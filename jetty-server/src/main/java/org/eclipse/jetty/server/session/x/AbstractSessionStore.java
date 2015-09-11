@@ -19,12 +19,14 @@
 
 package org.eclipse.jetty.server.session.x;
 
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+
 /**
  * AbstractSessionStore
  *
  *
  */
-public abstract class AbstractSessionStore implements SessionStore
+public abstract class AbstractSessionStore extends AbstractLifeCycle implements SessionStore
 {
     protected SessionDataStore _sessionDataStore;
 
@@ -47,6 +49,25 @@ public abstract class AbstractSessionStore implements SessionStore
     }
     
     
+    
+    
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (_sessionDataStore == null)
+            throw new IllegalStateException ("No session data store configured");
+        
+        _sessionDataStore.start();
+        super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        _sessionDataStore.stop();
+        super.doStop();
+    }
+
     public SessionDataStore getSessionDataStore()
     {
         return _sessionDataStore;

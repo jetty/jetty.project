@@ -235,4 +235,13 @@ public class SessionData implements Serializable
         _maxInactiveMs = in.readLong();
         _attributes = (HashMap<String,Object>)in.readObject();
     }
+    
+    
+    public boolean isExpiredAt (long time)
+    {
+        if (getExpiry() <= 0)
+            return false; //never expires
+        
+        return (getExpiry() < time);
+    }
 }

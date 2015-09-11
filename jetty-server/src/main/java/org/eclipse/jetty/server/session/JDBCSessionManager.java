@@ -697,7 +697,8 @@ public class JDBCSessionManager extends AbstractSessionManager
      *
      * @param idInCluster the id in the cluster
      */
-    protected void invalidateSession (String idInCluster)
+    @Override
+    public void invalidateSession (String idInCluster)
     {
         Session session = (Session)_sessions.get(idInCluster);
 

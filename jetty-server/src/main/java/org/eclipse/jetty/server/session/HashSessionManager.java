@@ -484,6 +484,17 @@ public class HashSessionManager extends AbstractSessionManager
             LOG.warn(e);
         }
     }
+    
+    
+   
+
+    @Override
+    public void invalidateSession(String id)
+    {
+        // TODO Auto-generated method stub
+        //Called from SessionIdManager when invalidating all sessions with the same id 
+        //across contexts
+    }
 
     /* ------------------------------------------------------------ */
     @Override

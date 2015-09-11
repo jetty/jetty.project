@@ -664,6 +664,9 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
 
     protected abstract void addSession(AbstractSession session);
+    
+    public abstract void invalidateSession(String id);
+    
 
     /* ------------------------------------------------------------ */
     /**
@@ -1047,12 +1050,5 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     l.attributeReplaced(event);
             }
         }
-    }
-
-    @Override
-    @Deprecated
-    public SessionIdManager getMetaManager()
-    {
-        throw new UnsupportedOperationException();
-    }
+    } 
 }

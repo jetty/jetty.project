@@ -19,12 +19,14 @@
 
 package org.eclipse.jetty.server.session.x;
 
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+
 /**
  * AbstractSessionDataStore
  *
  *
  */
-public abstract class AbstractSessionDataStore implements SessionDataStore
+public abstract class AbstractSessionDataStore extends AbstractLifeCycle implements SessionDataStore
 {
     
     public abstract void doStore(SessionKey key, SessionData data) throws Exception;

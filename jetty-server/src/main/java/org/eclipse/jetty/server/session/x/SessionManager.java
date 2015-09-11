@@ -351,9 +351,10 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         else if (!_scheduler.isStarted())
             throw new IllegalStateException("Shared scheduler not started");
  
-       setScavengeInterval(getScavengeInterval());
-        
+       setScavengeInterval(getScavengeInterval());        
 
+       _sessionStore.start();
+       
         super.doStart();
     }
 
@@ -361,10 +362,9 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     @Override
     public void doStop() throws Exception
     {
-        super.doStop();
-
         shutdownSessions();
-
+        _sessionStore.stop();
+        super.doStop();
         _loader=null;
     }
 
@@ -760,14 +760,48 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     {
         try
         {
-            Session session =  _sessionStore.get(SessionKey.getKey(id, _context));
-            session.setSessionManager(this);
-            session.setExtendedId(_sessionIdManager.getExtendedId(id, null)); //TODO not sure if this is OK?
+            SessionKey key = SessionKey.getKey(id, _context);
+            Session session =  _sessionStore.get(key);
+            if (session != null)
+            {
+                //TODO consider not allowing load of expired sessions inside stores
+                //if the session we loaded has expired 
+                if (session.isExpiredAt(System.currentTimeMillis()))
+                {
+                    //Remove the expired session from cache and backing persistent store
+                    try
+                    {
+                        _sessionStore.delete(key);
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.warn("Unable to delete expired session {}", key);
+                    }
+                    
+                    //Tell the id manager that this session id should not be used in case other threads
+                    //try to use the same session id in other contexts
+                    _sessionIdManager.removeId(id);
+                    
+                    return null;
+                }
+                
+                session.setSessionManager(this);
+                session.setExtendedId(_sessionIdManager.getExtendedId(id, null)); //TODO not sure if this is OK?
+                session.setLastNode(_sessionIdManager.getWorkerName());  //TODO write through the change of node?
+            }
             return session;
         }
-        catch (Exception e)
+        catch (UnreadableSessionDataException e)
         {
             LOG.warn(e);
+            //Could not retrieve the session with the given id
+            //Tell the session id manager that the session id is not to be used by any other threads/contexts
+            _sessionIdManager.removeId(id);
+            return null;
+        }
+        catch (Exception e1)
+        {
+            LOG.warn(e1);
             return null;
         }
     }
@@ -979,13 +1013,13 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                 l.sessionIdChanged(event, oldClusterId);
             }
         }
-
     }
     
     
     public void scavenge ()
     {
         //TODO call scavenge on the cache, which calls through to scavenge on the backing store
+        //want scavenging to use different algorithms?Pluggable?
     }
     
     

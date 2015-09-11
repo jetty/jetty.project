@@ -77,6 +77,8 @@ public class MemorySessionStore extends AbstractSessionStore
     
     
     
+    
+    
     /** 
      * @see org.eclipse.jetty.server.session.x.AbstractSessionStore#doGet(java.lang.String)
      */
@@ -128,10 +130,6 @@ public class MemorySessionStore extends AbstractSessionStore
     @Override
     public void shutdown ()
     {
-        
-        //TODO Always have a sessionDataStore, but it may be the null store!
-        
-        
         // loop over all the sessions in memory (a few times if necessary to catch sessions that have been
         // added while we're running
         int loop=100;
@@ -158,9 +156,15 @@ public class MemorySessionStore extends AbstractSessionStore
                 }
                 else
                 {
-                    //TODO this will call back into our delete method
                     //not preserving sessions on exit
-                    session.invalidate();
+                    try
+                    {
+                        session.invalidate();
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.ignore(e);
+                    }
                 }
             }
         }

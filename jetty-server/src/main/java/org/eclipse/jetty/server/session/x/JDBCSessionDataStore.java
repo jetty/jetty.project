@@ -20,7 +20,9 @@
 package org.eclipse.jetty.server.session.x;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -559,14 +561,14 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             return "select * from "+getTableName()+" where "+getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?";
         }
      
-        public PreparedStatement getLoadStatement (Connection connection, String rowId, String contextPath, String virtualHosts)
+        public PreparedStatement getLoadStatement (Connection connection, SessionKey key)
         throws SQLException
         { 
             if (_dbAdaptor == null)
                 throw new IllegalStateException("No DB adaptor");
 
 
-            if (contextPath == null || "".equals(contextPath))
+            if (key.getCanonicalContextPath() == null || "".equals(key.getCanonicalContextPath()))
             {
                 if (_dbAdaptor.isEmptyStringNull())
                 {
@@ -574,8 +576,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                                                                               " where "+getIdColumn()+" = ? and "+
                                                                               getContextPathColumn()+" is null and "+
                                                                               getVirtualHostColumn()+" = ?");
-                    statement.setString(1, rowId);
-                    statement.setString(2, virtualHosts);
+                    statement.setString(1, key.getId());
+                    statement.setString(2, key.getVhost());
 
                     return statement;
                 }
@@ -584,14 +586,46 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             PreparedStatement statement = connection.prepareStatement("select * from "+getTableName()+
                                                                       " where "+getIdColumn()+" = ? and "+getContextPathColumn()+
                                                                       " = ? and "+getVirtualHostColumn()+" = ?");
-            statement.setString(1, rowId);
-            statement.setString(2, contextPath);
-            statement.setString(3, virtualHosts);
+            statement.setString(1, key.getId());
+            statement.setString(2, key.getCanonicalContextPath());
+            statement.setString(3, key.getVhost());
 
             return statement;
         }
-        
-        
+
+
+        public PreparedStatement getDeleteStatement (Connection connection, SessionKey key)
+        throws Exception
+        { 
+            if (_dbAdaptor == null)
+
+                throw new IllegalStateException("No DB adaptor");
+
+
+            if (key.getCanonicalContextPath() == null || "".equals(key.getCanonicalContextPath()))
+            {
+                if (_dbAdaptor.isEmptyStringNull())
+                {
+                    PreparedStatement statement = connection.prepareStatement("delete from "+getTableName()+
+                                                                              " where "+getIdColumn()+" = ? and "+getContextPathColumn()+
+                                                                              " = ? and "+getVirtualHostColumn()+" = ?");
+                    statement.setString(1, key.getId());
+                    statement.setString(2, key.getVhost());
+                    return statement;
+                }
+            }
+
+            PreparedStatement statement = connection.prepareStatement("delete from "+getTableName()+
+                                                                      " where "+getIdColumn()+" = ? and "+getContextPathColumn()+
+                                                                      " = ? and "+getVirtualHostColumn()+" = ?");
+            statement.setString(1, key.getId());
+            statement.setString(2, key.getCanonicalContextPath());
+            statement.setString(3, key.getVhost());
+
+            return statement;
+
+        }
+
         
         /**
          * Set up the tables in the database
@@ -706,10 +740,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     public class JDBCSessionData extends SessionData
     {
         protected String _rowId;
-        //TODO other fields needed by jdbc
-        
-    
-       
+        protected long _lastSaved; //time in msec since last save
+      
 
         /**
          * @param id
@@ -735,10 +767,31 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             _rowId = rowId;
         }
         
+
+        
+
+        public long getLastSaved()
+        {
+            return _lastSaved;
+        }
+
+
+
+        public void setLastSaved(long lastSaved)
+        {
+            _lastSaved = lastSaved;
+        }
+
         
         public void setAttributes (Map<String, Object> attributes)
         {
             _attributes.putAll(attributes);
+        }
+        
+        //TODO immutable??
+        public Map<String,Object> getAttributes ()
+        {
+            return _attributes;
         }
     }
     
@@ -778,6 +831,25 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
 
+    @Override
+    protected void doStart() throws Exception
+    {
+        initialize();
+        super.doStart();
+    }
+
+
+
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+    }
+
+
+
+
     public void initialize () throws Exception
     {
         if (!_initialized)
@@ -805,40 +877,35 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     @Override
     public SessionData load(SessionKey key) throws Exception
     {
-        // TODO make jdbc calls to load in the session
-        long created = 0;
-        long accessed = 0;
-        long lastAccessed = 0;
-        long maxInactiveMs = 0;
-
-
         try (Connection connection = _dbAdaptor.getConnection();
-                PreparedStatement statement = _sessionTableSchema.getLoadStatement(connection, key.getId(), key.getCanonicalContextPath(), key.getVhost());
+                PreparedStatement statement = _sessionTableSchema.getLoadStatement(connection, key);
                 ResultSet result = statement.executeQuery())
         {
             JDBCSessionData data = null;
             if (result.next())
             {                    
-                long maxInterval = result.getLong(_sessionTableSchema.getMaxIntervalColumn());
-
-
                 data = (JDBCSessionData)newSessionData(key.getId(), 
                                                        result.getLong(_sessionTableSchema.getCreateTimeColumn()), 
                                                        result.getLong(_sessionTableSchema.getAccessTimeColumn()), 
-                                                       result.getLong(_sessionTableSchema.getLastAccessTimeColumn()), maxInactiveMs);
+                                                       result.getLong(_sessionTableSchema.getLastAccessTimeColumn()), 
+                                                       result.getLong(_sessionTableSchema.getMaxIntervalColumn()));
                 data.setRowId(result.getString(_sessionTableSchema.getRowIdColumn()));
                 data.setCookieSet(result.getLong(_sessionTableSchema.getCookieTimeColumn()));
                 data.setLastNode(result.getString(_sessionTableSchema.getLastNodeColumn()));
-                //TODO needed?data.setLastSaved(result.getLong(_sessionTableSchema.getLastSavedTimeColumn()));
+                data.setLastSaved(result.getLong(_sessionTableSchema.getLastSavedTimeColumn()));
                 data.setExpiry(result.getLong(_sessionTableSchema.getExpiryTimeColumn()));
-                // TODO needed???? data.setCanonicalContext(result.getString(_sessionTableSchema.getContextPathColumn()));
-                data.setVhost(result.getString(_sessionTableSchema.getVirtualHostColumn()));
+                data.setContextPath(result.getString(_sessionTableSchema.getContextPathColumn())); //TODO needed? this is part of the key now
+                data.setVhost(result.getString(_sessionTableSchema.getVirtualHostColumn())); //TODO needed??? this is part of the key now
 
                 try (InputStream is = _dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn());
                         ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
                 {
                     Object o = ois.readObject();
                     data.setAttributes((Map<String,Object>)o);
+                }
+                catch (Exception e)
+                {
+                    throw new UnreadableSessionDataException (key, e);
                 }
 
                 if (LOG.isDebugEnabled())
@@ -848,13 +915,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 if (LOG.isDebugEnabled())
                     LOG.debug("Failed to load session "+key.getId());
             return data;
-        }
-        catch (Exception e)
-        {
-            //if the session could not be restored, take its id out of the pool of currently-in-use
-            //session ids
-            //TODO handle situation where session cannot be restored:  _jdbcSessionIdMgr.removeId(id);
-            throw e;
         }
     }
 
@@ -866,8 +926,15 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     @Override
     public boolean delete(SessionKey key) throws Exception
     {
-        // TODO delete from jdbc
-        return false;
+        try (Connection connection = _dbAdaptor.getConnection();
+             PreparedStatement statement = _sessionTableSchema.getDeleteStatement(connection, key))
+        {
+            connection.setAutoCommit(true);
+            int rows = statement.executeUpdate();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Deleted Session {}:{}",key,(rows>0));
+            return rows > 0;
+        }
     }
 
 
@@ -880,7 +947,37 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     public void doStore(SessionKey key, SessionData data) throws Exception
     {
         // TODO write session data to jdbc
-        
+        if (data==null || key==null)
+            return;
+
+        try (Connection connection = _dbAdaptor.getConnection();
+             PreparedStatement statement = connection.prepareStatement(_sessionTableSchema.getUpdateSessionStatementAsString()))
+        {
+            long now = System.currentTimeMillis();
+            connection.setAutoCommit(true);
+            statement.setString(1, key.getId());
+            statement.setString(2, data.getLastNode());//should be my node id
+            statement.setLong(3, data.getAccessed());//accessTime
+            statement.setLong(4, data.getLastAccessed()); //lastAccessTime
+            statement.setLong(5, now); //last saved time
+            statement.setLong(6, data.getExpiry());
+            statement.setLong(7, data.getMaxInactiveMs());
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(((JDBCSessionData)data).getAttributes());
+            oos.flush();
+            byte[] bytes = baos.toByteArray();
+            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+
+            statement.setBinaryStream(8, bais, bytes.length);//attribute map as blob
+            statement.setString(9, ((JDBCSessionData)data).getRowId()); //rowId
+            statement.executeUpdate();
+
+            ((JDBCSessionData)data).setLastSaved(now);
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Updated session "+data);
     }
 
 

@@ -71,6 +71,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         return _workerName;
     }
 
+    
+    
     /* ------------------------------------------------------------ */
     /**
      * Set the workername. If set, the workername is dot appended to the session

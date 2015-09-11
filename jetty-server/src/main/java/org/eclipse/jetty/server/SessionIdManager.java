@@ -19,7 +19,7 @@
 package org.eclipse.jetty.server;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+
 
 import org.eclipse.jetty.util.component.LifeCycle;
 

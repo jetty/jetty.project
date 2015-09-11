@@ -22,7 +22,6 @@ package org.eclipse.jetty.server.session.x;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.ServletContext;
@@ -33,7 +32,6 @@ import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
 
-import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -41,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /**
- * AbstractSession
+ * Session
  *
  *
  */
@@ -106,7 +104,7 @@ public class Session implements SessionManager.SessionIf
             _sessionData.setLastAccessed(lastAccessed);
             int maxInterval=getMaxInactiveInterval();
            _sessionData.setExpiry(maxInterval <= 0 ? 0 : (time + maxInterval*1000L));
-            if (checkExpiry(time))
+            if (isExpiredAt(time))
             {
                 invalidate();
                 return false;
@@ -159,15 +157,22 @@ public class Session implements SessionManager.SessionIf
      * @param time the time in milliseconds
      * @return true if expired
      */
-    protected boolean checkExpiry(long time)
+    protected boolean isExpiredAt(long time)
     {
-        //TODO replace by check on SessionData object instead
-        if (_sessionData.getMaxInactiveMs()>0 && _sessionData.getLastAccessed()>0 && _sessionData.getLastAccessed() + _sessionData.getMaxInactiveMs() < time)
-            return true;
-        
-        return false;
+        return _sessionData.isExpiredAt(time);
     }
     
+    
+    public void setLastNode (String nodename)
+    {
+        _sessionData.setLastNode(nodename);
+    }
+    
+    
+    public String getLastNode ()
+    {
+        return _sessionData.getLastNode();
+    }
 
     public void clearAttributes()
     {
@@ -186,7 +191,7 @@ public class Session implements SessionManager.SessionIf
     }
 
 
-        /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     /**
      * Call binding and attribute listeners based on the new and old
      * values of the attribute.
@@ -210,6 +215,8 @@ public class Session implements SessionManager.SessionIf
         }
     }
 
+    
+    
     /* ------------------------------------------------------------- */
     /**
      * Unbind value if value implements {@link HttpSessionBindingListener} (calls {@link HttpSessionBindingListener#valueUnbound(HttpSessionBindingEvent)}) 
@@ -253,6 +260,8 @@ public class Session implements SessionManager.SessionIf
             }
         }
     }
+    
+    
     /* ------------------------------------------------------------- */
     public void willPassivate()
     {
