@@ -50,6 +50,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.DebugListener;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -83,6 +84,7 @@ public class AsyncServletIOTest
         _server.setConnectors(new Connector[]{ _connector });
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/ctx");
+        context.addEventListener(new DebugListener());
         _server.setHandler(context);
         _servletHandler=context.getServletHandler();
         

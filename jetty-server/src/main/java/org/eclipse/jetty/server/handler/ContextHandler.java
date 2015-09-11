@@ -1076,7 +1076,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
 
             if (old_context != _scontext)
-                enterScope(baseRequest);
+                enterScope(baseRequest,dispatch);
             
             if (LOG.isDebugEnabled())
                 LOG.debug("context={}|{}|{} @ {}",baseRequest.getContextPath(),baseRequest.getServletPath(), baseRequest.getPathInfo(),this);
@@ -1184,8 +1184,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /**
      * @param request A request that is applicable to the scope, or null
+     * @param reason An object that indicates the reason the scope is being entered.
      */
-    protected void enterScope(Request request)
+    protected void enterScope(Request request, Object reason)
     {
         if (!_contextListeners.isEmpty())
         {
@@ -1193,7 +1194,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             {
                 try
                 {
-                    listener.enterScope(_scontext,request);
+                    listener.enterScope(_scontext,request,reason);
                 }
                 catch(Throwable e)
                 {
@@ -1235,10 +1236,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         ClassLoader old_classloader = null;
         Thread current_thread = null;
-        Context old_context = null;
+        Context old_context = __context.get();
+        
+        // Are we already in the scope?
+        if (old_context==_scontext)
+        {
+            runnable.run();
+            return;
+        }
+        
+        // Nope, so enter the scope and then exit
         try
         {
-            old_context = __context.get();
             __context.set(_scontext);
 
             // Set the classloader
@@ -1249,7 +1258,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 current_thread.setContextClassLoader(_classLoader);
             }
 
-            enterScope(request);
+            enterScope(request,runnable);
             runnable.run();
         }
         finally
@@ -2859,7 +2868,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
          */
-        void enterScope(Context context, Request request);
+        void enterScope(Context context, Request request, Object reason);
         
         
         /**

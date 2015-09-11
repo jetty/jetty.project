@@ -374,42 +374,49 @@ public class WebAppClassLoader extends URLClassLoader
         String tmp = name;
         if (tmp != null && tmp.endsWith(".class"))
             tmp = tmp.substring(0, tmp.length()-6);
-      
+        
         boolean system_class=_context.isSystemClass(tmp);
         boolean server_class=_context.isServerClass(tmp);
         
+        if (LOG.isDebugEnabled())
+            LOG.debug("getResource({}) system={} server={} cl={}",name,system_class,server_class,this);
+        
         if (system_class && server_class)
             return null;
+        
+        ClassLoader source=null;
         
         if (_parent!=null &&(_context.isParentLoaderPriority() || system_class ) && !server_class)
         {
             tried_parent= true;
             
             if (_parent!=null)
-                url= _parent.getResource(name);
+            {
+                source=_parent;
+                url=_parent.getResource(name);
+            }
         }
 
         if (url == null)
         {
             url= this.findResource(name);
-
+            source=this;
             if (url == null && name.startsWith("/"))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("HACK leading / off " + name);
                 url= this.findResource(name.substring(1));
-            }
         }
 
         if (url == null && !tried_parent && !server_class )
         {
             if (_parent!=null)
+            {
+                tried_parent=true;
+                source=_parent;
                 url= _parent.getResource(name);
+            }
         }
 
-        if (url != null)
-            if (LOG.isDebugEnabled())
-                LOG.debug("getResource("+name+")=" + url);
+        if (LOG.isDebugEnabled())
+            LOG.debug("gotResource({})=={} from={} tried_parent={}",name,url,source,tried_parent);
 
         return url;
     }
@@ -434,6 +441,11 @@ public class WebAppClassLoader extends URLClassLoader
             boolean system_class=_context.isSystemClass(name);
             boolean server_class=_context.isServerClass(name);
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("loadClass({}) system={} server={} cl={}",name,system_class,server_class,this);
+            
+            ClassLoader source=null;
+            
             if (system_class && server_class)
             {
                 return null;
@@ -442,6 +454,7 @@ public class WebAppClassLoader extends URLClassLoader
             if (c == null && _parent!=null && (_context.isParentLoaderPriority() || system_class) && !server_class)
             {
                 tried_parent= true;
+                source=_parent;
                 try
                 {
                     c= _parent.loadClass(name);
@@ -458,6 +471,7 @@ public class WebAppClassLoader extends URLClassLoader
             {
                 try
                 {
+                    source=this;
                     c= this.findClass(name);
                 }
                 catch (ClassNotFoundException e)
@@ -467,19 +481,23 @@ public class WebAppClassLoader extends URLClassLoader
             }
 
             if (c == null && _parent!=null && !tried_parent && !server_class )
+            {
+                tried_parent=true;
+                source=_parent;
                 c= _parent.loadClass(name);
+            }
 
             if (c == null && ex!=null)
             {
-                LOG.debug("not found {} from {}",name,this,ex);
+                LOG.debug("!loadedClass({}) from={} tried_parent={}",name,this,tried_parent);
                 throw ex;
             }
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("loadedClass({})=={} from={} tried_parent={}",name,c,source,tried_parent);
+            
             if (resolve)
                 resolveClass(c);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("loaded {} from {}",c,c==null?null:c.getClassLoader());
 
             return c;
         }
@@ -541,7 +559,10 @@ public class WebAppClassLoader extends URLClassLoader
             {
                 content = url.openStream();
                 byte[] bytes = IO.readBytes(content);
-                    
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("foundClass({}) url={} cl={}",name,url,this);
+                
                 for (ClassFileTransformer transformer : _transformers)
                 {
                     byte[] tmp = transformer.transform(this,name,null,null,bytes);

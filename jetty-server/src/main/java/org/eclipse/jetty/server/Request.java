@@ -975,7 +975,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getMethod()
     {
-        return _metadata.getMethod();
+        return _metadata==null?null:_metadata.getMethod();
     }
 
     /* ------------------------------------------------------------ */
@@ -1787,6 +1787,12 @@ public class Request implements HttpServletRequest
         setPathInfo(info);
     }
 
+    /* ------------------------------------------------------------ */
+    public org.eclipse.jetty.http.MetaData.Request getMetaData()
+    {
+        return _metadata;
+    }
+    
     /* ------------------------------------------------------------ */
     public boolean hasMetaData()
     {

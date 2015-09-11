@@ -44,6 +44,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.DebugListener;
 import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -101,6 +102,7 @@ public class AsyncServletTest
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/ctx");
         logHandler.setHandler(context);
+        context.addEventListener(new DebugListener());
 
         _servletHandler=context.getServletHandler();
         ServletHolder holder=new ServletHolder(_servlet);

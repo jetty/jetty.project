@@ -270,23 +270,37 @@ public class HttpChannelState
             _async=Async.STARTED;
             _event=event;
             lastAsyncListeners=_asyncListeners;
-            _asyncListeners=null;
+            _asyncListeners=null;            
         }
 
         if (lastAsyncListeners!=null)
         {
-            for (AsyncListener listener : lastAsyncListeners)
+            Runnable callback=new Runnable()
             {
-                try
+                @Override
+                public void run()
                 {
-                    listener.onStartAsync(event);
+                    for (AsyncListener listener : lastAsyncListeners)
+                    {
+                        try
+                        {
+                            listener.onStartAsync(event);
+                        }
+                        catch(Exception e)
+                        {
+                            // TODO Async Dispatch Error
+                            LOG.warn(e);
+                        }
+                    }
                 }
-                catch(Exception e)
+                @Override
+                public String toString()
                 {
-                    // TODO Async Dispatch Error
-                    LOG.warn(e);
+                    return "startAsync";
                 }
-            }
+            };
+                  
+            runInContext(event,callback);
         }
     }
 
@@ -416,12 +430,17 @@ public class HttpChannelState
 
     public void dispatch(ServletContext context, String path)
     {
-        boolean dispatch;
+        boolean dispatch=false;
+        AsyncContextEvent event=null;
         try(Locker.Lock lock= _locker.lock())
         {
+            boolean started=false;
+            event=_event;
             switch(_async)
             {
                 case STARTED:
+                    started=true;
+                    break;
                 case EXPIRING:
                 case ERRORED:
                     break;
@@ -435,27 +454,26 @@ public class HttpChannelState
             if (path!=null)
                 _event.setDispatchPath(path);
 
-            switch(_state)
+            if (started)
             {
-                case DISPATCHED:
-                case ASYNC_IO:
-                    dispatch=false;
-                    break;
-                case ASYNC_WAIT:
-                    _state=State.ASYNC_WOKEN;
-                    dispatch=true;
-                    break;
-                case ASYNC_WOKEN:
-                    dispatch=false;
-                    break;
-                default:
-                    LOG.warn("async dispatched when complete {}",this);
-                    dispatch=false;
-                    break;
+                switch(_state)
+                {
+                    case DISPATCHED:
+                    case ASYNC_IO:
+                    case ASYNC_WOKEN:
+                        break;
+                    case ASYNC_WAIT:
+                        _state=State.ASYNC_WOKEN;
+                        dispatch=true;
+                        break;
+                    default:
+                        LOG.warn("async dispatched when complete {}",this);
+                        break;
+                }
             }
         }
 
-        cancelTimeout();
+        cancelTimeout(event);
         if (dispatch)
             scheduleDispatch();
     }
@@ -471,6 +489,7 @@ public class HttpChannelState
             _async=Async.EXPIRING;
             event=_event;
             listeners=_asyncListeners;
+
         }
 
         if (LOG.isDebugEnabled())
@@ -478,43 +497,65 @@ public class HttpChannelState
 
         if (listeners!=null)
         {
-            for (AsyncListener listener : listeners)
+            Runnable callback=new Runnable()
             {
-                try
+                @Override
+                public void run()
                 {
-                    listener.onTimeout(event);
+                    for (AsyncListener listener : listeners)
+                    {
+                        try
+                        {
+                            listener.onTimeout(event);
+                        }
+                        catch(Exception e)
+                        {
+                            LOG.debug(e);
+                            event.addThrowable(e);
+                            _channel.getRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,event.getThrowable());
+                            break;
+                        }
+                    }
                 }
-                catch(Exception e)
+                @Override
+                public String toString()
                 {
-                    LOG.debug(e);
-                    event.addThrowable(e);
-                    _channel.getRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,event.getThrowable());
-                    break;
+                    return "onTimeout";
                 }
-            }
+            };
+            
+            runInContext(event,callback);
         }
 
         boolean dispatch=false;
         try(Locker.Lock lock= _locker.lock())
         {
-            if (_async==Async.EXPIRING)
+            switch(_async)
             {
-                // If the listeners did not call dispatch() or complete(),
-                // then the container must generate an error.
-                if (event.getThrowable()==null)
-                {
-                    _async=Async.EXPIRED;
-                    _event.addThrowable(new TimeoutException("Async API violation"));
-                }
-                else
-                {
-                    _async=Async.ERRORING;
-                }
-                if (_state==State.ASYNC_WAIT)
-                {
-                    _state=State.ASYNC_WOKEN;
-                    dispatch=true;
-                }
+                case EXPIRING:
+                    if (event.getThrowable()==null)
+                    {
+                        _async=Async.EXPIRED;
+                        _event.addThrowable(new TimeoutException("Async API violation"));
+                    }
+                    else
+                    {
+                        _async=Async.ERRORING;
+                    }
+                    break;
+                    
+                case COMPLETE:
+                case DISPATCH:
+                    break;
+                    
+                default:
+                    throw new IllegalStateException();
+            }
+
+            if (_state==State.ASYNC_WAIT)
+            {
+                _state=State.ASYNC_WOKEN;
+                dispatch=true;
             }
         }
 
@@ -530,11 +571,17 @@ public class HttpChannelState
     {
         // just like resume, except don't set _dispatched=true;
         boolean handle=false;
+        AsyncContextEvent event=null;
         try(Locker.Lock lock= _locker.lock())
         {
+            boolean started=false;
+            event=_event;
+            
             switch(_async)
             {
                 case STARTED:
+                    started=true;
+                    break;
                 case EXPIRING:
                 case ERRORED:
                     break;
@@ -542,22 +589,17 @@ public class HttpChannelState
                     throw new IllegalStateException(this.getStatusStringLocked());
             }
             _async=Async.COMPLETE;
-            if (_state==State.ASYNC_WAIT)
+            
+            if (started && _state==State.ASYNC_WAIT)
             {
                 handle=true;
                 _state=State.ASYNC_WOKEN;
             }
         }
 
-        cancelTimeout();
+        cancelTimeout(event);
         if (handle)
-        {
-            ContextHandler handler=getContextHandler();
-            if (handler!=null)
-                handler.handle(_channel.getRequest(),_channel);
-            else
-                _channel.handle();
-        }
+            runInContext(event,_channel);
     }
 
     public void errorComplete()
@@ -631,17 +673,31 @@ public class HttpChannelState
         {
             if (aListeners!=null)
             {
-                for (AsyncListener listener : aListeners)
+                Runnable callback = new Runnable()
                 {
-                    try
+                    @Override
+                    public void run()
                     {
-                        listener.onComplete(event);
-                    }
-                    catch(Exception e)
+                        for (AsyncListener listener : aListeners)
+                        {
+                            try
+                            {
+                                listener.onComplete(event);
+                            }
+                            catch(Exception e)
+                            {
+                                LOG.warn(e);
+                            }
+                        }
+                    }    
+                    @Override
+                    public String toString()
                     {
-                        LOG.warn(e);
+                        return "onComplete";
                     }
-                }
+                };
+                
+                runInContext(event,callback);                
             }
             event.completed();
         }
@@ -697,7 +753,6 @@ public class HttpChannelState
         }
     }
 
-
     protected void scheduleDispatch()
     {
         _channel.execute(_channel);
@@ -717,10 +772,15 @@ public class HttpChannelState
         {
             event=_event;
         }
+        cancelTimeout(event);
+    }
+
+    protected void cancelTimeout(AsyncContextEvent event)
+    {
         if (event!=null)
             event.cancelTimeoutTask();
     }
-
+    
     public boolean isIdle()
     {
         try(Locker.Lock lock= _locker.lock())
@@ -779,7 +839,6 @@ public class HttpChannelState
         }
     }
 
-
     public boolean isAsync()
     {
         try(Locker.Lock lock= _locker.lock())
@@ -805,7 +864,11 @@ public class HttpChannelState
         {
             event=_event;
         }
+        return getContextHandler(event);
+    }
 
+    ContextHandler getContextHandler(AsyncContextEvent event)
+    {
         if (event!=null)
         {
             Context context=((Context)event.getServletContext());
@@ -822,11 +885,25 @@ public class HttpChannelState
         {
             event=_event;
         }
+        return getServletResponse(event);
+    }
+    
+    public ServletResponse getServletResponse(AsyncContextEvent event)
+    {
         if (event!=null && event.getSuppliedResponse()!=null)
             return event.getSuppliedResponse();
         return _channel.getResponse();
     }
-
+    
+    void runInContext(AsyncContextEvent event,Runnable runnable)
+    {
+        ContextHandler contextHandler = getContextHandler(event);
+        if (contextHandler==null)
+            runnable.run();
+        else
+            contextHandler.handle(_channel.getRequest(),runnable);
+    }
+    
     public Object getAttribute(String name)
     {
         return _channel.getRequest().getAttribute(name);

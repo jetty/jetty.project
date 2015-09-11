@@ -447,6 +447,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     handleException(e);
                 }
             }
+            finally
+            {
+                _request.setDispatcherType(null);
+            }
 
             action = _state.unhandle();
         }
