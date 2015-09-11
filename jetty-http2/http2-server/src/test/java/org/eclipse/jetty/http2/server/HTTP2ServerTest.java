@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -114,6 +115,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
+        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
@@ -170,6 +172,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
+        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
@@ -228,9 +231,10 @@ public class HTTP2ServerTest extends AbstractServerTest
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
+        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
         generator.control(lease, new PingFrame(new byte[8], false));
         // Modify the length of the frame to a wrong one.
-        lease.getByteBuffers().get(1).putShort(0, (short)7);
+        lease.getByteBuffers().get(2).putShort(0, (short)7);
 
         final CountDownLatch latch = new CountDownLatch(1);
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
@@ -264,9 +268,10 @@ public class HTTP2ServerTest extends AbstractServerTest
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
+        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
         generator.control(lease, new PingFrame(new byte[8], false));
         // Modify the streamId of the frame to non zero.
-        lease.getByteBuffers().get(1).putInt(4, 1);
+        lease.getByteBuffers().get(2).putInt(4, 1);
 
         final CountDownLatch latch = new CountDownLatch(1);
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
@@ -340,6 +345,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
+        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
         try (Socket client = new Socket("localhost", connector2.getLocalPort()))
@@ -375,6 +381,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
+            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", new HttpFields());
             generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
@@ -400,97 +407,85 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testRequestWithContinuationFrames() throws Exception
     {
-        testRequestWithContinuationFrames(new Callable<ByteBufferPool.Lease>()
+        testRequestWithContinuationFrames(() ->
         {
-            @Override
-            public ByteBufferPool.Lease call() throws Exception
-            {
-                ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-                generator.control(lease, new PrefaceFrame());
-                MetaData.Request metaData = newRequest("GET", new HttpFields());
-                generator.control(lease, new HeadersFrame(1, metaData, null, true));
-                return lease;
-            }
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.control(lease, new PrefaceFrame());
+            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+            MetaData.Request metaData = newRequest("GET", new HttpFields());
+            generator.control(lease, new HeadersFrame(1, metaData, null, true));
+            return lease;
         });
     }
 
     @Test
     public void testRequestWithContinuationFramesWithEmptyHeadersFrame() throws Exception
     {
-        testRequestWithContinuationFrames(new Callable<ByteBufferPool.Lease>()
+        testRequestWithContinuationFrames(() ->
         {
-            @Override
-            public ByteBufferPool.Lease call() throws Exception
-            {
-                ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-                generator.control(lease, new PrefaceFrame());
-                MetaData.Request metaData = newRequest("GET", new HttpFields());
-                generator.control(lease, new HeadersFrame(1, metaData, null, true));
-                // Take the HeadersFrame header and set the length to zero.
-                List<ByteBuffer> buffers = lease.getByteBuffers();
-                ByteBuffer headersFrameHeader = buffers.get(1);
-                headersFrameHeader.put(0, (byte)0);
-                headersFrameHeader.putShort(1, (short)0);
-                // Insert a CONTINUATION frame header for the body of the HEADERS frame.
-                lease.insert(2, buffers.get(3).slice(), false);
-                return lease;
-            }
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.control(lease, new PrefaceFrame());
+            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+            MetaData.Request metaData = newRequest("GET", new HttpFields());
+            generator.control(lease, new HeadersFrame(1, metaData, null, true));
+            // Take the HeadersFrame header and set the length to zero.
+            List<ByteBuffer> buffers = lease.getByteBuffers();
+            ByteBuffer headersFrameHeader = buffers.get(2);
+            headersFrameHeader.put(0, (byte)0);
+            headersFrameHeader.putShort(1, (short)0);
+            // Insert a CONTINUATION frame header for the body of the HEADERS frame.
+            lease.insert(3, buffers.get(4).slice(), false);
+            return lease;
         });
     }
 
     @Test
     public void testRequestWithContinuationFramesWithEmptyContinuationFrame() throws Exception
     {
-        testRequestWithContinuationFrames(new Callable<ByteBufferPool.Lease>()
+        testRequestWithContinuationFrames(() ->
         {
-            @Override
-            public ByteBufferPool.Lease call() throws Exception
-            {
-                ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-                generator.control(lease, new PrefaceFrame());
-                MetaData.Request metaData = newRequest("GET", new HttpFields());
-                generator.control(lease, new HeadersFrame(1, metaData, null, true));
-                // Take the ContinuationFrame header, duplicate it, and set the length to zero.
-                List<ByteBuffer> buffers = lease.getByteBuffers();
-                ByteBuffer continuationFrameHeader = buffers.get(3);
-                ByteBuffer duplicate = ByteBuffer.allocate(continuationFrameHeader.remaining());
-                duplicate.put(continuationFrameHeader).flip();
-                continuationFrameHeader.flip();
-                continuationFrameHeader.put(0, (byte)0);
-                continuationFrameHeader.putShort(1, (short)0);
-                // Insert a CONTINUATION frame header for the body of the previous CONTINUATION frame.
-                lease.insert(4, duplicate, false);
-                return lease;
-            }
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.control(lease, new PrefaceFrame());
+            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+            MetaData.Request metaData = newRequest("GET", new HttpFields());
+            generator.control(lease, new HeadersFrame(1, metaData, null, true));
+            // Take the ContinuationFrame header, duplicate it, and set the length to zero.
+            List<ByteBuffer> buffers = lease.getByteBuffers();
+            ByteBuffer continuationFrameHeader = buffers.get(4);
+            ByteBuffer duplicate = ByteBuffer.allocate(continuationFrameHeader.remaining());
+            duplicate.put(continuationFrameHeader).flip();
+            continuationFrameHeader.flip();
+            continuationFrameHeader.put(0, (byte)0);
+            continuationFrameHeader.putShort(1, (short)0);
+            // Insert a CONTINUATION frame header for the body of the previous CONTINUATION frame.
+            lease.insert(5, duplicate, false);
+            return lease;
         });
     }
 
     @Test
     public void testRequestWithContinuationFramesWithEmptyLastContinuationFrame() throws Exception
     {
-        testRequestWithContinuationFrames(new Callable<ByteBufferPool.Lease>()
+        testRequestWithContinuationFrames(() ->
         {
-            @Override
-            public ByteBufferPool.Lease call() throws Exception
-            {
-                ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-                generator.control(lease, new PrefaceFrame());
-                MetaData.Request metaData = newRequest("GET", new HttpFields());
-                generator.control(lease, new HeadersFrame(1, metaData, null, true));
-                // Take the last CONTINUATION frame and reset the flag.
-                List<ByteBuffer> buffers = lease.getByteBuffers();
-                ByteBuffer continuationFrameHeader = buffers.get(buffers.size() - 2);
-                continuationFrameHeader.put(4, (byte)0);
-                // Add a last, empty, CONTINUATION frame.
-                ByteBuffer last = ByteBuffer.wrap(new byte[]{
-                        0, 0, 0, // Length
-                        (byte)FrameType.CONTINUATION.getType(),
-                        (byte)Flags.END_HEADERS,
-                        0, 0, 0, 1 // Stream ID
-                });
-                lease.append(last, false);
-                return lease;
-            }
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.control(lease, new PrefaceFrame());
+            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+            MetaData.Request metaData = newRequest("GET", new HttpFields());
+            generator.control(lease, new HeadersFrame(1, metaData, null, true));
+            // Take the last CONTINUATION frame and reset the flag.
+            List<ByteBuffer> buffers = lease.getByteBuffers();
+            ByteBuffer continuationFrameHeader = buffers.get(buffers.size() - 2);
+            continuationFrameHeader.put(4, (byte)0);
+            // Add a last, empty, CONTINUATION frame.
+            ByteBuffer last = ByteBuffer.wrap(new byte[]{
+                    0, 0, 0, // Length
+                    (byte)FrameType.CONTINUATION.getType(),
+                    (byte)Flags.END_HEADERS,
+                    0, 0, 0, 1 // Stream ID
+            });
+            lease.append(last, false);
+            return lease;
         });
     }
 

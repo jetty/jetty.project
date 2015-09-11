@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -75,6 +76,21 @@ public class ServerParser extends Parser
                     case PREFACE:
                     {
                         if (!prefaceParser.parse(buffer))
+                            return;
+                        state = State.SETTINGS;
+                        break;
+                    }
+                    case SETTINGS:
+                    {
+                        if (!parseHeader(buffer))
+                            return;
+                        if (getFrameType() != FrameType.SETTINGS.getType())
+                        {
+                            BufferUtil.clear(buffer);
+                            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_preface");
+                            return;
+                        }
+                        if (!parseBody(buffer))
                             return;
                         onPreface();
                         state = State.FRAMES;
@@ -133,6 +149,6 @@ public class ServerParser extends Parser
 
     private enum State
     {
-        PREFACE, FRAMES
+        PREFACE, SETTINGS, FRAMES
     }
 }
