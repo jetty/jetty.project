@@ -199,6 +199,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void onPriority(PriorityFrame frame)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received {}", frame);
     }
 
     @Override
@@ -223,6 +225,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
     public void onSettings(SettingsFrame frame, boolean reply)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received {}", frame);
+
         if (frame.isReply())
             return;
 
@@ -305,6 +310,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
+
         if (frame.isReply())
         {
             notifyPing(this, frame);
@@ -383,6 +389,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
+
         int streamId = frame.getStreamId();
         if (streamId > 0)
         {
@@ -644,7 +651,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             return null;
         }
     }
-    
+
     public IStream createUpgradeStream()
     {
         // SPEC: upgrade stream is id=1 and can't exceed maximum

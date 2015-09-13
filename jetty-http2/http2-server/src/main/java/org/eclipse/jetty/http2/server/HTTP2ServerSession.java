@@ -68,6 +68,9 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
     @Override
     public void onHeaders(HeadersFrame frame)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received {}", frame);
+
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest())
         {
