@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -81,7 +82,7 @@ public class AsyncIOTest extends AbstractTest
 
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = newRequest("GET", fields);
-        HeadersFrame frame = new HeadersFrame(1, metaData, null, false);
+        HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, new Stream.Listener.Adapter()
@@ -132,7 +133,7 @@ public class AsyncIOTest extends AbstractTest
 
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = newRequest("GET", fields);
-        HeadersFrame frame = new HeadersFrame(1, metaData, null, false);
+        HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, new Stream.Listener.Adapter()
@@ -188,7 +189,7 @@ public class AsyncIOTest extends AbstractTest
 
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = newRequest("GET", fields);
-        HeadersFrame frame = new HeadersFrame(1, metaData, null, false);
+        HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, new Stream.Listener.Adapter()

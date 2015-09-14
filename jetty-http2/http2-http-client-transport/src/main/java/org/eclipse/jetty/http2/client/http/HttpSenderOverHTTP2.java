@@ -52,7 +52,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
         final Request request = exchange.getRequest();
         HttpURI uri = new HttpURI(request.getScheme(), request.getHost(), request.getPort(), request.getPath(), null, request.getQuery(), null);
         MetaData.Request metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders());
-        HeadersFrame headersFrame = new HeadersFrame(0, metaData, null, !content.hasContent());
+        HeadersFrame headersFrame = new HeadersFrame(metaData, null, !content.hasContent());
         HttpChannelOverHTTP2 channel = getHttpChannel();
         Promise<Stream> promise = new Promise<Stream>()
         {

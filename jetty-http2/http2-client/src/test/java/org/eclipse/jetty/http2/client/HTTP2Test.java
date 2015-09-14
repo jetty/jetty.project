@@ -56,9 +56,9 @@ public class HTTP2Test extends AbstractTest
 
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = newRequest("GET", fields);
-        HeadersFrame frame = new HeadersFrame(1, metaData, null, true);
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -95,9 +95,9 @@ public class HTTP2Test extends AbstractTest
 
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = newRequest("GET", fields);
-        HeadersFrame frame = new HeadersFrame(1, metaData, null, true);
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(2);
-        session.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -151,11 +151,11 @@ public class HTTP2Test extends AbstractTest
         fields.putLongField(downloadBytes, random.nextInt(128 * 1024));
         fields.put("User-Agent", "HTTP2Client/" + Jetty.VERSION);
         MetaData.Request metaData = newRequest("GET", fields);
-        HeadersFrame frame = new HeadersFrame(1, metaData, null, true);
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(requests);
         for (int i = 0; i < requests; ++i)
         {
-            session.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+            session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
             {
                 @Override
                 public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -186,7 +186,7 @@ public class HTTP2Test extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = newRequest("GET", fields);
-        HeadersFrame frame = new HeadersFrame(1, metaData, null, true);
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
@@ -223,7 +223,7 @@ public class HTTP2Test extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
         HostPortHttpField hostHeader = new HostPortHttpField(authority);
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, hostHeader, servletPath, HttpVersion.HTTP_2, new HttpFields());
-        HeadersFrame frame = new HeadersFrame(1, metaData, null, true);
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {

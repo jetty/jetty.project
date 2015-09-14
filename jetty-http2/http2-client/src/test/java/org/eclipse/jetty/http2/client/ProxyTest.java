@@ -170,8 +170,8 @@ public class ProxyTest
         final CountDownLatch clientLatch = new CountDownLatch(1);
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", "/", new HttpFields());
-        HeadersFrame frame = new HeadersFrame(1, metaData, null, true);
-        session.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
+        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)

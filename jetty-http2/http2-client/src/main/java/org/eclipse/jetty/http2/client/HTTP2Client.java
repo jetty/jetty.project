@@ -78,7 +78,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * // Prepare the HTTP request object.
  * MetaData.Request request = new MetaData.Request("PUT", new HttpURI("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
  * // Create the HTTP/2 HEADERS frame representing the HTTP request.
- * HeadersFrame headersFrame = new HeadersFrame(0, request, null, false);
+ * HeadersFrame headersFrame = new HeadersFrame(request, null, false);
  *
  * // Prepare the listener to receive the HTTP response frames.
  * Stream.Listener responseListener = new new Stream.Listener.Adapter()

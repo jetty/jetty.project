@@ -103,7 +103,7 @@ public class ProxyProtocolTest
         HttpFields fields = new HttpFields();
         String uri = "http://localhost:" + connector.getLocalPort() + "/";
         MetaData.Request metaData = new MetaData.Request("GET", new HttpURI(uri), HttpVersion.HTTP_2, fields);
-        HeadersFrame frame = new HeadersFrame(1, metaData, null, true);
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {

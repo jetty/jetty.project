@@ -57,9 +57,9 @@ public class Client
         HttpFields requestFields = new HttpFields();
         requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
         MetaData.Request metaData = new MetaData.Request("GET", new HttpURI("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
-        HeadersFrame headersFrame = new HeadersFrame(0, metaData, null, true);
+        HeadersFrame headersFrame = new HeadersFrame(metaData, null, true);
         final Phaser phaser = new Phaser(2);
-        session.newStream(headersFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(headersFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
