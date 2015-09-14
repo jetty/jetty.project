@@ -21,15 +21,20 @@ package org.eclipse.jetty.http2.frames;
 public class PriorityFrame extends Frame
 {
     private final int streamId;
-    private final int dependentStreamId;
+    private final int parentStreamId;
     private final int weight;
     private final boolean exclusive;
 
-    public PriorityFrame(int streamId, int dependentStreamId, int weight, boolean exclusive)
+    public PriorityFrame(int parentStreamId, int weight, boolean exclusive)
+    {
+        this(0, parentStreamId, weight, exclusive);
+    }
+
+    public PriorityFrame(int streamId, int parentStreamId, int weight, boolean exclusive)
     {
         super(FrameType.PRIORITY);
         this.streamId = streamId;
-        this.dependentStreamId = dependentStreamId;
+        this.parentStreamId = parentStreamId;
         this.weight = weight;
         this.exclusive = exclusive;
     }
@@ -39,9 +44,18 @@ public class PriorityFrame extends Frame
         return streamId;
     }
 
+    /**
+     * @deprecated use {@link #getParentStreamId()} instead.
+     */
+    @Deprecated
     public int getDependentStreamId()
     {
-        return dependentStreamId;
+        return getParentStreamId();
+    }
+
+    public int getParentStreamId()
+    {
+        return parentStreamId;
     }
 
     public int getWeight()
@@ -57,6 +71,6 @@ public class PriorityFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s#%d/#%d{weight=%d,ex=%b}", super.toString(), streamId, dependentStreamId, weight, exclusive);
+        return String.format("%s#%d/#%d{weight=%d,exclusive=%b}", super.toString(), streamId, parentStreamId, weight, exclusive);
     }
 }

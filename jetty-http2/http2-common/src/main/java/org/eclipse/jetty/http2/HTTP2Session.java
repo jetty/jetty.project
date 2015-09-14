@@ -201,6 +201,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
+
+
+
     }
 
     @Override
@@ -418,11 +421,15 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         boolean queued;
         synchronized (this)
         {
-            int streamId = streamIds.getAndAdd(2);
-            PriorityFrame priority = frame.getPriority();
-            priority = priority == null ? null : new PriorityFrame(streamId, priority.getDependentStreamId(),
-                    priority.getWeight(), priority.isExclusive());
-            frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
+            int streamId = frame.getStreamId();
+            if (streamId <= 0)
+            {
+                streamId = streamIds.getAndAdd(2);
+                PriorityFrame priority = frame.getPriority();
+                priority = priority == null ? null : new PriorityFrame(streamId, priority.getParentStreamId(),
+                        priority.getWeight(), priority.isExclusive());
+                frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
+            }
             final IStream stream = createLocalStream(streamId, promise);
             if (stream == null)
                 return;
@@ -434,6 +441,21 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         // Iterate outside the synchronized block.
         if (queued)
             flusher.iterate();
+    }
+
+    @Override
+    public int priority(PriorityFrame frame, Callback callback)
+    {
+        int streamId = frame.getStreamId();
+        IStream stream = streams.get(streamId);
+        if (stream == null)
+        {
+            streamId = streamIds.getAndAdd(2);
+            frame = new PriorityFrame(streamId, frame.getParentStreamId(),
+                    frame.getWeight(), frame.isExclusive());
+        }
+        control(stream, callback, frame);
+        return streamId;
     }
 
     @Override
@@ -650,20 +672,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             close(ErrorCode.PROTOCOL_ERROR.code, "duplicate_stream", Callback.NOOP);
             return null;
         }
-    }
-
-    public IStream createUpgradeStream()
-    {
-        // SPEC: upgrade stream is id=1 and can't exceed maximum
-        remoteStreamCount.incrementAndGet();
-        IStream stream = newStream(1);
-        streams.put(1,stream);
-        updateLastStreamId(1);
-        stream.setIdleTimeout(getStreamIdleTimeout());
-        flowControl.onStreamCreated(stream, false);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Created upgrade {}", stream);
-        return stream;
     }
 
     protected IStream newStream(int streamId)
@@ -1176,7 +1184,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
     }
 
-    private class PromiseCallback<C> implements Callback
+    private static class PromiseCallback<C> implements Callback
     {
         private final Promise<C> promise;
         private final C value;
