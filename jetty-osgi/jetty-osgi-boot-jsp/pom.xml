@@ -133,7 +133,7 @@
  org.apache.taglibs.standard.tei;version="1.2";resolution:=optional,
  org.apache.taglibs.standard.tlv;version="1.2";resolution:=optional,
  org.apache.tomcat;version="[8.0.23,9)";resolution:=optional,
- org.eclipse.jetty.jsp;version="[9.3,10)";resolution:=optional,
+ org.eclipse.jetty.jsp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:=optional,
  org.osgi.*,
  org.xml.*;resolution:=optional,
  org.xml.sax.*;resolution:=optional,
@@ -142,8 +142,7 @@
  org.w3c.dom.ls;resolution:=optional,
  javax.xml.parser;resolution:=optional
  </Import-Package>
-               <_nouses>true</_nouses>
-               <DynamicImport-Package>org.eclipse.jetty.jsp.*;version="9.3",org.apache.jasper.*;version="8.0.23",org.apache.el.*;version="8.0.23"</DynamicImport-Package>
+               <DynamicImport-Package>org.eclipse.jetty.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",org.apache.jasper.*;version="8.0.23",org.apache.el.*;version="8.0.23"</DynamicImport-Package>
               </instructions>
           </configuration>
       </plugin>
