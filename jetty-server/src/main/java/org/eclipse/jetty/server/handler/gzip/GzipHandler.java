@@ -28,6 +28,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.GzipHttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -61,10 +62,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     public final static String GZIP = "gzip";
     public final static String DEFLATE = "deflate";
-    public final static String ETAG_GZIP="--gzip";
     public final static String ETAG = "o.e.j.s.Gzip.ETag";
     public final static int DEFAULT_MIN_GZIP_SIZE=16;
-
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
     private boolean _checkGzExists = true;
@@ -78,6 +77,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
     
     private HttpField _vary;
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -418,8 +418,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         String etag = request.getHeader("If-None-Match"); 
         if (etag!=null)
         {
-            if (etag.contains(ETAG_GZIP))
-                request.setAttribute(ETAG,etag.replace(ETAG_GZIP,""));
+            if (etag.contains(GzipHttpContent.ETAG_GZIP))
+                request.setAttribute(ETAG,etag.replace(GzipHttpContent.ETAG_GZIP,""));
         }
 
         // install interceptor and handle

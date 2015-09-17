@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.InclusiveByteRange;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceCache;
+import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
@@ -161,6 +162,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     private Resource _resourceBase;
     private ResourceCache _cache;
+    private HttpContent.Factory _contentFactory;
 
     private MimeTypes _mimeTypes;
     private String[] _welcomes;
@@ -243,7 +245,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         String cc=getInitParameter("cacheControl");
         if (cc!=null)
             _cacheControl=new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cc);
-        
+
         String resourceCache = getInitParameter("resourceCache");
         int max_cache_size=getInitInt("maxCacheSize", -2);
         int max_cached_file_size=getInitInt("maxCachedFileSize", -2);
@@ -257,23 +259,23 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             _cache=(ResourceCache)_servletContext.getAttribute(resourceCache);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Cache {}={}",resourceCache,_cache);
+                LOG.debug("Cache {}={}",resourceCache,_contentFactory);
         }
 
         _etags = getInitBoolean("etags",_etags);
-        
+
         try
         {
             if (_cache==null && (max_cached_files!=-2 || max_cache_size!=-2 || max_cached_file_size!=-2))
             {
-                _cache= new ResourceCache(null,this,_mimeTypes,_useFileMappedBuffer,_etags);
-
+                _cache = new ResourceCache(null,this,_mimeTypes,_useFileMappedBuffer,_etags,_gzip);
                 if (max_cache_size>=0)
                     _cache.setMaxCacheSize(max_cache_size);
                 if (max_cached_file_size>=-1)
                     _cache.setMaxCachedFileSize(max_cached_file_size);
                 if (max_cached_files>=-1)
                     _cache.setMaxCachedFiles(max_cached_files);
+                _servletContext.setAttribute(resourceCache==null?"resourceCache":resourceCache,_cache);
             }
         }
         catch (Exception e)
@@ -281,33 +283,34 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             LOG.warn(Log.EXCEPTION,e);
             throw new UnavailableException(e.toString());
         }
-        
-       _gzipEquivalentFileExtensions = new ArrayList<String>();
-       String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
-       if (otherGzipExtensions != null)
-       {
-           //comma separated list
-           StringTokenizer tok = new StringTokenizer(otherGzipExtensions,",",false);
-           while (tok.hasMoreTokens())
-           {
-               String s = tok.nextToken().trim();
-               _gzipEquivalentFileExtensions.add((s.charAt(0)=='.'?s:"."+s));
-           }
-       }
-       else
-       {
-           //.svgz files are gzipped svg files and must be served with Content-Encoding:gzip
-           _gzipEquivalentFileExtensions.add(".svgz");   
-       }
 
-       _servletHandler= _contextHandler.getChildHandlerByClass(ServletHandler.class);
-       for (ServletHolder h :_servletHandler.getServlets())
-           if (h.getServletInstance()==this)
-               _defaultHolder=h;
+        _contentFactory=_cache==null?new ResourceContentFactory(this,_mimeTypes,-1,_gzip):_cache; // TODO pass a buffer size
 
+        _gzipEquivalentFileExtensions = new ArrayList<String>();
+        String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
+        if (otherGzipExtensions != null)
+        {
+            //comma separated list
+            StringTokenizer tok = new StringTokenizer(otherGzipExtensions,",",false);
+            while (tok.hasMoreTokens())
+            {
+                String s = tok.nextToken().trim();
+                _gzipEquivalentFileExtensions.add((s.charAt(0)=='.'?s:"."+s));
+            }
+        }
+        else
+        {
+            //.svgz files are gzipped svg files and must be served with Content-Encoding:gzip
+            _gzipEquivalentFileExtensions.add(".svgz");   
+        }
 
-       if (LOG.isDebugEnabled())
-           LOG.debug("resource base = "+_resourceBase);
+        _servletHandler= _contextHandler.getChildHandlerByClass(ServletHandler.class);
+        for (ServletHolder h :_servletHandler.getServlets())
+            if (h.getServletInstance()==this)
+                _defaultHolder=h;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("resource base = "+_resourceBase);
     }
 
     /**
@@ -422,8 +425,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         String servletPath=null;
         String pathInfo=null;
         Enumeration<String> reqRanges = null;
-        Boolean included =request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI)!=null;
-        if (included!=null && included.booleanValue())
+        boolean included =request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI)!=null;
+        if (included)
         {
             servletPath=(String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
             pathInfo=(String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
@@ -435,7 +438,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         else
         {
-            included = Boolean.FALSE;
             servletPath = _pathInfoOnly?"/":request.getServletPath();
             pathInfo = request.getPathInfo();
 
@@ -447,155 +449,72 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
         boolean endsWithSlash=(pathInfo==null?request.getServletPath():pathInfo).endsWith(URIUtil.SLASH);
-
-
-        // Find the resource and content
-        Resource resource=null;
+        boolean gzippable=_gzip && !endsWithSlash && !included && reqRanges==null;
+        
         HttpContent content=null;
-        boolean close_content=true;
+        boolean release_content=true;
         try
         {
-            // is gzip enabled?
-            String pathInContextGz=null;
-            boolean gzip=false;
-            if (!included.booleanValue() && _gzip && reqRanges==null && !endsWithSlash )
-            {
-                // Look for a gzip resource
-                pathInContextGz=pathInContext+".gz";
-                if (_cache==null)
-                    resource=getResource(pathInContextGz);
-                else
-                {
-                    content=_cache.lookup(pathInContextGz);
-                    resource=(content==null)?null:content.getResource();
-                }
-
-                // Does a gzip resource exist?
-                if (resource!=null && resource.exists() && !resource.isDirectory())
-                {
-                    // Tell caches that response may vary by accept-encoding
-                    response.addHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
-                    
-                    // Does the client accept gzip?
-                    String accept=request.getHeader(HttpHeader.ACCEPT_ENCODING.asString());
-                    if (accept!=null && accept.indexOf("gzip")>=0)
-                        gzip=true;
-                }
-            }
-
-            // find resource
-            if (!gzip)
-            {
-                if (_cache==null)
-                    resource=getResource(pathInContext);
-                else
-                {
-                    content=_cache.lookup(pathInContext);
-                    resource=content==null?null:content.getResource();
-                }
-            }
-
+            // Find the content
+            content=_contentFactory.getContent(pathInContext);
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("uri=%s, resource=%s, content=%s",request.getRequestURI(),resource,content));
-
-            // Handle resource
-            if (resource==null || !resource.exists())
+                LOG.info("content={}",content);
+            
+            // Not found?
+            if (content==null || !content.getResource().exists())
             {
                 if (included)
                     throw new FileNotFoundException("!" + pathInContext);
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
             }
-            else if (!resource.isDirectory())
+            
+            // Directory?
+            if (content.getResource().isDirectory())
             {
-                if (endsWithSlash && pathInContext.length()>1)
-                {
-                    String q=request.getQueryString();
-                    pathInContext=pathInContext.substring(0,pathInContext.length()-1);
-                    if (q!=null&&q.length()!=0)
-                        pathInContext+="?"+q;
-                    response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(_servletContext.getContextPath(),pathInContext)));
-                }
-                else
-                {
-                    // ensure we have content
-                    if (content==null)
-                        content=new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(pathInContext),response.getBufferSize(),_etags);
-
-                    if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
-                    {
-                        if (gzip || isGzippedContent(pathInContext))
-                        {
-                            response.setHeader(HttpHeader.CONTENT_ENCODING.asString(),"gzip");
-                            String mt=_servletContext.getMimeType(pathInContext);
-                            if (mt!=null)
-                                response.setContentType(mt);
-                        }
-                        close_content=sendData(request,response,included.booleanValue(),resource,content,reqRanges);
-                    }
-                }
+                sendWelcome(content,pathInContext,endsWithSlash,included,request,response);
+                return;
             }
-            else
+            
+            // Strip slash?
+            if (endsWithSlash && pathInContext.length()>1)
             {
-                String welcome=null;
-
-                if (!endsWithSlash || (pathInContext.length()==1 && request.getAttribute("org.eclipse.jetty.server.nullPathInfo")!=null))
-                {
-                    StringBuffer buf=request.getRequestURL();
-                    synchronized(buf)
-                    {
-                        int param=buf.lastIndexOf(";");
-                        if (param<0)
-                            buf.append('/');
-                        else
-                            buf.insert(param,'/');
-                        String q=request.getQueryString();
-                        if (q!=null&&q.length()!=0)
-                        {
-                            buf.append('?');
-                            buf.append(q);
-                        }
-                        response.setContentLength(0);
-                        response.sendRedirect(response.encodeRedirectURL(buf.toString()));
-                    }
-                }
-                // else look for a welcome file
-                else if (null!=(welcome=getWelcomeFile(pathInContext)))
+                String q=request.getQueryString();
+                pathInContext=pathInContext.substring(0,pathInContext.length()-1);
+                if (q!=null&&q.length()!=0)
+                    pathInContext+="?"+q;
+                response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(_servletContext.getContextPath(),pathInContext)));
+                return;
+            }
+            
+            // Conditional response?
+            if (!included && !passConditionalHeaders(request,response,content))
+                return;
+                
+            // Gzip?
+            HttpContent gzip_content = gzippable?content.getGzipContent():null;
+            if (gzip_content!=null)
+            {
+                // Tell caches that response may vary by accept-encoding
+                response.addHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
+                
+                // Does the client accept gzip?
+                String accept=request.getHeader(HttpHeader.ACCEPT_ENCODING.asString());
+                if (accept!=null && accept.indexOf("gzip")>=0)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("welcome={}",welcome);
-                    if (_redirectWelcome)
-                    {
-                        // Redirect to the index
-                        response.setContentLength(0);
-                        String q=request.getQueryString();
-                        if (q!=null&&q.length()!=0)
-                            response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths( _servletContext.getContextPath(),welcome)+"?"+q));
-                        else
-                            response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths( _servletContext.getContextPath(),welcome)));
-                    }
-                    else
-                    {
-                        // Forward to the index
-                        RequestDispatcher dispatcher=request.getRequestDispatcher(welcome);
-                        if (dispatcher!=null)
-                        {
-                            if (included.booleanValue())
-                                dispatcher.include(request,response);
-                            else
-                            {
-                                request.setAttribute("org.eclipse.jetty.server.welcome",welcome);
-                                dispatcher.forward(request,response);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    content=new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(pathInContext),_etags);
-                    if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
-                        sendDirectory(request,response,resource,pathInContext);
+                        LOG.debug("gzip={}",gzip_content);
+                    content=gzip_content;
                 }
             }
+
+            // TODO this should be done by HttpContent#getContentEncoding
+            if (isGzippedContent(pathInContext))
+                response.setHeader(HttpHeader.CONTENT_ENCODING.asString(),"gzip");
+                
+            // Send the data
+            release_content=sendData(request,response,included,content,reqRanges);
+            
         }
         catch(IllegalArgumentException e)
         {
@@ -605,17 +524,80 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         finally
         {
-            if (close_content)
+            if (release_content)
             {
                 if (content!=null)
                     content.release();
-                else if (resource!=null)
-                    resource.close();
             }
         }
 
     }
 
+    protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, boolean included, HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
+    {                
+        // Redirect to directory
+        if (!endsWithSlash || (pathInContext.length()==1 && request.getAttribute("org.eclipse.jetty.server.nullPathInfo")!=null))
+        {
+            StringBuffer buf=request.getRequestURL();
+            synchronized(buf)
+            {
+                int param=buf.lastIndexOf(";");
+                if (param<0)
+                    buf.append('/');
+                else
+                    buf.insert(param,'/');
+                String q=request.getQueryString();
+                if (q!=null&&q.length()!=0)
+                {
+                    buf.append('?');
+                    buf.append(q);
+                }
+                response.setContentLength(0);
+                response.sendRedirect(response.encodeRedirectURL(buf.toString()));
+            }
+            return;
+        }
+        
+        // look for a welcome file
+        String welcome=getWelcomeFile(pathInContext);
+        if (welcome!=null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("welcome={}",welcome);
+            if (_redirectWelcome)
+            {
+                // Redirect to the index
+                response.setContentLength(0);
+                String q=request.getQueryString();
+                if (q!=null&&q.length()!=0)
+                    response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths( _servletContext.getContextPath(),welcome)+"?"+q));
+                else
+                    response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths( _servletContext.getContextPath(),welcome)));
+            }
+            else
+            {
+                // Forward to the index
+                RequestDispatcher dispatcher=request.getRequestDispatcher(welcome);
+                if (dispatcher!=null)
+                {
+                    if (included)
+                        dispatcher.include(request,response);
+                    else
+                    {
+                        request.setAttribute("org.eclipse.jetty.server.welcome",welcome);
+                        dispatcher.forward(request,response);
+                    }
+                }
+            }
+            return;
+        }
+         
+        if (included || passConditionalHeaders(request,response, content))
+            sendDirectory(request,response,content.getResource(),pathInContext);
+    }
+
+    /* ------------------------------------------------------------ */
     protected boolean isGzippedContent(String path)
     {
         if (path == null) return false;
@@ -699,7 +681,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     /* ------------------------------------------------------------ */
     /* Check modification date headers.
      */
-    protected boolean passConditionalHeaders(HttpServletRequest request,HttpServletResponse response, Resource resource, HttpContent content)
+    protected boolean passConditionalHeaders(HttpServletRequest request,HttpServletResponse response, HttpContent content)
     throws IOException
     {
         try
@@ -820,7 +802,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     }
 
                     long ifmsl=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
-                    if (ifmsl!=-1 && resource.lastModified()/1000 <= ifmsl/1000)
+                    if (ifmsl!=-1 && content.getResource().lastModified()/1000 <= ifmsl/1000)
                     { 
                         response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                         if (_etags)
@@ -831,7 +813,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 }
 
                 // Parse the if[un]modified dates and compare to resource
-                if (ifums!=-1 && resource.lastModified()/1000 > ifums/1000)
+                if (ifums!=-1 && content.getResource().lastModified()/1000 > ifums/1000)
                 {
                     response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
                     return false;
@@ -894,12 +876,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     protected boolean sendData(HttpServletRequest request,
             HttpServletResponse response,
             boolean include,
-            Resource resource,
             final HttpContent content,
             Enumeration<String> reqRanges)
     throws IOException
     {
-        final long content_length = (content==null)?resource.length():content.getContentLengthValue();
+        final long content_length = content.getContentLengthValue();
         
         // Get the output stream (or writer)
         OutputStream out =null;
@@ -908,7 +889,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         {
             out = response.getOutputStream();
 
-            // has a filter already written to the response?
+            // has something already written to the response?
             written = out instanceof HttpOutput
                 ? ((HttpOutput)out).isWritten()
                 : true;
@@ -928,18 +909,18 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             if (include)
             {
                 // write without headers
-                resource.writeTo(out,0,content_length);
+                content.getResource().writeTo(out,0,content_length);
             }
             // else if we can't do a bypass write because of wrapping
-            else if (content==null || written || !(out instanceof HttpOutput))
+            else if (written || !(out instanceof HttpOutput))
             {
                 // write normally
                 putHeaders(response,content,written?-1:0);
-                ByteBuffer buffer = (content==null)?null:content.getIndirectBuffer();
+                ByteBuffer buffer = content.getIndirectBuffer();
                 if (buffer!=null)
                     BufferUtil.writeTo(buffer,out);
                 else
-                    resource.writeTo(out,0,content_length);
+                    content.getResource().writeTo(out,0,content_length);
             }
             // else do a bypass write
             else
@@ -983,7 +964,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 }
                 // otherwise write content blocking
                 ((HttpOutput)out).sendContent(content);
-                
             }
         }
         else
@@ -998,7 +978,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                         InclusiveByteRange.to416HeaderRangeString(content_length));
-                resource.writeTo(out,0,content_length);
+                content.getResource().writeTo(out,0,content_length);
                 return true;
             }
 
@@ -1014,7 +994,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     response.addDateHeader(HttpHeader.DATE.asString(),System.currentTimeMillis());
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                         singleSatisfiableRange.toHeaderRangeString(content_length));
-                resource.writeTo(out,singleSatisfiableRange.getFirst(content_length),singleLength);
+                content.getResource().writeTo(out,singleSatisfiableRange.getFirst(content_length),singleLength);
                 return true;
             }
 
@@ -1041,7 +1021,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 ctp = "multipart/byteranges; boundary=";
             response.setContentType(ctp+multi.getBoundary());
 
-            InputStream in=resource.getInputStream();
+            InputStream in=content.getResource().getInputStream();
             long pos=0;
 
             // calculate the content-length
@@ -1075,7 +1055,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     if (start<pos)
                     {
                         in.close();
-                        in=resource.getInputStream();
+                        in=content.getResource().getInputStream();
                         pos=0;
                     }
                     if (pos<start)
@@ -1089,7 +1069,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 }
                 else
                     // Handle cached resource
-                    (resource).writeTo(multi,start,size);
+                    content.getResource().writeTo(multi,start,size);
             }
             if (in!=null)
                 in.close();

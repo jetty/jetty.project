@@ -44,6 +44,9 @@ public interface HttpContent
     String getCharacterEncoding();
     Type getMimeType();
 
+    HttpField getContentEncoding();
+    String getContentEncodingValue();
+    
     HttpField getContentLength();
     long getContentLengthValue();
     
@@ -60,4 +63,11 @@ public interface HttpContent
     ReadableByteChannel getReadableByteChannel() throws IOException;
     void release();
 
+    HttpContent getGzipContent();
+    
+    
+    public interface Factory
+    {
+        HttpContent getContent(String path) throws IOException;
+    }
 }

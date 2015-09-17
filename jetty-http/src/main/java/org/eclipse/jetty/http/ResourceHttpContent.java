@@ -39,33 +39,28 @@ public class ResourceHttpContent implements HttpContent
     final Resource _resource;
     final String _contentType;
     final int _maxBuffer;
-    final String _etag;
+    HttpContent _gzip;
+    String _etag;
 
     /* ------------------------------------------------------------ */
     public ResourceHttpContent(final Resource resource, final String contentType)
     {
-        this(resource,contentType,-1,false);
+        this(resource,contentType,-1,null);
     }
 
     /* ------------------------------------------------------------ */
     public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer)
     {
-        this(resource,contentType,maxBuffer,false);
+        this(resource,contentType,maxBuffer,null);
     }
-
+    
     /* ------------------------------------------------------------ */
-    public ResourceHttpContent(final Resource resource, final String contentType, boolean etag)
-    {
-        this(resource,contentType,-1,etag);
-    }
-
-    /* ------------------------------------------------------------ */
-    public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer, boolean etag)
+    public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer, HttpContent gzip)
     {
         _resource=resource;
         _contentType=contentType;
         _maxBuffer=maxBuffer;
-        _etag=etag?resource.getWeakETag():null;
+        _gzip=gzip;
     }
 
     /* ------------------------------------------------------------ */
@@ -80,6 +75,20 @@ public class ResourceHttpContent implements HttpContent
     public HttpField getContentType()
     {
         return _contentType==null?null:new HttpField(HttpHeader.CONTENT_TYPE,_contentType);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public HttpField getContentEncoding()
+    {
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public String getContentEncodingValue()
+    {
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -132,14 +141,14 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public HttpField getETag()
     {
-        return _etag==null?null:new HttpField(HttpHeader.ETAG,_etag);
+        return new HttpField(HttpHeader.ETAG,getETagValue());
     }
     
     /* ------------------------------------------------------------ */
     @Override
     public String getETagValue()
     {
-        return _etag;
+        return _resource.getWeakETag();
     }
 
     /* ------------------------------------------------------------ */
@@ -205,6 +214,14 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s}",this.getClass().getSimpleName(),hashCode(),_resource);
+        return String.format("%s@%x{r=%s,gz=%b}",this.getClass().getSimpleName(),hashCode(),_resource,_gzip!=null);
     }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public HttpContent getGzipContent()
+    {
+        return _gzip==null?null:new GzipHttpContent(this,_gzip);
+    }
+
 }

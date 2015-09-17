@@ -1311,7 +1311,6 @@ public class Response implements HttpServletResponse
 
     public void putHeaders(HttpContent content,long contentLength, boolean etag)
     {
-        
         HttpField lm = content.getLastModified();
         if (lm!=null)
             _fields.put(lm);
@@ -1335,6 +1334,10 @@ public class Response implements HttpServletResponse
             _characterEncoding=content.getCharacterEncoding();
             _mimeType=content.getMimeType();
         }
+        
+        HttpField ce=content.getContentEncoding();
+        if (ce!=null)
+            _fields.put(ce);
         
         if (etag)
         {
@@ -1362,7 +1365,11 @@ public class Response implements HttpServletResponse
 
         String ct=content.getContentTypeValue();
         if (ct!=null && response.getContentType()==null)
-            response.setContentType(content.getContentTypeValue());
+            response.setContentType(ct);
+
+        String ce=content.getContentEncodingValue();
+        if (ce!=null)
+            response.setHeader(HttpHeader.CONTENT_ENCODING.asString(),ce);
         
         if (etag)
         {

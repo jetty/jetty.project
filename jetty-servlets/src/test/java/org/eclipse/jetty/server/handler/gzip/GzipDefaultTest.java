@@ -38,6 +38,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.GzipHttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -147,7 +148,7 @@ public class GzipDefaultTest
             //A HEAD request should have similar headers, but no body
             response = tester.executeRequest("HEAD","/context/file.txt",5,TimeUnit.SECONDS);
             assertThat("Response status",response.getStatus(),is(HttpStatus.OK_200));
-            assertThat("ETag", response.get("ETag"), containsString(GzipHandler.ETAG_GZIP));
+            assertThat("ETag", response.get("ETag"), containsString(GzipHttpContent.ETAG_GZIP));
             assertThat("Content encoding", response.get("Content-Encoding"), containsString("gzip"));
             assertNull("Content length", response.get("Content-Length"));
    

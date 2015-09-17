@@ -49,9 +49,9 @@ public class ResourceCacheTest
         Resource[] r = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false,false);
-        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false,false);
-        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false,false);
+        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false,false,false);
+        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false,false,false);
+        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false,false,false);
 
         assertEquals("1 - one", getContent(rc1, "1.txt"));
         assertEquals("2 - two", getContent(rc1, "2.txt"));
@@ -79,8 +79,8 @@ public class ResourceCacheTest
         Resource[] r = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false,false);
-        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false,false)
+        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false,false,false);
+        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false,false,false)
         {
             @Override
             public boolean isCacheable(Resource resource)
@@ -89,7 +89,7 @@ public class ResourceCacheTest
             }
         };
 
-        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false,false);
+        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false,false,false);
 
         assertEquals("1 - one", getContent(rc1, "1.txt"));
         assertEquals("2 - two", getContent(rc1, "2.txt"));
@@ -130,7 +130,7 @@ public class ResourceCacheTest
         directory=Resource.newResource(files[0].getParentFile().getAbsolutePath());
 
 
-        cache=new ResourceCache(null,directory,new MimeTypes(),false,false);
+        cache=new ResourceCache(null,directory,new MimeTypes(),false,false,false);
 
         cache.setMaxCacheSize(95);
         cache.setMaxCachedFileSize(85);
@@ -243,7 +243,7 @@ public class ResourceCacheTest
         Resource[] resources = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        ResourceCache cache = new ResourceCache(null,resources[0],mime,false,false);
+        ResourceCache cache = new ResourceCache(null,resources[0],mime,false,false,false);
 
         assertEquals("4 - four", getContent(cache, "four.txt"));
         assertEquals("4 - four (no extension)", getContent(cache, "four"));

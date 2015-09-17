@@ -712,6 +712,11 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public String getWeakETag()
     {
+        return getWeakETag("");
+    }
+    
+    public String getWeakETag(String suffix)
+    {
         try
         {
             StringBuilder b = new StringBuilder(32);
@@ -725,6 +730,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             
             B64Code.encode(lastModified()^lhash,b);
             B64Code.encode(length()^lhash,b);
+            b.append(suffix);
             b.append('"');
             return b.toString();
         } 
