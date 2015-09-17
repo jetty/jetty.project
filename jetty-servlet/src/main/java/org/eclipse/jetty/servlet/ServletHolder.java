@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import javax.servlet.MultipartConfigElement;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -56,7 +57,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/** 
+/**
  * Servlet Instance and Context Holder.
  * <p>
  * Holds the name, params and some state of a javax.servlet.Servlet
@@ -87,11 +88,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private transient boolean _enabled = true;
     private transient UnavailableException _unavailableEx;
 
-    
+
     public static final String APACHE_SENTINEL_CLASS = "org.apache.tomcat.InstanceManager";
     public static final  String JSP_GENERATED_PACKAGE_NAME = "org.eclipse.jetty.servlet.jspPackagePrefix";
     public static final Map<String,String> NO_MAPPED_ROLES = Collections.emptyMap();
-    public static enum JspContainer {APACHE, OTHER}; 
+    public static enum JspContainer {APACHE, OTHER};
 
     /* ---------------------------------------------------------------- */
     /** Constructor .
@@ -184,7 +185,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Set the initialize order.
      * <p>
      * Holders with order&lt;0, are initialized on use. Those with
@@ -199,7 +200,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Comparator by init order.
      */
     @Override
@@ -288,7 +289,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _enabled = enabled;
     }
 
-    
+
     /* ------------------------------------------------------------ */
     public void doStart()
         throws Exception
@@ -296,7 +297,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _unavailable=0;
         if (!_enabled)
             return;
-        
+
         // Handle JSP file forced paths
         if (_forcedPath != null)
         {
@@ -313,7 +314,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 setClassName(jsp.getClassName());
             }
             else
-            { 
+            {
                 if (getClassName() == null)
                 {
                     // Look for normal JSP servlet
@@ -334,12 +335,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                         //container does not support startup precompilation, it will be compiled at runtime when handling a request for this jsp.
                         //See also adaptForcedPathToJspContainer
                         setInitParameter("jspFile", _forcedPath);
-                    }                       
+                    }
                 }
             }
         }
-        
-        
+
+
         //check servlet has a class (ie is not a preliminary registration). If preliminary, fail startup.
         try
         {
@@ -386,10 +387,10 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
         if (_class!=null && javax.servlet.SingleThreadModel.class.isAssignableFrom(_class))
             _servlet = new SingleThreadedWrapper();
-     
+
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     @Override
     public void initialize ()
@@ -411,8 +412,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             }
         }
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     public void doStop()
         throws Exception
@@ -520,22 +521,22 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
         return isStarted()&& _unavailable==0;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Check if there is a javax.servlet.annotation.ServletSecurity
      * annotation on the servlet class. If there is, then we force
-     * it to be loaded on startup, because all of the security 
+     * it to be loaded on startup, because all of the security
      * constraints must be calculated as the container starts.
-     * 
+     *
      */
     private void checkInitOnStartup()
     {
         if (_class==null)
             return;
-        
+
         if ((_class.getAnnotation(javax.servlet.annotation.ServletSecurity.class) != null) && !_initOnStartup)
-            setInitOrder(Integer.MAX_VALUE);    
+            setInitOrder(Integer.MAX_VALUE);
     }
 
     /* ------------------------------------------------------------ */
@@ -593,8 +594,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 _servlet=newInstance();
             if (_config==null)
                 _config=new Config();
-            
-          
+
+
 
             // Handle run as
             if (_identityService!=null)
@@ -657,7 +658,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     protected void initJspServlet () throws Exception
     {
         ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
-            
+
         /* Set the webapp's classpath for Jasper */
         ch.setAttribute("org.apache.catalina.jsp_classpath", ch.getClassPath());
 
@@ -670,7 +671,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             if (classpath != null)
                 setInitParameter("classpath", classpath);
         }
-        
+
         /* ensure scratch dir */
         File scratch = null;
         if (getInitParameter("scratchdir") == null)
@@ -679,7 +680,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             scratch = new File(tmp, "jsp");
             setInitParameter("scratchdir", scratch.getAbsolutePath());
         }
-     
+
         scratch = new File (getInitParameter("scratchdir"));
         if (!scratch.exists()) scratch.mkdir();
     }
@@ -688,7 +689,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /**
      * Register a ServletRequestListener that will ensure tmp multipart
      * files are deleted when the request goes out of scope.
-     * 
+     *
      * @throws Exception if unable to init the multipart
      */
     protected void initMultiPart () throws Exception
@@ -737,11 +738,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         _runAsRole = role;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Prepare to service a request.
-     * 
+     *
      * @param baseRequest the base request
      * @param request the request
      * @param response the response
@@ -756,7 +757,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (mpce != null)
             baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
     }
-    
+
     public synchronized Servlet ensureInstance()
     throws ServletException, UnavailableException
     {
@@ -768,15 +769,15 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (_unavailable!=0 || (!_initOnStartup && servlet==null))
             servlet=getServlet();
         if (servlet==null)
-            throw new UnavailableException("Could not instantiate "+_class);    
-        
+            throw new UnavailableException("Could not instantiate "+_class);
+
         return servlet;
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Service a request with this servlet.
-     * 
+     *
      * @param baseRequest the base request
      * @param request the request
      * @param response the response
@@ -831,7 +832,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
             // Handle error params.
             if (servlet_error)
-                request.setAttribute("javax.servlet.error.servlet_name",getName());
+                request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME,getName());
         }
     }
 
@@ -894,7 +895,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         if (jsp == null)
             return "";
-        
+
         int i = jsp.lastIndexOf('/') + 1;
         jsp = jsp.substring(i);
         try
@@ -912,14 +913,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             return tmp;
         }
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     private String getPackageOfJspClass (String jsp)
     {
         if (jsp == null)
             return "";
-        
+
         int i = jsp.lastIndexOf('/');
         if (i <= 0)
             return "";
@@ -928,7 +929,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             Class<?> jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
             Method makeJavaPackage = jspUtil.getMethod("makeJavaPackage", String.class);
             return (String)makeJavaPackage.invoke(null, jsp.substring(0,i));
-        } 
+        }
         catch (Exception e)
         {
             String tmp = jsp.substring(1).replace('/','.');
@@ -938,25 +939,25 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             return tmp;
         }
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     private String getJspPackagePrefix ()
     {
         String jspPackageName = (String)getServletHandler().getServletContext().getInitParameter(JSP_GENERATED_PACKAGE_NAME );
         if (jspPackageName == null)
             jspPackageName = "org.apache.jsp";
-        
+
         return jspPackageName;
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     private String getClassNameForJsp (String jsp)
     {
         if (jsp == null)
-            return null; 
-        
+            return null;
+
         return getJspPackagePrefix() + "." +getPackageOfJspClass(jsp) + "." + getNameOfJspClass(jsp);
     }
 
@@ -1203,7 +1204,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             throw se;
         }
     }
-    
+
 
     /* ------------------------------------------------------------ */
     @Override
