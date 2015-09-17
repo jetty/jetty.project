@@ -33,8 +33,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
-import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration.Dynamic;
 import javax.servlet.ServletSecurityElement;
@@ -688,7 +688,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_serverClasses == null)
             loadServerClasses();
 
-        _serverClasses.prependPattern(classOrPackage);
+        StringTokenizer entries =  new StringTokenizer(classOrPackage, ":,");
+        while(entries.hasMoreTokens()) {
+            _serverClasses.prependPattern(entries.nextToken());
+        }
     }
 
     /* ------------------------------------------------------------ */
