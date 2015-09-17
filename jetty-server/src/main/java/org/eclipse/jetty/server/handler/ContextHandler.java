@@ -102,7 +102,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * <p>
  * This servers executore is made available via a context attributed "org.eclipse.jetty.server.Executor".
  * <p>
- * By default, the context is created with alias checkers for {@link AllowSymLinkAliasChecker} (unix only) and {@link ApproveNonExistentDirectoryAliases}. 
+ * By default, the context is created with alias checkers for {@link AllowSymLinkAliasChecker} (unix only) and {@link ApproveNonExistentDirectoryAliases}.
  * If these alias checkers are not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  */
 @ManagedObject("URI Context")
@@ -126,7 +126,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private static final ThreadLocal<Context> __context = new ThreadLocal<Context>();
 
     private static String __serverInfo = "jetty/" + Server.getVersion();
-    
+
     /**
      * If a context attribute with this name is set, it is interpreted as a comma separated list of attribute name. Any other context attributes that are set
      * with a name from this list will result in a call to {@link #setManagedAttribute(String, Object)}, which typically initiates the creation of a JMX MBean
@@ -603,7 +603,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (listener instanceof ContextScopeListener)
             _contextListeners.add((ContextScopeListener)listener);
-        
+
         if (listener instanceof ServletContextListener)
             _servletContextListeners.add((ServletContextListener)listener);
 
@@ -809,7 +809,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
     }
 
-    
+
     /* ------------------------------------------------------------ */
     protected void stopContext () throws Exception
     {
@@ -824,9 +824,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 callContextDestroyed(_servletContextListeners.get(i),event);
         }
     }
-    
-    
-    
+
+
+
     /* ------------------------------------------------------------ */
     protected void callContextInitialized (ServletContextListener l, ServletContextEvent e)
     {
@@ -891,8 +891,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         _scontext.clearAttributes();
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     public boolean checkVirtualHost(final Request baseRequest)
     {
@@ -933,8 +933,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         return true;
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     public boolean checkContextPath(String uri)
     {
@@ -1077,7 +1077,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             if (old_context != _scontext)
                 enterScope(baseRequest,dispatch);
-            
+
             if (LOG.isDebugEnabled())
                 LOG.debug("context={}|{}|{} @ {}",baseRequest.getContextPath(),baseRequest.getServletPath(), baseRequest.getPathInfo(),this);
 
@@ -1097,7 +1097,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (old_context != _scontext)
             {
                 exitScope(baseRequest);
-                
+
                 // reset the classloader
                 if (_classLoader != null && current_thread!=null)
                 {
@@ -1179,8 +1179,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
     }
 
-    
-     
+
+
 
     /**
      * @param request A request that is applicable to the scope, or null
@@ -1203,8 +1203,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
     }
-    
-    
+
+
     /**
      * @param request A request that is applicable to the scope, or null
      */
@@ -1225,7 +1225,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Handle a runnable in the scope of this context and a particular request
@@ -1237,14 +1237,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         ClassLoader old_classloader = null;
         Thread current_thread = null;
         Context old_context = __context.get();
-        
+
         // Are we already in the scope?
         if (old_context==_scontext)
         {
             runnable.run();
             return;
         }
-        
+
         // Nope, so enter the scope and then exit
         try
         {
@@ -1264,15 +1264,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         finally
         {
             exitScope(request);
-            
+
             __context.set(old_context);
-            if (old_classloader != null && current_thread!=null)
+            if (old_classloader != null)
             {
                 current_thread.setContextClassLoader(old_classloader);
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * Handle a runnable in the scope of this context
@@ -1482,10 +1482,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Set the base resource for this context.
-     * @param resourceBase A string representing the base resource for the context. Any string accepted 
-     * by {@link Resource#newResource(String)} may be passed and the call is equivalent to 
+     * @param resourceBase A string representing the base resource for the context. Any string accepted
+     * by {@link Resource#newResource(String)} may be passed and the call is equivalent to
      * <code>setBaseResource(newResource(resourceBase));</code>
      */
     public void setResourceBase(String resourceBase)
@@ -1694,9 +1694,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Get all of the locale encodings
-     * 
+     *
      * @return a map of all the locale encodings: key is name of the locale and value is the char encoding
      */
     public Map<String,String> getLocaleEncodings()
@@ -2397,16 +2397,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     ClassLoader callerLoader = caller.getClassLoader();
                     while (!ok && callerLoader != null)
                     {
-                        if (callerLoader == _classLoader) 
+                        if (callerLoader == _classLoader)
                             ok = true;
                         else
-                            callerLoader = callerLoader.getParent();    
+                            callerLoader = callerLoader.getParent();
                     }
 
                     if (ok)
                         return _classLoader;
                 }
-                catch (Exception e)      
+                catch (Exception e)
                 {
                     LOG.warn("Unable to check classloader of caller",e);
                 }
@@ -2855,11 +2855,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (a.length()<r.length())
                 return r.startsWith(a) && r.length()==a.length()+1 && r.endsWith("/");
 
-            return a.equals(r); 
+            return a.equals(r);
         }
     }
 
-    
+
     /** Listener for all threads entering context scope, including async IO callbacks
      */
     public static interface ContextScopeListener extends EventListener
@@ -2869,12 +2869,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
          * @param request A request that is applicable to the scope, or null
          */
         void enterScope(Context context, Request request, Object reason);
-        
-        
+
+
         /**
          * @param context The context being exited
          * @param request A request that is applicable to the scope, or null
          */
-        void exitScope(Context context, Request request);   
+        void exitScope(Context context, Request request);
     }
 }
