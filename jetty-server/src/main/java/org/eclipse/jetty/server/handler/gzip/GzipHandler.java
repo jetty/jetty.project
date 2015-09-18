@@ -420,10 +420,14 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         if (etag!=null)
         {
             int i=etag.indexOf(ETAG_GZIP_QUOTE);
-            while (i>=0)
+            if (i>0)
             {
-                baseRequest.getHttpFields().put(new HttpField(HttpHeader.ETAG,etag.substring(0,i)+etag.substring(i+GzipHttpContent.ETAG_GZIP.length())));
-                i=etag.indexOf(ETAG_GZIP_QUOTE,i);
+                while (i>=0)
+                {
+                    etag=etag.substring(0,i)+etag.substring(i+GzipHttpContent.ETAG_GZIP.length());
+                    i=etag.indexOf(ETAG_GZIP_QUOTE,i);
+                }
+                baseRequest.getHttpFields().put(new HttpField(HttpHeader.IF_NONE_MATCH,etag));
             }
         }
 
