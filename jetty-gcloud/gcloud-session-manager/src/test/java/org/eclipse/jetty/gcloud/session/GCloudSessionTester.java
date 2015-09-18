@@ -56,7 +56,7 @@ public class GCloudSessionTester
  
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setResourceBase("../../jetty-distribution/target/distribution/demo-base/webapps/test/");
+        webapp.setWar("../../jetty-distribution/target/distribution/demo-base/webapps/test.war");
         webapp.addAliasCheck(new AllowSymLinkAliasChecker());
         GCloudSessionManager mgr = new GCloudSessionManager();
         mgr.setSessionIdManager(idmgr);
