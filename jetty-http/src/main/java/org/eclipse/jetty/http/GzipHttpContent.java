@@ -32,7 +32,18 @@ public class GzipHttpContent implements HttpContent
     private final HttpContent _content; 
     private final HttpContent _contentGz;
     public final static String ETAG_GZIP="--gzip";
+    public final static String ETAG_GZIP_QUOTE="--gzip\"";
     public final static PreEncodedHttpField CONTENT_ENCODING_GZIP=new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING,"gzip");
+    
+    public static String removeGzipFromETag(String etag)
+    {
+        if (etag==null)
+            return null;
+        int i = etag.indexOf(ETAG_GZIP_QUOTE);
+        if (i<0)
+            return etag;
+        return etag.substring(0,i)+'"';
+    }
     
     public GzipHttpContent(HttpContent content, HttpContent contentGz)
     {  

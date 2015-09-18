@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
+import static org.eclipse.jetty.http.GzipHttpContent.ETAG_GZIP_QUOTE;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
@@ -62,7 +64,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     public final static String GZIP = "gzip";
     public final static String DEFLATE = "deflate";
-    public final static String ETAG = "o.e.j.s.Gzip.ETag";
     public final static int DEFAULT_MIN_GZIP_SIZE=16;
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
@@ -415,11 +416,15 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
         
         // Special handling for etags
-        String etag = request.getHeader("If-None-Match"); 
+        String etag = baseRequest.getHttpFields().get(HttpHeader.IF_NONE_MATCH); 
         if (etag!=null)
         {
-            if (etag.contains(GzipHttpContent.ETAG_GZIP))
-                request.setAttribute(ETAG,etag.replace(GzipHttpContent.ETAG_GZIP,""));
+            int i=etag.indexOf(ETAG_GZIP_QUOTE);
+            while (i>=0)
+            {
+                baseRequest.getHttpFields().put(new HttpField(HttpHeader.ETAG,etag.substring(0,i)+etag.substring(i+GzipHttpContent.ETAG_GZIP.length())));
+                i=etag.indexOf(ETAG_GZIP_QUOTE,i);
+            }
         }
 
         // install interceptor and handle

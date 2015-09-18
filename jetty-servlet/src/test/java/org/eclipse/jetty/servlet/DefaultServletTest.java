@@ -731,6 +731,32 @@ public class DefaultServletTest
         assertResponseNotContains("Content-Encoding: gzip",response);
         assertResponseNotContains("ETag: "+etag_gzip,response);
         assertResponseContains("ETag: ",response);   
+        
+        response = connector.getResponses("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"wobble\"\r\n\r\n");
+        assertResponseContains("Content-Length: 9", response);
+        assertResponseContains("fake gzip",response);
+        assertResponseContains("Content-Type: application/gzip",response);
+        assertResponseNotContains("Vary: Accept-Encoding",response);
+        assertResponseNotContains("Content-Encoding: gzip",response);
+        assertResponseNotContains("ETag: "+etag_gzip,response);
+        assertResponseContains("ETag: ",response);   
+        
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag,response);
+        
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag,response);
+        
     }
 
     @Test
@@ -784,6 +810,22 @@ public class DefaultServletTest
         assertResponseNotContains("Content-Encoding: gzip",response);
         assertResponseNotContains("ETag: "+etag_gzip,response);
         assertResponseContains("ETag: ",response);
+        
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag,response);
+        
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag,response);
     }
 
     @Test

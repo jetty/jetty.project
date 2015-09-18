@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.eclipse.jetty.http.GzipHttpContent.ETAG_GZIP_QUOTE;
+import static org.eclipse.jetty.http.GzipHttpContent.removeGzipFromETag;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.DateParser;
+import org.eclipse.jetty.http.GzipHttpContent;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -693,6 +697,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             
             if (request instanceof Request)
             {
+                // Find multiple fields by iteration as an optimization 
                 HttpFields fields = ((Request)request).getHttpFields();
                 for (int i=fields.size();i-->0;)
                 {
@@ -730,16 +735,17 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             {
                 if (_etags)
                 {
+                    String etag=content.getETagValue();
                     if (ifm!=null)
                     {
                         boolean match=false;
-                        if (content.getETagValue()!=null)
+                        if (etag!=null)
                         {
                             QuotedStringTokenizer quoted = new QuotedStringTokenizer(ifm,", ",false,true);
                             while (!match && quoted.hasMoreTokens())
                             {
                                 String tag = quoted.nextToken();
-                                if (content.getETagValue().equals(tag))
+                                if (etag.equals(tag) || tag.endsWith(ETAG_GZIP_QUOTE) && etag.equals(removeGzipFromETag(tag)))
                                     match=true;
                             }
                         }
@@ -751,33 +757,25 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         }
                     }
                     
-                    if (ifnm!=null && content.getETagValue()!=null)
+                    if (ifnm!=null && etag!=null)
                     {
-                        // Look for Gzip'd version of etag
-                        if (content.getETagValue().equals(request.getAttribute("o.e.j.s.Gzip.ETag")))
+                        // Handle special case of exact match OR gzip exact match
+                        if (etag.equals(ifnm) || ifnm.endsWith(ETAG_GZIP_QUOTE) && ifnm.indexOf(',')<0 && etag.equals(removeGzipFromETag(etag)))
                         {
                             response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                             response.setHeader(HttpHeader.ETAG.asString(),ifnm);
                             return false;
                         }
                         
-                        // Handle special case of exact match.
-                        if (content.getETagValue().equals(ifnm))
-                        {
-                            response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                            response.setHeader(HttpHeader.ETAG.asString(),content.getETagValue());
-                            return false;
-                        }
-
                         // Handle list of tags
                         QuotedStringTokenizer quoted = new QuotedStringTokenizer(ifnm,", ",false,true);
                         while (quoted.hasMoreTokens())
                         {
                             String tag = quoted.nextToken();
-                            if (content.getETagValue().equals(tag))
+                            if (etag.equals(tag) || tag.endsWith(ETAG_GZIP_QUOTE) && etag.equals(removeGzipFromETag(tag))) 
                             {
                                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                                response.setHeader(HttpHeader.ETAG.asString(),content.getETagValue());
+                                response.setHeader(HttpHeader.ETAG.asString(),tag);
                                 return false;
                             }
                         }
