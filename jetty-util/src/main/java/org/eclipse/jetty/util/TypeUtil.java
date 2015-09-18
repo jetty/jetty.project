@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
@@ -498,6 +499,13 @@ public class TypeUtil
     public static Object call(Class<?> oClass, String methodName, Object obj, Object[] arg)
        throws InvocationTargetException, NoSuchMethodException
     {
+        Objects.requireNonNull(oClass,"Class cannot be null");
+        Objects.requireNonNull(methodName,"Method name cannot be null");
+        if (StringUtil.isBlank(methodName))
+        {
+            throw new IllegalArgumentException("Method name cannot be blank");
+        }
+        
         // Lets just try all methods for now
         for (Method method : oClass.getMethods())
         {
@@ -554,9 +562,17 @@ public class TypeUtil
 
     public static Object construct(Class<?> klass, Object[] arguments) throws InvocationTargetException, NoSuchMethodException
     {
+        Objects.requireNonNull(klass,"Class cannot be null");
+        
         for (Constructor<?> constructor : klass.getConstructors())
         {
-            if (constructor.getParameterTypes().length != arguments.length)
+            if (arguments == null)
+            {
+                // null arguments in .newInstance() is allowed
+                if (constructor.getParameterTypes().length != 0)
+                    continue;
+            }
+            else if (constructor.getParameterTypes().length != arguments.length)
                 continue;
 
             try
@@ -573,20 +589,34 @@ public class TypeUtil
     
     public static Object construct(Class<?> klass, Object[] arguments, Map<String, Object> namedArgMap) throws InvocationTargetException, NoSuchMethodException
     {
+        Objects.requireNonNull(klass,"Class cannot be null");
+        Objects.requireNonNull(namedArgMap,"Named Argument Map cannot be null");
+        
         for (Constructor<?> constructor : klass.getConstructors())
         {
-            if (constructor.getParameterTypes().length != arguments.length)
+            if (arguments == null)
+            {
+                // null arguments in .newInstance() is allowed
+                if (constructor.getParameterTypes().length != 0)
+                    continue;
+            }
+            else if (constructor.getParameterTypes().length != arguments.length)
                 continue;
 
             try
             {
                 Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
                 
-                // target has no annotations
-                if ( parameterAnnotations == null || parameterAnnotations.length == 0 )
+                if (arguments == null || arguments.length == 0)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Target has no parameter annotations");
+                        LOG.debug("Constructor has no arguments");
+                    return constructor.newInstance(arguments);
+                }
+                else if (parameterAnnotations == null || parameterAnnotations.length == 0)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Constructor has no parameter annotations");
                     return constructor.newInstance(arguments);
                 }
                 else
