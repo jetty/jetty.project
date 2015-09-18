@@ -2394,24 +2394,32 @@ public class Request implements HttpServletRequest
 
         if (updateQueryString)
         {
-            // Build the new merged query string, parameters in the
-            // new query string hide parameters in the old query string.
-            StringBuilder mergedQuery = new StringBuilder();
-            if (newQuery!=null)
-                mergedQuery.append(newQuery);
-            for (Map.Entry<String, List<String>> entry : mergedQueryParams.entrySet())
+            if (newQuery==null)
+                setQueryString(oldQuery);
+            else if (oldQuery==null)
+                setQueryString(newQuery);
+            else
             {
-                if (newQueryParams!=null && newQueryParams.containsKey(entry.getKey()))
-                    continue;
-                for (String value : entry.getValue())
+                // Build the new merged query string, parameters in the
+                // new query string hide parameters in the old query string.
+                StringBuilder mergedQuery = new StringBuilder();
+                if (newQuery!=null)
+                    mergedQuery.append(newQuery);
+                for (Map.Entry<String, List<String>> entry : mergedQueryParams.entrySet())
                 {
-                    if (mergedQuery.length()>0)
-                        mergedQuery.append("&");
-                    mergedQuery.append(entry.getKey()).append("=").append(value);
+                    if (newQueryParams!=null && newQueryParams.containsKey(entry.getKey()))
+                        continue;
+                    for (String value : entry.getValue())
+                    {
+                        if (mergedQuery.length()>0)
+                            mergedQuery.append("&");
+                        URIUtil.encodePath(mergedQuery,entry.getKey());
+                        mergedQuery.append('=');
+                        URIUtil.encodePath(mergedQuery,value);
+                    }
                 }
+                setQueryString(mergedQuery.toString());
             }
-
-            setQueryString(mergedQuery.toString());
         }
     }
 

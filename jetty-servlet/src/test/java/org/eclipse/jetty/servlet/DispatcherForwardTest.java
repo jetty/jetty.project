@@ -36,6 +36,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
+
+@SuppressWarnings("serial")
 public class DispatcherForwardTest
 {
     private Server server;
@@ -81,12 +83,12 @@ public class DispatcherForwardTest
     @Test
     public void testQueryRetainedByForwardWithoutQuery() throws Exception
     {
-        // 1. request /one?a=1
+        // 1. request /one?a=1%20one
         // 1. forward /two
-        // 2. assert query => a=1
-        // 1. assert query => a=1
+        // 2. assert query => a=1 one
+        // 1. assert query => a=1 one
 
-        final String query1 = "a=1";
+        final String query1 = "a=1%20one";
         servlet1 = new HttpServlet()
         {
             @Override
@@ -97,7 +99,7 @@ public class DispatcherForwardTest
                 req.getRequestDispatcher("/two").forward(req, resp);
 
                 checkThat(req.getQueryString(),Matchers.equalTo(query1));
-                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
             }
         };
         servlet2 = new HttpServlet()
@@ -106,7 +108,7 @@ public class DispatcherForwardTest
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 checkThat(req.getQueryString(),Matchers.equalTo(query1));
-                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
             }
         };
 
@@ -129,9 +131,9 @@ public class DispatcherForwardTest
         // 2. assert query => a=2
         // 1. assert query => a=1
 
-        final String query1 = "a=1&b=2";
-        final String query2 = "a=3";
-        final String query3 = "a=3&b=2";
+        final String query1 = "a=1$20one&b=2%20two";
+        final String query2 = "a=3%20three";
+        final String query3 = "a=3%20three&b=2%20two";
         servlet1 = new HttpServlet()
         {
             @Override
@@ -142,8 +144,8 @@ public class DispatcherForwardTest
                 req.getRequestDispatcher("/two?" + query2).forward(req, resp);
 
                 checkThat(req.getQueryString(),Matchers.equalTo(query1));
-                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
-                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2 two"));
             }
         };
         servlet2 = new HttpServlet()
@@ -152,8 +154,8 @@ public class DispatcherForwardTest
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 checkThat(req.getQueryString(),Matchers.equalTo(query3));
-                checkThat(req.getParameter("a"),Matchers.equalTo("3"));
-                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
+                checkThat(req.getParameter("a"),Matchers.equalTo("3 three"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2 two"));
             }
         };
 
@@ -176,9 +178,9 @@ public class DispatcherForwardTest
         // 2. assert query => a=1&b=2
         // 1. assert query => a=1
 
-        final String query1 = "a=1";
-        final String query2 = "b=2";
-        final String query3 = "b=2&a=1";
+        final String query1 = "a=1%20one";
+        final String query2 = "b=2%20two";
+        final String query3 = "b=2%20two&a=1%20one";
         servlet1 = new HttpServlet()
         {
             @Override
@@ -189,7 +191,7 @@ public class DispatcherForwardTest
                 req.getRequestDispatcher("/two?" + query2).forward(req, resp);
 
                 checkThat(req.getQueryString(),Matchers.equalTo(query1));
-                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
             }
         };
         servlet2 = new HttpServlet()
@@ -198,8 +200,8 @@ public class DispatcherForwardTest
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 checkThat(req.getQueryString(),Matchers.equalTo(query3));
-                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
-                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2 two"));
             }
         };
 
@@ -222,8 +224,8 @@ public class DispatcherForwardTest
         // 2. assert query => a=1 + params => a=1,2
         // 1. assert query => a=1 + params => a=1,2
 
-        final String query1 = "a=1";
-        final String form = "a=2";
+        final String query1 = "a=1%20one";
+        final String form = "a=2%20two";
         servlet1 = new HttpServlet()
         {
             @Override
@@ -237,7 +239,7 @@ public class DispatcherForwardTest
                 String[] values = req.getParameterValues("a");
                 checkThat(values, Matchers.notNullValue());
                 checkThat(2, Matchers.equalTo(values.length));
-                checkThat(values, Matchers.arrayContainingInAnyOrder("1", "2"));
+                checkThat(values, Matchers.arrayContainingInAnyOrder("1 one", "2 two"));
             }
         };
         servlet2 = new HttpServlet()
@@ -249,7 +251,7 @@ public class DispatcherForwardTest
                 String[] values = req.getParameterValues("a");
                 checkThat(values, Matchers.notNullValue());
                 checkThat(2, Matchers.equalTo(values.length));
-                checkThat(values, Matchers.arrayContainingInAnyOrder("1", "2"));
+                checkThat(values, Matchers.arrayContainingInAnyOrder("1 one", "2 two"));
             }
         };
 
@@ -275,9 +277,9 @@ public class DispatcherForwardTest
         // 2. assert query => a=3 + params => a=3,2,1
         // 1. assert query => a=1 + params => a=1,2
 
-        final String query1 = "a=1";
-        final String query2 = "a=3";
-        final String form = "a=2";
+        final String query1 = "a=1%20one";
+        final String query2 = "a=3%20three";
+        final String form = "a=2%20two";
         servlet1 = new HttpServlet()
         {
             @Override
@@ -291,7 +293,7 @@ public class DispatcherForwardTest
                 String[] values = req.getParameterValues("a");
                 checkThat(values, Matchers.notNullValue());
                 checkThat(2, Matchers.equalTo(values.length));
-                checkThat(values, Matchers.arrayContainingInAnyOrder("1", "2"));
+                checkThat(values, Matchers.arrayContainingInAnyOrder("1 one", "2 two"));
             }
         };
         servlet2 = new HttpServlet()
@@ -303,7 +305,7 @@ public class DispatcherForwardTest
                 String[] values = req.getParameterValues("a");
                 checkThat(values, Matchers.notNullValue());
                 checkThat(3, Matchers.equalTo(values.length));
-                checkThat(values, Matchers.arrayContainingInAnyOrder("3", "2", "1"));
+                checkThat(values, Matchers.arrayContainingInAnyOrder("3 three", "2 two", "1 one"));
             }
         };
 
@@ -329,10 +331,10 @@ public class DispatcherForwardTest
         // 2. assert query => a=1&c=3 + params => a=1&b=2&c=3
         // 1. assert query => a=1 + params => a=1&b=2
 
-        final String query1 = "a=1";
-        final String query2 = "c=3";
-        final String query3 = "c=3&a=1";
-        final String form = "b=2";
+        final String query1 = "a=1%20one";
+        final String query2 = "c=3%20three";
+        final String query3 = "c=3%20three&a=1%20one";
+        final String form = "b=2%20two";
         servlet1 = new HttpServlet()
         {
             @Override
@@ -343,8 +345,8 @@ public class DispatcherForwardTest
                 req.getRequestDispatcher("/two?" + query2).forward(req, resp);
 
                 checkThat(req.getQueryString(),Matchers.equalTo(query1));
-                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
-                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2 two"));
                 checkThat(req.getParameter("c"), Matchers.nullValue());
             }
         };
@@ -354,9 +356,9 @@ public class DispatcherForwardTest
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 checkThat(req.getQueryString(),Matchers.equalTo(query3));
-                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
-                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
-                checkThat(req.getParameter("c"),Matchers.equalTo("3"));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2 two"));
+                checkThat(req.getParameter("c"),Matchers.equalTo("3 three"));
             }
         };
 
@@ -383,24 +385,24 @@ public class DispatcherForwardTest
         // 2. assert query => a=1&c=3 + params => a=1&b=2&c=3
         // 1. assert query => a=1 + params => a=1&b=2
 
-        final String query1 = "a=1";
-        final String query2 = "c=3";
-        final String query3 = "c=3&a=1";
-        final String form = "b=2";
+        final String query1 = "a=1%20one";
+        final String query2 = "c=3%20three";
+        final String query3 = "c=3%20three&a=1%20one";
+        final String form = "b=2%20two";
         servlet1 = new HttpServlet()
         {
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 checkThat(req.getQueryString(),Matchers.equalTo(query1));
-                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
-                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2 two"));
 
                 req.getRequestDispatcher("/two?" + query2).forward(req, resp);
 
                 checkThat(req.getQueryString(),Matchers.equalTo(query1));
-                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
-                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2 two"));
                 checkThat(req.getParameter("c"), Matchers.nullValue());
             }
         };
@@ -410,9 +412,9 @@ public class DispatcherForwardTest
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 checkThat(req.getQueryString(),Matchers.equalTo(query3));
-                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
-                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
-                checkThat(req.getParameter("c"),Matchers.equalTo("3"));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2 two"));
+                checkThat(req.getParameter("c"),Matchers.equalTo("3 three"));
             }
         };
 
@@ -433,8 +435,8 @@ public class DispatcherForwardTest
     @Test
     public void testContentCanBeReadViaInputStreamAfterForwardWithoutQuery() throws Exception
     {
-        final String query1 = "a=1";
-        final String form = "c=3";
+        final String query1 = "a=1%20one";
+        final String form = "c=3%20three";
         servlet1 = new HttpServlet()
         {
             @Override
@@ -477,10 +479,10 @@ public class DispatcherForwardTest
     @Test
     public void testContentCanBeReadViaInputStreamAfterForwardWithQuery() throws Exception
     {
-        final String query1 = "a=1";
-        final String query2 = "b=2";
-        final String query3 = "b=2&a=1";
-        final String form = "c=3";
+        final String query1 = "a=1%20one";
+        final String query2 = "b=2%20two";
+        final String query3 = "b=2%20two&a=1%20one";
+        final String form = "c=3%20three";
         servlet1 = new HttpServlet()
         {
             @Override
