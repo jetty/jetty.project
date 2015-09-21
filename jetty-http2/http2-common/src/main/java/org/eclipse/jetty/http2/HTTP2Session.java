@@ -201,9 +201,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
-
-
-
     }
 
     @Override
