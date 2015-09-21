@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-project</artifactId>
-        <version>8.1.17-SNAPSHOT</version>
+        <version>7.6.17-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -210,7 +210,7 @@
                 </property>
             </activation>
             <properties>
-                <npn.version>1.1.7.v20140316</npn.version>
+                <npn.version>1.1.8.v20141013</npn.version>
             </properties>
         </profile>
     <profile>
@@ -222,8 +222,8 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.7.v20140316</npn.version>
-        <alpn.version>7.0.0.v20140317</alpn.version>
+        <npn.version>1.1.8.v20141013</npn.version>
+        <alpn.version>7.1.0.v20141016</alpn.version>
       </properties>
     </profile>
     <profile>
@@ -235,8 +235,8 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.7.v20140316</npn.version>
-        <alpn.version>7.0.0.v20140317</alpn.version>
+        <npn.version>1.1.8.v20141013</npn.version>
+        <alpn.version>7.1.0.v20141016</alpn.version>
       </properties>
     </profile>
     <profile>
@@ -248,10 +248,88 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.7.v20140316</npn.version>
-        <alpn.version>7.0.0.v20140317</alpn.version>
+        <npn.version>1.1.8.v20141013</npn.version>
+        <alpn.version>7.1.0.v20141016</alpn.version>
       </properties>
     </profile>
-    </profiles>
+    <profile>
+      <id>7u71</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_71</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.9.v20141016</npn.version>
+        <alpn.version>7.1.2.v20141202</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>7u72</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_72</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.9.v20141016</npn.version>
+        <alpn.version>7.1.2.v20141202</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>7u75</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_75</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.10.v20150130</npn.version>
+        <alpn.version>7.1.3.v20150130</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>7u76</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_76</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.10.v20150130</npn.version>
+        <alpn.version>7.1.3.v20150130</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>7u79</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_79</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.10.v20150130</npn.version>
+        <alpn.version>7.1.3.v20150130</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>7u80</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_80</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.11.v20150415</npn.version>
+        <alpn.version>7.1.3.v20150130</alpn.version>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>

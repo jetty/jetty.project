@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>8.1.17-SNAPSHOT</version>
+    <version>8.1.18-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -14,8 +14,8 @@
     <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>
   </properties>
   <dependencies>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-annotations</artifactId>
       </dependency>
     <dependency>
