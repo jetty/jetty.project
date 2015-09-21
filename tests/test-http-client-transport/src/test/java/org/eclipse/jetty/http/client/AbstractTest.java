@@ -53,7 +53,7 @@ public abstract class AbstractTest
     @Rule
     public final TestTracker tracker = new TestTracker();
 
-    private final Transport transport;
+    protected final Transport transport;
     protected Server server;
     protected ServerConnector connector;
     protected HttpClient client;
@@ -65,6 +65,12 @@ public abstract class AbstractTest
 
     public void start(Handler handler) throws Exception
     {
+        startServer(handler);
+        startClient();
+    }
+
+    protected void startServer(Handler handler) throws Exception
+    {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
@@ -72,7 +78,10 @@ public abstract class AbstractTest
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
+    }
 
+    protected void startClient() throws Exception
+    {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         client = new HttpClient(provideClientTransport(transport, clientThreads), null);
@@ -118,8 +127,10 @@ public abstract class AbstractTest
     @After
     public void stop() throws Exception
     {
-        client.stop();
-        server.stop();
+        if (client != null)
+            client.stop();
+        if (server != null)
+            server.stop();
     }
 
     protected enum Transport
