@@ -1120,5 +1120,17 @@
         <alpn.version>8.1.4.v20150727</alpn.version>
       </properties>
     </profile>
+    <profile>
+      <id>8u60</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_60</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.5.v20150921</alpn.version>
+      </properties>
+    </profile>
   </profiles>
 </project>
