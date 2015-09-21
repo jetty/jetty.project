@@ -18,20 +18,14 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.IOException;
-
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.*;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
-import org.eclipse.jetty.io.BufferUtil;
-import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.bio.StreamEndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import java.io.IOException;
 
 public class HttpParser implements Parser
 {
@@ -172,6 +166,8 @@ public class HttpParser implements Parser
     /* ------------------------------------------------------------ */
     public boolean isComplete()
     {
+        if (_responseStatus > 0)
+            return isState(STATE_END) || isState(STATE_SEEKING_EOF);
         return isState(STATE_END);
     }
 
@@ -604,7 +600,7 @@ public class HttpParser implements Parser
                                 if (ch == HttpTokens.CARRIAGE_RETURN || ch == HttpTokens.LINE_FEED)
                                 {
                                     // is it a response that cannot have a body?
-                                    if (_responseStatus > 0  && // response  
+                                    if (_responseStatus > 0  && // response
                                        (_responseStatus == 304  || // not-modified response
                                         _responseStatus == 204 || // no-content response
                                         _responseStatus < 200)) // 1xx response
@@ -960,14 +956,14 @@ public class HttpParser implements Parser
                     }
 
                     case STATE_SEEKING_EOF:
-                    {                        
+                    {
                         // Close if there is more data than CRLF
                         if (_buffer.length()>2)
                         {
                             _state=STATE_END;
                             _endp.close();
                         }
-                        else  
+                        else
                         {
                             // or if the data is not white space
                             while (_buffer.length()>0)
@@ -978,7 +974,7 @@ public class HttpParser implements Parser
                                     _buffer.clear();
                                 }
                         }
-                        
+
                         _buffer.clear();
                         break;
                     }
