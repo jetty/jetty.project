@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -48,7 +48,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     private final AtomicInteger _threadsStarted = new AtomicInteger();
     private final AtomicInteger _threadsIdle = new AtomicInteger();
     private final AtomicLong _lastShrink = new AtomicLong();
-    private final ConcurrentLinkedQueue<Thread> _threads=new ConcurrentLinkedQueue<Thread>();
+    private final ConcurrentHashSet<Thread> _threads=new ConcurrentHashSet<Thread>();
     private final Object _joinLock = new Object();
     private BlockingQueue<Runnable> _jobs;
     private String _name;
