@@ -26,11 +26,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -38,7 +40,6 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
@@ -52,9 +53,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests various close scenarios
+ * Tests various close scenarios that should result in Open Session cleanup
  */
-public class WebSocketCloseTest
+public class ManyConnectionsCleanupTest
 {
     static class AbstractCloseSocket extends WebSocketAdapter
     {
@@ -83,6 +84,7 @@ public class WebSocketCloseTest
     public static class CloseServlet extends WebSocketServlet implements WebSocketCreator
     {
         private WebSocketServerFactory serverFactory;
+        private AtomicInteger calls = new AtomicInteger(0);
 
         @Override
         public void configure(WebSocketServletFactory factory)
@@ -99,19 +101,19 @@ public class WebSocketCloseTest
         {
             if (req.hasSubProtocol("fastclose"))
             {
-                closeSocket = new FastCloseSocket();
+                closeSocket = new FastCloseSocket(calls);
                 return closeSocket;
             }
 
             if (req.hasSubProtocol("fastfail"))
             {
-                closeSocket = new FastFailSocket();
+                closeSocket = new FastFailSocket(calls);
                 return closeSocket;
             }
 
             if (req.hasSubProtocol("container"))
             {
-                closeSocket = new ContainerSocket(serverFactory);
+                closeSocket = new ContainerSocket(serverFactory,calls);
                 return closeSocket;
             }
             return new RFCSocket();
@@ -123,19 +125,22 @@ public class WebSocketCloseTest
      */
     public static class ContainerSocket extends AbstractCloseSocket
     {
-        private static final Logger LOG = Log.getLogger(WebSocketCloseTest.ContainerSocket.class);
+        private static final Logger LOG = Log.getLogger(ManyConnectionsCleanupTest.ContainerSocket.class);
         private final WebSocketServerFactory container;
+        private final AtomicInteger calls;
         private Session session;
 
-        public ContainerSocket(WebSocketServerFactory container)
+        public ContainerSocket(WebSocketServerFactory container, AtomicInteger calls)
         {
             this.container = container;
+            this.calls = calls;
         }
 
         @Override
         public void onWebSocketText(String message)
         {
             LOG.debug("onWebSocketText({})",message);
+            calls.incrementAndGet();
             if (message.equalsIgnoreCase("openSessions"))
             {
                 Set<WebSocketSession> sessions = container.getOpenSessions();
@@ -148,8 +153,11 @@ public class WebSocketCloseTest
                     ret.append('[').append(idx++).append("] ").append(sess.toString()).append('\n');
                 }
                 session.getRemote().sendStringByFuture(ret.toString());
+                session.close(StatusCode.NORMAL,"ContainerSocket");
+            } else if(message.equalsIgnoreCase("calls"))
+            {
+                session.getRemote().sendStringByFuture(String.format("calls=%,d",calls.get()));
             }
-            session.close(StatusCode.NORMAL,"ContainerSocket");
         }
 
         @Override
@@ -165,12 +173,19 @@ public class WebSocketCloseTest
      */
     public static class FastCloseSocket extends AbstractCloseSocket
     {
-        private static final Logger LOG = Log.getLogger(WebSocketCloseTest.FastCloseSocket.class);
+        private static final Logger LOG = Log.getLogger(ManyConnectionsCleanupTest.FastCloseSocket.class);
+        private final AtomicInteger calls;
+
+        public FastCloseSocket(AtomicInteger calls)
+        {
+            this.calls = calls;
+        }
 
         @Override
         public void onWebSocketConnect(Session sess)
         {
             LOG.debug("onWebSocketConnect({})",sess);
+            calls.incrementAndGet();
             sess.close(StatusCode.NORMAL,"FastCloseServer");
         }
     }
@@ -180,19 +195,26 @@ public class WebSocketCloseTest
      */
     public static class FastFailSocket extends AbstractCloseSocket
     {
-        private static final Logger LOG = Log.getLogger(WebSocketCloseTest.FastFailSocket.class);
+        private static final Logger LOG = Log.getLogger(ManyConnectionsCleanupTest.FastFailSocket.class);
+        private final AtomicInteger calls;
+
+        public FastFailSocket(AtomicInteger calls)
+        {
+            this.calls = calls;
+        }
 
         @Override
         public void onWebSocketConnect(Session sess)
         {
             LOG.debug("onWebSocketConnect({})",sess);
+            calls.incrementAndGet();
             // Test failure due to unhandled exception
             // this should trigger a fast-fail closure during open/connect
             throw new RuntimeException("Intentional FastFail");
         }
     }
 
-    private static final Logger LOG = Log.getLogger(WebSocketCloseTest.class);
+    private static final Logger LOG = Log.getLogger(ManyConnectionsCleanupTest.class);
 
     private static SimpleServletServer server;
     private static AbstractCloseSocket closeSocket;
@@ -211,74 +233,6 @@ public class WebSocketCloseTest
     }
 
     /**
-     * Test fast close (bug #403817)
-     * 
-     * @throws Exception
-     *             on test failure
-     */
-    @Test
-    public void testFastClose() throws Exception
-    {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
-        {
-            client.setProtocols("fastclose");
-            client.setTimeout(1,TimeUnit.SECONDS);
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            // Verify that client got close frame
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
-            assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
-            CloseInfo close = new CloseInfo(frame);
-            assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.NORMAL));
-
-            // Notify server of close handshake
-            client.write(close.asFrame()); // respond with close
-
-            // ensure server socket got close event
-            assertThat("Fast Close Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-            assertThat("Fast Close.statusCode",closeSocket.closeStatusCode,is(StatusCode.NORMAL));
-        }
-    }
-
-    /**
-     * Test fast fail (bug #410537)
-     * 
-     * @throws Exception
-     *             on test failure
-     */
-    @Test
-    public void testFastFail() throws Exception
-    {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
-        {
-            client.setProtocols("fastfail");
-            client.setTimeout(1,TimeUnit.SECONDS);
-            try (StacklessLogging scope = new StacklessLogging(AbstractEventDriver.class))
-            {
-                client.connect();
-                client.sendStandardRequest();
-                client.expectUpgradeResponse();
-
-                EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
-                WebSocketFrame frame = frames.poll();
-                assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
-                CloseInfo close = new CloseInfo(frame);
-                assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
-
-                client.write(close.asFrame()); // respond with close
-
-                // ensure server socket got close event
-                assertThat("Fast Fail Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-                assertThat("Fast Fail.statusCode",closeSocket.closeStatusCode,is(StatusCode.SERVER_ERROR));
-                assertThat("Fast Fail.errors",closeSocket.errors.size(),is(1));
-            }
-        }
-    }
-
-    /**
      * Test session open session cleanup (bug #474936)
      * 
      * @throws Exception
@@ -287,9 +241,22 @@ public class WebSocketCloseTest
     @Test
     public void testOpenSessionCleanup() throws Exception
     {
-        fastFail();
-        fastClose();
-        dropConnection();
+        int iterationCount = 100;
+        
+        StdErrLog.getLogger(FastFailSocket.class).setLevel(StdErrLog.LEVEL_OFF);
+        
+        StdErrLog sessLog = StdErrLog.getLogger(WebSocketSession.class);
+        int oldLevel = sessLog.getLevel();
+        sessLog.setLevel(StdErrLog.LEVEL_OFF);
+        
+        for (int requests = 0; requests < iterationCount; requests++)
+        {
+            fastFail();
+            fastClose();
+            dropConnection();
+        }
+        
+        sessLog.setLevel(oldLevel);
 
         try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
@@ -298,20 +265,26 @@ public class WebSocketCloseTest
             client.connect();
             client.sendStandardRequest();
             client.expectUpgradeResponse();
+            
+            client.write(new TextFrame().setPayload("calls"));
+            client.write(new TextFrame().setPayload("openSessions"));
 
-            TextFrame text = new TextFrame();
-            text.setPayload("openSessions");
-            client.write(text);
-
-            EventQueue<WebSocketFrame> frames = client.readFrames(2,1,TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(3,6,TimeUnit.SECONDS);
+            WebSocketFrame frame;
+            String resp;
+            
+            frame = frames.poll();
             assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.TEXT));
+            resp = frame.getPayloadAsUTF8();
+            assertThat("Should only have 1 open session",resp,containsString("calls=" + ((iterationCount * 2) + 1)));
 
-            String resp = frame.getPayloadAsUTF8();
+            frame = frames.poll();
+            assertThat("frames[1].opcode",frame.getOpCode(),is(OpCode.TEXT));
+            resp = frame.getPayloadAsUTF8();
             assertThat("Should only have 1 open session",resp,containsString("openSessions.size=1\n"));
 
             frame = frames.poll();
-            assertThat("frames[1].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            assertThat("frames[2].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.NORMAL));
             client.write(close.asFrame()); // respond with close
