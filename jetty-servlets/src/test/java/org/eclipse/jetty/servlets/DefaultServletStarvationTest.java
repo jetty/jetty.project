@@ -129,8 +129,8 @@ public class DefaultServletStarvationTest
             output.flush();
             Thread.sleep(100);
         }
-        
-        
+
+
         // Wait for a the servlet to block.
         Assert.assertTrue(writePending.await(5, TimeUnit.SECONDS));
 
@@ -138,7 +138,7 @@ public class DefaultServletStarvationTest
         _server.dumpStdErr();
         Thread.sleep(1000);
 
-        
+
         ScheduledFuture<?> dumper = Executors.newSingleThreadScheduledExecutor().schedule(new Runnable()
         {
             @Override
@@ -147,17 +147,16 @@ public class DefaultServletStarvationTest
                 _server.dumpStdErr();
             }
         }, 10, TimeUnit.SECONDS);
-        
+
 
         long expected = Files.size(resourcePath);
         byte[] buffer = new byte[48 * 1024];
         for (Socket socket : sockets)
         {
             String socketString = socket.toString();
-            System.out.println("Reading socket " + socketString+"...");
             long total = 0;
             InputStream input = socket.getInputStream();
-            
+
             // look for CRLFCRLF
             StringBuilder header = new StringBuilder();
             int state=0;
@@ -191,17 +190,15 @@ public class DefaultServletStarvationTest
                         else
                             state=0;
                         break;
-                }                
+                }
             }
-            System.out.println("Header socket " + socketString+"\n"+header.toString());
-            
+
             while (total<expected)
             {
                 int read=input.read(buffer);
                 if (read<0)
                     break;
                 total+=read;
-                System.out.printf("READ %d of %d/%d from %s%n",read,total,expected,socketString);
             }
 
             Assert.assertEquals(expected,total);
