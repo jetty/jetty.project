@@ -1287,8 +1287,7 @@ public class ServletHandler extends ScopedHandler
     {
         if (mapping != null)
         {
-            Source source = mapping.getFilterHolder().getSource();
-            
+            Source source = (mapping.getFilterHolder()==null?null:mapping.getFilterHolder().getSource());
             FilterMapping[] mappings = getFilterMappings();
             if (mappings==null || mappings.length==0)
             {
