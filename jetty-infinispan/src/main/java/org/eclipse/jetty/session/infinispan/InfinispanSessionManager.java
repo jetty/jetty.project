@@ -654,14 +654,11 @@ public class InfinispanSessionManager extends AbstractSessionManager
         long now = System.currentTimeMillis();
         
         LOG.info("SessionManager for context {} scavenging at {} ", getContextPath(getContext()), now);
-        synchronized (_sessions)
+        for (Map.Entry<String, Session> entry:_sessions.entrySet())
         {
-            for (Map.Entry<String, Session> entry:_sessions.entrySet())
-            {
-                long expiry = entry.getValue().getExpiry();
-                if (expiry > 0 && expiry < now)
-                    candidateIds.add(entry.getKey());
-            }
+            long expiry = entry.getValue().getExpiry();
+            if (expiry > 0 && expiry < now)
+                candidateIds.add(entry.getKey());
         }
 
         for (String candidateId:candidateIds)
