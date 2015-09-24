@@ -593,7 +593,7 @@ public class StartArgs
             Path prop_path;
             if (exec_properties==null)
             {
-                prop_path=Files.createTempFile(Paths.get(baseHome.getBase()), "start_", ".properties");
+                prop_path=Files.createTempFile("start_", ".properties");
                 prop_path.toFile().deleteOnExit();
             }
             else
