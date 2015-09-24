@@ -853,6 +853,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _availability = Availability.UNAVAILABLE;
 
         ClassLoader old_classloader = null;
+        ClassLoader old_webapploader = null;
         Thread current_thread = null;
 
         Context old_context = __context.get();
@@ -862,6 +863,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // Set the classloader
             if (_classLoader != null)
             {
+                old_webapploader = _classLoader;
                 current_thread = Thread.currentThread();
                 old_classloader = current_thread.getContextClassLoader();
                 current_thread.setContextClassLoader(_classLoader);
@@ -885,7 +887,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             LOG.info("Stopped {}", this);
             __context.set(old_context);
             // reset the classloader
-            if (_classLoader != null && current_thread!=null)
+            if ((old_classloader == null || (old_classloader != old_webapploader)) && current_thread != null)
                 current_thread.setContextClassLoader(old_classloader);
         }
 
