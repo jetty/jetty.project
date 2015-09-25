@@ -130,7 +130,7 @@ public class Log
         });
     }
     
-    private static void loadProperties(String resourceName, Properties props)
+    static void loadProperties(String resourceName, Properties props)
     {
         URL testProps = Loader.getResource(Log.class,resourceName);
         if (testProps != null)

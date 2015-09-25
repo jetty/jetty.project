@@ -18,8 +18,14 @@
 
 package org.eclipse.jetty.util.log;
 
+import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
+
+import org.eclipse.jetty.util.Loader;
 
 /**
  * <p>
@@ -33,6 +39,18 @@ import java.util.logging.LogRecord;
  * 
  * Configuration Properties:
  * <dl>
+ *   <dt>${name|hierarchy}.LEVEL=(ALL|DEBUG|INFO|WARN|OFF)</dt>
+ *   <dd>
+ *   Sets the level that the Logger should log at.<br>
+ *   Names can be a package name, or a fully qualified class name.<br>
+ *   Default: The default from the java.util.logging mechanism/configuration
+ *   <br>
+ *   <dt>org.eclipse.jetty.util.log.javautil.PROPERTIES=&lt;property-resource-name&gt;</dt>
+ *   <dd>If set, it is used as a classpath resource name to find a java.util.logging 
+ *   property file.
+ *   <br>
+ *   Default: null
+ *   </dd>
  *   <dt>org.eclipse.jetty.util.log.javautil.SOURCE=(true|false)</dt>
  *   <dd>Set the LogRecord source class and method for JavaUtilLog.<br>
  *   Default: true
@@ -50,22 +68,73 @@ public class JavaUtilLog extends AbstractLogger
             Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
             Log.__props.getProperty("org.eclipse.jetty.util.log.javautil.SOURCE","true")));
     
+    private static boolean _initialized=false;
+    
     private Level configuredLevel;
     private java.util.logging.Logger _logger;
 
     public JavaUtilLog()
     {
-        this("org.eclipse.jetty.util.log");
+        this("org.eclipse.jetty.util.log.javautil");
     }
 
     public JavaUtilLog(String name)
     {
-        _logger = java.util.logging.Logger.getLogger(name);
-        if (Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.DEBUG", "false")))
+        synchronized (JavaUtilLog.class)
         {
-            _logger.setLevel(Level.FINE);
-        }
+            if (!_initialized)
+            {
+                _initialized=true;
 
+                final String properties=Log.__props.getProperty("org.eclipse.jetty.util.log.javautil.PROPERTIES",null);
+                if (properties!=null)
+                {
+                    AccessController.doPrivileged(new PrivilegedAction<Object>()
+                    {
+                        public Object run()
+                        {
+                            try
+                            {
+                                URL props = Loader.getResource(JavaUtilLog.class,properties);
+                                if (props != null)
+                                    LogManager.getLogManager().readConfiguration(props.openStream());
+                            }
+                            catch(Throwable e)
+                            {
+                                System.err.println("[WARN] Error loading logging config: " + properties);
+                                e.printStackTrace(System.err);
+                            }
+                            
+                            return null;
+                        }
+                    });
+                }
+            }
+        }
+        
+        _logger = java.util.logging.Logger.getLogger(name);
+        
+        switch(lookupLoggingLevel(Log.__props,name))
+        {
+            case LEVEL_ALL:
+                _logger.setLevel(Level.ALL);
+                break;
+            case LEVEL_DEBUG:
+                _logger.setLevel(Level.FINE);
+                break;
+            case LEVEL_INFO:
+                _logger.setLevel(Level.INFO);
+                break;
+            case LEVEL_WARN:
+                _logger.setLevel(Level.WARNING);
+                break;
+            case LEVEL_OFF:
+                _logger.setLevel(Level.OFF);
+                break;
+            case LEVEL_DEFAULT:
+            default:
+                break;
+        }
         
         configuredLevel = _logger.getLevel();
     }
