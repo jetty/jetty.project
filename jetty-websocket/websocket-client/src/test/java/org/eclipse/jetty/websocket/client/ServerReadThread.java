@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,22 +34,22 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.Assert;
 
 public class ServerReadThread extends Thread
 {
     private static final int BUFFER_SIZE = 8192;
     private static final Logger LOG = Log.getLogger(ServerReadThread.class);
-    private final ServerConnection conn;
+    private final IBlockheadServerConnection conn;
     private boolean active = true;
     private int slowness = -1; // disabled is default
     private final AtomicInteger frameCount = new AtomicInteger();
     private final CountDownLatch expectedMessageCount;
 
-    public ServerReadThread(ServerConnection conn, int expectedMessages)
+    public ServerReadThread(IBlockheadServerConnection sconnection, int expectedMessages)
     {
-        this.conn = conn;
+        this.conn = sconnection;
         this.expectedMessageCount = new CountDownLatch(expectedMessages);
     }
 

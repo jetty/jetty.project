@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 
 import java.net.URI;
 import java.util.Set;
@@ -31,7 +30,7 @@ import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -70,7 +69,7 @@ public class SessionTest
             request.setSubProtocols("echo");
             Future<Session> future = client.connect(cliSock,wsUri,request);
 
-            final ServerConnection srvSock = server.accept();
+            final IBlockheadServerConnection srvSock = server.accept();
             srvSock.upgrade();
 
             Session sess = future.get(500,TimeUnit.MILLISECONDS);

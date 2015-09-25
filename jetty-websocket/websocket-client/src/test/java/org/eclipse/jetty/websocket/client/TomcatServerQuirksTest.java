@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -29,7 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -92,7 +91,7 @@ public class TomcatServerQuirksTest
             client.connect(websocket,wsURI);
 
             // Accept incoming connection
-            ServerConnection socket = server.accept();
+            IBlockheadServerConnection socket = server.accept();
             socket.setSoTimeout(2000); // timeout
 
             // Issue upgrade
@@ -114,8 +113,7 @@ public class TomcatServerQuirksTest
             serverFrame.put((byte)(payload.length & 0xFF)); // second length byte
             serverFrame.put(payload);
             BufferUtil.flipToFlush(serverFrame,0);
-            byte buf[] = BufferUtil.toArray(serverFrame);
-            socket.write(buf,0,buf.length);
+            socket.write(serverFrame);
             socket.flush();
 
             Assert.assertTrue(websocket.dataLatch.await(1000,TimeUnit.SECONDS));

@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.net.URI;
 import java.util.concurrent.Future;
@@ -29,7 +29,7 @@ import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -81,7 +81,7 @@ public class SlowClientTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(tsocket, wsUri);
 
-        ServerConnection sconnection = server.accept();
+        IBlockheadServerConnection sconnection = server.accept();
         sconnection.setSoTimeout(60000);
         sconnection.upgrade();
 

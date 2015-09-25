@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -106,7 +106,7 @@ public class WebSocketClientTest
             request.setSubProtocols("echo");
             Future<Session> future = client.connect(cliSock,wsUri,request);
 
-            final ServerConnection srvSock = server.accept();
+            final IBlockheadServerConnection srvSock = server.accept();
             srvSock.upgrade();
 
             Session sess = future.get(500,TimeUnit.MILLISECONDS);
@@ -152,7 +152,7 @@ public class WebSocketClientTest
             request.setSubProtocols("echo");
             Future<Session> future = client.connect(cliSock,wsUri,request);
 
-            final ServerConnection srvSock = server.accept();
+            final IBlockheadServerConnection srvSock = server.accept();
             srvSock.upgrade();
 
             Session sess = future.get(500,TimeUnit.MILLISECONDS);
@@ -188,7 +188,7 @@ public class WebSocketClientTest
             Future<Session> future = client.connect(wsocket,server.getWsUri());
 
             // Server
-            final ServerConnection srvSock = server.accept();
+            final IBlockheadServerConnection srvSock = server.accept();
             srvSock.upgrade();
 
             // Validate connect
@@ -226,7 +226,7 @@ public class WebSocketClientTest
             URI wsUri = server.getWsUri();
             Future<Session> future = fact.connect(wsocket,wsUri);
 
-            ServerConnection ssocket = server.accept();
+            IBlockheadServerConnection ssocket = server.accept();
             ssocket.upgrade();
 
             future.get(500,TimeUnit.MILLISECONDS);
@@ -266,7 +266,7 @@ public class WebSocketClientTest
             URI wsUri = server.getWsUri();
             Future<Session> future = factSmall.connect(wsocket,wsUri);
 
-            ServerConnection ssocket = server.accept();
+            IBlockheadServerConnection ssocket = server.accept();
             ssocket.upgrade();
 
             future.get(500,TimeUnit.MILLISECONDS);
@@ -304,7 +304,7 @@ public class WebSocketClientTest
             URI wsUri = server.getWsUri();
             Future<Session> future = client.connect(wsocket,wsUri);
 
-            ServerConnection ssocket = server.accept();
+            IBlockheadServerConnection ssocket = server.accept();
             ssocket.upgrade();
 
             wsocket.awaitConnect(1,TimeUnit.SECONDS);
@@ -346,7 +346,7 @@ public class WebSocketClientTest
             URI wsUri = server.getWsUri().resolve("/test?snack=cashews&amount=handful&brand=off");
             Future<Session> future = fact.connect(wsocket,wsUri);
 
-            ServerConnection ssocket = server.accept();
+            IBlockheadServerConnection ssocket = server.accept();
             ssocket.upgrade();
 
             future.get(500,TimeUnit.MILLISECONDS);

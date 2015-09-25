@@ -18,14 +18,7 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -65,7 +58,7 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.RawFrameBuilder;
 import org.hamcrest.Matcher;
@@ -194,7 +187,7 @@ public class ClientCloseTest
     private BlockheadServer server;
     private WebSocketClient client;
 
-    private void confirmConnection(CloseTrackingSocket clientSocket, Future<Session> clientFuture, ServerConnection serverConn) throws Exception
+    private void confirmConnection(CloseTrackingSocket clientSocket, Future<Session> clientFuture, IBlockheadServerConnection serverConns) throws Exception
     {
         // Wait for client connect on via future
         clientFuture.get(500,TimeUnit.MILLISECONDS);
@@ -212,7 +205,7 @@ public class ClientCloseTest
             testFut.get(500,TimeUnit.MILLISECONDS);
 
             // Read Frame on server side
-            IncomingFramesCapture serverCapture = serverConn.readFrames(1,500,TimeUnit.MILLISECONDS);
+            IncomingFramesCapture serverCapture = serverConns.readFrames(1,500,TimeUnit.MILLISECONDS);
             serverCapture.assertNoErrors();
             serverCapture.assertFrameCount(1);
             WebSocketFrame frame = serverCapture.getFrames().poll();
@@ -220,7 +213,7 @@ public class ClientCloseTest
             Assert.assertThat("Server received frame payload",frame.getPayloadAsUTF8(),is(echoMsg));
 
             // Server send echo reply
-            serverConn.write(new TextFrame().setPayload(echoMsg));
+            serverConns.write(new TextFrame().setPayload(echoMsg));
 
             // Wait for received echo
             clientSocket.messageQueue.awaitEventCount(1,1,TimeUnit.SECONDS);
@@ -238,7 +231,7 @@ public class ClientCloseTest
         }
     }
 
-    private void confirmServerReceivedCloseFrame(ServerConnection serverConn, int expectedCloseCode, Matcher<String> closeReasonMatcher) throws IOException,
+    private void confirmServerReceivedCloseFrame(IBlockheadServerConnection serverConn, int expectedCloseCode, Matcher<String> closeReasonMatcher) throws IOException,
             TimeoutException
     {
         IncomingFramesCapture serverCapture = serverConn.readFrames(1,500,TimeUnit.MILLISECONDS);
@@ -355,7 +348,7 @@ public class ClientCloseTest
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
         // Server accepts connect
-        ServerConnection serverConn = server.accept();
+        IBlockheadServerConnection serverConn = server.accept();
         serverConn.upgrade();
 
         // client confirms connection via echo
@@ -404,7 +397,7 @@ public class ClientCloseTest
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
         // Server accepts connect
-        ServerConnection serverConn = server.accept();
+        IBlockheadServerConnection serverConn = server.accept();
         serverConn.upgrade();
 
         // client confirms connection via echo
@@ -455,7 +448,7 @@ public class ClientCloseTest
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
         // Server accepts connect
-        ServerConnection serverConn = server.accept();
+        IBlockheadServerConnection serverConn = server.accept();
         serverConn.upgrade();
 
         // client confirms connection via echo
@@ -503,7 +496,7 @@ public class ClientCloseTest
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
         // Server accepts connect
-        ServerConnection serverConn = server.accept();
+        IBlockheadServerConnection serverConn = server.accept();
         serverConn.upgrade();
 
         // client confirms connection via echo
@@ -539,7 +532,7 @@ public class ClientCloseTest
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
         // Server accepts connect
-        ServerConnection serverConn = server.accept();
+        IBlockheadServerConnection serverConn = server.accept();
         serverConn.upgrade();
 
         // client confirms connection via echo
@@ -571,7 +564,7 @@ public class ClientCloseTest
 
         int clientCount = 3;
         CloseTrackingSocket clientSockets[] = new CloseTrackingSocket[clientCount];
-        ServerConnection serverConns[] = new ServerConnection[clientCount];
+        IBlockheadServerConnection serverConns[] = new IBlockheadServerConnection[clientCount];
 
         // Connect Multiple Clients
         for (int i = 0; i < clientCount; i++)
@@ -617,7 +610,7 @@ public class ClientCloseTest
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
         // Server accepts connect
-        ServerConnection serverConn = server.accept();
+        IBlockheadServerConnection serverConn = server.accept();
         serverConn.upgrade();
 
         // client confirms connection via echo

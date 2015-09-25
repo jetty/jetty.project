@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -39,7 +36,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.After;
 import org.junit.Assert;
@@ -121,7 +118,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection connection = server.accept();
+        IBlockheadServerConnection connection = server.accept();
         connection.readRequest();
         // no upgrade, just fail with a 404 error
         connection.respond("HTTP/1.1 404 NOT FOUND\r\n\r\n");
@@ -150,7 +147,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection connection = server.accept();
+        IBlockheadServerConnection connection = server.accept();
         connection.readRequest();
         // Send OK to GET but not upgrade
         connection.respond("HTTP/1.1 200 OK\r\n\r\n");
@@ -179,7 +176,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection connection = server.accept();
+        IBlockheadServerConnection connection = server.accept();
         List<String> requestLines = connection.readRequestLines();
         String key = connection.parseWebSocketKey(requestLines);
 
@@ -215,7 +212,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection connection = server.accept();
+        IBlockheadServerConnection connection = server.accept();
         List<String> requestLines = connection.readRequestLines();
         String key = connection.parseWebSocketKey(requestLines);
 
@@ -251,7 +248,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection connection = server.accept();
+        IBlockheadServerConnection connection = server.accept();
         List<String> requestLines = connection.readRequestLines();
         String key = connection.parseWebSocketKey(requestLines);
 
@@ -287,7 +284,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection connection = server.accept();
+        IBlockheadServerConnection connection = server.accept();
         connection.readRequest();
         // Upgrade badly
         connection.respond("HTTP/1.1 101 Upgrade\r\n" + "Sec-WebSocket-Accept: rubbish\r\n" + "\r\n");
@@ -381,7 +378,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection ssocket = server.accept();
+        IBlockheadServerConnection ssocket = server.accept();
         Assert.assertNotNull(ssocket);
         // Intentionally don't upgrade
         // ssocket.upgrade();
