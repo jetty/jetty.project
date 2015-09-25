@@ -678,7 +678,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         {
             return content.isNonBlocking();
         }
-        
+
         @Override
         public void succeeded()
         {
@@ -811,9 +811,9 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             while (true)
             {
                 boolean advanced = content.advance();
-                boolean consumed = content.isConsumed();
+                boolean lastContent = content.isLast();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Content {} consumed {} for {}", advanced, consumed, exchange.getRequest());
+                    LOG.debug("Content present {}, last {}, consumed {} for {}", advanced, lastContent, content.isConsumed(), exchange.getRequest());
 
                 if (advanced)
                 {
@@ -821,7 +821,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                     return Action.SCHEDULED;
                 }
 
-                if (consumed)
+                if (lastContent)
                 {
                     sendContent(exchange, content, lastCallback);
                     return Action.IDLE;
@@ -894,7 +894,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         {
             return content.isNonBlocking();
         }
-        
+
         @Override
         public void succeeded()
         {

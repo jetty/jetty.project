@@ -64,9 +64,11 @@ public class HttpSenderOverHTTP2 extends HttpSender
 
                 if (content.hasContent() && !expects100Continue(request))
                 {
-                    if (content.advance())
+                    boolean advanced = content.advance();
+                    boolean lastContent = content.isLast();
+                    if (advanced || lastContent)
                     {
-                        DataFrame dataFrame = new DataFrame(stream.getId(), content.getByteBuffer(), content.isLast());
+                        DataFrame dataFrame = new DataFrame(stream.getId(), content.getByteBuffer(), lastContent);
                         stream.data(dataFrame, callback);
                         return;
                     }
@@ -80,6 +82,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
                 callback.failed(failure);
             }
         };
+        // TODO optimize the send of HEADERS and DATA frames.
         channel.getSession().newStream(headersFrame, promise, channel.getStreamListener());
     }
 

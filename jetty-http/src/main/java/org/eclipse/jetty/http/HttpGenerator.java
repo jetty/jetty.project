@@ -891,8 +891,9 @@ public class HttpGenerator
     @Override
     public String toString()
     {
-        return String.format("%s{s=%s}",
+        return String.format("%s@%x{s=%s}",
                 getClass().getSimpleName(),
+                hashCode(),
                 _state);
     }
 
