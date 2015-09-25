@@ -250,6 +250,9 @@ public class IOState
         synchronized (this)
         {
             closeInfo = close;
+            
+            // Turn off further output
+            outputAvailable = false;
 
             boolean in = inputAvailable;
             boolean out = outputAvailable;
@@ -257,9 +260,7 @@ public class IOState
             {
                 closeHandshakeSource = CloseHandshakeSource.LOCAL;
             }
-            out = false;
-            outputAvailable = false;
-
+            
             LOG.debug("onCloseLocal(), input={}, output={}",in,out);
 
             if (!in && !out)
@@ -319,6 +320,9 @@ public class IOState
             }
 
             closeInfo = close;
+            
+            // turn off further input
+            inputAvailable = false;
 
             boolean in = inputAvailable;
             boolean out = outputAvailable;
@@ -326,8 +330,6 @@ public class IOState
             {
                 closeHandshakeSource = CloseHandshakeSource.REMOTE;
             }
-            in = false;
-            inputAvailable = false;
 
             if (LOG.isDebugEnabled())
                 LOG.debug("onCloseRemote(), input={}, output={}",in,out);

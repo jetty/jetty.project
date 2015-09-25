@@ -400,12 +400,14 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
                 // confirmed close of local endpoint
                 notifyClose(close.getStatusCode(),close.getReason());
                 break;
-            case OPEN:
+            case CONNECTED:
                 // notify session listeners
                 for (SessionListener listener : sessionListeners)
                 {
                     try
                     {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{}.onSessionOpen()", listener.getClass().getSimpleName());
                         listener.onSessionOpened(this);
                     }
                     catch (Throwable t)
@@ -435,7 +437,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     
             // Connect remote
             remote = new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
-
+            
             // Open WebSocket
             websocket.openSession(this);
 
