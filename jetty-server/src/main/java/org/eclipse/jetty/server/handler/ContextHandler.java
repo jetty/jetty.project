@@ -2869,6 +2869,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         /**
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
+         * @param reason An object that indicates the reason the scope is being entered
          */
         void enterScope(Context context, Request request, Object reason);
 
