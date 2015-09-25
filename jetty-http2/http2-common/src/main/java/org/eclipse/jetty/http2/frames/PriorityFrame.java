@@ -20,6 +20,8 @@ package org.eclipse.jetty.http2.frames;
 
 public class PriorityFrame extends Frame
 {
+    public static final int PRIORITY_LENGTH = 5;
+
     private final int streamId;
     private final int parentStreamId;
     private final int weight;

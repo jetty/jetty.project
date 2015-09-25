@@ -36,7 +36,7 @@ public class HeadersBodyParser extends BodyParser
     private int length;
     private int paddingLength;
     private boolean exclusive;
-    private int streamId;
+    private int parentStreamId;
     private int weight;
 
     public HeadersBodyParser(HeaderParser headerParser, Parser.Listener listener, HeaderBlockParser headerBlockParser, HeaderBlockFragments headerBlockFragments)
@@ -53,7 +53,7 @@ public class HeadersBodyParser extends BodyParser
         length = 0;
         paddingLength = 0;
         exclusive = false;
-        streamId = 0;
+        parentStreamId = 0;
         weight = 0;
     }
 
@@ -70,9 +70,8 @@ public class HeadersBodyParser extends BodyParser
             headerBlockFragments.setStreamId(getStreamId());
             headerBlockFragments.setEndStream(isEndStream());
             if (hasFlag(Flags.PRIORITY))
-                headerBlockFragments.setPriorityFrame(new PriorityFrame(streamId, getStreamId(), weight, exclusive));
+                connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_headers_priority_frame");
         }
-        reset();
     }
 
     @Override
@@ -122,15 +121,15 @@ public class HeadersBodyParser extends BodyParser
                     // because the 31 least significant bits represent the stream id.
                     int currByte = buffer.get(buffer.position());
                     exclusive = (currByte & 0x80) == 0x80;
-                    state = State.STREAM_ID;
+                    state = State.PARENT_STREAM_ID;
                     break;
                 }
-                case STREAM_ID:
+                case PARENT_STREAM_ID:
                 {
                     if (buffer.remaining() >= 4)
                     {
-                        streamId = buffer.getInt();
-                        streamId &= 0x7F_FF_FF_FF;
+                        parentStreamId = buffer.getInt();
+                        parentStreamId &= 0x7F_FF_FF_FF;
                         length -= 4;
                         state = State.WEIGHT;
                         if (length < 1)
@@ -138,22 +137,22 @@ public class HeadersBodyParser extends BodyParser
                     }
                     else
                     {
-                        state = State.STREAM_ID_BYTES;
+                        state = State.PARENT_STREAM_ID_BYTES;
                         cursor = 4;
                     }
                     break;
                 }
-                case STREAM_ID_BYTES:
+                case PARENT_STREAM_ID_BYTES:
                 {
                     int currByte = buffer.get() & 0xFF;
                     --cursor;
-                    streamId += currByte << (8 * cursor);
+                    parentStreamId += currByte << (8 * cursor);
                     --length;
                     if (cursor > 0 && length <= 0)
                         return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame");
                     if (cursor == 0)
                     {
-                        streamId &= 0x7F_FF_FF_FF;
+                        parentStreamId &= 0x7F_FF_FF_FF;
                         state = State.WEIGHT;
                         if (length < 1)
                             return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame");
@@ -177,7 +176,7 @@ public class HeadersBodyParser extends BodyParser
                         {
                             state = State.PADDING;
                             loop = paddingLength == 0;
-                            onHeaders(streamId, weight, exclusive, metaData);
+                            onHeaders(parentStreamId, weight, exclusive, metaData);
                         }
                     }
                     else
@@ -193,7 +192,7 @@ public class HeadersBodyParser extends BodyParser
                             headerBlockFragments.setStreamId(getStreamId());
                             headerBlockFragments.setEndStream(isEndStream());
                             if (hasFlag(Flags.PRIORITY))
-                                headerBlockFragments.setPriorityFrame(new PriorityFrame(streamId, getStreamId(), weight, exclusive));
+                                headerBlockFragments.setPriorityFrame(new PriorityFrame(getStreamId(), parentStreamId, weight, exclusive));
                             headerBlockFragments.storeFragment(buffer, length, false);
                             state = State.PADDING;
                             loop = paddingLength == 0;
@@ -222,17 +221,17 @@ public class HeadersBodyParser extends BodyParser
         return false;
     }
 
-    private void onHeaders(int streamId, int weight, boolean exclusive, MetaData metaData)
+    private void onHeaders(int parentStreamId, int weight, boolean exclusive, MetaData metaData)
     {
         PriorityFrame priorityFrame = null;
         if (hasFlag(Flags.PRIORITY))
-            priorityFrame = new PriorityFrame(streamId, getStreamId(), weight, exclusive);
+            priorityFrame = new PriorityFrame(getStreamId(), parentStreamId, weight, exclusive);
         HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, priorityFrame, isEndStream());
         notifyHeaders(frame);
     }
 
     private enum State
     {
-        PREPARE, PADDING_LENGTH, EXCLUSIVE, STREAM_ID, STREAM_ID_BYTES, WEIGHT, HEADERS, PADDING
+        PREPARE, PADDING_LENGTH, EXCLUSIVE, PARENT_STREAM_ID, PARENT_STREAM_ID_BYTES, WEIGHT, HEADERS, PADDING
     }
 }

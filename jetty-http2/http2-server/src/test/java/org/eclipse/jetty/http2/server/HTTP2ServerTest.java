@@ -40,15 +40,19 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
+import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
+import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -407,7 +411,7 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testRequestWithContinuationFrames() throws Exception
     {
-        testRequestWithContinuationFrames(() ->
+        testRequestWithContinuationFrames(null, () ->
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
@@ -419,9 +423,24 @@ public class HTTP2ServerTest extends AbstractServerTest
     }
 
     @Test
+    public void testRequestWithPriorityWithContinuationFrames() throws Exception
+    {
+        PriorityFrame priority = new PriorityFrame(1, 13, 200, true);
+        testRequestWithContinuationFrames(priority, () ->
+        {
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.control(lease, new PrefaceFrame());
+            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+            MetaData.Request metaData = newRequest("GET", new HttpFields());
+            generator.control(lease, new HeadersFrame(1, metaData, priority, true));
+            return lease;
+        });
+    }
+
+    @Test
     public void testRequestWithContinuationFramesWithEmptyHeadersFrame() throws Exception
     {
-        testRequestWithContinuationFrames(() ->
+        testRequestWithContinuationFrames(null, () ->
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
@@ -440,9 +459,31 @@ public class HTTP2ServerTest extends AbstractServerTest
     }
 
     @Test
+    public void testRequestWithPriorityWithContinuationFramesWithEmptyHeadersFrame() throws Exception
+    {
+        PriorityFrame priority = new PriorityFrame(1, 13, 200, true);
+        testRequestWithContinuationFrames(null, () ->
+        {
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.control(lease, new PrefaceFrame());
+            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+            MetaData.Request metaData = newRequest("GET", new HttpFields());
+            generator.control(lease, new HeadersFrame(1, metaData, priority, true));
+            // Take the HeadersFrame header and set the length to just the priority frame.
+            List<ByteBuffer> buffers = lease.getByteBuffers();
+            ByteBuffer headersFrameHeader = buffers.get(2);
+            headersFrameHeader.put(0, (byte)0);
+            headersFrameHeader.putShort(1, (short)PriorityFrame.PRIORITY_LENGTH);
+            // Insert a CONTINUATION frame header for the body of the HEADERS frame.
+            lease.insert(4, buffers.get(5).slice(), false);
+            return lease;
+        });
+    }
+
+    @Test
     public void testRequestWithContinuationFramesWithEmptyContinuationFrame() throws Exception
     {
-        testRequestWithContinuationFrames(() ->
+        testRequestWithContinuationFrames(null, () ->
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
@@ -466,7 +507,7 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testRequestWithContinuationFramesWithEmptyLastContinuationFrame() throws Exception
     {
-        testRequestWithContinuationFrames(() ->
+        testRequestWithContinuationFrames(null, () ->
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
@@ -489,15 +530,30 @@ public class HTTP2ServerTest extends AbstractServerTest
         });
     }
 
-    private void testRequestWithContinuationFrames(Callable<ByteBufferPool.Lease> frames) throws Exception
+    private void testRequestWithContinuationFrames(PriorityFrame priorityFrame, Callable<ByteBufferPool.Lease> frames) throws Exception
     {
         final CountDownLatch serverLatch = new CountDownLatch(1);
-        startServer(new HttpServlet()
+        startServer(new ServerSessionListener.Adapter()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
+                if (priorityFrame != null)
+                {
+                    PriorityFrame priority = frame.getPriority();
+                    Assert.assertNotNull(priority);
+                    Assert.assertEquals(priorityFrame.getStreamId(), priority.getStreamId());
+                    Assert.assertEquals(priorityFrame.getParentStreamId(), priority.getParentStreamId());
+                    Assert.assertEquals(priorityFrame.getWeight(), priority.getWeight());
+                    Assert.assertEquals(priorityFrame.isExclusive(), priority.isExclusive());
+                }
+
                 serverLatch.countDown();
+
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
+                stream.headers(responseFrame, Callback.NOOP);
+                return null;
             }
         });
         generator = new Generator(byteBufferPool, 4096, 4);

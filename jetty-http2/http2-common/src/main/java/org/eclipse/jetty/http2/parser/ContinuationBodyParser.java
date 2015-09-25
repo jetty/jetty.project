@@ -42,7 +42,6 @@ public class ContinuationBodyParser extends BodyParser
     @Override
     protected void emptyBody(ByteBuffer buffer)
     {
-        reset();
         if (hasFlag(Flags.END_HEADERS))
             onHeaders();
     }
