@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -258,7 +259,7 @@ public class ManyConnectionsCleanupTest
         
         sessLog.setLevel(oldLevel);
 
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("container");
             client.setTimeout(1,TimeUnit.SECONDS);
@@ -298,7 +299,7 @@ public class ManyConnectionsCleanupTest
 
     private void fastClose() throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastclose");
             client.setTimeout(1,TimeUnit.SECONDS);
@@ -325,7 +326,7 @@ public class ManyConnectionsCleanupTest
 
     private void fastFail() throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastfail");
             client.setTimeout(1,TimeUnit.SECONDS);
@@ -350,7 +351,7 @@ public class ManyConnectionsCleanupTest
     
     private void dropConnection() throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("container");
             client.setTimeout(1,TimeUnit.SECONDS);

@@ -88,7 +88,7 @@ import org.junit.Assert;
  * with regards to basic IO behavior, a write should work as expected, a read should work as expected, but <u>what</u> byte it sends or reads is not within its
  * scope.
  */
-public class BlockheadClient implements OutgoingFrames, ConnectionStateListener, AutoCloseable
+public class BlockheadClient implements OutgoingFrames, ConnectionStateListener, AutoCloseable, IBlockheadClient
 {
     private class FrameReadingThread extends Thread implements Runnable, IncomingFrames
     {
@@ -238,16 +238,28 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         this.ioState.addListener(this);
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#addExtensions(java.lang.String)
+     */
+    @Override
     public void addExtensions(String xtension)
     {
         this.extensions.add(xtension);
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#addHeader(java.lang.String)
+     */
+    @Override
     public void addHeader(String header)
     {
         this.headers.add(header);
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#awaitDisconnect(long, java.util.concurrent.TimeUnit)
+     */
+    @Override
     public boolean awaitDisconnect(long timeout, TimeUnit unit) throws InterruptedException
     {
         return disconnectedLatch.await(timeout,unit);
@@ -263,6 +275,9 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         extensions.clear();
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#close()
+     */
     @Override
     public void close()
     {
@@ -270,6 +285,10 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         close(-1,null);
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#close(int, java.lang.String)
+     */
+    @Override
     public void close(int statusCode, String message)
     {
         LOG.debug("close({},{})",statusCode,message);
@@ -285,6 +304,10 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         }
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#connect()
+     */
+    @Override
     public void connect() throws IOException
     {
         InetAddress destAddr = InetAddress.getByName(destHttpURI.getHost());
@@ -323,6 +346,10 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         }
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#expectServerDisconnect()
+     */
+    @Override
     public void expectServerDisconnect()
     {
         if (eof)
@@ -353,6 +380,10 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         }
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#expectUpgradeResponse()
+     */
+    @Override
     public HttpResponse expectUpgradeResponse() throws IOException
     {
         HttpResponse response = readResponseHeader();
@@ -466,6 +497,10 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         return ioState;
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#getProtocols()
+     */
+    @Override
     public String getProtocols()
     {
         return protocols;
@@ -597,6 +632,10 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         return frameReader.frames;
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#readResponseHeader()
+     */
+    @Override
     public HttpResponse readResponseHeader() throws IOException
     {
         HttpResponse response = new HttpResponse();
@@ -632,6 +671,10 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         return response;
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#sendStandardRequest()
+     */
+    @Override
     public void sendStandardRequest() throws IOException
     {
         StringBuilder req = generateUpgradeRequest();
@@ -676,11 +719,19 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         this.executor = executor;
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#setProtocols(java.lang.String)
+     */
+    @Override
     public void setProtocols(String protocols)
     {
         this.protocols = protocols;
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#setTimeout(int, java.util.concurrent.TimeUnit)
+     */
+    @Override
     public void setTimeout(int duration, TimeUnit unit)
     {
         this.timeout = (int)TimeUnit.MILLISECONDS.convert(duration,unit);
@@ -725,6 +776,10 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         LOG.info("Waking up from sleep");
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#write(org.eclipse.jetty.websocket.common.WebSocketFrame)
+     */
+    @Override
     public void write(WebSocketFrame frame) throws IOException
     {
         if (!ioState.isOpen())
@@ -744,12 +799,20 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         extensionStack.outgoingFrame(frame,null,BatchMode.OFF);
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#writeRaw(java.nio.ByteBuffer)
+     */
+    @Override
     public void writeRaw(ByteBuffer buf) throws IOException
     {
         LOG.debug("write(ByteBuffer) {}",BufferUtil.toDetailString(buf));
         BufferUtil.writeTo(buf,out);
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#writeRaw(java.nio.ByteBuffer, int)
+     */
+    @Override
     public void writeRaw(ByteBuffer buf, int numBytes) throws IOException
     {
         int len = Math.min(numBytes,buf.remaining());
@@ -758,12 +821,20 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         out.write(arr);
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#writeRaw(java.lang.String)
+     */
+    @Override
     public void writeRaw(String str) throws IOException
     {
         LOG.debug("write((String)[{}]){}{})",str.length(),'\n',str);
         out.write(str.getBytes(StandardCharsets.ISO_8859_1));
     }
 
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.websocket.common.test.IBlockheadClient#writeRawSlowly(java.nio.ByteBuffer, int)
+     */
+    @Override
     public void writeRawSlowly(ByteBuffer buf, int segmentSize) throws IOException
     {
         while (buf.remaining() > 0)
