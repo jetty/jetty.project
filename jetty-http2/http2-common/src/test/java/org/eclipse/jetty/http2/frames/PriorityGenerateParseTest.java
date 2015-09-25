@@ -51,7 +51,7 @@ public class PriorityGenerateParseTest
 
         int streamId = 13;
         int parentStreamId = 17;
-        int weight = 3;
+        int weight = 256;
         boolean exclusive = true;
 
         // Iterate a few times to be sure generator and parser are properly reset.

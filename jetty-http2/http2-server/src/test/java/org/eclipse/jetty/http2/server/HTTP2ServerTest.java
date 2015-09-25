@@ -475,7 +475,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             headersFrameHeader.put(0, (byte)0);
             headersFrameHeader.putShort(1, (short)PriorityFrame.PRIORITY_LENGTH);
             // Insert a CONTINUATION frame header for the body of the HEADERS frame.
-            lease.insert(4, buffers.get(5).slice(), false);
+            lease.insert(3, buffers.get(4).slice(), false);
             return lease;
         });
     }

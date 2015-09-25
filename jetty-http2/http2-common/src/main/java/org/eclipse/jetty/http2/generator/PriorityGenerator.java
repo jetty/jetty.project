@@ -43,21 +43,26 @@ public class PriorityGenerator extends FrameGenerator
 
     public void generatePriority(ByteBufferPool.Lease lease, int streamId, int parentStreamId, int weight, boolean exclusive)
     {
+        ByteBuffer header = generateHeader(lease, FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
+        generatePriorityBody(header, streamId, parentStreamId, weight, exclusive);
+        BufferUtil.flipToFlush(header, 0);
+        lease.append(header, true);
+    }
+
+    public void generatePriorityBody(ByteBuffer header, int streamId, int parentStreamId, int weight, boolean exclusive)
+    {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
         if (parentStreamId < 0)
             throw new IllegalArgumentException("Invalid parent stream id: " + parentStreamId);
-
-        ByteBuffer header = generateHeader(lease, FrameType.PRIORITY, 5, Flags.NONE, streamId);
+        if (parentStreamId == streamId)
+            throw new IllegalArgumentException("Stream " + streamId + " cannot depend on stream " + parentStreamId);
+        if (weight < 1 || weight > 256)
+            throw new IllegalArgumentException("Invalid weight: " + weight);
 
         if (exclusive)
             parentStreamId |= 0x80_00_00_00;
-
         header.putInt(parentStreamId);
-
-        header.put((byte)weight);
-
-        BufferUtil.flipToFlush(header, 0);
-        lease.append(header, true);
+        header.put((byte)(weight - 1));
     }
 }

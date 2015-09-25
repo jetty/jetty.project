@@ -103,7 +103,7 @@ public class PriorityBodyParser extends BodyParser
                     if (getStreamId() == parentStreamId)
                         return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_priority_frame");
 
-                    int weight = buffer.get() & 0xFF;
+                    int weight = (buffer.get() & 0xFF) + 1;
                     return onPriority(parentStreamId, weight, exclusive);
                 }
                 default:

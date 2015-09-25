@@ -161,7 +161,7 @@ public class HeadersBodyParser extends BodyParser
                 }
                 case WEIGHT:
                 {
-                    weight = buffer.get() & 0xFF;
+                    weight = (buffer.get() & 0xFF) + 1;
                     --length;
                     state = State.HEADERS;
                     loop = length == 0;
