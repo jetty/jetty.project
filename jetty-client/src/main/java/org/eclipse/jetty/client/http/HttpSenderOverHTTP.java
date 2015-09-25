@@ -79,7 +79,9 @@ public class HttpSenderOverHTTP extends HttpSender
                 boolean lastContent = content.isLast();
                 HttpGenerator.Result result = generator.generateRequest(null, null, chunk, contentBuffer, lastContent);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Generated content: {} - {}", result, generator);
+                    LOG.debug("Generated content ({} bytes) - {}/{}",
+                            contentBuffer == null ? -1 : contentBuffer.remaining(),
+                            result, generator);
                 switch (result)
                 {
                     case NEED_CHUNK:
@@ -200,7 +202,11 @@ public class HttpSenderOverHTTP extends HttpSender
             {
                 HttpGenerator.Result result = generator.generateRequest(metaData, headerBuffer, chunkBuffer, contentBuffer, lastContent);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Generated headers: {} - ", result, generator);
+                    LOG.debug("Generated headers ({} bytes), chunk ({} bytes), content ({} bytes) - {}/{}",
+                            headerBuffer == null ? -1 : headerBuffer.remaining(),
+                            chunkBuffer == null ? -1 : chunkBuffer.remaining(),
+                            contentBuffer == null ? -1 : contentBuffer.remaining(),
+                            result, generator);
                 switch (result)
                 {
                     case NEED_HEADER:

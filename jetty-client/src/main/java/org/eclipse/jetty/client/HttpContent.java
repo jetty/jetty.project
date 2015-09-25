@@ -67,11 +67,13 @@ public class HttpContent implements Callback, Closeable
 {
     private static final Logger LOG = Log.getLogger(HttpContent.class);
     private static final ByteBuffer AFTER = ByteBuffer.allocate(0);
+    private static final ByteBuffer CLOSE = ByteBuffer.allocate(0);
 
     private final ContentProvider provider;
     private final Iterator<ByteBuffer> iterator;
     private ByteBuffer buffer;
-    private volatile ByteBuffer content;
+    private ByteBuffer content;
+    private boolean last;
 
     public HttpContent(ContentProvider provider)
     {
@@ -92,7 +94,7 @@ public class HttpContent implements Callback, Closeable
      */
     public boolean isLast()
     {
-        return !iterator.hasNext();
+        return last;
     }
 
     /**
@@ -124,40 +126,49 @@ public class HttpContent implements Callback, Closeable
      */
     public boolean advance()
     {
-        boolean advanced;
-        boolean hasNext;
-        ByteBuffer bytes;
         if (iterator instanceof Synchronizable)
         {
             synchronized (((Synchronizable)iterator).getLock())
             {
-                advanced = iterator.hasNext();
-                bytes = advanced ? iterator.next() : null;
-                hasNext = advanced && iterator.hasNext();
+                return advance(iterator);
             }
         }
         else
         {
-            advanced = iterator.hasNext();
-            bytes = advanced ? iterator.next() : null;
-            hasNext = advanced && iterator.hasNext();
+            return advance(iterator);
         }
+    }
 
-        if (advanced)
+    private boolean advance(Iterator<ByteBuffer> iterator)
+    {
+        boolean hasNext = iterator.hasNext();
+        ByteBuffer bytes = hasNext ? iterator.next() : null;
+        boolean hasMore = hasNext && iterator.hasNext();
+        boolean wasLast = last;
+        last = !hasMore;
+
+        if (hasNext)
         {
             buffer = bytes;
             content = bytes == null ? null : bytes.slice();
             if (LOG.isDebugEnabled())
-                LOG.debug("Advanced content to {} chunk {}", hasNext ? "next" : "last", bytes);
+                LOG.debug("Advanced content to {} chunk {}", hasMore ? "next" : "last", String.valueOf(bytes));
             return bytes != null;
         }
         else
         {
-            if (content != AFTER)
+            // No more content, but distinguish between last and consumed.
+            if (wasLast)
             {
-                content = buffer = AFTER;
+                buffer = content = AFTER;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Advanced content past last chunk");
+            }
+            else
+            {
+                buffer = content = CLOSE;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Advanced content to last chunk");
             }
             return false;
         }
@@ -168,13 +179,15 @@ public class HttpContent implements Callback, Closeable
      */
     public boolean isConsumed()
     {
-        return content == AFTER;
+        return buffer == AFTER;
     }
 
     @Override
     public void succeeded()
     {
         if (isConsumed())
+            return;
+        if (buffer == CLOSE)
             return;
         if (iterator instanceof Callback)
             ((Callback)iterator).succeeded();
@@ -184,6 +197,8 @@ public class HttpContent implements Callback, Closeable
     public void failed(Throwable x)
     {
         if (isConsumed())
+            return;
+        if (buffer == CLOSE)
             return;
         if (iterator instanceof Callback)
             ((Callback)iterator).failed(x);

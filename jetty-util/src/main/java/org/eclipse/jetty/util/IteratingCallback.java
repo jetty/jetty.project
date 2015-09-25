@@ -216,7 +216,7 @@ public abstract class IteratingCallback implements Callback
 
                     case CLOSED:
                     default:
-                        throw new IllegalStateException("state="+_state);
+                        throw new IllegalStateException(toString());
                 }
             }
         }
@@ -288,7 +288,7 @@ public abstract class IteratingCallback implements Callback
                             }
 
                             default:
-                                throw new IllegalStateException("state="+_state+" action="+action);
+                                throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                         }
                     }
 
@@ -304,7 +304,7 @@ public abstract class IteratingCallback implements Callback
                             }
 
                             default:
-                                throw new IllegalStateException("state="+_state+" action="+action);
+                                throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                         }
                     }
 
@@ -316,7 +316,7 @@ public abstract class IteratingCallback implements Callback
                     case IDLE:
                     case PENDING:
                     default:
-                        throw new IllegalStateException("state="+_state+" action="+action);
+                        throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                 }
             }
         }
@@ -357,7 +357,7 @@ public abstract class IteratingCallback implements Callback
                 }
                 default:
                 {
-                    throw new IllegalStateException("state="+_state);
+                    throw new IllegalStateException(toString());
                 }
             }
         }
@@ -394,7 +394,7 @@ public abstract class IteratingCallback implements Callback
                     break;
                 }
                 default:
-                    throw new IllegalStateException("state="+_state);
+                    throw new IllegalStateException(toString());
             }
         }
         if (failure)
