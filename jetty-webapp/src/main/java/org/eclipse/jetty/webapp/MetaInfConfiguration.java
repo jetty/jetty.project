@@ -181,10 +181,14 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 //Resource represents a packed jar
                 URI uri = target.getURI();
-                resourcesDir = Resource.newResource("jar:"+uri+"!/META-INF/resources");
+                resourcesDir = Resource.newResource("jar:"+uri+"!/META-INF/resources", false);
             }
+            
             if (!resourcesDir.exists() || !resourcesDir.isDirectory())
+            {
+                resourcesDir.close();
                 resourcesDir = EmptyResource.INSTANCE;
+            }
 
             if (cache != null)
             {               
@@ -196,7 +200,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
             }
 
             if (resourcesDir == EmptyResource.INSTANCE)
+            {
                 return;
+            }
         }
 
         //add it to the meta inf resources for this context
@@ -207,6 +213,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             context.setAttribute(METAINF_RESOURCES, dirs);
         }
         if (LOG.isDebugEnabled()) LOG.debug(resourcesDir+" added to context");
+
         dirs.add(resourcesDir);
     }
     
@@ -245,10 +252,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
             else
             {
                 URI uri = jar.getURI();
-                webFrag = Resource.newResource("jar:"+uri+"!/META-INF/web-fragment.xml");
+                webFrag = Resource.newResource("jar:"+uri+"!/META-INF/web-fragment.xml", false);
             }
             if (!webFrag.exists() || webFrag.isDirectory())
+            {
+                webFrag.close();
                 webFrag = EmptyResource.INSTANCE;
+            }
             
             if (cache != null)
             {
@@ -342,8 +352,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(METAINF_FRAGMENTS, null); 
         context.setAttribute(METAINF_RESOURCES, null);
+
+        context.setAttribute(METAINF_FRAGMENTS, null); 
+   
         context.setAttribute(METAINF_TLDS, null);
     }
     
@@ -392,7 +404,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         
         URL url = new URL("jar:"+uri+"!/");
         JarURLConnection jarConn = (JarURLConnection) url.openConnection();
-        jarConn.setUseCaches(Resource.getDefaultUseCaches());
+        jarConn.setUseCaches(false);
         JarFile jarFile = jarConn.getJarFile();
         Enumeration<JarEntry> entries = jarFile.entries();
         while (entries.hasMoreElements())

@@ -599,6 +599,13 @@ public class WebAppClassLoader extends URLClassLoader
         return clazz;
     }
     
+    
+    @Override
+    public void close() throws IOException
+    {
+        super.close();
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

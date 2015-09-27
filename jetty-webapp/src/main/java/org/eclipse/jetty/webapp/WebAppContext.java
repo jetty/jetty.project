@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,6 +60,7 @@ import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
@@ -1354,7 +1356,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         finally
         {
             if (_ownClassLoader)
+            {
+                ClassLoader loader = getClassLoader();
+                if (loader != null && loader instanceof URLClassLoader)
+                    ((URLClassLoader)loader).close(); 
                 setClassLoader(null);
+            }
 
             setAvailable(true);
             _unavailableException=null;
