@@ -234,7 +234,11 @@ public abstract class AbstractConnection implements Connection
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x[%s,%s]",
+                getClass().getSimpleName(),
+                hashCode(),
+                _state.get(),
+                _endPoint);
     }
 
     private class ReadCallback implements Callback
