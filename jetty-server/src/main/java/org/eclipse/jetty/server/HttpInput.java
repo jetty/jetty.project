@@ -637,13 +637,11 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public String toString()
     {
-        return String.format("%s@%x[r=%d,s=%s,e=%s,f=%s]",
+        return String.format("%s@%x[c=%d,s=%s]",
                 getClass().getSimpleName(),
                 hashCode(),
-                _contentRead,
-                _contentState,
-                _eofState,
-                _onError);
+                _contentConsumed,
+                _state);
     }
 
     public static class PoisonPillContent extends Content
