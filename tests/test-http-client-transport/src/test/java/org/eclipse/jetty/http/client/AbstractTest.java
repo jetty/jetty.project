@@ -20,7 +20,6 @@ package org.eclipse.jetty.http.client;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -84,7 +83,7 @@ public abstract class AbstractTest
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(provideClientTransport(transport, clientThreads), null);
+        client = new HttpClient(provideClientTransport(transport), null);
         client.setExecutor(clientThreads);
         client.start();
     }
@@ -102,7 +101,7 @@ public abstract class AbstractTest
         }
     }
 
-    private HttpClientTransport provideClientTransport(Transport transport, Executor clientThreads)
+    private HttpClientTransport provideClientTransport(Transport transport)
     {
         switch (transport)
         {
@@ -113,7 +112,6 @@ public abstract class AbstractTest
             case HTTP2:
             {
                 HTTP2Client http2Client = new HTTP2Client();
-                http2Client.setExecutor(clientThreads);
                 http2Client.setSelectors(1);
                 return new HttpClientTransportOverHTTP2(http2Client);
             }

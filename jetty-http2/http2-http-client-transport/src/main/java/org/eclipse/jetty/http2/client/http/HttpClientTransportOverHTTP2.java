@@ -57,8 +57,17 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     @Override
     protected void doStart() throws Exception
     {
+        if (!client.isStarted())
+        {
+            client.setExecutor(httpClient.getExecutor());
+            client.setScheduler(httpClient.getScheduler());
+            client.setByteBufferPool(httpClient.getByteBufferPool());
+            client.setConnectTimeout(httpClient.getConnectTimeout());
+            client.setIdleTimeout(httpClient.getIdleTimeout());
+        }
         addBean(client);
         super.doStart();
+
         this.connectionFactory = client.getClientConnectionFactory();
         client.setClientConnectionFactory((endPoint, context) ->
         {
