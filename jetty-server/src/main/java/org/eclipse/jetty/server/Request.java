@@ -126,12 +126,12 @@ public class Request implements HttpServletRequest
     private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
-
+    
     private static final MultiMap<String> NO_PARAMS = new MultiMap<>();
 
 
     /* ------------------------------------------------------------ */
-    /**
+    /** 
      * Obtain the base {@link Request} instance of a {@link ServletRequest}, by
      * coercion, unwrapping or special attribute.
      * @param request The request
@@ -141,21 +141,21 @@ public class Request implements HttpServletRequest
     {
         if (request instanceof Request)
             return (Request)request;
-
+        
         Object channel = request.getAttribute(HttpChannel.class.getName());
         if (channel instanceof HttpChannel)
             return ((HttpChannel)channel).getRequest();
-
+        
         while (request instanceof ServletRequestWrapper)
             request=((ServletRequestWrapper)request).getRequest();
 
         if (request instanceof Request)
             return (Request)request;
-
+        
         return null;
     }
-
-
+    
+    
     private final HttpChannel _channel;
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
     private final HttpInput _input;
@@ -165,7 +165,7 @@ public class Request implements HttpServletRequest
     private String _contextPath;
     private String _servletPath;
     private String _pathInfo;
-
+    
     private boolean _secure;
     private boolean _asyncSupported = true;
     private boolean _newContext;
@@ -195,7 +195,7 @@ public class Request implements HttpServletRequest
     private long _timeStamp;
     private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
     private AsyncContextState _async;
-
+    
     /* ------------------------------------------------------------ */
     public Request(HttpChannel channel, HttpInput input)
     {
@@ -226,7 +226,7 @@ public class Request implements HttpServletRequest
     {
         return getHttpChannel().getHttpTransport().isPushSupported();
     }
-
+    
     /* ------------------------------------------------------------ */
     /** Get a PushBuilder associated with this request initialized as follows:<ul>
      * <li>The method is initialized to "GET"</li>
@@ -237,18 +237,18 @@ public class Request implements HttpServletRequest
      *   <li>Authorization headers
      *   <li>Referrer headers
      * </ul></li>
-     * <li>If the request was Authenticated, an Authorization header will
+     * <li>If the request was Authenticated, an Authorization header will 
      * be set with a container generated token that will result in equivalent
      * Authorization</li>
      * <li>The query string from {@link #getQueryString()}
      * <li>The {@link #getRequestedSessionId()} value, unless at the time
      * of the call {@link #getSession(boolean)}
-     * has previously been called to create a new {@link HttpSession}, in
-     * which case the new session ID will be used as the PushBuilders
+     * has previously been called to create a new {@link HttpSession}, in 
+     * which case the new session ID will be used as the PushBuilders 
      * requested session ID.</li>
      * <li>The source of the requested session id will be the same as for
      * this request</li>
-     * <li>The builders Referer header will be set to {@link #getRequestURL()}
+     * <li>The builders Referer header will be set to {@link #getRequestURL()} 
      * plus any {@link #getQueryString()} </li>
      * <li>If {@link HttpServletResponse#addCookie(Cookie)} has been called
      * on the associated response, then a corresponding Cookie header will be added
@@ -256,9 +256,9 @@ public class Request implements HttpServletRequest
      * case the Cookie will be removed from the builder.</li>
      * <li>If this request has has the conditional headers If-Modified-Since or
      * If-None-Match then the {@link PushBuilderImpl#isConditional()} header is set
-     * to true.
+     * to true. 
      * </ul>
-     *
+     * 
      * <p>Each call to getPushBuilder() will return a new instance
      * of a PushBuilder based off this Request.  Any mutations to the
      * returned PushBuilder are not reflected on future returns.
@@ -268,12 +268,12 @@ public class Request implements HttpServletRequest
     {
         if (!isPushSupported())
             throw new IllegalStateException();
-
+        
         HttpFields fields = new HttpFields(getHttpFields().size()+5);
         boolean conditional=false;
         UserIdentity user_identity=null;
         Authentication authentication=null;
-
+        
         for (HttpField field : getHttpFields())
         {
             HttpHeader header = field.getHeader();
@@ -291,7 +291,7 @@ public class Request implements HttpServletRequest
                     case REFERER:
                     case COOKIE:
                         continue;
-
+                        
                     case AUTHORIZATION:
                         user_identity=getUserIdentity();
                         authentication=_authentication;
@@ -301,13 +301,13 @@ public class Request implements HttpServletRequest
                     case IF_MODIFIED_SINCE:
                         conditional=true;
                         continue;
-
+            
                     default:
                         fields.add(field);
                 }
             }
         }
-
+        
         String id=null;
         try
         {
@@ -324,13 +324,13 @@ public class Request implements HttpServletRequest
         {
             id=getRequestedSessionId();
         }
-
+        
         PushBuilder builder = new PushBuilderImpl(this,fields,getMethod(),getQueryString(),id,conditional);
         builder.addHeader("referer",getRequestURL().toString());
-
+        
         // TODO process any set cookies
         // TODO process any user_identity
-
+        
         return builder;
     }
 
@@ -418,7 +418,7 @@ public class Request implements HttpServletRequest
                 }
             }
         }
-
+        
     }
 
     /* ------------------------------------------------------------ */
@@ -508,7 +508,7 @@ public class Request implements HttpServletRequest
         HttpChannelState state = getHttpChannelState();
         if (_async==null || !state.isAsyncStarted())
             throw new IllegalStateException(state.getStatusString());
-
+        
         return _async;
     }
 
@@ -647,7 +647,7 @@ public class Request implements HttpServletRequest
     {
         return _input.getContentConsumed();
     }
-
+    
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletRequest#getContentType()
@@ -696,7 +696,7 @@ public class Request implements HttpServletRequest
         {
             if (_cookies == null || _cookies.getCookies().length == 0)
                 return null;
-
+            
             return _cookies.getCookies();
         }
 
@@ -720,7 +720,7 @@ public class Request implements HttpServletRequest
         //Javadoc for Request.getCookies() stipulates null for no cookies
         if (_cookies == null || _cookies.getCookies().length == 0)
             return null;
-
+        
         return _cookies.getCookies();
     }
 
@@ -824,7 +824,7 @@ public class Request implements HttpServletRequest
     {
         if (_metadata==null)
             return Locale.getDefault();
-
+            
         Enumeration<String> enm = _metadata.getFields().getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
 
         // handle no locale
@@ -864,7 +864,7 @@ public class Request implements HttpServletRequest
     {
         if (_metadata==null)
             return Collections.enumeration(__defaultLocale);
-
+        
         Enumeration<String> enm = _metadata.getFields().getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
 
         // handle no locale
@@ -920,7 +920,7 @@ public class Request implements HttpServletRequest
                 LOG.ignore(e);
             }
         }
-
+        
         InetSocketAddress local=_channel.getLocalAddress();
         if (local==null)
             return "";
@@ -1042,7 +1042,7 @@ public class Request implements HttpServletRequest
     {
         if (_queryParameters == null)
             extractQueryParameters();
-
+        
         if (_queryParameters==NO_PARAMS || _queryParameters.size()==0)
             _parameters=_contentParameters;
         else if (_contentParameters==NO_PARAMS || _contentParameters.size()==0)
@@ -1190,7 +1190,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     /**
      * Access the underlying Remote {@link InetSocketAddress} for this request.
-     *
+     * 
      * @return the remote {@link InetSocketAddress} for this request, or null if the request has no remote (see {@link ServletRequest#getRemoteAddr()} for
      *         conditions that result in no remote address)
      */
@@ -1213,14 +1213,14 @@ public class Request implements HttpServletRequest
         InetSocketAddress remote=_remote;
         if (remote==null)
             remote=_channel.getRemoteAddress();
-
+        
         if (remote==null)
             return "";
-
+        
         InetAddress address = remote.getAddress();
         if (address==null)
             return remote.getHostString();
-
+        
         return address.getHostAddress();
     }
 
@@ -1365,7 +1365,7 @@ public class Request implements HttpServletRequest
     public String getServerName()
     {
         String name = _metadata.getURI().getHost();
-
+        
         // Return already determined host
         if (name != null)
             return name;
@@ -1414,7 +1414,7 @@ public class Request implements HttpServletRequest
     {
         HttpURI uri = _metadata.getURI();
         int port = (uri.getHost()==null)?findServerPort():uri.getPort();
-
+            
         // If no port specified, return the default port for the scheme
         if (port <= 0)
         {
@@ -1422,7 +1422,7 @@ public class Request implements HttpServletRequest
                 return 443;
             return 80;
         }
-
+        
         // return a specific port
         return port;
     }
@@ -1445,10 +1445,10 @@ public class Request implements HttpServletRequest
         // Return host from connection
         if (_channel != null)
             return getLocalPort();
-
+        
         return -1;
     }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     public ServletContext getServletContext()
@@ -1534,7 +1534,7 @@ public class Request implements HttpServletRequest
 
         if (!create)
             return null;
-
+        
         if (getResponse().isCommitted())
             throw new IllegalStateException("Response is committed");
 
@@ -1631,7 +1631,7 @@ public class Request implements HttpServletRequest
             UserIdentity user = ((Authentication.User)_authentication).getUserIdentity();
             return user.getUserPrincipal();
         }
-
+        
         return null;
     }
 
@@ -1749,7 +1749,7 @@ public class Request implements HttpServletRequest
         _metadata=request;
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
-
+        
         String path = uri.getDecodedPath();
         String info;
         if (path==null || path.length()==0)
@@ -1777,13 +1777,13 @@ public class Request implements HttpServletRequest
         }
         else
             info = URIUtil.canonicalPath(path);// TODO should this be done prior to decoding???
-
+        
         if (info == null)
         {
             setPathInfo(path);
             throw new BadMessageException(400,"Bad URI");
         }
-
+        
         setPathInfo(info);
     }
 
@@ -1792,21 +1792,21 @@ public class Request implements HttpServletRequest
     {
         return _metadata;
     }
-
+    
     /* ------------------------------------------------------------ */
     public boolean hasMetaData()
     {
         return _metadata!=null;
     }
-
+    
     /* ------------------------------------------------------------ */
     protected void recycle()
     {
         _metadata=null;
-
+        
         if (_context != null)
             throw new IllegalStateException("Request in context!");
-
+        
         if (_inputState == __READER)
         {
             try
@@ -1919,7 +1919,7 @@ public class Request implements HttpServletRequest
             setQueryEncoding(value == null?null:value.toString());
         else if ("org.eclipse.jetty.server.sendContent".equals(name))
             LOG.warn("Deprecated: org.eclipse.jetty.server.sendContent");
-
+        
         if (_attributes == null)
             _attributes = new AttributesMap();
         _attributes.setAttribute(name,value);
@@ -2098,7 +2098,7 @@ public class Request implements HttpServletRequest
      *
      * The request attribute "org.eclipse.jetty.server.server.Request.queryEncoding" may be set as an alternate method of calling setQueryEncoding.
      *
-     * @param queryEncoding the URI query character encoding
+     * @param queryEncoding the URI query character encoding 
      */
     public void setQueryEncoding(String queryEncoding)
     {
@@ -2125,7 +2125,7 @@ public class Request implements HttpServletRequest
     {
         _remote = addr;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param requestedSessionId
@@ -2171,7 +2171,7 @@ public class Request implements HttpServletRequest
      */
     public void setAuthority(String host,int port)
     {
-        _metadata.getURI().setAuthority(host,port);
+        _metadata.getURI().setAuthority(host,port);;
     }
 
     /* ------------------------------------------------------------ */
@@ -2254,7 +2254,7 @@ public class Request implements HttpServletRequest
                 getClass().getSimpleName(),
                 _handled ? "[" : "(",
                 getMethod(),
-                getHttpURI(),
+                _uri,
                 _handled ? "]" : ")",
                 hashCode());
     }
@@ -2298,14 +2298,14 @@ public class Request implements HttpServletRequest
         if (_multiPartInputStream == null)
         {
             MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
-
+            
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
-
+            
             _multiPartInputStream = new MultiPartInputStreamParser(getInputStream(),
-                                                             getContentType(), config,
+                                                             getContentType(), config, 
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
-
+            
             setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
             setAttribute(__MULTIPART_CONTEXT, _context);
             Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
@@ -2327,7 +2327,7 @@ public class Request implements HttpServletRequest
                         IO.copy(is, os);
                         String content=new String(os.toByteArray(),charset==null?StandardCharsets.UTF_8:Charset.forName(charset));
                         if (_contentParameters == null)
-                            _contentParameters = params == null ? new MultiMap<>() : params;
+                            _contentParameters = params == null ? new MultiMap<String>() : params;
                         _contentParameters.add(mp.getName(), content);
                     }
                     os.reset();
@@ -2367,7 +2367,7 @@ public class Request implements HttpServletRequest
     public void mergeQueryParameters(String oldQuery,String newQuery, boolean updateQueryString)
     {
         // TODO  This is seriously ugly
-
+        
         MultiMap<String> newQueryParams = null;
         // Have to assume ENCODING because we can't know otherwise.
         if (newQuery!=null)
@@ -2442,9 +2442,9 @@ public class Request implements HttpServletRequest
         {
             //Instantiate an instance and inject it
             T h = getContext().createInstance(handlerClass);
-
+            
             //TODO handle the rest of the upgrade process
-
+            
             return h;
         }
         catch (Exception e)
@@ -2455,5 +2455,5 @@ public class Request implements HttpServletRequest
         }
     }
 
-
+    
 }

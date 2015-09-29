@@ -87,15 +87,19 @@ public abstract class AbstractConnection implements Connection
         // TODO always dispatch failure ?
         try
         {
-            getExecutor().execute(() ->
+            getExecutor().execute(new Runnable()
             {
-                try
+                @Override
+                public void run()
                 {
-                    callback.failed(x);
-                }
-                catch(Exception e)
-                {
-                    LOG.warn(e);
+                    try
+                    {
+                        callback.failed(x);
+                    }
+                    catch(Exception e)
+                    {
+                        LOG.warn(e);
+                    }
                 }
             });
         }
@@ -230,9 +234,10 @@ public abstract class AbstractConnection implements Connection
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s]",
+        return String.format("%s@%x[%s,%s]",
                 getClass().getSimpleName(),
                 hashCode(),
+                _state.get(),
                 _endPoint);
     }
 
@@ -255,5 +260,5 @@ public abstract class AbstractConnection implements Connection
         {
             return String.format("AC.ReadCB@%x{%s}", AbstractConnection.this.hashCode(),AbstractConnection.this);
         }
-    }
+    };
 }
