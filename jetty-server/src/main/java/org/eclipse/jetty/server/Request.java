@@ -2250,13 +2250,7 @@ public class Request implements HttpServletRequest
     @Override
     public String toString()
     {
-        return String.format("%s%s%s %s%s@%x",
-                getClass().getSimpleName(),
-                _handled ? "[" : "(",
-                getMethod(),
-                _uri,
-                _handled ? "]" : ")",
-                hashCode());
+        return (_handled?"[":"(") + getMethod() + " " + _metadata.getURI() + (_handled?"]@":")@") + hashCode() + " " + super.toString();
     }
 
     /* ------------------------------------------------------------ */
