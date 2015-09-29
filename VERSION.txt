@@ -1,4 +1,8 @@
-jetty-8.1.18-SNAPSHOT
+jetty-8.1.18.v20150929 - 29 September 2015
+ + 467434 NPE in SslContextFactory
+ + 475851 AbstractGenerator.setResponse can produce an invalid Response header
+ + 477817 Fixed memory leak in QueuedThreadPool
+ + 477948 Connections leaked when response contains Connection: close header.
 
 jetty-8.1.17.v20150415 - 15 April 2015
  + 409788 Large POST body causes java.lang.IllegalStateException: SENDING =>
