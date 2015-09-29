@@ -1,3 +1,5 @@
+jetty-8.1.19-SNAPSHOT
+
 jetty-8.1.18.v20150929 - 29 September 2015
  + 467434 NPE in SslContextFactory
  + 475851 AbstractGenerator.setResponse can produce an invalid Response header
