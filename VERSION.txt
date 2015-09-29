@@ -1,4 +1,6 @@
-jetty-7.6.18-SNAPSHOT
+jetty-7.6.18.20150929 - 29 September 2015
+ + 475851 AbstractGenerator.setResponse can produce an invalid Response header
+ + 477948 Connections leaked when response contains Connection: close header.
 
 jetty-7.6.17.v20150415 - 15 April 2015
  + 409788 Large POST body causes java.lang.IllegalStateException: SENDING =>
