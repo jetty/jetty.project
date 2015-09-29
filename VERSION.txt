@@ -1,3 +1,5 @@
+jetty-7.6.19-SNAPSHOT
+
 jetty-7.6.18.20150929 - 29 September 2015
  + 475851 AbstractGenerator.setResponse can produce an invalid Response header
  + 477948 Connections leaked when response contains Connection: close header.
