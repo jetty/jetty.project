@@ -554,8 +554,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 _requests,
                 _committed.get(),
                 _state.getState(),
-                _state.getState()==HttpChannelState.State.IDLE?"-":_request.getRequestURI()
-            );
+                _request.getHttpURI());
     }
 
     public void onRequest(MetaData.Request request)

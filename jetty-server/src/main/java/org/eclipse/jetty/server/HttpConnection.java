@@ -517,6 +517,52 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return new Content(c);
     }
 
+    @Override
+    public void abort(Throwable failure)
+    {
+        // Do a direct close of the output, as this may indicate to a client that the
+        // response is bad either with RST or by abnormal completion of chunked response.
+        getEndPoint().close();
+    }
+
+    @Override
+    public boolean isPushSupported()
+    {
+        return false;
+    }
+
+    @Override
+    public void push(org.eclipse.jetty.http.MetaData.Request request)
+    {
+        LOG.debug("ignore push in {}",this);
+    }
+
+    public void asyncReadFillInterested()
+    {
+        getEndPoint().fillInterested(_asyncReadCallback);
+    }
+
+    public void blockingReadFillInterested()
+    {
+        getEndPoint().fillInterested(_blockingReadCallback);
+    }
+
+    public void blockingReadException(Throwable e)
+    {
+        _blockingReadCallback.failed(e);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[p=%s,g=%s,c=%s][b=%s]",
+                super.toString(),
+                _parser,
+                _generator,
+                _channel,
+                BufferUtil.toDetailString(_requestBuffer));
+    }
+
     private class Content extends HttpInput.Content
     {
         public Content(ByteBuffer content)
@@ -763,49 +809,5 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             return String.format("%s[i=%s,cb=%s]",super.toString(),_info,_callback);
         }
-    }
-
-    @Override
-    public void abort(Throwable failure)
-    {
-        // Do a direct close of the output, as this may indicate to a client that the
-        // response is bad either with RST or by abnormal completion of chunked response.
-        getEndPoint().close();
-    }
-
-    @Override
-    public boolean isPushSupported()
-    {
-        return false;
-    }
-
-    /**
-     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
-     */
-    @Override
-    public void push(org.eclipse.jetty.http.MetaData.Request request)
-    {
-        LOG.debug("ignore push in {}",this);
-    }
-
-    public void asyncReadFillInterested()
-    {
-        getEndPoint().fillInterested(_asyncReadCallback);
-    }
-
-    public void blockingReadFillInterested()
-    {
-        getEndPoint().fillInterested(_blockingReadCallback);
-    }
-
-    public void blockingReadException(Throwable e)
-    {
-        _blockingReadCallback.failed(e);
-    }
-
-    @Override
-    public String toString()
-    {
-        return super.toString()+"<--"+BufferUtil.toDetailString(_requestBuffer);
     }
 }

@@ -634,6 +634,16 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[c=%d,s=%s]",
+                getClass().getSimpleName(),
+                hashCode(),
+                _contentConsumed,
+                _state);
+    }
+
     public static class PoisonPillContent extends Content
     {
         private final String _name;

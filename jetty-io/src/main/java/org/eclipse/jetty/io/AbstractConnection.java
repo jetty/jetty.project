@@ -96,7 +96,7 @@ public abstract class AbstractConnection implements Connection
                     {
                         callback.failed(x);
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         LOG.warn(e);
                     }
@@ -234,7 +234,10 @@ public abstract class AbstractConnection implements Connection
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x[%s]",
+                getClass().getSimpleName(),
+                hashCode(),
+                _endPoint);
     }
 
     private class ReadCallback implements Callback
@@ -256,5 +259,5 @@ public abstract class AbstractConnection implements Connection
         {
             return String.format("AC.ReadCB@%x{%s}", AbstractConnection.this.hashCode(),AbstractConnection.this);
         }
-    };
+    }
 }
