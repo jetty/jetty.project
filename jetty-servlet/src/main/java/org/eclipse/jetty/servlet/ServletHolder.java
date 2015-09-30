@@ -75,6 +75,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private static final Logger LOG = Log.getLogger(ServletHolder.class);
     private int _initOrder = -1;
     private boolean _initOnStartup=false;
+    private boolean initialized = false;
     private Map<String, String> _roleMap;
     private String _forcedPath;
     private String _runAsRole;
@@ -82,7 +83,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private IdentityService _identityService;
     private ServletRegistration.Dynamic _registration;
     private JspContainer _jspContainer;
-
 
     private transient Servlet _servlet;
     private transient Config _config;
@@ -378,7 +378,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
         if (_class!=null && javax.servlet.SingleThreadModel.class.isAssignableFrom(_class))
             _servlet = new SingleThreadedWrapper();
-     
+
     }
     
     
@@ -387,21 +387,24 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public void initialize ()
     throws Exception
     {
-        super.initialize();
-        if (_extInstance || _initOnStartup)
-        {
-            try
+        if(!initialized){
+            super.initialize();
+            if (_extInstance || _initOnStartup)
             {
-                initServlet();
-            }
-            catch(Exception e)
-            {
-                if (_servletHandler.isStartWithUnavailable())
-                    LOG.ignore(e);
-                else
-                    throw e;
+                try
+                {
+                    initServlet();
+                }
+                catch(Exception e)
+                {
+                    if (_servletHandler.isStartWithUnavailable())
+                        LOG.ignore(e);
+                    else
+                        throw e;
+                }
             }
         }
+        initialized = true;
     }
     
     
