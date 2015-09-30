@@ -150,7 +150,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.websocket.",    // don't hide websocket classes from webapps (allow webapp to use ones from system classloader)
         "-org.eclipse.jetty.apache.",       // don't hide jetty apache impls
         "-org.eclipse.jetty.util.log.",     // don't hide server log 
-        "-org.eclipse.ketty.alpn.",         // don't hide ALPN
+        "-org.eclipse.jetty.alpn.",         // don't hide ALPN
         "org.objectweb.asm.",               // hide asm used by jetty
         "org.eclipse.jdt.",                 // hide jdt used by jetty
         "org.eclipse.jetty."                // hide other jetty classes
