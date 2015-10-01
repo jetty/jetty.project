@@ -427,25 +427,31 @@ public class DoSFilter implements Filter
         {
             if (accepted)
             {
-                // Wake up the next highest priority request.
-                for (int p = _queues.length - 1; p >= 0; --p)
+                try
                 {
-                    AsyncContext asyncContext = _queues[p].poll();
-                    if (asyncContext != null)
+                    // Wake up the next highest priority request.
+                    for (int p = _queues.length - 1; p >= 0; --p)
                     {
-                        ServletRequest candidate = asyncContext.getRequest();
-                        Boolean suspended = (Boolean)candidate.getAttribute(_suspended);
-                        if (suspended == Boolean.TRUE)
+                        AsyncContext asyncContext = _queues[p].poll();
+                        if (asyncContext != null)
                         {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Resuming {}", request);
-                            candidate.setAttribute(_resumed, Boolean.TRUE);
-                            asyncContext.dispatch();
-                            break;
+                            ServletRequest candidate = asyncContext.getRequest();
+                            Boolean suspended = (Boolean)candidate.getAttribute(_suspended);
+                            if (suspended == Boolean.TRUE)
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Resuming {}", request);
+                                candidate.setAttribute(_resumed, Boolean.TRUE);
+                                asyncContext.dispatch();
+                                break;
+                            }
                         }
                     }
                 }
-                _passes.release();
+                finally
+                {
+                    _passes.release();
+                }
             }
         }
     }
