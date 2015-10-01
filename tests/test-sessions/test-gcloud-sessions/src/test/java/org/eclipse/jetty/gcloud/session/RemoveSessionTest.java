@@ -67,7 +67,6 @@ public class RemoveSessionTest extends AbstractRemoveSessionTest
     @Override
     public void testRemoveSession() throws Exception
     {
-        // TODO Auto-generated method stub
         super.testRemoveSession();
     }
     

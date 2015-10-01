@@ -19,23 +19,20 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import org.eclipse.jetty.server.session.AbstractSessionExpiryTest;
+import org.eclipse.jetty.server.session.AbstractLocalSessionScavengingTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * SessionExpiryTest
+ * LocalSessionScavengingTest
  *
  *
  */
-public class SessionExpiryTest extends AbstractSessionExpiryTest
+public class LocalSessionScavengingTest extends AbstractLocalSessionScavengingTest
 {
-
-    static GCloudSessionTestSupport _testSupport;
+  static GCloudSessionTestSupport _testSupport;
     
     @BeforeClass
     public static void setup () throws Exception
@@ -54,9 +51,8 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         _testSupport.tearDown();
     }
     
-    
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractLocalSessionScavengingTest#createServer(int, int, int)
      */
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
@@ -66,21 +62,10 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
 
     @Test
     @Override
-    public void testSessionNotExpired() throws Exception
+    public void testLocalSessionsScavenging() throws Exception
     {
-        super.testSessionNotExpired();
-        _testSupport.deleteSessions();
+        super.testLocalSessionsScavenging();
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#testSessionExpiry()
-     */
-    @Test
-    @Override
-    public void testSessionExpiry() throws Exception
-    {
-        super.testSessionExpiry();
-        _testSupport.assertSessions(0);
-    }
-
+    
 }

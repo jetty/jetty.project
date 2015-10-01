@@ -24,6 +24,9 @@ import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.SessionHandler;
 
+import com.google.gcloud.datastore.Datastore;
+import com.google.gcloud.datastore.DatastoreFactory;
+
 /**
  * GCloudTestServer
  *
@@ -76,7 +79,7 @@ public class GCloudTestServer extends AbstractTestServer
         GCloudSessionManager sessionManager = new GCloudSessionManager();
         sessionManager.setSessionIdManager((GCloudSessionIdManager)_sessionIdManager);
         sessionManager.setStaleIntervalSec(1);
-        sessionManager.setScavengeInterval(_scavengePeriod);
+        sessionManager.setScavengeIntervalSec(_scavengePeriod);
         return sessionManager;
         
     }

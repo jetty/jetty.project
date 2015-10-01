@@ -19,44 +19,41 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import org.eclipse.jetty.server.session.AbstractSessionExpiryTest;
+import org.eclipse.jetty.server.session.AbstractSessionValueSavingTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * SessionExpiryTest
+ * SessionValueSavingTest
  *
  *
  */
-public class SessionExpiryTest extends AbstractSessionExpiryTest
+public class SessionValueSavingTest extends AbstractSessionValueSavingTest
 {
 
     static GCloudSessionTestSupport _testSupport;
-    
+
     @BeforeClass
     public static void setup () throws Exception
     {
         String projectId = System.getProperty("test.projectId", null);
         String port = System.getProperty("test.port","0");
         _testSupport = new GCloudSessionTestSupport(projectId,
-                                                   Integer.parseInt(port),
-                                                   null);
+                                                    Integer.parseInt(port),
+                                                    null);
         _testSupport.setUp();
     }
-    
+
     @AfterClass
     public static void teardown () throws Exception
     {
         _testSupport.tearDown();
     }
-    
-    
+
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractSessionValueSavingTest#createServer(int, int, int)
      */
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
@@ -66,21 +63,10 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
 
     @Test
     @Override
-    public void testSessionNotExpired() throws Exception
+    public void testSessionValueSaving() throws Exception
     {
-        super.testSessionNotExpired();
-        _testSupport.deleteSessions();
+        super.testSessionValueSaving();
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#testSessionExpiry()
-     */
-    @Test
-    @Override
-    public void testSessionExpiry() throws Exception
-    {
-        super.testSessionExpiry();
-        _testSupport.assertSessions(0);
-    }
-
+    
 }

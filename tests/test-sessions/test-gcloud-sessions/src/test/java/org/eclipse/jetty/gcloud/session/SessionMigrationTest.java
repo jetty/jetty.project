@@ -19,68 +19,54 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import org.eclipse.jetty.server.session.AbstractSessionExpiryTest;
+import org.eclipse.jetty.server.session.AbstractSessionMigrationTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * SessionExpiryTest
+ * SessionMigrationTest
  *
  *
  */
-public class SessionExpiryTest extends AbstractSessionExpiryTest
+public class SessionMigrationTest extends AbstractSessionMigrationTest
 {
-
     static GCloudSessionTestSupport _testSupport;
-    
+
     @BeforeClass
     public static void setup () throws Exception
     {
         String projectId = System.getProperty("test.projectId", null);
         String port = System.getProperty("test.port","0");
         _testSupport = new GCloudSessionTestSupport(projectId,
-                                                   Integer.parseInt(port),
-                                                   null);
+                                                    Integer.parseInt(port),
+                                                    null);
         _testSupport.setUp();
     }
-    
+
     @AfterClass
     public static void teardown () throws Exception
     {
         _testSupport.tearDown();
     }
-    
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#createServer(int, int, int)
-     */
-    @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
-    {
-        return  new GCloudTestServer(port, max, scavenge, _testSupport.getConfiguration());
-    }
-
-    @Test
-    @Override
-    public void testSessionNotExpired() throws Exception
-    {
-        super.testSessionNotExpired();
-        _testSupport.deleteSessions();
-    }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#testSessionExpiry()
+     * @see org.eclipse.jetty.server.session.AbstractSessionMigrationTest#createServer(int)
      */
-    @Test
     @Override
-    public void testSessionExpiry() throws Exception
+    public AbstractTestServer createServer(int port)
     {
-        super.testSessionExpiry();
-        _testSupport.assertSessions(0);
+        return  new GCloudTestServer(port, _testSupport.getConfiguration());
     }
 
+    
+    @Test
+    @Override
+    public void testSessionMigration() throws Exception
+    {
+        super.testSessionMigration();
+    }
+
+    
 }

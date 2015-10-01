@@ -19,32 +19,29 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import org.eclipse.jetty.server.session.AbstractSessionExpiryTest;
+import org.eclipse.jetty.server.session.AbstractOrphanedSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * SessionExpiryTest
+ * OrphanedSessionTest
  *
  *
  */
-public class SessionExpiryTest extends AbstractSessionExpiryTest
+public class OrphanedSessionTest extends AbstractOrphanedSessionTest
 {
-
     static GCloudSessionTestSupport _testSupport;
-    
+
     @BeforeClass
     public static void setup () throws Exception
     {
         String projectId = System.getProperty("test.projectId", null);
         String port = System.getProperty("test.port","0");
         _testSupport = new GCloudSessionTestSupport(projectId,
-                                                   Integer.parseInt(port),
-                                                   null);
+                                                    Integer.parseInt(port),
+                                                    null);
         _testSupport.setUp();
     }
     
@@ -54,9 +51,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         _testSupport.tearDown();
     }
     
-    
+
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractOrphanedSessionTest#createServer(int, int, int)
      */
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
@@ -66,21 +63,13 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
 
     @Test
     @Override
-    public void testSessionNotExpired() throws Exception
+    public void testOrphanedSession() throws Exception
     {
-        super.testSessionNotExpired();
-        _testSupport.deleteSessions();
-    }
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#testSessionExpiry()
-     */
-    @Test
-    @Override
-    public void testSessionExpiry() throws Exception
-    {
-        super.testSessionExpiry();
+        super.testOrphanedSession();
         _testSupport.assertSessions(0);
     }
+    
+    
+    
 
 }

@@ -19,6 +19,9 @@
 
 package org.eclipse.jetty.gcloud.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,15 +34,28 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 import com.google.api.client.util.Strings;
+import com.google.gcloud.datastore.Key;
+import com.google.gcloud.datastore.Datastore;
+import com.google.gcloud.datastore.DatastoreFactory;
 import com.google.gcloud.datastore.DatastoreOptions;
+import com.google.gcloud.datastore.Entity;
+import com.google.gcloud.datastore.GqlQuery;
+import com.google.gcloud.datastore.ProjectionEntity;
+import com.google.gcloud.datastore.Query;
+import com.google.gcloud.datastore.Query.ResultType;
+import com.google.gcloud.datastore.QueryResults;
+import com.google.gcloud.datastore.StructuredQuery;
+import com.google.gcloud.datastore.StructuredQuery.Projection;
 
 /**
  * GCloudSessionTestSupport
@@ -94,10 +110,9 @@ public class GCloudSessionTestSupport
                 String line;
                 while ((line = _reader.readLine()) != (null) && !line.contains(_startupSentinel))
                 {
-                    System.err.println(line);
+                    //System.err.println(line);
                 }
             }
-            System.err.println("SENTINEL FOUND");
         }
 
 
@@ -133,6 +148,7 @@ public class GCloudSessionTestSupport
     File _datastoreDir;
     File _gcdInstallDir;
     File _gcdUnpackedDir;
+    Datastore _ds;
     
     public GCloudSessionTestSupport (String projectId, int port, File gcdInstallDir)
     {
@@ -220,9 +236,6 @@ public class GCloudSessionTestSupport
           processBuilder.redirectOutput(new File("/tmp/run.out"));
           processBuilder.command("bash", new File(_gcdUnpackedDir, "gcd.sh").getAbsolutePath(), "create", "-p",_projectId, _projectId);
         }
-        
-        for (String s:processBuilder.command())
-            System.err.println(s);
 
         Process temp = processBuilder.start();
         System.err.println("Create outcome: "+temp.waitFor());
@@ -286,5 +299,71 @@ public class GCloudSessionTestSupport
     {
         stopDatastore();
         clearDatastore();
+    }
+    
+    public void ensureDatastore()
+    throws Exception
+    {
+        if (_ds == null)
+            _ds = DatastoreFactory.instance().get(getConfiguration().getDatastoreOptions());
+    }
+    public void listSessions () throws Exception
+    {
+        ensureDatastore();
+        GqlQuery.Builder builder = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+GCloudSessionManager.KIND);
+       
+        Query<Entity> query = builder.build();
+    
+        QueryResults<Entity> results = _ds.run(query);
+        assertNotNull(results);
+        while (results.hasNext())
+        {
+            Entity e = results.next();
+            System.err.println(e.getString("clusterId")+" expires at "+e.getLong("expiry"));
+        }
+    }
+    
+    public void assertSessions(int count) throws Exception
+    {
+        ensureDatastore();
+        StructuredQuery<ProjectionEntity> keyOnlyProjectionQuery = Query.projectionEntityQueryBuilder()
+                .kind(GCloudSessionManager.KIND)
+                .projection(Projection.property("__key__"))
+                .limit(100)
+                .build();  
+        QueryResults<ProjectionEntity> results =   _ds.run(keyOnlyProjectionQuery);
+        assertNotNull(results);
+        int actual = 0;
+        while (results.hasNext())
+        { 
+            results.next();
+            ++actual;
+        }       
+        assertEquals(count, actual);
+    }
+    
+    public void deleteSessions () throws Exception
+    {
+       ensureDatastore();
+        StructuredQuery<ProjectionEntity> keyOnlyProjectionQuery = Query.projectionEntityQueryBuilder()
+                .kind(GCloudSessionManager.KIND)
+                .projection(Projection.property("__key__"))
+                .limit(100)
+                .build();  
+        QueryResults<ProjectionEntity> results =   _ds.run(keyOnlyProjectionQuery);
+        if (results != null)
+        {
+            List<Key> keys = new ArrayList<Key>();
+            
+            while (results.hasNext())
+            { 
+                ProjectionEntity pe = results.next();
+                keys.add(pe.key());
+            }
+            
+            _ds.delete(keys.toArray(new Key[keys.size()]));
+        }
+        
+        assertSessions(0);
     }
 }

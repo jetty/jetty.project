@@ -49,6 +49,7 @@ import com.google.gcloud.datastore.Blob;
 import com.google.gcloud.datastore.Datastore;
 import com.google.gcloud.datastore.DatastoreFactory;
 import com.google.gcloud.datastore.Entity;
+import com.google.gcloud.datastore.GqlQuery;
 import com.google.gcloud.datastore.Key;
 import com.google.gcloud.datastore.KeyFactory;
 import com.google.gcloud.datastore.Query;
@@ -97,7 +98,7 @@ public class GCloudSessionManager extends AbstractSessionManager
     private SessionEntityConverter _converter;
 
 
-    private int _maxResults;
+    private int _maxResults = DEFAULT_MAX_QUERY_RESULTS;
 
 
     /**
@@ -702,7 +703,7 @@ public class GCloudSessionManager extends AbstractSessionManager
         else if (!_scheduler.isStarted())
             throw new IllegalStateException("Shared scheduler not started");
  
-        setScavengeInterval(getScavengeInterval());
+        setScavengeIntervalSec(getScavengeIntervalSec());
         
         super.doStart();
     }
@@ -724,56 +725,64 @@ public class GCloudSessionManager extends AbstractSessionManager
         if (_ownScheduler && _scheduler !=null)
             _scheduler.stop();
         _scheduler = null;
-        
+
         _sessions.clear();
         _sessions = null;
     }
-    
-    
-    
+
+
+
     /**
      * Look for sessions in local memory that have expired.
      */
     public void scavenge ()
     {
-       //scavenge in the database every so often
-        //TODO
-        
-        //always scavenge in memory
-        scavengeMemory();
-    }
-    
-    
-    protected void scavengeMemory()
-    {
-        long now = System.currentTimeMillis();
-        for (Session s:_sessions.values())
+        try
         {
-            if (s.isExpiredAt(now))
-                s.timeout();
+            //scavenge in the database every so often
+            scavengeGCloudDataStore();
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Problem scavenging", e);
         }
     }
+
+ 
     
     protected void scavengeGCloudDataStore()
     throws Exception
     {
+       
         //query the datastore for sessions that have expired
         long now = System.currentTimeMillis();
         
-        Query<Entity> query = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+KIND+" where expiry < @1 LIMIT "+_maxResults)
-                .setBinding("1", now)
-                .build();
-    
+        //give a bit of leeway so we don't immediately something that has only just expired a nanosecond ago
+        now = now - (_scavengeIntervalMs/2);
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("Scavenging for sessions expired before "+now);
+
+
+        GqlQuery.Builder builder = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+KIND+" where expiry < @1 limit "+_maxResults);
+        builder.allowLiteral(true);
+        builder.addBinding(now);
+        Query<Entity> query = builder.build();
         QueryResults<Entity> results = _datastore.run(query);
         
         while (results.hasNext())
-        {
+        {          
             Entity sessionEntity = results.next();
-            scavengeSession(sessionEntity);
-            
+            scavengeSession(sessionEntity);        
         }
+
     }
 
+    /**
+     * Scavenge a session that has expired
+     * @param e
+     * @throws Exception
+     */
     protected void scavengeSession (Entity e)
             throws Exception
     {
@@ -782,17 +791,19 @@ public class GCloudSessionManager extends AbstractSessionManager
         if (session == null)
             return;
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("Scavenging session: {}",session.getId());
         //if the session isn't in memory already, put it there so we can do a normal timeout call
-        Session memSession =_sessions.get(session.getId());
-        if (memSession == null)
-            memSession =  _sessions.putIfAbsent(session.getId(), memSession);
+         Session memSession =  _sessions.putIfAbsent(session.getId(), session);
+         if (memSession == null)
+             memSession = session;
 
         //final check
         if (memSession.isExpiredAt(now))
             memSession.timeout();   
     }
 
-    public long getScavengeInterval ()
+    public long getScavengeIntervalSec ()
     {
         return _scavengeIntervalMs/1000;
     }
@@ -806,7 +817,7 @@ public class GCloudSessionManager extends AbstractSessionManager
      * 
      * @param sec
      */
-    public void setScavengeInterval (long sec)
+    public void setScavengeIntervalSec (long sec)
     {
 
         long old_period=_scavengeIntervalMs;

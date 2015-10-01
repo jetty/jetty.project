@@ -19,23 +19,20 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import org.eclipse.jetty.server.session.AbstractSessionExpiryTest;
+import org.eclipse.jetty.server.session.AbstractSameNodeLoadTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * SessionExpiryTest
+ * SameNodeLoadTest
  *
  *
  */
-public class SessionExpiryTest extends AbstractSessionExpiryTest
+public class SameNodeLoadTest extends AbstractSameNodeLoadTest
 {
-
-    static GCloudSessionTestSupport _testSupport;
+  static GCloudSessionTestSupport _testSupport;
     
     @BeforeClass
     public static void setup () throws Exception
@@ -54,33 +51,21 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         _testSupport.tearDown();
     }
     
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSameNodeLoadTest#createServer(int)
+     */
+    @Override
+    public AbstractTestServer createServer(int port)
+    {
+        return  new GCloudTestServer(port, _testSupport.getConfiguration());
+    }
+
+    @Test
+    @Override
+    public void testLoad() throws Exception
+    {
+        super.testLoad();
+    }
+
     
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#createServer(int, int, int)
-     */
-    @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
-    {
-        return  new GCloudTestServer(port, max, scavenge, _testSupport.getConfiguration());
-    }
-
-    @Test
-    @Override
-    public void testSessionNotExpired() throws Exception
-    {
-        super.testSessionNotExpired();
-        _testSupport.deleteSessions();
-    }
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#testSessionExpiry()
-     */
-    @Test
-    @Override
-    public void testSessionExpiry() throws Exception
-    {
-        super.testSessionExpiry();
-        _testSupport.assertSessions(0);
-    }
-
 }
