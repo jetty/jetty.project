@@ -35,6 +35,7 @@ import com.google.gcloud.datastore.DatastoreFactory;
 public class GCloudTestServer extends AbstractTestServer
 {
     static int __workers=0;
+    public static int STALE_INTERVAL_SEC = 1;
 
  
 
@@ -78,7 +79,7 @@ public class GCloudTestServer extends AbstractTestServer
     {
         GCloudSessionManager sessionManager = new GCloudSessionManager();
         sessionManager.setSessionIdManager((GCloudSessionIdManager)_sessionIdManager);
-        sessionManager.setStaleIntervalSec(1);
+        sessionManager.setStaleIntervalSec(STALE_INTERVAL_SEC);
         sessionManager.setScavengeIntervalSec(_scavengePeriod);
         return sessionManager;
         

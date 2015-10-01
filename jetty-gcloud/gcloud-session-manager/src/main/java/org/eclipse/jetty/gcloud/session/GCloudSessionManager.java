@@ -22,7 +22,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -70,6 +69,7 @@ public class GCloudSessionManager extends AbstractSessionManager
     
     public static final String KIND = "GCloudSession";
     public static final int DEFAULT_MAX_QUERY_RESULTS = 100;
+    public static final long DEFAULT_SCAVENGE_SEC = 600; 
     
     /**
      * Sessions known to this node held in memory
@@ -88,7 +88,7 @@ public class GCloudSessionManager extends AbstractSessionManager
     protected Scheduler.Task _task; //scavenge task
     protected Scheduler _scheduler;
     protected Scavenger _scavenger;
-    protected long _scavengeIntervalMs = 0; //0 means no scavenging
+    protected long _scavengeIntervalMs = 1000L * DEFAULT_SCAVENGE_SEC; //10mins
     protected boolean _ownScheduler;
     
     private Datastore _datastore;
@@ -692,7 +692,6 @@ public class GCloudSessionManager extends AbstractSessionManager
         _sessions = new ConcurrentHashMap<String, Session>();
 
         //try and use a common scheduler, fallback to own
-        //TODO check against starting with a 0 scavenge interval
         _scheduler = getSessionHandler().getServer().getBean(Scheduler.class);
         if (_scheduler == null)
         {
@@ -862,9 +861,6 @@ public class GCloudSessionManager extends AbstractSessionManager
             }
         }
     }
-    
-
-    
     
     
     public long getStaleIntervalSec()

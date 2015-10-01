@@ -65,7 +65,18 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
     @Override
     public void pause()
     {
-        // TODO Auto-generated method stub
+        //This test moves around a session between 2 nodes. After it is invalidated on the 1st node,
+        //it will still be in the memory of the 2nd node. We need to wait until after the stale time
+        //has expired on node2 for it to reload the session and discover it has been deleted.
+        try
+        {
+            Thread.currentThread().sleep((2*GCloudTestServer.STALE_INTERVAL_SEC)*1000);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        
     }
 
 }

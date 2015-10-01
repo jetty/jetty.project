@@ -83,4 +83,20 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         _testSupport.assertSessions(0);
     }
 
+    @Override
+    public void verifySessionCreated(TestHttpSessionListener listener, String sessionId)
+    {
+        super.verifySessionCreated(listener, sessionId);
+        try{ _testSupport.listSessions(); _testSupport.assertSessions(1);}catch(Exception e) {e.printStackTrace();} 
+    }
+
+    @Override
+    public void verifySessionDestroyed(TestHttpSessionListener listener, String sessionId)
+    {
+        super.verifySessionDestroyed(listener, sessionId);
+        try{ _testSupport.listSessions(); _testSupport.assertSessions(0);}catch(Exception e) {e.printStackTrace();}
+    }
+
+    
+    
 }
