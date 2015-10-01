@@ -828,14 +828,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     /**
      * Get SCIs that are not excluded from consideration
-     * @param context
-     * @return
-     * @throws Exception
-     */
-    /**
-     * @param context
-     * @return
-     * @throws Exception
+     * @param context the web app context 
+     * @return the list of non-excluded servlet container initializers
+     * @throws Exception if unable to get list 
      */
     public List<ServletContainerInitializer> getNonExcludedInitializers (WebAppContext context)
     throws Exception
