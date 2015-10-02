@@ -22,13 +22,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 
 import javax.servlet.ServletContext;
@@ -53,7 +52,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -94,7 +92,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final WebSocketExtensionFactory extensionFactory;
     private Executor executor;
     private List<SessionFactory> sessionFactories;
-    private Set<WebSocketSession> openSessions = new CopyOnWriteArraySet<>();
     private WebSocketCreator creator;
     private List<Class<?>> registeredSocketClasses;
     private DecoratedObjectFactory objectFactory;
@@ -228,27 +225,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
     }
 
-    protected void shutdownAllConnections()
-    {
-        for (WebSocketSession session : openSessions)
-        {
-            if (session.getConnection() != null)
-            {
-                try
-                {
-                    session.getConnection().close(
-                            StatusCode.SHUTDOWN,
-                            "Shutdown");
-                }
-                catch (Throwable t)
-                {
-                    LOG.debug("During Shutdown All Connections",t);
-                }
-            }
-        }
-        openSessions.clear();
-    }
-
     @Override
     public WebSocketServletFactory createFactory(WebSocketPolicy policy)
     {
@@ -319,13 +295,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     }
 
     @Override
-    protected void doStop() throws Exception
-    {
-        shutdownAllConnections();
-        super.doStop();
-    }
-
-    @Override
     public ByteBufferPool getBufferPool()
     {
         return this.bufferPool;
@@ -359,9 +328,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return extensionFactory;
     }
     
-    public Set<WebSocketSession> getOpenSessions()
+    public Collection<WebSocketSession> getOpenSessions()
     {
-        return Collections.unmodifiableSet(this.openSessions);
+        return getBeans(WebSocketSession.class);
     }
 
     @Override
@@ -484,13 +453,13 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
-        this.openSessions.remove(session);
+        removeBean(session);
     }
 
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
-        this.openSessions.add(session);
+        addManaged(session);
     }
 
     protected String[] parseProtocols(String protocol)
@@ -636,23 +605,12 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         extensionStack.setNextOutgoing(wsConnection);
 
         // Start Components
-        session.addBean(extensionStack);
-        this.addBean(session);
+        session.addManaged(extensionStack);
+        this.addManaged(session);
         
         if (session.isFailed())
         {
             throw new IOException("Session failed to start");
-        }
-        else if (!session.isRunning())
-        {
-            try
-            {
-                session.start();
-            }
-            catch (Exception e)
-            {
-                throw new IOException("Unable to start Session",e);
-            }
         }
 
         // Tell jetty about the new upgraded connection

@@ -29,6 +29,7 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.masks.Masker;
+import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
@@ -41,12 +42,14 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     private final ConnectPromise connectPromise;
     private final Masker masker;
     private final AtomicBoolean opened = new AtomicBoolean(false);
+    private final SessionListener sessionListener;
 
     public WebSocketClientConnection(EndPoint endp, Executor executor, ConnectPromise connectPromise, WebSocketPolicy policy)
     {
         super(endp,executor,connectPromise.getClient().getScheduler(),policy,connectPromise.getClient().getBufferPool());
         this.connectPromise = connectPromise;
         this.masker = connectPromise.getMasker();
+        this.sessionListener = connectPromise.getClient();
         assert (this.masker != null);
     }
 
@@ -66,8 +69,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     public void onClose()
     {
         super.onClose();
-        ConnectionManager connectionManager = connectPromise.getClient().getConnectionManager();
-        connectionManager.removeSession(getSession());
+        sessionListener.onSessionClosed(getSession());
     }
 
     @Override
@@ -77,8 +79,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
         if (!beenOpened)
         {
             WebSocketSession session = getSession();
-            ConnectionManager connectionManager = connectPromise.getClient().getConnectionManager();
-            connectionManager.addSession(session);
+            sessionListener.onSessionOpened(session);
             connectPromise.succeeded(session);
         }
         super.onOpen();

@@ -22,8 +22,8 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -139,7 +139,7 @@ public class WebSocketCloseTest
             LOG.debug("onWebSocketText({})",message);
             if (message.equalsIgnoreCase("openSessions"))
             {
-                Set<WebSocketSession> sessions = container.getOpenSessions();
+                Collection<WebSocketSession> sessions = container.getOpenSessions();
 
                 StringBuilder ret = new StringBuilder();
                 ret.append("openSessions.size=").append(sessions.size()).append('\n');

@@ -200,7 +200,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
-    private static final Logger LOG_CLOSE = Log.getLogger(AbstractWebSocketConnection.class.getName() + ".close");
+    private static final Logger LOG_CLOSE = Log.getLogger(AbstractWebSocketConnection.class.getName() + "_close");
 
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
@@ -214,7 +214,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final WebSocketPolicy policy;
     private final AtomicBoolean suspendToken;
     private final FrameFlusher flusher;
-    private WebSocketSession session;
+    private WebSocketSession session; // TODO: Should not be part of Connection
     private List<ExtensionConfig> extensions;
     private boolean isFilling;
     private ByteBuffer prefillBuffer;

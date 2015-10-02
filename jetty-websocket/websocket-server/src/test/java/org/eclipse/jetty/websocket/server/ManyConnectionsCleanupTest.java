@@ -22,8 +22,8 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -144,7 +144,7 @@ public class ManyConnectionsCleanupTest
             calls.incrementAndGet();
             if (message.equalsIgnoreCase("openSessions"))
             {
-                Set<WebSocketSession> sessions = container.getOpenSessions();
+                Collection<WebSocketSession> sessions = container.getOpenSessions();
 
                 StringBuilder ret = new StringBuilder();
                 ret.append("openSessions.size=").append(sessions.size()).append('\n');
@@ -336,7 +336,7 @@ public class ManyConnectionsCleanupTest
                 client.sendStandardRequest();
                 client.expectUpgradeResponse();
                 
-                client.readFrames(1,1,TimeUnit.SECONDS);
+                // client.readFrames(1,2,TimeUnit.SECONDS);
 
                 CloseInfo close = new CloseInfo(StatusCode.NORMAL,"Normal");
                 client.write(close.asFrame()); // respond with close

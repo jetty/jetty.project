@@ -23,19 +23,13 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Locale;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 /**
@@ -136,38 +130,12 @@ public class ConnectionManager extends ContainerLifeCycle
         return new InetSocketAddress(uri.getHost(),port);
     }
 
-    private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
     private final WebSocketClient client;
     private WebSocketClientSelectorManager selector;
 
     public ConnectionManager(WebSocketClient client)
     {
         this.client = client;
-    }
-
-    public void addSession(WebSocketSession session)
-    {
-        sessions.add(session);
-    }
-
-    private void shutdownAllConnections()
-    {
-        for (WebSocketSession session : sessions)
-        {
-            if (session.getConnection() != null)
-            {
-                try
-                {
-                    session.getConnection().close(
-                            StatusCode.SHUTDOWN,
-                            "Shutdown");
-                }
-                catch (Throwable t)
-                {
-                    LOG.debug("During Shutdown All Connections",t);
-                }
-            }
-        }
     }
 
     public ConnectPromise connect(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
@@ -189,8 +157,6 @@ public class ConnectionManager extends ContainerLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        shutdownAllConnections();
-        sessions.clear();
         super.doStop();
         removeBean(selector);
     }
@@ -198,11 +164,6 @@ public class ConnectionManager extends ContainerLifeCycle
     public WebSocketClientSelectorManager getSelector()
     {
         return selector;
-    }
-
-    public Collection<WebSocketSession> getSessions()
-    {
-        return Collections.unmodifiableCollection(sessions);
     }
 
     /**
@@ -215,10 +176,5 @@ public class ConnectionManager extends ContainerLifeCycle
     protected WebSocketClientSelectorManager newWebSocketClientSelectorManager(WebSocketClient client)
     {
         return new WebSocketClientSelectorManager(client);
-    }
-
-    public void removeSession(WebSocketSession session)
-    {
-        sessions.remove(session);
     }
 }

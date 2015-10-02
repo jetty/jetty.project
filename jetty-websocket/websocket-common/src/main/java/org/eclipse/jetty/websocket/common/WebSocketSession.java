@@ -63,8 +63,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private final WebSocketContainerScope containerScope;
     private final URI requestURI;
-    private final EventDriver websocket;
     private final LogicalConnection connection;
+    private final EventDriver websocket;
     private final SessionListener[] sessionListeners;
     private final Executor executor;
     private ClassLoader classLoader;
@@ -93,6 +93,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         this.outgoingHandler = connection;
         this.incomingHandler = websocket;
         this.connection.getIOState().addListener(this);
+        
+        addBean(this.connection);
+        addBean(this.websocket);
     }
 
     @Override
@@ -128,6 +131,35 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     public void dispatch(Runnable runnable)
     {
         executor.execute(runnable);
+    }
+    
+    @Override
+    protected void doStart() throws Exception
+    {
+        if(LOG.isDebugEnabled())
+            LOG.debug("starting - {}",this);
+
+        super.doStart();
+    }
+    
+    @Override
+    protected void doStop() throws Exception
+    {
+        if(LOG.isDebugEnabled())
+            LOG.debug("stopping - {}",this);
+        
+        if (getConnection() != null)
+        {
+            try
+            {
+                getConnection().close(StatusCode.SHUTDOWN,"Shutdown");
+            }
+            catch (Throwable t)
+            {
+                LOG.debug("During Connection Shutdown",t);
+            }
+        }
+        super.doStop();
     }
     
     @Override
@@ -381,6 +413,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         switch (state)
         {
             case CLOSED:
+                IOState ioState = this.connection.getIOState();
+                CloseInfo close = ioState.getCloseInfo();
+                // confirmed close of local endpoint
+                notifyClose(close.getStatusCode(),close.getReason());
+                
                 // notify session listeners
                 for (SessionListener listener : sessionListeners)
                 {
@@ -395,10 +432,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
                         LOG.ignore(t);
                     }
                 }
-                IOState ioState = this.connection.getIOState();
-                CloseInfo close = ioState.getCloseInfo();
-                // confirmed close of local endpoint
-                notifyClose(close.getStatusCode(),close.getReason());
                 break;
             case CONNECTED:
                 // notify session listeners
@@ -418,7 +451,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
                 break;
         }
     }
-
+    
     /**
      * Open/Activate the session
      */
@@ -467,7 +500,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
             close(statusCode,t.getMessage());
         }
     }
-
+    
     public void setExtensionFactory(ExtensionFactory extensionFactory)
     {
         this.extensionFactory = extensionFactory;

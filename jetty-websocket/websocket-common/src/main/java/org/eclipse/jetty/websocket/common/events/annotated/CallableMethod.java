@@ -55,7 +55,8 @@ public class CallableMethod
 
         if (obj == null)
         {
-            LOG.warn("Cannot call {} on null object",this.method);
+            String err = String.format("Cannot call %s on null object", this.method);
+            LOG.warn(new RuntimeException(err));            
             return null;
         }
 

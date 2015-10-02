@@ -18,14 +18,12 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -37,6 +35,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
@@ -118,7 +117,8 @@ public class WebSocketClientTest
             cliSock.assertWasOpened();
             cliSock.assertNotClosed();
 
-            Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
+            Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
+            Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
 
             RemoteEndpoint remote = cliSock.getSession().getRemote();
             remote.sendStringByFuture("Hello World!");
@@ -164,7 +164,8 @@ public class WebSocketClientTest
             cliSock.assertWasOpened();
             cliSock.assertNotClosed();
 
-            Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
+            Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
+            Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
 
             FutureWriteCallback callback = new FutureWriteCallback();
 
