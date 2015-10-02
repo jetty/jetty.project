@@ -31,7 +31,6 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState;
 
 public class DummyConnection implements LogicalConnection
@@ -104,13 +103,6 @@ public class DummyConnection implements LogicalConnection
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public WebSocketSession getSession()
-    {
         return null;
     }
 
@@ -147,11 +139,6 @@ public class DummyConnection implements LogicalConnection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("setNextIncomingFrames({})",incoming);
-    }
-
-    @Override
-    public void setSession(WebSocketSession session)
-    {
     }
 
     @Override

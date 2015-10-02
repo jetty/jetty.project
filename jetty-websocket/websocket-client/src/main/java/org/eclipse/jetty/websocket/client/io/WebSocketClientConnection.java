@@ -29,9 +29,7 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.masks.Masker;
-import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
 /**
@@ -42,14 +40,12 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     private final ConnectPromise connectPromise;
     private final Masker masker;
     private final AtomicBoolean opened = new AtomicBoolean(false);
-    private final SessionListener sessionListener;
 
     public WebSocketClientConnection(EndPoint endp, Executor executor, ConnectPromise connectPromise, WebSocketPolicy policy)
     {
         super(endp,executor,connectPromise.getClient().getScheduler(),policy,connectPromise.getClient().getBufferPool());
         this.connectPromise = connectPromise;
         this.masker = connectPromise.getMasker();
-        this.sessionListener = connectPromise.getClient();
         assert (this.masker != null);
     }
 
@@ -66,23 +62,14 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     }
 
     @Override
-    public void onClose()
-    {
-        super.onClose();
-        sessionListener.onSessionClosed(getSession());
-    }
-
-    @Override
     public void onOpen()
     {
+        super.onOpen();
         boolean beenOpened = opened.getAndSet(true);
         if (!beenOpened)
         {
-            WebSocketSession session = getSession();
-            sessionListener.onSessionOpened(session);
-            connectPromise.succeeded(session);
+            connectPromise.succeeded();
         }
-        super.onOpen();
     }
 
     /**

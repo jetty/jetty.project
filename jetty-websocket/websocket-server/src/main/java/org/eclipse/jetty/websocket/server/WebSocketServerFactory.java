@@ -594,7 +594,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // set true negotiated extension list back to response 
         response.setExtensions(extensionStack.getNegotiatedExtensions());
         session.setUpgradeResponse(response);
-        wsConnection.setSession(session);
+        wsConnection.addListener(session);
 
         // Setup Incoming Routing
         wsConnection.setNextIncomingFrames(extensionStack);

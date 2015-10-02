@@ -19,6 +19,8 @@
 package org.eclipse.jetty.websocket.client.io;
 
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
@@ -32,12 +34,14 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
  */
 public abstract class ConnectPromise extends FuturePromise<Session> implements Runnable
 {
+    private static final Logger LOG = Log.getLogger(ConnectPromise.class);
     private final WebSocketClient client;
     private final EventDriver driver;
     private final ClientUpgradeRequest request;
     private final Masker masker;
     private UpgradeListener upgradeListener;
     private ClientUpgradeResponse response;
+    private WebSocketSession session;
 
     public ConnectPromise(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
     {
@@ -97,11 +101,18 @@ public abstract class ConnectPromise extends FuturePromise<Session> implements R
         this.upgradeListener = upgradeListener;
     }
 
-    public void succeeded(WebSocketSession session)
+    public void succeeded()
     {
+        if(LOG.isDebugEnabled())
+            LOG.debug("{}.succeeded()",this.getClass().getSimpleName());
         session.setUpgradeRequest(request);
         session.setUpgradeResponse(response);
-        session.open();
+        // session.open();
         super.succeeded(session);
+    }
+
+    public void setSession(WebSocketSession session)
+    {
+        this.session = session;
     }
 }

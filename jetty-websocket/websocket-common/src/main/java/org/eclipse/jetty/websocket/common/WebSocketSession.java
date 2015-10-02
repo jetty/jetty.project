@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -58,9 +59,10 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 
 @ManagedObject("A Jetty WebSocket Session")
-public class WebSocketSession extends ContainerLifeCycle implements Session, WebSocketSessionScope, IncomingFrames, ConnectionStateListener
+public class WebSocketSession extends ContainerLifeCycle implements Session, WebSocketSessionScope, IncomingFrames, Connection.Listener, ConnectionStateListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
+    private static final Logger LOG_OPEN = Log.getLogger(WebSocketSession.class.getName() + "_OPEN");
     private final WebSocketContainerScope containerScope;
     private final URI requestURI;
     private final LogicalConnection connection;
@@ -285,6 +287,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     @Override
     public RemoteEndpoint getRemote()
     {
+        if(LOG_OPEN.isDebugEnabled())
+            LOG_OPEN.debug("[{}] {}.getRemote()",policy.getBehavior(),this.getClass().getSimpleName());
         ConnectionState state = connection.getIOState().getConnectionState();
 
         if ((state == ConnectionState.OPEN) || (state == ConnectionState.CONNECTED))
@@ -405,6 +409,19 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     {
         incomingError(cause);
     }
+    
+    @Override
+    public void onClosed(Connection connection)
+    {
+    }
+    
+    @Override
+    public void onOpened(Connection connection)
+    {
+        if(LOG_OPEN.isDebugEnabled())
+            LOG_OPEN.debug("[{}] {}.onOpened()",policy.getBehavior(),this.getClass().getSimpleName());
+        open();
+    }
 
     @SuppressWarnings("incomplete-switch")
     @Override
@@ -457,6 +474,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
      */
     public void open()
     {
+        if(LOG_OPEN.isDebugEnabled())
+            LOG_OPEN.debug("[{}] {}.open()",policy.getBehavior(),this.getClass().getSimpleName());
+
         if (remote != null)
         {
             // already opened
@@ -470,6 +490,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     
             // Connect remote
             remote = new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
+            if(LOG_OPEN.isDebugEnabled())
+                LOG_OPEN.debug("[{}] {}.open() remote={}",policy.getBehavior(),this.getClass().getSimpleName(),remote);
             
             // Open WebSocket
             websocket.openSession(this);

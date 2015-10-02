@@ -53,7 +53,6 @@ import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
 /**
@@ -71,7 +70,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         @Override
         protected void onFailure(Throwable x)
         {
-            session.notifyError(x);
+            notifyError(x);
 
             if (ioState.wasAbnormalClose())
             {
@@ -200,7 +199,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
-    private static final Logger LOG_CLOSE = Log.getLogger(AbstractWebSocketConnection.class.getName() + "_close");
+    private static final Logger LOG_OPEN = Log.getLogger(AbstractWebSocketConnection.class.getName() + "_OPEN");
+    private static final Logger LOG_CLOSE = Log.getLogger(AbstractWebSocketConnection.class.getName() + "_CLOSE");
 
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
@@ -214,7 +214,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final WebSocketPolicy policy;
     private final AtomicBoolean suspendToken;
     private final FrameFlusher flusher;
-    private WebSocketSession session; // TODO: Should not be part of Connection
     private List<ExtensionConfig> extensions;
     private boolean isFilling;
     private ByteBuffer prefillBuffer;
@@ -389,12 +388,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return scheduler;
     }
 
-    @Override
-    public WebSocketSession getSession()
-    {
-        return session;
-    }
-
     public Stats getStats()
     {
         return stats;
@@ -544,9 +537,16 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         prefillBuffer = prefilled;
     }
     
+    private void notifyError(Throwable t)
+    {
+        getParser().getIncomingFramesHandler().incomingError(t);
+    }
+    
     @Override
     public void onOpen()
     {
+        if(LOG_OPEN.isDebugEnabled())
+            LOG_OPEN.debug("[{}] {}.onOpened()",policy.getBehavior(),this.getClass().getSimpleName());
         super.onOpen();
         this.ioState.onOpened();
     }
@@ -573,7 +573,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         try
         {
-            session.notifyError(new SocketTimeoutException("Timeout on Read"));
+            notifyError(new SocketTimeoutException("Timeout on Read"));
         }
         finally
         {
@@ -720,12 +720,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void setMaxIdleTimeout(long ms)
     {
         getEndPoint().setIdleTimeout(ms);
-    }
-
-    @Override
-    public void setSession(WebSocketSession session)
-    {
-        this.session = session;
     }
 
     @Override

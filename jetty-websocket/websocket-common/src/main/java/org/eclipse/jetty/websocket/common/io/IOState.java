@@ -404,6 +404,9 @@ public class IOState
      */
     public void onOpened()
     {
+        if(LOG.isDebugEnabled())
+            LOG.debug(" onOpened()");
+        
         ConnectionState event = null;
         synchronized (this)
         {
