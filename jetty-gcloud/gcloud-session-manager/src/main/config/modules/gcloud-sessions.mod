@@ -32,7 +32,7 @@ maven://javax.transaction/transaction-api/1.1|lib/gcloud/transaction-api-1.1.jar
 maven://com.google.http-client/google-http-client-appengine/1.20.0|lib/gcloud/google-http-client-appengine-1.20.0.jar
 maven://com.google.http-client/google-http-client-jackson/1.20.0|lib/gcloud/google-http-client-jackson-1.20.0.jar
 maven://org.codehaus.jackson/jackson-core-asl/1.9.11|lib/gcloud/jackson-core-asl-1.9.11.jar
-maven://joda-time/joda-time/RELEASE|lib/gcloud/joda-time-RELEASE.jar
+maven://joda-time/joda-time/2.8.2|lib/gcloud/joda-time-2.8.2.jar
 maven://org.json/json/20090211|lib/gcloud/json-20090211.jar
 maven://com.google.apis/google-api-services-datastore-protobuf/v1beta2-rev1-2.1.2|lib/gcloud/google-api-services-datastore-protobuf-v1beta2-rev1-2.1.2.jar
 maven://com.google.protobuf/protobuf-java/2.5.0|lib/gcloud/protobuf-java-2.5.0.jar

@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.servlet.http.HttpServletRequest;
@@ -178,33 +179,63 @@ public class GCloudSessionManager extends AbstractSessionManager
         {
             if (entity == null)
                 return null;
-            
-            //turn an entity into a Session
-            String clusterId = entity.getString(CLUSTERID);
-            String contextPath = entity.getString(CONTEXTPATH);
-            String vhost = entity.getString(VHOST);
-            long accessed = entity.getLong(ACCESSED);
-            long lastAccessed = entity.getLong(LASTACCESSED);
-            long createTime = entity.getLong(CREATETIME);
-            long cookieSetTime = entity.getLong(COOKIESETTIME);
-            String lastNode = entity.getString(LASTNODE);
-            long expiry = entity.getLong(EXPIRY);
-            long maxInactive = entity.getLong(MAXINACTIVE);
-            Blob blob = (Blob) entity.getBlob(ATTRIBUTES);
- 
-            Session session = new Session (clusterId, createTime, accessed, maxInactive);
-            session.setLastNode(lastNode);
-            session.setContextPath(contextPath);
-            session.setVHost(vhost);
-            session.setCookieSetTime(cookieSetTime);
-            session.setLastAccessedTime(lastAccessed);
-            session.setLastNode(lastNode);
-            try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(blob.asInputStream()))
+
+            final AtomicReference<Session> reference = new AtomicReference<Session>();
+            final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+            Runnable load = new Runnable()
             {
-                Object o = ois.readObject();
-                session.addAttributes((Map<String,Object>)o);
+                public void run ()
+                {
+                    try
+                    {
+                        //turn an entity into a Session
+                        String clusterId = entity.getString(CLUSTERID);
+                        String contextPath = entity.getString(CONTEXTPATH);
+                        String vhost = entity.getString(VHOST);
+                        long accessed = entity.getLong(ACCESSED);
+                        long lastAccessed = entity.getLong(LASTACCESSED);
+                        long createTime = entity.getLong(CREATETIME);
+                        long cookieSetTime = entity.getLong(COOKIESETTIME);
+                        String lastNode = entity.getString(LASTNODE);
+                        long expiry = entity.getLong(EXPIRY);
+                        long maxInactive = entity.getLong(MAXINACTIVE);
+                        Blob blob = (Blob) entity.getBlob(ATTRIBUTES);
+
+                        Session session = new Session (clusterId, createTime, accessed, maxInactive);
+                        session.setLastNode(lastNode);
+                        session.setContextPath(contextPath);
+                        session.setVHost(vhost);
+                        session.setCookieSetTime(cookieSetTime);
+                        session.setLastAccessedTime(lastAccessed);
+                        session.setLastNode(lastNode);
+                        session.setExpiry(expiry);
+                        try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(blob.asInputStream()))
+                        {
+                            Object o = ois.readObject();
+                            session.addAttributes((Map<String,Object>)o);
+                        }
+                        reference.set(session);
+                    }
+                    catch (Exception e)
+                    {
+                        exception.set(e);
+                    }
+                }
+            };
+            
+            if (_context==null)
+                load.run();
+            else
+                _context.getContextHandler().handle(null,load);
+   
+           
+            if (exception.get() != null)
+            {
+                exception.get().printStackTrace();
+                throw exception.get();
             }
-            return session;
+            
+            return reference.get();
         }
     }
     
@@ -506,6 +537,7 @@ public class GCloudSessionManager extends AbstractSessionManager
         @Override
         protected void timeout()
         {
+            if (LOG.isDebugEnabled()) LOG.debug("Timing out session {}", getId());
             super.timeout();
         }
         
@@ -795,11 +827,16 @@ public class GCloudSessionManager extends AbstractSessionManager
         //if the session isn't in memory already, put it there so we can do a normal timeout call
          Session memSession =  _sessions.putIfAbsent(session.getId(), session);
          if (memSession == null)
+         {
              memSession = session;
+         }
 
         //final check
         if (memSession.isExpiredAt(now))
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("Session {} is definitely expired", memSession.getId());
             memSession.timeout();   
+        }
     }
 
     public long getScavengeIntervalSec ()
@@ -1050,7 +1087,9 @@ public class GCloudSessionManager extends AbstractSessionManager
         try
         {
             if (session != null)
+            {
                 delete(session);
+            }
         }
         catch (Exception e)
         {
