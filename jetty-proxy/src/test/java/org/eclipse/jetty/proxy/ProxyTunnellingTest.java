@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -63,6 +61,8 @@ import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class ProxyTunnellingTest
 {
@@ -271,6 +271,59 @@ public class ProxyTunnellingTest
             assertEquals(HttpStatus.OK_200, response2.getStatus());
             String content2 = response1.getContentAsString();
             assertEquals(body1, content2);
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
+    public void testShortIdleTimeoutOverriddenByRequest() throws Exception
+    {
+        // Short idle timeout for HttpClient.
+        long idleTimeout = 500;
+
+        startSSLServer(new ServerHandler());
+        startProxy(new ConnectHandler()
+        {
+            @Override
+            protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
+            {
+                try
+                {
+                    // Make sure the proxy remains idle enough.
+                    Thread.sleep(2 * idleTimeout);
+                    super.handleConnect(baseRequest, request, response, serverAddress);
+                }
+                catch (InterruptedException x)
+                {
+                    onConnectFailure(request, response, null, x);
+                }
+            }
+        });
+
+        HttpClient httpClient = new HttpClient(sslContextFactory);
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
+        // Short idle timeout for HttpClient.
+        httpClient.setIdleTimeout(idleTimeout);
+        httpClient.start();
+
+        try
+        {
+            String host = "localhost";
+            String body = "BODY";
+            ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
+                    .scheme(HttpScheme.HTTPS.asString())
+                    .method(HttpMethod.GET)
+                    .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                    // Long idle timeout for the request.
+                    .idleTimeout(10 * idleTimeout, TimeUnit.MILLISECONDS)
+                    .send();
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = response.getContentAsString();
+            assertEquals(body, content);
         }
         finally
         {
