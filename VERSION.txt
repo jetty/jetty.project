@@ -1,4 +1,47 @@
-jetty-9.3.4-SNAPSHOT
+jetty-9.3.4.RC1 - 06 October 2015
+ + 428474 Expose batch mode in the Jetty WebSocket API
+ + 472082 isOpen returns true on CLOSING Connection
+ + 474936 WebSocketSessions are not always cleaned out from openSessions
+ + 475209 WebSocketServerFactory should not hand null object to
+   DecoratedObjectFactory
+ + 476023 Incorrect trimming of WebSocket close reason
+ + 476049 When using WebSocket Session.close() there should be no status code
+   or reason sent
+ + 476170 Support servers that close connections without sending Connection:
+   close header.
+ + 476720 getTrustStoreResource fixed
+ + 477087 Enforce that the preface contains a SETTINGS frame.
+ + 477123 AsyncListener callbacks need context scope
+ + 477270 Add ability to send a single PRIORITY frame.
+ + 477278 Refactored DefaultServlet for cached Gzip & Etags
+ + 477385 Make jetty osgi manifests only resolve jetty packages against a
+   single distro version
+ + 477641 ALPN classes exposed to webapps - fixed typo
+ + 477680 Encode merged query parameters
+ + 477737 Improve handling of etags with dynamic and static gzip
+ + 477757 Null args in TypeUtil .call & .construct result in confusing
+   exceptions
+ + 477817 Fixed memory leak in QueuedThreadPool
+ + 477878 HttpClient over HTTP/2 doesn't close upload stream.
+ + 477885 Jetty HTTP2 client fails to connect with Netty server - HTTP2 client
+   preface missing or corrupt.
+ + 477890 Overwhelmed HTTP/2 server discards data.
+ + 477895 Prevent leak of handles to deleted files after redeploy
+ + 477900 Increase client authentication default max content size
+ + 478008 Do not reset current value of CounterStatistics
+ + 478021 Client sending Connection: close does not shutdown output.
+ + 478105 prependFilterMapping check for null FilterHolder
+ + 478239 Remove pointless synchronize in infinispan scavenging
+ + 478247 WebappClassLoader pinned after redeploy
+ + 478275 Priority information in HEADERS frame is not sent.
+ + 478280 property file in temp directory
+ + 478372 JavaUtilLog setSourceClass and setSourceMethod
+ + 478434 Priority weights should be between 1 and 256 inclusive.
+ + 478757 DebugHandler thread name is mangled
+ + 478829 WebsocketSession not cleaned up / memory leak
+ + 478862 Update to jstl 1.2.5
+ + 478923 Add XML property for blockingTimeout
+ + 479026 Wrong CONNECT request idle timeout.
 
 jetty-9.3.3.v20150827 - 27 August 2015
  + 470311 Introduce a proxy-protocol module.
