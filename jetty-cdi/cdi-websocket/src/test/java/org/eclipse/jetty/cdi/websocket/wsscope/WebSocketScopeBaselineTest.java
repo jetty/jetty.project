@@ -61,6 +61,7 @@ public class WebSocketScopeBaselineTest
      * Test behavior of {@link WebSocketScope} in basic operation.
      * <p>
      * Food is declared as part of WebSocketScope, and as such, only 1 instance of it can exist.
+     * @throws Exception on test failure
      */
     @Test
     public void testScopeBehavior() throws Exception

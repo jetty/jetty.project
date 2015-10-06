@@ -267,7 +267,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
         /**
          * A new session.
          * 
-         * @param request
+         * @param request the request
          */
         protected Session (HttpServletRequest request)
         {
@@ -295,10 +295,10 @@ public class InfinispanSessionManager extends AbstractSessionManager
         /**
          * A restored session.
          * 
-         * @param sessionId
-         * @param created
-         * @param accessed
-         * @param maxInterval
+         * @param sessionId the session id
+         * @param created time created
+         * @param accessed time last accessed
+         * @param maxInterval max expiry interval
          */
         protected Session (String sessionId, long created, long accessed, long maxInterval)
         {
@@ -406,8 +406,8 @@ public class InfinispanSessionManager extends AbstractSessionManager
         }
         
         /** Test if the session is stale
-         * @param atTime
-         * @return
+         * @param atTime time when stale
+         * @return true if stale
          */
         protected boolean isStale (long atTime)
         {
@@ -416,7 +416,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
         
         
         /** Test if the session is dirty
-         * @return
+         * @return true if dirty
          */
         protected boolean isDirty ()
         {
@@ -711,7 +711,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
      * often.
      * 
      * 
-     * @param sec
+     * @param sec scavenge interval in seconds
      */
     public void setScavengeInterval (long sec)
     {
@@ -752,7 +752,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
     /**
      * Get the clustered cache instance.
      * 
-     * @return
+     * @return the cache
      */
     public BasicCache<String, Object> getCache() 
     {
@@ -764,7 +764,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
     /**
      * Set the clustered cache instance.
      * 
-     * @param cache
+     * @param cache the cache
      */
     public void setCache (BasicCache<String, Object> cache) 
     {
@@ -990,8 +990,8 @@ public class InfinispanSessionManager extends AbstractSessionManager
     /**
      * Load a session from the clustered cache.
      * 
-     * @param key
-     * @return
+     * @param key the session key
+     * @return the session
      */
     protected Session load (String key)
     {
@@ -1019,8 +1019,8 @@ public class InfinispanSessionManager extends AbstractSessionManager
     /**
      * Save or update the session to the cluster cache
      * 
-     * @param session
-     * @throws Exception
+     * @param session the session
+     * @throws Exception if unable to save
      */
     protected void save (InfinispanSessionManager.Session session)
     throws Exception
@@ -1053,7 +1053,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
     /**
      * Remove the session from the cluster cache.
      * 
-     * @param session
+     * @param session the session
      */
     protected void delete (InfinispanSessionManager.Session session)
     {  
@@ -1067,7 +1067,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
     /**
      * Invalidate a session for this context with the given id
      * 
-     * @param idInCluster
+     * @param idInCluster session id in cluster
      */
     public void invalidateSession (String idInCluster)
     {
