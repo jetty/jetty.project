@@ -21,6 +21,8 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -88,6 +90,7 @@ public class DispatcherForwardTest
         // 2. assert query => a=1 one
         // 1. assert query => a=1 one
 
+        CountDownLatch latch = new CountDownLatch(1);
         final String query1 = "a=1%20one";
         servlet1 = new HttpServlet()
         {
@@ -100,6 +103,7 @@ public class DispatcherForwardTest
 
                 checkThat(req.getQueryString(),Matchers.equalTo(query1));
                 checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
+                latch.countDown();
             }
         };
         servlet2 = new HttpServlet()
@@ -120,6 +124,7 @@ public class DispatcherForwardTest
                 "Connection: close\r\n" +
                 "\r\n";
         String response = connector.getResponses(request);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
 
@@ -131,7 +136,8 @@ public class DispatcherForwardTest
         // 2. assert query => a=2
         // 1. assert query => a=1
 
-        final String query1 = "a=1$20one&b=2%20two";
+        CountDownLatch latch = new CountDownLatch(1);
+        final String query1 = "a=1%20one&b=2%20two";
         final String query2 = "a=3%20three";
         final String query3 = "a=3%20three&b=2%20two";
         servlet1 = new HttpServlet()
@@ -143,9 +149,10 @@ public class DispatcherForwardTest
 
                 req.getRequestDispatcher("/two?" + query2).forward(req, resp);
 
-                checkThat(req.getQueryString(),Matchers.equalTo(query1));
+                checkThat(req.getQueryString(), Matchers.equalTo(query1));
                 checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
                 checkThat(req.getParameter("b"),Matchers.equalTo("2 two"));
+                latch.countDown();
             }
         };
         servlet2 = new HttpServlet()
@@ -167,6 +174,7 @@ public class DispatcherForwardTest
                 "Connection: close\r\n" +
                 "\r\n";
         String response = connector.getResponses(request);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
 
@@ -178,6 +186,7 @@ public class DispatcherForwardTest
         // 2. assert query => a=1&b=2
         // 1. assert query => a=1
 
+        CountDownLatch latch = new CountDownLatch(1);
         final String query1 = "a=1%20one";
         final String query2 = "b=2%20two";
         final String query3 = "b=2%20two&a=1%20one";
@@ -192,6 +201,7 @@ public class DispatcherForwardTest
 
                 checkThat(req.getQueryString(),Matchers.equalTo(query1));
                 checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
+                latch.countDown();
             }
         };
         servlet2 = new HttpServlet()
@@ -213,6 +223,7 @@ public class DispatcherForwardTest
                 "Connection: close\r\n" +
                 "\r\n";
         String response = connector.getResponses(request);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
 
@@ -224,6 +235,7 @@ public class DispatcherForwardTest
         // 2. assert query => a=1 + params => a=1,2
         // 1. assert query => a=1 + params => a=1,2
 
+        CountDownLatch latch = new CountDownLatch(1);
         final String query1 = "a=1%20one";
         final String form = "a=2%20two";
         servlet1 = new HttpServlet()
@@ -240,6 +252,7 @@ public class DispatcherForwardTest
                 checkThat(values, Matchers.notNullValue());
                 checkThat(2, Matchers.equalTo(values.length));
                 checkThat(values, Matchers.arrayContainingInAnyOrder("1 one", "2 two"));
+                latch.countDown();
             }
         };
         servlet2 = new HttpServlet()
@@ -266,6 +279,7 @@ public class DispatcherForwardTest
                 "\r\n" +
                 form;
         String response = connector.getResponses(request);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
 
@@ -277,6 +291,7 @@ public class DispatcherForwardTest
         // 2. assert query => a=3 + params => a=3,2,1
         // 1. assert query => a=1 + params => a=1,2
 
+        CountDownLatch latch = new CountDownLatch(1);
         final String query1 = "a=1%20one";
         final String query2 = "a=3%20three";
         final String form = "a=2%20two";
@@ -294,6 +309,7 @@ public class DispatcherForwardTest
                 checkThat(values, Matchers.notNullValue());
                 checkThat(2, Matchers.equalTo(values.length));
                 checkThat(values, Matchers.arrayContainingInAnyOrder("1 one", "2 two"));
+                latch.countDown();
             }
         };
         servlet2 = new HttpServlet()
@@ -320,6 +336,7 @@ public class DispatcherForwardTest
                 "\r\n" +
                 form;
         String response = connector.getResponses(request);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
 
@@ -331,6 +348,7 @@ public class DispatcherForwardTest
         // 2. assert query => a=1&c=3 + params => a=1&b=2&c=3
         // 1. assert query => a=1 + params => a=1&b=2
 
+        CountDownLatch latch = new CountDownLatch(1);
         final String query1 = "a=1%20one";
         final String query2 = "c=3%20three";
         final String query3 = "c=3%20three&a=1%20one";
@@ -348,6 +366,7 @@ public class DispatcherForwardTest
                 checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
                 checkThat(req.getParameter("b"),Matchers.equalTo("2 two"));
                 checkThat(req.getParameter("c"), Matchers.nullValue());
+                latch.countDown();
             }
         };
         servlet2 = new HttpServlet()
@@ -373,6 +392,7 @@ public class DispatcherForwardTest
                 "\r\n" +
                 form;
         String response = connector.getResponses(request);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
 
@@ -385,6 +405,7 @@ public class DispatcherForwardTest
         // 2. assert query => a=1&c=3 + params => a=1&b=2&c=3
         // 1. assert query => a=1 + params => a=1&b=2
 
+        CountDownLatch latch = new CountDownLatch(1);
         final String query1 = "a=1%20one";
         final String query2 = "c=3%20three";
         final String query3 = "c=3%20three&a=1%20one";
@@ -404,6 +425,7 @@ public class DispatcherForwardTest
                 checkThat(req.getParameter("a"),Matchers.equalTo("1 one"));
                 checkThat(req.getParameter("b"),Matchers.equalTo("2 two"));
                 checkThat(req.getParameter("c"), Matchers.nullValue());
+                latch.countDown();
             }
         };
         servlet2 = new HttpServlet()
@@ -429,12 +451,14 @@ public class DispatcherForwardTest
                 "\r\n" +
                 form;
         String response = connector.getResponses(request);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
 
     @Test
     public void testContentCanBeReadViaInputStreamAfterForwardWithoutQuery() throws Exception
     {
+        CountDownLatch latch = new CountDownLatch(1);
         final String query1 = "a=1%20one";
         final String form = "c=3%20three";
         servlet1 = new HttpServlet()
@@ -448,6 +472,7 @@ public class DispatcherForwardTest
 
                 checkThat(req.getQueryString(),Matchers.equalTo(query1));
                 checkThat(req.getParameter("c"), Matchers.nullValue());
+                latch.countDown();
             }
         };
         servlet2 = new HttpServlet()
@@ -473,12 +498,14 @@ public class DispatcherForwardTest
                 "\r\n" +
                 form;
         String response = connector.getResponses(request);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
 
     @Test
     public void testContentCanBeReadViaInputStreamAfterForwardWithQuery() throws Exception
     {
+        CountDownLatch latch = new CountDownLatch(1);
         final String query1 = "a=1%20one";
         final String query2 = "b=2%20two";
         final String query3 = "b=2%20two&a=1%20one";
@@ -494,6 +521,7 @@ public class DispatcherForwardTest
 
                 checkThat(req.getQueryString(),Matchers.equalTo(query1));
                 checkThat(req.getParameter("c"), Matchers.nullValue());
+                latch.countDown();
             }
         };
         servlet2 = new HttpServlet()
@@ -520,6 +548,7 @@ public class DispatcherForwardTest
                 "\r\n" +
                 form;
         String response = connector.getResponses(request);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
 
