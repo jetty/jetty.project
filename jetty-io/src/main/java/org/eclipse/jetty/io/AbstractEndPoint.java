@@ -216,8 +216,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                 isOpen()?"Open":"CLOSED",
                 isInputShutdown()?"ISHUT":"in",
                 isOutputShutdown()?"OSHUT":"out",
-                _fillInterest.isInterested()?"R":"-",
-                _writeFlusher.isInProgress()?"W":"-",
+                _fillInterest.toStateString(),
+                _writeFlusher.toStateString(),
                 getIdleFor(),
                 getIdleTimeout(),
                 getConnection()==null?null:getConnection().getClass().getSimpleName());
