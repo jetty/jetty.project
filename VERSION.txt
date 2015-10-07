@@ -1,3 +1,5 @@
+jetty-9.4.0-SNAPSHOT
+
 jetty-9.3.4.v20151007 - 07 October 2015
  + 428474 Expose batch mode in the Jetty WebSocket API
  + 472082 isOpen returns true on CLOSING Connection
