@@ -61,7 +61,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = client.newRequest(newURI())
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
@@ -95,7 +95,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        org.eclipse.jetty.client.api.Request request = client.newRequest("localhost", connector.getLocalPort());
+        org.eclipse.jetty.client.api.Request request = client.newRequest(newURI());
         FutureResponseListener listener = new FutureResponseListener(request, length);
         request.timeout(10, TimeUnit.SECONDS).send(listener);
         ContentResponse response = listener.get();
@@ -139,7 +139,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        org.eclipse.jetty.client.api.Request request = client.newRequest("localhost", connector.getLocalPort());
+        org.eclipse.jetty.client.api.Request request = client.newRequest(newURI());
         FutureResponseListener listener = new FutureResponseListener(request, 2 * length);
         request.timeout(10, TimeUnit.SECONDS).send(listener);
         ContentResponse response = listener.get();
@@ -183,7 +183,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = client.newRequest(newURI())
                 .method(HttpMethod.POST)
                 .content(new BytesContentProvider(bytes))
                 .timeout(15, TimeUnit.SECONDS)
@@ -228,7 +228,7 @@ public class HttpClientTest extends AbstractTest
         int chunkSize = 16;
         byte[][] bytes = IntStream.range(0, chunks).mapToObj(x -> new byte[chunkSize]).toArray(byte[][]::new);
         BytesContentProvider contentProvider = new BytesContentProvider("application/octet-stream", bytes);
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = client.newRequest(newURI())
                 .method(HttpMethod.POST)
                 .content(contentProvider)
                 .timeout(15, TimeUnit.SECONDS)
