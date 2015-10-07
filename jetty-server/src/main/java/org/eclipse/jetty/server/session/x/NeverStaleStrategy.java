@@ -19,31 +19,21 @@
 
 package org.eclipse.jetty.server.session.x;
 
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-
 /**
- * AbstractSessionDataStore
+ * NeverStale
  *
  *
  */
-public abstract class AbstractSessionDataStore extends AbstractLifeCycle implements SessionDataStore
+public class NeverStaleStrategy implements StalenessStrategy
 {
-    
-    public abstract void doStore(SessionKey key, SessionData data) throws Exception;
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionDataStore#store(java.lang.String, org.eclipse.jetty.server.session.x.SessionData)
+     * @see org.eclipse.jetty.server.session.x.StalenessStrategy#isStale(org.eclipse.jetty.server.session.x.Session)
      */
     @Override
-    public void store(SessionKey key, SessionData data) throws Exception
+    public boolean isStale(Session session)
     {
-        try
-        {
-            doStore(key, data);
-        }
-        finally
-        {
-            data.setDirty(false);
-        }
+        return false;
     }
+
 }

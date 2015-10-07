@@ -29,7 +29,9 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
@@ -182,13 +184,15 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         if (size>0)
         {
             // input stream should not be closed here
+            Map<String,Object> attributes = new HashMap<String,Object>();
             ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(is);
             for (int i=0; i<size;i++)
             {
                 String key = ois.readUTF();
                 Object value = ois.readObject();
-                data.setAttribute(key,value);
+                attributes.put(key,value);
             }
+            data.putAllAttributes(attributes);
         }
     }
 

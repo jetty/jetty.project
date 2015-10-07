@@ -764,11 +764,14 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             Session session =  _sessionStore.get(key);
             if (session != null)
             {
-                //TODO consider not allowing load of expired sessions inside stores
-                //if the session we loaded has expired 
+                //If the session we got back has expired
                 if (session.isExpiredAt(System.currentTimeMillis()))
                 {
-                    //Remove the expired session from cache and backing persistent store
+                    //Tell the id manager that this session id should not be used in case other threads
+                    //try to use the same session id in other contexts
+                    _sessionIdManager.removeId(id);                  
+                    
+                    //Remove the expired session from cache and any backing persistent store
                     try
                     {
                         _sessionStore.delete(key);
@@ -777,10 +780,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                     {
                         LOG.warn("Unable to delete expired session {}", key);
                     }
-                    
-                    //Tell the id manager that this session id should not be used in case other threads
-                    //try to use the same session id in other contexts
-                    _sessionIdManager.removeId(id);
                     
                     return null;
                 }
@@ -799,9 +798,9 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             _sessionIdManager.removeId(id);
             return null;
         }
-        catch (Exception e1)
+        catch (Exception other)
         {
-            LOG.warn(e1);
+            LOG.warn(other);
             return null;
         }
     }
@@ -992,26 +991,50 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     {
         _checkingRemoteSessionIdEncoding=remote;
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /**
-     * Tell the HttpSessionIdListeners the id changed.
-     * NOTE: this method must be called LAST in subclass overrides, after the session has been updated
-     * with the new id.
-     * @see org.eclipse.jetty.server.SessionManager#renewSessionId(java.lang.String, java.lang.String, java.lang.String, java.lang.String)
+     * Change the session id and tell the HttpSessionIdListeners the id changed.
+     * 
      */
     @Override
-    public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId)
+    public void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId)
     {
-        if (!_sessionIdListeners.isEmpty())
+        try
         {
-            Session session = getSession(newClusterId);
-            HttpSessionEvent event = new HttpSessionEvent(session);
-            for (HttpSessionIdListener l:_sessionIdListeners)
+            SessionKey oldKey = SessionKey.getKey(oldId, _context);
+            SessionKey newKey = SessionKey.getKey(newId, _context);
+            
+            Session session = _sessionStore.get(oldKey);
+            if (session == null)
             {
-                l.sessionIdChanged(event, oldClusterId);
+                LOG.warn("Unable to renew id to "+newId+" for non-existant session "+oldId);
+                return;
             }
+
+            //save session with new id
+            session.getSessionData().setId(newId);
+            session.setExtendedId(newExtendedId);
+            session.getSessionData().setLastSaved(0); //forces an insert
+            _sessionStore.put(newKey, session);
+            
+            //remove session with old id
+            _sessionStore.delete(oldKey);
+
+            //inform the listeners
+            if (!_sessionIdListeners.isEmpty())
+            {
+                HttpSessionEvent event = new HttpSessionEvent(session);
+                for (HttpSessionIdListener l:_sessionIdListeners)
+                {
+                    l.sessionIdChanged(event, oldId);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
         }
     }
     

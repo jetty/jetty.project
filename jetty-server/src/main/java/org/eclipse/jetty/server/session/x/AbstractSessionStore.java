@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 public abstract class AbstractSessionStore extends AbstractLifeCycle implements SessionStore
 {
     protected SessionDataStore _sessionDataStore;
+    protected StalenessStrategy _staleStrategy;
 
     
 
@@ -78,6 +79,16 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         _sessionDataStore = sessionDataStore;
     }
     
+    public StalenessStrategy getStaleStrategy()
+    {
+        return _staleStrategy;
+    }
+
+    public void setStaleStrategy(StalenessStrategy staleStrategy)
+    {
+        _staleStrategy = staleStrategy;
+    }
+
     /** 
      * Get a session object.
      * 
@@ -161,7 +172,6 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     public boolean delete(SessionKey key) throws Exception
     {
         boolean deleted =  true;
-        //TODO synchronization???
         if (_sessionDataStore != null)
             deleted = _sessionDataStore.delete(key);
         doDelete(key);
@@ -170,7 +180,21 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
     public boolean isStale (Session session)
     {
-        //TODO implement (pluggable?) algorithm for deciding if memory is stale
+        if (_staleStrategy != null)
+            return _staleStrategy.isStale(session);
         return false;
+    }
+    
+
+
+    /** 
+     * @see org.eclipse.jetty.server.session.x.SessionStore#scavenge()
+     */
+    @Override
+    public void scavenge()
+    {
+       if (!isStarted())
+           return;
+       _sessionDataStore.scavenge();
     }
 }

@@ -89,7 +89,7 @@ public class MemorySessionStore extends AbstractSessionStore
         
         if (isStale(session))
         {
-            //delete from memory
+            //delete from memory so should reload
             doDelete(key);
             return null;
         }
@@ -192,17 +192,5 @@ public class MemorySessionStore extends AbstractSessionStore
         return new MemorySession (data);
     }
 
-
-
-
-    /** 
-     * @see org.eclipse.jetty.server.session.x.SessionStore#scavenge()
-     */
-    @Override
-    public void scavenge()
-    {
-        // TODO Auto-generated method stub
-        
-    }
 
 }

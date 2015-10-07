@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session.x;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +34,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class SessionData implements Serializable
 {
+
+    private static final long serialVersionUID = 1L;
+
     protected String _id;
 
     protected String _contextPath;
@@ -50,7 +54,7 @@ public class SessionData implements Serializable
     protected long _maxInactiveMs;
     protected Map<String,Object> _attributes = new ConcurrentHashMap<String, Object>();
     protected boolean _dirty;
-
+    protected long _lastSaved; //time in msec since last save
     
 
     public SessionData (String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
@@ -61,6 +65,20 @@ public class SessionData implements Serializable
         _lastAccessed = lastAccessed;
         _maxInactiveMs = maxInactiveMs;
     }
+    
+
+    public long getLastSaved()
+    {
+        return _lastSaved;
+    }
+
+
+
+    public void setLastSaved(long lastSaved)
+    {
+        _lastSaved = lastSaved;
+    }
+
 
     public boolean isDirty()
     {
@@ -92,6 +110,16 @@ public class SessionData implements Serializable
        return old;
     }
     
+    
+    public void putAllAttributes (Map<String,Object> attributes)
+    {
+        _attributes.putAll(attributes);
+    }
+    
+    public Map<String,Object> getAllAttributes()
+    {
+        return Collections.unmodifiableMap(_attributes);
+    }
     
     public String getId()
     {

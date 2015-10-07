@@ -32,11 +32,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.naming.InitialContext;
-import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
@@ -57,6 +58,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     
     protected int _deleteBlockSize = 10; //number of ids to include in where 'in' clause for finding long expired sessions
     protected boolean _initialized = false;
+    protected long _lastScavengeTime = 0;
 
 
 
@@ -321,19 +323,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         protected String _maxIntervalColumn = "maxInterval";
         protected String _mapColumn = "map";
 
-        private String _insertSession;
-
-        private String _deleteSession;
-
-        private String _updateSession;
-
-        private String _updateSessionNode;
-
-        private String _updateSessionAccessTime;
-
-        private String _selectBoundedExpiredSessions;
-
-        private String _selectExpiredSessions;
         
         
         protected void setDatabaseAdaptor(DatabaseAdaptor dbadaptor)
@@ -522,34 +511,34 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         public String getInsertSessionStatementAsString()
         {
            return "insert into "+getTableName()+
-            " ("+getRowIdColumn()+", "+getIdColumn()+", "+getContextPathColumn()+", "+getVirtualHostColumn()+", "+getLastNodeColumn()+
+            " ("+getIdColumn()+", "+getContextPathColumn()+", "+getVirtualHostColumn()+", "+getLastNodeColumn()+
             ", "+getAccessTimeColumn()+", "+getLastAccessTimeColumn()+", "+getCreateTimeColumn()+", "+getCookieTimeColumn()+
             ", "+getLastSavedTimeColumn()+", "+getExpiryTimeColumn()+", "+getMaxIntervalColumn()+", "+getMapColumn()+") "+
-            " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         }
-        public String getDeleteSessionStatementAsString()
+
+        public String getUpdateSessionStatementAsString(SessionKey key)
         {
-            return "delete from "+getTableName()+
-            " where "+getRowIdColumn()+" = ?";
-        }
-        public String getUpdateSessionStatementAsString()
-        {
-            return "update "+getTableName()+
+            String s =  "update "+getTableName()+
                     " set "+getIdColumn()+" = ?, "+getLastNodeColumn()+" = ?, "+getAccessTimeColumn()+" = ?, "+
                     getLastAccessTimeColumn()+" = ?, "+getLastSavedTimeColumn()+" = ?, "+getExpiryTimeColumn()+" = ?, "+
-                    getMaxIntervalColumn()+" = ?, "+getMapColumn()+" = ? where "+getRowIdColumn()+" = ?";
+                    getMaxIntervalColumn()+" = ?, "+getMapColumn()+" = ? where ";
+
+            if (key.getCanonicalContextPath() == null || "".equals(key.getCanonicalContextPath()))
+            {
+                if (_dbAdaptor.isEmptyStringNull())
+                {
+                    return s+getIdColumn()+" = ? and "+
+                            getContextPathColumn()+" is null and "+
+                            getVirtualHostColumn()+" = ?";
+
+                }
+            }
+
+            return s+getIdColumn()+" = ? and "+getContextPathColumn()+
+                    " = ? and "+getVirtualHostColumn()+" = ?";
         }
-        public String getUpdateSessionNodeStatementAsString()
-        {
-            return "update "+getTableName()+
-                    " set "+getLastNodeColumn()+" = ? where "+getRowIdColumn()+" = ?";
-        }
-        public String getUpdateSessionAccessTimeStatementAsString()
-        {
-           return "update "+getTableName()+
-            " set "+getLastNodeColumn()+" = ?, "+getAccessTimeColumn()+" = ?, "+getLastAccessTimeColumn()+" = ?, "+
-                   getLastSavedTimeColumn()+" = ?, "+getExpiryTimeColumn()+" = ?, "+getMaxIntervalColumn()+" = ? where "+getRowIdColumn()+" = ?";
-        }
+
         
         public String getBoundedExpiredSessionsStatementAsString()
         {
@@ -592,6 +581,42 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
             return statement;
         }
+
+        
+        
+        public PreparedStatement getUpdateStatement (Connection connection, SessionKey key)
+        throws SQLException
+        {
+            if (_dbAdaptor == null)
+                throw new IllegalStateException("No DB adaptor");
+
+            String s = "update "+getTableName()+
+                    " set "+getIdColumn()+" = ?, "+getLastNodeColumn()+" = ?, "+getAccessTimeColumn()+" = ?, "+
+                    getLastAccessTimeColumn()+" = ?, "+getLastSavedTimeColumn()+" = ?, "+getExpiryTimeColumn()+" = ?, "+
+                    getMaxIntervalColumn()+" = ?, "+getMapColumn()+" = ? where ";
+
+            if (key.getCanonicalContextPath() == null || "".equals(key.getCanonicalContextPath()))
+            {
+                if (_dbAdaptor.isEmptyStringNull())
+                {
+                    PreparedStatement statement = connection.prepareStatement(s+getIdColumn()+" = ? and "+
+                            getContextPathColumn()+" is null and "+
+                            getVirtualHostColumn()+" = ?");
+                    statement.setString(1, key.getId());
+                    statement.setString(2, key.getVhost());
+                    return statement;
+                }
+            }
+            PreparedStatement statement = connection.prepareStatement(s+getIdColumn()+" = ? and "+getContextPathColumn()+
+                                                                      " = ? and "+getVirtualHostColumn()+" = ?");
+            statement.setString(1, key.getId());
+            statement.setString(2, key.getCanonicalContextPath());
+            statement.setString(3, key.getVhost());
+
+            return statement;
+        }
+        
+        
 
 
         public PreparedStatement getDeleteStatement (Connection connection, SessionKey key)
@@ -717,91 +742,13 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                     statement.executeUpdate(getCreateIndexOverExpiryStatementAsString(index1));
                 if (!index2Exists)
                     statement.executeUpdate(getCreateIndexOverSessionStatementAsString(index2));
-
-                //set up some strings representing the statements for session manipulation
-                _insertSession = getInsertSessionStatementAsString();
-                _deleteSession = getDeleteSessionStatementAsString();
-                _updateSession = getUpdateSessionStatementAsString();
-                _updateSessionNode = getUpdateSessionNodeStatementAsString();
-                _updateSessionAccessTime = getUpdateSessionAccessTimeStatementAsString();
-                _selectBoundedExpiredSessions = getBoundedExpiredSessionsStatementAsString();
-                _selectExpiredSessions = getSelectExpiredSessionsStatementAsString();
             }
         }
     }
     
     
-    
-    /**
-     * JDBCSessionData
-     *
-     *
-     */
-    public class JDBCSessionData extends SessionData
-    {
-        protected String _rowId;
-        protected long _lastSaved; //time in msec since last save
-      
-
-        /**
-         * @param id
-         * @param created
-         * @param accessed
-         * @param lastAccessed
-         * @param maxInactiveMs
-         */
-        public JDBCSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
-        {
-            super(id, created, accessed, lastAccessed, maxInactiveMs);
-        }
-        
-        
-
-        public String getRowId()
-        {
-            return _rowId;
-        }
-
-        public void setRowId(String rowId)
-        {
-            _rowId = rowId;
-        }
-        
-
-        
-
-        public long getLastSaved()
-        {
-            return _lastSaved;
-        }
-
-
-
-        public void setLastSaved(long lastSaved)
-        {
-            _lastSaved = lastSaved;
-        }
-
-        
-        public void setAttributes (Map<String, Object> attributes)
-        {
-            _attributes.putAll(attributes);
-        }
-        
-        //TODO immutable??
-        public Map<String,Object> getAttributes ()
-        {
-            return _attributes;
-        }
-    }
-    
-    
- 
-    
-    
-    /**
-     *
-     */
+   
+  
     public JDBCSessionDataStore ()
     {
         super ();
@@ -826,7 +773,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        return new JDBCSessionData(id, created, accessed, lastAccessed, maxInactiveMs);
+        return new SessionData(id, created, accessed, lastAccessed, maxInactiveMs);
     }
 
 
@@ -881,15 +828,14 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 PreparedStatement statement = _sessionTableSchema.getLoadStatement(connection, key);
                 ResultSet result = statement.executeQuery())
         {
-            JDBCSessionData data = null;
+            SessionData data = null;
             if (result.next())
             {                    
-                data = (JDBCSessionData)newSessionData(key.getId(), 
-                                                       result.getLong(_sessionTableSchema.getCreateTimeColumn()), 
-                                                       result.getLong(_sessionTableSchema.getAccessTimeColumn()), 
-                                                       result.getLong(_sessionTableSchema.getLastAccessTimeColumn()), 
-                                                       result.getLong(_sessionTableSchema.getMaxIntervalColumn()));
-                data.setRowId(result.getString(_sessionTableSchema.getRowIdColumn()));
+                data = newSessionData(key.getId(), 
+                                      result.getLong(_sessionTableSchema.getCreateTimeColumn()), 
+                                      result.getLong(_sessionTableSchema.getAccessTimeColumn()), 
+                                      result.getLong(_sessionTableSchema.getLastAccessTimeColumn()), 
+                                      result.getLong(_sessionTableSchema.getMaxIntervalColumn()));
                 data.setCookieSet(result.getLong(_sessionTableSchema.getCookieTimeColumn()));
                 data.setLastNode(result.getString(_sessionTableSchema.getLastNodeColumn()));
                 data.setLastSaved(result.getLong(_sessionTableSchema.getLastSavedTimeColumn()));
@@ -901,7 +847,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
                 {
                     Object o = ois.readObject();
-                    data.setAttributes((Map<String,Object>)o);
+                    data.putAllAttributes((Map<String,Object>)o);
                 }
                 catch (Exception e)
                 {
@@ -946,41 +892,109 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doStore(SessionKey key, SessionData data) throws Exception
     {
-        // TODO write session data to jdbc
         if (data==null || key==null)
             return;
 
-        try (Connection connection = _dbAdaptor.getConnection();
-             PreparedStatement statement = connection.prepareStatement(_sessionTableSchema.getUpdateSessionStatementAsString()))
+        try (Connection connection = _dbAdaptor.getConnection())        
         {
-            long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
-            statement.setString(1, key.getId());
-            statement.setString(2, data.getLastNode());//should be my node id
-            statement.setLong(3, data.getAccessed());//accessTime
-            statement.setLong(4, data.getLastAccessed()); //lastAccessTime
-            statement.setLong(5, now); //last saved time
-            statement.setLong(6, data.getExpiry());
-            statement.setLong(7, data.getMaxInactiveMs());
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(((JDBCSessionData)data).getAttributes());
-            oos.flush();
-            byte[] bytes = baos.toByteArray();
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-
-            statement.setBinaryStream(8, bais, bytes.length);//attribute map as blob
-            statement.setString(9, ((JDBCSessionData)data).getRowId()); //rowId
-            statement.executeUpdate();
-
-            ((JDBCSessionData)data).setLastSaved(now);
+            
+            //If last saved field not set, then this is a fresh session that has never been persisted
+            if (data.getLastSaved() <= 0)
+            {     
+                doInsert(connection, key, data);
+            }
+            else
+            {
+                doUpdate(connection, key, data);            
+            }
+         
         }
-        if (LOG.isDebugEnabled())
-            LOG.debug("Updated session "+data);
+
     }
 
 
+    private void doInsert (Connection connection, SessionKey key, SessionData data) 
+    throws Exception
+    {
+        String s = _sessionTableSchema.getInsertSessionStatementAsString();
+
+        try  (PreparedStatement statement = connection.prepareStatement(s))
+        {
+
+            long now = System.currentTimeMillis();
+
+
+            statement.setString(1, key.getId()); //session id
+            statement.setString(2, key.getCanonicalContextPath()); //context path
+            statement.setString(3, key.getVhost()); //first vhost
+            statement.setString(4, data.getLastNode());//my node id
+            statement.setLong(5, data.getAccessed());//accessTime
+            statement.setLong(6, data.getLastAccessed()); //lastAccessTime
+            statement.setLong(7, data.getCreated()); //time created
+            statement.setLong(8, data.getCookieSet());//time cookie was set
+            statement.setLong(9, now); //last saved time
+            statement.setLong(10, data.getExpiry());
+            statement.setLong(11, data.getMaxInactiveMs());
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(data.getAllAttributes());
+            oos.flush();
+            byte[] bytes = baos.toByteArray();
+
+            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+            statement.setBinaryStream(12, bais, bytes.length);//attribute map as blob
+            statement.executeUpdate();
+            data.setLastSaved(now);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Inserted session "+data);
+        }
+    }
+
+    private void doUpdate (Connection connection, SessionKey key, SessionData data)
+    throws Exception
+    {
+       try (PreparedStatement statement = connection.prepareStatement(_sessionTableSchema.getUpdateSessionStatementAsString(key)))
+       {
+
+           long now = System.currentTimeMillis();
+           
+  
+           statement.setString(1, data.getLastNode());//should be my node id
+           statement.setLong(2, data.getAccessed());//accessTime
+           statement.setLong(3, data.getLastAccessed()); //lastAccessTime
+           statement.setLong(4, now); //last saved time
+           statement.setLong(5, data.getExpiry());
+           statement.setLong(6, data.getMaxInactiveMs());
+
+           ByteArrayOutputStream baos = new ByteArrayOutputStream();
+           ObjectOutputStream oos = new ObjectOutputStream(baos);
+           oos.writeObject(data.getAllAttributes());
+           oos.flush();
+           byte[] bytes = baos.toByteArray();
+           ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+           statement.setBinaryStream(7, bais, bytes.length);//attribute map as blob
+
+           if ((key.getCanonicalContextPath() == null || "".equals(key.getCanonicalContextPath())) && _dbAdaptor.isEmptyStringNull())
+           {
+               statement.setString(8, key.getId());
+               statement.setString(9, key.getVhost()); 
+           }
+           else
+           {
+               statement.setString(8, key.getId());
+               statement.setString(9, key.getCanonicalContextPath());
+               statement.setString(10, key.getVhost());
+           }
+           
+           statement.executeUpdate();
+
+           data.setLastSaved(now);
+           if (LOG.isDebugEnabled())
+               LOG.debug("Updated session "+data);
+       }
+    }
 
 
     /** 
@@ -989,8 +1003,25 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     @Override
     public void scavenge()
     {
-        // TODO Auto-generated method stub
+        if (LOG.isDebugEnabled())
+            LOG.debug("Scavenge sweep started at "+System.currentTimeMillis());
+
+        long now = System.currentTimeMillis();
         
+        //first time we're called, don't scavenge
+        if (_lastScavengeTime == 0)
+        {
+            _lastScavengeTime = now;
+            return;
+        }
+
+        
+        /*TODO
+         * 1. Select sessions for our node and our context that have expired since our last pass, giving some leeway
+         * 2. Select sessions for our node that have expired some time ago
+         * 3. Select sessions for any node that have expired quite a while ago
+         */
+       
     }
     
     
