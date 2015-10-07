@@ -47,8 +47,6 @@ public class QuoteUtil
             QUOTE_DOUBLE
         }
 
-        private static final boolean DEBUG = false;
-
         private final String input;
         private final String delims;
         private StringBuilder token;
@@ -80,14 +78,6 @@ public class QuoteUtil
                     token.append(c);
                     hasToken = true;
                 }
-            }
-        }
-
-        private void debug(String format, Object... args)
-        {
-            if (DEBUG)
-            {
-                System.out.printf(format,args);
             }
         }
 
@@ -133,7 +123,7 @@ public class QuoteUtil
                     {
                         if (delims.indexOf(c) >= 0)
                         {
-                            debug("hasNext/t: %b [%s]%n",hasToken,token);
+                            // System.out.printf("hasNext/t: %b [%s]%n",hasToken,token);
                             return hasToken;
                         }
                         else if (c == '\'')
@@ -192,10 +182,9 @@ public class QuoteUtil
                         break;
                     }
                 }
-                debug("%s <%s> : [%s]%n",state,c,token);
+                // System.out.printf("%s <%s> : [%s]%n",state,c,token);
             }
-
-            debug("hasNext/e: %b [%s]%n",hasToken,token);
+            // System.out.printf("hasNext/e: %b [%s]%n",hasToken,token);
             return hasToken;
         }
 

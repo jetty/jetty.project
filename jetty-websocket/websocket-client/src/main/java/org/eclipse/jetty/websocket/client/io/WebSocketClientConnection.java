@@ -30,7 +30,6 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
 /**
@@ -63,25 +62,14 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     }
 
     @Override
-    public void onClose()
-    {
-        super.onClose();
-        ConnectionManager connectionManager = connectPromise.getClient().getConnectionManager();
-        connectionManager.removeSession(getSession());
-    }
-
-    @Override
     public void onOpen()
     {
+        super.onOpen();
         boolean beenOpened = opened.getAndSet(true);
         if (!beenOpened)
         {
-            WebSocketSession session = getSession();
-            ConnectionManager connectionManager = connectPromise.getClient().getConnectionManager();
-            connectionManager.addSession(session);
-            connectPromise.succeeded(session);
+            connectPromise.succeeded();
         }
-        super.onOpen();
     }
 
     /**

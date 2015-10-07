@@ -35,7 +35,6 @@ import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.junit.rules.TestName;
 
@@ -150,12 +149,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
-    public WebSocketSession getSession()
-    {
-        return null;
-    }
-
-    @Override
     public void incomingError(Throwable e)
     {
         incoming.incomingError(e);
@@ -233,11 +226,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     public void setPolicy(WebSocketPolicy policy)
     {
         this.policy = policy;
-    }
-
-    @Override
-    public void setSession(WebSocketSession session)
-    {
     }
 
     @Override

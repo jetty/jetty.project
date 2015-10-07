@@ -57,6 +57,7 @@ public class ScopeBasicsTest
 
     /**
      * Validation of Scope / Inject logic on non-websocket-scoped classes
+     * @throws Exception on test failure
      */
     @Test
     public void testBasicBehavior() throws Exception

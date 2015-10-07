@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.server;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -32,8 +31,6 @@ import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
 public class WebSocketServerConnection extends AbstractWebSocketConnection implements Connection.UpgradeTo
 {
-    private final AtomicBoolean opened = new AtomicBoolean(false);
-
     public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         super(endp,executor,scheduler,policy,bufferPool);
@@ -53,17 +50,6 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection imple
     public InetSocketAddress getRemoteAddress()
     {
         return getEndPoint().getRemoteAddress();
-    }
-
-    @Override
-    public void onOpen()
-    {
-        boolean beenOpened = opened.getAndSet(true);
-        if (!beenOpened)
-        {
-            getSession().open();
-        }
-        super.onOpen();
     }
     
     @Override

@@ -16,12 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.samples;
+package org.eclipse.jetty.websocket.common.test;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -29,11 +31,11 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState;
 
 public class DummyConnection implements LogicalConnection
 {
+    private static final Logger LOG = Log.getLogger(DummyConnection.class);
     private IOState iostate;
 
     public DummyConnection()
@@ -101,13 +103,6 @@ public class DummyConnection implements LogicalConnection
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public WebSocketSession getSession()
-    {
         return null;
     }
 
@@ -126,6 +121,7 @@ public class DummyConnection implements LogicalConnection
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
+        callback.writeSuccess();
     }
 
     @Override
@@ -141,11 +137,8 @@ public class DummyConnection implements LogicalConnection
     @Override
     public void setNextIncomingFrames(IncomingFrames incoming)
     {
-    }
-
-    @Override
-    public void setSession(WebSocketSession session)
-    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("setNextIncomingFrames({})",incoming);
     }
 
     @Override

@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -58,13 +59,14 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 
 @ManagedObject("A Jetty WebSocket Session")
-public class WebSocketSession extends ContainerLifeCycle implements Session, WebSocketSessionScope, IncomingFrames, ConnectionStateListener
+public class WebSocketSession extends ContainerLifeCycle implements Session, WebSocketSessionScope, IncomingFrames, Connection.Listener, ConnectionStateListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
+    private static final Logger LOG_OPEN = Log.getLogger(WebSocketSession.class.getName() + "_OPEN");
     private final WebSocketContainerScope containerScope;
     private final URI requestURI;
-    private final EventDriver websocket;
     private final LogicalConnection connection;
+    private final EventDriver websocket;
     private final SessionListener[] sessionListeners;
     private final Executor executor;
     private ClassLoader classLoader;
@@ -93,6 +95,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         this.outgoingHandler = connection;
         this.incomingHandler = websocket;
         this.connection.getIOState().addListener(this);
+        
+        addBean(this.connection);
+        addBean(this.websocket);
     }
 
     @Override
@@ -110,7 +115,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     @Override
     public void close(int statusCode, String reason)
     {
-        connection.close(statusCode,CloseStatus.trimMaxReasonLength(reason));
+        connection.close(statusCode,reason);
     }
 
     /**
@@ -128,6 +133,35 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     public void dispatch(Runnable runnable)
     {
         executor.execute(runnable);
+    }
+    
+    @Override
+    protected void doStart() throws Exception
+    {
+        if(LOG.isDebugEnabled())
+            LOG.debug("starting - {}",this);
+
+        super.doStart();
+    }
+    
+    @Override
+    protected void doStop() throws Exception
+    {
+        if(LOG.isDebugEnabled())
+            LOG.debug("stopping - {}",this);
+        
+        if (getConnection() != null)
+        {
+            try
+            {
+                getConnection().close(StatusCode.SHUTDOWN,"Shutdown");
+            }
+            catch (Throwable t)
+            {
+                LOG.debug("During Connection Shutdown",t);
+            }
+        }
+        super.doStop();
     }
     
     @Override
@@ -253,6 +287,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     @Override
     public RemoteEndpoint getRemote()
     {
+        if(LOG_OPEN.isDebugEnabled())
+            LOG_OPEN.debug("[{}] {}.getRemote()",policy.getBehavior(),this.getClass().getSimpleName());
         ConnectionState state = connection.getIOState().getConnectionState();
 
         if ((state == ConnectionState.OPEN) || (state == ConnectionState.CONNECTED))
@@ -373,6 +409,19 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     {
         incomingError(cause);
     }
+    
+    @Override
+    public void onClosed(Connection connection)
+    {
+    }
+    
+    @Override
+    public void onOpened(Connection connection)
+    {
+        if(LOG_OPEN.isDebugEnabled())
+            LOG_OPEN.debug("[{}] {}.onOpened()",policy.getBehavior(),this.getClass().getSimpleName());
+        open();
+    }
 
     @SuppressWarnings("incomplete-switch")
     @Override
@@ -381,6 +430,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         switch (state)
         {
             case CLOSED:
+                IOState ioState = this.connection.getIOState();
+                CloseInfo close = ioState.getCloseInfo();
+                // confirmed close of local endpoint
+                notifyClose(close.getStatusCode(),close.getReason());
+                
                 // notify session listeners
                 for (SessionListener listener : sessionListeners)
                 {
@@ -395,10 +449,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
                         LOG.ignore(t);
                     }
                 }
-                IOState ioState = this.connection.getIOState();
-                CloseInfo close = ioState.getCloseInfo();
-                // confirmed close of local endpoint
-                notifyClose(close.getStatusCode(),close.getReason());
                 break;
             case CONNECTED:
                 // notify session listeners
@@ -418,12 +468,15 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
                 break;
         }
     }
-
+    
     /**
      * Open/Activate the session
      */
     public void open()
     {
+        if(LOG_OPEN.isDebugEnabled())
+            LOG_OPEN.debug("[{}] {}.open()",policy.getBehavior(),this.getClass().getSimpleName());
+
         if (remote != null)
         {
             // already opened
@@ -437,6 +490,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     
             // Connect remote
             remote = new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
+            if(LOG_OPEN.isDebugEnabled())
+                LOG_OPEN.debug("[{}] {}.open() remote={}",policy.getBehavior(),this.getClass().getSimpleName(),remote);
             
             // Open WebSocket
             websocket.openSession(this);
@@ -467,7 +522,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
             close(statusCode,t.getMessage());
         }
     }
-
+    
     public void setExtensionFactory(ExtensionFactory extensionFactory)
     {
         this.extensionFactory = extensionFactory;

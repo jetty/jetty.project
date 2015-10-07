@@ -499,6 +499,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Session Opened: {}",session);
+        addManaged(session);
     }
     
     public void setAsyncWriteTimeout(long ms)

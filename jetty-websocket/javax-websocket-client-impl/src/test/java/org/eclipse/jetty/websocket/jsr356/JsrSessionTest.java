@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.*;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -29,6 +29,7 @@ import javax.websocket.MessageHandler;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.test.DummyConnection;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.SimpleEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
@@ -37,7 +38,6 @@ import org.eclipse.jetty.websocket.jsr356.handlers.ByteArrayWholeHandler;
 import org.eclipse.jetty.websocket.jsr356.handlers.ByteBufferPartialHandler;
 import org.eclipse.jetty.websocket.jsr356.handlers.LongMessageHandler;
 import org.eclipse.jetty.websocket.jsr356.handlers.StringWholeHandler;
-import org.eclipse.jetty.websocket.jsr356.samples.DummyConnection;
 import org.eclipse.jetty.websocket.jsr356.samples.DummyEndpoint;
 import org.junit.Assert;
 import org.junit.Before;

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.client;
 import static org.hamcrest.Matchers.*;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -81,7 +82,8 @@ public class SessionTest
             cliSock.assertWasOpened();
             cliSock.assertNotClosed();
 
-            Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
+            Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
+            Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
 
             RemoteEndpoint remote = cliSock.getSession().getRemote();
             remote.sendStringByFuture("Hello World!");
