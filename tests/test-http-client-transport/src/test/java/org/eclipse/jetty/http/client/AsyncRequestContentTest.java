@@ -53,7 +53,7 @@ public class AsyncRequestContentTest extends AbstractTest
 
         DeferredContentProvider contentProvider = new DeferredContentProvider();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST("http://localhost:" + connector.getLocalPort())
+        client.POST(newURI())
                 .content(contentProvider)
                 .send(result ->
                 {
@@ -73,7 +73,7 @@ public class AsyncRequestContentTest extends AbstractTest
 
         DeferredContentProvider contentProvider = new DeferredContentProvider();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST("http://localhost:" + connector.getLocalPort())
+        client.POST(newURI())
                 .content(contentProvider)
                 .send(result ->
                 {
@@ -95,7 +95,7 @@ public class AsyncRequestContentTest extends AbstractTest
         InputStreamContentProvider contentProvider =
                 new InputStreamContentProvider(new ByteArrayInputStream(new byte[0]));
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST("http://localhost:" + connector.getLocalPort())
+        client.POST(newURI())
                 .content(contentProvider)
                 .send(result ->
                 {
@@ -116,7 +116,7 @@ public class AsyncRequestContentTest extends AbstractTest
         InputStreamContentProvider contentProvider =
                 new InputStreamContentProvider(new ByteArrayInputStream(new byte[1]));
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST("http://localhost:" + connector.getLocalPort())
+        client.POST(newURI())
                 .content(contentProvider)
                 .send(result ->
                 {
@@ -136,7 +136,7 @@ public class AsyncRequestContentTest extends AbstractTest
 
         OutputStreamContentProvider contentProvider = new OutputStreamContentProvider();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST("http://localhost:" + connector.getLocalPort())
+        client.POST(newURI())
                 .content(contentProvider)
                 .send(result ->
                 {
@@ -156,7 +156,7 @@ public class AsyncRequestContentTest extends AbstractTest
 
         OutputStreamContentProvider contentProvider = new OutputStreamContentProvider();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST("http://localhost:" + connector.getLocalPort())
+        client.POST(newURI())
                 .content(contentProvider)
                 .send(result ->
                 {

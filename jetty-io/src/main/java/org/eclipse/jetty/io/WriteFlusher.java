@@ -522,4 +522,23 @@ abstract public class WriteFlusher
     {
         return String.format("WriteFlusher@%x{%s}", hashCode(), _state.get());
     }
+    
+    public String toStateString()
+    {
+        switch(_state.get().getType())
+        {
+            case WRITING:
+                return "W";
+            case PENDING:
+                return "P";
+            case COMPLETING:
+                return "C";
+            case IDLE:
+                return "-";
+            case FAILED:
+                return "F";
+            default:
+                return "?";
+        }
+    }
 }

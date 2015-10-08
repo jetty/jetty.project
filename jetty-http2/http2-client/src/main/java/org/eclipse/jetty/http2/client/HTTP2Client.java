@@ -137,7 +137,18 @@ public class HTTP2Client extends ContainerLifeCycle
             setByteBufferPool(new MappedByteBufferPool());
 
         if (connectionFactory == null)
-            setClientConnectionFactory(new HTTP2ClientConnectionFactory());
+        {
+            HTTP2ClientConnectionFactory h2 = new HTTP2ClientConnectionFactory();
+            ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), h2, getProtocols());
+            setClientConnectionFactory((endPoint, context) ->
+            {
+                ClientConnectionFactory factory = h2;
+                SslContextFactory sslContextFactory = (SslContextFactory)context.get(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
+                if (sslContextFactory != null)
+                    factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), alpn);
+                return factory.newConnection(endPoint, context);
+            });
+        }
 
         if (sessions == null)
         {
@@ -356,17 +367,7 @@ public class HTTP2Client extends ContainerLifeCycle
             context.put(HTTP2ClientConnectionFactory.BYTE_BUFFER_POOL_CONTEXT_KEY, getByteBufferPool());
             context.put(HTTP2ClientConnectionFactory.EXECUTOR_CONTEXT_KEY, getExecutor());
             context.put(HTTP2ClientConnectionFactory.SCHEDULER_CONTEXT_KEY, getScheduler());
-
-            ClientConnectionFactory factory = getClientConnectionFactory();
-
-            SslContextFactory sslContextFactory = (SslContextFactory)context.get(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
-            if (sslContextFactory != null)
-            {
-                ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), factory, getProtocols());
-                factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), alpn);
-            }
-
-            return factory.newConnection(endpoint, context);
+            return getClientConnectionFactory().newConnection(endpoint, context);
         }
 
         @Override
