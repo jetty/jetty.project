@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -503,6 +504,22 @@ public class OrderingTest
         if (!checkResult(result, outcomes))
             fail ("No outcome matched "+result);
     }
+
+    @Test
+    public void testOrderFragments() throws Exception 
+    {
+        final MetaData metadata = new MetaData();
+        final Resource jarResource = new TestResource("A");
+
+        metadata.setOrdering(new Ordering.RelativeOrdering(metadata));
+        metadata.addWebInfJar(jarResource);
+        metadata.orderFragments();
+        assertEquals(1, metadata.getOrderedWebInfJars().size());
+        metadata.orderFragments();
+        assertEquals(1, metadata.getOrderedWebInfJars().size());
+    }
+
+
 
     @Test
     public void testCircular1 ()
