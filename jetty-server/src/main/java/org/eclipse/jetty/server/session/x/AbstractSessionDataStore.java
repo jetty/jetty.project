@@ -19,6 +19,7 @@
 
 package org.eclipse.jetty.server.session.x;
 
+import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /**
@@ -28,8 +29,35 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  */
 public abstract class AbstractSessionDataStore extends AbstractLifeCycle implements SessionDataStore
 {
+    protected Context _context; //context associated with this session data store
+    protected String _node; //the unique id of the node on which this context is deployed
     
+    public String getNode()
+    {
+        return _node;
+    }
+
+
+    public void setNode(String node)
+    {
+        _node = node;
+    }
+
+
     public abstract void doStore(SessionKey key, SessionData data) throws Exception;
+
+    
+    public Context getContext()
+    {
+        return _context;
+    }
+
+
+    public void setContext(Context context)
+    {
+        _context = context;
+    }
+
 
     /** 
      * @see org.eclipse.jetty.server.session.x.SessionDataStore#store(java.lang.String, org.eclipse.jetty.server.session.x.SessionData)

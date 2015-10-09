@@ -323,7 +323,19 @@ public class Session implements SessionManager.SessionIf
     {
         return _extendedId;
     }
+    
+    public String getContextPath()
+    {
+        return _sessionData.getContextPath();
+    }
 
+    
+    public String getVHost ()
+    {
+        return _sessionData.getVhost();
+    }
+    
+    
     /** 
      * @see javax.servlet.http.HttpSession#getLastAccessedTime()
      */

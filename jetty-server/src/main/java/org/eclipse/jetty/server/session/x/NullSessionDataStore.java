@@ -19,6 +19,9 @@
 
 package org.eclipse.jetty.server.session.x;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * NullSessionDataStore
  *
@@ -36,13 +39,14 @@ public class NullSessionDataStore extends AbstractSessionDataStore
         return null;
     }
 
+    
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionDataStore#newSessionData(java.lang.String, long, long, long, long)
+     * @see org.eclipse.jetty.server.session.x.SessionDataStore#newSessionData(org.eclipse.jetty.server.session.x.SessionKey, long, long, long, long)
      */
     @Override
-    public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    public SessionData newSessionData(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        return new SessionData(id, created, accessed, lastAccessed, maxInactiveMs);
+        return new SessionData(key.getId(), key.getCanonicalContextPath(), key.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
 
     /** 
@@ -64,12 +68,12 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionDataStore#scavenge()
+     * @see org.eclipse.jetty.server.session.x.SessionDataStore#getExpired()
      */
     @Override
-    public void scavenge()
+    public Set<SessionKey> getExpired(Set<SessionKey> candidates)
     {
-       //noop
+       return candidates; //whatever is suggested we accept
     }
 
 }

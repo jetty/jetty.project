@@ -19,6 +19,10 @@
 
 package org.eclipse.jetty.server.session.x;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /**
@@ -30,6 +34,8 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 {
     protected SessionDataStore _sessionDataStore;
     protected StalenessStrategy _staleStrategy;
+    protected SessionManager _manager;
+    
 
     
 
@@ -43,13 +49,23 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     
     public abstract void doDelete (SessionKey key);
     
-   
+    public abstract Set<SessionKey> doGetExpiredCandidates();
+    
+    
     public AbstractSessionStore ()
     {
- 
     }
     
     
+    public void setSessionManager (SessionManager manager)
+    {
+        _manager = manager;
+    }
+    
+    public SessionManager getSessionManager()
+    {
+        return _manager;
+    }
     
     
     @Override
@@ -58,7 +74,18 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         if (_sessionDataStore == null)
             throw new IllegalStateException ("No session data store configured");
         
+        if (_manager == null)
+            throw new IllegalStateException ("No session manager");
+
+
+        if (_sessionDataStore instanceof AbstractSessionDataStore)
+        {
+            ((AbstractSessionDataStore)_sessionDataStore).setContext(_manager.getContext());
+            ((AbstractSessionDataStore)_sessionDataStore).setNode(_manager.getSessionIdManager().getWorkerName());
+        }
+        
         _sessionDataStore.start();
+        
         super.doStart();
     }
 
@@ -109,6 +136,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         {
             SessionData data = _sessionDataStore.load(key);
             session = newSession(data);
+            session.setSessionManager(_manager);
             doPut(key, session);
         }
         return session;
@@ -124,6 +152,11 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     @Override
     public void put(SessionKey key, Session session) throws Exception
     {
+        if (key == null || session == null)
+            throw new IllegalArgumentException ("Put key="+key+" session="+(session==null?"null":session.getId()));
+        
+        session.setSessionManager(_manager);
+        
         //if the session is already in our cache, then we want to write through any changes
         if (doExists(key))
         {
@@ -188,13 +221,15 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionStore#scavenge()
+     * @see org.eclipse.jetty.server.session.x.SessionStore#getExpired()
      */
     @Override
-    public void scavenge()
+    public Set<SessionKey> getExpired()
     {
        if (!isStarted())
-           return;
-       _sessionDataStore.scavenge();
+           return Collections.emptySet();
+       Set<SessionKey> candidates = doGetExpiredCandidates();
+       return _sessionDataStore.getExpired(candidates);
     }
+
 }

@@ -57,9 +57,11 @@ public class SessionData implements Serializable
     protected long _lastSaved; //time in msec since last save
     
 
-    public SessionData (String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    public SessionData (String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
         _id = id;
+        setContextPath(cpath);
+        setVhost(vhost);
         _created = created;
         _accessed = accessed;
         _lastAccessed = lastAccessed;

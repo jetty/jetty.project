@@ -23,23 +23,16 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
-import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.Driver;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
@@ -52,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JDBCSessionDataStore extends AbstractSessionDataStore
 {
-    private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
     
     
@@ -68,237 +61,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
     private SessionTableSchema _sessionTableSchema;
 
-    /**
-     * DatabaseAdaptor
-     *
-     * Handles differences between databases.
-     *
-     * Postgres uses the getBytes and setBinaryStream methods to access
-     * a "bytea" datatype, which can be up to 1Gb of binary data. MySQL
-     * is happy to use the "blob" type and getBlob() methods instead.
-     *
-     * TODO if the differences become more major it would be worthwhile
-     * refactoring this class.
-     */
-    public static class DatabaseAdaptor
-    {
-        String _dbName;
-        boolean _isLower;
-        boolean _isUpper;
-        
-        protected String _blobType; //if not set, is deduced from the type of the database at runtime
-        protected String _longType; //if not set, is deduced from the type of the database at runtime
-        private String _driverClassName;
-        private String _connectionUrl;
-        private Driver _driver;
-        private DataSource _datasource;
-        private String _jndiName;
-
-
-        public DatabaseAdaptor ()
-        {           
-        }
-        
-        
-        public void adaptTo(DatabaseMetaData dbMeta)  
-        throws SQLException
-        {
-            _dbName = dbMeta.getDatabaseProductName().toLowerCase(Locale.ENGLISH);
-            if (LOG.isDebugEnabled())
-                LOG.debug ("Using database {}",_dbName);
-            _isLower = dbMeta.storesLowerCaseIdentifiers();
-            _isUpper = dbMeta.storesUpperCaseIdentifiers(); 
-        }
-        
-       
-        public void setBlobType(String blobType)
-        {
-            _blobType = blobType;
-        }
-        
-        public String getBlobType ()
-        {
-            if (_blobType != null)
-                return _blobType;
-
-            if (_dbName.startsWith("postgres"))
-                return "bytea";
-
-            return "blob";
-        }
-        
-
-        public void setLongType(String longType)
-        {
-            _longType = longType;
-        }
-        
-
-        public String getLongType ()
-        {
-            if (_longType != null)
-                return _longType;
-
-            if (_dbName == null)
-                throw new IllegalStateException ("DbAdaptor missing metadata");
-            
-            if (_dbName.startsWith("oracle"))
-                return "number(20)";
-
-            return "bigint";
-        }
-        
-
-        /**
-         * Convert a camel case identifier into either upper or lower
-         * depending on the way the db stores identifiers.
-         *
-         * @param identifier the raw identifier
-         * @return the converted identifier
-         */
-        public String convertIdentifier (String identifier)
-        {
-            if (_dbName == null)
-                throw new IllegalStateException ("DbAdaptor missing metadata");
-            
-            if (_isLower)
-                return identifier.toLowerCase(Locale.ENGLISH);
-            if (_isUpper)
-                return identifier.toUpperCase(Locale.ENGLISH);
-
-            return identifier;
-        }
-
-        
-        public String getDBName ()
-        {
-            return _dbName;
-        }
-
-
-        public InputStream getBlobInputStream (ResultSet result, String columnName)
-        throws SQLException
-        {
-            if (_dbName == null)
-                throw new IllegalStateException ("DbAdaptor missing metadata");
-            
-            if (_dbName.startsWith("postgres"))
-            {
-                byte[] bytes = result.getBytes(columnName);
-                return new ByteArrayInputStream(bytes);
-            }
-
-            Blob blob = result.getBlob(columnName);
-            return blob.getBinaryStream();
-        }
-
-
-        public boolean isEmptyStringNull ()
-        {
-            if (_dbName == null)
-                throw new IllegalStateException ("DbAdaptor missing metadata");
-            
-            return (_dbName.startsWith("oracle"));
-        }
-        
-        /**
-         * rowId is a reserved word for Oracle, so change the name of this column
-         * @return true if db in use is oracle
-         */
-        public boolean isRowIdReserved ()
-        {
-            if (_dbName == null)
-                throw new IllegalStateException ("DbAdaptor missing metadata");
-            
-            return (_dbName != null && _dbName.startsWith("oracle"));
-        }
-
-        /**
-         * Configure jdbc connection information via a jdbc Driver
-         *
-         * @param driverClassName the driver classname
-         * @param connectionUrl the driver connection url
-         */
-        public void setDriverInfo (String driverClassName, String connectionUrl)
-        {
-            _driverClassName=driverClassName;
-            _connectionUrl=connectionUrl;
-        }
-
-        /**
-         * Configure jdbc connection information via a jdbc Driver
-         *
-         * @param driverClass the driver class
-         * @param connectionUrl the driver connection url
-         */
-        public void setDriverInfo (Driver driverClass, String connectionUrl)
-        {
-            _driver=driverClass;
-            _connectionUrl=connectionUrl;
-        }
-
-
-        public void setDatasource (DataSource ds)
-        {
-            _datasource = ds;
-        }
-        
-        public void setDatasourceName (String jndi)
-        {
-            _jndiName=jndi;
-        }
-
-        public void initializeDatabase ()
-        throws Exception
-        {
-            if (_datasource != null)
-                return; //already set up
-            
-            if (_jndiName!=null)
-            {
-                InitialContext ic = new InitialContext();
-                _datasource = (DataSource)ic.lookup(_jndiName);
-            }
-            else if ( _driver != null && _connectionUrl != null )
-            {
-                DriverManager.registerDriver(_driver);
-            }
-            else if (_driverClassName != null && _connectionUrl != null)
-            {
-                Class.forName(_driverClassName);
-            }
-            else
-            {
-                try
-                {
-                    InitialContext ic = new InitialContext();
-                    _datasource = (DataSource)ic.lookup("jdbc/sessions"); //last ditch effort
-                }
-                catch (NamingException e)
-                {
-                    throw new IllegalStateException("No database configured for sessions");
-                }
-            }
-        }
-
-        
-        /**
-         * Get a connection from the driver or datasource.
-         *
-         * @return the connection for the datasource
-         * @throws SQLException if unable to get the connection
-         */
-        protected Connection getConnection ()
-        throws SQLException
-        {
-            if (_datasource != null)
-                return _datasource.getConnection();
-            else
-                return DriverManager.getConnection(_connectionUrl);
-        }
-        
-    }
-    
     /**
      * SessionTableSchema
      *
@@ -542,12 +304,17 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         
         public String getBoundedExpiredSessionsStatementAsString()
         {
-            return "select * from "+getTableName()+" where "+getLastNodeColumn()+" = ? and "+getExpiryTimeColumn()+" >= ? and "+getExpiryTimeColumn()+" <= ?";
+            return "select "+getIdColumn()+" from "+getTableName()+" where "+getContextPathColumn()+" = ? and "+getVirtualHostColumn()+" = ? and "+getExpiryTimeColumn()+" >= ? and "+getExpiryTimeColumn()+" <= ?";
         }
         
-        public String getSelectExpiredSessionsStatementAsString()
+        public String getMyExpiredSessionsStatementAsString()
         {
-            return "select * from "+getTableName()+" where "+getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?";
+            return "select "+getIdColumn()+" from "+getTableName()+" where "+getLastNodeColumn()+" = ? and "+getContextPathColumn()+" = and "+getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?";
+        }
+        
+        public String getAllAncientExpiredSessionsAsString()
+        {
+            return "select "+getIdColumn()+", "+getContextPathColumn()+", "+getVirtualHostColumn()+" from "+getTableName()+" where "+getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?";
         }
      
         public PreparedStatement getLoadStatement (Connection connection, SessionKey key)
@@ -770,17 +537,23 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
   
 
+    /** 
+     * @see org.eclipse.jetty.server.session.x.SessionDataStore#newSessionData(org.eclipse.jetty.server.session.x.SessionKey, long, long, long, long)
+     */
     @Override
-    public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    public SessionData newSessionData(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        return new SessionData(id, created, accessed, lastAccessed, maxInactiveMs);
+        return new SessionData(key.getId(), key.getCanonicalContextPath(), key.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
 
 
 
     @Override
     protected void doStart() throws Exception
-    {
+    {         
+        if (_dbAdaptor == null)
+            throw new IllegalStateException("No jdbc config");
+        
         initialize();
         super.doStart();
     }
@@ -802,14 +575,12 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         if (!_initialized)
         {
             _initialized = true;
-            
-            if (_dbAdaptor == null)
-                _dbAdaptor = new DatabaseAdaptor();
-
+   
+            //taking the defaults if one not set
             if (_sessionTableSchema == null)
                 _sessionTableSchema = new SessionTableSchema();
             
-            _dbAdaptor.initializeDatabase();
+            _dbAdaptor.initialize();
             _sessionTableSchema.setDatabaseAdaptor(_dbAdaptor);
             _sessionTableSchema.prepareTables();
         }
@@ -831,7 +602,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             SessionData data = null;
             if (result.next())
             {                    
-                data = newSessionData(key.getId(), 
+                data = newSessionData(key,
                                       result.getLong(_sessionTableSchema.getCreateTimeColumn()), 
                                       result.getLong(_sessionTableSchema.getAccessTimeColumn()), 
                                       result.getLong(_sessionTableSchema.getLastAccessTimeColumn()), 
@@ -998,10 +769,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionDataStore#scavenge()
+     * @see org.eclipse.jetty.server.session.x.SessionDataStore#getExpired()
      */
     @Override
-    public void scavenge()
+    public Set<SessionKey> getExpired(Set<SessionKey> candidates)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Scavenge sweep started at "+System.currentTimeMillis());
@@ -1012,17 +783,83 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         if (_lastScavengeTime == 0)
         {
             _lastScavengeTime = now;
-            return;
+            return Collections.emptySet();
         }
-
         
-        /*TODO
-         * 1. Select sessions for our node and our context that have expired since our last pass, giving some leeway
-         * 2. Select sessions for our node that have expired some time ago
-         * 3. Select sessions for any node that have expired quite a while ago
-         */
-       
+        //we actually ignore the list of candidates as the database has the definitive list of sessions
+        
+        long interval = now - _lastScavengeTime;
+
+        String cpath = SessionKey.getContextPath(_context);
+        String vhost = SessionKey.getVirtualHost(_context);
+        
+        Set<SessionKey> expiredSessionKeys = new HashSet<SessionKey>();
+        try (Connection connection = _dbAdaptor.getConnection())
+        {
+            connection.setAutoCommit(true);
+            
+            /*
+             * 1. Select sessions for our node and context that have expired since a grace interval
+             */
+            long upperBound = _lastScavengeTime; //grace interval is 1 scavenge interval
+            if (LOG.isDebugEnabled())
+                LOG.debug ("{}- Pass 1: Searching for sessions for node {} and context {} expired before {}", _node, _node, cpath, upperBound);
+
+            
+            try (PreparedStatement statement = connection.prepareStatement(_sessionTableSchema.getMyExpiredSessionsStatementAsString()))
+            {
+                statement.setString(1, cpath);
+                statement.setString(2,  vhost);
+                statement.setLong(3, upperBound);
+                try (ResultSet result = statement.executeQuery())
+                {
+                    while (result.next())
+                    {
+                        String sessionId = result.getString(_sessionTableSchema.getIdColumn());
+                        expiredSessionKeys.add(SessionKey.getKey(sessionId, cpath, vhost));
+                        if (LOG.isDebugEnabled()) LOG.debug (cpath+"- Found expired sessionId="+sessionId);
+                    }
+                }
+            }
+
+            /*
+             *  2. Select sessions for any node or context that have expired a long time ago (ie at least 3 intervals ago)
+             */
+            try (PreparedStatement selectExpiredSessions = connection.prepareStatement(_sessionTableSchema.getAllAncientExpiredSessionsAsString()))
+            {
+              
+                upperBound = _lastScavengeTime - (3 * interval);
+                if (upperBound > 0)
+                {
+                    if (LOG.isDebugEnabled()) LOG.debug("{}- Pass 2: Searching for sessions expired before {}",_node, upperBound);
+                    selectExpiredSessions.setLong(1, upperBound);
+                    try (ResultSet result = selectExpiredSessions.executeQuery())
+                    {
+                        while (result.next())
+                        {
+                            String sessionId = result.getString(_sessionTableSchema.getIdColumn());
+                            String ctxtpth = result.getString(_sessionTableSchema.getContextPathColumn());
+                            String vh = result.getString(_sessionTableSchema.getVirtualHostColumn());
+                            expiredSessionKeys.add(SessionKey.getKey(sessionId, ctxtpth, vh));
+                            if (LOG.isDebugEnabled()) LOG.debug ("{}- Found expired sessionId=",_node, sessionId);
+                        }
+                    }
+                }
+            }
+
+            return expiredSessionKeys;
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+            return expiredSessionKeys; //return whatever we got
+        } 
+        finally
+        {
+            _lastScavengeTime = now;
+        }
     }
+    
     
     
     public void setDatabaseAdaptor (DatabaseAdaptor dbAdaptor)

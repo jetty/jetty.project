@@ -47,6 +47,11 @@ public class SessionKey
         String id = data.getId();
         return new SessionKey(id, cpath, vhost);
     }
+    
+    public static SessionKey getKey (String id, String canonicalContextPath, String canonicalVirtualHost)
+    {
+        return new SessionKey(id, canonicalContextPath, canonicalVirtualHost);
+    }
         
     
     private SessionKey (String id, String path, String vhost)
@@ -76,7 +81,7 @@ public class SessionKey
         return _canonicalContextPath +"_"+_vhost+"_"+_id;
     }
     
-    private static String getContextPath (Context context)
+    public static String getContextPath (Context context)
     {
         return canonicalize (context.getContextPath());
     }
@@ -89,7 +94,7 @@ public class SessionKey
      *
      * @return 0.0.0.0 if no virtual host is defined
      */
-    private static String getVirtualHost (Context context)
+    public static String getVirtualHost (Context context)
     {
         String vhost = "0.0.0.0";
 

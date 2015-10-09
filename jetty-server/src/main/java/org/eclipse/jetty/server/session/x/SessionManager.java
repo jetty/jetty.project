@@ -48,6 +48,7 @@ import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -268,7 +269,8 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         if (_sessionStore == null)
             throw new IllegalStateException("No session store configured");
         
-        
+        if (_sessionIdManager == null)
+            throw new IllegalStateException("No session id manager");
         
         _context=ContextHandler.getCurrentContext();
         _loader=Thread.currentThread().getContextClassLoader();
@@ -337,22 +339,11 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             if (tmp!=null)
                 _checkingRemoteSessionIdEncoding=Boolean.parseBoolean(tmp);
         }
-        
-      
-        
-        //try and use a common scheduler, fallback to own
-        _scheduler = server.getBean(Scheduler.class);
-        if (_scheduler == null)
-        {
-            _scheduler = new ScheduledExecutorScheduler();
-            _ownScheduler = true;
-            _scheduler.start();
-        }
-        else if (!_scheduler.isStarted())
-            throw new IllegalStateException("Shared scheduler not started");
- 
-       setScavengeInterval(getScavengeInterval());        
+       
 
+       if (_sessionStore instanceof AbstractSessionStore)
+           ((AbstractSessionStore)_sessionStore).setSessionManager(this);
+       
        _sessionStore.start();
        
         super.doStart();
@@ -628,7 +619,8 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     {
         long created=System.currentTimeMillis();
         String id =_sessionIdManager.newSessionId(request,created);
-        Session session = _sessionStore.newSession(id, created, created, created,  (_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000L:-1));
+        SessionKey key = SessionKey.getKey(id, _context);       
+        Session session = _sessionStore.newSession(key, created, created, created,  (_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000L:-1));
         session.setExtendedId(_sessionIdManager.getExtendedId(id,request));
         session.setSessionManager(this);
 
@@ -637,7 +629,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
         try
         {
-            _sessionStore.put(SessionKey.getKey(session.getId(), _context), session);
+            _sessionStore.put(key, session);
         }
         catch (Exception e)
         {
@@ -784,7 +776,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                     return null;
                 }
                 
-                session.setSessionManager(this);
                 session.setExtendedId(_sessionIdManager.getExtendedId(id, null)); //TODO not sure if this is OK?
                 session.setLastNode(_sessionIdManager.getWorkerName());  //TODO write through the change of node?
             }
@@ -861,11 +852,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                 _sessionsStats.decrement();
                 _sessionTimeStats.set(round((System.currentTimeMillis() - session.getCreationTime())/1000.0));
 
-                // Remove session from all context and global id maps
-                _sessionIdManager.removeId(session.getId());
-                if (invalidate)
-                    _sessionIdManager.invalidateAll(session.getId());
-
                 if (invalidate && _sessionListeners!=null)
                 {
                     HttpSessionEvent event=new HttpSessionEvent(session);      
@@ -884,6 +870,9 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             return false;
         }
     }
+    
+    
+   
 
     /* ------------------------------------------------------------ */
     /**
@@ -1038,51 +1027,37 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         }
     }
     
-    
-    public void scavenge ()
+    public void expire (String id)
     {
-        //TODO call scavenge on the cache, which calls through to scavenge on the backing store
-        //want scavenging to use different algorithms?Pluggable?
-    }
-    
-    
-    public void setScavengeInterval (long sec)
-    {
-        if (sec<=0)
-            sec=60;
+        if (StringUtil.isBlank(id))
+            return;
 
-        long old_period=_scavengeIntervalMs;
-        long period=sec*1000L;
-
-        _scavengeIntervalMs=period;
-
-        //add a bit of variability into the scavenge time so that not all
-        //nodes with the same scavenge interval sync up
-        long tenPercent = _scavengeIntervalMs/10;
-        if ((System.currentTimeMillis()%2) == 0)
-            _scavengeIntervalMs += tenPercent;
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Scavenging every "+_scavengeIntervalMs+" ms");
-        
-        synchronized (this)
+        try
         {
-            //if (_timer!=null && (period!=old_period || _task==null))
-            if (_scheduler != null && (period!=old_period || _task==null))
-            {
-                if (_task!=null)
-                    _task.cancel();
-                if (_scavenger == null)
-                    _scavenger = new Scavenger();
-                _task = _scheduler.schedule(_scavenger,_scavengeIntervalMs,TimeUnit.MILLISECONDS);
-            }
+            Session session = _sessionStore.get(SessionKey.getKey(id, _context));
+            if (session == null)
+                return;  // couldn't get/load a session for this context with that id
+            session.timeout();
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
         }
     }
-
-    public long getScavengeInterval ()
+    
+    
+    
+    
+    public Set<SessionKey> scavenge ()
     {
-        return _scavengeIntervalMs/1000;
+        //don't attempt to scavenge if we are shutting down
+        if (isStopping() || isStopped())
+            return Collections.emptySet();
+
+        return _sessionStore.getExpired();
     }
+    
+  
 
 
     /**

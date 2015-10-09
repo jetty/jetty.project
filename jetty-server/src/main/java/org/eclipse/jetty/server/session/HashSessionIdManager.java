@@ -144,8 +144,8 @@ public class HashSessionIdManager extends AbstractSessionIdManager
                 {
                     SessionManager manager = sessionHandler.getSessionManager();
 
-                    if (manager != null && manager instanceof AbstractSessionManager)
-                        ((AbstractSessionManager)manager).invalidateSession(id);
+                    if (manager != null)
+                       manager.expire(id);
                 }
             }
         }

@@ -29,14 +29,16 @@ package org.eclipse.jetty.server.session.x;
 public class JDBCSessionManager extends SessionManager
 {
    
+    protected DatabaseAdaptor _db = new DatabaseAdaptor();
+    protected JDBCSessionDataStore _sessionDataStore = new JDBCSessionDataStore();
 
 
     @Override
     public void doStart() throws Exception
     {
         _sessionStore = new MemorySessionStore();
-        ((AbstractSessionStore)_sessionStore).setSessionDataStore(new JDBCSessionDataStore());
-        
+        _sessionDataStore.setDatabaseAdaptor(_db);
+        ((AbstractSessionStore)_sessionStore).setSessionDataStore(_sessionDataStore);
         
         super.doStart();
     }
@@ -44,10 +46,17 @@ public class JDBCSessionManager extends SessionManager
     @Override
     public void doStop() throws Exception
     {
-        // TODO Auto-generated method stub
         super.doStop();
     }
 
     
+    /**
+     * Get the db adaptor to configure jdbc settings
+     * @return
+     */
+    public DatabaseAdaptor getDatabaseAdaptor()
+    {
+        return _db;
+    }
     
 }

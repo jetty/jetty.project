@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
@@ -75,13 +76,14 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
 
 
+ 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionDataStore#newSessionData(java.lang.String, long, long, long, long)
+     * @see org.eclipse.jetty.server.session.x.SessionDataStore#newSessionData(org.eclipse.jetty.server.session.x.SessionKey, long, long, long, long)
      */
     @Override
-    public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    public SessionData newSessionData(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        return new SessionData(id,created,accessed,lastAccessed,maxInactiveMs);
+        return new SessionData(key.getId(), key.getCanonicalContextPath(), key.getVhost(),created,accessed,lastAccessed,maxInactiveMs);
     }
 
     /** 
@@ -105,13 +107,13 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionDataStore#scavenge()
+     * @see org.eclipse.jetty.server.session.x.SessionDataStore#getExpired()
      */
     @Override
-    public void scavenge()
+    public Set<SessionKey> getExpired(Set<SessionKey> candidates)
     {
-        // TODO Auto-generated method stub
-
+        //we don't want to open up each file and check, so just leave it up to the SessionStore
+        return candidates;
     }
 
 
@@ -159,9 +161,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             long expiry = di.readLong();
             long maxIdle = di.readLong();
 
-            data = newSessionData(id, created, accessed, lastAccessed, maxIdle); 
-            data.setContextPath(contextPath);
-            data.setVhost(vhost);
+            data = newSessionData(key, created, accessed, lastAccessed, maxIdle); 
+            data.setContextPath(contextPath); //TODO should be same as key
+            data.setVhost(vhost);//TODO should be same as key
             data.setLastNode(lastNode);
             data.setCookieSet(cookieSet);
             data.setExpiry(expiry);

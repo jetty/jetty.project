@@ -19,6 +19,8 @@
 
 package org.eclipse.jetty.server.session.x;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.http.HttpServletRequest;
@@ -127,6 +129,26 @@ public class MemorySessionStore extends AbstractSessionStore
     
     
 
+
+    @Override
+    public Set<SessionKey> doGetExpiredCandidates()
+    {
+        Set<SessionKey> candidates = new HashSet<SessionKey>();
+        long now = System.currentTimeMillis();
+        
+        for (Session s:_sessions.values())
+        {
+            if (s.isExpiredAt(now))
+                candidates.add(SessionKey.getKey(s.getId(), s.getContextPath(), s.getVHost()));
+        }
+        return candidates;
+    }
+
+
+
+
+
+
     @Override
     public void shutdown ()
     {
@@ -175,9 +197,9 @@ public class MemorySessionStore extends AbstractSessionStore
      * @see org.eclipse.jetty.server.session.x.SessionStore#newSession(java.lang.String)
      */
     @Override
-    public Session newSession(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    public Session newSession(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-           return new MemorySession(_sessionDataStore.newSessionData(id, created, accessed, lastAccessed, maxInactiveMs));
+           return new MemorySession(_sessionDataStore.newSessionData(key, created, accessed, lastAccessed, maxInactiveMs));
     }
 
 

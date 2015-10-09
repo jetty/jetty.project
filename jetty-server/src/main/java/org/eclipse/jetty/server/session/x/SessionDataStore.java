@@ -19,6 +19,8 @@
 
 package org.eclipse.jetty.server.session.x;
 
+import java.util.Set;
+
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
@@ -42,7 +44,7 @@ public interface SessionDataStore extends LifeCycle
      * Create a new SessionData 
      * @return
      */
-    public SessionData newSessionData (String id, long created, long accessed, long lastAccessed, long maxInactiveMs);
+    public SessionData newSessionData (SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs);
     
     
     
@@ -67,13 +69,17 @@ public interface SessionDataStore extends LifeCycle
     
     
     
-    
+   
     /**
      * Called periodically, this method should search the data store
      * for sessions that have been expired for a 'reasonable' amount 
-     * of time.
+     * of time. 
+     * @param candidates if provided, these are keys of sessions that
+     * the SessionStore thinks has expired and should be verified by the
+     * SessionDataStore
+     * @return
      */
-    public void scavenge ();
+    public Set<SessionKey> getExpired (Set<SessionKey> candidates);
     
     
 }
