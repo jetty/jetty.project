@@ -146,6 +146,10 @@ public interface Ordering
         @Override
         public List<Resource> order(List<Resource> jars)
         {         
+            _beforeOthers.clear();
+            _afterOthers.clear();
+            _noOthers.clear();
+
             //for each jar, put it into the ordering according to the fragment ordering
             for (Resource jar:jars)
             {
@@ -157,17 +161,17 @@ public interface Ordering
                     {
                         case None:
                         {
-                            ((RelativeOrdering)_metaData.getOrdering()).addNoOthers(jar);
+                            addNoOthers(jar);
                             break;
                         }
                         case Before:
                         { 
-                            ((RelativeOrdering)_metaData.getOrdering()).addBeforeOthers(jar);
+                            addBeforeOthers(jar);
                             break;
                         }
                         case After:
                         {
-                            ((RelativeOrdering)_metaData.getOrdering()).addAfterOthers(jar);
+                            addAfterOthers(jar);
                             break;
                         }
                     } 
@@ -175,7 +179,7 @@ public interface Ordering
                 else
                 {
                     //jar fragment has no descriptor, but there is a relative ordering in place, so it must be part of the others
-                    ((RelativeOrdering)_metaData.getOrdering()).addNoOthers(jar);
+                    addNoOthers(jar);
                 }
             }            
                 

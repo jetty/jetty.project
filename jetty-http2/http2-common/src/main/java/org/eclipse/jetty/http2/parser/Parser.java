@@ -197,6 +197,11 @@ public class Parser
         return headerParser.getFrameType();
     }
 
+    protected boolean hasFlag(int bit)
+    {
+        return headerParser.hasFlag(bit);
+    }
+
     protected void notifyConnectionFailure(int error, String reason)
     {
         try

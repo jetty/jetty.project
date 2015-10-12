@@ -51,7 +51,7 @@ public class AbstractTest
     protected ServerConnector connector;
     protected String servletPath = "/test";
     protected HTTP2Client client;
-    private Server server;
+    protected Server server;
 
     protected void start(HttpServlet servlet) throws Exception
     {
@@ -71,19 +71,19 @@ public class AbstractTest
 
     protected void start(ServerSessionListener listener) throws Exception
     {
-        prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(),listener));
+        prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener));
         server.start();
 
         prepareClient();
         client.start();
     }
 
-    private void prepareServer(ConnectionFactory connectionFactory)
+    protected void prepareServer(ConnectionFactory... connectionFactories)
     {
         QueuedThreadPool serverExecutor = new QueuedThreadPool();
         serverExecutor.setName("server");
         server = new Server(serverExecutor);
-        connector = new ServerConnector(server, 1,1, connectionFactory);
+        connector = new ServerConnector(server, 1, 1, connectionFactories);
         server.addConnector(connector);
     }
 

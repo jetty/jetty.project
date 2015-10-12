@@ -51,11 +51,13 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Tests various close scenarios that should result in Open Session cleanup
  */
+@Ignore
 public class ManyConnectionsCleanupTest
 {
     static class AbstractCloseSocket extends WebSocketAdapter
