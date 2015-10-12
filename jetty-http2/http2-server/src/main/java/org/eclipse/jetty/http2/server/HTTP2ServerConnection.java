@@ -19,6 +19,8 @@
 package org.eclipse.jetty.http2.server;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 
@@ -33,7 +35,9 @@ import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.SettingsBodyParser;
@@ -53,7 +57,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final Queue<HttpChannelOverHTTP2> channels = new ConcurrentArrayQueue<>();
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
-    private HeadersFrame upgradeRequest;
+    private final List<Frame> upgradeFrames = new ArrayList<>();
 
     public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
@@ -79,10 +83,10 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     @Override
     public void onOpen()
     {
-        super.onOpen();
         notifyAccept(getSession());
-        if (upgradeRequest != null)
-            getSession().onFrame(upgradeRequest);
+        for (Frame frame : upgradeFrames)
+            getSession().onFrame(frame);
+        super.onOpen();
     }
 
     private void notifyAccept(ISession session)
@@ -172,10 +176,12 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
                 throw new BadMessageException();
             }
 
-            getSession().onFrame(settingsFrame);
+            getParser().standardUpgrade();
 
+            upgradeFrames.add(new PrefaceFrame());
+            upgradeFrames.add(settingsFrame);
             // Remember the request to send a response from onOpen().
-            upgradeRequest = new HeadersFrame(1, request, null, true);
+            upgradeFrames.add(new HeadersFrame(1, request, null, true));
         }
         return true;
     }
