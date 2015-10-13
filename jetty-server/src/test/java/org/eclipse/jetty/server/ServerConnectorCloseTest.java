@@ -23,7 +23,7 @@ import org.junit.Before;
 
 
 /* ------------------------------------------------------------ */
-public class SelectChannelConnectorCloseTest extends ConnectorCloseTestBase
+public class ServerConnectorCloseTest extends ConnectorCloseTestBase
 {
     
     /* ------------------------------------------------------------ */
