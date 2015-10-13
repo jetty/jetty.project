@@ -1,3 +1,12 @@
+jetty-9.3.6-SNAPSHOT
+
+jetty-9.3.5.v20151012 - 12 October 2015
+ + 479343 calls to MetaData#orderFragments() with relative ordering adds
+   duplicate jars
+ + 479537 Server preface sent after client preface reply.
+ + 479584 WS Session does not contain UpgradeRequest information in
+   WebSocketAdapter.onWebSocketConnect callback
+
 jetty-9.3.4.v20151007 - 07 October 2015
  + 428474 Expose batch mode in the Jetty WebSocket API
  + 472082 isOpen returns true on CLOSING Connection
