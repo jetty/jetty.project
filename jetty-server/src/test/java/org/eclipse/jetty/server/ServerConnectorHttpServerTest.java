@@ -18,24 +18,20 @@
 
 package org.eclipse.jetty.server;
 
-import org.junit.After;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.junit.Before;
+import org.junit.runner.RunWith;
 
-
-/* ------------------------------------------------------------ */
-public class SelectChannelConnectorCloseTest extends ConnectorCloseTestBase
+/**
+ * HttpServer Tester.
+ */
+@RunWith(AdvancedRunner.class)
+public class ServerConnectorHttpServerTest extends HttpServerTestBase
 {
-    
-    /* ------------------------------------------------------------ */
     @Before
     public void init() throws Exception
     {
-        startServer(new ServerConnector(_server));
-    }
-    
-    @After
-    public void after() throws Exception
-    {
-        _server.stop();
+        // Run this test with 0 acceptors. Other tests already check the acceptors >0
+        startServer(new ServerConnector(_server,0,1));
     }
 }

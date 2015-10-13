@@ -45,9 +45,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @Ignore("Ignored while refactoring the connection events and statistics")
-public class SelectChannelStatisticsTest
+public class ConnectorStatisticsTest
 {
-    private static final Logger LOG = Log.getLogger(SelectChannelStatisticsTest.class);
+    private static final Logger LOG = Log.getLogger(ConnectorStatisticsTest.class);
 
     private static Server _server;
     private static ConnectorStatistics _statistics;
