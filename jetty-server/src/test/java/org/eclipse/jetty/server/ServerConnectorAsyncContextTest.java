@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.IO;
 
-public class SelectChannelAsyncContextTest extends LocalAsyncContextTest
+public class ServerConnectorAsyncContextTest extends LocalAsyncContextTest
 {
     @Override
     protected Connector initConnector()
