@@ -171,6 +171,11 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         return true;
     }
 
+    public void remove()
+    {
+        getHttpDestination().remove(this);
+    }
+
     @Override
     public String toString()
     {

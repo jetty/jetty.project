@@ -167,12 +167,17 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
         }
     }
 
+    public boolean remove(Connection connection)
+    {
+        return connectionPool.remove(connection);
+    }
+
     @Override
     public void close(Connection connection)
     {
         super.close(connection);
 
-        boolean removed = connectionPool.remove(connection);
+        boolean removed = remove(connection);
 
         if (getHttpExchanges().isEmpty())
         {

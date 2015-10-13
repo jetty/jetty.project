@@ -437,6 +437,7 @@ public abstract class HttpReceiver
 
         if (result != null)
         {
+            result = channel.exchangeTerminating(exchange, result);
             boolean ordered = getHttpDestination().getHttpClient().isStrictEventOrdering();
             if (!ordered)
                 channel.exchangeTerminated(exchange, result);
