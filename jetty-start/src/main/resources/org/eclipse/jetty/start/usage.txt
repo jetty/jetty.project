@@ -115,10 +115,6 @@ Module Management:
                      ${jetty.base} and are willing to forego some of the
                      safety checks built into the jetty-start mechanism.
 
-  --yes            Automatically reply Yes to any questions asked by the
-                   module installation mechanism. Useful for running module
-                   commands from scripts.
-                   
 
 Startup / Shutdown Command Line:
 --------------------------------
