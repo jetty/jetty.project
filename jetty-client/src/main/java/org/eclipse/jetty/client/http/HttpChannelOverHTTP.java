@@ -95,21 +95,24 @@ public class HttpChannelOverHTTP extends HttpChannel
             return result;
 
         HttpResponse response = exchange.getResponse();
-        if (response.getStatus() != HttpStatus.SWITCHING_PROTOCOLS_101)
-            return result;
-        // TODO: protocol version and connection: upgrade
-
-        HttpRequest request = exchange.getRequest();
-        if (request instanceof HttpConnectionUpgrader)
+        
+        if ( (response.getVersion() == HttpVersion.HTTP_1_1) &&
+             (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101) &&
+             (response.getHeaders().get("Connection").equalsIgnoreCase("upgrade")) )
         {
-            HttpConnectionUpgrader listener = (HttpConnectionUpgrader)request;
-            try
+            // Upgrade Response
+            HttpRequest request = exchange.getRequest();
+            if (request instanceof HttpConnectionUpgrader)
             {
-                listener.upgrade(response, getHttpConnection());
-            }
-            catch (Throwable x)
-            {
-                return new Result(result, x);
+                HttpConnectionUpgrader listener = (HttpConnectionUpgrader)request;
+                try
+                {
+                    listener.upgrade(response, getHttpConnection());
+                }
+                catch (Throwable x)
+                {
+                    return new Result(result, x);
+                }
             }
         }
 

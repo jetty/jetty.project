@@ -196,7 +196,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
                 HttpClient client = destination.getHttpClient();
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
-                if (HttpScheme.HTTPS.is(destination.getScheme()))
+                if (HttpScheme.HTTPS.is(destination.getScheme()) || HttpScheme.WSS.is(destination.getScheme()))
                     connectionFactory = new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
                 org.eclipse.jetty.io.Connection connection = connectionFactory.newConnection(getEndPoint(), context);
                 ClientConnectionFactory.Helper.replaceConnection(this, connection);

@@ -1044,12 +1044,20 @@ public class HttpClient extends ContainerLifeCycle
 
     protected int normalizePort(String scheme, int port)
     {
-        return port > 0 ? port : HttpScheme.HTTPS.is(scheme) ? 443 : 80;
+        if (port > 0)
+            return port;
+        else if (HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme))
+            return 443;
+        else
+            return 80;
     }
 
     public boolean isDefaultPort(String scheme, int port)
     {
-        return HttpScheme.HTTPS.is(scheme) ? port == 443 : port == 80;
+        if (HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme))
+            return port == 443;
+        else 
+            return port == 80;
     }
 
     @Override
