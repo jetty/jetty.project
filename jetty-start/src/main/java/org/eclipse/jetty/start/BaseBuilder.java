@@ -116,7 +116,7 @@ public class BaseBuilder
                 if (licensing.hasLicenses())
                 {
                     StartLog.debug("Requesting License Acknowledgement");
-                    if (!licensing.acknowledgeLicenses())
+                    if (!licensing.acknowledgeLicenses(startArgs))
                     {
                         StartLog.warn(EXITING_LICENSE_NOT_ACKNOWLEDGED);
                         System.exit(1);

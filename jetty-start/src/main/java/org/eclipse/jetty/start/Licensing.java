@@ -55,7 +55,7 @@ public class Licensing
         return !licenseMap.isEmpty();
     }
 
-    public boolean acknowledgeLicenses() throws IOException
+    public boolean acknowledgeLicenses(StartArgs startArgs) throws IOException
     {
         if (!hasLicenses())
         {
@@ -92,11 +92,7 @@ public class Licensing
                 throw new RuntimeException("Test Configuration Missing - Pre-specify answer to (" + PROP_ACK_LICENSES + ") in test case");
             }
 
-            BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
-            System.err.printf("%nProceed (y/N)? ");
-            String response = input.readLine();
-
-            licenseAck = (Utils.isNotBlank(response) && response.toLowerCase().startsWith("y"));
+            licenseAck = startArgs.isYes("%nProceed (y/N)? ");
         }
 
         return licenseAck;

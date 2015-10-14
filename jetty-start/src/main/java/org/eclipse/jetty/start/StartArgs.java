@@ -18,14 +18,15 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -170,6 +171,7 @@ public class StartArgs
     private boolean licenseCheckRequired = false;
     private boolean testingMode = false;
 
+    private boolean yes = false;
     private boolean help = false;
     private boolean stopCommand = false;
     private boolean listModules = false;
@@ -181,7 +183,8 @@ public class StartArgs
     private boolean exec = false;
     private String exec_properties;
     private boolean approveAllLicenses = false;
-
+    private BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
+    
     public StartArgs()
     {
         classpath = new Classpath();
@@ -835,6 +838,11 @@ public class StartArgs
             run = false;
             return;
         }
+        
+        if ("--yes".equals(arg))
+        {
+            yes = true;
+        }
 
         if ("--debug".equals(arg) || arg.startsWith("--start-log-file"))
         {
@@ -1181,6 +1189,26 @@ public class StartArgs
         this.run = run;
     }
 
+    public boolean isYes(String promptFormat,Object... args)
+    {
+        System.err.printf(promptFormat,args);
+        if (yes)
+        {
+            System.err.printf("--yes%n");
+            return true;
+        }
+        try
+        {
+            String response = input.readLine();
+            return (Utils.isNotBlank(response) && response.toLowerCase().startsWith("y"));
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
     @Override
     public String toString()
     {
@@ -1196,4 +1224,5 @@ public class StartArgs
         builder.append("]");
         return builder.toString();
     }
+
 }
