@@ -15,13 +15,14 @@
   <url>http://www.eclipse.org/jetty</url>
   <build>
     <plugins>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
             <id>unpack-dependencies</id>
-            <phase>package</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack-dependencies</goal>
             </goals>
@@ -36,33 +37,34 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins
-        </groupId>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <extensions>true</extensions>
+          <executions>
+              <execution>
+                  <id>bundle-manifest</id>
+                  <phase>process-classes</phase>
+                  <goals>
+                      <goal>manifest</goal>
+                  </goals>
+              </execution>
+          </executions>
+          <configuration>
+            <instructions>
+              <Main-Class>org.eclipse.jetty.runner.Runner</Main-Class>
+              <Import-Package>!*</Import-Package>
+              <Export-Package></Export-Package>
+            </instructions>
+          </configuration>
+        </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>package</id>
-            <phase>package</phase>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-            <configuration>
-              <archive>
-                <manifest>
-                  <mainClass>org.eclipse.jetty.runner.Runner</mainClass>
-                </manifest>
-                <manifestEntries>
-                  <mode>development</mode>
-                  <url>http://eclipse.org/jetty</url>
-                  <Built-By>${user.name}</Built-By>
-                  <package>org.eclipse.jetty.runner</package>
-                  <Bundle-Name>Jetty Runner</Bundle-Name>
-                  <Bundle-Vendor>Mort Bay Consulting</Bundle-Vendor>
-                </manifestEntries>
-              </archive>
-            </configuration>
-          </execution>
-        </executions>
+        <configuration>
+         <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+         </archive>
+        </configuration>
       </plugin>
     </plugins>
   </build>
