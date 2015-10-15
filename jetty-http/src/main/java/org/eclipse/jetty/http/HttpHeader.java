@@ -103,6 +103,7 @@ public enum HttpHeader
     /* ------------------------------------------------------------ */
     /** WebSocket Fields.
      */
+    ORIGIN("Origin"),
     SEC_WEBSOCKET_KEY("Sec-WebSocket-Key"),
     SEC_WEBSOCKET_VERSION("Sec-WebSocket-Version"),
     SEC_WEBSOCKET_EXTENSIONS("Sec-WebSocket-Extensions"),
