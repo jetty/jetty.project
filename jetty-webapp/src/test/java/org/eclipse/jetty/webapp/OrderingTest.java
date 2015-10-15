@@ -505,7 +505,7 @@ public class OrderingTest
         final MetaData metadata = new MetaData();
         final Resource jarResource = new TestResource("A");
 
-        metadata.setOrdering(new Ordering.RelativeOrdering(metadata));
+        metadata.setOrdering(new RelativeOrdering(metadata));
         metadata.addWebInfJar(jarResource);
         metadata.orderFragments();
         assertEquals(1, metadata.getOrderedWebInfJars().size());
