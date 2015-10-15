@@ -448,7 +448,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         start(new EmptyServerHandler());
 
         long timeout = 1000;
-        Request request = client.newRequest("badscheme://localhost:" + connector.getLocalPort());
+        Request request = client.newRequest("badscheme://localhost:badport");
 
         try
         {
