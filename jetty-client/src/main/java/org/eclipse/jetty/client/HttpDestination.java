@@ -76,7 +76,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
         else
         {
-            if (HttpScheme.HTTPS.is(getScheme())||HttpScheme.WSS.is(getScheme()))
+            if (HttpScheme.HTTPS.is(getScheme()) || HttpScheme.WSS.is(getScheme()))
                 connectionFactory = newSslClientConnectionFactory(connectionFactory);
         }
         this.connectionFactory = connectionFactory;

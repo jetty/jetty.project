@@ -18,12 +18,13 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.util.Locale;
+
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.client.HttpSender;
+import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
@@ -58,13 +59,13 @@ public class HttpChannelOverHTTP extends HttpChannel
     }
 
     @Override
-    protected HttpSender getHttpSender()
+    protected HttpSenderOverHTTP getHttpSender()
     {
         return sender;
     }
 
     @Override
-    protected HttpReceiver getHttpReceiver()
+    protected HttpReceiverOverHTTP getHttpReceiver()
     {
         return receiver;
     }
@@ -96,10 +97,15 @@ public class HttpChannelOverHTTP extends HttpChannel
 
         HttpResponse response = exchange.getResponse();
         
-        if ( (response.getVersion() == HttpVersion.HTTP_1_1) &&
-             (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101) &&
-             (response.getHeaders().get("Connection").equalsIgnoreCase("upgrade")) )
+        if ((response.getVersion() == HttpVersion.HTTP_1_1) && 
+            (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101))
         {
+            String connection = response.getHeaders().get(HttpHeader.CONNECTION);
+            if ((connection == null) || !connection.toLowerCase(Locale.US).contains("upgrade"))
+            {
+                return new Result(result,new HttpResponseException("101 Switching Protocols without Connection: Upgrade not supported",response));
+            }
+            
             // Upgrade Response
             HttpRequest request = exchange.getRequest();
             if (request instanceof HttpConnectionUpgrader)
@@ -107,11 +113,11 @@ public class HttpChannelOverHTTP extends HttpChannel
                 HttpConnectionUpgrader listener = (HttpConnectionUpgrader)request;
                 try
                 {
-                    listener.upgrade(response, getHttpConnection());
+                    listener.upgrade(response,getHttpConnection());
                 }
                 catch (Throwable x)
                 {
-                    return new Result(result, x);
+                    return new Result(result,x);
                 }
             }
         }

@@ -88,6 +88,17 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         buffer = null;
     }
 
+    protected ByteBuffer onUpgradeFrom()
+    {
+        if (BufferUtil.hasContent(buffer))
+        {
+            ByteBuffer upgradeBuffer = buffer;
+            releaseBuffer(); // TODO: right place to do this?
+            return upgradeBuffer;
+        }
+        return null;
+    }
+
     private void process()
     {
         try
