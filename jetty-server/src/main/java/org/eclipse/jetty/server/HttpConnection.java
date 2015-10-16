@@ -212,7 +212,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillable enter {}", this, _channel.getState());
+            LOG.debug("{} onFillable enter {} {}", this, _channel.getState(),BufferUtil.toDetailString(_requestBuffer));
 
         HttpConnection last=setCurrentConnection(this);
         try
@@ -259,7 +259,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             setCurrentConnection(last);
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onFillable exit {}", this, _channel.getState());
+                LOG.debug("{} onFillable exit {} {}", this, _channel.getState(),BufferUtil.toDetailString(_requestBuffer));
         }
     }
 
@@ -272,8 +272,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         boolean handled=false;
         while (_parser.inContentState())
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} parseContent",this);
             int filled = fillRequestBuffer();
             boolean handle = parseRequestBuffer();
             handled|=handle;
@@ -300,7 +298,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // No pretend we read -1
                 _parser.atEOF();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} filled -1",this);
+                    LOG.debug("{} filled -1 {}",this,BufferUtil.toDetailString(_requestBuffer));
                 return -1;
             }
 
@@ -321,7 +319,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     _parser.atEOF();
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} filled {}",this,filled);
+                    LOG.debug("{} filled {} {}",this,filled,BufferUtil.toDetailString(_requestBuffer));
 
                 return filled;
             }
@@ -559,8 +557,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 super.toString(),
                 _parser,
                 _generator,
-                _channel,
-                BufferUtil.toDetailString(_requestBuffer));
+                _channel);
     }
 
     private class Content extends HttpInput.Content
