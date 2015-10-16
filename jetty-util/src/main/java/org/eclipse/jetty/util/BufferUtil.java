@@ -32,6 +32,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -1027,38 +1028,46 @@ public class BufferUtil
 
     private static void appendDebugString(StringBuilder buf,ByteBuffer buffer)
     {
-        for (int i = 0; i < buffer.position(); i++)
+        try
         {
-            appendContentChar(buf,buffer.get(i));
-            if (i == 16 && buffer.position() > 32)
+            for (int i = 0; i < buffer.position(); i++)
             {
-                buf.append("...");
-                i = buffer.position() - 16;
+                appendContentChar(buf,buffer.get(i));
+                if (i == 16 && buffer.position() > 32)
+                {
+                    buf.append("...");
+                    i = buffer.position() - 16;
+                }
             }
+            buf.append("<<<");
+            for (int i = buffer.position(); i < buffer.limit(); i++)
+            {
+                appendContentChar(buf,buffer.get(i));
+                if (i == buffer.position() + 16 && buffer.limit() > buffer.position() + 32)
+                {
+                    buf.append("...");
+                    i = buffer.limit() - 16;
+                }
+            }
+            buf.append(">>>");
+            int limit = buffer.limit();
+            buffer.limit(buffer.capacity());
+            for (int i = limit; i < buffer.capacity(); i++)
+            {
+                appendContentChar(buf,buffer.get(i));
+                if (i == limit + 16 && buffer.capacity() > limit + 32)
+                {
+                    buf.append("...");
+                    i = buffer.capacity() - 16;
+                }
+            }
+            buffer.limit(limit);
         }
-        buf.append("<<<");
-        for (int i = buffer.position(); i < buffer.limit(); i++)
+        catch(Throwable x)
         {
-            appendContentChar(buf,buffer.get(i));
-            if (i == buffer.position() + 16 && buffer.limit() > buffer.position() + 32)
-            {
-                buf.append("...");
-                i = buffer.limit() - 16;
-            }
+            Log.getRootLogger().ignore(x);
+            buf.append("!!concurrent mod!!");
         }
-        buf.append(">>>");
-        int limit = buffer.limit();
-        buffer.limit(buffer.capacity());
-        for (int i = limit; i < buffer.capacity(); i++)
-        {
-            appendContentChar(buf,buffer.get(i));
-            if (i == limit + 16 && buffer.capacity() > limit + 32)
-            {
-                buf.append("...");
-                i = buffer.capacity() - 16;
-            }
-        }
-        buffer.limit(limit);
     }
 
     private static void appendContentChar(StringBuilder buf, byte b)
