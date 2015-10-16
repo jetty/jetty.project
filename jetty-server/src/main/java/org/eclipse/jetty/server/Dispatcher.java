@@ -41,6 +41,8 @@ import org.eclipse.jetty.util.MultiMap;
 
 public class Dispatcher implements RequestDispatcher
 {
+    public final static String __ERROR_DISPATCH="org.eclipse.jetty.server.Dispatcher.ERROR";
+    
     /** Dispatch include attribute names */
     public final static String __INCLUDE_PREFIX="javax.servlet.include.";
 
@@ -76,7 +78,15 @@ public class Dispatcher implements RequestDispatcher
 
     public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        forward(request, response, DispatcherType.ERROR);
+        try
+        {
+            request.setAttribute(__ERROR_DISPATCH,Boolean.TRUE);
+            forward(request, response, DispatcherType.ERROR);
+        }
+        finally
+        {
+            request.setAttribute(__ERROR_DISPATCH,null);
+        }
     }
 
     @Override
@@ -137,9 +147,7 @@ public class Dispatcher implements RequestDispatcher
             request = new ServletRequestHttpWrapper(request);
         if (!(response instanceof HttpServletResponse))
             response = new ServletResponseHttpWrapper(response);
-
-        final boolean old_handled=baseRequest.isHandled();
-        
+      
         final HttpURI old_uri=baseRequest.getHttpURI();
         final String old_context_path=baseRequest.getContextPath();
         final String old_servlet_path=baseRequest.getServletPath();
@@ -151,7 +159,6 @@ public class Dispatcher implements RequestDispatcher
 
         try
         {
-            baseRequest.setHandled(false);
             baseRequest.setDispatcherType(dispatch);
 
             if (_named!=null)
@@ -204,7 +211,6 @@ public class Dispatcher implements RequestDispatcher
         }
         finally
         {
-            baseRequest.setHandled(old_handled);
             baseRequest.setHttpURI(old_uri);
             baseRequest.setContextPath(old_context_path);
             baseRequest.setServletPath(old_servlet_path);

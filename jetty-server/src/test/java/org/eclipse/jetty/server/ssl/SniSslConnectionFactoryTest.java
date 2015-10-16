@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -98,7 +102,7 @@ public class SniSslConnectionFactoryTest
         _server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);
@@ -237,8 +241,8 @@ public class SniSslConnectionFactoryTest
             output.flush();
 
             response = response(input);
-            Assert.assertTrue(response.startsWith("HTTP/1.1 400 "));
-            Assert.assertThat(response, Matchers.containsString("Host does not match SNI"));
+            assertThat(response,startsWith("HTTP/1.1 400 "));
+            assertThat(response, containsString("Host does not match SNI"));
         }
         finally
         {

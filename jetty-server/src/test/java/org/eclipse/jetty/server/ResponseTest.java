@@ -402,7 +402,7 @@ public class ResponseTest
 
         response.sendError(404);
         assertEquals(404, response.getStatus());
-        assertEquals(null, response.getReason());
+        assertEquals("Not Found", response.getReason());
 
         response = newResponse();
 

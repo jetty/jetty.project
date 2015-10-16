@@ -1143,11 +1143,30 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 }
             }
 
-            if (DispatcherType.REQUEST.equals(dispatch) && isProtectedTarget(target))
+            switch(dispatch)
             {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND);
-                baseRequest.setHandled(true);
-                return;
+                case REQUEST:
+                    if (isProtectedTarget(target))
+                    {
+                        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                        baseRequest.setHandled(true);
+                        return;
+                    }
+                    break;
+                    
+                case ERROR:
+                    // If this is already a dispatch to an error page, proceed normally
+                    if (Boolean.TRUE.equals(baseRequest.getAttribute(Dispatcher.__ERROR_DISPATCH)))
+                        break;
+                    
+                    Object error = request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
+                    // We can just call sendError here.  If there is no error page, then one will
+                    // be generated. If there is an error page, then a RequestDispatcher will be
+                    // used to route the request through appropriate filters etc.
+                    response.sendError((error instanceof Integer)?((Integer)error).intValue():500);
+                    return;
+                default:
+                    break;
             }
 
             // start manual inline of nextHandle(target,baseRequest,request,response);
@@ -2869,7 +2888,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         /**
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
-         * @param reason An object that indicates the reason the scope is being entered
+         * @param reason An object that indicates the reason the scope is being entered.
          */
         void enterScope(Context context, Request request, Object reason);
 

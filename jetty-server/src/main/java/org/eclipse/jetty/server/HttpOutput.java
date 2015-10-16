@@ -286,6 +286,20 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _state.get()==OutputState.CLOSED;
     }
 
+    public boolean isAsync()
+    {
+        switch(_state.get())
+        {
+            case ASYNC:
+            case READY:
+            case PENDING:
+            case UNREADY:
+                return true;
+            default:
+                return false;
+        }
+    }
+    
     @Override
     public void flush() throws IOException
     {
@@ -1252,4 +1266,5 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             super.onCompleteFailure(x);
         }
     }
+
 }

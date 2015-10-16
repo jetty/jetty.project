@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;

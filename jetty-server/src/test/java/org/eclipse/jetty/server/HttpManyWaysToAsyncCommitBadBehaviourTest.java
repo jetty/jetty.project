@@ -84,7 +84,7 @@ public class HttpManyWaysToAsyncCommitBadBehaviourTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             final CyclicBarrier resumeBarrier = new CyclicBarrier(1);
             
