@@ -977,7 +977,7 @@ public class AnnotationParser
                     ||
                (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
             {
-                Resource clazz = Resource.newResource("jar:"+jar.getURI()+"!/"+name,false);
+                Resource clazz = Resource.newResource("jar:"+jar.getURI()+"!/"+name);
                 if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
                 try (InputStream is = clazz.getInputStream())
                 {
