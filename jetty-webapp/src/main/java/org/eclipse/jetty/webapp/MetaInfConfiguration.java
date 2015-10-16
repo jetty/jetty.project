@@ -181,7 +181,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 //Resource represents a packed jar
                 URI uri = target.getURI();
-                resourcesDir = Resource.newResource("jar:"+uri+"!/META-INF/resources", false);
+                resourcesDir = Resource.newResource("jar:"+uri+"!/META-INF/resources");
             }
             
             if (!resourcesDir.exists() || !resourcesDir.isDirectory())
@@ -252,7 +252,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             else
             {
                 URI uri = jar.getURI();
-                webFrag = Resource.newResource("jar:"+uri+"!/META-INF/web-fragment.xml", false);
+                webFrag = Resource.newResource("jar:"+uri+"!/META-INF/web-fragment.xml");
             }
             if (!webFrag.exists() || webFrag.isDirectory())
             {
@@ -404,7 +404,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         
         URL url = new URL("jar:"+uri+"!/");
         JarURLConnection jarConn = (JarURLConnection) url.openConnection();
-        jarConn.setUseCaches(false);
+        jarConn.setUseCaches(Resource.getDefaultUseCaches());
         JarFile jarFile = jarConn.getJarFile();
         Enumeration<JarEntry> entries = jarFile.entries();
         while (entries.hasMoreElements())
