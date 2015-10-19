@@ -24,7 +24,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
-import org.eclipse.jetty.client.ConnectionPool;
+import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.EmptyServerHandler;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Origin;
@@ -97,9 +97,9 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()))
         {
             @Override
-            protected ConnectionPool newConnectionPool(HttpClient client)
+            protected DuplexConnectionPool newConnectionPool(HttpClient client)
             {
-                return new ConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
+                return new DuplexConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
                 {
                     @Override
                     protected void idleCreated(Connection connection)

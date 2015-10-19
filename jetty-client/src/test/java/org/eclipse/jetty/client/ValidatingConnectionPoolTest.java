@@ -194,7 +194,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
             return new HttpDestinationOverHTTP(getHttpClient(), origin)
             {
                 @Override
-                protected ConnectionPool newConnectionPool(HttpClient client)
+                protected DuplexConnectionPool newConnectionPool(HttpClient client)
                 {
                     return new ValidatingConnectionPool(this, client.getMaxConnectionsPerDestination(), this, client.getScheduler(), timeout);
                 }

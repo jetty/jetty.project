@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.thread.Sweeper;
 @ManagedObject
 public abstract class PoolingHttpDestination<C extends Connection> extends HttpDestination implements Callback
 {
-    private final ConnectionPool connectionPool;
+    private final DuplexConnectionPool connectionPool;
 
     public PoolingHttpDestination(HttpClient client, Origin origin)
     {
@@ -44,13 +44,13 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
             sweeper.offer(connectionPool);
     }
 
-    protected ConnectionPool newConnectionPool(HttpClient client)
+    protected DuplexConnectionPool newConnectionPool(HttpClient client)
     {
-        return new ConnectionPool(this, client.getMaxConnectionsPerDestination(), this);
+        return new DuplexConnectionPool(this, client.getMaxConnectionsPerDestination(), this);
     }
 
     @ManagedAttribute(value = "The connection pool", readonly = true)
-    public ConnectionPool getConnectionPool()
+    public DuplexConnectionPool getConnectionPool()
     {
         return connectionPool;
     }
