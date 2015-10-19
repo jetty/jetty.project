@@ -38,18 +38,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 import com.google.api.client.util.Strings;
-import com.google.gcloud.datastore.Key;
 import com.google.gcloud.datastore.Datastore;
 import com.google.gcloud.datastore.DatastoreFactory;
-import com.google.gcloud.datastore.DatastoreOptions;
 import com.google.gcloud.datastore.Entity;
 import com.google.gcloud.datastore.GqlQuery;
+import com.google.gcloud.datastore.Key;
 import com.google.gcloud.datastore.ProjectionEntity;
 import com.google.gcloud.datastore.Query;
 import com.google.gcloud.datastore.Query.ResultType;
@@ -64,34 +62,6 @@ import com.google.gcloud.datastore.StructuredQuery.Projection;
  */
 public class GCloudSessionTestSupport
 {
-    
-    /**
-     * GCloudTestConfiguration
-     * 
-     * Specialization of GCloudConfiguration for gcd test environment
-     *
-     */
-    public class GCloudTestConfiguration extends GCloudConfiguration
-    {
-        int _port;
-
-        public GCloudTestConfiguration(String projectId, int port)
-        {
-            setProjectId(projectId);
-            _port = port;
-        }
-
-
-        @Override
-        public DatastoreOptions getDatastoreOptions() throws Exception
-        { 
-          return DatastoreOptions.builder()
-                    .projectId(_projectId)
-                    .host("http://localhost:" + _port)
-                    .build();
-        }
-    }
-    
     
     private static class ProcessOutputReader implements Runnable
     {
@@ -138,40 +108,55 @@ public class GCloudSessionTestSupport
     
 
     public static String DEFAULT_PROJECTID = "jetty9-work";
-    public static int DEFAULT_PORT = 8088;
+    public static String DEFAULT_PORT = "8088";
+    public static String DEFAULT_HOST = "http://localhost:"+DEFAULT_PORT;
     public static String DEFAULT_GCD_ZIP = "gcd-v1beta2-rev1-2.1.2b.zip";
     public static String DEFAULT_GCD_UNPACKED = "gcd-v1beta2-rev1-2.1.2b";
     public static String DEFAULT_DOWNLOAD_URL = "http://storage.googleapis.com/gcd/tools/";
     
+ 
     String _projectId;
-    int _port;
+    String _testServerUrl;
+    String _testPort;
     File _datastoreDir;
     File _gcdInstallDir;
     File _gcdUnpackedDir;
     Datastore _ds;
     
-    public GCloudSessionTestSupport (String projectId, int port, File gcdInstallDir)
+    public GCloudSessionTestSupport (File gcdInstallDir)
     {
-        _projectId = projectId;
-        if (_projectId == null)
-            _projectId = DEFAULT_PROJECTID;
-        _port = port;
-        if (_port <= 0)
-            _port = DEFAULT_PORT;
-        
         _gcdInstallDir = gcdInstallDir;
         if (_gcdInstallDir == null)
             _gcdInstallDir = new File (System.getProperty("java.io.tmpdir"));
+        
+        _projectId = System.getProperty("DATASTORE_DATASET", System.getenv("DATASTORE_DATASET"));
+        if (_projectId == null)
+        {
+            _projectId = DEFAULT_PROJECTID;
+            System.setProperty("DATASTORE_DATASET", _projectId);
+        }
+        _testServerUrl = System.getProperty("DATASTORE_HOST", System.getenv("DATASTORE_HOST"));
+        if (_testServerUrl == null)
+        {
+            _testServerUrl = DEFAULT_HOST;
+            _testPort = DEFAULT_PORT;
+            System.setProperty("DATASTORE_HOST", _testServerUrl);
+        }
+        else
+        {
+            int i = _testServerUrl.lastIndexOf(':');
+            _testPort = _testServerUrl.substring(i+1);
+        }
     }
     
     public GCloudSessionTestSupport ()
     {
-        this(null,0, null);
+        this(null);
     }
 
     public GCloudConfiguration getConfiguration ()
     {
-        return new GCloudTestConfiguration(_projectId, _port);
+        return new GCloudConfiguration();
     }
     
     
@@ -251,11 +236,11 @@ public class GCloudSessionTestSupport
         processBuilder.redirectErrorStream(true);
         if (System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows")) 
         {
-          processBuilder.command("cmd", "/C", new File(_gcdUnpackedDir, "gcd.cmd").getAbsolutePath(), "start", "--testing", "--allow_remote_shutdown","--port="+String.valueOf(_port), _projectId);
+          processBuilder.command("cmd", "/C", new File(_gcdUnpackedDir, "gcd.cmd").getAbsolutePath(), "start", "--testing", "--allow_remote_shutdown","--port="+_testPort, _projectId);
         } 
         else 
         {
-          processBuilder.command("bash", new File(_gcdUnpackedDir, "gcd.sh").getAbsolutePath(), "start", "--testing", "--allow_remote_shutdown", "--port="+String.valueOf(_port), _projectId);
+          processBuilder.command("bash", new File(_gcdUnpackedDir, "gcd.sh").getAbsolutePath(), "start", "--testing", "--allow_remote_shutdown", "--port="+_testPort, _projectId);
         }
         
         System.err.println("Starting datastore");
@@ -270,7 +255,7 @@ public class GCloudSessionTestSupport
     throws Exception
     {
         //Send request to terminate test datastore
-        URL url = new URL("http", "localhost", _port, "/_ah/admin/quit");
+        URL url = new URL("http", "localhost", Integer.parseInt(_testPort.trim()), "/_ah/admin/quit");
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("POST");
         con.setDoOutput(true);

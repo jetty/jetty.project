@@ -37,7 +37,9 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
@@ -238,5 +240,49 @@ public class HTTP2Test extends AbstractTest
         });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testServerSendsGoAwayOnStop() throws Exception
+    {
+        start(new ServerSessionListener.Adapter());
+
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        newClient(new Session.Listener.Adapter()
+        {
+            @Override
+            public void onClose(Session session, GoAwayFrame frame)
+            {
+                closeLatch.countDown();
+            }
+        });
+
+        Thread.sleep(1000);
+
+        server.stop();
+
+        Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testClientSendsGoAwayOnStop() throws Exception
+    {
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public void onClose(Session session, GoAwayFrame frame)
+            {
+                closeLatch.countDown();
+            }
+        });
+
+        newClient(new Session.Listener.Adapter());
+
+        Thread.sleep(1000);
+
+        client.stop();
+
+        Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 }

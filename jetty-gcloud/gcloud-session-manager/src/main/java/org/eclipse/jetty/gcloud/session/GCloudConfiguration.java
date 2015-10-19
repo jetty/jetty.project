@@ -46,8 +46,10 @@ public class GCloudConfiguration
     public static final String SERVICE_ACCOUNT = "serviceAccount";
     
     private String _projectId;
+    private String _p12Filename;
     private File _p12File;
     private String _serviceAccount;
+    private String _passwordSet;
     private String _password;
     private AuthCredentials _authCredentials;
     private DatastoreOptions _options;
@@ -109,7 +111,8 @@ public class GCloudConfiguration
     public void setP12File (String file)
     {
         checkForModification();
-        _p12File = new File(file);
+        _p12Filename = file;
+
     }
     
     
@@ -119,12 +122,12 @@ public class GCloudConfiguration
         _serviceAccount = serviceAccount;
     }
     
-    
+
     public void setPassword (String pwd)
     {
         checkForModification();
-        Password p = new Password(pwd);
-        _password = p.toString();
+        _passwordSet = pwd;
+
     }
 
 
@@ -133,10 +136,29 @@ public class GCloudConfiguration
     {
         if (_options == null)
         {
-            _options = DatastoreOptions.builder()
-                    .projectId(_projectId)
-                    .authCredentials(getAuthCredentials())
-                    .build();
+            if (_passwordSet == null && _p12Filename == null && _serviceAccount == null)
+            {
+                //When no values are explicitly presented for auth info, we are either running
+                //1. inside GCE environment, in which case all auth info is derived from the environment
+                //2. outside the GCE environment, but using a local gce dev server, in which case you
+                //   need to set the following 2 environment/system properties
+                //          DATASTORE_HOST: eg http://localhost:9999 - this is the host and port of a local development server
+                //          DATASTORE_DATASET: eg myProj - this is the name of your project          
+                _options = DatastoreOptions.defaultInstance();
+            }
+            else
+            {
+                //When running externally to GCE, you need to provide
+                //explicit auth info. You can either set the projectId explicitly, or you can set the
+                //DATASTORE_DATASET env/system property
+                _p12File = new File(_p12Filename);
+                Password p = new Password(_passwordSet);
+                _password = p.toString();
+                _options = DatastoreOptions.builder()
+                        .projectId(_projectId)
+                        .authCredentials(getAuthCredentials())
+                        .build();
+            }
         }
         return _options;
     }
@@ -152,11 +174,6 @@ public class GCloudConfiguration
         {
             if (_password == null)
                 throw new IllegalStateException("No password");
-            if (_projectId == null)
-                throw new IllegalStateException("No project id");
-
-            if (_projectId == null)
-                throw new IllegalStateException("No project id");
 
             if (_p12File == null || !_p12File.exists())
                 throw new IllegalStateException("No p12 file: "+(_p12File==null?"null":_p12File.getAbsolutePath()));
