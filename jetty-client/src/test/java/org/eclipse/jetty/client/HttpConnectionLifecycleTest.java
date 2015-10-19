@@ -69,7 +69,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
 
         final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
@@ -130,7 +130,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
 
         final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
@@ -181,7 +181,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
 
         final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
@@ -241,7 +241,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
 
         final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
@@ -314,7 +314,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
 
         final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
@@ -367,7 +367,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
 
         final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
@@ -417,7 +417,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             String host = "localhost";
             int port = connector.getLocalPort();
             HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-            ConnectionPool connectionPool = destination.getConnectionPool();
+            DuplexConnectionPool connectionPool = destination.getConnectionPool();
 
             final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
             Assert.assertEquals(0, idleConnections.size());
@@ -467,7 +467,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
 
         final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
@@ -499,7 +499,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
 
         final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());

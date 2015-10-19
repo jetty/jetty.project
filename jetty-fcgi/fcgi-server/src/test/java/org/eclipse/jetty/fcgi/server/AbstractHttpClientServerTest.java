@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.client.ConnectionPool;
+import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.LeakTrackingConnectionPool;
@@ -40,8 +37,11 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Rule;
+
+import static org.junit.Assert.assertThat;
 
 public abstract class AbstractHttpClientServerTest
 {
@@ -71,7 +71,7 @@ public abstract class AbstractHttpClientServerTest
 
         QueuedThreadPool executor = new QueuedThreadPool();
         executor.setName(executor.getName() + "-client");
-        
+
         client = new HttpClient(new HttpClientTransportOverFCGI(1, false, "")
         {
             @Override
@@ -80,7 +80,7 @@ public abstract class AbstractHttpClientServerTest
                 return new HttpDestinationOverFCGI(client, origin)
                 {
                     @Override
-                    protected ConnectionPool newConnectionPool(HttpClient client)
+                    protected DuplexConnectionPool newConnectionPool(HttpClient client)
                     {
                         return new LeakTrackingConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
                         {
@@ -105,15 +105,15 @@ public abstract class AbstractHttpClientServerTest
     {
         System.gc();
 
-        assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), is(0L));
-        assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), is(0L));
-        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), is(0L));
-        
-        assertThat("Client BufferPool - leaked acquires", clientBufferPool.getLeakedAcquires(), is(0L));
-        assertThat("Client BufferPool - leaked releases", clientBufferPool.getLeakedReleases(), is(0L));
-        assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedResources(), is(0L));
-        
-        assertThat("Connection Leaks", connectionLeaks.get(), is(0L));
+        assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), Matchers.is(0L));
+        assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), Matchers.is(0L));
+        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), Matchers.is(0L));
+
+        assertThat("Client BufferPool - leaked acquires", clientBufferPool.getLeakedAcquires(), Matchers.is(0L));
+        assertThat("Client BufferPool - leaked releases", clientBufferPool.getLeakedReleases(), Matchers.is(0L));
+        assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedResources(), Matchers.is(0L));
+
+        assertThat("Connection Leaks", connectionLeaks.get(), Matchers.is(0L));
 
         if (client != null)
             client.stop();
