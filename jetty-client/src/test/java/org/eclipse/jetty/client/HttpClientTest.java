@@ -111,7 +111,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(200, response.getStatus());
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
 
         long start = System.nanoTime();
         HttpConnectionOverHTTP connection = null;

@@ -106,7 +106,7 @@ public class HttpClientFailureTest
             // Expected.
         }
 
-        ConnectionPool connectionPool = connectionRef.get().getHttpDestination().getConnectionPool();
+        DuplexConnectionPool connectionPool = connectionRef.get().getHttpDestination().getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -170,7 +170,7 @@ public class HttpClientFailureTest
         Assert.assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 
-        ConnectionPool connectionPool = connectionRef.get().getHttpDestination().getConnectionPool();
+        DuplexConnectionPool connectionPool = connectionRef.get().getHttpDestination().getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());

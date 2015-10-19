@@ -114,7 +114,10 @@ Module Management:
                      fully understand the configuration of their
                      ${jetty.base} and are willing to forego some of the
                      safety checks built into the jetty-start mechanism.
-
+                     
+  --approve-all-licenses
+                   Approve all license questions. Useful for enabling 
+                   modules from a script that does not require user interaction.
 
 Startup / Shutdown Command Line:
 --------------------------------

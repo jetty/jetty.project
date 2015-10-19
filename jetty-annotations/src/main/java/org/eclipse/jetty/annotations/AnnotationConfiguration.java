@@ -738,7 +738,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         
         loadingJarName = loadingJarName.substring(0,i+4);
         loadingJarName = (loadingJarName.startsWith("jar:")?loadingJarName.substring(4):loadingJarName);
-        return Resource.newResource(loadingJarName, false);
+        return Resource.newResource(loadingJarName);
     }
     
     /**

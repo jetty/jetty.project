@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -127,6 +128,14 @@ public class HTTP2Connection extends AbstractConnection
             executionStrategy.dispatch();
         else
             executionStrategy.execute();
+    }
+
+    @Override
+    public void close()
+    {
+        // We don't call super from here, otherwise we close the
+        // endPoint and we're not able to read or write anymore.
+        session.close(ErrorCode.NO_ERROR.code, "close", Callback.NOOP);
     }
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer

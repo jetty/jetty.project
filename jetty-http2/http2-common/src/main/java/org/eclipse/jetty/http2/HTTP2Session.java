@@ -537,8 +537,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     {
                         byte[] payload = reason == null ? null : reason.getBytes(StandardCharsets.UTF_8);
                         GoAwayFrame frame = new GoAwayFrame(lastStreamId.get(), error, payload);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Sending {}", frame);
                         control(null, callback, frame);
                         return true;
                     }

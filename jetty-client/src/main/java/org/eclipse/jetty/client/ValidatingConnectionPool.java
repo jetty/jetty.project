@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
- * <p>A {@link ConnectionPool} that validates connections before
+ * <p>A connection pool that validates connections before
  * making them available for use.</p>
  * <p>Connections that have just been opened are not validated.
  * Connections that are {@link #release(Connection) released} will

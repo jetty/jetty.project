@@ -53,23 +53,39 @@ https://github.com/GoogleCloudPlatform/gcloud-java
 http://www.apache.org/licenses/LICENSE-2.0.html
 
 [ini-template]
-## GCloudDatastore Session config
-
 ## Unique identifier for this node in the cluster
 # jetty.gcloudSession.workerName=node1
 
-## Name of properties files containing gcloud config
-#jetty.gcloudSession.configFilet=etc/gcloud.props
 
-##Alternative to properties file, individual properties
-##  the gcloud projectId
+## GCloudDatastore Session config
+## If running inside Google cloud all configuration is provided by
+## environment variables and you do not need to set anything in this file.
+##    
+## If running externally to Google:
+##   To contact the remote gcloud datastore:
+##   1. set the DATASTORE_DATASET System property/environment variable to the name of your project
+##      or alternatively set the jetty.gcloudSession.projectId property below.
+##   2. set the jetty.gcloudSession.p12File, jetty.gcloudSession.serviceAccount and 
+##      jetty.gcloudSession.password (supports obfuscation) below.
+##
+##   To contact a local dev gcloud datastore server:
+##   1. set the DATASTORE_DATASET System property/environment variable to the name of your project.
+##   2. set the DATASTORE_HOST System property/environment variable to the url of the dev server
+##      as described at https://cloud.google.com/datastore/docs/tools/devserver#setting_environment_variables
+
+## The gcloud projectId
+## Set this property to connect to remote gcloud datastore. 
+## Or, set the DATASTORE_DATASET System property/env variable instead.
 #jetty.gcloudSession.projectId=
 
-##  the p12 file associated with the project
+## The p12 file associated with the project.
+## Set this property to connect to remote gcloud datastore
 #jetty.gcloudSession.p12File=
 
-##  the serviceAccount for the Datastore
+## The serviceAccount for the Datastore.
+## Set this property to connect to to remote gcloud datastore
 #jetty.gcloudSession.serviceAccount=
 
-##  the password (can be obfuscated)
+## The password (can be obfuscated).
+## Set this property to connect to remote gcloud datastore
 #jetty.gcloudSession.password=
