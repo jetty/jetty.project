@@ -31,23 +31,20 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-/* ------------------------------------------------------------ */
 /**
  * Hpack Decoder
- * <p>This is not thread safe and may only be called by 1 thread at a time
+ * <p>This is not thread safe and may only be called by 1 thread at a time.</p>
  */
 public class HpackDecoder
 {
     public static final Logger LOG = Log.getLogger(HpackDecoder.class);
-    public final static HttpField.LongValueHttpField CONTENT_LENGTH_0 = 
+    public final static HttpField.LongValueHttpField CONTENT_LENGTH_0 =
             new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH,0L);
-    
+
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
     private int _localMaxDynamicTableSize;
 
-    /* ------------------------------------------------------------ */
     /**
      * @param localMaxDynamicTableSize  The maximum allowed size of the local dynamic header field table.
      * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters.
@@ -58,36 +55,38 @@ public class HpackDecoder
         _localMaxDynamicTableSize=localMaxDynamicTableSize;
         _builder = new MetaDataBuilder(maxHeaderSize);
     }
-    
+
     public HpackContext getHpackContext()
     {
         return _context;
     }
-    
+
     public void setLocalMaxDynamicTableSize(int localMaxdynamciTableSize)
     {
-        _localMaxDynamicTableSize=localMaxdynamciTableSize; 
+        _localMaxDynamicTableSize=localMaxdynamciTableSize;
     }
-    
+
     public MetaData decode(ByteBuffer buffer)
-    {       
+    {
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets",_context.hashCode(),buffer.remaining()));
-        
+
         // If the buffer is big, don't even think about decoding it
         if (buffer.remaining()>_builder.getMaxSize())
             throw new BadMessageException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,"Header frame size "+buffer.remaining()+">"+_builder.getMaxSize());
-            
-        
+
+
         while(buffer.hasRemaining())
         {
             if (LOG.isDebugEnabled())
-            {                
+            {
                 int l=Math.min(buffer.remaining(),16);
                 // TODO: not guaranteed the buffer has a backing array !
-                LOG.debug("decode  "+TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l)+(l<buffer.remaining()?"...":""));
+                LOG.debug("decode {}{}",
+                        TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l),
+                        l<buffer.remaining()?"...":"");
             }
-            
+
             byte b = buffer.get();
             if (b<0)
             {
@@ -104,7 +103,7 @@ public class HpackDecoder
                         LOG.debug("decode IdxStatic {}",entry);
                     // emit field
                     _builder.emit(entry.getHttpField());
-                    
+
                     // TODO copy and add to reference set if there is room
                     // _context.add(entry.getHttpField());
                 }
@@ -116,7 +115,7 @@ public class HpackDecoder
                     _builder.emit(entry.getHttpField());
                 }
             }
-            else 
+            else
             {
                 // look at the first nibble in detail
                 byte f= (byte)((b&0xF0)>>4);
@@ -126,7 +125,7 @@ public class HpackDecoder
 
                 boolean indexed;
                 int name_index;
-                
+
                 switch (f)
                 {
                     case 2: // 7.3
@@ -139,14 +138,14 @@ public class HpackDecoder
                             throw new IllegalArgumentException();
                         _context.resize(size);
                         continue;
-                    
+
                     case 0: // 7.2.2
                     case 1: // 7.2.3
                         indexed=false;
                         name_index=NBitInteger.decode(buffer,4);
                         break;
-                     
-                  
+
+
                     case 4: // 7.2.1
                     case 5: // 7.2.1
                     case 6: // 7.2.1
@@ -154,7 +153,7 @@ public class HpackDecoder
                         indexed=true;
                         name_index=NBitInteger.decode(buffer,6);
                         break;
-                        
+
                     default:
                         throw new IllegalStateException();
                 }
@@ -236,7 +235,13 @@ public class HpackDecoder
                 }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("decoded '"+field+"' by Lit"+(name_index>0?"IdxName":(huffmanName?"HuffName":"LitName"))+(huffmanValue?"HuffVal":"LitVal")+(indexed?"Idx":""));
+                {
+                    LOG.debug("decoded '{}' by {}/{}/{}",
+                            field,
+                            name_index > 0 ? "IdxName" : (huffmanName ? "HuffName" : "LitName"),
+                            huffmanValue ? "HuffVal" : "LitVal",
+                            indexed ? "Idx" : "");
+                }
 
                 // emit the field
                 _builder.emit(field);
@@ -250,22 +255,23 @@ public class HpackDecoder
 
             }
         }
-        
+
         return _builder.build();
     }
 
     public static String toASCIIString(ByteBuffer buffer,int length)
     {
         StringBuilder builder = new StringBuilder(length);
-        int start=buffer.arrayOffset()+buffer.position();
+        int position=buffer.position();
+        int start=buffer.arrayOffset()+ position;
         int end=start+length;
-        buffer.position(end);
+        buffer.position(position+length);
         byte[] array=buffer.array();
         for (int i=start;i<end;i++)
             builder.append((char)(0x7f&array[i]));
         return builder.toString();
     }
-    
+
     @Override
     public String toString()
     {
