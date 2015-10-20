@@ -68,13 +68,7 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         boolean retry=false;
         String name=(String)request.getAttribute("org.eclipse.jetty.thread.name");
         if (name == null)
-        {
-            HttpURI baseUri = baseRequest.getHttpURI();
-            if (baseUri.getScheme() == null)
-                name = old_name + ":" + baseRequest.getScheme() + ":" + baseUri.toString();
-            else
-                name = old_name + ":" + baseUri.toString();
-        }
+            name = old_name + ":" + baseRequest.getHttpURI();
         else
             retry=true;
 
