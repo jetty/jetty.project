@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -129,6 +130,8 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     if (!_metadata.getURI().isAbsolute() && field instanceof HostPortHttpField)
                     {
                         HostPortHttpField hp = (HostPortHttpField)field;
+                        // Set scheme default value as 'http' (can be overridden later in SecureRequestCustomizer)
+                        _metadata.getURI().setScheme(HttpScheme.HTTP.asString());
                         _metadata.getURI().setAuthority(hp.getHost(),hp.getPort());
                     }
                     break;
