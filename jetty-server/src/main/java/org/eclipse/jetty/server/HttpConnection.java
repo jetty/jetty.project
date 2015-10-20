@@ -553,7 +553,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public String toString()
     {
-        return String.format("%s[p=%s,g=%s,c=%s][b=%s]",
+        return String.format("%s[p=%s,g=%s,c=%s]",
                 super.toString(),
                 _parser,
                 _generator,
