@@ -498,24 +498,18 @@ public class HttpClient extends ContainerLifeCycle
         if (destination == null)
         {
             destination = transport.newHttpDestination(origin);
-            if (isRunning())
+            addManaged(destination);
+            HttpDestination existing = destinations.putIfAbsent(origin, destination);
+            if (existing != null)
             {
-                HttpDestination existing = destinations.putIfAbsent(origin, destination);
-                if (existing != null)
-                {
-                    destination = existing;
-                }
-                else
-                {
-                    addManaged(destination);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Created {}", destination);
-                }
-
-                if (!isRunning())
-                    removeDestination(destination);
+                removeBean(destination);
+                destination = existing;
             }
-
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Created {}", destination);
+            }
         }
         return destination;
     }
