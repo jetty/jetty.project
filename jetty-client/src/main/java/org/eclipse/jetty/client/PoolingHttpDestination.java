@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.thread.Sweeper;
 @ManagedObject
 public abstract class PoolingHttpDestination<C extends Connection> extends HttpDestination implements Callback
 {
-    private final DuplexConnectionPool connectionPool;
+    private DuplexConnectionPool connectionPool;
 
     public PoolingHttpDestination(HttpClient client, Origin origin)
     {
@@ -42,6 +42,29 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
         Sweeper sweeper = client.getBean(Sweeper.class);
         if (sweeper != null)
             sweeper.offer(connectionPool);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        HttpClient client = getHttpClient();
+        this.connectionPool = newConnectionPool(client);
+        addBean(connectionPool);
+        super.doStart();
+        Sweeper sweeper = client.getBean(Sweeper.class);
+        if (sweeper != null)
+            sweeper.offer(connectionPool);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        HttpClient client = getHttpClient();
+        Sweeper sweeper = client.getBean(Sweeper.class);
+        if (sweeper != null)
+            sweeper.remove(connectionPool);
+        super.doStop();
+        removeBean(connectionPool);
     }
 
     protected DuplexConnectionPool newConnectionPool(HttpClient client)
