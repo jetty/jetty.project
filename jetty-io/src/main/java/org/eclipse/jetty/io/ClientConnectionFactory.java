@@ -19,11 +19,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Map;
-
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Factory for client-side {@link Connection} instances.
@@ -38,53 +34,4 @@ public interface ClientConnectionFactory
      * @throws IOException if the connection cannot be created
      */
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException;
-
-    public static class Helper
-    {
-        private static Logger LOG = Log.getLogger(Helper.class);
-
-        private Helper()
-        {
-        }
-
-        /**
-         * Replaces the given {@code oldConnection} with the given {@code newConnection} on the
-         * {@link EndPoint} associated with {@code oldConnection}, performing connection lifecycle management.
-         * <p>
-         * The {@code oldConnection} will be closed by invoking {@link org.eclipse.jetty.io.Connection#onClose()}
-         * and the {@code newConnection} will be opened by invoking {@link org.eclipse.jetty.io.Connection#onOpen()}.
-         * @param oldConnection the old connection to replace
-         * @param newConnection the new connection replacement
-         */
-        public static void replaceConnection(Connection oldConnection, Connection newConnection)
-        {
-            close(oldConnection);
-            oldConnection.getEndPoint().setConnection(newConnection);
-            open(newConnection);
-        }
-
-        private static void open(Connection connection)
-        {
-            try
-            {
-                connection.onOpen();
-            }
-            catch (Throwable x)
-            {
-                LOG.debug(x);
-            }
-        }
-
-        private static void close(Connection connection)
-        {
-            try
-            {
-                connection.onClose();
-            }
-            catch (Throwable x)
-            {
-                LOG.debug(x);
-            }
-        }
-    }
 }

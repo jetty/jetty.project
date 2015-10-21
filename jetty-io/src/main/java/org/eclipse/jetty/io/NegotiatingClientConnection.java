@@ -108,9 +108,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
         EndPoint endPoint = getEndPoint();
         try
         {
-            Connection oldConnection = endPoint.getConnection();
-            Connection newConnection = connectionFactory.newConnection(endPoint, context);
-            ClientConnectionFactory.Helper.replaceConnection(oldConnection, newConnection);
+            endPoint.upgrade(connectionFactory.newConnection(endPoint, context));
         }
         catch (Throwable x)
         {

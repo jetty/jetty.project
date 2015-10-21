@@ -163,7 +163,7 @@ public class HttpClientCustomProxyTest
         {
             super.onOpen();
             fillInterested();
-            getEndPoint().write(new Callback.Adapter(), ByteBuffer.wrap(CAFE_BABE));
+            getEndPoint().write(Callback.NOOP, ByteBuffer.wrap(CAFE_BABE));
         }
 
         @Override
@@ -177,7 +177,7 @@ public class HttpClientCustomProxyTest
                 Assert.assertArrayEquals(CAFE_BABE, buffer.array());
 
                 // We are good, upgrade the connection
-                ClientConnectionFactory.Helper.replaceConnection(this, connectionFactory.newConnection(getEndPoint(), context));
+                getEndPoint().upgrade(connectionFactory.newConnection(getEndPoint(), context));
             }
             catch (Throwable x)
             {
@@ -232,10 +232,10 @@ public class HttpClientCustomProxyTest
                 int filled = getEndPoint().fill(buffer);
                 Assert.assertEquals(4, filled);
                 Assert.assertArrayEquals(CAFE_BABE, buffer.array());
-                getEndPoint().write(new Callback.Adapter(), buffer);
+                getEndPoint().write(Callback.NOOP, buffer);
 
                 // We are good, upgrade the connection
-                ClientConnectionFactory.Helper.replaceConnection(this, connectionFactory.newConnection(connector, getEndPoint()));
+                getEndPoint().upgrade(connectionFactory.newConnection(connector, getEndPoint()));
             }
             catch (Throwable x)
             {

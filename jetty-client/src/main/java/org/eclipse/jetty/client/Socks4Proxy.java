@@ -198,10 +198,10 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
                 if (HttpScheme.HTTPS.is(destination.getScheme()))
                     connectionFactory = new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
-                org.eclipse.jetty.io.Connection connection = connectionFactory.newConnection(getEndPoint(), context);
-                ClientConnectionFactory.Helper.replaceConnection(this, connection);
+                org.eclipse.jetty.io.Connection newConnection = connectionFactory.newConnection(getEndPoint(), context);
+                getEndPoint().upgrade(newConnection);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("SOCKS4 tunnel established: {} over {}", this, connection);
+                    LOG.debug("SOCKS4 tunnel established: {} over {}", this, newConnection);
             }
             catch (Throwable x)
             {
