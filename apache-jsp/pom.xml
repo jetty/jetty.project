@@ -88,8 +88,8 @@
 
     <!-- Eclipse Java Compiler (for JSP Compilation) -->
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>org.eclipse.jdt.core</artifactId>
+      <groupId>org.eclipse.jdt.core.compiler</groupId>
+      <artifactId>ecj</artifactId>
     </dependency>
   </dependencies>
 </project>

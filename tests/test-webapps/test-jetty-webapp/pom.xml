@@ -243,8 +243,10 @@
               </goals>
              <!-- example configuration
               <configuration>
-                 <includes>**/*.foo</includes>
-                 <excludes>**/*.fff</excludes>
+                <includes>**/*.foo</includes>
+                <excludes>**/*.fff</excludes>
+                <sourceVersion>1.8</sourceVersion>
+                <targetVersion>1.8</targetVersion>
               </configuration>
               -->
             </execution>

@@ -251,6 +251,19 @@ public class JspcMojo extends AbstractMojo
     
     
     /**
+     * Source version - if not set defaults to jsp default (currently 1.7)
+     * @parameter 
+     */
+    private String sourceVersion;
+    
+    
+    /**
+     * Target version - if not set defaults to jsp default (currently 1.7)
+     * @parameter 
+     */
+    private String targetVersion;
+    
+    /**
      * 
      * The JspC instance being used to compile the jsps.
      * 
@@ -280,7 +293,11 @@ public class JspcMojo extends AbstractMojo
             getLog().info("webXml="+webXml);
             getLog().info("insertionMarker="+ (insertionMarker == null || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker));
             getLog().info("keepSources=" + keepSources);
-            getLog().info("mergeFragment=" + mergeFragment);            
+            getLog().info("mergeFragment=" + mergeFragment);  
+            if (sourceVersion != null)
+                getLog().info("sourceVersion="+sourceVersion);
+            if (targetVersion != null)
+                getLog().info("targetVersion="+targetVersion);
         }
         try
         {
@@ -343,6 +360,10 @@ public class JspcMojo extends AbstractMojo
         jspc.setClassLoader(fakeWebAppClassLoader);
         jspc.setScanAllDirectories(scanAllDirectories);
         jspc.setCompile(true);
+        if (sourceVersion != null)
+            jspc.setCompilerSourceVM(sourceVersion);
+        if (targetVersion != null)
+            jspc.setCompilerTargetVM(targetVersion);
 
         // JspC#setExtensions() does not exist, so 
         // always set concrete list of files that will be processed.
