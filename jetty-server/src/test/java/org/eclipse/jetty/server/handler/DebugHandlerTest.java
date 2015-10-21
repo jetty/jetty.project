@@ -158,7 +158,7 @@ public class DebugHandlerTest
         req.getString("/foo/bar?a=b");
         
         String log = capturedLog.toString(StandardCharsets.UTF_8.name());
-        String expectedThreadName = String.format("http://%s:%s/foo/bar?a=b",serverURI.getHost(),serverURI.getPort());
+        String expectedThreadName = String.format("//%s:%s/foo/bar?a=b",serverURI.getHost(),serverURI.getPort());
         assertThat("ThreadName", log, containsString(expectedThreadName));
         // Look for bad/mangled/duplicated schemes
         assertThat("ThreadName", log, not(containsString("http:"+expectedThreadName)));

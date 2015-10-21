@@ -66,12 +66,37 @@ public class RequestLogTest
         _server.stop();
     }
     
+    
     @Test
     public void testNotHandled() throws Exception
     {
         _connector.getResponses("GET /foo HTTP/1.0\n\n");
         String log = _log.exchange(null,5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo HTTP/1.0\" 404 "));
+    }
+
+    @Test
+    public void testRequestLine() throws Exception
+    {
+        _connector.getResponses("GET /foo?data=1 HTTP/1.0\nhost: host:80\n\n");
+        String log = _log.exchange(null,5,TimeUnit.SECONDS);
+        // TODO should be without host (https://bugs.eclipse.org/bugs/show_bug.cgi?id=480276)
+        // assertThat(log,containsString("GET /foo?data=1 HTTP/1.0\" 200 "));
+        assertThat(log,containsString("GET //host:80/foo?data=1 HTTP/1.0\" 200 "));
+        
+        _connector.getResponses("GET //host/foo?data=1 HTTP/1.0\n\n");
+        log = _log.exchange(null,5,TimeUnit.SECONDS);
+        assertThat(log,containsString("GET //host/foo?data=1 HTTP/1.0\" 200 "));
+        
+        _connector.getResponses("GET //absolute:80/foo?data=1 HTTP/1.0\nhost: host:80\n\n");
+        log = _log.exchange(null,5,TimeUnit.SECONDS);
+        // TODO should it be with absolute? (https://bugs.eclipse.org/bugs/show_bug.cgi?id=480276)
+        // assertThat(log,containsString("GET //absolute:80/foo?data=1 HTTP/1.0\" 200 "));
+        assertThat(log,containsString("GET //host:80/foo?data=1 HTTP/1.0\" 200 "));
+        
+        _connector.getResponses("GET http://host:80/foo?data=1 HTTP/1.0\n\n");
+        log = _log.exchange(null,5,TimeUnit.SECONDS);
+        assertThat(log,containsString("GET http://host:80/foo?data=1 HTTP/1.0\" 200 "));   
     }
     
     @Test
