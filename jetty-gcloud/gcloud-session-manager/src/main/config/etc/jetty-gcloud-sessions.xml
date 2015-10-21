@@ -4,27 +4,18 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <!-- ============================================================================================== -->
-  <!-- GCloud configuration  from property file                                                       -->
-  <!-- Note: passwords stored in the property file can use jetty obfuscation (see                     -->
+  <!-- GCloud configuration.                                                                          -->
+  <!-- Note: passwords can use jetty obfuscation.  See                                                -->
   <!-- https://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html -->
   <!-- ============================================================================================== -->
-   <Call id="gconf" class="org.eclipse.jetty.gcloud.session.GCloudConfiguration" name="fromFile">
-      <Arg><Property name="jetty.base" default="."/>/<Property name="jetty.gcloudSession.configFile" default="etc/gcloud.props"/></Arg>
-   </Call>
-
-  <!-- ============================================================================================== -->
-  <!-- Alternate GCloud configuration from properties                                                 -->
-  <!-- Note: passwords can use jetty obfuscation (see                                                 -->
-  <!-- https://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html -->
-  <!-- ============================================================================================== -->
-<!--
   <New id="gconf" class="org.eclipse.jetty.gcloud.session.GCloudConfiguration">
+    <!-- To contact remote gclouddatastore set the following properties in start.ini -->
+    <!-- Either set jetty.gcloudSession.projectId or use system property/env var DATASTORE_DATASET-->
     <Set name="projectId"><Property name="jetty.gcloudSession.projectId"/></Set>
     <Set name="p12File"><Property name="jetty.gcloudSession.p12File"/></Set>
     <Set name="serviceAccount"><Property name="jetty.gcloudSession.serviceAccount"/></Set>
     <Set name="password"><Property name="jetty.gcloudSession.password"/></Set>
   </New>
--->
 
 
   <!-- ===================================================================== -->

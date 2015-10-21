@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -61,8 +58,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertThat;
 
 public class HttpClientLoadTest extends AbstractHttpClientServerTest
 {
@@ -100,7 +100,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                 return new HttpDestinationOverHTTP(getHttpClient(), origin)
                 {
                     @Override
-                    protected ConnectionPool newConnectionPool(HttpClient client)
+                    protected DuplexConnectionPool newConnectionPool(HttpClient client)
                     {
                         return new LeakTrackingConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
                         {
@@ -143,15 +143,15 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
 
         System.gc();
 
-        assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), is(0L));
-        assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), is(0L));
-        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), is(0L));
+        assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), Matchers.is(0L));
+        assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), Matchers.is(0L));
+        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), Matchers.is(0L));
 
-        assertThat("Client BufferPool - leaked acquires", clientBufferPool.getLeakedAcquires(), is(0L));
-        assertThat("Client BufferPool - leaked releases", clientBufferPool.getLeakedReleases(), is(0L));
-        assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedResources(), is(0L));
+        assertThat("Client BufferPool - leaked acquires", clientBufferPool.getLeakedAcquires(), Matchers.is(0L));
+        assertThat("Client BufferPool - leaked releases", clientBufferPool.getLeakedReleases(), Matchers.is(0L));
+        assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedResources(), Matchers.is(0L));
 
-        assertThat("Connection Leaks", connectionLeaks.get(), is(0L));
+        assertThat("Connection Leaks", connectionLeaks.get(), Matchers.is(0L));
     }
 
     private void run(Random random, int iterations) throws InterruptedException
@@ -173,7 +173,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                 for (String host : Arrays.asList("localhost", "127.0.0.1"))
                 {
                     HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, connector.getLocalPort());
-                    ConnectionPool connectionPool = destination.getConnectionPool();
+                    DuplexConnectionPool connectionPool = destination.getConnectionPool();
                     for (Connection connection : new ArrayList<>(connectionPool.getActiveConnections()))
                     {
                         HttpConnectionOverHTTP active = (HttpConnectionOverHTTP)connection;

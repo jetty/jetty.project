@@ -88,7 +88,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -135,7 +135,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -182,7 +182,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -225,7 +225,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -289,7 +289,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -344,7 +344,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -454,7 +454,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());

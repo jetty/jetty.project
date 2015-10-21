@@ -991,7 +991,7 @@ public class HttpClient extends ContainerLifeCycle
      * anymore and leave space for new destinations.
      *
      * @param removeIdleDestinations whether destinations that have no connections should be removed
-     * @see org.eclipse.jetty.client.ConnectionPool
+     * @see org.eclipse.jetty.client.DuplexConnectionPool
      */
     public void setRemoveIdleDestinations(boolean removeIdleDestinations)
     {

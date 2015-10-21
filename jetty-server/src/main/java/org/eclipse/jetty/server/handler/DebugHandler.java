@@ -27,6 +27,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
@@ -66,9 +67,8 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         boolean suspend=false;
         boolean retry=false;
         String name=(String)request.getAttribute("org.eclipse.jetty.thread.name");
-        if (name==null) {
-            name=old_name+":"+baseRequest.getScheme()+":"+baseRequest.getHttpURI();
-        }
+        if (name == null)
+            name = old_name + ":" + baseRequest.getHttpURI();
         else
             retry=true;
 

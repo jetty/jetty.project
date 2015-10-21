@@ -126,16 +126,8 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         }
 
         @Override
-        public void onClose()
-        {
-            super.onClose();
-            client.removeSession(getSession());
-        }
-
-        @Override
         public void succeeded()
         {
-            client.addSession(getSession());
             promise.succeeded(getSession());
         }
 

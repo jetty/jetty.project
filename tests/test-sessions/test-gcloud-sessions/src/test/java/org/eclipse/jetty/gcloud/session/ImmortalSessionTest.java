@@ -34,14 +34,13 @@ public class ImmortalSessionTest extends AbstractImmortalSessionTest
 {
     static GCloudSessionTestSupport _testSupport;
 
+    /**
+     * @throws Exception
+     */
     @BeforeClass
     public static void setup () throws Exception
     {
-        String projectId = System.getProperty("test.projectId", null);
-        String port = System.getProperty("test.port","0");
-        _testSupport = new GCloudSessionTestSupport(projectId,
-                                                   Integer.parseInt(port),
-                                                   null);
+        _testSupport = new GCloudSessionTestSupport();
         _testSupport.setUp();
     }
     

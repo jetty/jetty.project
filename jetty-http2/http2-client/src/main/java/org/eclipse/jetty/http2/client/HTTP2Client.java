@@ -26,13 +26,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
-import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -43,7 +39,6 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -117,7 +112,6 @@ public class HTTP2Client extends ContainerLifeCycle
     private Scheduler scheduler;
     private ByteBufferPool bufferPool;
     private ClientConnectionFactory connectionFactory;
-    private Queue<ISession> sessions;
     private SelectorManager selector;
     private int selectors = 1;
     private long idleTimeout = 30000;
@@ -150,12 +144,6 @@ public class HTTP2Client extends ContainerLifeCycle
             });
         }
 
-        if (sessions == null)
-        {
-            sessions = new ConcurrentLinkedQueue<>();
-            addBean(sessions);
-        }
-
         if (selector == null)
         {
             selector = newSelectorManager();
@@ -169,13 +157,6 @@ public class HTTP2Client extends ContainerLifeCycle
     protected SelectorManager newSelectorManager()
     {
         return new ClientSelectorManager(getExecutor(), getScheduler(), getSelectors());
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        closeConnections();
-        super.doStop();
     }
 
     public Executor getExecutor()
@@ -327,23 +308,6 @@ public class HTTP2Client extends ContainerLifeCycle
     protected void configure(SocketChannel channel) throws IOException
     {
         channel.socket().setTcpNoDelay(true);
-    }
-
-    private void closeConnections()
-    {
-        for (ISession session : sessions)
-            session.close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
-        sessions.clear();
-    }
-
-    public boolean addSession(ISession session)
-    {
-        return sessions.offer(session);
-    }
-
-    public boolean removeSession(ISession session)
-    {
-        return sessions.remove(session);
     }
 
     private class ClientSelectorManager extends SelectorManager

@@ -272,7 +272,7 @@ public class HttpClientUploadDuringServerShutdown
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", connector.getLocalPort());
-        ConnectionPool pool = destination.getConnectionPool();
+        DuplexConnectionPool pool = destination.getConnectionPool();
         Assert.assertEquals(0, pool.getConnectionCount());
         Assert.assertEquals(0, pool.getIdleConnections().size());
         Assert.assertEquals(0, pool.getActiveConnections().size());
