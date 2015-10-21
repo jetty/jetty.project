@@ -533,6 +533,7 @@ public class ResponseTest
                     Response response = newResponse();
                     Request request = response.getHttpChannel().getRequest();
 
+                    request.setScheme("http");
                     request.setAuthority(host,port);
                     request.setURIPathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
                     request.setContextPath("/path");

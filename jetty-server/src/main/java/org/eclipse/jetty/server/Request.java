@@ -1353,7 +1353,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getScheme()
     {
-        String scheme=_metadata.getURI().getScheme();
+        String scheme=_metadata==null?null:_metadata.getURI().getScheme();
         return scheme==null?HttpScheme.HTTP.asString():scheme;
     }
 
