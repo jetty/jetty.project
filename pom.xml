@@ -594,15 +594,9 @@
       </dependency>
 
       <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>org.eclipse.jdt.core</artifactId>
-       <version>3.8.2.v20130121</version>
-       <exclusions>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet</artifactId>
-         </exclusion>
-        </exclusions>
+        <groupId>org.eclipse.jdt.core.compiler</groupId>
+        <artifactId>ecj</artifactId>
+       <version>4.4.2</version>
       </dependency>
 
     <!-- JSTL Impl -->
