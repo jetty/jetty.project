@@ -179,10 +179,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                     ClientConnectionFactory sslConnectionFactory = new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
                     HttpConnectionOverHTTP oldConnection = (HttpConnectionOverHTTP)endPoint.getConnection();
                     org.eclipse.jetty.io.Connection newConnection = sslConnectionFactory.newConnection(endPoint, context);
-                    Helper.replaceConnection(oldConnection, newConnection);
-                    // Avoid setting fill interest in the old Connection,
-                    // without closing the underlying EndPoint.
-                    oldConnection.softClose();
+                    endPoint.upgrade(newConnection);
                     if (LOG.isDebugEnabled())
                         LOG.debug("HTTP tunnel established: {} over {}", oldConnection, newConnection);
                 }

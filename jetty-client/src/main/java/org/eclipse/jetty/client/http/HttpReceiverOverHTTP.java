@@ -107,11 +107,13 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             EndPoint endPoint = connection.getEndPoint();
             while (true)
             {
-                // Connection may be closed in a parser callback.
-                if (connection.isClosed())
+                boolean upgraded = connection != endPoint.getConnection();
+
+                // Connection may be closed or upgraded in a parser callback.
+                if (connection.isClosed() || upgraded)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} closed", connection);
+                        LOG.debug("{} {}", connection, upgraded ? "upgraded" : "closed");
                     releaseBuffer();
                     return;
                 }
