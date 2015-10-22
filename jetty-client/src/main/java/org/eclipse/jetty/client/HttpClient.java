@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.CookieStore;
@@ -1047,13 +1046,6 @@ public class HttpClient extends ContainerLifeCycle
     public boolean isDefaultPort(String scheme, int port)
     {
         return HttpScheme.HTTPS.is(scheme) ? port == 443 : port == 80;
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        dumpThis(out);
-        dump(out, indent, getBeans(), destinations.values());
     }
 
     private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>
