@@ -173,7 +173,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 public class RewriteHandler extends HandlerWrapper
 {
     private RuleContainer _rules;
-    private EnumSet<DispatcherType> _dispatchTypes = EnumSet.of(DispatcherType.REQUEST);
+    private EnumSet<DispatcherType> _dispatchTypes = EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC);
 
     /* ------------------------------------------------------------ */
     public RewriteHandler()

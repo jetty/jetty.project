@@ -23,6 +23,23 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 
+/**
+ * <p>The FastCGI protocol exchanges <em>frames</em>.</p>
+ * <pre>
+ * struct frame {
+ *     ubyte version;
+ *     ubyte type;
+ *     ushort requestId;
+ *     ushort contentLength;
+ *     ubyte paddingLength;
+ *     ubyte reserved;
+ *     ubyte[] content;
+ *     ubyte[] padding;
+ * }
+ * </pre>
+ * <p>Depending on the {@code type}, the content may have a different format,
+ * so there are specialized content parsers.</p>
+ */
 public abstract class Parser
 {
     protected final HeaderParser headerParser = new HeaderParser();
