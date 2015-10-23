@@ -243,6 +243,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
        }
        
        _scavenger.start();
+       System.err.println("Started scavenger "+_scavenger);
     }
 
     /* ------------------------------------------------------------ */

@@ -16,76 +16,39 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 import java.io.File;
 
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- * ForwardedSessionTest
- *
- *
- */
-public class ForwardedSessionTest extends AbstractForwardedSessionTest
-{ 
-   File tmpDir;
+public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
+{
     
     @Before
     public void before() throws Exception
     {
-        tmpDir = File.createTempFile("hash-session-forward-test", null);
-        tmpDir.delete();
-        tmpDir.mkdirs();
-        tmpDir.deleteOnExit();
+       FileTestServer.setup();
     }
     
     @After 
     public void after()
     {
-        IO.delete(tmpDir);
+       FileTestServer.teardown();
     }
     
-    @Override
     public AbstractTestServer createServer(int port)
     {
-        return new HashTestServer(port)
-        {
-
-            @Override
-            public SessionManager newSessionManager()
-            {
-                HashSessionManager sessionManager = (HashSessionManager)super.newSessionManager();
-                sessionManager.setSavePeriod(2);
-                
-                try
-                {
-                    sessionManager.setStoreDirectory(tmpDir);
-                }
-                catch (Exception e)
-                {
-                    throw new IllegalStateException(e);
-                }
-                return sessionManager;
-            }
-
-        };
+        return new FileTestServer(port);
     }
 
-    
-    
     @Test
-    public void testSessionCreateInForward() throws Exception
+    public void testCrossContextDispatch() throws Exception
     {
-        super.testSessionCreateInForward();
+        super.testCrossContextDispatch();
     }
-
-  
-
 
 }

@@ -131,7 +131,7 @@ public abstract class AbstractSessionRenewTest
                 String beforeSessionId = beforeSession.getId();
 
 
-                ((AbstractSession)beforeSession).renewId(request);
+                ((Session)beforeSession).renewId(request);
 
                 HttpSession afterSession = request.getSession(false);
                 assertTrue(afterSession != null);
@@ -140,7 +140,7 @@ public abstract class AbstractSessionRenewTest
                 assertTrue(beforeSession==afterSession);
                 assertFalse(beforeSessionId.equals(afterSessionId));
 
-                AbstractSessionManager sessionManager = (AbstractSessionManager)((AbstractSession)afterSession).getSessionManager();
+                SessionManager sessionManager = ((Session)afterSession).getSessionManager();
                 AbstractSessionIdManager sessionIdManager = (AbstractSessionIdManager)sessionManager.getSessionIdManager();
 
                 assertTrue(sessionIdManager.isIdInUse(afterSessionId));
@@ -151,7 +151,7 @@ public abstract class AbstractSessionRenewTest
                 session = sessionManager.getSession(beforeSessionId);
                 assertNull(session);
 
-                if (((AbstractSession)afterSession).isIdChanged())
+                if (((Session)afterSession).isIdChanged())
                 {
                     ((org.eclipse.jetty.server.Response)response).addCookie(sessionManager.getSessionCookie(afterSession, request.getContextPath(), request.isSecure()));
                 }

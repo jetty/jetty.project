@@ -621,6 +621,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         Session session = _sessionStore.newSession(key, created, created, created,  (_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000L:-1));
         session.setExtendedId(_sessionIdManager.getExtendedId(id,request));
         session.setSessionManager(this);
+        session.setLastNode(_sessionIdManager.getWorkerName());
 
         if (request.isSecure())
             session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);

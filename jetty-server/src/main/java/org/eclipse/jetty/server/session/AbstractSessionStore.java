@@ -130,14 +130,17 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     {
         //look locally
         Session session = doGet(key);
-        
+
         //not in session store, load the data for the session if possible
         if (session == null && _sessionDataStore != null)
         {
             SessionData data = _sessionDataStore.load(key);
-            session = newSession(data);
-            session.setSessionManager(_manager);
-            doPut(key, session);
+            if (data != null)
+            {
+                session = newSession(data);
+                session.setSessionManager(_manager);
+                doPut(key, session);
+            }
         }
         return session;
     }

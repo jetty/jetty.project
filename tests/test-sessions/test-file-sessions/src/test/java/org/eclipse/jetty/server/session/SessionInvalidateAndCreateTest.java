@@ -18,30 +18,34 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.io.File;
-
-import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
+public class SessionInvalidateAndCreateTest extends AbstractSessionInvalidateAndCreateTest
 {
 
-
-    @Test
-    public void testCrossContextDispatch() throws Exception
+    @Before
+    public void before() throws Exception
     {
-        super.testCrossContextDispatch();
+       FileTestServer.setup();
     }
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractClientCrossContextSessionTest#createServer(int)
-     */
+    
+    @After 
+    public void after()
+    {
+       FileTestServer.teardown();
+    }
+    
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return new HashTestServer(port);
+        return new FileTestServer(port,max,scavenge);
     }
-
+    
+    @Test
+    public void testSessionScavenge() throws Exception
+    {
+        super.testSessionScavenge();
+    }
 }

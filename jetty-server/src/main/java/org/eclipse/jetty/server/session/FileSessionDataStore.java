@@ -105,7 +105,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         if (_storeDir != null)
         {
             file = new File(_storeDir, key.toString());
-            if (file.exists())
+            if (file.exists() && file.getParentFile().equals(_storeDir))
             {
                 file.delete();
                 return true;
@@ -150,13 +150,12 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
         catch (UnreadableSessionDataException e)
         {
-            if (isDeleteUnrestorableFiles() && file.exists())
+            if (isDeleteUnrestorableFiles() && file.exists() && file.getParentFile().equals(_storeDir));
             {
                 file.delete();
                 LOG.warn("Deleted unrestorable file for session {}", key);
-                return null;
             }
-            return null;
+           throw e;
         }
     }
     

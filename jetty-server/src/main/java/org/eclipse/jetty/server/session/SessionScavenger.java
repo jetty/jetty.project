@@ -167,6 +167,9 @@ public class SessionScavenger extends AbstractLifeCycle
         if (isStopping() || isStopped())
             return;
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("Scavenging sessions");
+        
         //find the session managers
         Handler[] contexts = ((AbstractSessionIdManager)_sessionIdManager).getServer().getChildHandlersByClass(ContextHandler.class);
         for (int i=0; contexts!=null && i<contexts.length; i++)
@@ -198,5 +201,14 @@ public class SessionScavenger extends AbstractLifeCycle
         }
 
     }
+
+
+    @Override
+    public String toString()
+    {
+        return super.toString()+"[interval="+_scavengeIntervalMs+", ownscheduler="+_ownScheduler+"]";
+    }
+    
+    
 
 }

@@ -83,6 +83,8 @@ public class SessionKey
     
     public static String getContextPath (Context context)
     {
+        if (context == null)
+            return "";
         return canonicalize (context.getContextPath());
     }
     

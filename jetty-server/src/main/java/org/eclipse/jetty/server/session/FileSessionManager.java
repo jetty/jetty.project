@@ -16,32 +16,42 @@
 //  ========================================================================
 //
 
+
 package org.eclipse.jetty.server.session;
 
-import java.io.File;
-
-import org.eclipse.jetty.util.IO;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
+/**
+ * FileHashSessionManager
+ *
+ * Session manager that stores its sessions in files on disk
+ * 
+ */
+public class FileSessionManager extends SessionManager
 {
+    protected FileSessionDataStore _sessionDataStore = new FileSessionDataStore();
 
 
-    @Test
-    public void testCrossContextDispatch() throws Exception
+    @Override
+    public void doStart() throws Exception
     {
-        super.testCrossContextDispatch();
+        _sessionStore = new MemorySessionStore();
+        ((AbstractSessionStore)_sessionStore).setSessionDataStore(_sessionDataStore);
+        
+        super.doStart();
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractClientCrossContextSessionTest#createServer(int)
-     */
     @Override
-    public AbstractTestServer createServer(int port)
+    public void doStop() throws Exception
     {
-        return new HashTestServer(port);
+        super.doStop();
+    }
+    
+    /**
+     * Get the SessionDataStore to configure it
+     * @return
+     */
+    public FileSessionDataStore getSessionDataStore()
+    {
+        return _sessionDataStore;
     }
 
 }

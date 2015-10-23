@@ -22,11 +22,12 @@ package org.eclipse.jetty.server.session;
 /**
  * HashSessionManager
  *
- *
+ * In memory-only session manager.
+ * 
  */
 public class HashSessionManager extends SessionManager
 {
-    protected FileSessionDataStore _sessionDataStore = new FileSessionDataStore();
+    protected NullSessionDataStore _sessionDataStore = new NullSessionDataStore();
 
 
     @Override
@@ -44,13 +45,4 @@ public class HashSessionManager extends SessionManager
         super.doStop();
     }
     
-    /**
-     * Get the SessionDataStore to configure it
-     * @return
-     */
-    public FileSessionDataStore getSessionDataStore()
-    {
-        return _sessionDataStore;
-    }
-
 }

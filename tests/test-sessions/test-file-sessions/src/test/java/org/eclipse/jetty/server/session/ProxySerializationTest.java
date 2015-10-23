@@ -23,6 +23,8 @@ import java.io.File;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -32,40 +34,29 @@ import org.junit.Test;
  */
 public class ProxySerializationTest extends AbstractProxySerializationTest
 {   
+    
+    @Before
+    public void before() throws Exception
+    {
+       FileTestServer.setup();
+    }
+    
+    @After 
+    public void after()
+    {
+       FileTestServer.teardown();
+    }
     /** 
      * @see org.eclipse.jetty.server.session.AbstractProxySerializationTest#createServer(int, int, int)
      */
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return new HashTestServer(port,max,scavenge);
+        return new FileTestServer(port,max,scavenge);
     }
     
     
     
-    
-    @Override
-    public void customizeContext(ServletContextHandler c)
-    {
-        if (c == null)
-            return;
-        
-        //Ensure that the HashSessionManager will persist sessions on passivation
-        HashSessionManager manager = (HashSessionManager)c.getSessionHandler().getSessionManager();
-        manager.setLazyLoad(false);
-        manager.setIdleSavePeriod(1);
-        try
-        {
-            File testDir = MavenTestingUtils.getTargetTestingDir("foo");
-            testDir.mkdirs();
-            manager.setStoreDirectory(testDir);
-        }
-        catch (Exception e)
-        {
-            throw new IllegalStateException(e);
-        }       
-    }
-
 
 
 
@@ -73,6 +64,16 @@ public class ProxySerializationTest extends AbstractProxySerializationTest
     public void testProxySerialization() throws Exception
     {
         super.testProxySerialization();
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractProxySerializationTest#customizeContext(org.eclipse.jetty.servlet.ServletContextHandler)
+     */
+    @Override
+    public void customizeContext(ServletContextHandler c)
+    {
+        // TODO Auto-generated method stub
+        
     }
 
 }

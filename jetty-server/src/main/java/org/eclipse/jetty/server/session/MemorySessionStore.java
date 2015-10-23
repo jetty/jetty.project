@@ -199,6 +199,7 @@ public class MemorySessionStore extends AbstractSessionStore
     @Override
     public Session newSession(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
+        //TODO - how to tell that the session is new?!
            return new MemorySession(_sessionDataStore.newSessionData(key, created, accessed, lastAccessed, maxInactiveMs));
     }
 

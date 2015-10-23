@@ -46,7 +46,9 @@ public abstract class AbstractNewSessionTest
     {
         try
         {
+            System.err.println("Sleeping "+(scavenge * 2500L));
             Thread.sleep(scavenge * 2500L);
+            System.err.println("Sleeping "+(scavenge * 2500L));
         }
         catch (InterruptedException e)
         {

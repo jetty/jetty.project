@@ -16,32 +16,48 @@
 //  ========================================================================
 //
 
+
 package org.eclipse.jetty.server.session;
 
-import java.io.File;
-
-import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
-{
-
-
-    @Test
-    public void testCrossContextDispatch() throws Exception
+/**
+ * ForwardedSessionTest
+ *
+ *
+ */
+public class ForwardedSessionTest extends AbstractForwardedSessionTest
+{ 
+    
+    @Before
+    public void before() throws Exception
     {
-        super.testCrossContextDispatch();
+       FileTestServer.setup();
     }
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractClientCrossContextSessionTest#createServer(int)
-     */
+    
+    @After 
+    public void after()
+    {
+        FileTestServer.teardown();
+    }
+    
     @Override
     public AbstractTestServer createServer(int port)
     {
-        return new HashTestServer(port);
+        return new FileTestServer(port);
     }
+
+    
+    
+    @Test
+    public void testSessionCreateInForward() throws Exception
+    {
+        super.testSessionCreateInForward();
+    }
+
+  
+
 
 }

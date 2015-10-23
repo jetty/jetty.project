@@ -25,62 +25,110 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class HashSessionManagerTest
+public class FileSessionManagerTest
 {
+    private static StdErrLog _log;
+    private static boolean _stacks;
+  
+    
+   // @BeforeClass
+    public static void beforeClass ()
+    {
+        _log = ((StdErrLog)Log.getLogger("org.eclipse.jetty.server.session"));
+        _stacks = _log.isHideStacks();
+        _log.setHideStacks(true);
+    }
+    
+    //@AfterClass
+    public static void afterClass()
+    {
+        _log.setHideStacks(_stacks);
+    }
+    
+    
+    
     @Test
     public void testDangerousSessionIdRemoval() throws Exception
     {
-        final HashSessionManager manager = new HashSessionManager();
+        Server server = new Server();
+        SessionHandler handler = new SessionHandler();
+        handler.setServer(server);
+        final HashSessionIdManager idmgr = new HashSessionIdManager();
+        idmgr.setServer(server);
+        server.setSessionIdManager(idmgr);
+        
+        final FileSessionManager manager = new FileSessionManager();
         manager.getSessionDataStore().setDeleteUnrestorableFiles(true);
         //manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         testDir.mkdirs();
         manager.getSessionDataStore().setStoreDir(testDir);
-
-        MavenTestingUtils.getTargetFile("dangerFile.session").createNewFile();
+        manager.setSessionIdManager(idmgr);
+        handler.setSessionManager(manager);
+        manager.start();
         
-        Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile("dangerFile.session").exists());
-
-        manager.getSession("../../dangerFile.session");
+        String expectedFilename = "../../_0.0.0.0_dangerFile";
         
-        Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile("dangerFile.session").exists());
+        MavenTestingUtils.getTargetFile(expectedFilename).createNewFile();
+        
+        Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile(expectedFilename).exists());
+
+        manager.getSession("../../_0.0.0.0_dangerFile");
+        
+        Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile(expectedFilename).exists());
 
     }
-    
-   @Test
+
+    @Test
     public void testValidSessionIdRemoval() throws Exception
-    {
-        final HashSessionManager manager = new HashSessionManager();
+    {      
+        Server server = new Server();
+        SessionHandler handler = new SessionHandler();
+        handler.setServer(server);
+        final HashSessionIdManager idmgr = new HashSessionIdManager();
+        idmgr.setServer(server);
+        server.setSessionIdManager(idmgr);
+        final FileSessionManager manager = new FileSessionManager();
         manager.getSessionDataStore().setDeleteUnrestorableFiles(true);
-       // manager.setLazyLoad(true);
+        manager.setSessionIdManager(idmgr);
+        handler.setSessionManager(manager);
+        // manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         FS.ensureEmpty(testDir);
-        
+
         manager.getSessionDataStore().setStoreDir(testDir);
+        manager.start();
 
-        Assert.assertTrue(new File(testDir, "validFile.session").createNewFile());
+        //See SessionKey.getKey()
+        String expectedFilename = "_0.0.0.0_validFile123";
         
-        Assert.assertTrue("File should exist!", new File(testDir, "validFile.session").exists());
-       
-        manager.getSession("validFile.session");
+        Assert.assertTrue(new File(testDir, expectedFilename).createNewFile());
 
-        Assert.assertTrue("File shouldn't exist!", !new File(testDir,"validFile.session").exists());
+        Assert.assertTrue("File should exist!", new File(testDir, expectedFilename).exists());
+
+        manager.getSession("validFile123");
+
+        Assert.assertTrue("File shouldn't exist!", !new File(testDir,expectedFilename).exists());
     }
-    
+
     @Test
     public void testHashSession() throws Exception
     {
         File testDir = MavenTestingUtils.getTargetTestingDir("saved");
         IO.delete(testDir);
         testDir.mkdirs();
-        
+
         Server server = new Server();
         SessionHandler handler = new SessionHandler();
         handler.setServer(server);
-        HashSessionManager manager = new HashSessionManager();
+        FileSessionManager manager = new FileSessionManager();
         manager.getSessionDataStore().setStoreDir(testDir);
         manager.setMaxInactiveInterval(5);
         Assert.assertTrue(testDir.exists());
@@ -88,6 +136,7 @@ public class HashSessionManagerTest
         handler.setSessionManager(manager);
         
         AbstractSessionIdManager idManager = new HashSessionIdManager();
+        idManager.setServer(server);
         idManager.setWorkerName("foo");
         manager.setSessionIdManager(idManager);
         server.setSessionIdManager(idManager);
@@ -105,7 +154,11 @@ public class HashSessionManagerTest
         manager.setMaxInactiveInterval(30); // change max inactive interval for *new* sessions
         manager.stop();
         
-        Assert.assertTrue("File should exist!", new File(testDir, session.getId()).exists());
+        for (String f: testDir.list())
+            System.err.println(f);
+        
+        String expectedFilename = "_0.0.0.0_"+session.getId();
+        Assert.assertTrue("File should exist!", new File(testDir, expectedFilename).exists());
         
         
         manager.start();

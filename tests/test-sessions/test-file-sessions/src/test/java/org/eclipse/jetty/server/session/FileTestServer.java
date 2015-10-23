@@ -18,22 +18,45 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.io.File;
+
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.util.IO;
 
 /**
  * @version $Revision$ $Date$
  */
-public class HashTestServer extends AbstractTestServer
+public class FileTestServer extends AbstractTestServer
 {
     static int __workers=0;
+    static File _tmpDir;
     
-    public HashTestServer(int port)
+    public  static void setup ()
+    throws Exception
+    {
+        
+        _tmpDir = File.createTempFile("file", null);
+        _tmpDir.delete();
+        _tmpDir.mkdirs();
+        _tmpDir.deleteOnExit();
+    }
+    
+    
+    public static void teardown ()
+    {
+        IO.delete(_tmpDir);
+        _tmpDir = null;
+    }
+    
+    
+    
+    public FileTestServer(int port)
     {
         super(port, 30, 10);
     }
 
-    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod)
+    public FileTestServer(int port, int maxInactivePeriod, int scavengePeriod)
     {
         super(port, maxInactivePeriod, scavengePeriod);
     }
@@ -48,7 +71,8 @@ public class HashTestServer extends AbstractTestServer
 
     public SessionManager newSessionManager()
     {
-        HashSessionManager manager = new HashSessionManager();
+        FileSessionManager manager = new FileSessionManager();
+        manager.getSessionDataStore().setStoreDir(_tmpDir);
         return manager;
     }
 
