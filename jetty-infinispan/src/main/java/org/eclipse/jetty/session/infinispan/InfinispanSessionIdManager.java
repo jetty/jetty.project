@@ -214,10 +214,10 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
      * Remove a session id. This compels all other contexts who have a session
      * with the same id to also remove it.
      * 
-     * @see org.eclipse.jetty.server.SessionIdManager#invalidateAll(java.lang.String)
+     * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
      */
     @Override
-    public void invalidateAll(String id)
+    public void expireAll(String id)
     {
         //delete the session id from list of in-use sessions
         delete (id);

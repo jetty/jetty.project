@@ -837,7 +837,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
      * Remove session from manager
      * @param session The session to remove
      * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
-     * {@link SessionIdManager#invalidateAll(String)} should be called.
+     * {@link SessionIdManager#expireAll(String)} should be called.
      * @return if the session was removed 
      */
     public boolean removeSession(Session session, boolean invalidate)
@@ -1027,7 +1027,10 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         }
     }
     
-    public void expire (String id)
+   
+    
+    
+    public void invalidate (String id)
     {
         if (StringUtil.isBlank(id))
             return;
@@ -1037,14 +1040,13 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             Session session = _sessionStore.get(SessionKey.getKey(id, _context));
             if (session == null)
                 return;  // couldn't get/load a session for this context with that id
-            session.timeout();
+            session.invalidateAndRemove();
         }
         catch (Exception e)
         {
             LOG.warn(e);
         }
     }
-    
     
     
     

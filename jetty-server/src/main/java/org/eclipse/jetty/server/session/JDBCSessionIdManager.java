@@ -900,10 +900,10 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     /**
      * Invalidate the session matching the id on all contexts.
      *
-     * @see org.eclipse.jetty.server.SessionIdManager#invalidateAll(java.lang.String)
+     * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
      */
     @Override
-    public void invalidateAll(String id)
+    public void expireAll(String id)
     {
         //take the id out of the list of known sessionids for this node
         removeId(id);

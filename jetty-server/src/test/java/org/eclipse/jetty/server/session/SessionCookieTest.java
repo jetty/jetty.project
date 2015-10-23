@@ -164,10 +164,10 @@ public class SessionCookieTest
         }
 
         /**
-         * @see org.eclipse.jetty.server.SessionIdManager#invalidateAll(java.lang.String)
+         * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
          */
         @Override
-        public void invalidateAll(String id)
+        public void expireAll(String id)
         {
 
         }

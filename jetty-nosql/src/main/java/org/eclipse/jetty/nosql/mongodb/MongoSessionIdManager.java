@@ -632,10 +632,10 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     /** Remove the session id from the list of in-use sessions.
      * Inform all other known contexts that sessions with the same id should be
      * invalidated.
-     * @see org.eclipse.jetty.server.SessionIdManager#invalidateAll(java.lang.String)
+     * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
      */
     @Override
-    public void invalidateAll(String sessionId)
+    public void expireAll(String sessionId)
     {
         _sessionsIds.remove(sessionId);
             

@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * to support distributed sessions.
  *
  */
-public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.AbstractSessionIdManager
+public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.x.AbstractSessionIdManager
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
@@ -185,7 +185,12 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
     }
 
 
-    //TODO useId might not be the right paradigm
+    
+    /** 
+     * Record the session id as being in use
+     * 
+     * @see org.eclipse.jetty.server.SessionIdManager#useId(java.lang.String)
+     */
     public void useId (String id)
     {
         if (id == null)
@@ -209,6 +214,10 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
 
 
     /** 
+     * Remove the id from in-use set
+     * 
+     * Prevents another context from using this id
+     * 
      * @see org.eclipse.jetty.server.SessionIdManager#removeId(java.lang.String)
      */
     @Override
@@ -339,66 +348,28 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
     /**
      * Invalidate the session matching the id on all contexts.
      *
-     * @see org.eclipse.jetty.server.SessionIdManager#invalidateAll(java.lang.String)
+     * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
      */
     @Override
-    public void invalidateAll(String id)
-    {
-        //take the id out of the list of known sessionids for this node
-        removeId(id);
-
+    public void expireAll(String id)
+    {       
         synchronized (_sessionIds)
         {
-            //tell all contexts that may have a session object with this id to
-            //get rid of them
-            Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
-            for (int i=0; contexts!=null && i<contexts.length; i++)
-            {
-                SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-                if (sessionHandler != null)
-                {
-                    SessionManager manager = sessionHandler.getSessionManager();
-
-                    if (manager != null)
-                    {
-                        manager.expire(id);
-                    }
-                }
-            }
+           super.expireAll(id);
         }
     }
 
 
-    @Override
-    public void renewSessionId (String oldClusterId, String oldNodeId, HttpServletRequest request)
-    {
-        //generate a new id
-        String newClusterId = newSessionId(request.hashCode());
-
-        synchronized (_sessionIds)
-        {
-            removeId(oldClusterId);//remove the old one from the list (and database)
-
-            //tell all contexts to update the id 
-            Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
-            for (int i=0; contexts!=null && i<contexts.length; i++)
-            {
-                SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-                if (sessionHandler != null) 
-                {
-                    SessionManager manager = sessionHandler.getSessionManager();
-
-                    if (manager != null)
-                    {
-                        manager.renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
-                    }
-                }
-            }
-        }
-    }
-
- 
     
+    @Override
+    public void renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)
+    {
+        synchronized (_sessionIds)
+        {
+            super.renewSessionId(oldClusterId, oldNodeId, request);
+        }
+    }
+
     /**
      * Get the database adaptor in order to configure it
      * @return
@@ -424,14 +395,6 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
         _dbAdaptor.initialize();
         _sessionIdTableSchema.prepareTables(_dbAdaptor);
         
-        if (_scavenger == null)
-        {
-            LOG.warn("No SessionScavenger set, using defaults");
-            _scavenger = new SessionScavenger();
-            _scavenger.setSessionIdManager(this);
-        }
-        
-        _scavenger.start();
         super.doStart();
       
     }
@@ -444,62 +407,8 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
     throws Exception
     {
         _sessionIds.clear();
-        _scavenger.stop();
+
         super.doStop();
-    }
-
-  
-    public void setSessionScavenger (SessionScavenger scavenger)
-    {
-        _scavenger = scavenger;
-        _scavenger.setSessionIdManager(this);
-    }
-   
-
-
-   
-  
-    private void cleanExpiredSessionIds (Set<String> expiredIds)
-    throws Exception
-    {
-        if (expiredIds == null || expiredIds.isEmpty())
-            return;
-
-        String[] ids = expiredIds.toArray(new String[expiredIds.size()]);
-        try (Connection con = getConnection())
-        {
-            con.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-            con.setAutoCommit(false);
-
-            int start = 0;
-            int end = 0;
-            int blocksize = _deleteBlockSize;
-            int block = 0;
-       
-            try (Statement statement = con.createStatement())
-            {
-                while (end < ids.length)
-                {
-                    start = block*blocksize;
-                    if ((ids.length -  start)  >= blocksize)
-                        end = start + blocksize;
-                    else
-                        end = ids.length;
-
-                    //take them out of the sessionIds table
-                    statement.executeUpdate(fillInClause("delete from "+_sessionIdTableSchema.getTableName()+" where "+_sessionIdTableSchema.getIdColumn()+" in ", ids, start, end));
-                    //take them out of the sessions table
-                    statement.executeUpdate(fillInClause("delete from "+_sessionTableSchema.getTableName()+" where "+_sessionTableSchema.getIdColumn()+" in ", ids, start, end));
-                    block++;
-                }
-            }
-            catch (Exception e)
-            {
-                con.rollback();
-                throw e;
-            }
-            con.commit();
-        }
     }
 
     

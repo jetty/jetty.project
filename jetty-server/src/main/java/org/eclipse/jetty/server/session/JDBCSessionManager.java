@@ -780,7 +780,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     /** Remove session from manager
      * @param session The session to remove
      * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
-     * {@link SessionIdManager#invalidateAll(String)} should be called.
+     * {@link SessionIdManager#expireAll(String)} should be called.
      */
     @Override
     public boolean removeSession(AbstractSession session, boolean invalidate)

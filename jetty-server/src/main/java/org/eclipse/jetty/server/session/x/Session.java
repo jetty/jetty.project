@@ -127,9 +127,12 @@ public class Session implements SessionManager.SessionIf
 
 
     /* ------------------------------------------------------------- */
-    protected void timeout() throws Exception
+    /** 
+     * 
+     * @throws Exception
+     */
+    protected void invalidateAndRemove() throws Exception
     {
-        // remove session from context and invalidate other sessions with same ID.
         if (_manager == null)
             throw new IllegalStateException ("No session manager for session "+ _sessionData.getId());
         
@@ -545,6 +548,12 @@ public class Session implements SessionManager.SessionIf
        
 
     /* ------------------------------------------------------------- */
+    /** Called by users to invalidate a session, or called by the
+     * access method as a request enters the session if the session
+     * has expired.
+     * 
+     * @see javax.servlet.http.HttpSession#invalidate()
+     */
     @Override
     public void invalidate()
     {
@@ -555,9 +564,15 @@ public class Session implements SessionManager.SessionIf
         try
         {
             
-            // remove session from context and invalidate other sessions with same ID.
+      /*      // remove session from context 
             _manager.removeSession(this,true);
+            
+            //invalidate session
             doInvalidate();
+            */
+            //tell id mgr to remove session from all other contexts
+           ((AbstractSessionIdManager)_manager.getSessionIdManager()).invalidateAll(_sessionData.getId());
+           
         }
         catch (Exception e)
         {

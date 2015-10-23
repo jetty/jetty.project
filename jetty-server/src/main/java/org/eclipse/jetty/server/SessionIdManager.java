@@ -52,7 +52,7 @@ public interface SessionIdManager extends LifeCycle
      * 
      * @param id The session ID without any cluster node extension
      */
-    public void invalidateAll(String id);
+    public void expireAll(String id);
     
     /**
      * Create a new Session ID.

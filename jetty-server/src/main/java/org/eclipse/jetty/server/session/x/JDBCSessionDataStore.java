@@ -33,6 +33,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
@@ -47,19 +49,15 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
-    
-    
-    protected int _deleteBlockSize = 10; //number of ids to include in where 'in' clause for finding long expired sessions
     protected boolean _initialized = false;
     protected long _lastScavengeTime = 0;
-
-
+    protected Map<SessionKey, AtomicInteger> _unloadables = new ConcurrentHashMap<>();
 
     private DatabaseAdaptor _dbAdaptor;
-
-
-
     private SessionTableSchema _sessionTableSchema;
+
+    private int _attempts = -1; // <= 0 means unlimited attempts to load a session
+    private boolean _deleteUnloadables = false; //true means if attempts exhausted delete the session
 
     /**
      * SessionTableSchema
@@ -521,20 +519,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         super ();
     }
 
-    
-    
-    
-    public void setDeleteBlockSize (int bsize)
-    {
-        this._deleteBlockSize = bsize;
-    }
-
-    public int getDeleteBlockSize ()
-    {
-        return this._deleteBlockSize;
-    }
-    
-
   
 
     /** 
@@ -554,6 +538,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         if (_dbAdaptor == null)
             throw new IllegalStateException("No jdbc config");
         
+        _unloadables.clear();
         initialize();
         super.doStart();
     }
@@ -564,6 +549,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     @Override
     protected void doStop() throws Exception
     {
+        _unloadables.clear();
         super.doStop();
     }
 
@@ -622,16 +608,37 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 }
                 catch (Exception e)
                 {
+                    if (getLoadAttempts() > 0)
+                    {
+                        incLoadAttempt (key);
+                    }
                     throw new UnreadableSessionDataException (key, e);
                 }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("LOADED session "+data);
+                    LOG.debug("LOADED session {}", data);
             }
             else
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Failed to load session "+key.getId());
+                    LOG.debug("No session {}", key.getId());
             return data;
+        }
+        catch (UnreadableSessionDataException e)
+        {
+            if (getLoadAttempts() > 0 && loadAttemptsExhausted(key))
+            {
+                try
+                {
+                    delete (key);
+                    _unloadables.remove(key);
+                }
+                catch (Exception x)
+                {
+                    LOG.warn("Problem deleting unloadable session {}", key);
+                }
+
+            }
+            throw e;
         }
     }
 
@@ -864,14 +871,55 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     
     public void setDatabaseAdaptor (DatabaseAdaptor dbAdaptor)
     {
+        checkStarted();
         _dbAdaptor = dbAdaptor;
     }
     
     public void setSessionTableSchema (SessionTableSchema schema)
     {
+        checkStarted();
         _sessionTableSchema = schema;
     }
 
+    public void setLoadAttempts (int attempts)
+    {
+        checkStarted();
+        _attempts = attempts;
+    }
+
+    public int getLoadAttempts ()
+    {
+        return _attempts;
+    }
+    
+    public boolean loadAttemptsExhausted (SessionKey key)
+    {
+        AtomicInteger i = _unloadables.get(key);
+        if (i == null)
+            return false;
+        return (i.get() >= _attempts);
+    }
+    
+    public void setDeleteUnloadableSessions (boolean delete)
+    {
+        checkStarted();
+        _deleteUnloadables = delete;
+    }
+    
+    protected void incLoadAttempt (SessionKey key)
+    {
+        AtomicInteger i = new AtomicInteger(0);
+        AtomicInteger count = _unloadables.putIfAbsent(key, i);
+        if (count == null)
+            count = i;
+        count.incrementAndGet();
+    }
+    
+    protected void checkStarted () throws IllegalStateException
+    {
+        if (isStarted())
+            throw new IllegalStateException("Already started");
+    }
 }
 
 

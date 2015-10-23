@@ -47,9 +47,8 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     private File _storeDir;
+    private boolean _deleteUnrestorableFiles = false;
     
-
-
 
 
     @Override
@@ -72,11 +71,21 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
     public void setStoreDir(File storeDir)
     {
+        checkStarted();
         _storeDir = storeDir;
     }
 
+    public boolean isDeleteUnrestorableFiles()
+    {
+        return _deleteUnrestorableFiles;
+    }
 
- 
+    public void setDeleteUnrestorableFiles(boolean deleteUnrestorableFiles)
+    {
+        checkStarted();
+        _deleteUnrestorableFiles = deleteUnrestorableFiles;
+    }
+
     /** 
      * @see org.eclipse.jetty.server.session.x.SessionDataStore#newSessionData(org.eclipse.jetty.server.session.x.SessionKey, long, long, long, long)
      */
@@ -139,6 +148,23 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             file.delete();
             return data;
         }
+        catch (UnreadableSessionDataException e)
+        {
+            if (isDeleteUnrestorableFiles() && file.exists())
+            {
+                file.delete();
+                LOG.warn("Deleted unrestorable file for session {}", key);
+                return null;
+            }
+            return null;
+        }
+    }
+    
+    private void checkStarted() 
+    throws IllegalStateException
+    {
+        if (isStarted())
+            throw new IllegalStateException("Already started");
     }
         
         

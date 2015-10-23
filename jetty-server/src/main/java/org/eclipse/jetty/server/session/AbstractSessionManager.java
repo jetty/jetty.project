@@ -742,7 +742,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     /** Remove session from manager
      * @param session The session to remove
      * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
-     * {@link SessionIdManager#invalidateAll(String)} should be called.
+     * {@link SessionIdManager#expireAll(String)} should be called.
      */
     public void removeSession(HttpSession session, boolean invalidate)
     {
@@ -755,7 +755,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * Remove session from manager
      * @param session The session to remove
      * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
-     * {@link SessionIdManager#invalidateAll(String)} should be called.
+     * {@link SessionIdManager#expireAll(String)} should be called.
      * @return if the session was removed 
      */
     public boolean removeSession(AbstractSession session, boolean invalidate)
@@ -771,7 +771,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             // Remove session from all context and global id maps
             _sessionIdManager.removeId(session.getId());
             if (invalidate)
-                _sessionIdManager.invalidateAll(session.getClusterId());
+                _sessionIdManager.expireAll(session.getClusterId());
 
             if (invalidate && _sessionListeners!=null)
             {

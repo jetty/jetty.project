@@ -124,10 +124,10 @@ public class HashSessionIdManager extends AbstractSessionIdManager
 
     /* ------------------------------------------------------------ */
     /**
-     * @see SessionIdManager#invalidateAll(String)
+     * @see SessionIdManager#expireAll(String)
      */
     @Override
-    public void invalidateAll(String id)
+    public void expireAll(String id)
     {
         //take the id out of the list of known sessionids for this node
         removeId(id);
