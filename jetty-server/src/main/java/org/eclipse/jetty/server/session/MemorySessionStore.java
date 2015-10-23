@@ -17,7 +17,7 @@
 //
 
 
-package org.eclipse.jetty.server.session.x;
+package org.eclipse.jetty.server.session;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -82,7 +82,7 @@ public class MemorySessionStore extends AbstractSessionStore
     
     
     /** 
-     * @see org.eclipse.jetty.server.session.x.AbstractSessionStore#doGet(java.lang.String)
+     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doGet(java.lang.String)
      */
     @Override
     public Session doGet(SessionKey key)
@@ -101,7 +101,7 @@ public class MemorySessionStore extends AbstractSessionStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.AbstractSessionStore#doPut(java.lang.String, org.eclipse.jetty.server.session.x.Session)
+     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doPut(java.lang.String, org.eclipse.jetty.server.session.Session)
      */
     @Override
     public void doPut(SessionKey key, Session session)
@@ -110,7 +110,7 @@ public class MemorySessionStore extends AbstractSessionStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.AbstractSessionStore#doExists(java.lang.String)
+     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doExists(java.lang.String)
      */
     @Override
     public boolean doExists(SessionKey key)
@@ -119,7 +119,7 @@ public class MemorySessionStore extends AbstractSessionStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.AbstractSessionStore#doDelete(java.lang.String)
+     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(java.lang.String)
      */
     @Override
     public void doDelete(SessionKey key)
@@ -194,7 +194,7 @@ public class MemorySessionStore extends AbstractSessionStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionStore#newSession(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionStore#newSession(java.lang.String)
      */
     @Override
     public Session newSession(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
@@ -206,7 +206,7 @@ public class MemorySessionStore extends AbstractSessionStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.AbstractSessionStore#newSession(org.eclipse.jetty.server.session.x.SessionData)
+     * @see org.eclipse.jetty.server.session.AbstractSessionStore#newSession(org.eclipse.jetty.server.session.SessionData)
      */
     @Override
     public Session newSession(SessionData data)

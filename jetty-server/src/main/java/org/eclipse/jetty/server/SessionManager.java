@@ -216,17 +216,17 @@ public interface SessionManager extends LifeCycle
     /**
      * @param session the session object
      * @return the unique id of the session within the cluster, extended with an optional node id.
-     * @see #getClusterId(HttpSession)
+     * @see #getId(HttpSession)
      */
-    public String getNodeId(HttpSession session);
+    public String getExtendedId(HttpSession session);
 
     /* ------------------------------------------------------------ */
     /**
      * @param session the session object
      * @return the unique id of the session within the cluster (without a node id extension)
-     * @see #getNodeId(HttpSession)
+     * @see #getExtendedId(HttpSession)
      */
-    public String getClusterId(HttpSession session);
+    public String getId(HttpSession session);
 
     /* ------------------------------------------------------------ */
     /**

@@ -17,7 +17,7 @@
 //
 
 
-package org.eclipse.jetty.server.session.x;
+package org.eclipse.jetty.server.session;
 
 import java.util.Collections;
 import java.util.Map;
@@ -123,7 +123,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * the data for it from a SessionDataStore associated with the 
      * session manager.
      * 
-     * @see org.eclipse.jetty.server.session.x.SessionStore#get(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionStore#get(java.lang.String)
      */
     @Override
     public Session get(SessionKey key) throws Exception
@@ -147,7 +147,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * If the session manager supports a session data store, write the
      * session data through to the session data store.
      * 
-     * @see org.eclipse.jetty.server.session.x.SessionStore#put(java.lang.String, org.eclipse.jetty.server.session.x.Session)
+     * @see org.eclipse.jetty.server.session.SessionStore#put(java.lang.String, org.eclipse.jetty.server.session.Session)
      */
     @Override
     public void put(SessionKey key, Session session) throws Exception
@@ -187,7 +187,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * 
      * TODO should this check through to the backing store?
      * 
-     * @see org.eclipse.jetty.server.session.x.SessionStore#exists(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionStore#exists(java.lang.String)
      */
     @Override
     public boolean exists(SessionKey key)
@@ -199,7 +199,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     /** 
      * Remove a session object from this store and from any backing store.
      * 
-     * @see org.eclipse.jetty.server.session.x.SessionStore#delete(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionStore#delete(java.lang.String)
      */
     @Override
     public boolean delete(SessionKey key) throws Exception
@@ -221,7 +221,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionStore#getExpired()
+     * @see org.eclipse.jetty.server.session.SessionStore#getExpired()
      */
     @Override
     public Set<SessionKey> getExpired()

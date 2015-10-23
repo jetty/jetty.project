@@ -449,7 +449,7 @@ public class Response implements HttpServletResponse
         if (!sessionManager.isValid(session))
             return url;
 
-        String id = sessionManager.getNodeId(session);
+        String id = sessionManager.getExtendedId(session);
 
         if (uri == null)
             uri = new HttpURI(url);

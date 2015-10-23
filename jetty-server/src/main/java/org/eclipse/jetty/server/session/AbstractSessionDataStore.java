@@ -17,7 +17,7 @@
 //
 
 
-package org.eclipse.jetty.server.session.x;
+package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -60,7 +60,7 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionDataStore#store(java.lang.String, org.eclipse.jetty.server.session.x.SessionData)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#store(java.lang.String, org.eclipse.jetty.server.session.SessionData)
      */
     @Override
     public void store(SessionKey key, SessionData data) throws Exception

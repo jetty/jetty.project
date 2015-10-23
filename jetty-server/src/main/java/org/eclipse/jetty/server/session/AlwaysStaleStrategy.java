@@ -17,30 +17,23 @@
 //
 
 
-package org.eclipse.jetty.server.session.x;
+package org.eclipse.jetty.server.session;
 
 /**
- * UnreadableSessionData
+ * AlwaysStale
  *
  *
  */
-public class UnreadableSessionDataException extends Exception
+public class AlwaysStaleStrategy implements StalenessStrategy
 {
-    private SessionKey _key;
-    
-    
-    public SessionKey getKey()
-    {
-        return _key;
-    }
 
-
-    public UnreadableSessionDataException (SessionKey key, Throwable t)
+    /** 
+     * @see org.eclipse.jetty.server.session.StalenessStrategy#isStale(org.eclipse.jetty.server.session.Session)
+     */
+    @Override
+    public boolean isStale(Session session)
     {
-        super ("Unreadable session "+key, t);
-        _key = key;
+       return true;
     }
-    
-    
 
 }

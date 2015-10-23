@@ -17,23 +17,26 @@
 //
 
 
-package org.eclipse.jetty.server.session.x;
+package org.eclipse.jetty.server.session;
+
+import java.util.Set;
+
+import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
- * NeverStale
+ * SessionStore
  *
- *
+ * A store/cache of Session objects.  This store of Session objects can be backed by
+ * a SessionDataStore to persist/distribute the data contained in the Session objects.
  */
-public class NeverStaleStrategy implements StalenessStrategy
+public interface SessionStore extends LifeCycle
 {
-
-    /** 
-     * @see org.eclipse.jetty.server.session.x.StalenessStrategy#isStale(org.eclipse.jetty.server.session.x.Session)
-     */
-    @Override
-    public boolean isStale(Session session)
-    {
-        return false;
-    }
-
+    Session newSession (SessionKey key,  long created, long accessed, long lastAccessed, long maxInactiveMs);
+    Session get(SessionKey key) throws Exception;
+    void put(SessionKey key, Session session) throws Exception;
+    boolean exists (SessionKey key) throws Exception;
+    boolean delete (SessionKey key) throws Exception;
+    void shutdown ();
+    Set<SessionKey> getExpired ();
+    
 }

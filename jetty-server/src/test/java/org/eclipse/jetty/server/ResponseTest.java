@@ -55,7 +55,8 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
-import org.eclipse.jetty.server.session.HashedSession;
+import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
@@ -835,11 +836,12 @@ public class ResponseTest
         return new Response(_channel, _channel.getResponse().getHttpOutput());
     }
 
-    private static class TestSession extends HashedSession
+    private static class TestSession extends Session
     {
         protected TestSession(HashSessionManager hashSessionManager, String id)
         {
-            super(hashSessionManager, 0L, 0L, id);
+            super(new SessionData(id, "", "0.0.0.0", 0, 0, 0, 300));
+            setSessionManager(hashSessionManager);
         }
     }
 }

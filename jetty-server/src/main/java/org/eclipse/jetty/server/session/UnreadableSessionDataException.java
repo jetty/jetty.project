@@ -17,14 +17,30 @@
 //
 
 
-package org.eclipse.jetty.server.session.x;
+package org.eclipse.jetty.server.session;
 
 /**
- * StalenessStrategy
+ * UnreadableSessionData
  *
  *
  */
-public interface StalenessStrategy
+public class UnreadableSessionDataException extends Exception
 {
-    boolean isStale (Session session);
+    private SessionKey _key;
+    
+    
+    public SessionKey getKey()
+    {
+        return _key;
+    }
+
+
+    public UnreadableSessionDataException (SessionKey key, Throwable t)
+    {
+        super ("Unreadable session "+key, t);
+        _key = key;
+    }
+    
+    
+
 }

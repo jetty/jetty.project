@@ -17,7 +17,7 @@
 //
 
 
-package org.eclipse.jetty.server.session.x;
+package org.eclipse.jetty.server.session;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -522,7 +522,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
   
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionDataStore#newSessionData(org.eclipse.jetty.server.session.x.SessionKey, long, long, long, long)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(org.eclipse.jetty.server.session.SessionKey, long, long, long, long)
      */
     @Override
     public SessionData newSessionData(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
@@ -576,7 +576,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
  
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionDataStore#load(org.eclipse.jetty.server.session.x.SessionKey)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#load(org.eclipse.jetty.server.session.SessionKey)
      */
     @Override
     public SessionData load(SessionKey key) throws Exception
@@ -645,7 +645,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionDataStore#delete(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
      */
     @Override
     public boolean delete(SessionKey key) throws Exception
@@ -665,7 +665,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.AbstractSessionDataStore#doStore()
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore()
      */
     @Override
     public void doStore(SessionKey key, SessionData data) throws Exception
@@ -776,7 +776,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionDataStore#getExpired()
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired()
      */
     @Override
     public Set<SessionKey> getExpired(Set<SessionKey> candidates)

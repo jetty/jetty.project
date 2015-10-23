@@ -17,7 +17,7 @@
 //
 
 
-package org.eclipse.jetty.server.session.x;
+package org.eclipse.jetty.server.session;
 
 /**
  * StalePeriodStrategy
@@ -29,7 +29,7 @@ public class StalePeriodStrategy implements StalenessStrategy
     protected long _staleMs = 0;
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.StalenessStrategy#isStale(org.eclipse.jetty.server.session.x.Session)
+     * @see org.eclipse.jetty.server.session.StalenessStrategy#isStale(org.eclipse.jetty.server.session.Session)
      */
     @Override
     public boolean isStale (Session session)

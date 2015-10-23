@@ -17,26 +17,26 @@
 //
 
 
-package org.eclipse.jetty.server.session.x;
-
-import java.util.Set;
-
-import org.eclipse.jetty.util.component.LifeCycle;
+package org.eclipse.jetty.server.session;
 
 /**
- * SessionStore
+ * UnwriteableSessionDataException
  *
- * A store/cache of Session objects.  This store of Session objects can be backed by
- * a SessionDataStore to persist/distribute the data contained in the Session objects.
+ *
  */
-public interface SessionStore extends LifeCycle
+public class UnwriteableSessionDataException extends Exception
 {
-    Session newSession (SessionKey key,  long created, long accessed, long lastAccessed, long maxInactiveMs);
-    Session get(SessionKey key) throws Exception;
-    void put(SessionKey key, Session session) throws Exception;
-    boolean exists (SessionKey key) throws Exception;
-    boolean delete (SessionKey key) throws Exception;
-    void shutdown ();
-    Set<SessionKey> getExpired ();
+    private SessionKey _key;
     
+    
+    public UnwriteableSessionDataException (SessionKey key, Throwable t)
+    {
+        super ("Unwriteable session "+key, t);
+        _key = key;
+    }
+    
+    public SessionKey getKey()
+    {
+        return _key;
+    }
 }

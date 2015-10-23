@@ -17,7 +17,7 @@
 //
 
 
-package org.eclipse.jetty.server.session.x;
+package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 

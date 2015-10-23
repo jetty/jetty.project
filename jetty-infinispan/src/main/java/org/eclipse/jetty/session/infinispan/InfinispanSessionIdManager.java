@@ -138,7 +138,7 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
         if (id == null)
             return false;
         
-        String clusterId = getClusterId(id);
+        String clusterId = getId(id);
         
         //ask the cluster - this should also tickle the idle expiration timer on the sessionid entry
         //keeping it valid

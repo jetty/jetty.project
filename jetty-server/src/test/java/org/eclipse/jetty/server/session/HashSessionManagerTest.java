@@ -34,11 +34,11 @@ public class HashSessionManagerTest
     public void testDangerousSessionIdRemoval() throws Exception
     {
         final HashSessionManager manager = new HashSessionManager();
-        manager.setDeleteUnrestorableSessions(true);
-        manager.setLazyLoad(true);
+        manager.getSessionDataStore().setDeleteUnrestorableFiles(true);
+        //manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         testDir.mkdirs();
-        manager.setStoreDirectory(testDir);
+        manager.getSessionDataStore().setStoreDir(testDir);
 
         MavenTestingUtils.getTargetFile("dangerFile.session").createNewFile();
         
@@ -54,12 +54,12 @@ public class HashSessionManagerTest
     public void testValidSessionIdRemoval() throws Exception
     {
         final HashSessionManager manager = new HashSessionManager();
-        manager.setDeleteUnrestorableSessions(true);
-        manager.setLazyLoad(true);
+        manager.getSessionDataStore().setDeleteUnrestorableFiles(true);
+       // manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         FS.ensureEmpty(testDir);
         
-        manager.setStoreDirectory(testDir);
+        manager.getSessionDataStore().setStoreDir(testDir);
 
         Assert.assertTrue(new File(testDir, "validFile.session").createNewFile());
         
@@ -81,7 +81,7 @@ public class HashSessionManagerTest
         SessionHandler handler = new SessionHandler();
         handler.setServer(server);
         HashSessionManager manager = new HashSessionManager();
-        manager.setStoreDirectory(testDir);
+        manager.getSessionDataStore().setStoreDir(testDir);
         manager.setMaxInactiveInterval(5);
         Assert.assertTrue(testDir.exists());
         Assert.assertTrue(testDir.canWrite());
@@ -95,7 +95,7 @@ public class HashSessionManagerTest
         server.start();
         manager.start();
         
-        HashedSession session = (HashedSession)manager.newHttpSession(new Request(null, null));
+        Session session = (Session)manager.newHttpSession(new Request(null, null));
         String sessionId = session.getId();
         
         session.setAttribute("one", new Integer(1));
@@ -107,10 +107,11 @@ public class HashSessionManagerTest
         
         Assert.assertTrue("File should exist!", new File(testDir, session.getId()).exists());
         
-        //start will restore sessions
+        
         manager.start();
         
-        HashedSession restoredSession = (HashedSession)manager.getSession(sessionId);
+        //restore session
+        Session restoredSession = (Session)manager.getSession(sessionId);
         Assert.assertNotNull(restoredSession);
         
         Object o = restoredSession.getAttribute("one");

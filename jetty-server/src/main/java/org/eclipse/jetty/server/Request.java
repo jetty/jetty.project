@@ -76,7 +76,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.server.session.AbstractSession;
+import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.IO;
@@ -1494,14 +1494,14 @@ public class Request implements HttpServletRequest
         if (session == null)
             throw new IllegalStateException("No session");
 
-        if (session instanceof AbstractSession)
+        if (session instanceof Session)
         {
-            AbstractSession abstractSession =  ((AbstractSession)session);
-            abstractSession.renewId(this);
+            Session s =  ((Session)session);
+            s.renewId(this);
             if (getRemoteUser() != null)
-                abstractSession.setAttribute(AbstractSession.SESSION_CREATED_SECURE, Boolean.TRUE);
-            if (abstractSession.isIdChanged())
-                _channel.getResponse().addCookie(_sessionManager.getSessionCookie(abstractSession, getContextPath(), isSecure()));
+                s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+            if (s.isIdChanged())
+                _channel.getResponse().addCookie(_sessionManager.getSessionCookie(s, getContextPath(), isSecure()));
         }
 
         return session.getId();
@@ -1697,7 +1697,7 @@ public class Request implements HttpServletRequest
             return false;
 
         HttpSession session = getSession(false);
-        return (session != null && _sessionManager.getSessionIdManager().getClusterId(_requestedSessionId).equals(_sessionManager.getClusterId(session)));
+        return (session != null && _sessionManager.getSessionIdManager().getId(_requestedSessionId).equals(_sessionManager.getId(session)));
     }
 
     /* ------------------------------------------------------------ */

@@ -17,7 +17,7 @@
 //
 
 
-package org.eclipse.jetty.server.session.x;
+package org.eclipse.jetty.server.session;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -32,6 +32,7 @@ import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
 
+import org.eclipse.jetty.server.session.SessionManager.SessionIf;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -387,6 +388,13 @@ public class Session implements SessionManager.SessionIf
         return SessionManager.__nullSessionContext;
     }
 
+    
+    public SessionManager getSessionManager()
+    {
+        return _manager;
+    }
+    
+    
     /* ------------------------------------------------------------- */
     /**
      * asserts that the session is valid

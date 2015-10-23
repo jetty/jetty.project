@@ -17,23 +17,23 @@
 //
 
 
-package org.eclipse.jetty.server.session.x;
+package org.eclipse.jetty.server.session;
 
 /**
- * AlwaysStale
+ * NeverStale
  *
  *
  */
-public class AlwaysStaleStrategy implements StalenessStrategy
+public class NeverStaleStrategy implements StalenessStrategy
 {
 
     /** 
-     * @see org.eclipse.jetty.server.session.x.StalenessStrategy#isStale(org.eclipse.jetty.server.session.x.Session)
+     * @see org.eclipse.jetty.server.session.StalenessStrategy#isStale(org.eclipse.jetty.server.session.Session)
      */
     @Override
     public boolean isStale(Session session)
     {
-       return true;
+        return false;
     }
 
 }
