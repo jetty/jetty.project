@@ -136,7 +136,7 @@ public class ProxyTunnellingTest
         }
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testOneExchangeViaSSL() throws Exception
     {
         startSSLServer(new ServerHandler());
@@ -167,7 +167,7 @@ public class ProxyTunnellingTest
         }
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testTwoExchangesViaSSL() throws Exception
     {
         startSSLServer(new ServerHandler());
@@ -210,7 +210,7 @@ public class ProxyTunnellingTest
         }
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testTwoConcurrentExchangesViaSSL() throws Exception
     {
         startSSLServer(new ServerHandler());
@@ -278,7 +278,7 @@ public class ProxyTunnellingTest
         }
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testShortIdleTimeoutOverriddenByRequest() throws Exception
     {
         // Short idle timeout for HttpClient.
@@ -331,7 +331,7 @@ public class ProxyTunnellingTest
         }
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testProxyDown() throws Exception
     {
         startSSLServer(new ServerHandler());
@@ -363,7 +363,7 @@ public class ProxyTunnellingTest
         }
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testServerDown() throws Exception
     {
         startSSLServer(new ServerHandler());
@@ -395,7 +395,7 @@ public class ProxyTunnellingTest
         }
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testProxyClosesConnection() throws Exception
     {
         startSSLServer(new ServerHandler());
@@ -429,7 +429,7 @@ public class ProxyTunnellingTest
         }
     }
 
-    @Test
+    @Test(timeout=60000)
     @Ignore("External Proxy Server no longer stable enough for testing")
     public void testExternalProxy() throws Exception
     {
