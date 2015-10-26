@@ -19,31 +19,29 @@
       <Set name="rewriteRequestURI"><Property name="jetty.rewrite.rewriteRequestURI" deprecated="rewrite.rewriteRequestURI" default="true"/></Set>
       <Set name="rewritePathInfo"><Property name="jetty.rewrite.rewritePathInfo" deprecated="rewrite.rewritePathInfo" default="false"/></Set>
       <Set name="originalPathAttribute"><Property name="jetty.rewrite.originalPathAttribute" deprecated="rewrite.originalPathAttribute" default="requestedPath"/></Set>
-    </New>
    
-    <!-- Set DispatcherTypes  -->
-    <Set name="dispatcherTypes">
-      <Array type="javax.servlet.DispatcherType">
-        <Item><Call class="javax.servlet.DispatcherType" name="valueOf"><Arg>REQUEST</Arg></Call></Item>
-        <Item><Call class="javax.servlet.DispatcherType" name="valueOf"><Arg>ASYNC</Arg></Call></Item>
-      </Array>
-    </Set>
+      <!-- Set DispatcherTypes  -->
+      <Set name="dispatcherTypes">
+        <Array type="javax.servlet.DispatcherType">
+          <Item><Call class="javax.servlet.DispatcherType" name="valueOf"><Arg>REQUEST</Arg></Call></Item>
+          <Item><Call class="javax.servlet.DispatcherType" name="valueOf"><Arg>ASYNC</Arg></Call></Item>
+        </Array>
+      </Set>
+
+      <!-- example rule -->
+      <!--
+      <Call name="addRule">
+	<Arg>
+	  <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+	    <Set name="pattern">/favicon.ico</Set>
+	    <Set name="name">Cache-Control</Set>
+	    <Set name="value">Max-Age=3600,public</Set>
+	    <Set name="terminating">true</Set>
+	  </New>
+	</Arg>
+      </Call>
+      -->
+
+    </New>
   </Set>
-
-
-
-  <!-- example rule -->
-  <!--
-  <Call name="addRule">
-    <Arg>
-      <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-        <Set name="pattern">/favicon.ico</Set>
-        <Set name="name">Cache-Control</Set>
-        <Set name="value">Max-Age=3600,public</Set>
-        <Set name="terminating">true</Set>
-      </New>
-    </Arg>
-  </Call>
-  -->
-
 </Configure>
