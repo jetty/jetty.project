@@ -25,6 +25,8 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
+import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
@@ -52,7 +54,7 @@ public abstract class AbstractTest
     @Parameterized.Parameters(name = "transport: {0}")
     public static Object[] parameters() throws Exception
     {
-        return new Object[]{Transport.HTTP, Transport.HTTPS, Transport.H2C, Transport.H2};
+        return Transport.values();
     }
 
     @Rule
@@ -139,6 +141,11 @@ public abstract class AbstractTest
                 result.add(h2);
                 break;
             }
+            case FCGI:
+            {
+                result.add(new ServerFCGIConnectionFactory(new HttpConfiguration()));
+                break;
+            }
             default:
             {
                 throw new IllegalArgumentException();
@@ -163,6 +170,10 @@ public abstract class AbstractTest
                 http2Client.setSelectors(1);
                 return new HttpClientTransportOverHTTP2(http2Client);
             }
+            case FCGI:
+            {
+                return new HttpClientTransportOverFCGI(1, false, "");
+            }
             default:
             {
                 throw new IllegalArgumentException();
@@ -176,6 +187,7 @@ public abstract class AbstractTest
         {
             case HTTP:
             case H2C:
+            case FCGI:
                 return "http://localhost:" + connector.getLocalPort();
             case HTTPS:
             case H2:
@@ -196,6 +208,6 @@ public abstract class AbstractTest
 
     protected enum Transport
     {
-        HTTP, HTTPS, H2C, H2
+        HTTP, HTTPS, H2C, H2, FCGI
     }
 }
