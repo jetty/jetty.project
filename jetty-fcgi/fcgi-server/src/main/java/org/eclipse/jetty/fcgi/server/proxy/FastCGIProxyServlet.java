@@ -20,8 +20,11 @@ package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.net.URI;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -32,6 +35,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
@@ -212,6 +216,16 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         {
             super.customize(request, fastCGIHeaders);
             customizeFastCGIHeaders(request, fastCGIHeaders);
+            if (_log.isDebugEnabled())
+            {
+                TreeMap<String, String> fcgi = new TreeMap<>();
+                for (HttpField field : fastCGIHeaders)
+                    fcgi.put(field.getName(), field.getValue());
+                String eol = System.lineSeparator();
+                _log.debug("FastCGI variables{}{}", eol, fcgi.entrySet().stream()
+                        .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
+                        .collect(Collectors.joining(eol)));
+            }
         }
     }
 }
