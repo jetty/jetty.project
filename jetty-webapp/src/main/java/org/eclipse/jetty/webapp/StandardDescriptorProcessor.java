@@ -51,6 +51,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
@@ -1210,8 +1211,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             //remove ps from the path specs on the existing mapping
                             //if the mapping now has no pathspecs, remove it
                             String[] updatedPaths = ArrayUtil.removeFromArray(sm.getPathSpecs(), ps);
+                            
                             if (updatedPaths == null || updatedPaths.length == 0)
-                            { 
+                            {
                                 if (LOG.isDebugEnabled()) LOG.debug("Removed empty mapping {}",sm);
                                 listItor.remove();
                             }
@@ -1230,9 +1232,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             paths.add(p);
             context.getMetaData().setOrigin(servletName+".servlet.mapping."+p, descriptor);
         }
+
         mapping.setPathSpecs((String[]) paths.toArray(new String[paths.size()]));
         if (LOG.isDebugEnabled()) LOG.debug("Added mapping {} ",mapping);
-    
         _servletMappings.add(mapping);
         return mapping;
     }
@@ -1367,10 +1369,52 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         //add mappings to the jsp servlet from the property-group mappings
         if (paths.size() > 0)
         {
-            ServletMapping mapping = new ServletMapping();
-            mapping.setServletName("jsp");
-            mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
-            _servletMappings.add(mapping);
+            ServletMapping jspMapping = null;
+            for (ServletMapping m: _servletMappings)
+            {
+                if (m.getServletName().equals("jsp"))
+                {
+                    jspMapping = m;
+                    break;
+                }
+            }
+            if (jspMapping != null)
+            {
+                if (jspMapping.getPathSpecs() == null)
+                {
+                    //no paths in jsp servlet mapping, we will add all of ours
+                    if (LOG.isDebugEnabled()) LOG.debug("Adding all paths from jsp-config to jsp servlet mapping");
+                    jspMapping.setPathSpecs(paths.toArray(new String[paths.size()]));
+                }
+                else
+                {
+                    //check if each of our paths is already present in existing mapping
+                    ListIterator<String> piterator = paths.listIterator();
+                    while (piterator.hasNext())
+                    {
+                        String p = piterator.next();
+                        if (jspMapping.containsPathSpec(p))
+                            piterator.remove();
+                    }
+                    
+                    //any remaining paths, add to the jspMapping
+                    if (paths.size() > 0)
+                    {
+                        for (String p:jspMapping.getPathSpecs())
+                            paths.add(p);
+                        if (LOG.isDebugEnabled()) LOG.debug("Adding extra paths from jsp-config to jsp servlet mapping");
+                        jspMapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
+                    }
+                }
+            }
+            else
+            {
+                //no mapping for jsp yet, make one
+                ServletMapping mapping = new ServletMapping();
+                mapping.setServletName("jsp");
+                mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
+                _servletMappings.add(mapping);
+            }
         }
     }
 
