@@ -418,10 +418,18 @@ public class Response implements HttpServletResponse
      */
     public void sendError(int sc) throws IOException
     {
-        if (sc==102)
-            sendProcessing();
-        else
-            sendError(sc,null);
+        switch (sc)
+        {
+            case -1:
+                _connection.getEndPoint().close();
+                break;
+            case 102:
+                sendProcessing();
+                break;
+            default:
+                sendError(sc,null);
+                break;
+        }
     }
 
     /* ------------------------------------------------------------ */
