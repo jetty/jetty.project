@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class Response implements HttpServletResponse
 {
     private static final Logger LOG = Log.getLogger(Response.class);
-
+    private final static int __MIN_BUFFER_SIZE = 1;
     
     public static final int
         NONE=0,
@@ -1021,6 +1021,8 @@ public class Response implements HttpServletResponse
     {
         if (isCommitted() || getContentCount()>0)
             throw new IllegalStateException("Committed or content written");
+        if (size <= 0)
+            size = __MIN_BUFFER_SIZE;
         _connection.getGenerator().increaseContentBufferSize(size);
     }
 
