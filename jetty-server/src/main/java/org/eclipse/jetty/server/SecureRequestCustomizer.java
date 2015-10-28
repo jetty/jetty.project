@@ -68,11 +68,6 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     {
         if (request.getHttpChannel().getEndPoint() instanceof DecryptedEndPoint)
         {
-            request.setSecure(true);
-            
-            if (request.getHttpURI().getScheme()==null)
-                request.setScheme(HttpScheme.HTTPS.asString());
-            
             SslConnection.DecryptedEndPoint ssl_endp = (DecryptedEndPoint)request.getHttpChannel().getEndPoint();
             SslConnection sslConnection = ssl_endp.getSslConnection();
             SSLEngine sslEngine=sslConnection.getSSLEngine();
@@ -104,7 +99,10 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      */
     public void customize(SSLEngine sslEngine, Request request)
     {
-        request.setScheme(HttpScheme.HTTPS.asString());
+        request.setSecure(true);
+        if (request.getHttpURI().getScheme()==null)
+            request.getHttpURI().setScheme(HttpScheme.HTTPS.asString());
+        
         SSLSession sslSession = sslEngine.getSession();
 
         if (_sniHostCheck)
