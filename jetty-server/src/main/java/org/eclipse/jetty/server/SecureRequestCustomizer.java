@@ -72,7 +72,13 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             SslConnection sslConnection = ssl_endp.getSslConnection();
             SSLEngine sslEngine=sslConnection.getSSLEngine();
             customize(sslEngine,request);
+
+            if (request.getHttpURI().getScheme()==null)
+                request.setScheme(HttpScheme.HTTPS.asString());
         }
+
+        if (HttpScheme.HTTPS.is(request.getScheme()))
+            request.setSecure(true);
     }
 
     /**
@@ -99,10 +105,6 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      */
     public void customize(SSLEngine sslEngine, Request request)
     {
-        request.setSecure(true);
-        if (request.getHttpURI().getScheme()==null)
-            request.getHttpURI().setScheme(HttpScheme.HTTPS.asString());
-        
         SSLSession sslSession = sslEngine.getSession();
 
         if (_sniHostCheck)

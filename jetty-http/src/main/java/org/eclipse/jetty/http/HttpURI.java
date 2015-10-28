@@ -119,6 +119,7 @@ public class HttpURI
     public HttpURI(HttpURI uri)
     {
         this(uri._scheme,uri._host,uri._port,uri._path,uri._param,uri._query,uri._fragment);
+        _uri=uri._uri;
     }
     
     /* ------------------------------------------------------------ */
