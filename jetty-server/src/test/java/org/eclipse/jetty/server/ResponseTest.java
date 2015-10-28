@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,6 +75,7 @@ public class ResponseTest
     public void init() throws Exception
     {
         server = new Server();
+        server.setSendServerVersion(false);
         connector = new LocalConnector();
         server.addConnector(connector);
         server.setHandler(new DumpHandler());
@@ -440,6 +442,25 @@ public class ResponseTest
         response.sendRedirect("../other%2Fpath");
         String location = response.getHeader("Location");
         assertEquals("http://myhost:8888/path/test/other%2Fpath",location);
+    }
+    
+    @Test
+    public void testSendServerVersion() throws Exception
+    {
+        ByteArrayEndPoint out=new ByteArrayEndPoint(new byte[]{},4096);
+        AbstractHttpConnection connection=new TestHttpConnection(connector,out, connector.getServer());
+        Response response = new Response(connection);
+        Request request = connection.getRequest();
+        request.setServerName("myhost");
+        request.setServerPort(8888);
+        request.setRequestURI("/oops/");
+        request.setContextPath("/");
+        request.setServletPath("/");
+        request.setPathInfo("/info/");
+
+        response.sendError(500, "Ooops");
+        ByteArrayBuffer output = out.getOut();
+        assertFalse("Contains jetty://", output.toString(StringUtil.__UTF8_CHARSET).contains("jetty://"));
     }
 
     @Test
