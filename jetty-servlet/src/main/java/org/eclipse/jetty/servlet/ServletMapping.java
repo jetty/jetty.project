@@ -65,6 +65,25 @@ public class ServletMapping
     {
         _pathSpecs = pathSpecs;
     }
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Test if the list of path specs contains a particular one.
+     * @param pathSpec
+     * @return
+     */
+    public boolean containsPathSpec (String pathSpec)
+    {
+        if (_pathSpecs == null || _pathSpecs.length == 0)
+            return false;
+        
+        for (String p:_pathSpecs)
+        {
+            if (p.equals(pathSpec))
+                return true;
+        }
+        return false;
+    }
 
     /* ------------------------------------------------------------ */
     /**
