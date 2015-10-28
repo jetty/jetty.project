@@ -65,9 +65,6 @@ public class PushBuilderImpl implements PushBuilder
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#getMethod()
-     */
     @Override
     public String getMethod()
     {
@@ -75,9 +72,6 @@ public class PushBuilderImpl implements PushBuilder
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#method(java.lang.String)
-     */
     @Override
     public PushBuilder method(String method)
     {
@@ -86,9 +80,6 @@ public class PushBuilderImpl implements PushBuilder
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#getQueryString()
-     */
     @Override
     public String getQueryString()
     {
@@ -96,9 +87,6 @@ public class PushBuilderImpl implements PushBuilder
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#queryString(java.lang.String)
-     */
     @Override
     public PushBuilder queryString(String queryString)
     {
@@ -107,9 +95,6 @@ public class PushBuilderImpl implements PushBuilder
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#getSessionId()
-     */
     @Override
     public String getSessionId()
     {
@@ -117,9 +102,6 @@ public class PushBuilderImpl implements PushBuilder
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#sessionId(java.lang.String)
-     */
     @Override
     public PushBuilder sessionId(String sessionId)
     {
@@ -128,9 +110,6 @@ public class PushBuilderImpl implements PushBuilder
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#isConditional()
-     */
     @Override
     public boolean isConditional()
     {
@@ -138,9 +117,6 @@ public class PushBuilderImpl implements PushBuilder
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#conditional(boolean)
-     */
     @Override
     public PushBuilder conditional(boolean conditional)
     {
@@ -149,9 +125,6 @@ public class PushBuilderImpl implements PushBuilder
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#getHeaderNames()
-     */
     @Override
     public Set<String> getHeaderNames()
     {
@@ -159,9 +132,6 @@ public class PushBuilderImpl implements PushBuilder
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#getHeader(java.lang.String)
-     */
     @Override
     public String getHeader(String name)
     {
@@ -169,9 +139,6 @@ public class PushBuilderImpl implements PushBuilder
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#setHeader(java.lang.String, java.lang.String)
-     */
     @Override
     public PushBuilder setHeader(String name,String value)
     {
@@ -180,9 +147,6 @@ public class PushBuilderImpl implements PushBuilder
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#addHeader(java.lang.String, java.lang.String)
-     */
     @Override
     public PushBuilder addHeader(String name,String value)
     {
@@ -190,11 +154,15 @@ public class PushBuilderImpl implements PushBuilder
         return this;
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public PushBuilder removeHeader(String name)
+    {
+        _fields.remove(name);
+        return this;
+    }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#getPath()
-     */
     @Override
     public String getPath()
     {
@@ -202,9 +170,6 @@ public class PushBuilderImpl implements PushBuilder
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#path(java.lang.String)
-     */
     @Override
     public PushBuilder path(String path)
     {
@@ -213,9 +178,6 @@ public class PushBuilderImpl implements PushBuilder
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#getEtag()
-     */
     @Override
     public String getEtag()
     {
@@ -223,9 +185,6 @@ public class PushBuilderImpl implements PushBuilder
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#etag(java.lang.String)
-     */
     @Override
     public PushBuilder etag(String etag)
     {
@@ -234,9 +193,6 @@ public class PushBuilderImpl implements PushBuilder
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#getLastModified()
-     */
     @Override
     public String getLastModified()
     {
@@ -244,9 +200,6 @@ public class PushBuilderImpl implements PushBuilder
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#lastModified(java.lang.String)
-     */
     @Override
     public PushBuilder lastModified(String lastModified)
     {
@@ -255,10 +208,6 @@ public class PushBuilderImpl implements PushBuilder
     }
 
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.PushBuilder#push()
-     */
     @Override
     public void push()
     {
@@ -308,4 +257,5 @@ public class PushBuilderImpl implements PushBuilder
         _etag=null;
         _lastModified=null;
     }
+
 }

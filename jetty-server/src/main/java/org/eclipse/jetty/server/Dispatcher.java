@@ -31,10 +31,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiMap;
@@ -220,28 +217,6 @@ public class Dispatcher implements RequestDispatcher
             baseRequest.setAttributes(old_attr);
             baseRequest.setDispatcherType(old_type);
         }
-    }
-    
-    @Deprecated
-    public void push(ServletRequest request)
-    {
-        Request baseRequest = Request.getBaseRequest(request);
-        HttpFields fields = new HttpFields(baseRequest.getHttpFields());
-        
-        String query=baseRequest.getQueryString();
-        if (_uri.hasQuery())
-        {
-            if (query==null)
-                query=_uri.getQuery();
-            else
-                query=query+"&"+_uri.getQuery(); // TODO is this correct semantic?
-        }
-        
-        HttpURI uri = HttpURI.createHttpURI(request.getScheme(),request.getServerName(),request.getServerPort(),_uri.getPath(),baseRequest.getHttpURI().getParam(),query,null);
-        
-        MetaData.Request push = new MetaData.Request(HttpMethod.GET.asString(),uri,baseRequest.getHttpVersion(),fields);
-        
-        baseRequest.getHttpChannel().getHttpTransport().push(push);
     }
     
     @Override
