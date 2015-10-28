@@ -975,5 +975,18 @@
         <alpn.version>8.1.5.v20150921</alpn.version>
       </properties>
     </profile>
+
+    <profile>
+      <id>8u66</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_66</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.5.v20150921</alpn.version>
+      </properties>
+    </profile>
   </profiles>
 </project>
