@@ -26,17 +26,18 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
 
 
 /* ------------------------------------------------------------ */
@@ -49,6 +50,8 @@ import org.eclipse.jetty.util.log.StdErrLog;
  */
 public class ProxyConnectionFactory extends AbstractConnectionFactory
 {
+    public static final String TLS_VERSION = "TLS_VERSION"; 
+    
     private static final Logger LOG = Log.getLogger(ProxyConnectionFactory.class);
     private final String _next;
     private int _maxProxyHeader=1024;
@@ -489,6 +492,14 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                             throw new IllegalStateException();
                     }
                     
+
+                    // Extract Addresses
+                    InetSocketAddress remote=new InetSocketAddress(src,sp);
+                    InetSocketAddress local =new InetSocketAddress(dst,dp);
+                    ProxyEndPoint proxyEndPoint = new ProxyEndPoint(endPoint,remote,local);
+                    endPoint = proxyEndPoint;
+                    
+                    
                     // Any additional info?
                     while(_buffer.hasRemaining())
                     {
@@ -498,7 +509,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                         _buffer.get(value);
                         
                         if (LOG.isDebugEnabled())
-                            LOG.debug(String.format("T=%x L=%d V=%s for {}%n",type,length,TypeUtil.toHexString(value),this));
+                            LOG.debug(String.format("T=%x L=%d V=%s for %s",type,length,TypeUtil.toHexString(value),this));
                         
                         // TODO interpret these values
                         switch(type)
@@ -508,7 +519,32 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                             case 0x02: // PP2_TYPE_AUTHORITY
                                 break;
                             case 0x20: // PP2_TYPE_SSL
+                            { 
+                                int i=0;
+                                int client = 0xff & value[i++];
+                                int verify = (0xff & value[i++])<<24 + (0xff & value[i++])<<16 + (0xff & value[i++])<<8 + (0xff&value[i++]);
+                                while(i<value.length)
+                                {
+                                    int ssl_type = 0xff & value[i++];
+                                    int ssl_length = (0xff & value[i++])*0x100 + (0xff&value[i++]);
+                                    byte[] ssl_val = new byte[ssl_length];
+                                    System.arraycopy(value,i,ssl_val,0,ssl_length);
+                                    i+=ssl_length;
+                                    
+                                    switch(ssl_type)
+                                    {
+                                        case 0x21: // PP2_TYPE_SSL_VERSION
+                                            String version=new String(ssl_val,0,ssl_length,StandardCharsets.ISO_8859_1);
+                                            if (client==1)
+                                                proxyEndPoint.setAttribute(TLS_VERSION,version);
+                                            break;
+                                            
+                                        default:
+                                            break;
+                                    }
+                                }
                                 break;
+                            }
                             case 0x21: // PP2_TYPE_SSL_VERSION
                                 break;
                             case 0x22: // PP2_TYPE_SSL_CN
@@ -520,11 +556,9 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                         }
                     }
                     
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} {}",getEndPoint(),proxyEndPoint.toString());
 
-                    // Extract Addresses
-                    InetSocketAddress remote=new InetSocketAddress(src,sp);
-                    InetSocketAddress local =new InetSocketAddress(dst,dp);
-                    endPoint = new ProxyEndPoint(endPoint,remote,local);
 
                 }
                 catch(Exception e)
@@ -535,12 +569,11 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
 
             Connection newConnection = connectionFactory.newConnection(_connector, endPoint);
             endPoint.upgrade(newConnection);
-        }
-        
+        }    
     }
     
 
-    public static class ProxyEndPoint implements EndPoint
+    public static class ProxyEndPoint extends AttributesMap implements EndPoint
     {
         private final EndPoint _endp;
         private final InetSocketAddress _remote;
