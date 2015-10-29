@@ -54,6 +54,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -87,7 +88,10 @@ public class ProxyTunnellingTest
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
-        server = new Server();
+
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
         serverConnector = new ServerConnector(server, sslContextFactory);
         server.addConnector(serverConnector);
         server.setHandler(handler);
@@ -101,7 +105,9 @@ public class ProxyTunnellingTest
 
     protected void startProxy(ConnectHandler connectHandler) throws Exception
     {
-        proxy = new Server();
+        QueuedThreadPool proxyThreads = new QueuedThreadPool();
+        proxyThreads.setName("proxy");
+        proxy = new Server(proxyThreads);
         proxyConnector = new ServerConnector(proxy);
         proxy.addConnector(proxyConnector);
         // Under Windows, it takes a while to detect that a connection
