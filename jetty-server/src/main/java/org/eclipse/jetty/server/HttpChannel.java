@@ -29,6 +29,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
@@ -264,6 +265,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         handle();
     }
 
+    AtomicReference<Action> caller = new AtomicReference<>();
+    
     /**
      * @return True if the channel is ready to continue handling (ie it is not suspended)
      */
@@ -297,7 +300,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             throw new IllegalStateException("state=" + _state);
                         _request.setHandled(false);
                         _response.getHttpOutput().reopen();
-                        _request.setDispatcherType(DispatcherType.REQUEST);
 
                         List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
                         if (!customizers.isEmpty())
@@ -305,7 +307,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             for (HttpConfiguration.Customizer customizer : customizers)
                                 customizer.customize(getConnector(), _configuration, _request);
                         }
-                        getServer().handle(this);
+                        try
+                        {
+                            _request.setDispatcherType(DispatcherType.REQUEST);
+                            getServer().handle(this);
+                        }
+                        finally
+                        {
+                            _request.setDispatcherType(null);
+                        }
                         break;
                     }
 
@@ -313,8 +323,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         _request.setHandled(false);
                         _response.getHttpOutput().reopen();
-                        _request.setDispatcherType(DispatcherType.ASYNC);
-                        getServer().handleAsync(this);
+                        
+                        try
+                        {
+                            _request.setDispatcherType(DispatcherType.ASYNC);
+                            getServer().handleAsync(this);
+                        }
+                        finally
+                        {
+                            _request.setDispatcherType(null);
+                        }
                         break;
                     }
 
@@ -336,8 +354,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 _request.setAttribute(ERROR_STATUS_CODE,code);
                             _request.setHandled(false);
                             _response.getHttpOutput().reopen();
-                            _request.setDispatcherType(DispatcherType.ERROR);
-                            getServer().handle(this);
+                            
+                            try
+                            {
+                                _request.setDispatcherType(DispatcherType.ERROR);
+                                getServer().handle(this);
+                            }
+                            finally
+                            {
+                                _request.setDispatcherType(null);
+                            }
                         }
                         break;
                     }
@@ -389,10 +415,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     LOG.ignore(failure);
                 else
                     handleException(failure);
-            }
-            finally
-            {
-                _request.setDispatcherType(null);
             }
 
             action = _state.unhandle();

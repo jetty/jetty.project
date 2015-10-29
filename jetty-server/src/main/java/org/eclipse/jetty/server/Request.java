@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
@@ -1754,7 +1755,7 @@ public class Request implements HttpServletRequest
      * @param request the Request metadata
      */
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
-    {
+    {        
         _metadata=request;
         _originalURI=_metadata.getURIString();
         setMethod(request.getMethod());
