@@ -89,14 +89,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         fillInterested();
         promise.succeeded(this);
     }
-    
-    @Override
-    public void onClose()
-    {
-        softClose();
-        super.onClose();
-    }
-    
+
     public boolean isClosed()
     {
         return closed.get();
