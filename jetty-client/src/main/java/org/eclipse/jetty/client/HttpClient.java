@@ -1039,7 +1039,7 @@ public class HttpClient extends ContainerLifeCycle
     {
         if (port > 0)
             return port;
-        else if (HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme))
+        else if (isSchemeSecure(scheme))
             return 443;
         else
             return 80;
@@ -1047,10 +1047,15 @@ public class HttpClient extends ContainerLifeCycle
 
     public boolean isDefaultPort(String scheme, int port)
     {
-        if (HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme))
+        if (isSchemeSecure(scheme))
             return port == 443;
-        else 
+        else
             return port == 80;
+    }
+
+    public boolean isSchemeSecure(String scheme)
+    {
+        return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
     }
 
     private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>

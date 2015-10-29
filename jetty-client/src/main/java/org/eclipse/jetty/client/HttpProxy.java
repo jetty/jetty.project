@@ -107,7 +107,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             public void succeeded(Connection connection)
             {
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-                if (HttpScheme.HTTPS.is(destination.getScheme()) || HttpScheme.WSS.is(destination.getScheme()))
+                if (destination.isSecure())
                 {
                     SslContextFactory sslContextFactory = destination.getHttpClient().getSslContextFactory();
                     if (sslContextFactory != null)

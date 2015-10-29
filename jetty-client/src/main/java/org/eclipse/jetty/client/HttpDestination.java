@@ -31,7 +31,6 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -76,7 +75,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
         else
         {
-            if (HttpScheme.HTTPS.is(getScheme()) || HttpScheme.WSS.is(getScheme()))
+            if (isSecure())
                 connectionFactory = newSslClientConnectionFactory(connectionFactory);
         }
         this.connectionFactory = connectionFactory;
@@ -95,6 +94,11 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
     {
         return new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
+    }
+
+    public boolean isSecure()
+    {
+        return client.isSchemeSecure(getScheme());
     }
 
     public HttpClient getHttpClient()
