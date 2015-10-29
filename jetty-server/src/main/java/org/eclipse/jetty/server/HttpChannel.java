@@ -295,7 +295,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             throw new IllegalStateException("state=" + _state);
                         _request.setHandled(false);
                         _response.getHttpOutput().reopen();
-                        _request.setDispatcherType(DispatcherType.REQUEST);
 
                         List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
                         if (!customizers.isEmpty())
@@ -303,7 +302,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             for (HttpConfiguration.Customizer customizer : customizers)
                                 customizer.customize(getConnector(), _configuration, _request);
                         }
-                        getServer().handle(this);
+                        try
+                        {
+                            _request.setDispatcherType(DispatcherType.REQUEST);
+                            getServer().handle(this);
+                        }
+                        finally
+                        {
+                            _request.setDispatcherType(null);
+                        }
                         break;
                     }
 
@@ -311,8 +318,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         _request.setHandled(false);
                         _response.getHttpOutput().reopen();
-                        _request.setDispatcherType(DispatcherType.ASYNC);
-                        getServer().handleAsync(this);
+                        
+                        try
+                        {
+                            _request.setDispatcherType(DispatcherType.ASYNC);
+                            getServer().handleAsync(this);
+                        }
+                        finally
+                        {
+                            _request.setDispatcherType(null);
+                        }
                         break;
                     }
 
@@ -344,7 +359,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         _request.setHandled(false);
                         _response.resetBuffer();
                         _response.getHttpOutput().reopen();
-                        _request.setDispatcherType(DispatcherType.ERROR);
+
 
                         String reason;
                         if (ex == null || ex instanceof TimeoutException)
@@ -371,7 +386,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 _state.getAsyncContextEvent().setDispatchPath(error_page);
                         }
 
-                        getServer().handleAsync(this);
+                        
+                        try
+                        {
+                            _request.setDispatcherType(DispatcherType.ERROR);
+                            getServer().handleAsync(this);
+                        }
+                        finally
+                        {
+                            _request.setDispatcherType(null);
+                        }
                         break;
                     }
 
@@ -446,10 +470,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         LOG.debug(String.valueOf(_request.getHttpURI()), e);
                     handleException(e);
                 }
-            }
-            finally
-            {
-                _request.setDispatcherType(null);
             }
 
             action = _state.unhandle();
