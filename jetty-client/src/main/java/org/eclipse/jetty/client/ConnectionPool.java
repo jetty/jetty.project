@@ -18,17 +18,24 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.util.Callback;
+import java.io.Closeable;
 
-/**
- * @deprecated use {@link DuplexConnectionPool} instead
- */
-@Deprecated
-public class ConnectionPool extends DuplexConnectionPool
+import org.eclipse.jetty.client.api.Connection;
+
+public interface ConnectionPool extends Closeable
 {
-    public ConnectionPool(Destination destination, int maxConnections, Callback requester)
-    {
-        super(destination, maxConnections, requester);
-    }
+    boolean isActive(Connection connection);
+
+    boolean isEmpty();
+
+    boolean isClosed();
+
+    Connection acquire();
+
+    boolean release(Connection connection);
+
+    boolean remove(Connection connection);
+
+    @Override
+    void close();
 }

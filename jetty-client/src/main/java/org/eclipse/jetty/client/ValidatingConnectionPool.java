@@ -56,7 +56,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * tuning the idle timeout of the servers to be larger than
  * that of the client.</p>
  */
-public class ValidatingConnectionPool extends ConnectionPool
+public class ValidatingConnectionPool extends DuplexConnectionPool
 {
     private static final Logger LOG = Log.getLogger(ValidatingConnectionPool.class);
 
@@ -154,7 +154,7 @@ public class ValidatingConnectionPool extends ConnectionPool
     private class Holder implements Runnable
     {
         private final long timestamp = System.nanoTime();
-        private final AtomicBoolean latch = new AtomicBoolean();
+        private final AtomicBoolean done = new AtomicBoolean();
         private final Connection connection;
         public Scheduler.Task task;
 
@@ -166,30 +166,31 @@ public class ValidatingConnectionPool extends ConnectionPool
         @Override
         public void run()
         {
-            if (latch.compareAndSet(false, true))
+            if (done.compareAndSet(false, true))
             {
-                boolean idle;
+                boolean closed = isClosed();
                 lock();
                 try
                 {
-                    quarantine.remove(connection);
-                    idle = offerIdle(connection);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Validated {}", connection);
+                    quarantine.remove(connection);
+                    if (!closed)
+                        deactivate(connection);
                 }
                 finally
                 {
                     unlock();
                 }
 
-                if (idle(connection, idle))
-                    proceed();
+                idle(connection, closed);
+                proceed();
             }
         }
 
         public boolean cancel()
         {
-            if (latch.compareAndSet(false, true))
+            if (done.compareAndSet(false, true))
             {
                 task.cancel();
                 return true;

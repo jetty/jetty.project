@@ -22,8 +22,9 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.PoolingHttpDestination;
+import org.eclipse.jetty.client.api.Connection;
 
-public class HttpDestinationOverFCGI extends PoolingHttpDestination<HttpConnectionOverFCGI>
+public class HttpDestinationOverFCGI extends PoolingHttpDestination
 {
     public HttpDestinationOverFCGI(HttpClient client, Origin origin)
     {
@@ -31,8 +32,8 @@ public class HttpDestinationOverFCGI extends PoolingHttpDestination<HttpConnecti
     }
 
     @Override
-    protected void send(HttpConnectionOverFCGI connection, HttpExchange exchange)
+    protected void send(Connection connection, HttpExchange exchange)
     {
-        connection.send(exchange);
+        ((HttpConnectionOverFCGI)connection).send(exchange);
     }
 }

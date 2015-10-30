@@ -18,136 +18,16 @@
 
 package org.eclipse.jetty.client;
 
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.util.Promise;
-
-public abstract class MultiplexHttpDestination<C extends Connection> extends HttpDestination implements Promise<Connection>
+public abstract class MultiplexHttpDestination extends HttpDestination
 {
-    private final AtomicReference<ConnectState> connect = new AtomicReference<>(ConnectState.DISCONNECTED);
-    private C connection;
-
     protected MultiplexHttpDestination(HttpClient client, Origin origin)
     {
         super(client, origin);
     }
 
-    @Override
-    public void send()
+    protected ConnectionPool newConnectionPool(HttpClient client)
     {
-        while (true)
-        {
-            ConnectState current = connect.get();
-            switch (current)
-            {
-                case DISCONNECTED:
-                {
-                    if (!connect.compareAndSet(current, ConnectState.CONNECTING))
-                        break;
-                    newConnection(this);
-                    return;
-                }
-                case CONNECTING:
-                {
-                    // Waiting to connect, just return
-                    return;
-                }
-                case CONNECTED:
-                {
-                    if (process(connection))
-                        break;
-                    return;
-                }
-                default:
-                {
-                    abort(new IllegalStateException("Invalid connection state " + current));
-                    return;
-                }
-            }
-        }
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public void succeeded(Connection result)
-    {
-        C connection = this.connection = (C)result;
-        if (connect.compareAndSet(ConnectState.CONNECTING, ConnectState.CONNECTED))
-        {
-            process(connection);
-        }
-        else
-        {
-            connection.close();
-            failed(new IllegalStateException());
-        }
-    }
-
-    @Override
-    public void failed(Throwable x)
-    {
-        connect.set(ConnectState.DISCONNECTED);
-        abort(x);
-    }
-
-    protected boolean process(final C connection)
-    {
-        HttpClient client = getHttpClient();
-        final HttpExchange exchange = getHttpExchanges().poll();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Processing {} on {}", exchange, connection);
-        if (exchange == null)
-            return false;
-
-        final Request request = exchange.getRequest();
-        Throwable cause = request.getAbortCause();
-        if (cause != null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Aborted before processing {}: {}", exchange, cause);
-            // It may happen that the request is aborted before the exchange
-            // is created. Aborting the exchange a second time will result in
-            // a no-operation, so we just abort here to cover that edge case.
-            exchange.abort(cause);
-        }
-        else
-        {
-            send(connection, exchange);
-        }
-        return true;
-    }
-
-    @Override
-    public void close()
-    {
-        super.close();
-        C connection = this.connection;
-        if (connection != null)
-            connection.close();
-    }
-
-    @Override
-    public void close(Connection connection)
-    {
-        super.close(connection);
-        while (true)
-        {
-            ConnectState current = connect.get();
-            if (connect.compareAndSet(current, ConnectState.DISCONNECTED))
-            {
-                if (getHttpClient().isRemoveIdleDestinations())
-                    getHttpClient().removeDestination(this);
-                break;
-            }
-        }
-    }
-
-    protected abstract void send(C connection, HttpExchange exchange);
-
-    private enum ConnectState
-    {
-        DISCONNECTED, CONNECTING, CONNECTED
+        return new MultiplexConnectionPool(this, client.getMaxConnectionsPerDestination(), this,
+                client.getMaxRequestsQueuedPerDestination());
     }
 }

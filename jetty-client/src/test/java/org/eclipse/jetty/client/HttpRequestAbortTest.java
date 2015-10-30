@@ -25,12 +25,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
@@ -88,7 +88,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -135,7 +135,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -182,7 +182,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -204,14 +204,10 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
-                    .onRequestCommit(new Request.CommitListener()
+                    .onRequestCommit(request ->
                     {
-                        @Override
-                        public void onCommit(Request request)
-                        {
-                            aborted.set(request.abort(cause));
-                            latch.countDown();
-                        }
+                        aborted.set(request.abort(cause));
+                        latch.countDown();
                     })
                     .timeout(5, TimeUnit.SECONDS)
                     .send();
@@ -225,7 +221,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -260,14 +256,10 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
-                    .onRequestCommit(new Request.CommitListener()
+                    .onRequestCommit(request ->
                     {
-                        @Override
-                        public void onCommit(Request request)
-                        {
-                            aborted.set(request.abort(cause));
-                            latch.countDown();
-                        }
+                        aborted.set(request.abort(cause));
+                        latch.countDown();
                     })
                     .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
                     {
@@ -289,7 +281,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -315,14 +307,10 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
-                    .onRequestContent(new Request.ContentListener()
+                    .onRequestContent((request, content) ->
                     {
-                        @Override
-                        public void onContent(Request request, ByteBuffer content)
-                        {
-                            aborted.set(request.abort(cause));
-                            latch.countDown();
-                        }
+                        aborted.set(request.abort(cause));
+                        latch.countDown();
                     })
                     .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
                     {
@@ -344,7 +332,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -454,7 +442,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -486,15 +474,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         Request request = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .timeout(3 * delay, TimeUnit.MILLISECONDS);
-        request.send(new Response.CompleteListener()
+        request.send(result ->
         {
-            @Override
-            public void onComplete(Result result)
-            {
-                Assert.assertTrue(result.isFailed());
-                Assert.assertSame(cause, result.getFailure());
-                latch.countDown();
-            }
+            Assert.assertTrue(result.isFailed());
+            Assert.assertSame(cause, result.getFailure());
+            latch.countDown();
         });
 
         TimeUnit.MILLISECONDS.sleep(delay);

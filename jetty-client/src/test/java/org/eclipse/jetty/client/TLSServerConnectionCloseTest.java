@@ -183,7 +183,7 @@ public class TLSServerConnectionCloseTest
 
         // Connection should have been removed from pool.
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getIdleConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnectionCount());

@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
@@ -89,10 +90,15 @@ public abstract class AbstractTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        connector = new ServerConnector(server, provideServerConnectionFactory(transport));
+        connector = newServerConnector(server);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
+    }
+
+    protected ServerConnector newServerConnector(Server server)
+    {
+        return new ServerConnector(server, provideServerConnectionFactory(transport));
     }
 
     private void startClient() throws Exception
@@ -101,10 +107,11 @@ public abstract class AbstractTest
         clientThreads.setName("client");
         client = new HttpClient(provideClientTransport(transport), sslContextFactory);
         client.setExecutor(clientThreads);
+        client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         client.start();
     }
 
-    private ConnectionFactory[] provideServerConnectionFactory(Transport transport)
+    protected ConnectionFactory[] provideServerConnectionFactory(Transport transport)
     {
         List<ConnectionFactory> result = new ArrayList<>();
         switch (transport)
@@ -154,7 +161,7 @@ public abstract class AbstractTest
         return result.toArray(new ConnectionFactory[result.size()]);
     }
 
-    private HttpClientTransport provideClientTransport(Transport transport)
+    protected HttpClientTransport provideClientTransport(Transport transport)
     {
         switch (transport)
         {
@@ -192,6 +199,22 @@ public abstract class AbstractTest
             case HTTPS:
             case H2:
                 return "https://localhost:" + connector.getLocalPort();
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
+
+    protected boolean isTransportSecure()
+    {
+        switch (transport)
+        {
+            case HTTP:
+            case H2C:
+            case FCGI:
+                return false;
+            case HTTPS:
+            case H2:
+                return true;
             default:
                 throw new IllegalArgumentException();
         }

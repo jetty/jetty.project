@@ -111,7 +111,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(200, response.getStatus());
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
         long start = System.nanoTime();
         HttpConnectionOverHTTP connection = null;
@@ -367,16 +367,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final byte[] content = {0, 1, 2, 3};
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
-                .onRequestContent(new Request.ContentListener()
+                .onRequestContent((request, buffer) ->
                 {
-                    @Override
-                    public void onContent(Request request, ByteBuffer buffer)
-                    {
-                        byte[] bytes = new byte[buffer.remaining()];
-                        buffer.get(bytes);
-                        if (!Arrays.equals(content, bytes))
-                            request.abort(new Exception());
-                    }
+                    byte[] bytes = new byte[buffer.remaining()];
+                    buffer.get(bytes);
+                    if (!Arrays.equals(content, bytes))
+                        request.abort(new Exception());
                 })
                 .content(new BytesContentProvider(content))
                 .timeout(5, TimeUnit.SECONDS)
@@ -401,16 +397,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final AtomicInteger progress = new AtomicInteger();
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
-                .onRequestContent(new Request.ContentListener()
+                .onRequestContent((request, buffer) ->
                 {
-                    @Override
-                    public void onContent(Request request, ByteBuffer buffer)
-                    {
-                        byte[] bytes = new byte[buffer.remaining()];
-                        Assert.assertEquals(1, bytes.length);
-                        buffer.get(bytes);
-                        Assert.assertEquals(bytes[0], progress.getAndIncrement());
-                    }
+                    byte[] bytes = new byte[buffer.remaining()];
+                    Assert.assertEquals(1, bytes.length);
+                    buffer.get(bytes);
+                    Assert.assertEquals(bytes[0], progress.getAndIncrement());
                 })
                 .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{2}, new byte[]{3}, new byte[]{4}))
                 .timeout(5, TimeUnit.SECONDS)
@@ -432,19 +424,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final CountDownLatch successLatch = new CountDownLatch(2);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onRequestBegin(new Request.BeginListener()
+                .onRequestBegin(request ->
                 {
-                    @Override
-                    public void onBegin(Request request)
+                    try
                     {
-                        try
-                        {
-                            latch.await();
-                        }
-                        catch (InterruptedException x)
-                        {
-                            x.printStackTrace();
-                        }
+                        latch.await();
+                    }
+                    catch (InterruptedException x)
+                    {
+                        x.printStackTrace();
                     }
                 })
                 .send(new Response.Listener.Adapter()
@@ -459,14 +447,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onRequestQueued(new Request.QueuedListener()
-                {
-                    @Override
-                    public void onQueued(Request request)
-                    {
-                        latch.countDown();
-                    }
-                })
+                .onRequestQueued(request -> latch.countDown())
                 .send(new Response.Listener.Adapter()
                 {
                     @Override
@@ -514,27 +495,16 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         latch.countDown();
                     }
                 })
-                .onResponseFailure(new Response.FailureListener()
-                {
-                    @Override
-                    public void onFailure(Response response, Throwable failure)
-                    {
-                        latch.countDown();
-                    }
-                })
+                .onResponseFailure((response, failure) -> latch.countDown())
                 .send(null);
 
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .path("/two")
-                .onResponseSuccess(new Response.SuccessListener()
+                .onResponseSuccess(response ->
                 {
-                    @Override
-                    public void onSuccess(Response response)
-                    {
-                        Assert.assertEquals(200, response.getStatus());
-                        latch.countDown();
-                    }
+                    Assert.assertEquals(200, response.getStatus());
+                    latch.countDown();
                 })
                 .send(null);
 
@@ -564,14 +534,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .file(file)
-                .onRequestSuccess(new Request.SuccessListener()
+                .onRequestSuccess(request ->
                 {
-                    @Override
-                    public void onSuccess(Request request)
-                    {
-                        requestTime.set(System.nanoTime());
-                        latch.countDown();
-                    }
+                    requestTime.set(System.nanoTime());
+                    latch.countDown();
                 })
                 .send(new Response.Listener.Adapter()
                 {
@@ -674,14 +640,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final int port = connector.getLocalPort();
         client.newRequest(host, port)
                 .scheme(scheme)
-                .onRequestBegin(new Request.BeginListener()
+                .onRequestBegin(request ->
                 {
-                    @Override
-                    public void onBegin(Request request)
-                    {
-                        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-                        destination.getConnectionPool().getActiveConnections().peek().close();
-                    }
+                    HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
+                    DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+                    connectionPool.getActiveConnections().iterator().next().close();
                 })
                 .send(new Response.Listener.Adapter()
                 {
@@ -773,14 +736,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onResponseHeader(new Response.HeaderListener()
-                {
-                    @Override
-                    public boolean onHeader(Response response, HttpField field)
-                    {
-                        return !field.getName().equals(headerName);
-                    }
-                })
+                .onResponseHeader((response1, field) -> !field.getName().equals(headerName))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
@@ -864,16 +820,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("idontexist", 80)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        Assert.assertTrue(result.isFailed());
-                        Throwable failure = result.getFailure();
-                        Assert.assertTrue(failure instanceof UnknownHostException);
-                        latch.countDown();
-                    }
+                    Assert.assertTrue(result.isFailed());
+                    Throwable failure = result.getFailure();
+                    Assert.assertTrue(failure instanceof UnknownHostException);
+                    latch.countDown();
                 });
         Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
@@ -1323,14 +1275,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isFailed())
-                            completeLatch.countDown();
-                    }
+                    if (result.isFailed())
+                        completeLatch.countDown();
                 });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));

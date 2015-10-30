@@ -22,8 +22,9 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.MultiplexHttpDestination;
 import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.api.Connection;
 
-public class HttpDestinationOverHTTP2 extends MultiplexHttpDestination<HttpConnectionOverHTTP2>
+public class HttpDestinationOverHTTP2 extends MultiplexHttpDestination
 {
     public HttpDestinationOverHTTP2(HttpClient client, Origin origin)
     {
@@ -31,8 +32,8 @@ public class HttpDestinationOverHTTP2 extends MultiplexHttpDestination<HttpConne
     }
 
     @Override
-    protected void send(HttpConnectionOverHTTP2 connection, HttpExchange exchange)
+    protected void send(Connection connection, HttpExchange exchange)
     {
-        connection.send(exchange);
+        ((HttpConnectionOverHTTP2)connection).send(exchange);
     }
 }
