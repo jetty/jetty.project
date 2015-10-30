@@ -72,13 +72,29 @@ public class DuplexConnectionPool implements Closeable, Dumpable, Sweeper.Sweepa
     @ManagedAttribute(value = "The number of idle connections", readonly = true)
     public int getIdleConnectionCount()
     {
-        return idleConnections.size();
+        lock();
+        try
+        {
+            return idleConnections.size();
+        }
+        finally
+        {
+            unlock();
+        }
     }
 
     @ManagedAttribute(value = "The number of active connections", readonly = true)
     public int getActiveConnectionCount()
     {
-        return activeConnections.size();
+        lock();
+        try
+        {
+            return activeConnections.size();
+        }
+        finally
+        {
+            unlock();
+        }
     }
 
     public Queue<Connection> getIdleConnections()
@@ -275,7 +291,7 @@ public class DuplexConnectionPool implements Closeable, Dumpable, Sweeper.Sweepa
             unlock();
         }
 
-        if (activeRemoved)
+        if (activeRemoved || force)
             released(connection);
         boolean removed = activeRemoved || idleRemoved || force;
         if (removed)
@@ -374,14 +390,14 @@ public class DuplexConnectionPool implements Closeable, Dumpable, Sweeper.Sweepa
     @Override
     public boolean sweep()
     {
-        List<Sweeper.Sweepable> toSweep = new ArrayList<>();
+        List<Connection> toSweep = new ArrayList<>();
         lock();
         try
         {
-            for (Connection connection : getActiveConnections())
+            for (Connection connection : activeConnections)
             {
                 if (connection instanceof Sweeper.Sweepable)
-                    toSweep.add(((Sweeper.Sweepable)connection));
+                    toSweep.add(connection);
             }
         }
         finally
@@ -389,13 +405,13 @@ public class DuplexConnectionPool implements Closeable, Dumpable, Sweeper.Sweepa
             unlock();
         }
 
-        for (Sweeper.Sweepable candidate : toSweep)
+        for (Connection connection : toSweep)
         {
-            if (candidate.sweep())
+            if (((Sweeper.Sweepable)connection).sweep())
             {
-                boolean removed = getActiveConnections().remove(candidate);
+                boolean removed = remove(connection, true);
                 LOG.warn("Connection swept: {}{}{} from active connections{}{}",
-                        candidate,
+                        connection,
                         System.lineSeparator(),
                         removed ? "Removed" : "Not removed",
                         System.lineSeparator(),
