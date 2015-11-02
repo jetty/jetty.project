@@ -157,6 +157,9 @@ public class PushCacheFilter implements Filter
             LOG.debug("{} {} referrer={} conditional={}", request.getMethod(), request.getRequestURI(), referrer, conditional);
 
         String path = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
+        String query = request.getQueryString();
+        if (query != null)
+            path += "?" + query;
         if (referrer != null)
         {
             HttpURI referrerURI = new HttpURI(referrer);
