@@ -29,7 +29,8 @@ import javax.servlet.http.HttpSession;
 /** Build a request to be pushed.
  *
  * <p>A PushBuilder is obtained by calling {@link
- * HttpServletRequest#getPushBuilder()}.  Each call to this method will
+ * Request#getPushBuilder()} (<code>Eventually HttpServletRequest.getPushBuilder()</code>).  
+ * Each call to this method will
  * return a new instance of a PushBuilder based off the current {@code
  * HttpServletRequest}.  Any mutations to the returned PushBuilder are
  * not reflected on future returns.</p>
@@ -103,12 +104,10 @@ public interface PushBuilder
      * 
      * <p>Any non-empty String may be used for the method.</p>
      *
-     * @throws NullPointerException if the argument is {@code null}
-     *
-     * @throws IllegalArgumentException if the argument is the empty String
-     *
      * @param method the method to be used for the push.  
      * @return this builder.
+     * @throws NullPointerException if the argument is {@code null}
+     * @throws IllegalArgumentException if the argument is the empty String
      */
     public abstract PushBuilder method(String method);
     
@@ -209,7 +208,7 @@ public interface PushBuilder
      * nulled after every call to {@link #push()}
      * @param lastModified the last modified date to be used for the push.
      * @return this builder.
-     * */
+     */
     public abstract PushBuilder lastModified(String lastModified);
 
 
@@ -240,10 +239,6 @@ public interface PushBuilder
      */
     public abstract void push();
     
-    
-  
-    
-    
     public abstract String getMethod();
     public abstract String getQueryString();
     public abstract String getSessionId();
@@ -253,8 +248,4 @@ public interface PushBuilder
     public abstract String getPath();
     public abstract String getEtag();
     public abstract String getLastModified();
-
-
-
-
 }
