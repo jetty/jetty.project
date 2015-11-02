@@ -113,8 +113,8 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
      * <p>The {@code Content-Type} of this part will be obtained from:</p>
      * <ul>
      *     <li>the {@code Content-Type} header in the {@code fields} parameter; otherwise</li>
-     *     <li>the {@link Typed#getContentType()} method if the {@code content} parameter
-     *     implements {@link Typed}; otherwise</li>
+     *     <li>the {@link org.eclipse.jetty.client.api.ContentProvider.Typed#getContentType()} method if the {@code content} parameter
+     *     implements {@link org.eclipse.jetty.client.api.ContentProvider.Typed}; otherwise</li>
      *     <li>"text/plain"</li>
      * </ul>
      *
@@ -133,8 +133,8 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
      * <p>The {@code Content-Type} of this part will be obtained from:</p>
      * <ul>
      *     <li>the {@code Content-Type} header in the {@code fields} parameter; otherwise</li>
-     *     <li>the {@link Typed#getContentType()} method if the {@code content} parameter
-     *     implements {@link Typed}; otherwise</li>
+     *     <li>the {@link org.eclipse.jetty.client.api.ContentProvider.Typed#getContentType()} method if the {@code content} parameter
+     *     implements {@link org.eclipse.jetty.client.api.ContentProvider.Typed}; otherwise</li>
      *     <li>"application/octet-stream"</li>
      * </ul>
      *
