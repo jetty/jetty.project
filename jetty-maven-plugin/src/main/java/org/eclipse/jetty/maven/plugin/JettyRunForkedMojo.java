@@ -244,6 +244,8 @@ public class JettyRunForkedMojo extends JettyRunMojo
 
             //ensure handler structure enabled
             ServerSupport.configureHandlers(server, null);
+            
+            ServerSupport.configureDefaultConfigurationClasses(server);
                    
             //ensure config of the webapp based on settings in plugin
             configureWebApplication();
