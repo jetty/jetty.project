@@ -125,7 +125,10 @@ public class Starter
 
         //check if contexts already configured, create if not
         ServerSupport.configureHandlers(server, null);
-
+        
+        //Set up list of default Configurations to apply to a webapp
+        ServerSupport.configureDefaultConfigurationClasses(server);
+        
         webApp = new JettyWebAppContext();
         
         //configure webapp from properties file describing unassembled webapp

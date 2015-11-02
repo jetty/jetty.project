@@ -72,23 +72,25 @@ public class JettyWebAppContext extends WebAppContext
     private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$|.*javax.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-impl-.*\\.jar";
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
     private static final String WEB_INF_LIB_PREFIX = "/WEB-INF/lib";
+    
+    
+    public  static final String[] DEFAULT_CONFIGURATION_CLASSES = {
+                                                           "org.eclipse.jetty.maven.plugin.MavenWebInfConfiguration",
+                                                           "org.eclipse.jetty.webapp.WebXmlConfiguration",
+                                                           "org.eclipse.jetty.webapp.MetaInfConfiguration",
+                                                           "org.eclipse.jetty.webapp.FragmentConfiguration",
+                                                           "org.eclipse.jetty.plus.webapp.EnvConfiguration",
+                                                           "org.eclipse.jetty.plus.webapp.PlusConfiguration",
+                                                           "org.eclipse.jetty.annotations.AnnotationConfiguration",
+                                                           "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
+                                                           };
 
-    private final Configuration[] _defaultConfigurations = {
-                                                             new MavenWebInfConfiguration(),
-                                                             new WebXmlConfiguration(),
-                                                             new MetaInfConfiguration(),
-                                                             new FragmentConfiguration(),
-                                                             new EnvConfiguration(),
-                                                             new PlusConfiguration(),
-                                                             new AnnotationConfiguration(),
-                                                             new JettyWebXmlConfiguration()
-                                                            };
 
-    private final Configuration[] _quickStartConfigurations = {
-                                                                new MavenQuickStartConfiguration(),
-                                                                new EnvConfiguration(),
-                                                                new PlusConfiguration(),
-                                                                new JettyWebXmlConfiguration()
+    private final String[] QUICKSTART_CONFIGURATION_CLASSES = {
+                                                                "org.eclipse.jetty.maven.plugin.MavenQuickStartConfiguration",
+                                                                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
+                                                                "org.eclipse.jetty.plus.webapp.PlusConfiguration",
+                                                                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
                                                                };
 
     private File _classes = null;
@@ -100,6 +102,7 @@ public class JettyWebAppContext extends WebAppContext
     private String _jettyEnvXml;
     private List<Overlay> _overlays;
     private Resource _quickStartWebXml;
+   
     
  
     
@@ -338,24 +341,16 @@ public class JettyWebAppContext extends WebAppContext
     {
         //choose if this will be a quickstart or normal start
         if (!isGenerateQuickStart() && getQuickStartWebDescriptor() != null)
-            setConfigurations(_quickStartConfigurations);
-        else
         {
-            setConfigurations(_defaultConfigurations);
+            setConfigurationClasses(QUICKSTART_CONFIGURATION_CLASSES);
+        }
+        else
+        { 
             if (isGenerateQuickStart())
             {
                 _preconfigProcessor = new PreconfigureDescriptorProcessor();
                 getMetaData().addDescriptorProcessor(_preconfigProcessor);
             }
-        }
-        
-        //inject configurations with config from maven plugin    
-        for (Configuration c:getConfigurations())
-        {
-            if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
-                ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
-            else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
-                ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());         
         }
 
         //Set up the pattern that tells us where the jars are that need scanning
@@ -404,6 +399,22 @@ public class JettyWebAppContext extends WebAppContext
     }
     
     
+    @Override
+    protected void loadConfigurations() throws Exception
+    {
+        super.loadConfigurations();
+        
+        //inject configurations with config from maven plugin    
+        for (Configuration c:getConfigurations())
+        {
+            if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
+                ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
+            else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
+                ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());         
+        }
+    }
+
+
     /* ------------------------------------------------------------ */
     public void doStop () throws Exception
     { 
