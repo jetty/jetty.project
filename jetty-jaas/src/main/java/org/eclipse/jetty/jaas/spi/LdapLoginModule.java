@@ -649,12 +649,12 @@ public class LdapLoginModule extends AbstractLoginModule
 
     public static String convertCredentialJettyToLdap(String encryptedPassword)
     {
-        if (encryptedPassword.toUpperCase(Locale.ENGLISH).("MD5:"))
+        if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("MD5:"))
         {
             return "{MD5}" + encryptedPassword.substring("MD5:".length(), encryptedPassword.length());
         }
 
-        if (encryptedPassword.toUpperCase(Locale.ENGLISH).("CRYPT:"))
+        if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("CRYPT:"))
         {
             return "{CRYPT}" + encryptedPassword.substring("CRYPT:".length(), encryptedPassword.length());
         }
