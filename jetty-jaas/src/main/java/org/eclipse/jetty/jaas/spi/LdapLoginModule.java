@@ -649,12 +649,12 @@ public class LdapLoginModule extends AbstractLoginModule
 
     public static String convertCredentialJettyToLdap(String encryptedPassword)
     {
-        if ("MD5:".startsWith(encryptedPassword.toUpperCase(Locale.ENGLISH)))
+        if (encryptedPassword.toUpperCase(Locale.ENGLISH).("MD5:"))
         {
             return "{MD5}" + encryptedPassword.substring("MD5:".length(), encryptedPassword.length());
         }
 
-        if ("CRYPT:".startsWith(encryptedPassword.toUpperCase(Locale.ENGLISH)))
+        if (encryptedPassword.toUpperCase(Locale.ENGLISH).("CRYPT:"))
         {
             return "{CRYPT}" + encryptedPassword.substring("CRYPT:".length(), encryptedPassword.length());
         }
@@ -669,12 +669,12 @@ public class LdapLoginModule extends AbstractLoginModule
             return encryptedPassword;
         }
 
-        if ("{MD5}".startsWith(encryptedPassword.toUpperCase(Locale.ENGLISH)))
+        if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("{MD5}"))
         {
             return "MD5:" + encryptedPassword.substring("{MD5}".length(), encryptedPassword.length());
         }
 
-        if ("{CRYPT}".startsWith(encryptedPassword.toUpperCase(Locale.ENGLISH)))
+        if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("{CRYPT}"))
         {
             return "CRYPT:" + encryptedPassword.substring("{CRYPT}".length(), encryptedPassword.length());
         }
