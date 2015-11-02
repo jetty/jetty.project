@@ -651,7 +651,8 @@ public class LdapLoginModule extends AbstractLoginModule
     {
         if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("MD5:"))
         {
-            return "{MD5}" + encryptedPassword.substring("MD5:".length(), encryptedPassword.length());
+            String src = encryptedPassword.substring("MD5:".length(), encryptedPassword.length());
+            return "{MD5}" + hexToBase64(src);
         }
 
         if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("CRYPT:"))
@@ -671,7 +672,8 @@ public class LdapLoginModule extends AbstractLoginModule
 
         if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("{MD5}"))
         {
-            return "MD5:" + encryptedPassword.substring("{MD5}".length(), encryptedPassword.length());
+            String src = encryptedPassword.substring("{MD5}".length(), encryptedPassword.length());
+            return "MD5:" + base64ToHex(src);
         }
 
         if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("{CRYPT}"))
@@ -680,5 +682,15 @@ public class LdapLoginModule extends AbstractLoginModule
         }
 
         return encryptedPassword;
+    }
+    
+    private static String base64ToHex(String src) {
+        byte[] bytes = B64Code.decode(src);
+        return TypeUtil.toString(bytes, 16);
+    }
+
+    private static String hexToBase64(String src) {
+        byte[] bytes = TypeUtil.fromHexString(src);
+        return new String(B64Code.encode(bytes));
     }
 }
