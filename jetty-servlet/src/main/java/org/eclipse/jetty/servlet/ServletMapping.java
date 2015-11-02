@@ -69,8 +69,8 @@ public class ServletMapping
     
     /* ------------------------------------------------------------ */
     /** Test if the list of path specs contains a particular one.
-     * @param pathSpec
-     * @return
+     * @param pathSpec the path spec
+     * @return true if path spec matches something in mappings
      */
     public boolean containsPathSpec (String pathSpec)
     {
