@@ -695,6 +695,10 @@ public class PushCacheFilterTest extends AbstractTest
             @Override
             public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
             {
+                MetaData metaData = frame.getMetaData();
+                Assert.assertTrue(metaData instanceof MetaData.Request);
+                MetaData.Request pushedRequest = (MetaData.Request)metaData;
+                Assert.assertEquals(servletPath + secondaryResource, pushedRequest.getURI().getPathQuery());
                 return new Adapter()
                 {
                     @Override
