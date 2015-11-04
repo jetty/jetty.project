@@ -47,6 +47,7 @@ import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -63,6 +64,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
@@ -75,6 +77,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -1467,23 +1470,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(2);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onRequestBegin(new Request.BeginListener()
+                .onRequestBegin(request ->
                 {
-                    @Override
-                    public void onBegin(Request request)
-                    {
-                        Assert.assertTrue(open.get());
-                        latch.countDown();
-                    }
+                    Assert.assertTrue(open.get());
+                    latch.countDown();
                 })
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isSucceeded())
-                            latch.countDown();
-                    }
+                    if (result.isSucceeded())
+                        latch.countDown();
                 });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
