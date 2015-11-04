@@ -673,7 +673,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
         Set<String> candidateIds = new HashSet<String>();
         long now = System.currentTimeMillis();
         
-        LOG.info("SessionManager for context {} scavenging at {} ", getContextPath(getContext()), now);
+        LOG.info("SessionManager node="+getSessionIdManager().getWorkerName()+" for context {} scavenging at {} ", getContextPath(getContext()), now);
         synchronized (_sessions)
         {
             for (Map.Entry<String, Session> entry:_sessions.entrySet())
@@ -714,6 +714,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
                     if (LOG.isDebugEnabled()) LOG.debug("Session({}) not local to this session manager, removing from local memory", candidateId);
                     candidateSession.willPassivate();
                     _sessions.remove(candidateSession.getClusterId());
+                    _sessionsStats.decrement();
                 }
 
             }
@@ -893,6 +894,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
                     {
                         //indicate that the session was reinflated
                         session.didActivate();
+                        _sessionsStats.increment();
                         LOG.debug("getSession({}): loaded session from cluster", idInCluster);
                     }
                     return session;

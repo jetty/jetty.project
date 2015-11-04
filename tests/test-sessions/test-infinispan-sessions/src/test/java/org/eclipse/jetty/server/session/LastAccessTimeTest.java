@@ -18,14 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.io.File;
-
-import org.eclipse.jetty.util.IO;
-import org.infinispan.Cache;
-import org.infinispan.configuration.cache.Configuration;
-import org.infinispan.configuration.cache.ConfigurationBuilder;
-import org.infinispan.manager.DefaultCacheManager;
-import org.infinispan.manager.EmbeddedCacheManager;
+import static org.junit.Assert.assertEquals;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -59,6 +52,27 @@ public class LastAccessTimeTest extends AbstractLastAccessTimeTest
     public void testLastAccessTime() throws Exception
     {
         super.testLastAccessTime();
+    }
+    
+    @Override
+    public void assertSessionsAfterCreation (AbstractSessionManager m)
+    {
+        assertSessions(1,1,1, m);
+    }
+    
+    public void assertSessions (int count, int max, int total, AbstractSessionManager m)
+    {
+        assertEquals(count, m.getSessions());
+        assertEquals(max, m.getSessionsMax());
+        assertEquals(total, m.getSessionsTotal());
+    }
+    
+    @Override
+    public void assertSessionsAfterScavenge(AbstractSessionManager m)
+    {
+        //the InfinispanSessionManager will throw a session out of memory if it is checked
+        //against the cluster during scavenge and found to be managed by another node
+        assertSessions(0, 1, 1, m);
     }
 
     

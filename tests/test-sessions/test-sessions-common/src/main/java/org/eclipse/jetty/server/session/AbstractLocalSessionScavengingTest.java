@@ -33,6 +33,8 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.server.session.AbstractSessionManager;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 
 /**
@@ -62,14 +64,16 @@ public abstract class AbstractLocalSessionScavengingTest
         int inactivePeriod = 1;
         int scavengePeriod = 2;
         AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
-        server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+        ServletContextHandler context1 = server1.addContext(contextPath);
+        context1.addServlet(TestServlet.class, servletMapping);
 
         try
         {
             server1.start();
             int port1 = server1.getPort();
             AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod * 3);
-            server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+            ServletContextHandler context2 = server2.addContext(contextPath);
+            context2.addServlet(TestServlet.class, servletMapping);
 
             try
             {
@@ -88,6 +92,9 @@ public abstract class AbstractLocalSessionScavengingTest
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                     String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
+                    assertSessionsAfterCreation(((AbstractSessionManager)context1.getSessionHandler().getSessionManager()));
+                  
+                    
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
@@ -96,7 +103,8 @@ public abstract class AbstractLocalSessionScavengingTest
                     request.header("Cookie", sessionCookie);
                     ContentResponse response2 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-
+                    assertSessionsAfterCreation(((AbstractSessionManager)context2.getSessionHandler().getSessionManager()));
+                    
 
                     // Wait for the scavenger to run on node1, waiting 2.5 times the scavenger period
                     pause(scavengePeriod);
@@ -106,6 +114,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     request.header("Cookie", sessionCookie);
                     response1 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                    assertSessionsAfterScavenge((AbstractSessionManager)context1.getSessionHandler().getSessionManager());
 
 
                     // Wait for the scavenger to run on node2, waiting 2 times the scavenger period
@@ -117,6 +126,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     request.header("Cookie", sessionCookie);
                     response2 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                    assertSessionsAfterScavenge(((AbstractSessionManager)context2.getSessionHandler().getSessionManager()));
                 }
                 finally
                 {
@@ -133,6 +143,18 @@ public abstract class AbstractLocalSessionScavengingTest
             server1.stop();
         }
     }
+    
+    
+    public void assertSessionsAfterCreation (AbstractSessionManager m)
+    {
+
+    }
+    
+    public void assertSessionsAfterScavenge (AbstractSessionManager m)
+    {
+    }
+    
+    
 
     public static class TestServlet extends HttpServlet
     {

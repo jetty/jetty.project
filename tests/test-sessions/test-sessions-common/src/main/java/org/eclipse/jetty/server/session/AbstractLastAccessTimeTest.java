@@ -73,7 +73,8 @@ public abstract class AbstractLastAccessTimeTest
             server1.start();
             int port1=server1.getPort();
             AbstractTestServer server2 = createServer(0, maxInactivePeriod, scavengePeriod);
-            server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+            ServletContextHandler context2 = server2.addContext(contextPath);
+            context2.addServlet(TestServlet.class, servletMapping);
 
             try
             {
@@ -89,6 +90,9 @@ public abstract class AbstractLastAccessTimeTest
                     assertEquals("test", response1.getContentAsString());
                     String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue( sessionCookie != null );
+                    assertSessionsAfterCreation(((AbstractSessionManager)context.getSessionHandler().getSessionManager()));
+                   
+                    
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
@@ -112,13 +116,15 @@ public abstract class AbstractLastAccessTimeTest
 
                         Thread.sleep(requestInterval);
                     }
+                    assertSessionsAfterCreation((AbstractSessionManager)context2.getSessionHandler().getSessionManager());
+                  
 
-                    // At this point, session1 should be eligible for expiration.
                     // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                     Thread.sleep(scavengePeriod * 2500L);
 
                     //check that the session was not scavenged over on server1 by ensuring that the SessionListener destroy method wasn't called
                     assertFalse(listener1.destroyed);
+                    assertSessionsAfterScavenge((AbstractSessionManager)context.getSessionHandler().getSessionManager());
                 }
                 finally
                 {
@@ -135,6 +141,17 @@ public abstract class AbstractLastAccessTimeTest
             server1.stop();
         }
     }
+    
+    public void assertSessionsAfterCreation (AbstractSessionManager m)
+    {
+
+    }
+    
+    public void assertSessionsAfterScavenge (AbstractSessionManager m)
+    {
+    }
+    
+   
 
     public static class TestSessionListener implements HttpSessionListener
     {

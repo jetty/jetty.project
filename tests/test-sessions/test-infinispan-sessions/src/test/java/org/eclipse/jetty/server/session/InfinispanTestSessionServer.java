@@ -23,9 +23,7 @@ import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionIdManager;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionManager;
-import org.infinispan.Cache;
 import org.infinispan.commons.api.BasicCache;
-import org.infinispan.commons.util.CloseableIteratorSet;
 
 public class InfinispanTestSessionServer extends AbstractTestServer
 {

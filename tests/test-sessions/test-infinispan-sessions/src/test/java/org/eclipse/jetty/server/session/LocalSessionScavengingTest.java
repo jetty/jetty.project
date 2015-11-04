@@ -19,6 +19,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -56,4 +57,23 @@ public class LocalSessionScavengingTest extends AbstractLocalSessionScavengingTe
         return new InfinispanTestSessionServer(port, max, scavenge, __testSupport.getCache());
     }
 
+    @Override
+    public void assertSessionsAfterCreation(AbstractSessionManager m)
+    {
+       assertSessions(1,1,1,m);
+    }
+
+    @Override
+    public void assertSessionsAfterScavenge(AbstractSessionManager m)
+    {
+       assertSessions(0,1,1,m);
+    }
+
+    public void assertSessions (int count, int max, int total, AbstractSessionManager m)
+    {
+        assertEquals(count, m.getSessions());
+        assertEquals(max, m.getSessionsMax());
+        assertEquals(total, m.getSessionsTotal());
+    }
+    
 }

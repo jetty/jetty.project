@@ -22,10 +22,6 @@ package org.eclipse.jetty.server.session.remote;
 import org.eclipse.jetty.server.session.AbstractImmortalSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.InfinispanTestSessionServer;
-import org.infinispan.Cache;
-import org.infinispan.configuration.cache.ConfigurationBuilder;
-import org.infinispan.manager.DefaultCacheManager;
-import org.infinispan.manager.EmbeddedCacheManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 

@@ -25,7 +25,6 @@ import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.InfinispanTestSessionServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import static org.junit.Assert.assertEquals;
 
 /**
  * InvalidationSessionTest
@@ -88,4 +89,22 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
         }
     }
 
+    public void assertSessionsAfterCreation (AbstractSessionManager m)
+    {
+        assertSessions(1,1,1, m);
+    }
+    
+    public void assertSessionsAfterInvalidation (AbstractSessionManager m)
+    {
+        assertSessions(0,1,1, m);
+    }
+    
+    public void assertSessions (int count, int max, int total, AbstractSessionManager m)
+    {
+        assertEquals(count, m.getSessions());
+        assertEquals(max, m.getSessionsMax());
+        assertEquals(total, m.getSessionsTotal());
+    }
+    
+    
 }

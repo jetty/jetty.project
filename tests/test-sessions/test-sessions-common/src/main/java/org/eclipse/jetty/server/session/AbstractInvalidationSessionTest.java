@@ -32,6 +32,7 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Test;
 
@@ -51,7 +52,8 @@ public abstract class AbstractInvalidationSessionTest
         String contextPath = "";
         String servletMapping = "/server";
         AbstractTestServer server1 = createServer(0);
-        server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+        ServletContextHandler context1 = server1.addContext(contextPath);
+        context1.addServlet(TestServlet.class, servletMapping);
 
 
         try
@@ -59,7 +61,8 @@ public abstract class AbstractInvalidationSessionTest
             server1.start();
             int port1 = server1.getPort();
             AbstractTestServer server2 = createServer(0);
-            server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+            ServletContextHandler context2 = server2.addContext(contextPath);
+            context2.addServlet(TestServlet.class, servletMapping);
 
             try
             {
@@ -81,22 +84,27 @@ public abstract class AbstractInvalidationSessionTest
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                     String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
+                    assertSessionsAfterCreation((AbstractSessionManager)context1.getSessionHandler().getSessionManager());
+                   
+                
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                     // Be sure the session is also present in node2
-
                     Request request2 = client.newRequest(urls[1] + "?action=increment");
                     request2.header("Cookie", sessionCookie);
                     ContentResponse response2 = request2.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-
+                    assertSessionsAfterCreation(((AbstractSessionManager)context2.getSessionHandler().getSessionManager()));
+                  
+                    
                     // Invalidate on node1
                     Request request1 = client.newRequest(urls[0] + "?action=invalidate");
                     request1.header("Cookie", sessionCookie);
                     response1 = request1.send();
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
-
+                    assertSessionsAfterInvalidation((AbstractSessionManager)context1.getSessionHandler().getSessionManager());
+                  
                     pause();
 
                     // Be sure on node2 we don't see the session anymore
@@ -104,7 +112,8 @@ public abstract class AbstractInvalidationSessionTest
                     request2.header("Cookie", sessionCookie);
                     response2 = request2.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-                }
+                    assertSessionsAfterInvalidation((AbstractSessionManager)context2.getSessionHandler().getSessionManager());
+                } 
                 finally
                 {
                     client.stop();
@@ -120,6 +129,21 @@ public abstract class AbstractInvalidationSessionTest
             server1.stop();
         }
     }
+    
+   
+
+    public void assertSessionsAfterCreation(AbstractSessionManager abstractSessionManager)
+    {
+        
+    }
+    
+    
+    public void assertSessionsAfterInvalidation(AbstractSessionManager sessionManager)
+    {
+       
+    }
+
+
 
     public static class TestServlet extends HttpServlet
     {
