@@ -181,7 +181,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         if (channels.isEmpty())
             close();
         else
-            failAndClose(new EOFException());
+            failAndClose(new EOFException(String.valueOf(getEndPoint())));
     }
 
     @Override

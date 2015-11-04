@@ -21,9 +21,28 @@ package org.eclipse.jetty.fcgi.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * <p>Parser for FastCGI frame headers.</p>
+ * <pre>
+ * struct frame_header {
+ *     ubyte version;
+ *     ubyte type;
+ *     ushort requestId;
+ *     ushort contentLength;
+ *     ubyte paddingLength;
+ *     ubyte reserved;
+ * }
+ * </pre>
+ *
+ * @see Parser
+ */
 public class HeaderParser
 {
+    private static final Logger LOG = Log.getLogger(Parser.class);
+
     private State state = State.VERSION;
     private int cursor;
     private int version;
@@ -109,6 +128,8 @@ public class HeaderParser
                 case RESERVED:
                 {
                     buffer.get();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Parsed request {} header {} length={}", getRequest(), getFrameType(), getContentLength());
                     return true;
                 }
                 default:
