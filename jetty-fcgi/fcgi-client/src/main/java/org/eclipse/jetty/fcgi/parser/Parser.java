@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>The FastCGI protocol exchanges <em>frames</em>.</p>
@@ -39,9 +41,14 @@ import org.eclipse.jetty.http.HttpField;
  * </pre>
  * <p>Depending on the {@code type}, the content may have a different format,
  * so there are specialized content parsers.</p>
+ *
+ * @see HeaderParser
+ * @see ContentParser
  */
 public abstract class Parser
 {
+    private static final Logger LOG = Log.getLogger(Parser.class);
+
     protected final HeaderParser headerParser = new HeaderParser();
     private State state = State.HEADER;
     private int padding;
@@ -73,6 +80,9 @@ public abstract class Parser
                     else
                     {
                         ContentParser.Result result = contentParser.parse(buffer);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Parsed request {} content {} result={}", headerParser.getRequest(), headerParser.getFrameType(), result);
+
                         if (result == ContentParser.Result.PENDING)
                         {
                             // Not enough data, signal to read/parse more.

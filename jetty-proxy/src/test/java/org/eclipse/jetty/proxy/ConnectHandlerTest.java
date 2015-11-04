@@ -27,6 +27,8 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentMap;
@@ -36,12 +38,15 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -631,11 +636,32 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             }
 
             @Override
+            protected void connectToServer(HttpServletRequest request, String host, int port, Promise<SocketChannel> promise)
+            {
+                Assert.assertEquals(contextValue, request.getAttribute(contextKey));
+                super.connectToServer(request, host, port, promise);
+            }
+
+            @Override
             protected void prepareContext(HttpServletRequest request, ConcurrentMap<String, Object> context)
             {
                 // Transfer data from the HTTP request to the connection context
                 Assert.assertEquals(contextValue, request.getAttribute(contextKey));
                 context.put(contextKey, request.getAttribute(contextKey));
+            }
+
+            @Override
+            protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
+            {
+                Assert.assertEquals(contextValue, context.get(contextKey));
+                return super.read(endPoint, buffer, context);
+            }
+
+            @Override
+            protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
+            {
+                Assert.assertEquals(contextValue, context.get(contextKey));
+                super.write(endPoint, buffer, callback, context);
             }
         });
         proxy.start();

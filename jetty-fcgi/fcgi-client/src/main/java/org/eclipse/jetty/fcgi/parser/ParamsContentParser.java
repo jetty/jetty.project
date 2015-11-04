@@ -20,11 +20,44 @@ package org.eclipse.jetty.fcgi.parser;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * <p>Parser for the PARAMS frame body.</p>
+ * <pre>
+ * struct small_name_small_value_params_body {
+ *     ubyte nameLength;
+ *     ubyte valueLength;
+ *     ubyte[] nameBytes;
+ *     ubyte[] valueBytes;
+ * }
+ *
+ * struct small_name_large_value_params_body {
+ *     ubyte nameLength;
+ *     uint valueLength;
+ *     ubyte[] nameBytes;
+ *     ubyte[] valueBytes;
+ * }
+ *
+ * struct large_name_small_value_params_body {
+ *     uint nameLength;
+ *     ubyte valueLength;
+ *     ubyte[] nameBytes;
+ *     ubyte[] valueBytes;
+ * }
+ *
+ * struct large_name_large_value_params_body {
+ *     uint nameLength;
+ *     uint valueLength;
+ *     ubyte[] nameBytes;
+ *     ubyte[] valueBytes;
+ * }
+ * </pre>
+ */
 public class ParamsContentParser extends ContentParser
 {
     private static final Logger LOG = Log.getLogger(ParamsContentParser.class);
@@ -179,7 +212,7 @@ public class ParamsContentParser extends ContentParser
                 }
                 case PARAM:
                 {
-                    Charset utf8 = Charset.forName("UTF-8");
+                    Charset utf8 = StandardCharsets.UTF_8;
                     onParam(new String(nameBytes, utf8), new String(valueBytes, utf8));
                     partialReset();
                     if (length == 0)
