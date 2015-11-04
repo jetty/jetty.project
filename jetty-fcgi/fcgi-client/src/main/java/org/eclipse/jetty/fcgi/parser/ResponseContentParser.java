@@ -35,8 +35,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>The parser for STDOUT type frames.</p>
- * <p>STDOUT frames contain both the HTTP headers (but not the response line)
+ * <p>The parser for STDOUT type frame bodies.</p>
+ * <p>STDOUT frame bodies contain both the HTTP headers (but not the response line)
  * and the HTTP content (either Content-Length delimited or chunked).</p>
  * <p>For this reason, a special HTTP parser is used to parse the frames body.
  * This special HTTP parser is configured to skip the response line, and to
@@ -99,12 +99,12 @@ public class ResponseContentParser extends StreamContentParser
 
         public boolean parse(ByteBuffer buffer)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Response {} {} content {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
-
             int remaining = buffer.remaining();
             while (remaining > 0)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Response {} {}, state {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
+
                 switch (state)
                 {
                     case HEADERS:

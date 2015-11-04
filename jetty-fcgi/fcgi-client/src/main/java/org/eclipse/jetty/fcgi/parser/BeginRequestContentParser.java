@@ -22,6 +22,16 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.fcgi.FCGI;
 
+/**
+ * <p>Parser for the BEGIN_REQUEST frame body.</p>
+ * <pre>
+ * struct begin_request_body {
+ *     ushort role;
+ *     ubyte flags;
+ *     ubyte[5] reserved;
+ * }
+ * </pre>
+ */
 public class BeginRequestContentParser extends ContentParser
 {
     private final ServerParser.Listener listener;
