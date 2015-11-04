@@ -535,6 +535,7 @@ public class JDBCSessionManager extends AbstractSessionManager
 
                         session.setLastNode(getSessionIdManager().getWorkerName());                            
                         _sessions.put(idInCluster, session);
+                        _sessionsStats.increment();
 
                         //update in db
                         try
@@ -843,6 +844,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                         //loaded an expired session last managed on this node for this context, add it to the list so we can 
                         //treat it like a normal expired session
                         _sessions.put(session.getClusterId(), session);
+                        _sessionsStats.increment();
                     }
                     else
                     {

@@ -39,6 +39,12 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 
+/**
+ * AbstractRemoveSessionTest
+ *
+ * Test that invalidating a session does not return the session on the next request.
+ * 
+ */
 public abstract class AbstractRemoveSessionTest
 {
     public abstract AbstractTestServer createServer(int port, int max, int scavenge);
@@ -55,6 +61,7 @@ public abstract class AbstractRemoveSessionTest
         context.addServlet(TestServlet.class, servletMapping);
         TestEventListener testListener = new TestEventListener();
         context.getSessionHandler().addEventListener(testListener);
+        AbstractSessionManager m = (AbstractSessionManager)context.getSessionHandler().getSessionManager();
         try
         {
             server.start();
@@ -72,7 +79,10 @@ public abstract class AbstractRemoveSessionTest
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
                 //ensure sessionCreated listener is called
                 assertTrue (testListener.isCreated());
-
+                assertEquals(1, m.getSessions());
+                assertEquals(1, m.getSessionsMax());
+                assertEquals(1, m.getSessionsTotal());
+                
                 //now delete the session
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=delete");
                 request.header("Cookie", sessionCookie);
@@ -80,13 +90,18 @@ public abstract class AbstractRemoveSessionTest
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 //ensure sessionDestroyed listener is called
                 assertTrue(testListener.isDestroyed());
-
+                assertEquals(0, m.getSessions());
+                assertEquals(1, m.getSessionsMax());
+                assertEquals(1, m.getSessionsTotal());
 
                 // The session is not there anymore, even if we present an old cookie
                 request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=check");
                 request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(0, m.getSessions());
+                assertEquals(1, m.getSessionsMax());
+                assertEquals(1, m.getSessionsTotal());
             }
             finally
             {

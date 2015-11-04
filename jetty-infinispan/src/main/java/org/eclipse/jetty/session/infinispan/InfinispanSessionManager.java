@@ -664,7 +664,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
         for (String candidateId:candidateIds)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Session {} expired ", candidateId);
+                LOG.debug("Session {} candidate for expiry", candidateId);
             
             Session candidateSession = _sessions.get(candidateId);
             if (candidateSession != null)
@@ -691,6 +691,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
                     if (LOG.isDebugEnabled()) LOG.debug("Session({}) not local to this session manager, removing from local memory", candidateId);
                     candidateSession.willPassivate();
                     _sessions.remove(candidateSession.getClusterId());
+                    _sessionsStats.decrement();
                 }
 
             }
@@ -870,6 +871,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
                     {
                         //indicate that the session was reinflated
                         session.didActivate();
+                        _sessionsStats.increment();
                         LOG.debug("getSession({}): loaded session from cluster", idInCluster);
                     }
                     return session;

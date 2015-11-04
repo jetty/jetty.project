@@ -39,6 +39,7 @@ public class MongoTestServer extends AbstractTestServer
 {
     static int __workers=0;
     private boolean _saveAllAttributes = false; // false save dirty, true save all
+    private int _saveInterval = 0;
     
     
     public static class TestMongoSessionIdManager extends MongoSessionIdManager 
@@ -70,13 +71,13 @@ public class MongoTestServer extends AbstractTestServer
     public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod)
     {
         super(port, maxInactivePeriod, scavengePeriod);
+        _saveInterval = 0;
     }
     
     
     public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, boolean saveAllAttributes)
     {
         super(port, maxInactivePeriod, scavengePeriod);
-        
         _saveAllAttributes = saveAllAttributes;
     }
 
@@ -109,10 +110,9 @@ public class MongoTestServer extends AbstractTestServer
             throw new RuntimeException(e);
         }
         
-        manager.setSavePeriod(1);
+        manager.setSavePeriod(_saveInterval);
         manager.setStalePeriod(0);
         manager.setSaveAllAttributes(_saveAllAttributes);
-        //manager.setScavengePeriod((int)TimeUnit.SECONDS.toMillis(_scavengePeriod));
         return manager;
     }
 

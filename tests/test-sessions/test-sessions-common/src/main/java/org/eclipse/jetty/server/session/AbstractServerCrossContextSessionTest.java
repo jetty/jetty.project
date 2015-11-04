@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.Collections;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -87,10 +86,9 @@ public abstract class AbstractServerCrossContextSessionTest
         {
             HttpSession session = request.getSession(false);
             if (session == null) session = request.getSession(true);
-
             // Add something to the session
             session.setAttribute("A", "A");
-            System.out.println("A: session.getAttributeNames() = " + Collections.list(session.getAttributeNames()));
+           
 
             // Perform cross context dispatch to another context
             // Over there we will check that the session attribute added above is not visible
@@ -101,7 +99,6 @@ public abstract class AbstractServerCrossContextSessionTest
             // Check that we don't see things put in session by contextB
             Object objectB = session.getAttribute("B");
             assertTrue(objectB == null);
-            System.out.println("A: session.getAttributeNames() = " + Collections.list(session.getAttributeNames()));
         }
     }
 
@@ -119,7 +116,6 @@ public abstract class AbstractServerCrossContextSessionTest
 
             // Add something, so in contextA we can check if it is visible (it must not).
             session.setAttribute("B", "B");
-            System.out.println("B: session.getAttributeNames() = " + Collections.list(session.getAttributeNames()));
         }
     }
 }

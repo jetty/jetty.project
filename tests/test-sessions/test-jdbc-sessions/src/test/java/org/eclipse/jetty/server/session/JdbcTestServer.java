@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,13 +36,34 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 public class JdbcTestServer extends AbstractTestServer
 {
     public static final String DRIVER_CLASS = "org.apache.derby.jdbc.EmbeddedDriver";
-    public static final String DEFAULT_CONNECTION_URL = "jdbc:derby:sessions;create=true";
+    public static final String DEFAULT_CONNECTION_URL = "jdbc:derby:memory:sessions;create=true";
+    public static final String DEFAULT_SHUTDOWN_URL = "jdbc:derby:memory:sessions;drop=true";
     public static final int SAVE_INTERVAL = 1;
     
     
     static 
     {
         System.setProperty("derby.system.home", MavenTestingUtils.getTargetFile("test-derby").getAbsolutePath());
+    }
+    
+    
+    public static void shutdown (String connectionUrl)
+    throws Exception
+    {
+        if (connectionUrl == null)
+            connectionUrl = DEFAULT_SHUTDOWN_URL;
+        
+        try
+        {
+            DriverManager.getConnection(connectionUrl);
+        }
+        catch( SQLException expected )
+        {
+            if (!"08006".equals(expected.getSQLState()))
+            {
+               throw expected;
+            }
+        }
     }
 
     

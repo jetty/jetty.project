@@ -206,7 +206,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     protected void scavenge()
     {
         long now = System.currentTimeMillis();
-        __log.debug("SessionIdManager:scavenge:at {}", now);        
+        __log.debug(getWorkerName()+":SessionIdManager:scavenge:at {}", now);        
         /*
          * run a query returning results that:
          *  - are in the known list of sessionIds
@@ -258,7 +258,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
                         
         for ( DBObject session : checkSessions )
         {             
-            __log.debug("SessionIdManager:scavenge: expiring session {}", (String)session.get(MongoSessionManager.__ID));
+            __log.debug(getWorkerName()+":SessionIdManager:scavenge: {} expiring session {}", atTime,(String)session.get(MongoSessionManager.__ID));
             expireAll((String)session.get(MongoSessionManager.__ID));
         }            
     }

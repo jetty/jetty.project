@@ -19,6 +19,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -44,6 +45,12 @@ public class ForwardedSessionTest extends AbstractForwardedSessionTest
         super.testSessionCreateInForward();
     }
     
+    
+    @After
+    public void tearDown() throws Exception 
+    {
+        JdbcTestServer.shutdown(null);
+    }
     
     
 

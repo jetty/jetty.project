@@ -19,6 +19,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.junit.After;
 import org.junit.Test;
 
 public class SessionInvalidateAndCreateTest extends AbstractSessionInvalidateAndCreateTest
@@ -35,4 +36,12 @@ public class SessionInvalidateAndCreateTest extends AbstractSessionInvalidateAnd
     {
         super.testSessionScavenge();
     }
+    
+    
+    @After
+    public void tearDown() throws Exception 
+    {
+        JdbcTestServer.shutdown(null);
+    }
+    
 }

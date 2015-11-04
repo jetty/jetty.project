@@ -96,7 +96,10 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
                     session=race;
                 }
                 else
+                {
                     __log.debug("session loaded ", idInCluster);
+                    _sessionsStats.increment();
+                }
                 
                 //check if the session we just loaded has actually expired, maybe while we weren't running
                 if (getMaxInactiveInterval() > 0 && session.getAccessed() > 0 && ((getMaxInactiveInterval()*1000L)+session.getAccessed()) < System.currentTimeMillis())

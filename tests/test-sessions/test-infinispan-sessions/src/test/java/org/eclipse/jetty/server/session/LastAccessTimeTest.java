@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.io.File;
-
-import org.eclipse.jetty.util.IO;
-import org.infinispan.Cache;
-import org.infinispan.configuration.cache.Configuration;
-import org.infinispan.configuration.cache.ConfigurationBuilder;
-import org.infinispan.manager.DefaultCacheManager;
-import org.infinispan.manager.EmbeddedCacheManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -59,6 +51,14 @@ public class LastAccessTimeTest extends AbstractLastAccessTimeTest
     public void testLastAccessTime() throws Exception
     {
         super.testLastAccessTime();
+    }
+
+    @Override
+    public void assertAfterScavenge(AbstractSessionManager manager)
+    {
+        //The infinispan session manager will remove a session from its local memory that was a candidate to be scavenged if
+        //it checks with the cluster and discovers that another node is managing it, so the count is 0
+        assertSessionCounts(0, 1, 1, manager);
     }
 
     

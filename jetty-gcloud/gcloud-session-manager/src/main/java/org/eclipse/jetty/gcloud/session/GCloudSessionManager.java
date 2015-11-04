@@ -829,6 +829,7 @@ public class GCloudSessionManager extends AbstractSessionManager
          if (memSession == null)
          {
              memSession = session;
+             _sessionsStats.increment();
          }
 
         //final check
@@ -1008,6 +1009,7 @@ public class GCloudSessionManager extends AbstractSessionManager
                     {
                         //indicate that the session was reinflated
                         session.didActivate();
+                        _sessionsStats.increment();
                         LOG.debug("getSession({}): loaded session from cluster", idInCluster);
                     }
                     return session;

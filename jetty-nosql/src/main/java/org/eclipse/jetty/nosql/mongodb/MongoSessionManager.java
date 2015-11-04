@@ -268,7 +268,9 @@ public class MongoSessionManager extends NoSqlSessionManager
                         if (currentMaxIdle != null && getMaxInactiveInterval() > 0 && getMaxInactiveInterval() < currentMaxIdle)
                             sets.put(__MAX_IDLE, getMaxInactiveInterval());
                         if (currentExpiry != null && expiry > 0 && expiry != currentExpiry)
+                        {
                             sets.put(__EXPIRY, expiry);
+                        }
                     }
                 }
                 

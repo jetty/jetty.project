@@ -23,8 +23,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -81,13 +79,8 @@ public class MaxInactiveMigrationTest
         testServer1.stop();
         testServer2.stop();
         client.stop();
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
+
+        JdbcTestServer.shutdown(null);
     }
 
 

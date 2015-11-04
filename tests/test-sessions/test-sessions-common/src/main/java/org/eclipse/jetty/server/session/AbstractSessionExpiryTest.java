@@ -40,6 +40,11 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
+/**
+ * AbstractSessionExpiryTest
+ *
+ *
+ */
 public abstract class AbstractSessionExpiryTest
 {
     public abstract AbstractTestServer createServer(int port, int max, int scavenge);
@@ -104,6 +109,7 @@ public abstract class AbstractSessionExpiryTest
 
             //now stop the server
             server1.stop();
+   
 
             //start the server again, before the session times out
             server1.start();
@@ -161,12 +167,12 @@ public abstract class AbstractSessionExpiryTest
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
             
             String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
-            
+
             verifySessionCreated(listener,sessionId);
             
             //now stop the server
             server1.stop();
-
+            
             //and wait until the expiry time has passed
             pause(inactivePeriod);
 
