@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -71,19 +72,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
             }
             
             // No, so let's check each element ourselves
-            Path d = path.getRoot();
-            for (Path e:path)
-            {
-                d=d.resolve(e);
-                
-                while (Files.exists(d) && Files.isSymbolicLink(d))
-                {
-                    Path link=Files.readSymbolicLink(d);                    
-                    if (!link.isAbsolute())
-                        link=d.resolve(link);
-                    d=link;
-                }
-            }
+            Path d = unrollSymbolicLink(path);
             if (pathResource.getAliasPath().equals(d))
             {
                 if (LOG.isDebugEnabled())
@@ -97,6 +86,24 @@ public class AllowSymLinkAliasChecker implements AliasCheck
         }
         
         return false;
+    }
+
+    private Path unrollSymbolicLink(Path path) throws IOException
+    {
+      Path d = path.getRoot();
+      for (Path e:path)
+      {
+          d=d.resolve(e);
+
+          while (Files.exists(d) && Files.isSymbolicLink(d))
+          {
+              Path link=Files.readSymbolicLink(d);
+              if (!link.isAbsolute())
+                  link=d.resolve(link);
+              d=unrollSymbolicLink(link);
+          }
+      }
+      return d;
     }
 
 }
