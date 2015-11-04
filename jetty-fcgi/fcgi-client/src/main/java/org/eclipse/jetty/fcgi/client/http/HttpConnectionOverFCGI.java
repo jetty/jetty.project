@@ -46,6 +46,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CompletableCallback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -58,6 +59,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Flusher flusher;
     private final HttpDestination destination;
+    private final Promise<Connection> promise;
     private final boolean multiplexed;
     private final Delegate delegate;
     private final ClientParser parser;
@@ -65,8 +67,15 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, boolean multiplexed)
     {
+        this(endPoint, destination, new Promise.Adapter<Connection>(), multiplexed);
+        throw new UnsupportedOperationException("Deprecated, use HttpConnectionOverFCGI(EndPoint, HttpDestination, Promise<Connection>, boolean) instead");
+    }
+
+    public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise, boolean multiplexed)
+    {
         super(endPoint, destination.getHttpClient().getExecutor(), destination.getHttpClient().isDispatchIO());
         this.destination = destination;
+        this.promise = promise;
         this.multiplexed = multiplexed;
         this.flusher = new Flusher(endPoint);
         this.delegate = new Delegate(destination);
@@ -95,6 +104,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     {
         super.onOpen();
         fillInterested();
+        promise.succeeded(this);
     }
 
     @Override

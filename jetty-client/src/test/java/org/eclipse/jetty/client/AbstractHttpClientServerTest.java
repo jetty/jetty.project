@@ -60,6 +60,12 @@ public abstract class AbstractHttpClientServerTest
 
     public void start(Handler handler) throws Exception
     {
+        startServer(handler);
+        startClient();
+    }
+
+    protected void startServer(Handler handler) throws Exception
+    {
         if (sslContextFactory != null)
         {
             sslContextFactory.setEndpointIdentificationAlgorithm("");
@@ -79,8 +85,6 @@ public abstract class AbstractHttpClientServerTest
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
-
-        startClient();
     }
 
     protected void startClient() throws Exception
