@@ -65,6 +65,10 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     private final ClientParser parser;
     private ByteBuffer buffer;
 
+    /**
+     * @deprecated use {@link #HttpConnectionOverFCGI(EndPoint, HttpDestination, Promise, boolean)} instead
+     */
+    @Deprecated
     public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, boolean multiplexed)
     {
         this(endPoint, destination, new Promise.Adapter<Connection>(), multiplexed);
