@@ -1250,6 +1250,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
      */
     private void scavenge ()
     {
+        Set<String> candidateIds = getAllCandidateExpiredSessionIds();
+        
         Connection connection = null;
         try
         {
@@ -1283,7 +1285,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                         }
                     }
                 }
-                scavengeSessions(expiredSessionIds, false);
+                scavengeSessions(candidateIds, expiredSessionIds, false);
 
 
                 //Pass 2: find sessions that have expired a while ago for which this node was their last manager
@@ -1306,7 +1308,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                                 if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId="+sessionId+" last managed by "+getWorkerName());
                             }
                         }
-                        scavengeSessions(expiredSessionIds, false);
+                        scavengeSessions(candidateIds, expiredSessionIds, false);
                     }
 
 
@@ -1329,9 +1331,13 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                                 if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId="+sessionId);
                             }
                         }
-                        scavengeSessions(expiredSessionIds, true);
+                        scavengeSessions(candidateIds, expiredSessionIds, true);
                     }
                 }
+                
+                //Tell session managers to check remaining sessions in memory that may have expired 
+                //but are no longer in the database
+                scavengeSessions(candidateIds);
             }
         }
         catch (Exception e)
@@ -1363,24 +1369,20 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     /**
      * @param expiredSessionIds
      */
-    private void scavengeSessions (Set<String> expiredSessionIds, boolean forceDelete)
+    private void scavengeSessions (Set<String> candidateIds, Set<String> expiredSessionIds, boolean forceDelete)
     {       
         Set<String> remainingIds = new HashSet<String>(expiredSessionIds);
-        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
-        for (int i=0; contexts!=null && i<contexts.length; i++)
+        Set<SessionManager> managers = getAllSessionManagers();
+        for (SessionManager m:managers)
         {
-            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-            if (sessionHandler != null)
+            Set<String> successfullyExpiredIds = ((JDBCSessionManager)m).expire(expiredSessionIds);
+            if (successfullyExpiredIds != null)
             {
-                SessionManager manager = sessionHandler.getSessionManager();
-                if (manager != null && manager instanceof JDBCSessionManager)
-                {
-                    Set<String> successfullyExpiredIds = ((JDBCSessionManager)manager).expire(expiredSessionIds);
-                    if (successfullyExpiredIds != null)
-                        remainingIds.removeAll(successfullyExpiredIds);
-                }
+                remainingIds.removeAll(successfullyExpiredIds);
+                candidateIds.removeAll(successfullyExpiredIds);
             }
         }
+    
 
         //Any remaining ids are of those sessions that no context removed
         if (!remainingIds.isEmpty() && forceDelete)
@@ -1402,6 +1404,63 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             }
         }
     }
+    
+    /**
+     * These are the session ids that the session managers thought had 
+     * expired, but were not expired in the database. This could be
+     * because the session is live on another node, or that the
+     * session no longer exists in the database because some other
+     * node removed it.
+     * @param candidateIds
+     */
+    private void scavengeSessions (Set<String> candidateIds)
+    {
+        if (candidateIds.isEmpty())
+            return;
+        
+        
+        Set<SessionManager> managers = getAllSessionManagers();
+        
+        for (SessionManager m:managers)
+        {
+            //tell the session managers to check the sessions that have expired in memory
+            //if they are no longer in the database, they should be removed
+            ((JDBCSessionManager)m).expireCandidates(candidateIds);
+        }
+    }
+    
+    private Set<String>  getAllCandidateExpiredSessionIds()
+    {
+        HashSet<String> candidateIds = new HashSet<>();
+        
+        Set<SessionManager> managers = getAllSessionManagers();
+        
+        for (SessionManager m:managers)
+        {
+            candidateIds.addAll(((JDBCSessionManager)m).getCandidateExpiredIds());
+        }
+        
+        return candidateIds;
+    }
+    
+    
+    private Set<SessionManager> getAllSessionManagers()
+    {
+        HashSet<SessionManager> managers = new HashSet<>();
+    
+        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
+        for (int i=0; contexts!=null && i<contexts.length; i++)
+        {
+            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+            if (sessionHandler != null)
+            {
+                SessionManager manager = sessionHandler.getSessionManager();
+                if (manager != null && manager instanceof JDBCSessionManager)
+                    managers.add(manager);
+            }
+        }
+        return managers;
+    }
 
 
    
@@ -1411,7 +1470,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     {
         if (expiredIds == null || expiredIds.isEmpty())
             return;
-
+        
         String[] ids = expiredIds.toArray(new String[expiredIds.size()]);
         try (Connection con = getConnection())
         {
