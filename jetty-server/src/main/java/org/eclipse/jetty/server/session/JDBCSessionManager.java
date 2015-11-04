@@ -569,6 +569,11 @@ public class JDBCSessionManager extends AbstractSessionManager
             }
             else
             {
+                if (memSession != null)
+                {
+                    //Session must have been removed from db by another node
+                    removeSession(memSession, true);
+                }
                 //No session in db with matching id and context path.
                 LOG.debug("getSession({}): No session in database matching id={}",idInCluster,idInCluster);
             }
@@ -866,7 +871,54 @@ public class JDBCSessionManager extends AbstractSessionManager
         }
     }
     
-  
+    protected void expireCandidates (Set<String> candidateIds)
+    {
+        Iterator<String> itor = candidateIds.iterator();
+        long now = System.currentTimeMillis();
+        while (itor.hasNext())
+        {
+            String id = itor.next();
+
+            //check if expired in db
+            try
+            {
+                Session memSession = _sessions.get(id);
+                if (memSession == null)
+                {
+                    continue; //no longer in memory
+                }
+
+                Session s = loadSession(id,  canonicalize(_context.getContextPath()), getVirtualHost(_context));
+                if (s == null)
+                {
+                    //session no longer exists, can be safely expired
+                    memSession.timeout();
+                }
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Error checking db for expiry for session {}", id);
+            }
+        }
+    }
+    
+    protected Set<String> getCandidateExpiredIds ()
+    {
+        HashSet<String> expiredIds = new HashSet<>();
+
+        Iterator<String> itor = _sessions.keySet().iterator();
+        while (itor.hasNext())
+        {
+            String id = itor.next();
+            //check to see if session should have expired
+            Session session = _sessions.get(id);
+            if (session._expiryTime > 0 &&  System.currentTimeMillis() > session._expiryTime)
+                expiredIds.add(id);           
+        }
+        return expiredIds;
+    }
+
+
     /**
      * Load a session from the database
      * @param id the id
