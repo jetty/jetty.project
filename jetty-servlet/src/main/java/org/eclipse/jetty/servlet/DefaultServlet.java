@@ -467,10 +467,31 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             // Not found?
             if (content==null || !content.getResource().exists())
             {
-                if (included)
-                    throw new FileNotFoundException("!" + pathInContext);
-                response.sendError(HttpServletResponse.SC_NOT_FOUND);
-                return;
+                if (gzippable)
+                {
+                    HttpContent gzip_content = _contentFactory.getContent(pathInContext + ".gz");
+                    // Tell caches that response may vary by accept-encoding
+                    response.addHeader(HttpHeader.VARY.asString(), HttpHeader.ACCEPT_ENCODING.asString());
+    
+                    if (doesClientAcceptGzip(request))
+                    {
+                      if (LOG.isDebugEnabled())
+                      {
+                        LOG.debug("gzip={}", gzip_content);
+                      }
+                      response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
+                      content = gzip_content;
+                    }
+                    else
+                    {
+                        if (included)
+                        {
+                            throw new FileNotFoundException("!" + pathInContext);
+                        }
+                        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                        return;
+                    }
+                }
             }
             
             // Directory?
@@ -502,9 +523,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 // Tell caches that response may vary by accept-encoding
                 response.addHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
                 
-                // Does the client accept gzip?
-                String accept=request.getHeader(HttpHeader.ACCEPT_ENCODING.asString());
-                if (accept!=null && accept.indexOf("gzip")>=0)
+                if (doesClientAcceptGzip(request))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("gzip={}",gzip_content);
@@ -535,6 +554,12 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             }
         }
 
+    }
+
+    private boolean doesClientAcceptGzip(HttpServletRequest request)
+    {
+      String accept=request.getHeader(HttpHeader.ACCEPT_ENCODING.asString());
+      return accept!=null && accept.indexOf("gzip")>=0;
     }
 
     protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, boolean included, HttpServletRequest request, HttpServletResponse response)
