@@ -21,6 +21,8 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jetty.server.handler.ContextHandler.AliasCheck;
 import org.eclipse.jetty.util.log.Log;
@@ -72,7 +74,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
             }
             
             // No, so let's check each element ourselves
-            Path d = unrollSymbolicLink(path);
+            Path d = unrollSymbolicLink(path, new HashMap<>());
             if (pathResource.getAliasPath().equals(d))
             {
                 if (LOG.isDebugEnabled())
@@ -88,7 +90,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
         return false;
     }
 
-    private Path unrollSymbolicLink(Path path) throws IOException
+    private Path unrollSymbolicLink(Path path, Map<Path, Path> resolved) throws IOException
     {
       Path d = path.getRoot();
       for (Path e:path)
@@ -100,9 +102,13 @@ public class AllowSymLinkAliasChecker implements AliasCheck
               Path link=Files.readSymbolicLink(d);
               if (!link.isAbsolute())
                   link=d.resolve(link);
-              d=unrollSymbolicLink(link);
+              if (resolved.containsKey(link))
+                d = resolved.get(link);
+              else
+                d=unrollSymbolicLink(link, resolved);
           }
       }
+      resolved.put(path,  d);
       return d;
     }
 
