@@ -125,7 +125,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.util.log.",      // webapp should use server log
         "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
         "org.eclipse.jetty.jsp.JettyJspServlet", //webapp cannot change jetty jsp servlet
-        "org.eclipse.jetty.servlets.PushCacheFilter" //must be loaded by container classpath
+        "org.eclipse.jetty.servlets.PushCacheFilter", //must be loaded by container classpath
+        "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath
     } ;
 
     // Server classes are classes that are hidden from being

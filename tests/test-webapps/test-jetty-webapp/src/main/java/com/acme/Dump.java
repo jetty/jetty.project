@@ -118,7 +118,7 @@ public class Dump extends HttpServlet
             }
             catch(ServletException se)
             {
-                se.printStackTrace();
+                getServletContext().log(se.toString());
             }
         }
 
