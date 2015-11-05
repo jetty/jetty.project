@@ -345,14 +345,12 @@ public class ShutdownMonitor
      */
     private ShutdownMonitor()
     {
-        Properties props = System.getProperties();
-
-        this.DEBUG = props.containsKey("DEBUG");
+        this.DEBUG = System.getProperty("DEBUG") != null;
 
         // Use values passed thru via /jetty-start/
-        this.host = props.getProperty("STOP.HOST","127.0.0.1");
-        this.port = Integer.parseInt(props.getProperty("STOP.PORT","-1"));
-        this.key = props.getProperty("STOP.KEY",null);
+        this.host = System.getProperty("STOP.HOST","127.0.0.1");
+        this.port = Integer.parseInt(System.getProperty("STOP.PORT","-1"));
+        this.key = System.getProperty("STOP.KEY",null);
         this.exitVm = true;
     }
 
