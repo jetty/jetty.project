@@ -138,6 +138,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         return new ProxyWriter(clientRequest, proxyResponse);
     }
 
+    @Override
     protected Response.CompleteListener newProxyResponseListener(HttpServletRequest clientRequest, HttpServletResponse proxyResponse)
     {
         return new ProxyResponseListener(clientRequest, proxyResponse);
