@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,6 +36,7 @@ import java.nio.file.Files;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -58,6 +62,7 @@ public class ResourceHandlerTest
     private static Server _server;
     private static HttpConfiguration _config;
     private static ServerConnector _connector;
+    private static LocalConnector _local;
     private static ContextHandler _contextHandler;
     private static ResourceHandler _resourceHandler;
 
@@ -111,7 +116,9 @@ public class ResourceHandlerTest
         _config.setOutputBufferSize(2048);
         _connector = new ServerConnector(_server,new HttpConnectionFactory(_config));
 
-        _server.setConnectors(new Connector[] { _connector });
+        _local = new LocalConnector(_server);
+        
+        _server.setConnectors(new Connector[] { _connector, _local });
 
         _resourceHandler = new ResourceHandler();
         _resourceHandler.setMinAsyncContentLength(4096);
@@ -149,6 +156,18 @@ public class ResourceHandlerTest
     {
         SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
         Assert.assertEquals("simple text",sr.getString("/resource/simple.txt"));
+    }
+
+    @Test
+    public void testHeaders() throws Exception
+    {
+        String response = _local.getResponses("GET /resource/simple.txt HTTP/1.0\r\n\r\n");
+        assertThat(response,startsWith("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.containsString("Content-Type: text/plain"));
+        assertThat(response,Matchers.containsString("Last-Modified: "));
+        assertThat(response,Matchers.containsString("Content-Length: 11"));
+        assertThat(response,Matchers.containsString("Server: Jetty"));
+        assertThat(response,Matchers.containsString("simple text"));
     }
 
     @Test

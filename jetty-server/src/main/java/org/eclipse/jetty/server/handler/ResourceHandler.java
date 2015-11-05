@@ -498,10 +498,11 @@ public class ResourceHandler extends HandlerWrapper
         doResponseHeaders(response,resource,mime);
         if (_etags)
             baseRequest.getResponse().getHttpFields().put(HttpHeader.ETAG,etag);
+        if (last_modified>0)
+            response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(),last_modified);
         
         if(skipContentBody)
             return;
-        
         
         // Send the content
         OutputStream out =null;
