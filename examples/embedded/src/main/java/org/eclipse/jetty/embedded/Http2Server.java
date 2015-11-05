@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlets.PushCacheFilter;
 import org.eclipse.jetty.servlets.PushSessionCacheFilter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -74,7 +75,8 @@ public class Http2Server
 
         ServletContextHandler context = new ServletContextHandler(server, "/",ServletContextHandler.SESSIONS);
         context.setResourceBase("src/main/resources/docroot");
-        context.addFilter(PushSessionCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(PushCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
+        // context.addFilter(PushSessionCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(PushedTilesFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         context.addServlet(new ServletHolder(servlet), "/test/*");
         context.addServlet(DefaultServlet.class, "/").setInitParameter("maxCacheSize","81920");
