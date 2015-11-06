@@ -1,3 +1,5 @@
+jetty-9.2.15-SNAPSHOT
+
 jetty-9.2.14.v20151106 - 06 November 2015
  + 428474 Expose batch mode in the Jetty WebSocket API
  + 471055 Restore legacy/experimental WebSocket extensions (deflate-frame)
