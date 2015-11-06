@@ -1,3 +1,5 @@
+jetty-9.3.7-SNAPSHOT
+
 jetty-9.3.6.v20151106 - 06 November 2015
  + 419966 Add ContentProvider that submits multipart/form-data.
  + 472675 No main manifest attribute, in jetty-runner regression
