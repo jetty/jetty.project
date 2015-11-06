@@ -71,23 +71,39 @@ public class AllowSymLinkAliasChecker implements AliasCheck
             }
             
             // No, so let's check each element ourselves
-            Path d = path.getRoot();
-            for (Path e:path)
+            boolean linked=true;
+            Path target=path;
+            int loops=0;
+            while (linked)
             {
-                d=d.resolve(e);
-                
-                while (Files.exists(d) && Files.isSymbolicLink(d))
+                if (++loops>100)
                 {
-                    Path link=Files.readSymbolicLink(d);                    
-                    if (!link.isAbsolute())
-                        link=d.resolve(link);
-                    d=link;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Too many symlinks {} --> {}",resource,target);
+                    return false;
                 }
+                linked=false;
+                Path d = target.getRoot();
+                for (Path e:target)
+                {
+                    d=d.resolve(e);
+
+                    while (Files.exists(d) && Files.isSymbolicLink(d))
+                    {
+                        Path link=Files.readSymbolicLink(d);                    
+                        if (!link.isAbsolute())
+                            link=d.resolve(link);
+                        d=link;
+                        linked=true;
+                    }
+                }
+                target=d;
             }
-            if (pathResource.getAliasPath().equals(d))
+            
+            if (pathResource.getAliasPath().equals(target))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Allow path symlink {} --> {}",resource,d);
+                    LOG.debug("Allow path symlink {} --> {}",resource,target);
                 return true;
             }
         }
