@@ -27,6 +27,7 @@ import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.util.TypeUtil;
@@ -66,20 +67,22 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     @Override
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
-        if (request.getHttpChannel().getEndPoint() instanceof DecryptedEndPoint)
+        EndPoint endp = request.getHttpChannel().getEndPoint();
+        if (endp instanceof DecryptedEndPoint)
         {
-            request.setSecure(true);
-            
-            if (request.getHttpURI().getScheme()==null)
-                request.getHttpURI().setScheme(HttpScheme.HTTPS.asString());
-            
-            SslConnection.DecryptedEndPoint ssl_endp = (DecryptedEndPoint)request.getHttpChannel().getEndPoint();
+            SslConnection.DecryptedEndPoint ssl_endp = (DecryptedEndPoint)endp;
             SslConnection sslConnection = ssl_endp.getSslConnection();
             SSLEngine sslEngine=sslConnection.getSSLEngine();
             customize(sslEngine,request);
 
             if (request.getHttpURI().getScheme()==null)
                 request.setScheme(HttpScheme.HTTPS.asString());
+        }
+        else if (endp instanceof ProxyConnectionFactory.ProxyEndPoint)
+        {
+            ProxyConnectionFactory.ProxyEndPoint proxy = (ProxyConnectionFactory.ProxyEndPoint)endp;
+            if (request.getHttpURI().getScheme()==null && proxy.getAttribute(ProxyConnectionFactory.TLS_VERSION)!=null)
+                request.setScheme(HttpScheme.HTTPS.asString());       
         }
 
         if (HttpScheme.HTTPS.is(request.getScheme()))

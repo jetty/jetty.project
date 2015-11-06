@@ -24,7 +24,7 @@ import java.nio.channels.SocketChannel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class ChannelEndPointTest extends EndPointTest<ChannelEndPoint>
+public class SocketChannelEndPointTest extends EndPointTest<SocketChannelEndPoint>
 {
     static ServerSocketChannel connector;
 
@@ -43,13 +43,19 @@ public class ChannelEndPointTest extends EndPointTest<ChannelEndPoint>
     }
 
     @Override
-    protected EndPointPair<ChannelEndPoint> newConnection() throws Exception
+    protected EndPointPair<SocketChannelEndPoint> newConnection() throws Exception
     {
-        EndPointPair<ChannelEndPoint> c = new EndPointPair<>();
+        EndPointPair<SocketChannelEndPoint> c = new EndPointPair<>();
 
-        c.client=new ChannelEndPoint(null,SocketChannel.open(connector.socket().getLocalSocketAddress()));
-        c.server=new ChannelEndPoint(null,connector.accept());
+        c.client=new SocketChannelEndPoint(SocketChannel.open(connector.socket().getLocalSocketAddress()),null,null,null);
+        c.server=new SocketChannelEndPoint(connector.accept(),null,null,null);
         return c;
+    }
+
+    @Override
+    public void testClientClose() throws Exception
+    {
+        super.testClientClose();
     }
 
     @Override

@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
@@ -133,7 +135,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         return _selectors.length;
     }
 
-    private ManagedSelector chooseSelector(SocketChannel channel)
+    private ManagedSelector chooseSelector(SelectableChannel channel)
     {
         // Ideally we would like to have all connections from the same client end
         // up on the same selector (to try to avoid smearing the data from a single 
@@ -145,14 +147,17 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             try
             {
-                SocketAddress remote = channel.getRemoteAddress();
-                if (remote instanceof InetSocketAddress)
+                if (channel instanceof SocketChannel)
                 {
-                    byte[] addr = ((InetSocketAddress)remote).getAddress().getAddress();
-                    if (addr != null)
+                    SocketAddress remote = ((SocketChannel)channel).getRemoteAddress();
+                    if (remote instanceof InetSocketAddress)
                     {
-                        int s = addr[addr.length - 1] & 0xFF;
-                        candidate1 = _selectors[s % getSelectorCount()];
+                        byte[] addr = ((InetSocketAddress)remote).getAddress().getAddress();
+                        if (addr != null)
+                        {
+                            int s = addr[addr.length - 1] & 0xFF;
+                            candidate1 = _selectors[s % getSelectorCount()];
+                        }
                     }
                 }
             }
@@ -184,7 +189,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param attachment the attachment object
      * @see #accept(SocketChannel, Object)
      */
-    public void connect(SocketChannel channel, Object attachment)
+    public void connect(SelectableChannel channel, Object attachment)
     {
         ManagedSelector set = chooseSelector(channel);
         set.submit(set.new Connect(channel, attachment));
@@ -194,7 +199,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param channel the channel to accept
      * @see #accept(SocketChannel, Object)
      */
-    public void accept(SocketChannel channel)
+    public void accept(SelectableChannel channel)
     {
         accept(channel, null);
     }
@@ -209,7 +214,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param channel    the channel to register
      * @param attachment the attachment object
      */
-    public void accept(SocketChannel channel, Object attachment)
+    public void accept(SelectableChannel channel, Object attachment)
     {
         final ManagedSelector selector = chooseSelector(channel);
         selector.submit(selector.new Accept(channel, attachment));
@@ -223,7 +228,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param server the server channel to register
      */
-    public void acceptor(ServerSocketChannel server)
+    public void acceptor(SelectableChannel server)
     {
         final ManagedSelector selector = chooseSelector(null);
         selector.submit(selector.new Acceptor(server));
@@ -238,7 +243,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param channel the
      * @throws IOException if unable to accept channel
      */
-    protected void accepted(SocketChannel channel) throws IOException
+    protected void accepted(SelectableChannel channel) throws IOException
     {
         throw new UnsupportedOperationException();
     }
@@ -332,10 +337,21 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
     }
 
-    protected boolean finishConnect(SocketChannel channel) throws IOException
+    protected boolean doFinishConnect(SelectableChannel channel) throws IOException
     {
-        return channel.finishConnect();
+        return ((SocketChannel)channel).finishConnect();
     }
+    
+    protected boolean isConnectionPending(SelectableChannel channel)
+    {
+        return ((SocketChannel)channel).isConnectionPending();
+    }
+    
+    protected SelectableChannel doAccept(SelectableChannel server) throws IOException
+    {
+        return ((ServerSocketChannel)server).accept();
+    }
+
 
     /**
      * <p>Callback method invoked when a non-blocking connect cannot be completed.</p>
@@ -345,11 +361,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param ex         the exception that caused the connect to fail
      * @param attachment the attachment object associated at registration
      */
-    protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
+    protected void connectionFailed(SelectableChannel channel, Throwable ex, Object attachment)
     {
         LOG.warn(String.format("%s - %s", channel, attachment), ex);
     }
 
+    protected Selector newSelector() throws IOException
+    {
+        return Selector.open();
+    }
+    
     /**
      * <p>Factory method to create {@link EndPoint}.</p>
      * <p>This method is invoked as a result of the registration of a channel via {@link #connect(SocketChannel, Object)}
@@ -362,7 +383,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @throws IOException if the endPoint cannot be created
      * @see #newConnection(SocketChannel, EndPoint, Object)
      */
-    protected abstract EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException;
+    protected abstract EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException;
 
     /**
      * <p>Factory method to create {@link Connection}.</p>
@@ -374,7 +395,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @throws IOException if unable to create new connection
      * @see #newEndPoint(SocketChannel, ManagedSelector, SelectionKey)
      */
-    public abstract Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException;
+    public abstract Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException;
 
     @Override
     public String dump()
@@ -388,4 +409,5 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         ContainerLifeCycle.dumpObject(out, this);
         ContainerLifeCycle.dump(out, indent, TypeUtil.asList(_selectors));
     }
+    
 }

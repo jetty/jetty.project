@@ -938,22 +938,25 @@ public class Request implements HttpServletRequest
     @Override
     public String getLocalName()
     {
-        if (_channel==null)
+        if (_channel!=null)
         {
-            try
-            {
-                String name =InetAddress.getLocalHost().getHostName();
-                if (StringUtil.ALL_INTERFACES.equals(name))
-                    return null;
-                return name;
-            }
-            catch (java.net.UnknownHostException e)
-            {
-                LOG.ignore(e);
-            }
+            InetSocketAddress local=_channel.getLocalAddress();
+            if (local!=null)
+                return local.getHostString();
         }
-        InetSocketAddress local=_channel.getLocalAddress();
-        return local.getHostString();
+        
+        try
+        {
+            String name =InetAddress.getLocalHost().getHostName();
+            if (StringUtil.ALL_INTERFACES.equals(name))
+                return null;
+            return name;
+        }
+        catch (java.net.UnknownHostException e)
+        {
+            LOG.ignore(e);
+        }
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -966,7 +969,7 @@ public class Request implements HttpServletRequest
         if (_channel==null)
             return 0;
         InetSocketAddress local=_channel.getLocalAddress();
-        return local.getPort();
+        return local==null?0:local.getPort();
     }
 
     /* ------------------------------------------------------------ */

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="unixSocketConnector" class="org.eclipse.jetty.unixsocket.UnixSocketConnector">
+  <Call name="addConnectionFactory">
+    <Arg>
+      <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+        <Arg name="config"><Ref refid="unixSocketHttpConfig" /></Arg>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
+

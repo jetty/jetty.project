@@ -32,6 +32,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -64,19 +65,21 @@ public class SelectChannelEndPointTest
     protected SelectorManager _manager = new SelectorManager(_threadPool, _scheduler)
     {
         @Override
-        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
             return SelectChannelEndPointTest.this.newConnection(channel, endpoint);
         }
 
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, selectionKey, getScheduler(), 60000);
+            SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
+            endp.setIdleTimeout(60000);
             _lastEndPoint = endp;
             _lastEndPointLatch.countDown();
             return endp;
         }
+        
     };
 
     // Must be volatile or the test may fail spuriously
@@ -110,7 +113,7 @@ public class SelectChannelEndPointTest
         return new Socket(_connector.socket().getInetAddress(), _connector.socket().getLocalPort());
     }
 
-    protected Connection newConnection(SocketChannel channel, EndPoint endpoint)
+    protected Connection newConnection(SelectableChannel channel, EndPoint endpoint)
     {
         return new TestConnection(endpoint);
     }
@@ -228,11 +231,11 @@ public class SelectChannelEndPointTest
             }
             catch (InterruptedException | EofException e)
             {
-                SelectChannelEndPoint.LOG.ignore(e);
+                Log.getRootLogger().ignore(e);
             }
             catch (Exception e)
             {
-                SelectChannelEndPoint.LOG.warn(e);
+                Log.getRootLogger().warn(e);
             }
             finally
             {

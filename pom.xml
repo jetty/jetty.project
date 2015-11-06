@@ -531,6 +531,7 @@
     <module>jetty-nosql</module>
     <module>jetty-infinispan</module>
     <module>jetty-gcloud</module>
+    <module>jetty-unixsocket</module>
     <module>tests</module>
     <module>examples</module>
     <module>jetty-quickstart</module>

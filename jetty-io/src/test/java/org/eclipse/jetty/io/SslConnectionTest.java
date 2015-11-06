@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -74,7 +76,7 @@ public class SslConnectionTest
     protected SelectorManager _manager = new SelectorManager(_threadPool, _scheduler)
     {
         @Override
-        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
             SSLEngine engine = __sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
@@ -85,10 +87,12 @@ public class SslConnectionTest
             return sslConnection;
         }
 
+
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
         {
-            SelectChannelEndPoint endp = new TestEP(channel,selectSet, selectionKey, getScheduler(), 60000);
+            SocketChannelEndPoint endp = new TestEP(channel, selector, selectionKey, getScheduler());
+            endp.setIdleTimeout(60000);
             _lastEndp=endp;
             return endp;
         }
@@ -96,12 +100,11 @@ public class SslConnectionTest
 
     static final AtomicInteger __startBlocking = new AtomicInteger();
     static final AtomicInteger __blockFor = new AtomicInteger();
-    private static class TestEP extends SelectChannelEndPoint
+    private static class TestEP extends SocketChannelEndPoint
     {
-       
-        public TestEP(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler, long idleTimeout)
+        public TestEP(SelectableChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
         {
-            super(channel,selector,key,scheduler,idleTimeout);
+            super((SocketChannel)channel,selector,key,scheduler);
         }
 
         @Override
@@ -121,7 +124,6 @@ public class SslConnectionTest
                     return false;
                 }
             }
-            String s=BufferUtil.toDetailString(buffers[0]);
             boolean flushed=super.flush(buffers);
             return flushed;
         }
@@ -235,11 +237,11 @@ public class SslConnectionTest
             }
             catch(InterruptedException|EofException e)
             {
-                SelectChannelEndPoint.LOG.ignore(e);
+                Log.getRootLogger().ignore(e);
             }
             catch(Exception e)
             {
-                SelectChannelEndPoint.LOG.warn(e);
+                Log.getRootLogger().warn(e);
             }
             finally
             {

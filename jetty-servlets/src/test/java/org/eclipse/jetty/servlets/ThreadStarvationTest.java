@@ -49,6 +49,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.server.HttpChannel;
@@ -110,7 +111,7 @@ public class ThreadStarvationTest
         ServerConnector connector = new ServerConnector(_server, 0, 1)
         {
             @Override
-            protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+            protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
                 return new SelectChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout())
                 {
@@ -264,7 +265,7 @@ public class ThreadStarvationTest
             ServerConnector connector = new ServerConnector(_server, acceptors, selectors)
             {
                 @Override
-                protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+                protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
                 {
                     return new SelectChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout())
                     {

@@ -21,6 +21,7 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -69,20 +70,22 @@ public class SelectorManagerTest
         SelectorManager selectorManager = new SelectorManager(executor, scheduler)
         {
             @Override
-            protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
+            protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key) throws IOException
             {
-                return new SelectChannelEndPoint(channel, selector, selectionKey, getScheduler(), connectTimeout / 2);
+                SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
+                endp.setIdleTimeout(connectTimeout/2);
+                return endp;
             }
-
+            
             @Override
-            protected boolean finishConnect(SocketChannel channel) throws IOException
+            protected boolean doFinishConnect(SelectableChannel channel) throws IOException
             {
                 try
                 {
                     long timeout = timeoutConnection.get();
                     if (timeout > 0)
                         TimeUnit.MILLISECONDS.sleep(timeout);
-                    return super.finishConnect(channel);
+                    return super.doFinishConnect(channel);
                 }
                 catch (InterruptedException e)
                 {
@@ -91,7 +94,7 @@ public class SelectorManagerTest
             }
 
             @Override
-            public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
+            public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
             {
                 ((Callback)attachment).succeeded();
                 return new AbstractConnection(endpoint, executor)
@@ -104,7 +107,7 @@ public class SelectorManagerTest
             }
 
             @Override
-            protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
+            protected void connectionFailed(SelectableChannel channel, Throwable ex, Object attachment)
             {
                 ((Callback)attachment).failed(ex);
             }
