@@ -512,12 +512,20 @@ public class IdleTimeoutTest extends AbstractTest
         session.newStream(requestFrame, promise, new Stream.Listener.Adapter());
         final Stream stream = promise.get(5, TimeUnit.SECONDS);
 
+        Callback.Completable completable1 = new Callback.Completable();
         sleep(idleTimeout / 2);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.NOOP);
-        sleep(idleTimeout / 2);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.NOOP);
-        sleep(idleTimeout / 2);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.NOOP);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), completable1);
+        completable1.thenCompose(nil ->
+        {
+            Callback.Completable completable2 = new Callback.Completable();
+            sleep(idleTimeout / 2);
+            stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), completable2);
+            return completable2;
+        }).thenRun(() ->
+        {
+            sleep(idleTimeout / 2);
+            stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.NOOP);
+        });
 
         Assert.assertFalse(resetLatch.await(0, TimeUnit.SECONDS));
     }

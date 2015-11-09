@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritePendingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -33,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
@@ -41,6 +43,7 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
@@ -257,7 +260,7 @@ public class HTTP2Test extends AbstractTest
             }
         });
 
-        Thread.sleep(1000);
+        sleep(1000);
 
         server.stop();
 
@@ -279,10 +282,191 @@ public class HTTP2Test extends AbstractTest
 
         newClient(new Session.Listener.Adapter());
 
-        Thread.sleep(1000);
+        sleep(1000);
 
         client.stop();
 
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
+
+    @Test
+    public void testInvalidAPIUsageOnClient() throws Exception
+    {
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                Callback.Completable completable = new Callback.Completable();
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                stream.headers(new HeadersFrame(stream.getId(), response, null, false), completable);
+                return new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        callback.succeeded();
+                        if (frame.isEndStream())
+                        {
+                            completable.thenRun(() ->
+                            {
+                                DataFrame endFrame = new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true);
+                                stream.data(endFrame, Callback.NOOP);
+                            });
+                        }
+                    }
+                };
+            }
+        });
+
+        Session session = newClient(new Session.Listener.Adapter());
+
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(metaData, null, false);
+        Promise.Completable<Stream> completable = new Promise.Completable<>();
+        CountDownLatch completeLatch = new CountDownLatch(2);
+        session.newStream(frame, completable, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                if (frame.isEndStream())
+                    completeLatch.countDown();
+            }
+        });
+        Stream stream = completable.get(5, TimeUnit.SECONDS);
+
+        long sleep = 1000;
+        DataFrame data1 = new DataFrame(stream.getId(), ByteBuffer.allocate(1024), false)
+        {
+            @Override
+            public ByteBuffer getData()
+            {
+                sleep(2 * sleep);
+                return super.getData();
+            }
+        };
+        DataFrame data2 = new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true);
+
+        new Thread(() ->
+        {
+            // The first data() call is legal, but slow.
+            stream.data(data1, new Callback()
+            {
+                @Override
+                public void succeeded()
+                {
+                    stream.data(data2, NOOP);
+                }
+            });
+        }).start();
+
+        // Wait for the first data() call to happen.
+        sleep(sleep);
+
+        // This data call is illegal because it does not
+        // wait for the previous callback to complete.
+        stream.data(data2, new Callback()
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                if (x instanceof WritePendingException)
+                {
+                    // Expected.
+                    completeLatch.countDown();
+                }
+            }
+        });
+
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    private static void sleep(long time)
+    {
+        try
+        {
+            Thread.sleep(time);
+        }
+        catch (InterruptedException x)
+        {
+            throw new RuntimeException();
+        }
+    }
 }
+/*
+    @Test
+    public void testInvalidAPIUsageOnServer() throws Exception
+    {
+        long sleep = 1000;
+        CountDownLatch completeLatch = new CountDownLatch(2);
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                DataFrame dataFrame = new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true);
+                // The call to headers() is legal, but slow.
+                new Thread(() ->
+                {
+                    stream.headers(new HeadersFrame(stream.getId(), response, null, false)
+                    {
+                        @Override
+                        public MetaData getMetaData()
+                        {
+                            sleep(2 * sleep);
+                            return super.getMetaData();
+                        }
+                    }, new Callback()
+                    {
+                        @Override
+                        public void succeeded()
+                        {
+                            stream.data(dataFrame, NOOP);
+                        }
+                    });
+                }).start();
+
+                // Wait for the headers() call to happen.
+                sleep(sleep);
+
+                // This data call is illegal because it does not
+                // wait for the previous callback to complete.
+                stream.data(dataFrame, new Callback()
+                {
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        if (x instanceof WritePendingException)
+                        {
+                            // Expected.
+                            completeLatch.countDown();
+                        }
+                    }
+                });
+
+                return null;
+            }
+        });
+
+        Session session = newClient(new Session.Listener.Adapter());
+
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
+        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                if (frame.isEndStream())
+                    completeLatch.countDown();
+            }
+        });
+
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+ */

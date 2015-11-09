@@ -122,24 +122,26 @@ public class StreamCloseTest extends AbstractTest
             {
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, false);
-                stream.headers(response, Callback.NOOP);
+                Callback.Completable completable = new Callback.Completable();
+                stream.headers(response, completable);
                 return new Stream.Listener.Adapter()
                 {
                     @Override
                     public void onData(final Stream stream, DataFrame frame, final Callback callback)
                     {
                         Assert.assertTrue(((HTTP2Stream)stream).isRemotelyClosed());
-                        stream.data(frame, new Callback()
-                        {
-                            @Override
-                            public void succeeded()
-                            {
-                                Assert.assertTrue(stream.isClosed());
-                                Assert.assertEquals(0, stream.getSession().getStreams().size());
-                                callback.succeeded();
-                                serverDataLatch.countDown();
-                            }
-                        });
+                        completable.thenRun(() ->
+                                stream.data(frame, new Callback()
+                                {
+                                    @Override
+                                    public void succeeded()
+                                    {
+                                        Assert.assertTrue(stream.isClosed());
+                                        Assert.assertEquals(0, stream.getSession().getStreams().size());
+                                        callback.succeeded();
+                                        serverDataLatch.countDown();
+                                    }
+                                }));
                     }
                 };
             }
