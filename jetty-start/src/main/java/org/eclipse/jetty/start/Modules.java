@@ -78,6 +78,10 @@ public class Modules implements Iterable<Module>
             {
                 System.out.printf("        Ref: %s%n",module.getFilesystemRef());
             }
+            for (String description : module.getDescription())
+            {
+                System.out.printf("           : %s%n",description);
+            }
             for (String parent : module.getDepends())
             {
                 System.out.printf("     Depend: %s%n",parent);

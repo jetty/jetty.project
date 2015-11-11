@@ -56,6 +56,9 @@ public class Module
     /** The name of the module */
     private String name;
     
+    /** The module description */
+    private List<String> description;
+    
     /** The version of Jetty the module supports */
     private Version version;
 
@@ -226,6 +229,7 @@ public class Module
 
     private void init(BaseHome basehome)
     {
+        description = new ArrayList<>();
         xmls = new ArrayList<>();
         defaultConfig = new ArrayList<>();
         iniTemplate = new ArrayList<>();
@@ -316,6 +320,9 @@ public class Module
                         {
                             case "":
                                 // ignore (this would be entries before first section)
+                                break;
+                            case "DESCRIPTION":
+                                description.add(line);
                                 break;
                             case "DEPEND":
                                 depends.add(line);
@@ -409,6 +416,11 @@ public class Module
     public Set<String> getOptional()
     {
         return Collections.unmodifiableSet(optional);
+    }
+    
+    public List<String> getDescription()
+    {
+        return description;
     }
     
     public boolean isSelected()

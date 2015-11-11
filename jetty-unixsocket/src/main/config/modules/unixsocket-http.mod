@@ -1,15 +1,8 @@
-#
-# Unix Socket HTTP Module
-#
-# This module adds a HTTP connection factory to the Unix Socket connector.
-# It should be used when the proxy is forwarding either HTTP or decrypted
-# HTTPS traffic.
-# 
-# If the proxy is decrypting SSL/TLS, then either the unixsocket-forwarded 
-# (for HTTP mode) or unixsocket-proxy-connection (for TCP mode) should be
-# used to set the scheme and certificate information correctly.
-#
-#
+[description]
+Adds a HTTP connection factory to the Unix Domain Socket connector.
+It should be used when a proxy is forwarding either HTTP or decrypted
+HTTPS traffic to the connector and may be used with the 
+unix-socket-http2c modules to upgrade to HTTP/2.
 
 [depend]
 unixsocket

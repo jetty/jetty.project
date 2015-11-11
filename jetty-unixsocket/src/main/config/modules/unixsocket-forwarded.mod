@@ -1,10 +1,7 @@
-#
-# Unix Socket forwarded module
-#
-# This module adds the jetty-unixsocket-forwarded.xml to the configuration
-# and is for use with the unixsocket-http module when the proxy is operating 
-# in HTTP mode and adding forwarded-for style headers
-#
+[description]
+Adds a forwarded request customizer to the HTTP configuration used
+by the Unix Domain Socket connector, for use when behind a proxy operating
+in HTTP mode that adds forwarded-for style HTTP headers
 
 [depend]
 unixsocket-http

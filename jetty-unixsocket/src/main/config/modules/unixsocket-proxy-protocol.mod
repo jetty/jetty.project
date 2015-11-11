@@ -1,12 +1,11 @@
-#
-# Unix Socket PROXY Protocol Module
-#
-# This module adds the proxy protocol connection factory to the 
-# unixsocket connector:
-#    http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt
-# Both V1 and V2 versions of the protocol are supported and any
-# SSL properties transported can be interpreted by the 
-# unixsocket-secure module to indicate secure HTTPS traffic.
+[description]
+Enables the proxy protocol on the Unix Domain Socket Connector 
+http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt
+This allows information about the proxied connection to be 
+efficiently forwarded as the connection is accepted.
+Both V1 and V2 versions of the protocol are supported and any
+SSL properties may be interpreted by the unixsocket-secure 
+module to indicate secure HTTPS traffic.
 
 [depend]
 unixsocket

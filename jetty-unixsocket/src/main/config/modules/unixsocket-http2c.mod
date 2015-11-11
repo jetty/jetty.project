@@ -1,11 +1,7 @@
-#
-# Unix Socket HTTP2C Module
-#
-# This module adds a HTTP2C connetion factory to the Unix Socket
-# Connector.  It can be used when either the proxy received direct
-# HTTP/2C (unecrypted) traffic; or the proxy is decrypting HTTP/2
-# traffic before forwarding it. 
-# 
+[description]
+Adds a HTTP2C connetion factory to the Unix Domain Socket Connector
+It can be used when either the proxy forwards direct
+HTTP/2C (unecrypted) or decrypted HTTP/2 traffic.
 
 [depend]
 unixsocket-http
