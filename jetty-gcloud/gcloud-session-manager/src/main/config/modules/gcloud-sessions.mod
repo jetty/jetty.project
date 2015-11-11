@@ -1,6 +1,5 @@
-#
-# Jetty GCloudDatastore Session Manager module
-#
+[description]
+Enables the GCloudDatastore Session Mananger module.
 
 [depend]
 annotations

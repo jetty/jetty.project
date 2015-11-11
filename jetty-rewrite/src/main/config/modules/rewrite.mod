@@ -1,6 +1,6 @@
-#
-# Jetty Rewrite module
-#
+[description]
+Enables the jetty-rewrite handler.  Specific rewrite
+rules must be added to etc/jetty-rewrite.xml
 
 [depend]
 server

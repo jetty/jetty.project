@@ -1,6 +1,5 @@
-#
-# Jetty HTTPS Connector
-#
+[description]
+Adds HTTPS protocol support to the TLS(SSL) Connector
 
 [depend]
 ssl

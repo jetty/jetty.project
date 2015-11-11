@@ -4,7 +4,6 @@ requests from a local proxy and/or SSL offloader (eg haproxy) in either
 HTTP or TCP mode.  Unix Domain Sockets are more efficient than 
 localhost TCP/IP connections  as they reduce data copies, avoid 
 needless fragmentation and have better dispatch behaviours. 
-
 When enabled with corresponding support modules, the connector can 
 accept HTTP, HTTPS or HTTP2C traffic.
 

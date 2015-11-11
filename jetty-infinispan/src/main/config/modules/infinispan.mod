@@ -1,6 +1,6 @@
-#
-# Jetty Infinispan module
-#
+[description]
+Enables an Infinispan Session Manager for session 
+persistance and/or clustering
 
 [depend]
 annotations

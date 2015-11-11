@@ -1,6 +1,5 @@
-#
-# JAMon Jetty module
-#
+[description]
+Deploys the JAMon webapplication
 
 [depend]
 stats

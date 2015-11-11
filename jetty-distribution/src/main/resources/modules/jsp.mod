@@ -1,6 +1,5 @@
-#
-# Jetty JSP Module
-#
+[description]
+Enables JSP for all webapplications deployed on the server.
 
 [depend]
 servlet

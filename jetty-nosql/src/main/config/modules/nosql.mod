@@ -1,6 +1,5 @@
-#
-# Jetty NoSql module
-#
+[description]
+Enables NoSql session management with a MongoDB driver.
 
 [depend]
 webapp

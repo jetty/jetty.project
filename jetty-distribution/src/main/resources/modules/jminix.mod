@@ -1,6 +1,5 @@
-#
-# JaMON Jetty module
-#
+[description]
+Deploys the Jminix JMX Console within the server
 
 [depend]
 stats

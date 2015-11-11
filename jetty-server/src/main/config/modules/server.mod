@@ -1,6 +1,5 @@
-#
-# Base Server Module
-#
+[description]
+Enables the core Jetty server on the classpath.
 
 [optional]
 jvm

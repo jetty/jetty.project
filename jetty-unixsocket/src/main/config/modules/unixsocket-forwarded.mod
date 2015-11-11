@@ -1,7 +1,8 @@
 [description]
 Adds a forwarded request customizer to the HTTP configuration used
 by the Unix Domain Socket connector, for use when behind a proxy operating
-in HTTP mode that adds forwarded-for style HTTP headers
+in HTTP mode that adds forwarded-for style HTTP headers. Typically this
+is an alternate to the Proxy Protocol used mostly for TCP mode.
 
 [depend]
 unixsocket-http

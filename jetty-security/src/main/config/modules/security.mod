@@ -1,6 +1,5 @@
-#
-# Jetty Security Module
-#
+[description]
+Adds servlet standard security handling to the classpath.
 
 [depend]
 server
