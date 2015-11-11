@@ -1,6 +1,14 @@
 #
 # Jetty UnixSocket Connector
 #
+# This module enables a Unix Domain Socket connector that can receive
+# requests from a local proxy and/or SSL offloader (eg haproxy) in either
+# HTTP or TCP mode.  Unix Domain Sockets are more efficient than 
+# localhost TCP/IP connections  as they reduce data copies, avoid 
+# needless fragmentation and have better dispatch behaviours. 
+#
+# When enabled with corresponding support modules, the connector can 
+# accept HTTP, HTTPS or HTTP2C traffic with the 
 
 [depend]
 server
@@ -34,7 +42,7 @@ https://github.com/jnr/jnr-unixsocket
 http://www.apache.org/licenses/LICENSE-2.0.html
 
 [ini-template]
-### HTTP Connector Configuration
+### Unix SocketHTTP Connector Configuration
 
 ## Connector host/address to bind to
 # jetty.unixsocket=/tmp/jetty.sock
