@@ -8,11 +8,11 @@ webapp
 
 
 [files]
-maven://org.infinispan/infinispan-core/7.1.1.Final|lib/infinispan/infinispan-core-7.1.1.Final.jar
-maven://org.infinispan/infinispan-commons/7.1.1.Final|lib/infinispan/infinispan-commons-7.1.1.Final.jar
-maven://org.jgroups/jgroups/3.6.1.Final|lib/infinispan/jgroups-3.6.1.Final.jar
-maven://org.jboss.marshalling/jboss-marshalling-osgi/1.4.4.Final|lib/infinispan/jboss-marshalling-osgi-1.4.4.Final.jar
-maven://org.jboss.logging/jboss-logging/3.1.2.GA|lib/infinispan/jboss-logging-3.1.2.GA.jar
+http://central.maven.org/maven2/org/infinispan/infinispan-core/7.1.1.Final/infinispan-core-7.1.1.Final.jar:lib/infinispan/infinispan-core-7.1.1.Final.jar
+http://central.maven.org/maven2/org/infinispan/infinispan-commons/7.1.1.Final/infinispan-commons-7.1.1.Final.jar:lib/infinispan/infinispan-commons-7.1.1.Final.jar
+http://central.maven.org/maven2/org/jgroups/jgroups/3.6.1.Final/jgroups-3.6.1.Final.jar:lib/infinispan/jgroups-3.6.1.Final.jar
+http://central.maven.org/maven2/org/jboss/marshalling/jboss-marshalling-osgi/1.4.4.Final/jboss-marshalling-osgi-1.4.4.Final.jar:lib/infinispan/jboss-marshalling-osgi-1.4.4.Final.jar
+http://central.maven.org/maven2/org/jboss/logging/jboss-logging/3.1.2.GA/jboss-logging-3.1.2.GA.jar:lib/infinispan/jboss-logging-3.1.2.GA.jar
 
 [lib]
 lib/jetty-infinispan-${jetty.version}.jar
