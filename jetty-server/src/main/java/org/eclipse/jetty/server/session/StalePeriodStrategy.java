@@ -22,7 +22,8 @@ package org.eclipse.jetty.server.session;
 /**
  * StalePeriodStrategy
  *
- *
+ * A session is regarded as being stale if it has been 
+ * x seconds since it was last read from the cluster.
  */
 public class StalePeriodStrategy implements StalenessStrategy
 {
@@ -48,17 +49,26 @@ public class StalePeriodStrategy implements StalenessStrategy
         }
         else
         {
-            return (session.getSessionData().getAccessed() - session.getSessionData().getLastSaved() >= _staleMs);
+           // return (session.getSessionData().getAccessed() - session.getSessionData().getLastSaved() >= _staleMs);
+            return (System.currentTimeMillis() - session.getSessionData().getLastSaved() >= _staleMs);
         }
             
     }
     
     
+    /**
+     * @return
+     */
     public long getStaleSec ()
     {
         return (_staleMs<=0?0L:_staleMs/1000L);
     }
     
+    /**
+     * The amount of time in seconds that a session can be held
+     * in memory without being refreshed from the cluster.
+     * @param sec
+     */
     public void setStaleSec (long sec)
     {
         if (sec == 0)

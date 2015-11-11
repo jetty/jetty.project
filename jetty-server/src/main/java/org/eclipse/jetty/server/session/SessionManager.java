@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
@@ -52,10 +51,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * AbstractSessionManager
@@ -92,7 +88,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         }
     };
 
-    private boolean _usingCookies=true;
+   
 
     /* ------------------------------------------------------------ */
     // Setting of max inactive interval for new sessions
@@ -120,46 +116,13 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     protected boolean _nodeIdInSessionId;
     protected boolean _checkingRemoteSessionIdEncoding;
     protected String _sessionComment;
-
+    protected SessionStore _sessionStore;
+    protected final SampleStatistic _sessionTimeStats = new SampleStatistic();
     public Set<SessionTrackingMode> _sessionTrackingModes;
 
     private boolean _usingURLs;
-    
-    
-    protected SessionStore _sessionStore;
+    private boolean _usingCookies=true;
 
-
-    protected final CounterStatistic _sessionsStats = new CounterStatistic();
-    protected final SampleStatistic _sessionTimeStats = new SampleStatistic();
-
-
-    protected Scheduler _scheduler; //scheduler for scavenging
-    protected boolean _ownScheduler;  //did we create our own scheduler or reuse common one
-    protected Scheduler.Task _task; //scavenge task
-    
-    
-    
-    /**
-     * Scavenger
-     *
-     */
-    protected class Scavenger implements Runnable
-    {
-
-        @Override
-        public void run()
-        {
-           try
-           {
-               scavenge();
-           }
-           finally
-           {
-               if (_scheduler != null && _scheduler.isRunning())
-                   _task = _scheduler.schedule(this, _scavengeIntervalMs, TimeUnit.MILLISECONDS);
-           }
-        }
-    }
 
     
     
@@ -397,7 +360,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
      * @return seconds
      */
     @Override
-    @ManagedAttribute("defailt maximum time a session may be idle for (in s)")
+    @ManagedAttribute("default maximum time a session may be idle for (in s)")
     public int getMaxInactiveInterval()
     {
         return _dftMaxIdleSecs;
@@ -410,7 +373,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     @ManagedAttribute("maximum number of simultaneous sessions")
     public int getSessionsMax()
     {
-        return (int)_sessionsStats.getMax();
+        return _sessionStore.getSessions();
     }
 
     /* ------------------------------------------------------------ */
@@ -420,7 +383,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     @ManagedAttribute("total number of sessions")
     public int getSessionsTotal()
     {
-        return (int)_sessionsStats.getTotal();
+        return _sessionStore.getSessionsTotal();
     }
 
     /* ------------------------------------------------------------ */
@@ -556,7 +519,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     @ManagedAttribute("number of currently active sessions")
     public int getSessions()
     {
-        return (int)_sessionsStats.getCurrent();
+        return _sessionStore.getSessions();
     }
 
     /* ------------------------------------------------------------ */
@@ -618,10 +581,11 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         long created=System.currentTimeMillis();
         String id =_sessionIdManager.newSessionId(request,created);
         SessionKey key = SessionKey.getKey(id, _context);       
-        Session session = _sessionStore.newSession(key, created, created, created,  (_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000L:-1));
+        Session session = _sessionStore.newSession(request, key, created,  (_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000L:-1));
         session.setExtendedId(_sessionIdManager.getExtendedId(id,request));
         session.setSessionManager(this);
         session.setLastNode(_sessionIdManager.getWorkerName());
+        session.getSessionData().setExpiry(_dftMaxIdleSecs <= 0 ? 0 : (created + _dftMaxIdleSecs*1000L));
 
         if (request.isSecure())
             session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
@@ -629,21 +593,23 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         try
         {
             _sessionStore.put(key, session);
+            
+            _sessionIdManager.useId(id);
+            
+            if (_sessionListeners!=null)
+            {
+                HttpSessionEvent event=new HttpSessionEvent(session);
+                for (HttpSessionListener listener : _sessionListeners)
+                    listener.sessionCreated(event);
+            }
+
+            return session;
         }
         catch (Exception e)
         {
             LOG.warn(e);
-        }
-
-        _sessionsStats.increment();
-        if (_sessionListeners!=null)
-        {
-            HttpSessionEvent event=new HttpSessionEvent(session);
-            for (HttpSessionListener listener : _sessionListeners)
-                listener.sessionCreated(event);
-        }
-
-        return session;
+            return null;
+        }      
     }
 
     /* ------------------------------------------------------------ */
@@ -666,7 +632,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     @ManagedOperation(value="reset statistics", impact="ACTION")
     public void statsReset()
     {
-        _sessionsStats.reset(getSessions());
+        _sessionStore.resetStats();
         _sessionTimeStats.reset();
     }
 
@@ -752,7 +718,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         try
         {
             SessionKey key = SessionKey.getKey(id, _context);
-            Session session =  _sessionStore.get(key);
+            Session session =  _sessionStore.get(key, true);
             if (session != null)
             {
                 //If the session we got back has expired
@@ -760,18 +726,10 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                 {
                     //Tell the id manager that this session id should not be used in case other threads
                     //try to use the same session id in other contexts
-                    _sessionIdManager.removeId(id);                  
+                    _sessionIdManager.removeId(id);    
                     
-                    //Remove the expired session from cache and any backing persistent store
-                    try
-                    {
-                        _sessionStore.delete(key);
-                    }
-                    catch (Exception e)
-                    {
-                        LOG.warn("Unable to delete expired session {}", key);
-                    }
-                    
+                    //The scavenger thread will pick up this expired session
+             
                     return null;
                 }
                 
@@ -845,18 +803,17 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         {
             //Remove the Session object from the session store and any backing data store
             boolean removed = _sessionStore.delete(SessionKey.getKey(session.getId(), _context));
-
             if (removed)
             {
-                _sessionsStats.decrement();
-                _sessionTimeStats.set(round((System.currentTimeMillis() - session.getCreationTime())/1000.0));
-
-                if (invalidate && _sessionListeners!=null)
+                if (invalidate)
                 {
-                    HttpSessionEvent event=new HttpSessionEvent(session);      
-                    for (int i = _sessionListeners.size()-1; i>=0; i--)
+                    if (_sessionListeners!=null)
                     {
-                        _sessionListeners.get(i).sessionDestroyed(event);
+                        HttpSessionEvent event=new HttpSessionEvent(session);      
+                        for (int i = _sessionListeners.size()-1; i>=0; i--)
+                        {
+                            _sessionListeners.get(i).sessionDestroyed(event);
+                        }
                     }
                 }
             }
@@ -925,10 +882,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         new CookieConfig();
 
 
-    private long _scavengeIntervalMs;
-    private Scavenger _scavenger;
-
-
     /* ------------------------------------------------------------ */
     /**
      * @return total amount of time all sessions remained valid
@@ -994,7 +947,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             SessionKey oldKey = SessionKey.getKey(oldId, _context);
             SessionKey newKey = SessionKey.getKey(newId, _context);
             
-            Session session = _sessionStore.get(oldKey);
+            Session session = _sessionStore.get(oldKey, true);
             if (session == null)
             {
                 LOG.warn("Unable to renew id to "+newId+" for non-existant session "+oldId);
@@ -1036,10 +989,14 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
         try
         {
-            Session session = _sessionStore.get(SessionKey.getKey(id, _context));
+            Session session = _sessionStore.get(SessionKey.getKey(id, _context), false);
             if (session == null)
+            {
                 return;  // couldn't get/load a session for this context with that id
-            session.invalidateAndRemove();
+            }
+            
+            _sessionTimeStats.set(round((System.currentTimeMillis() - session.getCreationTime())/1000.0));
+            session.invalidateAndRemove();           
         }
         catch (Exception e)
         {

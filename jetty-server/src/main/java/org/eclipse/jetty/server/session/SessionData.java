@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * SessionData
  *
- * The data associated with a session
+ * The data associated with a session.
  */
 public class SessionData implements Serializable
 {
@@ -57,6 +57,15 @@ public class SessionData implements Serializable
     protected long _lastSaved; //time in msec since last save
     
 
+    /**
+     * @param id
+     * @param cpath
+     * @param vhost
+     * @param created
+     * @param accessed
+     * @param lastAccessed
+     * @param maxInactiveMs
+     */
     public SessionData (String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
         _id = id;

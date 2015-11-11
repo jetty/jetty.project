@@ -32,7 +32,6 @@ import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
 
-import org.eclipse.jetty.server.session.SessionManager.SessionIf;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -46,8 +45,9 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Session implements SessionManager.SessionIf
 {
-
-    final static Logger LOG = Log.getLogger(Session.class); // TODO SessionHandler.LOG;
+    private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    
+    
     public final static String SESSION_CREATED_SECURE="org.eclipse.jetty.security.sessionCreatedSecure";
     
     protected SessionData _sessionData;
@@ -138,21 +138,7 @@ public class Session implements SessionManager.SessionIf
             throw new IllegalStateException ("No session manager for session "+ _sessionData.getId());
         
         _manager.removeSession(this,true);
-
-        // Notify listeners and unbind values
-        boolean do_invalidate=false;
-        synchronized (this)
-        {
-            if (!_sessionData.isInvalid())
-            {
-                if (_requests<=0)
-                    do_invalidate=true;
-                else
-                    _doInvalidate=true;
-            }
-        }
-        if (do_invalidate)
-            doInvalidate();
+        doInvalidate();
     }
     
     
@@ -366,7 +352,9 @@ public class Session implements SessionManager.SessionIf
     @Override
     public void setMaxInactiveInterval(int secs)
     {
-       _sessionData.setMaxInactiveMs((long)secs*1000L);        
+       _sessionData.setMaxInactiveMs((long)secs*1000L);  
+       _sessionData.setExpiry(_sessionData.getMaxInactiveMs() <= 0 ? 0 : (System.currentTimeMillis() + _sessionData.getMaxInactiveMs()*1000L));
+       _sessionData.setDirty(true);
     }
 
     /** 
@@ -571,13 +559,6 @@ public class Session implements SessionManager.SessionIf
         checkValid();
         try
         {
-            
-      /*      // remove session from context 
-            _manager.removeSession(this,true);
-            
-            //invalidate session
-            doInvalidate();
-            */
             //tell id mgr to remove session from all other contexts
            ((AbstractSessionIdManager)_manager.getSessionIdManager()).invalidateAll(_sessionData.getId());
            

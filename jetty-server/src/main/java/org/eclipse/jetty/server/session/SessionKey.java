@@ -56,6 +56,8 @@ public class SessionKey
     
     private SessionKey (String id, String path, String vhost)
     {
+        if (id == null || path == null || vhost == null)
+            throw new IllegalArgumentException ("Bad values for key");
         _id = id;
         _canonicalContextPath = path;
         _vhost = vhost;
@@ -81,6 +83,24 @@ public class SessionKey
         return _canonicalContextPath +"_"+_vhost+"_"+_id;
     }
     
+    @Override
+    public boolean equals (Object o)
+    {
+        if (o == null)
+            return false;
+        
+        SessionKey k = ((SessionKey)o);
+        if (k.getId().equals(getId()) && k.getCanonicalContextPath().equals(getCanonicalContextPath()) && k.getVhost().equals(getVhost()))
+                return true;
+        return false;
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        return java.util.Objects.hash(getId(), getCanonicalContextPath(), getVhost());
+    }
+
     public static String getContextPath (Context context)
     {
         if (context == null)

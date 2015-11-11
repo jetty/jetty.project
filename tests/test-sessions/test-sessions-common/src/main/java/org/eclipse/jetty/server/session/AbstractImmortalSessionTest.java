@@ -33,6 +33,7 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 
 
@@ -51,7 +52,8 @@ public abstract class AbstractImmortalSessionTest
         int scavengePeriod = 2;
         //turn off session expiry by setting maxInactiveInterval to -1
         AbstractTestServer server = createServer(0, -1, scavengePeriod);
-        server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+        ServletContextHandler context = server.addContext(contextPath);
+        context.addServlet(TestServlet.class, servletMapping);
 
         try
         {
@@ -82,6 +84,8 @@ public abstract class AbstractImmortalSessionTest
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 resp = response.getContentAsString();
                 assertEquals(String.valueOf(value),resp.trim());
+                
+                assertEquals(1, ((org.eclipse.jetty.server.session.SessionManager)context.getSessionHandler().getSessionManager()).getSessions());
             }
             finally
             {

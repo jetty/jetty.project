@@ -22,7 +22,8 @@ package org.eclipse.jetty.server.session;
 /**
  * NeverStale
  *
- *
+ * This strategy says that a session never needs to be refreshed by the cluster.
+ * 
  */
 public class NeverStaleStrategy implements StalenessStrategy
 {

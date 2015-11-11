@@ -73,12 +73,22 @@ public class SessionScavenger extends AbstractLifeCycle
         }
     }
     
+    
+    
+    
+    /**
+     * SessionIdManager associated with this scavenger
+     * @param sessionIdManager
+     */
     public void setSessionIdManager (SessionIdManager sessionIdManager)
     {
         _sessionIdManager = sessionIdManager;
     }
     
     
+    /** 
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
+     */
     @Override
     protected void doStart() throws Exception
     {
@@ -107,6 +117,9 @@ public class SessionScavenger extends AbstractLifeCycle
         super.doStart();
     }
 
+    /** 
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
+     */
     @Override
     protected void doStop() throws Exception
     {
@@ -124,6 +137,10 @@ public class SessionScavenger extends AbstractLifeCycle
     }
     
     
+    /**
+     * Set the period between scavenge cycles
+     * @param sec
+     */
     public void setScavengeIntervalSec (long sec)
     {
         if (sec<=0)
@@ -156,11 +173,23 @@ public class SessionScavenger extends AbstractLifeCycle
         }
     }
 
+    /**
+     * Get the period between scavenge cycles.
+     * 
+     * @return
+     */
     public long getScavengeIntervalSec ()
     {
         return _scavengeIntervalMs/1000;
     }
     
+    
+    
+    /**
+     * Perform a scavenge cycle:
+     *   ask all SessionManagers to find sessions they think have expired and then make
+     *   sure that a session sharing the same id is expired on all contexts
+     */
     public void scavenge ()
     {
         //don't attempt to scavenge if we are shutting down
@@ -203,12 +232,13 @@ public class SessionScavenger extends AbstractLifeCycle
     }
 
 
+    /** 
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString()
     {
         return super.toString()+"[interval="+_scavengeIntervalMs+", ownscheduler="+_ownScheduler+"]";
     }
-    
-    
 
 }

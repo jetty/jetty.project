@@ -47,7 +47,7 @@ public class SessionCookieTest
          * @see org.eclipse.jetty.server.session.SessionStore#newSession(org.eclipse.jetty.server.session.SessionKey, long, long, long, long)
          */
         @Override
-        public Session newSession(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
+        public Session newSession(HttpServletRequest request, SessionKey key, long time, long maxInactiveMs)
         {
             // TODO Auto-generated method stub
             return null;
@@ -84,13 +84,12 @@ public class SessionCookieTest
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doPut(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.Session)
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doPutIfAbsent(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.Session)
          */
         @Override
-        public void doPut(SessionKey key, Session session)
+        public Session doPutIfAbsent(SessionKey key, Session session)
         {
-            // TODO Auto-generated method stub
-            
+            return null;
         }
 
         /** 
@@ -107,10 +106,9 @@ public class SessionCookieTest
          * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(org.eclipse.jetty.server.session.SessionKey)
          */
         @Override
-        public void doDelete(SessionKey key)
+        public Session doDelete(SessionKey key)
         {
-            // TODO Auto-generated method stub
-            
+            return null;
         }
 
         /** 

@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 
@@ -83,9 +84,8 @@ public abstract class AbstractInvalidationSessionTest
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
+                    
                     // Be sure the session is also present in node2
-
                     Request request2 = client.newRequest(urls[1] + "?action=increment");
                     request2.header("Cookie", sessionCookie);
                     ContentResponse response2 = request2.send();
@@ -142,6 +142,18 @@ public abstract class AbstractInvalidationSessionTest
             {
                 HttpSession session = request.getSession(false);
                 session.invalidate();
+                
+                try
+                {
+                    session.invalidate();
+                    fail("Session should be invalid");
+                    
+                }
+                catch (IllegalStateException e)
+                {
+                    //expected
+                }
+                
             }
             else if ("test".equals(action))
             {

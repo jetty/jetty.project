@@ -38,7 +38,7 @@ public class FileSessionManagerTest
     private static boolean _stacks;
   
     
-   // @BeforeClass
+    @BeforeClass
     public static void beforeClass ()
     {
         _log = ((StdErrLog)Log.getLogger("org.eclipse.jetty.server.session"));
@@ -46,7 +46,7 @@ public class FileSessionManagerTest
         _log.setHideStacks(true);
     }
     
-    //@AfterClass
+    @AfterClass
     public static void afterClass()
     {
         _log.setHideStacks(_stacks);
@@ -99,7 +99,6 @@ public class FileSessionManagerTest
         manager.getSessionDataStore().setDeleteUnrestorableFiles(true);
         manager.setSessionIdManager(idmgr);
         handler.setSessionManager(manager);
-        // manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         FS.ensureEmpty(testDir);
 

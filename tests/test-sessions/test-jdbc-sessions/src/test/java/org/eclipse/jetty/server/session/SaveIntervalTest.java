@@ -42,7 +42,7 @@ import org.junit.Test;
  *  SaveIntervalTest
  *
  *  Checks to see that potentially stale sessions that have not
- *  changed are not always reloaded from the datase.
+ *  changed are not always reloaded from the database.
  *
  *  This test is Ignored because it takes a little while to run.
  *
@@ -65,7 +65,10 @@ public class SaveIntervalTest
         TestSaveIntervalServlet servlet = new TestSaveIntervalServlet();
         holder.setServlet(servlet);
         ctxA.addServlet(holder, "/test");
-        ((JDBCSessionManager)ctxA.getSessionHandler().getSessionManager()).setSaveInterval(SAVE);
+
+        StalePeriodStrategy strategy = new StalePeriodStrategy();
+        strategy.setStaleSec(SAVE);
+       ((AbstractSessionStore)((JDBCSessionManager)ctxA.getSessionHandler().getSessionManager()).getSessionStore()).setStaleStrategy(strategy);
         server.start();
         int port=server.getPort();
         try
@@ -81,7 +84,7 @@ public class SaveIntervalTest
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                long lastSaved = ((JDBCSessionManager.Session)servlet._session).getLastSaved();
+                long lastSaved = ((Session)servlet._session).getSessionData().getLastSaved();
                 
                 
                 //do another request to change the session attribute
@@ -89,7 +92,7 @@ public class SaveIntervalTest
                 request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                long tmp = ((JDBCSessionManager.Session)servlet._session).getLastSaved();
+                long tmp = ((Session)servlet._session).getSessionData().getLastSaved();
                 assertNotEquals(lastSaved, tmp); //set of attribute will cause save to db
                 lastSaved = tmp;
                 
@@ -105,7 +108,7 @@ public class SaveIntervalTest
                 request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                tmp = ((JDBCSessionManager.Session)servlet._session).getLastSaved();
+                tmp = ((Session)servlet._session).getSessionData().getLastSaved();
                 assertNotEquals(lastSaved, tmp);
                 lastSaved = tmp;
               
@@ -119,7 +122,7 @@ public class SaveIntervalTest
                 request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                tmp = ((JDBCSessionManager.Session)servlet._session).getLastSaved();
+                tmp = ((Session)servlet._session).getSessionData().getLastSaved();
                 assertEquals(lastSaved, tmp); //the save interval did not expire, so update to the access time will not have been persisted
             }
             finally
@@ -147,7 +150,6 @@ public class SaveIntervalTest
             if ("create".equals(action))
             {
                 HttpSession session = request.getSession(true);
-                System.err.println("CREATE: Session id="+session.getId());
                 _session = session;
                 return;
             }
@@ -157,8 +159,7 @@ public class SaveIntervalTest
                 HttpSession session = request.getSession(false);
                 if (session == null)
                     throw new ServletException("Session is null for action=change");
-               
-                System.err.println("SET: Session id="+session.getId());
+
                 session.setAttribute("aaa", "12345");
                 assertEquals(_session.getId(), session.getId());
                 return;
@@ -169,7 +170,7 @@ public class SaveIntervalTest
                 HttpSession session = request.getSession(false);
                 if (session == null)
                     throw new ServletException("Session does not exist");
-                System.err.println("TICKLE: Session id="+session.getId());
+
                 assertEquals(_session.getId(), session.getId());
                 return;
             }

@@ -31,15 +31,22 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * MemorySessionStore
  *
- *
+ * A session store that keeps its sessions in memory in a hashmap
  */
 public class MemorySessionStore extends AbstractSessionStore
 {
-    private static final Logger LOG = Log.getLogger(MemorySessionStore.class);
+    private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    
+    
     protected ConcurrentHashMap<String, Session> _sessions = new ConcurrentHashMap<String, Session>();
 
     
     
+    /**
+     * MemorySession
+     *
+     *
+     */
     public class MemorySession extends Session
     {
 
@@ -64,9 +71,6 @@ public class MemorySessionStore extends AbstractSessionStore
         {
             super(data);
         }
-        
-        
-        
     }
     
     
@@ -88,25 +92,18 @@ public class MemorySessionStore extends AbstractSessionStore
     public Session doGet(SessionKey key)
     {
         Session session = _sessions.get(key.getId());
-        
-        if (isStale(session))
-        {
-            //delete from memory so should reload
-            doDelete(key);
-            return null;
-        }
-        
+       
         return session;
     }
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doPut(java.lang.String, org.eclipse.jetty.server.session.Session)
+     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doPutIfAbsent(java.lang.String, org.eclipse.jetty.server.session.Session)
      */
     @Override
-    public void doPut(SessionKey key, Session session)
+    public Session doPutIfAbsent(SessionKey key, Session session)
     {
-        _sessions.put(key.getId(),  session);
+       return _sessions.putIfAbsent(key.getId(),  session);
     }
 
     /** 
@@ -122,9 +119,9 @@ public class MemorySessionStore extends AbstractSessionStore
      * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(java.lang.String)
      */
     @Override
-    public void doDelete(SessionKey key)
+    public Session doDelete(SessionKey key)
     {
-        _sessions.remove(key.getId());
+        return  _sessions.remove(key.getId());
     }
     
     
@@ -139,7 +136,9 @@ public class MemorySessionStore extends AbstractSessionStore
         for (Session s:_sessions.values())
         {
             if (s.isExpiredAt(now))
+            {
                 candidates.add(SessionKey.getKey(s.getId(), s.getContextPath(), s.getVHost()));
+            }
         }
         return candidates;
     }
@@ -197,10 +196,10 @@ public class MemorySessionStore extends AbstractSessionStore
      * @see org.eclipse.jetty.server.session.SessionStore#newSession(java.lang.String)
      */
     @Override
-    public Session newSession(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    public Session newSession(HttpServletRequest request, SessionKey key, long time, long maxInactiveMs)
     {
-        //TODO - how to tell that the session is new?!
-           return new MemorySession(_sessionDataStore.newSessionData(key, created, accessed, lastAccessed, maxInactiveMs));
+        MemorySession s =  new MemorySession(request, _sessionDataStore.newSessionData(key, time, time, time, maxInactiveMs));
+        return s;
     }
 
 
@@ -212,7 +211,8 @@ public class MemorySessionStore extends AbstractSessionStore
     @Override
     public Session newSession(SessionData data)
     {
-        return new MemorySession (data);
+        MemorySession s = new MemorySession (data);
+        return s;
     }
 
 

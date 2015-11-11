@@ -179,7 +179,6 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
     public String newSessionId(long seedTerm)
     {
         String id = super.newSessionId(seedTerm);
-        useId(id);
         return id;
     }
 

@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * FileSessionDataStore
  *
- *
+ * A file-based store of session data.
  */
 public class FileSessionDataStore extends AbstractSessionDataStore
 {

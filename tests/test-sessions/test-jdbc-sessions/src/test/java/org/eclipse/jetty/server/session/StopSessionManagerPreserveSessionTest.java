@@ -50,7 +50,6 @@ public class StopSessionManagerPreserveSessionTest extends AbstractStopSessionMa
         try
         {
             boolean actual = _server.existsInSessionTable(_id, true);
-            System.err.println(expected+":"+actual);
             assertEquals(expected, actual);
         }
         catch (Exception e)

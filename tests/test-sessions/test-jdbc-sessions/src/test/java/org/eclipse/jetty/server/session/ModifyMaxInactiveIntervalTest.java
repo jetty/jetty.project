@@ -74,7 +74,7 @@ public class ModifyMaxInactiveIntervalTest
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                
+
                 //do another request to change the maxinactive interval
                 Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val="+newMaxInactive);
                 request.header("Cookie", sessionCookie);
@@ -86,7 +86,6 @@ public class ModifyMaxInactiveIntervalTest
                 Thread.currentThread().sleep(10*1000L);
                 
                 //do another request using the cookie to ensure the session is still there
-               
                 request= client.newRequest("http://localhost:" + port + "/mod/test?action=test");
                 request.header("Cookie", sessionCookie);
                 response = request.send();

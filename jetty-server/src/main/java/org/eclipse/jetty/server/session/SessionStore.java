@@ -21,6 +21,8 @@ package org.eclipse.jetty.server.session;
 
 import java.util.Set;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
@@ -31,12 +33,15 @@ import org.eclipse.jetty.util.component.LifeCycle;
  */
 public interface SessionStore extends LifeCycle
 {
-    Session newSession (SessionKey key,  long created, long accessed, long lastAccessed, long maxInactiveMs);
-    Session get(SessionKey key) throws Exception;
+    Session newSession (HttpServletRequest request, SessionKey key,  long time, long maxInactiveMs);
+    Session get(SessionKey key, boolean staleCheck) throws Exception;
     void put(SessionKey key, Session session) throws Exception;
     boolean exists (SessionKey key) throws Exception;
     boolean delete (SessionKey key) throws Exception;
     void shutdown ();
     Set<SessionKey> getExpired ();
-    
+    int getSessions();
+    int getSessionsMax();
+    int getSessionsTotal();
+    void resetStats();
 }

@@ -33,8 +33,8 @@ import org.eclipse.jetty.util.log.Logger;
 
 public abstract class AbstractSessionIdManager extends AbstractLifeCycle implements SessionIdManager
 {
-    private static final Logger LOG = Log.getLogger(AbstractSessionIdManager.class);
-
+    private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    
     private final static String __NEW_SESSION_ID="org.eclipse.jetty.server.newSessionId";
 
     protected Random _random;
@@ -243,7 +243,6 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
        }
        
        _scavenger.start();
-       System.err.println("Started scavenger "+_scavenger);
     }
 
     /* ------------------------------------------------------------ */
@@ -345,6 +344,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     {
         //take the id out of the list of known sessionids for this node
         removeId(id);
+
         //tell all contexts that may have a session object with this id to
         //get rid of them
         Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);

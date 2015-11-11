@@ -41,6 +41,10 @@ public class UnreadableSessionDataException extends Exception
         _key = key;
     }
     
+    public UnreadableSessionDataException (SessionKey key, boolean loadAttemptsExhausted)
+    {
+        super("Unreadable session "+key+(loadAttemptsExhausted?" max load attempts":""));
+    }
     
 
 }
