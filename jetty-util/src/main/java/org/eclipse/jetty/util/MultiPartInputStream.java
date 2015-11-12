@@ -518,7 +518,7 @@ public class MultiPartInputStream
             line=(line==null?line:line.trim());
         }
 
-        if (line == null)
+        if (line == null || line.length() == 0)
             throw new IOException("Missing initial multi part boundary");
 
         // Read each part
