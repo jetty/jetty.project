@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.statistic.CounterStatistic;
 
 /**
  * MemorySessionStore
@@ -39,7 +40,8 @@ public class MemorySessionStore extends AbstractSessionStore
     
     
     protected ConcurrentHashMap<String, Session> _sessions = new ConcurrentHashMap<String, Session>();
-
+    
+    private final CounterStatistic _stats = new CounterStatistic();
     
     
     /**
@@ -81,8 +83,27 @@ public class MemorySessionStore extends AbstractSessionStore
     }
     
     
+    public long getSessions ()
+    {
+        return _stats.getCurrent();
+    }
     
     
+    public long getSessionsMax()
+    {
+        return _stats.getMax();
+    }
+    
+    
+    public long getSessionsTotal()
+    {
+        return _stats.getTotal();
+    }
+    
+    public void resetStats()
+    {
+        _stats.reset();
+    }
     
     
     /** 
@@ -103,7 +124,10 @@ public class MemorySessionStore extends AbstractSessionStore
     @Override
     public Session doPutIfAbsent(SessionKey key, Session session)
     {
-       return _sessions.putIfAbsent(key.getId(),  session);
+        Session s = _sessions.putIfAbsent(key.getId(), session);
+        if (s == null)
+            _stats.increment();
+       return s;
     }
 
     /** 
@@ -119,9 +143,12 @@ public class MemorySessionStore extends AbstractSessionStore
      * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(java.lang.String)
      */
     @Override
-    public Session doDelete(SessionKey key)
+    public boolean doDelete(SessionKey key)
     {
-        return  _sessions.remove(key.getId());
+        Session s = _sessions.remove(key.getId());
+        if (s != null)
+            _stats.decrement();
+        return  (s != null);
     }
     
     

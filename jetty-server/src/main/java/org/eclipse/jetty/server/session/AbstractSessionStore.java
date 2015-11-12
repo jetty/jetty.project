@@ -41,7 +41,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     protected SessionDataStore _sessionDataStore;
     protected StalenessStrategy _staleStrategy;
     protected SessionManager _manager;
-    protected final CounterStatistic _sessionStats = new CounterStatistic();
+
 
     
 
@@ -86,9 +86,9 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     /**
      * Remove the session with this identity from the store
      * @param key
-     * @return the removed Session or null if no such key
+     * @return true if removed false otherwise
      */
-    public abstract Session doDelete (SessionKey key);
+    public abstract boolean doDelete (SessionKey key);
     
     
     
@@ -187,10 +187,9 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         
         if (staleCheck && isStale(session))
         {
-            //delete from memory so should reload
+            //delete from store so should reload
             doDelete(key);
             session = null;
-            _sessionStats.decrement();
         }
 
         
@@ -209,8 +208,6 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
                     //so use it
                     session = existing;
                 }
-                else
-                    _sessionStats.increment();
             }
         }
         return session;
@@ -231,7 +228,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         
         session.setSessionManager(_manager);
  
-        //if the session data has changed, or the cache is considered stale, write it to any backing store
+        //if the session is new, the data has changed, or the cache is considered stale, write it to any backing store
         if ((session.isNew() || session.getSessionData().isDirty() || isStale(session)) && _sessionDataStore != null)
         {
             session.willPassivate();
@@ -239,11 +236,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
             session.didActivate();
         }
 
-        Session existing = doPutIfAbsent(key,session);
-        if (existing == null)
-        {
-            _sessionStats.increment();
-        }
+        doPutIfAbsent(key,session);
     }
 
     /** 
@@ -273,12 +266,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
             boolean dsdel = _sessionDataStore.delete(key);
             if (LOG.isDebugEnabled()) LOG.debug("Session {} deleted in db {}",key, dsdel);                   
         }
-        if (doDelete(key) != null)
-        {
-            _sessionStats.decrement();
-            return true;
-        }
-        return false;
+        return doDelete(key);
     }
 
     public boolean isStale (Session session)
@@ -310,38 +298,6 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     public Session newSession(HttpServletRequest request, SessionKey key, long time, long maxInactiveMs)
     {
         return null;
-    }
-
-
-
-    @Override
-    public int getSessions()
-    {
-       return (int)_sessionStats.getCurrent();
-    }
-
-
-
-    @Override
-    public int getSessionsMax()
-    {
-        return (int)_sessionStats.getMax();
-    }
-
-
-
-    @Override
-    public int getSessionsTotal()
-    {
-       return (int)_sessionStats.getTotal();
-    }
-
-
-
-    @Override
-    public void resetStats()
-    {
-        _sessionStats.reset();
     }
 
 }

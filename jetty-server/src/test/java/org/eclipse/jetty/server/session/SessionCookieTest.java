@@ -106,9 +106,9 @@ public class SessionCookieTest
          * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(org.eclipse.jetty.server.session.SessionKey)
          */
         @Override
-        public Session doDelete(SessionKey key)
+        public boolean doDelete(SessionKey key)
         {
-            return null;
+            return false;
         }
 
         /** 

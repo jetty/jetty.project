@@ -28,8 +28,11 @@ import org.eclipse.jetty.util.component.LifeCycle;
 /**
  * SessionStore
  *
- * A store/cache of Session objects.  This store of Session objects can be backed by
+ * A store of Session objects.  This store of Session objects can be backed by
  * a SessionDataStore to persist/distribute the data contained in the Session objects.
+ * 
+ * This store of Session objects ensures that all threads within the same context on
+ * the same node with the same session id will share exactly the same Session object.
  */
 public interface SessionStore extends LifeCycle
 {
@@ -40,8 +43,4 @@ public interface SessionStore extends LifeCycle
     boolean delete (SessionKey key) throws Exception;
     void shutdown ();
     Set<SessionKey> getExpired ();
-    int getSessions();
-    int getSessionsMax();
-    int getSessionsTotal();
-    void resetStats();
 }

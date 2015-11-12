@@ -30,7 +30,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * SessionData
  *
- * The data associated with a session.
+ * The data associated with a session. A Session object has a 1:1 relationship
+ * with a SessionData object. The behaviour of sessions is implemented in the
+ * Session object (eg calling listeners, keeping timers etc). A Session's
+ * associated SessionData is the object which can be persisted, serialized etc.
  */
 public class SessionData implements Serializable
 {

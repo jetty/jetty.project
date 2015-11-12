@@ -94,7 +94,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
                     org.eclipse.jetty.server.session.SessionManager m1 = (org.eclipse.jetty.server.session.SessionManager)context1.getSessionHandler().getSessionManager();
-                    assertEquals(1,  m1.getSessions());
+                    assertEquals(1,  m1.getSessionsCreated());
 
                     // Be sure the session is also present in node2
                     org.eclipse.jetty.client.api.Request request = client.newRequest(urls[1] + "?action=test");
@@ -102,12 +102,11 @@ public abstract class AbstractLocalSessionScavengingTest
                     ContentResponse response2 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                     org.eclipse.jetty.server.session.SessionManager m2 = (org.eclipse.jetty.server.session.SessionManager)context2.getSessionHandler().getSessionManager();
-                    assertEquals(1,  m2.getSessions());
 
                     // Wait for the scavenger to run on node1, waiting 2.5 times the scavenger period
                     pause(scavengePeriod);
 
-                    assertEquals(0,  m1.getSessions());
+                    assertEquals(1,  m1.getSessionsCreated());
 
                     // Check that node1 does not have any local session cached
                     request = client.newRequest(urls[0] + "?action=check");
@@ -115,7 +114,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     response1 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                     
-                    assertEquals(0,  m1.getSessions());
+                    assertEquals(1,  m1.getSessionsCreated());
 
                     // Wait for the scavenger to run on node2, waiting 2 times the scavenger period
                     // This ensures that the scavenger on node2 runs at least once.

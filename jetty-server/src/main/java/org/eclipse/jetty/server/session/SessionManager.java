@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 /**
@@ -118,6 +119,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     protected String _sessionComment;
     protected SessionStore _sessionStore;
     protected final SampleStatistic _sessionTimeStats = new SampleStatistic();
+    protected final CounterStatistic _sessionsCreatedStats = new CounterStatistic();
     public Set<SessionTrackingMode> _sessionTrackingModes;
 
     private boolean _usingURLs;
@@ -366,25 +368,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         return _dftMaxIdleSecs;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return maximum number of sessions
-     */
-    @ManagedAttribute("maximum number of simultaneous sessions")
-    public int getSessionsMax()
-    {
-        return _sessionStore.getSessions();
-    }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return total number of sessions
-     */
-    @ManagedAttribute("total number of sessions")
-    public int getSessionsTotal()
-    {
-        return _sessionStore.getSessionsTotal();
-    }
 
     /* ------------------------------------------------------------ */
     @ManagedAttribute("time before a session cookie is re-set (in s)")
@@ -516,10 +500,10 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @ManagedAttribute("number of currently active sessions")
-    public int getSessions()
+    @ManagedAttribute("number of sessions created by this node")
+    public int getSessionsCreated()
     {
-        return _sessionStore.getSessions();
+        return (int) _sessionsCreatedStats.getCurrent();
     }
 
     /* ------------------------------------------------------------ */
@@ -594,6 +578,8 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         {
             _sessionStore.put(key, session);
             
+            _sessionsCreatedStats.increment();
+            
             _sessionIdManager.useId(id);
             
             if (_sessionListeners!=null)
@@ -632,7 +618,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     @ManagedOperation(value="reset statistics", impact="ACTION")
     public void statsReset()
     {
-        _sessionStore.resetStats();
+        _sessionsCreatedStats.reset();
         _sessionTimeStats.reset();
     }
 
