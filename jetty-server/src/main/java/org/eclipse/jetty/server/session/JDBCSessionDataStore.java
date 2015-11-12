@@ -30,10 +30,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -586,15 +583,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
 
   
-
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(org.eclipse.jetty.server.session.SessionKey, long, long, long, long)
-     */
-    @Override
-    public SessionData newSessionData(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
-    {
-        return new SessionData(key.getId(), key.getCanonicalContextPath(), key.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
-    }
 
 
 

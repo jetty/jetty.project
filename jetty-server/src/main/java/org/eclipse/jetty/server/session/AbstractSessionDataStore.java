@@ -82,4 +82,15 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
             data.setDirty(false);
         }
     }
+    
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(org.eclipse.jetty.server.session.SessionKey, long, long, long, long)
+     */
+    @Override
+    public SessionData newSessionData(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    {
+        return new SessionData(key.getId(), key.getCanonicalContextPath(), key.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
+    }
+ 
 }

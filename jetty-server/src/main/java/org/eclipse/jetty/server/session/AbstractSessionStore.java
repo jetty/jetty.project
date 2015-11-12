@@ -27,12 +27,12 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.statistic.CounterStatistic;
 
 /**
  * AbstractSessionStore
  *
- *
+ * Basic behaviour for maintaining an in-memory store of Session objects and 
+ * making sure that any backing SessionDataStore is kept in sync.
  */
 public abstract class AbstractSessionStore extends AbstractLifeCycle implements SessionStore
 {
