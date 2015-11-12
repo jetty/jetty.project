@@ -230,28 +230,19 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
             throw new IllegalArgumentException ("Put key="+key+" session="+(session==null?"null":session.getId()));
         
         session.setSessionManager(_manager);
+ 
+        //if the session data has changed, or the cache is considered stale, write it to any backing store
+        if ((session.isNew() || session.getSessionData().isDirty() || isStale(session)) && _sessionDataStore != null)
+        {
+            session.willPassivate();
+            _sessionDataStore.store(key, session.getSessionData());
+            session.didActivate();
+        }
 
         Session existing = doPutIfAbsent(key,session);
         if (existing == null)
         {
-            //session not already in cache write through
-            if (_sessionDataStore != null)
-            {
-                session.willPassivate();
-                _sessionDataStore.store(SessionKey.getKey(session.getSessionData()), session.getSessionData());
-                session.didActivate();
-            }
             _sessionStats.increment();
-        }
-        else
-        {
-            //if the session data has changed, or the cache is considered stale, write it to any backing store
-            if ((session.getSessionData().isDirty() || isStale(session)) && _sessionDataStore != null)
-            {
-                session.willPassivate();
-                _sessionDataStore.store(key, session.getSessionData());
-                session.didActivate();
-            }
         }
     }
 

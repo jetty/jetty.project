@@ -308,7 +308,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 }
             }
 
-            PreparedStatement statement = connection.prepareStatement("select "+getIdColumn()+", "+", "+getExpiryTimeColumn()+
+            PreparedStatement statement = connection.prepareStatement("select "+getIdColumn()+", "+getExpiryTimeColumn()+
                                                                       " from "+getTableName()+" where "+getContextPathColumn()+" = ? and "+
                                                                       getVirtualHostColumn()+" = ? and "+
                                                                       getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?");
@@ -636,7 +636,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             _sessionTableSchema.setDatabaseAdaptor(_dbAdaptor);
             _sessionTableSchema.prepareTables();
         }
-
     }
 
 
@@ -741,108 +740,101 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore()
      */
     @Override
-    public void doStore(SessionKey key, SessionData data) throws Exception
+    public void doStore(SessionKey key, SessionData data, boolean isNew) throws Exception
     {
         if (data==null || key==null)
             return;
 
-        try (Connection connection = _dbAdaptor.getConnection())        
-        {
-            connection.setAutoCommit(true);
-            
-            //If last saved field not set, then this is a fresh session that has never been persisted
-            if (data.getLastSaved() <= 0)
-            {     
-                doInsert(connection, key, data);
-            }
-            else
-            {
-                doUpdate(connection, key, data);            
-            }
-         
+        if (isNew)
+        {     
+            doInsert(key, data);
         }
-
+        else
+        {
+            doUpdate(key, data);            
+        }
     }
 
 
-    private void doInsert (Connection connection, SessionKey key, SessionData data) 
+    private void doInsert (SessionKey key, SessionData data) 
     throws Exception
     {
         String s = _sessionTableSchema.getInsertSessionStatementAsString();
 
-        try  (PreparedStatement statement = connection.prepareStatement(s))
+
+        try (Connection connection = _dbAdaptor.getConnection())        
         {
+            connection.setAutoCommit(true);
+            try  (PreparedStatement statement = connection.prepareStatement(s))
+            {
+                statement.setString(1, key.getId()); //session id
+                statement.setString(2, key.getCanonicalContextPath()); //context path
+                statement.setString(3, key.getVhost()); //first vhost
+                statement.setString(4, data.getLastNode());//my node id
+                statement.setLong(5, data.getAccessed());//accessTime
+                statement.setLong(6, data.getLastAccessed()); //lastAccessTime
+                statement.setLong(7, data.getCreated()); //time created
+                statement.setLong(8, data.getCookieSet());//time cookie was set
+                statement.setLong(9, data.getLastSaved()); //last saved time
+                statement.setLong(10, data.getExpiry());
+                statement.setLong(11, data.getMaxInactiveMs());
 
-            long now = System.currentTimeMillis();
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                oos.writeObject(data.getAllAttributes());
+                oos.flush();
+                byte[] bytes = baos.toByteArray();
 
-
-            statement.setString(1, key.getId()); //session id
-            statement.setString(2, key.getCanonicalContextPath()); //context path
-            statement.setString(3, key.getVhost()); //first vhost
-            statement.setString(4, data.getLastNode());//my node id
-            statement.setLong(5, data.getAccessed());//accessTime
-            statement.setLong(6, data.getLastAccessed()); //lastAccessTime
-            statement.setLong(7, data.getCreated()); //time created
-            statement.setLong(8, data.getCookieSet());//time cookie was set
-            statement.setLong(9, now); //last saved time
-            statement.setLong(10, data.getExpiry());
-            statement.setLong(11, data.getMaxInactiveMs());
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(data.getAllAttributes());
-            oos.flush();
-            byte[] bytes = baos.toByteArray();
-
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            statement.setBinaryStream(12, bais, bytes.length);//attribute map as blob
-            statement.executeUpdate();
-            data.setLastSaved(now);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Inserted session "+data);
+                ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+                statement.setBinaryStream(12, bais, bytes.length);//attribute map as blob
+                statement.executeUpdate();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Inserted session "+data);
+            }
         }
     }
 
-    private void doUpdate (Connection connection, SessionKey key, SessionData data)
-    throws Exception
+    private void doUpdate (SessionKey key, SessionData data)
+            throws Exception
     {
-       try (PreparedStatement statement = _sessionTableSchema.getUpdateSessionStatement(connection, key.getCanonicalContextPath()))
-       {
-           long now = System.currentTimeMillis();
-  
-           statement.setString(1, data.getLastNode());//should be my node id
-           statement.setLong(2, data.getAccessed());//accessTime
-           statement.setLong(3, data.getLastAccessed()); //lastAccessTime
-           statement.setLong(4, now); //last saved time
-           statement.setLong(5, data.getExpiry());
-           statement.setLong(6, data.getMaxInactiveMs());
- 
-           ByteArrayOutputStream baos = new ByteArrayOutputStream();
-           ObjectOutputStream oos = new ObjectOutputStream(baos);
-           oos.writeObject(data.getAllAttributes());
-           oos.flush();
-           byte[] bytes = baos.toByteArray();
-           ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-           statement.setBinaryStream(7, bais, bytes.length);//attribute map as blob
+        try (Connection connection = _dbAdaptor.getConnection())        
+        {
+            connection.setAutoCommit(true);
+            try (PreparedStatement statement = _sessionTableSchema.getUpdateSessionStatement(connection, key.getCanonicalContextPath()))
+            {
+                statement.setString(1, data.getLastNode());//should be my node id
+                statement.setLong(2, data.getAccessed());//accessTime
+                statement.setLong(3, data.getLastAccessed()); //lastAccessTime
+                statement.setLong(4, data.getLastSaved()); //last saved time
+                statement.setLong(5, data.getExpiry());
+                statement.setLong(6, data.getMaxInactiveMs());
 
-           if ((key.getCanonicalContextPath() == null || "".equals(key.getCanonicalContextPath())) && _dbAdaptor.isEmptyStringNull())
-           {
-               statement.setString(8, key.getId());
-               statement.setString(9, key.getVhost()); 
-           }
-           else
-           {
-               statement.setString(8, key.getId());
-               statement.setString(9, key.getCanonicalContextPath());
-               statement.setString(10, key.getVhost());
-           }
-           
-           statement.executeUpdate();
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                oos.writeObject(data.getAllAttributes());
+                oos.flush();
+                byte[] bytes = baos.toByteArray();
+                ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+                statement.setBinaryStream(7, bais, bytes.length);//attribute map as blob
 
-           data.setLastSaved(now);
-           if (LOG.isDebugEnabled())
-               LOG.debug("Updated session "+data);
-       }
+                if ((key.getCanonicalContextPath() == null || "".equals(key.getCanonicalContextPath())) && _dbAdaptor.isEmptyStringNull())
+                {
+                    statement.setString(8, key.getId());
+                    statement.setString(9, key.getVhost()); 
+                }
+                else
+                {
+                    statement.setString(8, key.getId());
+                    statement.setString(9, key.getCanonicalContextPath());
+                    statement.setString(10, key.getVhost());
+                }
+
+                statement.executeUpdate();
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Updated session "+data);
+            }
+        }
     }
 
 

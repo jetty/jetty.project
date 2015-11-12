@@ -44,7 +44,7 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
     }
 
 
-    public abstract void doStore(SessionKey key, SessionData data) throws Exception;
+    public abstract void doStore(SessionKey key, SessionData data, boolean isNew) throws Exception;
 
     
     public Context getContext()
@@ -65,9 +65,17 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
     @Override
     public void store(SessionKey key, SessionData data) throws Exception
     {
+        long lastSave = data.getLastSaved();
+        
+        data.setLastSaved(System.currentTimeMillis());
         try
         {
-            doStore(key, data);
+            doStore(key, data, (lastSave<=0));
+        }
+        catch (Exception e)
+        {
+            //reset last save time
+            data.setLastSaved(lastSave);
         }
         finally
         {

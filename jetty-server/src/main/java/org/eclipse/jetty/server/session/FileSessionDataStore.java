@@ -228,7 +228,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData)
      */
     @Override
-    public void doStore(SessionKey key, SessionData data) throws Exception
+    public void doStore(SessionKey key, SessionData data, boolean isNew) throws Exception
     {
         File file = null;
         if (_storeDir != null)

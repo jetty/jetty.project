@@ -126,6 +126,7 @@ public abstract class AbstractForwardedSessionTest
    
             HttpSession sess = request.getSession(false);
             assertNotNull(sess);
+            assertNotNull(sess.getAttribute("servlet3"));
             sess.setAttribute("servlet1", "servlet1");
         }
     }
@@ -144,6 +145,7 @@ public abstract class AbstractForwardedSessionTest
             //the session should exist after the forward
             HttpSession sess = request.getSession(false);
             assertNotNull(sess);
+            assertNotNull(sess.getAttribute("servlet3"));
         }
     }
 

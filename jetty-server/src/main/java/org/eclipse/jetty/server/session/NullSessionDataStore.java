@@ -61,7 +61,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore()
      */
     @Override
-    public void doStore(SessionKey key, SessionData data) throws Exception
+    public void doStore(SessionKey key, SessionData data, boolean isNew) throws Exception
     {
         //noop
     }
