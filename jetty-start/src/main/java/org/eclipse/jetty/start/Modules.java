@@ -421,6 +421,7 @@ public class Modules implements Iterable<Module>
         }
         StartLog.debug("Registering Module: %s",basehome.toShortForm(file));
         Module module = new Module(basehome,file);
+        module.setSkipFilesValidation(args.isSkippedFileValidation(module.getName()));
         module.expandProperties(args.getProperties());
         return register(module);
     }

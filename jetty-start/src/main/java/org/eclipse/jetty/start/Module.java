@@ -105,6 +105,9 @@ public class Module
     private boolean enabled = false;
     /** List of sources that enabled this module */
     private final Set<String> sources = new HashSet<>();
+    
+    /** Skip the validation of [files] section */
+    private boolean skipFilesValidation = false;
 
     public Module(BaseHome basehome, File file) throws FileNotFoundException, IOException
     {
@@ -288,6 +291,11 @@ public class Module
         return enabled;
     }
 
+    public boolean isSkipFilesValidation()
+    {
+        return skipFilesValidation;
+    }
+
     public void process(BaseHome basehome) throws FileNotFoundException, IOException
     {
         Pattern section = Pattern.compile("\\s*\\[([^]]*)\\]\\s*");
@@ -381,6 +389,11 @@ public class Module
             this.parentNames.addAll(parents);
         }
     }
+    
+    public void setSkipFilesValidation(boolean skip)
+    {
+        this.skipFilesValidation = skip;
+    }
 
     @Override
     public String toString()
@@ -395,4 +408,5 @@ public class Module
         str.append(']');
         return str.toString();
     }
+
 }

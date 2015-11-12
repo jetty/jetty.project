@@ -469,9 +469,16 @@ public class Main
         }
 
         // Do downloads now
-        for (String file : module.getFiles())
+        if (module.isSkipFilesValidation())
         {
-            initFile(new FileArg(file));
+            StartLog.info("Skipping [files] validation on module: %s",module.getName());
+        }
+        else
+        {
+            for (String file : module.getFiles())
+            {
+                initFile(new FileArg(file));
+            }
         }
 
         // Process dependencies from top level only

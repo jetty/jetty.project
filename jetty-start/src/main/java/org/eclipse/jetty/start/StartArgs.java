@@ -27,11 +27,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.eclipse.jetty.start.Props.Prop;
 
@@ -69,6 +71,8 @@ public class StartArgs
 
     private List<String> commandLine = new ArrayList<>();
     private Set<String> modules = new HashSet<>();
+    /** List of modules to skip [files] section validation */
+    private Set<String> skipFileValidationModules = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
     private Map<String, List<String>> sources = new HashMap<>();
     private List<FileArg> files = new ArrayList<>();
     private Classpath classpath;
@@ -104,8 +108,14 @@ public class StartArgs
         classpath = new Classpath();
     }
 
-    private void addFile(String uriLocation)
+    private void addFile(Module module, String uriLocation)
     {
+        if (module != null && module.isSkipFilesValidation())
+        {
+            StartLog.debug("Not validating %s [files] for %s",module,uriLocation);
+            return;
+        }
+        
         FileArg arg = new FileArg(uriLocation);
         if (!files.contains(arg))
         {
@@ -410,7 +420,7 @@ public class StartArgs
             for (String file : module.getFiles())
             {
                 StartLog.debug("Adding module specified file: %s",file);
-                addFile(file);
+                addFile(module, file);
             }
         }
     }
@@ -629,6 +639,15 @@ public class StartArgs
     {
         return listModules;
     }
+    
+    public boolean isSkippedFileValidation(String moduleName)
+    {
+        if(skipFileValidationModules == null) {
+            return false;
+        }
+        
+        return skipFileValidationModules.contains(moduleName);
+    }
 
     private void setProperty(String key, String value, String source)
     {
@@ -737,7 +756,7 @@ public class StartArgs
 
         if (arg.startsWith("--download="))
         {
-            addFile(getValue(arg));
+            addFile(null, getValue(arg));
             run = false;
             download = true;
             return;
@@ -778,6 +797,17 @@ public class StartArgs
         if ("--exec".equals(arg))
         {
             exec = true;
+            return;
+        }
+        
+        // Skip [files] validation on a module
+        if (arg.startsWith("--skip-vile-validation="))
+        {
+            List<String> moduleNames = getValues(arg);
+            for (String moduleName : moduleNames)
+            {
+                skipFileValidationModules.add(moduleName);
+            }
             return;
         }
 

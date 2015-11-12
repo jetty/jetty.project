@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.is;
 
 import java.io.File;
@@ -44,7 +46,9 @@ public class ModulesTest
 
         Modules modules = new Modules();
         modules.registerAll(basehome, DEFAULT_ARGS);
-        Assert.assertThat("Module count",modules.count(),is(29));
+        // 29 for java versions inside of NPN list
+        // 30 for java versions outside of NPN list
+        Assert.assertThat("Module count",modules.count(),anyOf(is(29),is(30)));
     }
     
     @Test
