@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
@@ -987,6 +986,8 @@ public class Request implements HttpServletRequest
      */
     public RequestDispatcher getRequestDispatcher(String path)
     {
+        path = URIUtil.compactPath(path);
+
         if (path == null || _context == null)
             return null;
 
