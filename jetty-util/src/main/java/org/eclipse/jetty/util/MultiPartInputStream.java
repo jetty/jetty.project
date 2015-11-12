@@ -149,7 +149,12 @@ public class MultiPartInputStream
         protected void createFile ()
         throws IOException
         {
+            final boolean USER = true;
+            final boolean WORLD = false;
+            
             _file = File.createTempFile("MultiPart", "", MultiPartInputStream.this._tmpDir);
+            _file.setReadable(false,WORLD); // (reset) disable it for everyone first
+            _file.setReadable(true,USER); // enable for user only
             if (_deleteOnExit)
                 _file.deleteOnExit();
             FileOutputStream fos = new FileOutputStream(_file);
