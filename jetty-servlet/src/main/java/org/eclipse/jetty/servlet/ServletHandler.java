@@ -24,17 +24,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.ListIterator;
-import java.util.Set;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -60,7 +58,6 @@ import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServletRequestHttpWrapper;
@@ -92,6 +89,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class ServletHandler extends ScopedHandler
 {
     private static final Logger LOG = Log.getLogger(ServletHandler.class);
+    private static final Logger LOG_UNHANDLED = LOG.getLogger("unhandled");
 
     /* ------------------------------------------------------------ */
     public static final String __DEFAULT_SERVLET="default";
@@ -560,7 +558,11 @@ public class ServletHandler extends ScopedHandler
             }
             else
             {
-                LOG.warn(request.getRequestURI(),th);
+                LOG.warn(String.format("Error Processing URI: %s - (%s) %s",request.getRequestURI(),th.getClass().getName(),th.getMessage()));
+                if (LOG_UNHANDLED.isDebugEnabled())
+                {
+                    LOG_UNHANDLED.debug(request.getRequestURI(),th);
+                }
             }
 
             request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
