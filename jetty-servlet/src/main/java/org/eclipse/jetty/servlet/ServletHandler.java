@@ -666,7 +666,7 @@ public class ServletHandler extends ScopedHandler
         if (_filterChainsCached)
         {
             if (LazyList.size(filters) > 0)
-                chain= new CachedChain(filters, servletHolder);
+                chain = newCachedChain(filters, servletHolder);
 
             final Map<String,FilterChain> cache=_chainCache[dispatch];
             final Queue<String> lru=_chainLRU[dispatch];
@@ -816,6 +816,15 @@ public class ServletHandler extends ScopedHandler
     public ServletHolder newServletHolder(Holder.Source source)
     {
         return new ServletHolder(source);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Create a new CachedChain 
+     */
+    public CachedChain newCachedChain(Object filters, ServletHolder servletHolder)
+    {
+        return new CachedChain(filters, servletHolder);
     }
     
     /* ------------------------------------------------------------ */
@@ -1445,7 +1454,7 @@ public class ServletHandler extends ScopedHandler
             {
                 _filterHolder=(FilterHolder)LazyList.get(filters, 0);
                 filters=LazyList.remove(filters,0);
-                _next=new CachedChain(filters,servletHolder);
+                _next=newCachedChain(filters,servletHolder);
             }
             else
                 _servletHolder=servletHolder;
