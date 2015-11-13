@@ -21,9 +21,11 @@ package org.eclipse.jetty.util;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -95,7 +97,9 @@ public class Loader
         ClassNotFoundException ex=null;
         Class<?> c =null;
         ClassLoader loader=Thread.currentThread().getContextClassLoader();
-        while (c==null && loader!=null )
+        Set<ClassLoader> seen = new HashSet<ClassLoader>();
+        
+        while (c==null && loader!=null && seen.add(loader))
         {
             try { c=loader.loadClass(name); }
             catch (ClassNotFoundException e) {if(ex==null)ex=e;}
@@ -103,14 +107,15 @@ public class Loader
         }      
         
         loader=loadClass==null?null:loadClass.getClassLoader();
-        while (c==null && loader!=null )
+        while (c==null && loader!=null && seen.add(loader))
         {
             try { c=loader.loadClass(name); }
             catch (ClassNotFoundException e) {if(ex==null)ex=e;}
             loader=(c==null&&checkParents)?loader.getParent():null;
         }       
 
-        if (c==null)
+        loader=Loader.class.getClassLoader();
+        if (c==null && loader!=null && seen.add(loader))
         {
             try { c=Class.forName(name); }
             catch (ClassNotFoundException e) {if(ex==null)ex=e;}
@@ -130,7 +135,9 @@ public class Loader
         MissingResourceException ex=null;
         ResourceBundle bundle =null;
         ClassLoader loader=Thread.currentThread().getContextClassLoader();
-        while (bundle==null && loader!=null )
+        Set<ClassLoader> seen = new HashSet<ClassLoader>();
+        
+        while (bundle==null && loader!=null && seen.add(loader))
         {
             try { bundle=ResourceBundle.getBundle(name, locale, loader); }
             catch (MissingResourceException e) {if(ex==null)ex=e;}
@@ -138,14 +145,15 @@ public class Loader
         }      
         
         loader=loadClass==null?null:loadClass.getClassLoader();
-        while (bundle==null && loader!=null )
+        while (bundle==null && loader!=null && seen.add(loader))
         {
             try { bundle=ResourceBundle.getBundle(name, locale, loader); }
             catch (MissingResourceException e) {if(ex==null)ex=e;}
             loader=(bundle==null&&checkParents)?loader.getParent():null;
         }       
 
-        if (bundle==null)
+        loader = Loader.class.getClassLoader();
+        if (bundle==null && loader!=null && seen.add(loader))
         {
             try { bundle=ResourceBundle.getBundle(name, locale); }
             catch (MissingResourceException e) {if(ex==null)ex=e;}
