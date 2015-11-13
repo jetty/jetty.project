@@ -1,0 +1,157 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+
+package org.eclipse.jetty.session.infinispan;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.server.SessionIdManager;
+import org.eclipse.jetty.server.session.AbstractSessionDataStore;
+import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.server.session.SessionKey;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.infinispan.commons.api.BasicCache;
+
+/**
+ * InfinispanSessionDataStore
+ *
+ *
+ */
+public class InfinispanSessionDataStore extends AbstractSessionDataStore
+{
+    private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+
+    public static final int DEFAULT_IDLE_EXPIRY_MULTIPLE = 2;
+
+
+    /**
+     * Clustered cache of sessions
+     */
+    private BasicCache<String, Object> _cache;
+
+    private SessionIdManager _idMgr = null;
+    
+    
+    private int _idleExpiryMultiple = DEFAULT_IDLE_EXPIRY_MULTIPLE;
+    
+
+    /**
+     * Get the clustered cache instance.
+     * 
+     * @return
+     */
+    public BasicCache<String, Object> getCache() 
+    {
+        return _cache;
+    }
+
+    
+    
+    /**
+     * Set the clustered cache instance.
+     * 
+     * @param cache
+     */
+    public void setCache (BasicCache<String, Object> cache) 
+    {
+        this._cache = cache;
+    }
+
+    public void setSessionIdManager (SessionIdManager idMgr)
+    {
+        _idMgr = idMgr;
+    }
+    
+    
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#load(org.eclipse.jetty.server.session.SessionKey)
+     */
+    @Override
+    public SessionData load(SessionKey key) throws Exception
+    {
+       return (SessionData)_cache.get(key.toString());
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(org.eclipse.jetty.server.session.SessionKey)
+     */
+    @Override
+    public boolean delete(SessionKey key) throws Exception
+    {
+        return (_cache.remove(key.toString()) != null);
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
+     */
+    @Override
+    public Set<SessionKey> getExpired(Set<SessionKey> candidates)
+    {
+       if (candidates == null  || candidates.isEmpty())
+           return candidates;
+       
+       long now = System.currentTimeMillis();
+       
+       Set<SessionKey> expired = new HashSet<SessionKey>();
+       if (LOG.isDebugEnabled())
+           LOG.debug("Getting expired sessions " + now);
+       
+       for (SessionKey candidate:candidates)
+       {
+           try
+           {
+               SessionData sd = load(candidate);
+               if (sd.isExpiredAt(now))
+                   expired.add(candidate);
+                   
+           }
+           catch (Exception e)
+           {
+               LOG.warn("Error checking if session {} is expired", candidate, e);
+           }
+       }
+       
+       return expired;
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData, boolean)
+     */
+    @Override
+    public void doStore(SessionKey key, SessionData data, boolean isNew) throws Exception
+    {
+        //Put an idle timeout on the cache entry if the session is not immortal - 
+        //if no requests arrive at any node before this timeout occurs, or no node 
+        //scavenges the session before this timeout occurs, the session will be removed.
+        //NOTE: that no session listeners can be called for this.
+        if (data.getMaxInactiveMs() > 0)
+            _cache.put(key.toString(), data, -1, TimeUnit.MILLISECONDS, (data.getMaxInactiveMs() * _idleExpiryMultiple), TimeUnit.MILLISECONDS);
+        else
+            _cache.put(key.toString(), data);
+        
+        //tickle the session id manager to keep the sessionid entry for this session up-to-date
+        if (_idMgr != null && _idMgr instanceof InfinispanSessionIdManager)
+        {
+            ((InfinispanSessionIdManager)_idMgr).touch(key.getId());
+        }
+    }
+}

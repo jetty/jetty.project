@@ -1003,12 +1003,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         count.incrementAndGet();
     }
     
-    protected void checkStarted () throws IllegalStateException
-    {
-        if (isStarted())
-            throw new IllegalStateException("Already started");
-    }
-    
+  
     
     public int getLoadAttempts (SessionKey key)
     {

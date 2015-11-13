@@ -159,12 +159,6 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
         return _sessionIdTableSchema;
     }
 
-    @Override
-    public String newSessionId(long seedTerm)
-    {
-        String id = super.newSessionId(seedTerm);
-        return id;
-    }
 
 
     
@@ -173,13 +167,15 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
      * 
      * @see org.eclipse.jetty.server.SessionIdManager#useId(java.lang.String)
      */
-    public void useId (String id)
+    @Override
+    public void useId (Session session)
     {
-        if (id == null)
+        if (session == null)
             return;
 
         synchronized (_sessionIds)
         {
+            String id = session.getId();
             try
             {
                 insert(id);
@@ -391,31 +387,6 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
         _sessionIds.clear();
 
         super.doStop();
-    }
-
-    
-    
-    /**
-     * 
-     * @param sql
-     * @param atoms
-     * @throws Exception
-     */
-    private String fillInClause (String sql, String[] literals, int start, int end)
-    throws Exception
-    {
-        StringBuffer buff = new StringBuffer();
-        buff.append(sql);
-        buff.append("(");
-        for (int i=start; i<end; i++)
-        {
-            buff.append("'"+(literals[i])+"'");
-            if (i+1<end)
-                buff.append(",");
-        }
-        buff.append(")");
-        return buff.toString();
-    }
-     
+    } 
    
 }

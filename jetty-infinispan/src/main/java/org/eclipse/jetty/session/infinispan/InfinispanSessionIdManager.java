@@ -28,8 +28,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.server.session.AbstractSessionIdManager;
+import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -154,29 +154,6 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
         
     }
 
-    /** 
-     * Remember a new in-use session id.
-     * 
-     * This will save the in-use session id to the cluster.
-     * 
-     * @see org.eclipse.jetty.server.SessionIdManager#addSession(javax.servlet.http.HttpSession)
-     */
-    @Override
-    public void addSession(HttpSession session)
-    {
-        if (session == null)
-            return;
-
-        //insert into the cache and set an idle expiry on the entry that
-        //is based off the max idle time configured for the session. If the
-        //session is immortal, then there is no idle expiry on the corresponding
-        //session id
-        if (session.getMaxInactiveInterval() == 0)
-            insert (((AbstractSession)session).getClusterId());
-        else
-            insert (((AbstractSession)session).getClusterId(), session.getMaxInactiveInterval() * getIdleExpiryMultiple());
-    }
-    
     
     public void setIdleExpiryMultiple (int multiplier)
     {
@@ -192,90 +169,8 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
         return _idleExpiryMultiple;
     }
     
-    
-    /** 
-     * Remove a session id from the list of in-use ids.
-     * 
-     * This will remvove the corresponding session id from the cluster.
-     * 
-     * @see org.eclipse.jetty.server.SessionIdManager#removeSession(javax.servlet.http.HttpSession)
-     */
-    @Override
-    public void removeSession(HttpSession session)
-    {
-        if (session == null)
-            return;
+   
 
-        //delete from the cache
-        delete (((AbstractSession)session).getClusterId());
-    }
-
-    /** 
-     * Remove a session id. This compels all other contexts who have a session
-     * with the same id to also remove it.
-     * 
-     * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
-     */
-    @Override
-    public void expireAll(String id)
-    {
-        //delete the session id from list of in-use sessions
-        delete (id);
-
-
-        //tell all contexts that may have a session object with this id to
-        //get rid of them
-        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
-        for (int i=0; contexts!=null && i<contexts.length; i++)
-        {
-            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-            if (sessionHandler != null)
-            {
-                SessionManager manager = sessionHandler.getSessionManager();
-
-                if (manager != null && manager instanceof InfinispanSessionManager)
-                {
-                    ((InfinispanSessionManager)manager).invalidateSession(id);
-                }
-            }
-        }
-
-    }
-
-    /** 
-     * Change a session id. 
-     * 
-     * Typically this occurs when a previously existing session has passed through authentication.
-     * 
-     * @see org.eclipse.jetty.server.session.AbstractSessionIdManager#renewSessionId(java.lang.String, java.lang.String, javax.servlet.http.HttpServletRequest)
-     */
-    @Override
-    public void renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)
-    {
-        //generate a new id
-        String newClusterId = newSessionId(request.hashCode());
-
-        delete(oldClusterId);
-        insert(newClusterId);
-
-
-        //tell all contexts to update the id 
-        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
-        for (int i=0; contexts!=null && i<contexts.length; i++)
-        {
-            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-            if (sessionHandler != null) 
-            {
-                SessionManager manager = sessionHandler.getSessionManager();
-
-                if (manager != null && manager instanceof InfinispanSessionManager)
-                {
-                    ((InfinispanSessionManager)manager).renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
-                }
-            }
-        }
-
-    }
 
     /**
      * Get the cache.
@@ -376,5 +271,29 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     protected String makeKey (String id)
     {
         return ID_KEY+id;
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.SessionIdManager#useId(java.lang.String)
+     */
+    @Override
+    public void useId(Session session)
+    {
+        if (session == null)
+            return;
+        
+      if (session.getMaxInactiveInterval() == 0)
+            insert (session.getId());
+        else
+            insert (session.getId(), session.getMaxInactiveInterval() * getIdleExpiryMultiple());
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.SessionIdManager#removeId(java.lang.String)
+     */
+    @Override
+    public void removeId(String id)
+    {
+       delete (id);        
     }
 }

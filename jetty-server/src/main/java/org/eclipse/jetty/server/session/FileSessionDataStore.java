@@ -151,12 +151,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
     }
     
-    private void checkStarted() 
-    throws IllegalStateException
-    {
-        if (isStarted())
-            throw new IllegalStateException("Already started");
-    }
         
         
     private SessionData load (SessionKey key, InputStream is)

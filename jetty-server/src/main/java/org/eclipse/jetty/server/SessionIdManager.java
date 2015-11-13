@@ -20,7 +20,7 @@ package org.eclipse.jetty.server;
 
 import javax.servlet.http.HttpServletRequest;
 
-
+import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /** Session ID Manager.
@@ -37,9 +37,9 @@ public interface SessionIdManager extends LifeCycle
     
     /**
      * Notify the sessionid manager that a particular session id is in use
-     * @param id
+     * @param the session whose id is being used
      */
-    public void useId (String id);
+    public void useId (Session session);
     
     /**
      * Remove id

@@ -580,7 +580,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             
             _sessionsCreatedStats.increment();
             
-            _sessionIdManager.useId(id);
+            _sessionIdManager.useId(session);
             
             if (_sessionListeners!=null)
             {
@@ -945,6 +945,9 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             session.setExtendedId(newExtendedId);
             session.getSessionData().setLastSaved(0); //forces an insert
             _sessionStore.put(newKey, session);
+            
+            //tell session id manager the id is in use
+            _sessionIdManager.useId(session);
             
             //remove session with old id
             _sessionStore.delete(oldKey);

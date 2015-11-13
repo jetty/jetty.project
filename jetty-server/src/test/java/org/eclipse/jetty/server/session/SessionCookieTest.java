@@ -156,7 +156,7 @@ public class SessionCookieTest
          * @see org.eclipse.jetty.server.SessionIdManager#useId(java.lang.String)
          */
         @Override
-        public void useId(String id)
+        public void useId(Session session)
         {
             // TODO Auto-generated method stub
             

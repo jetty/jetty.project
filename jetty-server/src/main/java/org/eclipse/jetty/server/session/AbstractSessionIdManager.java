@@ -374,7 +374,6 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
 
         removeId(oldClusterId);//remove the old one from the list (and database)
         
-        useId(newClusterId); //add the new id to list
 
         //tell all contexts to update the id 
         Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);

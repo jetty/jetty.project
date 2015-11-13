@@ -93,4 +93,10 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
         return new SessionData(key.getId(), key.getCanonicalContextPath(), key.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
  
+    protected void checkStarted () throws IllegalStateException
+    {
+        if (isStarted())
+            throw new IllegalStateException("Already started");
+    }
+    
 }

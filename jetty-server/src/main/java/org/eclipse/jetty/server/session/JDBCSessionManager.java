@@ -26,13 +26,15 @@ package org.eclipse.jetty.server.session;
 public class JDBCSessionManager extends SessionManager
 {
   
-    protected DatabaseAdaptor _db = new DatabaseAdaptor();
-    protected JDBCSessionDataStore _sessionDataStore = new JDBCSessionDataStore();
+    protected DatabaseAdaptor _db;
+    protected JDBCSessionDataStore _sessionDataStore;
 
     
     public JDBCSessionManager()
     {
+        _db = new DatabaseAdaptor();
         _sessionStore = new MemorySessionStore();
+        _sessionDataStore = new JDBCSessionDataStore();
     }
 
     @Override

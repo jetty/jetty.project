@@ -56,14 +56,15 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     
     /** 
      * @see org.eclipse.jetty.server.SessionIdManager#useId(java.lang.String)
+     * @param session the session whose id to use
      */
     @Override
-    public void useId(String id)
+    public void useId(Session session)
     {
-        if (id == null)
+        if (session == null)
             return;
         
-       _ids.add(id);
+       _ids.add(session.getId());
     }
 
     /** 
