@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,29 +52,19 @@ public class SelectiveJarResource extends JarResource
     public static final List<String> DEFAULT_INCLUDES = Arrays.asList(new String[]{"**"});// No includes supplied, so set it to 'matches all'
     public static final List<String> DEFAULT_EXCLUDES = Collections.emptyList(); //No includes, set to no exclusions
 
-
     List<String> _includes = null;
     List<String> _excludes = null;
     boolean _caseSensitive = false;
     
-
-    /**
-     * @param url
-     */
     public SelectiveJarResource(URL url)
     {
         super(url);
     }
   
-    /**
-     * @param url
-     * @param useCaches
-     */
     public SelectiveJarResource(URL url, boolean useCaches)
     {
         super(url, useCaches);
     }
-    
     
     public void setCaseSensitive (boolean caseSensitive)
     {

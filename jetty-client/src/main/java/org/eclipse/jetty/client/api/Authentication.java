@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,12 +25,12 @@ import org.eclipse.jetty.util.Attributes;
 
 /**
  * {@link Authentication} represents a mechanism to authenticate requests for protected resources.
- * <p />
+ * <p>
  * {@link Authentication}s are added to an {@link AuthenticationStore}, which is then
  * {@link #matches(String, URI, String) queried} to find the right
  * {@link Authentication} mechanism to use based on its type, URI and realm, as returned by
  * {@code WWW-Authenticate} response headers.
- * <p />
+ * <p>
  * If an {@link Authentication} mechanism is found, it is then
  * {@link #authenticate(Request, ContentResponse, HeaderInfo, Attributes) executed} for the given request,
  * returning an {@link Authentication.Result}, which is then stored in the {@link AuthenticationStore}
@@ -49,8 +49,8 @@ public interface Authentication
 
     /**
      * Executes the authentication mechanism for the given request, returning a {@link Result} that can be
-     * used to actually authenticate the request via {@link Result#apply(Request)}.
-     * <p />
+     * used to actually authenticate the request via {@link org.eclipse.jetty.client.api.Authentication.Result#apply(Request)}.
+     * <p>
      * If a request for {@code "/secure"} returns a {@link Result}, then the result may be used for other
      * requests such as {@code "/secure/foo"} or {@code "/secure/bar"}, unless those resources are protected
      * by other realms.
@@ -117,7 +117,7 @@ public interface Authentication
     }
 
     /**
-     * {@link Result} holds the information needed to authenticate a {@link Request} via {@link #apply(Request)}.
+     * {@link Result} holds the information needed to authenticate a {@link Request} via {@link org.eclipse.jetty.client.api.Authentication.Result#apply(org.eclipse.jetty.client.api.Request)}.
      */
     public static interface Result
     {

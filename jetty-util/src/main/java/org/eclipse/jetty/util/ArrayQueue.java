@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,11 +25,12 @@ import java.util.Queue;
 /* ------------------------------------------------------------ */
 /**
  * Queue backed by circular array.
- * <p/>
+ * <p>
  * This partial Queue implementation (also with {@link #remove()} for stack operation)
  * is backed by a growable circular array.
+ * </p>
  *
- * @param <E>
+ * @param <E> the type of object the queue holds
  */
 public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
 {
@@ -91,6 +92,15 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return the next slot to be used
+     */
+    public int getNextSlotUnsafe()
+    {
+        return _nextSlot;
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
     public boolean add(E e)
     {
@@ -109,9 +119,9 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
 
     /* ------------------------------------------------------------ */
-    private boolean enqueue(E e)
+    protected boolean enqueue(E e)
     {
-        if (_size == _elements.length && !grow())
+        if (_size == _elements.length && !growUnsafe())
             return false;
 
         _size++;
@@ -192,7 +202,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
 
     /* ------------------------------------------------------------ */
-    private E dequeue()
+    protected E dequeue()
     {
         E e = at(_nextE);
         _elements[_nextE] = null;
@@ -243,6 +253,12 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
         {
             return _size;
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    public int sizeUnsafe()
+    {
+        return _size;
     }
 
     /* ------------------------------------------------------------ */
@@ -339,7 +355,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
             if (index < 0 || index > _size)
                 throw new IndexOutOfBoundsException("!(" + 0 + "<" + index + "<=" + _size + ")");
 
-            if (_size == _elements.length && !grow())
+            if (_size == _elements.length && !growUnsafe())
                 throw new IllegalStateException("Full");
 
             if (index == _size)
@@ -384,25 +400,33 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
 
     /* ------------------------------------------------------------ */
-    protected boolean grow()
+    protected void resizeUnsafe(int newCapacity)
     {
-        synchronized (_lock)
+        newCapacity = Math.max(newCapacity,_size);
+        Object[] elements = new Object[newCapacity];
+
+        if (_size>0)
         {
-            if (_growCapacity <= 0)
-                return false;
-
-            Object[] elements = new Object[_elements.length + _growCapacity];
-
-            int split = _elements.length - _nextE;
-            if (split > 0)
+            if (_nextSlot>_nextE)
+                System.arraycopy(_elements, _nextE, elements, 0, _size);
+            else
+            {
+                int split = _elements.length - _nextE;
                 System.arraycopy(_elements, _nextE, elements, 0, split);
-            if (_nextE != 0)
                 System.arraycopy(_elements, 0, elements, split, _nextSlot);
-
-            _elements = elements;
-            _nextE = 0;
-            _nextSlot = _size;
-            return true;
+            }
         }
+        _elements = elements;
+        _nextE = 0;
+        _nextSlot = _size;
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected boolean growUnsafe()
+    {
+        if (_growCapacity <= 0)
+            return false;
+        resizeUnsafe(_elements.length+_growCapacity);
+        return true;
     }
 }

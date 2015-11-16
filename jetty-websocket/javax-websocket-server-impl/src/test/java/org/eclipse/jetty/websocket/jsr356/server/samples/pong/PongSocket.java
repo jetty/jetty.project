@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,7 +48,8 @@ public class PongSocket
     @OnMessage
     public void onPong(PongMessage pong)
     {
-        LOG.debug("onPong(): PongMessage.appData={}",BufferUtil.toDetailString(pong.getApplicationData()));
+        if (LOG.isDebugEnabled())
+            LOG.debug("onPong(): PongMessage.appData={}",BufferUtil.toDetailString(pong.getApplicationData()));
         byte buf[] = BufferUtil.toArray(pong.getApplicationData());
         String message = new String(buf,StandardCharsets.UTF_8);
         this.session.getAsyncRemote().sendText("@OnMessage(PongMessage)[" + path + "]:" + message);

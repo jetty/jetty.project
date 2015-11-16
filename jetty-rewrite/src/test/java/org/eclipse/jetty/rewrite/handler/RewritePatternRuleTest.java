@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.http.HttpURI;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,6 +35,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
                     {"/foo/bar", "/foo/*", "/replace/bar"},
                     {"/foo/bar", "/foo/bar", "/replace"},
                     {"/foo/bar.txt", "*.txt", "/replace"},
+                    {"/foo/bar/%20x", "/foo/*", "/replace/bar/%20x"},
             };
     private RewritePatternRule _rule;
 
@@ -87,7 +87,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
     {
         String replacement = "/replace";
         String queryString = "request=parameter";
-        _request.setUri(new HttpURI("/old/context"));
+        _request.setURIPathQuery("/old/context");
         _request.setQueryString(queryString);
 
         RewritePatternRule rewritePatternRule = new RewritePatternRule();
@@ -110,7 +110,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
         String[] split = replacement.split("\\?", 2);
         String path = split[0];
         String queryString = split[1];
-        _request.setUri(new HttpURI("/old/context"));
+        _request.setURIPathQuery("/old/context");
         _request.setQueryString(requestQueryString);
 
         RewritePatternRule rewritePatternRule = new RewritePatternRule();

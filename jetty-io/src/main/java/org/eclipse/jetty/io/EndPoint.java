@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,34 +27,34 @@ import java.nio.channels.WritePendingException;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-
+import org.eclipse.jetty.util.IteratingCallback;
 
 /**
  *
  * A transport EndPoint
- * 
+ *
  * <h3>Asynchronous Methods</h3>
- * <p>The asynchronous scheduling methods of {@link EndPoint} 
+ * <p>The asynchronous scheduling methods of {@link EndPoint}
  * has been influenced by NIO.2 Futures and Completion
  * handlers, but does not use those actual interfaces because they have
  * some inefficiencies.</p>
  * <p>This class will frequently be used in conjunction with some of the utility
  * implementations of {@link Callback}, such as {@link FutureCallback} and
- * {@link ExecutorCallback}. Examples are:</p>
+ * {@link IteratingCallback}. Examples are:</p>
  *
  * <h3>Blocking Read</h3>
  * <p>A FutureCallback can be used to block until an endpoint is ready to be filled
- * from:
+ * from:</p>
  * <blockquote><pre>
  * FutureCallback&lt;String&gt; future = new FutureCallback&lt;&gt;();
  * endpoint.fillInterested("ContextObj",future);
  * ...
  * String context = future.get(); // This blocks
  * int filled=endpoint.fill(mybuffer);
- * </pre></blockquote></p>
+ * </pre></blockquote>
  *
  * <h3>Dispatched Read</h3>
- * <p>By using a different callback, the read can be done asynchronously in its own dispatched thread:
+ * <p>By using a different callback, the read can be done asynchronously in its own dispatched thread:</p>
  * <blockquote><pre>
  * endpoint.fillInterested("ContextObj",new ExecutorCallback&lt;String&gt;(executor)
  * {
@@ -65,22 +65,22 @@ import org.eclipse.jetty.util.FutureCallback;
  *   }
  *   public void onFailed(String context,Throwable cause) {...}
  * });
- * </pre></blockquote></p>
+ * </pre></blockquote>
  * <p>The executor callback can also be customized to not dispatch in some circumstances when
  * it knows it can use the callback thread and does not need to dispatch.</p>
  *
  * <h3>Blocking Write</h3>
  * <p>The write contract is that the callback complete is not called until all data has been
- * written or there is a failure.  For blocking this looks like:
+ * written or there is a failure.  For blocking this looks like:</p>
  * <blockquote><pre>
  * FutureCallback&lt;String&gt; future = new FutureCallback&lt;&gt;();
  * endpoint.write("ContextObj",future,headerBuffer,contentBuffer);
  * String context = future.get(); // This blocks
- * </pre></blockquote></p>
+ * </pre></blockquote>
  *
  * <h3>Dispatched Write</h3>
  * <p>Note also that multiple buffers may be passed in write so that gather writes
- * can be done:
+ * can be done:</p>
  * <blockquote><pre>
  * endpoint.write("ContextObj",new ExecutorCallback&lt;String&gt;(executor)
  * {
@@ -91,10 +91,10 @@ import org.eclipse.jetty.util.FutureCallback;
  *   }
  *   public void onFailed(String context,Throwable cause) {...}
  * },headerBuffer,contentBuffer);
- * </pre></blockquote></p>
+ * </pre></blockquote>
  */
 public interface EndPoint extends Closeable
-{
+{    
     /* ------------------------------------------------------------ */
     /**
      * @return The local Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
@@ -160,7 +160,7 @@ public interface EndPoint extends Closeable
      * operation, the position is unchanged and the limit is increased to reflect the new data filled.
      * @return an <code>int</code> value indicating the number of bytes
      * filled or -1 if EOF is read or the input is shutdown.
-     * @throws EofException If the endpoint is closed.
+     * @throws IOException if the endpoint is closed.
      */
     int fill(ByteBuffer buffer) throws IOException;
 
@@ -169,10 +169,10 @@ public interface EndPoint extends Closeable
      * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed
      * are taken from the header/buffer position up until the buffer limit.  The header/buffers position
      * is updated to indicate how many bytes have been consumed.
-     * @return True IFF all the buffers have been consumed and the endpoint has flushed the data to its 
+     * @param buffer the buffers to flush
+     * @return True IFF all the buffers have been consumed and the endpoint has flushed the data to its
      * destination (ie is not buffering any data).
-     *
-     * @throws EofException If the endpoint is closed or output is shutdown.
+     * @throws IOException If the endpoint is closed or output is shutdown.
      */
     boolean flush(ByteBuffer... buffer) throws IOException;
 
@@ -186,13 +186,13 @@ public interface EndPoint extends Closeable
     /** Get the max idle time in ms.
      * <p>The max idle time is the time the endpoint can be idle before
      * extraordinary handling takes place.
-     * @return the max idle time in ms or if ms <= 0 implies an infinite timeout
+     * @return the max idle time in ms or if ms &lt;= 0 implies an infinite timeout
      */
     long getIdleTimeout();
 
     /* ------------------------------------------------------------ */
     /** Set the idle timeout.
-     * @param idleTimeout the idle timeout in MS. Timeout <= 0 implies an infinite timeout
+     * @param idleTimeout the idle timeout in MS. Timeout &lt;= 0 implies an infinite timeout
      */
     void setIdleTimeout(long idleTimeout);
 
@@ -204,6 +204,12 @@ public interface EndPoint extends Closeable
      * @throws ReadPendingException if another read operation is concurrent.
      */
     void fillInterested(Callback callback) throws ReadPendingException;
+
+    /**
+     * @return whether {@link #fillInterested(Callback)} has been called, but {@link #fill(ByteBuffer)} has not yet
+     * been called
+     */
+    boolean isFillInterested();
 
     /**
      * <p>Writes the given buffers via {@link #flush(ByteBuffer...)} and invokes callback methods when either
@@ -224,6 +230,7 @@ public interface EndPoint extends Closeable
     /**
      * @param connection the {@link Connection} associated with this {@link EndPoint}
      * @see #getConnection()
+     * @see #upgrade(Connection)
      */
     void setConnection(Connection connection);
 
@@ -239,5 +246,18 @@ public interface EndPoint extends Closeable
      */
     void onClose();
 
-    
+    /** Is the endpoint optimized for DirectBuffer usage
+     * @return True if direct buffers can be used optimally.
+     */
+    boolean isOptimizedForDirectBuffers();
+
+
+    /** Upgrade connections.
+     * Close the old connection, update the endpoint and open the new connection.
+     * If the oldConnection is an instance of {@link Connection.UpgradeFrom} then
+     * a prefilled buffer is requested and passed to the newConnection if it is an instance
+     * of {@link Connection.UpgradeTo}
+     * @param newConnection The connection to upgrade to
+     */
+    public void upgrade(Connection newConnection);
 }

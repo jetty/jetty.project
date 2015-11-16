@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
+import org.eclipse.jetty.server.Server;
 
 
 /* ------------------------------------------------------------ */
@@ -58,6 +59,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     }
 
     /* ------------------------------------------------------------ */
+    @SuppressWarnings("unchecked")
     @Override
     public <T extends Handler> T getChildHandlerByClass(Class<T> byclass)
     {
@@ -103,6 +105,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         {
             for (Handler h:branches)
             {
+                @SuppressWarnings("unchecked")
                 T container = (T)h;
                 Handler[] candidates = container.getChildHandlersByClass(handler.getClass());
                 if (candidates!=null)
@@ -114,5 +117,22 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
             }
         }
         return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void setServer(Server server)
+    {
+        if (server==getServer())
+            return;
+        
+        if (isStarted())
+            throw new IllegalStateException(STARTED);
+
+        super.setServer(server);
+        Handler[] handlers=getHandlers();
+        if (handlers!=null)
+            for (Handler h : handlers)
+                h.setServer(server);
     }
 }

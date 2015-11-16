@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.common.events.annotated;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.events.ParamList;
 
@@ -34,7 +33,7 @@ public class InvalidSignatureException extends InvalidWebSocketException
         StringBuilder err = new StringBuilder();
         err.append("Invalid declaration of ");
         err.append(method);
-        err.append(StringUtil.__LINE_SEPARATOR);
+        err.append(System.lineSeparator());
 
         err.append("Acceptable method declarations for @");
         err.append(annoClass.getSimpleName());
@@ -43,7 +42,7 @@ public class InvalidSignatureException extends InvalidWebSocketException
         {
             for (Class<?>[] params : validParams)
             {
-                err.append(StringUtil.__LINE_SEPARATOR);
+                err.append(System.lineSeparator());
                 err.append("public void ").append(method.getName());
                 err.append('(');
                 boolean delim = false;

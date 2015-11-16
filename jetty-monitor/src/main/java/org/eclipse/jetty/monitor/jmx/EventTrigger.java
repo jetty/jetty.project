@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -58,7 +58,9 @@ public abstract class EventTrigger
      * Abstract method to verify if the event trigger conditions
      * are in the appropriate state for an event to be triggered
      * 
+     * @param timestamp the timestamp to match 
      * @return true to trigger an event
+     * @throws Exception if unable to match
      */
     public abstract boolean match(long timestamp) throws Exception;
 

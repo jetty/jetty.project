@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.Matchers.either;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,13 +37,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-
-import static org.hamcrest.Matchers.either;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class HttpGeneratorServerHTTPTest
@@ -145,7 +145,7 @@ public class HttpGeneratorServerHTTPTest
             }
             ByteBuffer header = null;
             ByteBuffer chunk = null;
-            HttpGenerator.ResponseInfo info = null;
+            MetaData.Response info = null;
 
             loop:
             while (true)
@@ -157,12 +157,12 @@ public class HttpGeneratorServerHTTPTest
                 // Generate
                 boolean last = !BufferUtil.hasContent(content);
 
-                HttpGenerator.Result result = gen.generateResponse(info, header, chunk, content, last);
+                HttpGenerator.Result result = gen.generateResponse(info, _head, header, chunk, content, last);
 
                 switch (result)
                 {
                     case NEED_INFO:
-                        info = new HttpGenerator.ResponseInfo(HttpVersion.fromVersion(version), _fields, _contentLength, _code, reason, _head);
+                        info = new MetaData.Response(HttpVersion.fromVersion(version), _code, reason, _fields, _contentLength);
                         continue;
 
                     case NEED_HEADER:
@@ -216,7 +216,7 @@ public class HttpGeneratorServerHTTPTest
         }
     }
 
-    private class Handler implements HttpParser.ResponseHandler<ByteBuffer>
+    private class Handler implements HttpParser.ResponseHandler
     {
         @Override
         public boolean content(ByteBuffer ref)
@@ -247,9 +247,8 @@ public class HttpGeneratorServerHTTPTest
         }
 
         @Override
-        public boolean parsedHeader(HttpField field)
+        public void parsedHeader(HttpField field)
         {
-            return false;
         }
 
         @Override

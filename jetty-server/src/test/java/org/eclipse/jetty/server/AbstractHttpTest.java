@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,15 +36,20 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 
 public abstract class AbstractHttpTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
     protected static Server server;
     protected static ServerConnector connector;
     protected String httpVersion;
@@ -76,23 +81,24 @@ public abstract class AbstractHttpTest
 
     protected SimpleHttpResponse executeRequest() throws URISyntaxException, IOException
     {
-        Socket socket = new Socket("localhost", connector.getLocalPort());
-        socket.setSoTimeout((int)connector.getIdleTimeout());
-        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-        PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
-        String request = "GET / " + httpVersion + "\r\n";
+        try(Socket socket = new Socket("localhost", connector.getLocalPort());)
+        {
+            socket.setSoTimeout((int)connector.getIdleTimeout());
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+            PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-        writer.write(request);
-        writer.write("Host: localhost");
-        writer.println("\r\n");
-        writer.flush();
+            writer.write("GET / " + httpVersion + "\r\n");
+            writer.write("Host: localhost\r\n");
+            writer.write("\r\n");
+            writer.flush();
 
-        SimpleHttpResponse response = httpParser.readResponse(reader);
-        if ("HTTP/1.1".equals(httpVersion) && response.getHeaders().get("content-length") == null && response
-                .getHeaders().get("transfer-encoding") == null)
-            assertThat("If HTTP/1.1 response doesn't contain transfer-encoding or content-length headers, " +
-                    "it should contain connection:close", response.getHeaders().get("connection"), is("close"));
-        return response;
+            SimpleHttpResponse response = httpParser.readResponse(reader);
+            if ("HTTP/1.1".equals(httpVersion) && response.getHeaders().get("content-length") == null && response
+                    .getHeaders().get("transfer-encoding") == null)
+                assertThat("If HTTP/1.1 response doesn't contain transfer-encoding or content-length headers, " +
+                        "it should contain connection:close", response.getHeaders().get("connection"), is("close"));
+            return response;
+        }
     }
 
     protected void assertResponseBody(SimpleHttpResponse response, String expectedResponseBody)
@@ -123,8 +129,14 @@ public abstract class AbstractHttpTest
             this.throwException = throwException;
         }
 
-        @Override
+        @Override final 
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            super.handle(target,baseRequest,request,response);
+        }
+
+        @Override
+        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (throwException)
                 throw new TestCommitException();

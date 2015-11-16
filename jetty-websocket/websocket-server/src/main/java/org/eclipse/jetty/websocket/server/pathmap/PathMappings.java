@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.server.pathmap.PathMappings.MappedResource;
  * <p>
  * Sorted into search order upon entry into the Set
  * 
- * @param <E>
+ * @param <E> the type of mapping endpoint
  */
 @ManagedObject("Path Mappings")
 public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
@@ -177,7 +177,8 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         }
         // TODO: warning on replacement of existing mapping?
         mappings.add(entry);
-        LOG.debug("Added {} to {}",entry,this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Added {} to {}",entry,this);
         Collections.sort(mappings);
     }
 

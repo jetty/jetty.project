@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,7 @@ import java.util.Set;
 
 /* ------------------------------------------------------------ */
 /** A Trie String lookup data structure.
- * @param <V>
+ * @param <V> the Trie entry type
  */
 public interface Trie<V>
 {
@@ -49,6 +49,7 @@ public interface Trie<V>
     /* ------------------------------------------------------------ */
     /** Get and exact match from a String key
      * @param s The key
+     * @return the value for the string key
      */
     public V get(String s);
 
@@ -57,6 +58,7 @@ public interface Trie<V>
      * @param s The key
      * @param offset The offset within the string of the key
      * @param len the length of the key
+     * @return the value for the string / offset / length
      */
     public V get(String s,int offset,int len);
 
@@ -120,5 +122,8 @@ public interface Trie<V>
 
     /* ------------------------------------------------------------ */
     public boolean isCaseInsensitive();
+
+    /* ------------------------------------------------------------ */
+    public void clear();
 
 }

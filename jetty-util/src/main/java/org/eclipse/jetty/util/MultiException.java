@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,10 +41,16 @@ public class MultiException extends Exception
     /* ------------------------------------------------------------ */
     public void add(Throwable e)
     {
+        if (e==null)
+            throw new IllegalArgumentException();
+
         if(nested == null)
         {
+            initCause(e);
             nested = new ArrayList<>();
         }
+        else
+            addSuppressed(e);
         
         if (e instanceof MultiException)
         {
@@ -66,9 +70,8 @@ public class MultiException extends Exception
     /* ------------------------------------------------------------ */
     public List<Throwable> getThrowables()
     {
-        if(nested == null) {
+        if(nested == null)
             return Collections.emptyList();
-        }
         return nested;
     }
     
@@ -83,7 +86,7 @@ public class MultiException extends Exception
      * If this multi exception is empty then no action is taken. If it
      * contains a single exception that is thrown, otherwise the this
      * multi exception is thrown. 
-     * @exception Exception 
+     * @exception Exception the Error or Exception if nested is 1, or the MultiException itself if nested is more than 1.
      */
     public void ifExceptionThrow()
         throws Exception
@@ -143,6 +146,7 @@ public class MultiException extends Exception
      * If this multi exception is empty then no action is taken. If it
      * contains a any exceptions then this
      * multi exception is thrown. 
+     * @throws MultiException the multiexception if there are nested exception
      */
     public void ifExceptionThrowMulti()
         throws MultiException
@@ -166,49 +170,6 @@ public class MultiException extends Exception
             str.append(nested);
         }
         return str.toString();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void printStackTrace()
-    {
-        super.printStackTrace();
-        if(nested != null) {
-            for(Throwable t: nested) {
-                t.printStackTrace();
-            }
-        }
-    }
-   
-
-    /* ------------------------------------------------------------------------------- */
-    /**
-     * @see java.lang.Throwable#printStackTrace(java.io.PrintStream)
-     */
-    @Override
-    public void printStackTrace(PrintStream out)
-    {
-        super.printStackTrace(out);
-        if(nested != null) {
-            for(Throwable t: nested) {
-                t.printStackTrace(out);
-            }
-        }
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    /**
-     * @see java.lang.Throwable#printStackTrace(java.io.PrintWriter)
-     */
-    @Override
-    public void printStackTrace(PrintWriter out)
-    {
-        super.printStackTrace(out);
-        if(nested != null) {
-            for(Throwable t: nested) {
-                t.printStackTrace(out);
-            }
-        }
     }
 
 }

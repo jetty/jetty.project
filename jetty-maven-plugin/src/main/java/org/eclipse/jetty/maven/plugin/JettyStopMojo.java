@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -63,6 +63,10 @@ public class JettyStopMojo extends AbstractMojo
      */
     protected int stopWait;
     
+ 
+    
+    
+    
 
     public void execute() throws MojoExecutionException, MojoFailureException 
     {
@@ -71,13 +75,17 @@ public class JettyStopMojo extends AbstractMojo
         if (stopKey == null)
             throw new MojoExecutionException("Please specify a valid stopKey");  
 
+        //Ensure jetty Server instance stops. Whether or not the remote process
+        //also stops depends whether or not it was started with ShutdownMonitor.exitVm=true
+        String command = "forcestop"; 
+       
         try
         {        
             Socket s=new Socket(InetAddress.getByName("127.0.0.1"),stopPort);
             s.setSoLinger(false, 0);
 
             OutputStream out=s.getOutputStream();
-            out.write((stopKey+"\r\nstop\r\n").getBytes());
+            out.write((stopKey+"\r\n"+command+"\r\n").getBytes());
             out.flush();
 
             if (stopWait > 0)

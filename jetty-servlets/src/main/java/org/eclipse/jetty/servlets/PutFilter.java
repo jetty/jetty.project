@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,6 +44,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -331,7 +332,7 @@ public class PutFilter implements Filter
                 if ("Allow".equalsIgnoreCase(name))
                 {
                     Set<String> options = new HashSet<String>();
-                    options.addAll(Arrays.asList(value.split(" *, *")));
+                    options.addAll(Arrays.asList(StringUtil.csvSplit(value)));
                     options.addAll(_operations);
                     value=null;
                     for (String o : options)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,12 +28,8 @@ import java.util.Set;
 
 import org.eclipse.jetty.util.ajax.JSON.Output;
 
-/* ------------------------------------------------------------ */
 /**
  * Convert an Object to JSON using reflection on getters methods.
- * 
- * 
- *
  */
 public class JSONObjectConvertor implements JSON.Convertor
 {
@@ -52,7 +48,7 @@ public class JSONObjectConvertor implements JSON.Convertor
     
     /* ------------------------------------------------------------ */
     /**
-     * @param fromJSON
+     * @param fromJSON true to convert from JSON
      * @param excluded An array of field names to exclude from the conversion
      */
     public JSONObjectConvertor(boolean fromJSON,String[] excluded)

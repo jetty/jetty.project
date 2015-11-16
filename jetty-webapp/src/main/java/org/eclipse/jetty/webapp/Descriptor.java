@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.net.URL;
-
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -36,18 +33,8 @@ public abstract class Descriptor
         _xml = xml;
     }
     
-    public abstract XmlParser newParser()
-    throws ClassNotFoundException;
-    
     public abstract void ensureParser()
     throws ClassNotFoundException;
-    
-    protected void redirect(XmlParser parser, String resource, URL source)
-    {
-        if (source != null) 
-            parser.redirectEntity(resource, source);
-    }
-    
     
     public void setValidating (boolean validating)
     {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -31,7 +30,6 @@ import org.junit.Test;
 public class PathMapTest
 {
     @Test
-    @Ignore
     public void testPathMap() throws Exception
     {
         PathMap<String> p = new PathMap<>();
@@ -147,6 +145,7 @@ public class PathMapTest
 
     /**
      * See JIRA issue: JETTY-88.
+     * @throws Exception failed test
      */
     @Test
     public void testPathMappingsOnlyMatchOnDirectoryNames() throws Exception
@@ -167,6 +166,30 @@ public class PathMapTest
         assertNotMatch(spec, "/xyz?123"); // as if the ? was encoded and part of the path
     }
 
+    @Test
+    public void testPrecidenceVsOrdering() throws Exception
+    {
+        PathMap<String> p = new PathMap<>();
+        p.put("/dump/gzip/*","prefix");
+        p.put("*.txt","suffix");
+       
+        assertEquals(null,p.getMatch("/foo/bar"));
+        assertEquals("prefix",p.getMatch("/dump/gzip/something").getValue());
+        assertEquals("suffix",p.getMatch("/foo/something.txt").getValue());
+        assertEquals("prefix",p.getMatch("/dump/gzip/something.txt").getValue());
+        
+        p = new PathMap<>();
+        p.put("*.txt","suffix");
+        p.put("/dump/gzip/*","prefix");
+       
+        assertEquals(null,p.getMatch("/foo/bar"));
+        assertEquals("prefix",p.getMatch("/dump/gzip/something").getValue());
+        assertEquals("suffix",p.getMatch("/foo/something.txt").getValue());
+        assertEquals("prefix",p.getMatch("/dump/gzip/something.txt").getValue());
+    }
+    
+    
+    
     private void assertMatch(String spec, String path)
     {
         boolean match = PathMap.match(spec, path);

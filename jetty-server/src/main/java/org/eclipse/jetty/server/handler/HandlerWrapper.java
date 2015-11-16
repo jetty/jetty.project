@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -84,37 +83,39 @@ public class HandlerWrapper extends AbstractHandlerContainer
         if (handler!=null)
             handler.setServer(getServer());
         
-        updateBean(_handler,handler);
+        Handler old=_handler;
         _handler=handler;
+        updateBean(old,_handler,true);
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Replace the current handler with another HandlerWrapper
+     * linked to the current handler.  
+     * <p>
+     * This is equivalent to:
+     * <pre>
+     *   wrapper.setHandler(getHandler());
+     *   setHandler(wrapper);
+     * </pre>
+     * @param wrapper the wrapper to insert
+     */
+    public void insertHandler(HandlerWrapper wrapper)
+    {
+        if (wrapper==null || wrapper.getHandler()!=null)
+            throw new IllegalArgumentException();
+        wrapper.setHandler(getHandler());
+        setHandler(wrapper);
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (_handler!=null && isStarted())
-        {
-            _handler.handle(target,baseRequest, request, response);
-        }
+        Handler handler=_handler;
+        if (handler!=null)
+            handler.handle(target,baseRequest, request, response);
     }
-
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void setServer(Server server)
-    {
-        if (server==getServer())
-            return;
-        
-        if (isStarted())
-            throw new IllegalStateException(STARTED);
-
-        super.setServer(server);
-        Handler h=getHandler();
-        if (h!=null)
-            h.setServer(server);
-    }
-
 
     /* ------------------------------------------------------------ */
     @Override

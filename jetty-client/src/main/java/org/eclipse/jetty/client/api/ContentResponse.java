@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,16 @@ package org.eclipse.jetty.client.api;
  */
 public interface ContentResponse extends Response
 {
+    /**
+     * @return the media type of the content, such as "text/html" or "application/octet-stream"
+     */
+    String getMediaType();
+
+    /**
+     * @return the encoding of the content, such as "UTF-8"
+     */
+    String getEncoding();
+
     /**
      * @return the response content
      */

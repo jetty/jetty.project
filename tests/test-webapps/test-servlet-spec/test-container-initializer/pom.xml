@@ -3,11 +3,14 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.1.3-SNAPSHOT</version>
+    <version>9.4.0-SNAPSHOT</version>
   </parent>
   <artifactId>test-container-initializer</artifactId>
   <packaging>jar</packaging>
   <name>Jetty Tests :: WebApp :: Servlet Spec :: ServletContainerInitializer Test Jar</name>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.sci</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
        <plugin>
@@ -16,6 +19,38 @@
           <verbose>false</verbose>
         </configuration>
        </plugin>
+       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+            <execution>
+                <id>artifact-jar</id>
+                <goals>
+                    <goal>jar</goal>
+                </goals>
+            </execution>
+        </executions>
+        <configuration>
+            <archive>
+                <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
+            </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <extensions>true</extensions>
+          <configuration>
+              <instructions>
+                  <Bundle-SymbolicName>org.eclipse.jetty.tests.test-servlet-container-initializer;singleton:=true</Bundle-SymbolicName>
+                  <Bundle-Description>A bundle containing a ServletContainerInitializer for testing</Bundle-Description>
+                  <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+                  <Provide-Capability>osgi.serviceloader; osgi.serviceloader=javax.servlet.ServletContainerInitializer</Provide-Capability>
+                  <Export-Package>com.acme.initializer;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+                  <_nouses>true</_nouses>
+              </instructions>
+          </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>
@@ -24,13 +59,5 @@
        <artifactId>javax.servlet-api</artifactId>
        <scope>provided</scope>
     </dependency>
-
-<!--
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
-      <scope>provided</scope>
-    </dependency>
--->
   </dependencies>
 </project>

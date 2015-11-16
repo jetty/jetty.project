@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -80,7 +80,9 @@ public class HttpResponseHeaderParser
             {
                 if (parseHeader(line))
                 {
-                    // Finished parsing entire header
+                    // Now finished with parsing the entire response header
+                    // Save the remaining bytes for WebSocket to process.
+                    
                     ByteBuffer copy = ByteBuffer.allocate(buf.remaining());
                     BufferUtil.put(buf,copy);
                     BufferUtil.flipToFlush(copy,0);

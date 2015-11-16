@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -67,13 +67,13 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
 
     /* ------------------------------------------------------------ */
     /**
-     * Set the workname. If set, the workername is dot appended to the session
+     * Set the workername. If set, the workername is dot appended to the session
      * ID and can be used to assist session affinity in a load balancer.
      * A worker name starting with $ is used as a request attribute name to
      * lookup the worker name that can be dynamically set by a request
-     * customiser.
+     * Customizer.
      *
-     * @param workerName
+     * @param workerName the name of the worker
      */
     public void setWorkerName(String workerName)
     {
@@ -167,7 +167,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
             // random chance to reseed
             if (_reseed>0 && (r0%_reseed)== 1L)
             {
-                LOG.debug("Reseeding {}",this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Reseeding {}",this);
                 if (_random instanceof SecureRandom)
                 {
                     SecureRandom secure = (SecureRandom)_random;
@@ -243,8 +244,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
 
     /** Get the session ID with any worker ID.
      *
-     * @param clusterId
-     * @param request
+     * @param clusterId the cluster id
+     * @param request the request
      * @return sessionId plus any worker ID.
      */
     @Override

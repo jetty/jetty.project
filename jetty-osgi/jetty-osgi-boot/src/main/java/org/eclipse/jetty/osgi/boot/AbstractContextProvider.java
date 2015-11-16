@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.osgi.boot;
 
 import java.io.File;
-import java.net.URL;
 import java.util.Dictionary;
 import java.util.HashMap;
 
@@ -143,63 +142,12 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             {   
                 //apply the contextFile, creating the ContextHandler, the DeploymentManager will register it in the ContextHandlerCollection
                 Resource res = null;
-
-                //try to find the context file in the filesystem
-                if (_contextFile.startsWith("/"))
-                    res = getFileAsResource(_contextFile);
-
-                //try to find it relative to jetty home
-                if (res == null)
-                {
-                    //See if the specific server we are related to has jetty.home set
-                    String jettyHome = (String)getServerInstanceWrapper().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
-                    if (jettyHome != null)
-                        res = getFileAsResource(jettyHome, _contextFile);
-
-                    //try to see if a SystemProperty for jetty.home is set
-                    if (res == null)
-                    {
-                        jettyHome =  System.getProperty(OSGiServerConstants.JETTY_HOME);
-
-                        if (jettyHome != null)
-                        {
-                            if (jettyHome.startsWith("\"") || jettyHome.startsWith("'"))
-                                jettyHome = jettyHome.substring(1);
-                            if (jettyHome.endsWith("\"") || (jettyHome.endsWith("'")))
-                                jettyHome = jettyHome.substring(0,jettyHome.length()-1);
-
-                            res = getFileAsResource(jettyHome, _contextFile); 
-                            LOG.debug("jetty home context file: {}",res);
-                        }
-                    }
-                }
-
-                //try to find it relative to an override location that has been specified
-                if (res == null)
-                {                 
-                    if (bundleOverrideLocation != null)
-                    { 
-                        try(Resource location=Resource.newResource(bundleOverrideLocation))
-                        {
-                            res=location.addPath(_contextFile);
-                        }
-                        LOG.debug("Bundle override location context file: {}",res);
-                    }
-                }         
-
-                //try to find it relative to the bundle in which it is being deployed
-                if (res == null)
-                {
-                    if (_contextFile.startsWith("./"))
-                        _contextFile = _contextFile.substring(1);
-
-                    if (!_contextFile.startsWith("/"))
-                        _contextFile = "/" + _contextFile;
-
-                    URL contextURL = _bundle.getEntry(_contextFile);
-                    if (contextURL != null)
-                        res = Resource.newResource(contextURL);
-                }
+                
+                String jettyHome = (String)getServerInstanceWrapper().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
+                if (jettyHome == null)
+                    jettyHome =  System.getProperty(OSGiServerConstants.JETTY_HOME);
+                
+                res = findFile(_contextFile, jettyHome, bundleOverrideLocation, _bundle);
 
                 //apply the context xml file, either to an existing ContextHandler, or letting the
                 //it create the ContextHandler as necessary
@@ -266,38 +214,6 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
            
         }
 
-
-        private Resource getFileAsResource (String dir, String file)
-        {
-            Resource r = null;
-            try
-            {
-                File asFile = new File (dir, file);
-                if (asFile.exists())
-                    r = Resource.newResource(asFile);
-            }
-            catch (Exception e)
-            {
-                r = null;
-            } 
-            return r;
-        }
-        
-        private Resource getFileAsResource (String file)
-        {
-            Resource r = null;
-            try
-            {
-                File asFile = new File (file);
-                if (asFile.exists())
-                    r = Resource.newResource(asFile);
-            }
-            catch (Exception e)
-            {
-                r = null;
-            } 
-            return r;
-        }
     }
     
     /* ------------------------------------------------------------ */

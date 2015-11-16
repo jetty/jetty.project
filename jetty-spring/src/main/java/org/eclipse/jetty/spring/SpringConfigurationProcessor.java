@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,28 +36,27 @@ import org.springframework.beans.PropertyValues;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 
 /**
  * Spring ConfigurationProcessor
- * <p/>
+ * <p>
  * A {@link ConfigurationProcessor} that uses a spring XML file to emulate the {@link XmlConfiguration} format.
- * <p/>
+ * <p>
  * {@link XmlConfiguration} expects a primary object that is either passed in to a call to {@link #configure(Object)}
  * or that is constructed by a call to {@link #configure()}. This processor looks for a bean definition
  * with an id, name or alias of "Main" as uses that as the primary bean.
- * <p/>
+ * <p>
  * The objects mapped by {@link XmlConfiguration#getIdMap()} are set as singletons before any configuration calls
  * and if the spring configuration file contains a definition for the singleton id, the the singleton is updated
- * with a call to {@link XmlBeanFactory#configureBean(Object, String)}.
- * <p/>
+ * with a call to {@link DefaultListableBeanFactory#configureBean(Object, String)}.
+ * <p>
  * The property map obtained via {@link XmlConfiguration#getProperties()} is set as a singleton called "properties"
  * and values can be accessed by somewhat verbose
  * usage of {@link org.springframework.beans.factory.config.MethodInvokingFactoryBean}.
- * <p/>
+ * <p>
  * This processor is returned by the {@link SpringConfigurationProcessorFactory} for any XML document whos first
  * element is "beans". The factory is discovered by a {@link ServiceLoader} for {@link ConfigurationProcessorFactory}.
  */

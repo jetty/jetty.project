@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,12 +23,11 @@ import java.util.Queue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoEndpoint;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoEndpointConfigContextListener;
 import org.junit.Assert;
@@ -36,7 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Example of an {@link Endpoint} extended echo server added programmatically via the
+ * Example of an {@link javax.websocket.Endpoint} extended echo server added programmatically via the
  * {@link ServerContainer#addEndpoint(javax.websocket.server.ServerEndpointConfig)}
  */
 public class BasicEndpointTest
@@ -45,7 +44,7 @@ public class BasicEndpointTest
     public TestingDir testdir = new TestingDir();
 
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     @Test
     public void testEcho() throws Exception
@@ -64,7 +63,6 @@ public class BasicEndpointTest
 
             WebAppContext webapp = wsb.createWebAppContext();
             wsb.deployWebapp(webapp);
-            // wsb.dump();
 
             WebSocketClient client = new WebSocketClient(bufferPool);
             try

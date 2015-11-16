@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,14 +32,15 @@ import java.util.StringTokenizer;
  * four octet wildcard specifications (a.b.c.d) that are defined as follows.
  * </p>
  * <pre>
- * nnn - an absolute value (0-255)
- * mmm-nnn - an inclusive range of absolute values, 
- *           with following shorthand notations:
- *           nnn- => nnn-255
- *           -nnn => 0-nnn
- *           -    => 0-255
- * a,b,... - a list of wildcard specifications
+ *     nnn  - an absolute value (0-255)
+ * mmm-nnn  - an inclusive range of absolute values, 
+ *            with following shorthand notations:
+ *              nnn- =&gt; nnn-255
+ *             -nnn  =&gt; 0-nnn
+ *             -     =&gt; 0-255
+ *          a,b,...  - a list of wildcard specifications
  * </pre>
+ * @param <TYPE> the Map Entry value type
  */
 @SuppressWarnings("serial")
 public class IPAddressMap<TYPE> extends HashMap<String, TYPE>

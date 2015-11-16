@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,21 +26,20 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 
 /**
  * Handler to adjust the idle timeout of requests while dispatched.
  * Can be applied in jetty.xml with
  * <pre>
- *   &lt;Get id='handler' name='Handler'/>
- *   &lt;Set name='Handler'>
- *     &lt;New id='idleTimeoutHandler' class='org.eclipse.jetty.server.handler.IdleTimeoutHandler'>
- *       &lt;Set name='Handler'>&lt;Ref id='handler'/>&lt;/Set>
- *       &lt;Set name='IdleTimeoutMs'>5000&lt;/Set>
- *     &lt;/New>
- *   &lt;/Set>
+ *   &lt;Get id='handler' name='Handler'/&gt;
+ *   &lt;Set name='Handler'&gt;
+ *     &lt;New id='idleTimeoutHandler' class='org.eclipse.jetty.server.handler.IdleTimeoutHandler'&gt;
+ *       &lt;Set name='Handler'&gt;&lt;Ref id='handler'/&gt;&lt;/Set&gt;
+ *       &lt;Set name='IdleTimeoutMs'&gt;5000&lt;/Set&gt;
+ *     &lt;/New&gt;
+ *   &lt;/Set&gt;
  * </pre>
  */
 public class IdleTimeoutHandler extends HandlerWrapper
@@ -79,17 +78,9 @@ public class IdleTimeoutHandler extends HandlerWrapper
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        HttpConnection connection = HttpConnection.getCurrentConnection();
-        final EndPoint endp = connection==null?null:connection.getEndPoint();
-        
-        final long idle_timeout;
-        if (endp==null)
-            idle_timeout=-1;
-        else
-        {
-            idle_timeout=endp.getIdleTimeout();
-            endp.setIdleTimeout(_idleTimeoutMs);
-        }
+        final HttpChannel channel = baseRequest.getHttpChannel();
+        final long idle_timeout=baseRequest.getHttpChannel().getIdleTimeout();
+        channel.setIdleTimeout(_idleTimeoutMs);
         
         try
         {
@@ -97,38 +88,35 @@ public class IdleTimeoutHandler extends HandlerWrapper
         }
         finally
         {
-            if (endp!=null)
+            if (_applyToAsync && request.isAsyncStarted())
             {
-                if (_applyToAsync && request.isAsyncStarted())
+                request.getAsyncContext().addListener(new AsyncListener()
                 {
-                    request.getAsyncContext().addListener(new AsyncListener()
+                    @Override
+                    public void onTimeout(AsyncEvent event) throws IOException
+                    {                            
+                    }
+
+                    @Override
+                    public void onStartAsync(AsyncEvent event) throws IOException
                     {
-                        @Override
-                        public void onTimeout(AsyncEvent event) throws IOException
-                        {                            
-                        }
-                        
-                        @Override
-                        public void onStartAsync(AsyncEvent event) throws IOException
-                        {
-                        }
-                        
-                        @Override
-                        public void onError(AsyncEvent event) throws IOException
-                        {
-                            endp.setIdleTimeout(idle_timeout);
-                        }
-                        
-                        @Override
-                        public void onComplete(AsyncEvent event) throws IOException
-                        {
-                            endp.setIdleTimeout(idle_timeout);
-                        }
-                    });
-                }
-                else 
-                    endp.setIdleTimeout(idle_timeout);
+                    }
+
+                    @Override
+                    public void onError(AsyncEvent event) throws IOException
+                    {
+                        channel.setIdleTimeout(idle_timeout);
+                    }
+
+                    @Override
+                    public void onComplete(AsyncEvent event) throws IOException
+                    {
+                        channel.setIdleTimeout(idle_timeout);
+                    }
+                });
             }
+            else 
+                channel.setIdleTimeout(idle_timeout);
         }
     }
 }

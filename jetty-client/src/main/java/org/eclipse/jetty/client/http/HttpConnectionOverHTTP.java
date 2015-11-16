@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousCloseException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -29,23 +32,33 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Sweeper;
 
-public class HttpConnectionOverHTTP extends AbstractConnection implements Connection
+public class HttpConnectionOverHTTP extends AbstractConnection implements Connection, org.eclipse.jetty.io.Connection.UpgradeFrom, Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(HttpConnectionOverHTTP.class);
 
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicInteger sweeps = new AtomicInteger();
+    private final Promise<Connection> promise;
     private final Delegate delegate;
     private final HttpChannelOverHTTP channel;
     private long idleTimeout;
 
-    public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination)
+    public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
-        super(endPoint, destination.getHttpClient().getExecutor(), destination.getHttpClient().isDispatchIO());
+        super(endPoint, destination.getHttpClient().getExecutor());
+        this.promise = promise;
         this.delegate = new Delegate(destination);
-        this.channel = new HttpChannelOverHTTP(this);
+        this.channel = newHttpChannel();
+    }
+
+    protected HttpChannelOverHTTP newHttpChannel()
+    {
+        return new HttpChannelOverHTTP(this);
     }
 
     public HttpChannelOverHTTP getHttpChannel()
@@ -74,6 +87,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     {
         super.onOpen();
         fillInterested();
+        promise.succeeded(this);
     }
 
     public boolean isClosed()
@@ -84,14 +98,10 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     @Override
     protected boolean onReadTimeout()
     {
-        LOG.debug("{} idle timeout", this);
-
-        HttpExchange exchange = channel.getHttpExchange();
-        if (exchange != null)
-            return exchange.getRequest().abort(new TimeoutException());
-
-        getHttpDestination().close(this);
-        return true;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Idle timeout {}", this);
+        close(new TimeoutException());
+        return false;
     }
 
     @Override
@@ -110,6 +120,13 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         }
     }
 
+    @Override
+    public ByteBuffer onUpgradeFrom()
+    {
+        HttpReceiverOverHTTP receiver = channel.getHttpReceiver();
+        return receiver.onUpgradeFrom();
+    }
+
     public void release()
     {
         // Restore idle timeout
@@ -120,13 +137,24 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     @Override
     public void close()
     {
+        close(new AsynchronousCloseException());
+    }
+
+    protected void close(Throwable failure)
+    {
         if (softClose())
         {
+            // First close then abort, to be sure that the connection cannot be reused
+            // from an onFailure() handler or by blocking code waiting for completion.
             getHttpDestination().close(this);
             getEndPoint().shutdownOutput();
-            LOG.debug("{} oshut", this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Shutdown {}", this);
             getEndPoint().close();
-            LOG.debug("{} closed", this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closed {}", this);
+
+            abort(failure);
         }
     }
 
@@ -135,14 +163,37 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         return closed.compareAndSet(false, true);
     }
 
+    protected boolean abort(Throwable failure)
+    {
+        HttpExchange exchange = channel.getHttpExchange();
+        return exchange != null && exchange.getRequest().abort(failure);
+    }
+
+    @Override
+    public boolean sweep()
+    {
+        if (!closed.get())
+            return false;
+        if (sweeps.incrementAndGet() < 4)
+            return false;
+        return true;
+    }
+
+    public void remove()
+    {
+        getHttpDestination().remove(this);
+    }
+
     @Override
     public String toString()
     {
-        return String.format("%s@%h(l:%s <-> r:%s)",
+        return String.format("%s@%h(l:%s <-> r:%s,closed=%b)[%s]",
                 getClass().getSimpleName(),
                 this,
                 getEndPoint().getLocalAddress(),
-                getEndPoint().getRemoteAddress());
+                getEndPoint().getRemoteAddress(),
+                closed.get(),
+                channel);
     }
 
     private class Delegate extends HttpConnection
@@ -164,8 +215,10 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
             endPoint.setIdleTimeout(request.getIdleTimeout());
 
             // One channel per connection, just delegate the send
-            channel.associate(exchange);
-            channel.send();
+            if (channel.associate(exchange))
+                channel.send();
+            else
+                channel.release();
         }
 
         @Override

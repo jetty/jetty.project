@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,13 +33,16 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A BlockingQueue backed by a circular array capable or growing.
- * <p/>
+ * <p>
  * This queue is uses a variant of the two lock queue algorithm to provide an efficient queue or list backed by a growable circular array.
- * <p/>
+ * </p>
+ * <p>
  * Unlike {@link java.util.concurrent.ArrayBlockingQueue}, this class is able to grow and provides a blocking put call.
- * <p/>
+ * </p>
+ * <p>
  * The queue has both a capacity (the size of the array currently allocated) and a max capacity (the maximum size that may be allocated), which defaults to
  * {@link Integer#MAX_VALUE}.
+ * </p>
  * 
  * @param <E>
  *            The element type

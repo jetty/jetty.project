@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,11 +26,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.util.URIUtil;
 
 public class BalancerServlet extends ProxyServlet
 {
@@ -86,7 +88,7 @@ public class BalancerServlet extends ProxyServlet
         }
     }
 
-    private void initStickySessions() throws ServletException
+    private void initStickySessions()
     {
         _stickySessions = Boolean.parseBoolean(getServletConfig().getInitParameter("stickySessions"));
     }
@@ -128,15 +130,16 @@ public class BalancerServlet extends ProxyServlet
     }
 
     @Override
-    protected URI rewriteURI(HttpServletRequest request)
+    protected String rewriteTarget(HttpServletRequest request)
     {
         BalancerMember balancerMember = selectBalancerMember(request);
-        _log.debug("Selected {}", balancerMember);
+        if (_log.isDebugEnabled())
+            _log.debug("Selected {}", balancerMember);
         String path = request.getRequestURI();
         String query = request.getQueryString();
         if (query != null)
             path += "?" + query;
-        return URI.create(balancerMember.getProxyTo() + "/" + path).normalize();
+        return URI.create(balancerMember.getProxyTo() + "/" + path).normalize().toString();
     }
 
     private BalancerMember selectBalancerMember(HttpServletRequest request)
@@ -212,24 +215,24 @@ public class BalancerServlet extends ProxyServlet
     }
 
     @Override
-    protected String filterResponseHeader(HttpServletRequest request, String headerName, String headerValue)
+    protected String filterServerResponseHeader(HttpServletRequest request, Response serverResponse, String headerName, String headerValue)
     {
         if (_proxyPassReverse && REVERSE_PROXY_HEADERS.contains(headerName))
         {
             URI locationURI = URI.create(headerValue).normalize();
             if (locationURI.isAbsolute() && isBackendLocation(locationURI))
             {
-                String newURI = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+                StringBuilder newURI = URIUtil.newURIBuilder(request.getScheme(), request.getServerName(), request.getServerPort());
                 String component = locationURI.getRawPath();
                 if (component != null)
-                    newURI += component;
+                    newURI.append(component);
                 component = locationURI.getRawQuery();
                 if (component != null)
-                    newURI += "?" + component;
+                    newURI.append('?').append(component);
                 component = locationURI.getRawFragment();
                 if (component != null)
-                    newURI += "#" + component;
-                return URI.create(newURI).normalize().toString();
+                    newURI.append('#').append(component);
+                return URI.create(newURI.toString()).normalize().toString();
             }
         }
         return headerValue;

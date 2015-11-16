@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,34 +18,29 @@
 
 package org.eclipse.jetty.start;
 
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_GRAPH;
 import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
 import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
 import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import org.eclipse.jetty.start.config.CommandLineConfigSource;
 
 /**
  * Main start class.
@@ -53,46 +48,21 @@ import java.util.regex.Pattern;
  * This class is intended to be the main class listed in the MANIFEST.MF of the start.jar archive. It allows the Jetty Application server to be started with the
  * command "java -jar start.jar".
  * <p>
- * Argument processing steps:
+ * <b>Argument processing steps:</b>
  * <ol>
- * <li>Directory Locations:
- * <ul>
- * <li>jetty.home=[directory] (the jetty.home location)</li>
- * <li>jetty.base=[directory] (the jetty.base location)</li>
- * </ul>
- * </li>
- * <li>Start Logging behavior:
- * <ul>
- * <li>--debug (debugging enabled)</li>
- * <li>--start-log-file=logs/start.log (output start logs to logs/start.log location)</li>
- * </ul>
- * </li>
+ * <li>Directory Location: jetty.home=[directory] (the jetty.home location)</li>
+ * <li>Directory Location: jetty.base=[directory] (the jetty.base location)</li>
+ * <li>Start Logging behavior: --debug (debugging enabled)</li>
+ * <li>Start Logging behavior: --start-log-file=logs/start.log (output start logs to logs/start.log location)</li>
  * <li>Module Resolution</li>
  * <li>Properties Resolution</li>
  * <li>Present Optional Informational Options</li>
  * <li>Normal Startup</li>
- * </li>
  * </ol>
  */
 public class Main
 {
     private static final int EXIT_USAGE = 1;
-
-    public static String join(Collection<?> objs, String delim)
-    {
-        StringBuilder str = new StringBuilder();
-        boolean needDelim = false;
-        for (Object obj : objs)
-        {
-            if (needDelim)
-            {
-                str.append(delim);
-            }
-            str.append(obj);
-            needDelim = true;
-        }
-        return str.toString();
-    }
 
     public static void main(String[] args)
     {
@@ -130,11 +100,11 @@ public class Main
         System.exit(exit);
     }
 
-    private final BaseHome baseHome;
+    private BaseHome baseHome;
+    private StartArgs startupArgs;
 
-    Main() throws IOException
+    public Main() throws IOException
     {
-        baseHome = new BaseHome();
     }
 
     private void copyInThread(final InputStream in, final OutputStream out)
@@ -163,63 +133,9 @@ public class Main
         }).start();
     }
 
-    private void initFile(FileArg arg)
-    {
-        try
-        {
-            File file = baseHome.getBaseFile(arg.location);
-
-            StartLog.debug("Module file %s %s",file.getAbsolutePath(),(file.exists()?"[Exists!]":""));
-            if (file.exists())
-            {
-                return;
-            }
-
-            if (arg.uri!=null)
-            {
-                URL url = new URL(arg.uri);
-
-                System.err.println("DOWNLOAD: " + url + " to " + arg.location);
-
-                FS.ensureDirectoryExists(file.getParentFile());
-
-                byte[] buf = new byte[8192];
-                try (InputStream in = url.openStream(); OutputStream out = new FileOutputStream(file);)
-                {
-                    while (true)
-                    {
-                        int len = in.read(buf);
-
-                        if (len > 0)
-                        {
-                            out.write(buf,0,len);
-                        }
-                        if (len < 0)
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
-            else if (arg.location.endsWith("/"))
-            {
-                System.err.println("MKDIR: " + baseHome.toShortForm(file));
-                file.mkdirs();
-            }
-            else
-                StartLog.warn("MISSING: required file "+ baseHome.toShortForm(file));
-            
-        }
-        catch (Exception e)
-        {
-            StartLog.warn("ERROR: processing %s%n%s",arg,e);
-            StartLog.warn(e);
-            usageExit(EXIT_USAGE);
-        }
-    }
-
     private void dumpClasspathWithVersions(Classpath classpath)
     {
+        StartLog.endStartLog();
         System.out.println();
         System.out.println("Jetty Server Classpath:");
         System.out.println("-----------------------");
@@ -264,10 +180,9 @@ public class Main
         return "";
     }
 
-    public void invokeMain(StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, IOException
+    public void invokeMain(ClassLoader classloader, StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, IOException
     {
         Class<?> invoked_class = null;
-        ClassLoader classloader = args.getClasspath().getClassLoader();
         String mainclass = args.getMainClassname();
 
         try
@@ -292,15 +207,17 @@ public class Main
         { argArray.getClass() };
 
         Method main = invoked_class.getDeclaredMethod("main",method_param_types);
-        Object[] method_params = new Object[]
-        { argArray };
+        Object[] method_params = new Object[] { argArray };
+        StartLog.endStartLog();
         main.invoke(null,method_params);
     }
 
     public void listConfig(StartArgs args)
     {
+        StartLog.endStartLog();
+        
         // Dump Jetty Home / Base
-        args.dumpEnvironment();
+        args.dumpEnvironment(baseHome);
 
         // Dump JVM Args
         args.dumpJvmArgs();
@@ -318,8 +235,9 @@ public class Main
         args.dumpActiveXmls(baseHome);
     }
 
-    private void listModules(StartArgs args)
+    public void listModules(StartArgs args)
     {
+        StartLog.endStartLog();
         System.out.println();
         System.out.println("Jetty All Available Modules:");
         System.out.println("----------------------------");
@@ -327,176 +245,17 @@ public class Main
 
         // Dump Enabled Modules
         System.out.println();
-        System.out.println("Jetty Active Module Tree:");
-        System.out.println("-------------------------");
+        System.out.println("Jetty Selected Module Ordering:");
+        System.out.println("-------------------------------");
         Modules modules = args.getAllModules();
-        modules.dumpEnabledTree();
-    }
-
-    private void moduleIni(StartArgs args, String name, boolean topLevel, boolean appendStartIni) throws IOException
-    {
-        // Find the start.d relative to the base directory only.
-        File start_d = baseHome.getBaseFile("start.d");
-
-        // Is this a module?
-        Modules modules = args.getAllModules();
-        Module module = modules.get(name);
-        if (module == null)
-        {
-            StartLog.warn("ERROR: No known module for %s",name);
-            return;
-        }
-
-        // Find any named ini file and check it follows the convention
-        File start_ini = baseHome.getBaseFile("start.ini");
-        String short_start_ini = baseHome.toShortForm(start_ini);
-        File ini = new File(start_d,name + ".ini");
-        String short_ini = baseHome.toShortForm(ini);
-        StartIni module_ini = null;
-        if (ini.exists())
-        {
-            module_ini = new StartIni(ini);
-            if (module_ini.getLineMatches(Pattern.compile("--module=(.*, *)*" + name)).size() == 0)
-            {
-                StartLog.warn("ERROR: %s is not enabled in %s!",name,short_ini);
-                return;
-            }
-        }
-
-        boolean transitive = module.isEnabled() && (module.getSources().size() == 0);
-        boolean has_ini_lines = module.getInitialise().size() > 0;
-
-        // If it is not enabled or is transitive with ini template lines or toplevel and doesn't exist
-        if (!module.isEnabled() || (transitive && has_ini_lines) || (topLevel && !ini.exists() && !appendStartIni))
-        {
-            String source = null;
-            PrintWriter out = null;
-            try
-            {
-                if (appendStartIni)
-                {
-                    if ((!start_ini.exists() && !start_ini.createNewFile()) || !start_ini.canWrite())
-                    {
-                        StartLog.warn("ERROR: Bad %s! ",start_ini);
-                        return;
-                    }
-                    source = short_start_ini;
-                    StartLog.info("%-15s initialised in %s (appended)",name,source);
-                    out = new PrintWriter(new FileWriter(start_ini,true));
-                }
-                else
-                {
-                    // Create the directory if needed
-                    FS.ensureDirectoryExists(start_d);
-                    FS.ensureDirectoryWritable(start_d);
-                    try
-                    {
-                        // Create a new ini file for it
-                        if (!ini.createNewFile())
-                        {
-                            StartLog.warn("ERROR: %s cannot be initialised in %s! ",name,short_ini);
-                            return;
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        StartLog.warn("ERROR: Unable to create %s!",ini);
-                        StartLog.warn(e);
-                        return;
-                    }
-                    source = short_ini;
-                    StartLog.info("%-15s initialised in %s (created)",name,source);
-                    out = new PrintWriter(ini);
-                }
-
-                if (appendStartIni)
-                {
-                    out.println();
-                }
-                out.println("#");
-                out.println("# Initialize module " + name);
-                out.println("#");
-                Pattern p = Pattern.compile("--module=([^,]+)(,([^,]+))*");
-
-                out.println("--module=" + name);
-                args.parse("--module=" + name,source);
-                modules.enable(name,Collections.singletonList(source));
-                for (String line : module.getInitialise())
-                {
-                    out.println(line);
-                    args.parse(line,source);
-                    Matcher m = p.matcher(line);
-                    if (m.matches())
-                    {
-                        for (int i = 1; i <= m.groupCount(); i++)
-                        {
-                            String n = m.group(i);
-                            if (n == null)
-                            {
-                                continue;
-                            }
-                            n = n.trim();
-                            if ((n.length() == 0) || n.startsWith(","))
-                            {
-                                continue;
-                            }
-
-                            modules.enable(n,Collections.singletonList(source));
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                if (out != null)
-                {
-                    out.close();
-                }
-            }
-        }
-        else if (ini.exists())
-        {
-            StartLog.info("%-15s initialised in %s",name,short_ini);
-        }
-
-        // Also list other places this module is enabled
-        for (String source : module.getSources())
-        {
-            if (!short_ini.equals(source))
-            {
-                StartLog.info("%-15s enabled in     %s",name,baseHome.toShortForm(source));
-            }
-        }
-
-        // Do downloads now
-        for (String file : module.getFiles())
-        {
-            initFile(new FileArg(file));
-        }
-
-        // Process dependencies from top level only
-        if (topLevel)
-        {
-            List<Module> parents = new ArrayList<>();
-            for (String parent : modules.resolveParentModulesOf(name))
-            {
-                if (!name.equals(parent))
-                {
-                    Module m = modules.get(parent);
-                    m.setEnabled(true);
-                    parents.add(m);
-                }
-            }
-            Collections.sort(parents,Collections.reverseOrder(new Module.DepthComparator()));
-            for (Module m : parents)
-            {
-                moduleIni(args,m.getName(),false,appendStartIni);
-            }
-        }
+        modules.dumpSelected();
     }
 
     /**
      * Convenience for <code>processCommandLine(cmdLine.toArray(new String[cmdLine.size()]))</code>
+     * @param cmdLine the command line
+     * @return the start args parsed from the command line
+     * @throws Exception if unable to process the command line
      */
     public StartArgs processCommandLine(List<String> cmdLine) throws Exception
     {
@@ -505,83 +264,89 @@ public class Main
 
     public StartArgs processCommandLine(String[] cmdLine) throws Exception
     {
-        StartArgs args = new StartArgs(cmdLine);
-
         // Processing Order is important!
         // ------------------------------------------------------------
-        // 1) Directory Locations
-
-        // Set Home and Base at the start, as all other paths encountered
-        // will be based off of them.
-        baseHome.initialize(args);
-
-        // ------------------------------------------------------------
-        // 2) Start Logging
-        StartLog.getInstance().initialize(baseHome,args);
+        // 1) Configuration Locations
+        CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
+        baseHome = new BaseHome(cmdLineSource);
 
         StartLog.debug("jetty.home=%s",baseHome.getHome());
         StartLog.debug("jetty.base=%s",baseHome.getBase());
 
         // ------------------------------------------------------------
-        // 3) Load Inis
-        File start_ini = baseHome.getBaseFile("start.ini");
-        if (FS.canReadFile(start_ini))
-        {
-            StartLog.debug("Reading ${jetty.base}/start.ini - %s",start_ini);
-            args.parse(baseHome,new StartIni(start_ini));
-        }
-
-        File start_d = baseHome.getBaseFile("start.d");
-        if (FS.canReadDirectory(start_d))
-        {
-            List<File> files = new ArrayList<>();
-            for (File file : start_d.listFiles(new FS.IniFilter()))
-            {
-                files.add(file);
-            }
-
-            Collections.sort(files,new NaturalSort.Files());
-            for (File file : files)
-            {
-                StartLog.debug("Reading ${jetty.base}/start.d/%s - %s",file.getName(),file);
-                args.parse(baseHome,new StartIni(file));
-            }
-        }
-
-        // 4) Parse everything provided.
+        // 2) Parse everything provided.
         // This would be the directory information +
         // the various start inis
         // and then the raw command line arguments
         StartLog.debug("Parsing collected arguments");
-        args.parseCommandLine();
+        StartArgs args = new StartArgs();
+        args.parse(baseHome.getConfigSources());
 
-        // 5) Module Registration
-        Modules modules = new Modules();
+        // ------------------------------------------------------------
+        // 3) Module Registration
+        Modules modules = new Modules(baseHome,args);
         StartLog.debug("Registering all modules");
-        modules.registerAll(baseHome, args);
+        modules.registerAll();
 
-        // 6) Active Module Resolution
+        // ------------------------------------------------------------
+        // 4) Active Module Resolution
         for (String enabledModule : args.getEnabledModules())
         {
-            List<String> sources = args.getSources(enabledModule);
-            modules.enable(enabledModule,sources);
+            for (String source : args.getSources(enabledModule))
+            {
+                String shortForm = baseHome.toShortForm(source);
+                modules.select(enabledModule,shortForm);
+            }
         }
 
-        StartLog.debug("Building Module Graph");
-        modules.buildGraph();
+        StartLog.debug("Sorting Modules");
+        try
+        {
+            modules.sort();
+        }
+        catch (Exception e)
+        {
+            throw new UsageException(ERR_BAD_GRAPH,e);
+        }
 
         args.setAllModules(modules);
-        List<Module> activeModules = modules.resolveEnabled();
-        
-        // 7) Lib & XML Expansion / Resolution
+        List<Module> activeModules = modules.getSelected();
+
+
+        final Version START_VERSION = new Version(StartArgs.VERSION);
+
+        for(Module enabled: activeModules)
+        {
+            if(enabled.getVersion().isNewerThan(START_VERSION))
+            {
+                throw new UsageException(UsageException.ERR_BAD_GRAPH, "Module [" + enabled.getName() + "] specifies jetty version [" + enabled.getVersion()
+                        + "] which is newer than this version of jetty [" + START_VERSION + "]");
+            }
+        }
+
+        for(String name: args.getSkipFileValidationModules())
+        {
+            Module module = modules.get(name);
+            module.setSkipFilesValidation(true);
+        }
+
+        // ------------------------------------------------------------
+        // 5) Lib & XML Expansion / Resolution
+        args.expandLibs(baseHome);
         args.expandModules(baseHome,activeModules);
 
-        // 8) Resolve Extra XMLs
+
+        // ------------------------------------------------------------
+        // 6) Resolve Extra XMLs
         args.resolveExtraXmls(baseHome);
+        
+        // ------------------------------------------------------------
+        // 9) Resolve Property Files
+        args.resolvePropertyFiles(baseHome);
 
         return args;
     }
-
+    
     public void start(StartArgs args) throws IOException, InterruptedException
     {
         StartLog.debug("StartArgs: %s",args);
@@ -618,7 +383,7 @@ public class Main
         // Generate Module Graph File
         if (args.getModuleGraphFilename() != null)
         {
-            File outputFile = baseHome.getBaseFile(args.getModuleGraphFilename());
+            Path outputFile = baseHome.getBasePath(args.getModuleGraphFilename());
             System.out.printf("Generating GraphViz Graph of Jetty Modules at %s%n",baseHome.toShortForm(outputFile));
             ModuleGraphWriter writer = new ModuleGraphWriter();
             writer.config(args.getProperties());
@@ -629,67 +394,34 @@ public class Main
         if (args.isDryRun())
         {
             CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
-            System.out.println(cmd.toString());
+            System.out.println(cmd.toString(StartLog.isDebugEnabled()?" \\\n":" "));
         }
 
         if (args.isStopCommand())
         {
-            int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
-            String stopKey = args.getProperties().getString("STOP.KEY");
-
-            if (args.getProperties().getString("STOP.WAIT") != null)
-            {
-                int stopWait = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
-
-                stop(stopPort,stopKey,stopWait);
-            }
-            else
-            {
-                stop(stopPort,stopKey);
-            }
+            doStop(args);
         }
-
-        // Initialize
-        for (String module : args.getModuleStartIni())
-        {
-            moduleIni(args,module,true,true);
-        }
-
-        // Initialize
-        for (String module : args.getModuleStartdIni())
-        {
-            moduleIni(args,module,true,false);
-        }
-
-        // Check files
-        for (FileArg arg : args.getFiles())
-        {
-            File file = baseHome.getBaseFile(arg.location);
-            if (!file.exists() && args.isDownload())
-                initFile(arg);
-
-            if (!file.exists())
-            {
-                args.setRun(false);
-                String type=arg.location.endsWith("/")?"directory":"file";
-                if (arg.uri==null)
-                    StartLog.warn("Required %s '%s' does not exist. Run with --create-files to create",type,baseHome.toShortForm(file));
-                else
-                    StartLog.warn("Required %s '%s' not downloaded from %s.  Run with --create-files to download",type,baseHome.toShortForm(file),arg.uri);
-            }
-        }
+        
+        // Check base directory
+        BaseBuilder baseBuilder = new BaseBuilder(baseHome,args);
+        if(baseBuilder.build())
+            StartLog.info("Base directory was modified");
+        else if (args.isDownload() || !args.getAddToStartdIni().isEmpty() || !args.getAddToStartIni().isEmpty())
+            StartLog.info("Base directory was not modified");
         
         // Informational command line, don't run jetty
         if (!args.isRun())
         {
             return;
         }
-
+        
         // execute Jetty in another JVM
         if (args.isExec())
         {
             CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
+            cmd.debug();
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
+            StartLog.endStartLog();
             final Process process = pbuilder.start();
             Runtime.getRuntime().addShutdownHook(new Thread()
             {
@@ -714,14 +446,13 @@ public class Main
             System.err.println("WARNING: System properties and/or JVM args set.  Consider using --dry-run or --exec");
         }
 
-        // Set current context class loader to what is selected.
         ClassLoader cl = classpath.getClassLoader();
         Thread.currentThread().setContextClassLoader(cl);
 
         // Invoke the Main Class
         try
         {
-            invokeMain(args);
+            invokeMain(cl, args);
         }
         catch (Exception e)
         {
@@ -729,33 +460,54 @@ public class Main
         }
     }
 
-    /**
-     * Stop a running jetty instance.
-     */
-    public void stop(int port, String key)
+    private void doStop(StartArgs args)
     {
-        stop(port,key,0);
+        String stopHost = args.getProperties().getString("STOP.HOST");
+        int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
+        String stopKey = args.getProperties().getString("STOP.KEY");
+
+        if (args.getProperties().getString("STOP.WAIT") != null)
+        {
+            int stopWait = Integer.parseInt(args.getProperties().getString("STOP.WAIT"));
+
+            stop(stopHost,stopPort,stopKey,stopWait);
+        }
+        else
+        {
+            stop(stopHost,stopPort,stopKey);
+        }
     }
 
-    public void stop(int port, String key, int timeout)
+    /**
+     * Stop a running jetty instance.
+     * @param host the host
+     * @param port the port
+     * @param key the key
+     */
+    public void stop(String host, int port, String key)
     {
-        int _port = port;
-        String _key = key;
+        stop(host,port,key,0);
+    }
 
+    public void stop(String host, int port, String key, int timeout)
+    {
+        if (host==null || host.length()==0)
+            host="127.0.0.1";
+        
         try
         {
-            if (_port <= 0)
+            if (port <= 0)
             {
                 System.err.println("STOP.PORT system property must be specified");
             }
-            if (_key == null)
+            if (key == null)
             {
-                _key = "";
+                key = "";
                 System.err.println("STOP.KEY system property must be specified");
                 System.err.println("Using empty key");
             }
 
-            try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"),_port))
+            try (Socket s = new Socket(InetAddress.getByName(host),port))
             {
                 if (timeout > 0)
                 {
@@ -764,7 +516,7 @@ public class Main
 
                 try (OutputStream out = s.getOutputStream())
                 {
-                    out.write((_key + "\r\nstop\r\n").getBytes());
+                    out.write((key + "\r\nstop\r\n").getBytes());
                     out.flush();
 
                     if (timeout > 0)
@@ -801,15 +553,27 @@ public class Main
 
     public void usage(boolean exit)
     {
-        String usageResource = "org/eclipse/jetty/start/usage.txt";
-        boolean usagePresented = false;
-        try (InputStream usageStream = getClass().getClassLoader().getResourceAsStream(usageResource))
+        StartLog.endStartLog();
+        if(!printTextResource("org/eclipse/jetty/start/usage.txt"))
         {
-            if (usageStream != null)
+            System.err.println("ERROR: detailed usage resource unavailable");
+        }
+        if (exit)
+        {
+            System.exit(EXIT_USAGE);
+        }
+    }
+    
+    public static boolean printTextResource(String resourceName)
+    {
+        boolean resourcePrinted = false;
+        try (InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName))
+        {
+            if (stream != null)
             {
-                try (InputStreamReader reader = new InputStreamReader(usageStream); BufferedReader buf = new BufferedReader(reader))
+                try (InputStreamReader reader = new InputStreamReader(stream); BufferedReader buf = new BufferedReader(reader))
                 {
-                    usagePresented = true;
+                    resourcePrinted = true;
                     String line;
                     while ((line = buf.readLine()) != null)
                     {
@@ -819,20 +583,47 @@ public class Main
             }
             else
             {
-                System.out.println("No usage.txt ??");
+                System.out.println("Unable to find resource: " + resourceName);
             }
         }
         catch (IOException e)
         {
             StartLog.warn(e);
         }
-        if (!usagePresented)
+
+        return resourcePrinted;
+    }
+
+    // ------------------------------------------------------------
+    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
+    public void init(String[] args) throws Exception
+    {
+        try
         {
-            System.err.println("ERROR: detailed usage resource unavailable");
+            startupArgs = processCommandLine(args);
         }
-        if (exit)
+        catch (UsageException e)
         {
-            System.exit(EXIT_USAGE);
+            System.err.println(e.getMessage());
+            usageExit(e.getCause(),e.getExitCode());
         }
+        catch (Throwable e)
+        {
+            usageExit(e,UsageException.ERR_UNKNOWN);
+        }
+    }
+
+    public void start() throws Exception
+    {
+        start(startupArgs);
+    }
+
+    public void stop() throws Exception
+    {
+        doStop(startupArgs);
+    }
+
+    public void destroy()
+    {
     }
 }

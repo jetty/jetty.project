@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,33 +27,35 @@ import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A {@link ContentProvider} for an {@link InputStream}.
- * <p />
+ * <p>
  * The input stream is read once and therefore fully consumed.
  * Invocations to the {@link #iterator()} method after the first will return an "empty" iterator
  * because the stream has been consumed on the first invocation.
- * <p />
+ * <p>
  * However, it is possible for subclasses to override {@link #onRead(byte[], int, int)} to copy
  * the content read from the stream to another location (for example a file), and be able to
  * support multiple invocations of {@link #iterator()}, returning the iterator provided by this
  * class on the first invocation, and an iterator on the bytes copied to the other location
  * for subsequent invocations.
- * <p />
+ * <p>
  * It is possible to specify, at the constructor, a buffer size used to read content from the
  * stream, by default 4096 bytes.
- * <p />
+ * <p>
  * The {@link InputStream} passed to the constructor is by default closed when is it fully
  * consumed (or when an exception is thrown while reading it), unless otherwise specified
  * to the {@link #InputStreamContentProvider(java.io.InputStream, int, boolean) constructor}.
  */
-public class InputStreamContentProvider implements ContentProvider
+public class InputStreamContentProvider implements ContentProvider, Callback, Closeable
 {
     private static final Logger LOG = Log.getLogger(InputStreamContentProvider.class);
 
+    private final InputStreamContentProviderIterator iterator = new InputStreamContentProviderIterator();
     private final InputStream stream;
     private final int bufferSize;
     private final boolean autoClose;
@@ -85,7 +87,7 @@ public class InputStreamContentProvider implements ContentProvider
      * Callback method invoked just after having read from the stream,
      * but before returning the iteration element (a {@link ByteBuffer}
      * to the caller.
-     * <p />
+     * <p>
      * Subclasses may override this method to copy the content read from
      * the stream to another location (a file, or in memory if the content
      * is known to fit).
@@ -102,10 +104,48 @@ public class InputStreamContentProvider implements ContentProvider
         return ByteBuffer.wrap(buffer, offset, length);
     }
 
+    /**
+     * Callback method invoked when an exception is thrown while reading
+     * from the stream.
+     *
+     * @param failure the exception thrown while reading from the stream.
+     */
+    protected void onReadFailure(Throwable failure)
+    {
+    }
+
     @Override
     public Iterator<ByteBuffer> iterator()
     {
-        return new InputStreamIterator();
+        return iterator;
+    }
+
+    @Override
+    public void close()
+    {
+        if (autoClose)
+        {
+            try
+            {
+                stream.close();
+            }
+            catch (IOException x)
+            {
+                LOG.ignore(x);
+            }
+        }
+    }
+
+    @Override
+    public void succeeded()
+    {
+    }
+
+    @Override
+    public void failed(Throwable failure)
+    {
+        // TODO: forward the failure to the iterator.
+        close();
     }
 
     /**
@@ -114,16 +154,16 @@ public class InputStreamContentProvider implements ContentProvider
      * means that stream reading must be performed by {@link #hasNext()}, which introduces a side-effect
      * on what is supposed to be a simple query method (with respect to the Query Command Separation
      * Principle).
-     * <p />
+     * <p>
      * Alternatively, we could return {@code true} from {@link #hasNext()} even if we don't know that
      * we will read -1, but then when {@link #next()} reads -1 it must return an empty buffer.
      * However this is problematic, since GETs with no content indication would become GET with chunked
      * content, and not understood by servers.
-     * <p />
+     * <p>
      * Therefore we need to make sure that {@link #hasNext()} does not perform any side effect (so that
      * it can be called multiple times) until {@link #next()} is called.
      */
-    private class InputStreamIterator implements Iterator<ByteBuffer>, Closeable
+    private class InputStreamContentProviderIterator implements Iterator<ByteBuffer>, Closeable
     {
         private Throwable failure;
         private ByteBuffer buffer;
@@ -139,7 +179,8 @@ public class InputStreamContentProvider implements ContentProvider
 
                 byte[] bytes = new byte[bufferSize];
                 int read = stream.read(bytes);
-                LOG.debug("Read {} bytes from {}", read, stream);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Read {} bytes from {}", read, stream);
                 if (read > 0)
                 {
                     hasNext = Boolean.TRUE;
@@ -162,10 +203,12 @@ public class InputStreamContentProvider implements ContentProvider
             }
             catch (Throwable x)
             {
-                LOG.debug(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
                 if (failure == null)
                 {
                     failure = x;
+                    onReadFailure(x);
                     // Signal we have more content to cause a call to
                     // next() which will throw NoSuchElementException.
                     hasNext = Boolean.TRUE;
@@ -214,17 +257,7 @@ public class InputStreamContentProvider implements ContentProvider
         @Override
         public void close()
         {
-            if (autoClose)
-            {
-                try
-                {
-                    stream.close();
-                }
-                catch (IOException x)
-                {
-                    LOG.ignore(x);
-                }
-            }
+            InputStreamContentProvider.this.close();
         }
     }
 }

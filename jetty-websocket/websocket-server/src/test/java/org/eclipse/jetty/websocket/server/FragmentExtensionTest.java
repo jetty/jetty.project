@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,23 +18,22 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.common.test.HttpResponse;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore("Bug 395444")
 public class FragmentExtensionTest
 {
     private static SimpleServletServer server;
@@ -79,7 +78,7 @@ public class FragmentExtensionTest
         try
         {
             // Make sure the read times out if there are problems with the implementation
-            client.setTimeout(TimeUnit.SECONDS,1);
+            client.setTimeout(1,TimeUnit.SECONDS);
             client.connect();
             client.sendStandardRequest();
             HttpResponse resp = client.expectUpgradeResponse();
@@ -90,10 +89,10 @@ public class FragmentExtensionTest
             client.write(new TextFrame().setPayload(msg));
 
             String parts[] = split(msg,fragSize);
-            IncomingFramesCapture capture = client.readFrames(parts.length,TimeUnit.MILLISECONDS,1000);
+            EventQueue<WebSocketFrame> frames = client.readFrames(parts.length,1000,TimeUnit.MILLISECONDS);
             for (int i = 0; i < parts.length; i++)
             {
-                WebSocketFrame frame = capture.getFrames().poll();
+                WebSocketFrame frame = frames.poll();
                 Assert.assertThat("text[" + i + "].payload",frame.getPayloadAsUTF8(),is(parts[i]));
             }
         }

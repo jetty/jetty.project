@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
 import org.eclipse.jetty.websocket.jsr356.JsrPongMessage;
@@ -50,7 +49,7 @@ import org.eclipse.jetty.websocket.jsr356.messages.TextWholeMessage;
 /**
  * EventDriver for websocket that extend from {@link javax.websocket.Endpoint}
  */
-public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements EventDriver
+public class JsrEndpointEventDriver extends AbstractJsrEventDriver
 {
     private static final Logger LOG = Log.getLogger(JsrEndpointEventDriver.class);
 
@@ -77,7 +76,10 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
             final MessageHandlerWrapper wrapper = jsrsession.getMessageHandlerWrapper(MessageType.BINARY);
             if (wrapper == null)
             {
-                LOG.debug("No BINARY MessageHandler declared");
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("No BINARY MessageHandler declared");
+                }
                 return;
             }
             if (wrapper.wantsPartialMessages())
@@ -86,7 +88,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
             }
             else if (wrapper.wantsStreams())
             {
-                final MessageInputStream stream = new MessageInputStream(session.getConnection());
+                final MessageInputStream stream = new MessageInputStream();
                 activeMessage = stream;
                 dispatch(new Runnable()
                 {
@@ -129,21 +131,26 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
     @Override
     public void onConnect()
     {
-        LOG.debug("onConnect({}, {})",jsrsession,config);
-        try
+        if (LOG.isDebugEnabled())
         {
-            endpoint.onOpen(jsrsession,config);
+            LOG.debug("onConnect({}, {})",jsrsession,config);
         }
-        catch (Throwable t)
-        {
-            LOG.warn("Uncaught exception",t);
-        }
+
+        // Let unhandled exceptions flow out
+        endpoint.onOpen(jsrsession,config);
     }
 
     @Override
     public void onError(Throwable cause)
     {
-        endpoint.onError(jsrsession,cause);
+        try
+        {
+            endpoint.onError(jsrsession,cause);
+        }
+        catch (Throwable t)
+        {
+            LOG.warn("Unable to report to onError due to exception",t);
+        }
     }
 
     @Override
@@ -172,7 +179,10 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
             final MessageHandlerWrapper wrapper = jsrsession.getMessageHandlerWrapper(MessageType.TEXT);
             if (wrapper == null)
             {
-                LOG.debug("No TEXT MessageHandler declared");
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("No TEXT MessageHandler declared");
+                }
                 return;
             }
             if (wrapper.wantsPartialMessages())
@@ -181,7 +191,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
             }
             else if (wrapper.wantsStreams())
             {
-                final MessageReader stream = new MessageReader(new MessageInputStream(session.getConnection()));
+                final MessageReader stream = new MessageReader(new MessageInputStream());
                 activeMessage = stream;
 
                 dispatch(new Runnable()
@@ -215,7 +225,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
     {
         /* Ignored, handled by TextWholeMessage */
     }
-    
+
     @Override
     public void onPing(ByteBuffer buffer)
     {
@@ -233,19 +243,31 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
         final MessageHandlerWrapper wrapper = jsrsession.getMessageHandlerWrapper(MessageType.PONG);
         if (wrapper == null)
         {
-            LOG.debug("No PONG MessageHandler declared");
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("No PONG MessageHandler declared");
+            }
             return;
         }
 
-        ByteBuffer pongBuf = ByteBuffer.allocate(buffer.remaining());
-        BufferUtil.put(buffer,pongBuf);
-        BufferUtil.flipToFlush(pongBuf,0);
-        
+        ByteBuffer pongBuf = null;
+
+        if (BufferUtil.isEmpty(buffer))
+        {
+            pongBuf = BufferUtil.EMPTY_BUFFER;
+        }
+        else
+        {
+            pongBuf = ByteBuffer.allocate(buffer.remaining());
+            BufferUtil.put(buffer,pongBuf);
+            BufferUtil.flipToFlush(pongBuf,0);
+        }
+
         @SuppressWarnings("unchecked")
         Whole<PongMessage> pongHandler = (Whole<PongMessage>)wrapper.getHandler();
         pongHandler.onMessage(new JsrPongMessage(pongBuf));
     }
-    
+
     @Override
     public void setPathParameters(Map<String, String> pathParameters)
     {

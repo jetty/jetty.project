@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,9 +20,6 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.io.IOException;
 
-
-
-
 /**
  * ConsoleScanner
  *
@@ -30,16 +27,8 @@ import java.io.IOException;
  */
 public class ConsoleScanner extends Thread 
 {
-    
     private final AbstractJettyMojo mojo;
     
-    
-    
-    
-    
-    /**
-     * @param mojo
-     */
     public ConsoleScanner(AbstractJettyMojo mojo) 
     {
         this.mojo = mojo;
@@ -47,12 +36,6 @@ public class ConsoleScanner extends Thread
         setDaemon(true);
     }
     
-    
-    
-    
-    /** 
-     * @see java.lang.Thread#run()
-     */
     public void run() 
     {  
         try 
@@ -69,12 +52,6 @@ public class ConsoleScanner extends Thread
         }
     }
     
-    
-    
-    
-    /**
-     * 
-     */
     private void getSomeSleep() 
     {
         try 
@@ -87,12 +64,6 @@ public class ConsoleScanner extends Thread
         }
     }
     
-    
-    
-    
-    /**
-     * @throws IOException
-     */
     private void checkSystemInput() throws IOException 
     {     
         while (System.in.available() > 0) {
@@ -106,9 +77,6 @@ public class ConsoleScanner extends Thread
             }
         }
     }
-    
-    
-    
     
     /**
      * Skip buffered bytes of system console.
@@ -136,12 +104,6 @@ public class ConsoleScanner extends Thread
         }      
     }
     
-    
-    
-    
-    /**
-     * 
-     */
     private void restartWebApp()
     {
         try

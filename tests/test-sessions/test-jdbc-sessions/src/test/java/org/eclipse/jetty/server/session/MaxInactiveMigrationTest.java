@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -81,13 +79,8 @@ public class MaxInactiveMigrationTest
         testServer1.stop();
         testServer2.stop();
         client.stop();
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
+
+        JdbcTestServer.shutdown(null);
     }
 
 
@@ -103,7 +96,7 @@ public class MaxInactiveMigrationTest
         ContentResponse response = request.send();
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-        sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+        sessionCookie = response.getHeaders().get("Set-Cookie");
         assertTrue( sessionCookie != null );
         // Mangle the cookie, replacing Path with $Path, etc.
         sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");

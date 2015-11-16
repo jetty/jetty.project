@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.eclipse.jetty.websocket.api.BatchMode;
+
 /**
  * Tags a POJO as being a WebSocket class.
  */
@@ -40,4 +42,6 @@ public @interface WebSocket
     int maxIdleTime() default -2;
 
     int maxTextMessageSize() default -2;
+    
+    BatchMode batchMode() default BatchMode.AUTO;
 }

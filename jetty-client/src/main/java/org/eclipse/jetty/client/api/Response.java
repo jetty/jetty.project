@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>{@link Response} represents a HTTP response and offers methods to retrieve status code, HTTP version
@@ -45,14 +46,9 @@ public interface Response
     Request getRequest();
 
     /**
-     * @return the conversation id
-     * @deprecated do not use this method anymore
-     */
-    @Deprecated
-    long getConversationID();
-
-    /**
-     * @return the response listener passed to {@link Request#send(CompleteListener)}
+     * @param listenerClass the listener class
+     * @return the response listener passed to {@link org.eclipse.jetty.client.api.Request#send(org.eclipse.jetty.client.api.Response.CompleteListener)}
+     * @param <T> the type of class
      */
     <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass);
 
@@ -99,7 +95,7 @@ public interface Response
         /**
          * Callback method invoked when the response line containing HTTP version,
          * HTTP status code and reason has been received and parsed.
-         * <p />
+         * <p>
          * This method is the best approximation to detect when the first bytes of the response arrived to the client.
          *
          * @param response the response containing the response line data
@@ -152,6 +148,18 @@ public interface Response
         public void onContent(Response response, ByteBuffer content);
     }
 
+    public interface AsyncContentListener extends ResponseListener
+    {
+        /**
+         * Callback method invoked asynchronously when the response content has been received.
+         *
+         * @param response the response containing the response line data and the headers
+         * @param content the content bytes received
+         * @param callback the callback to call when the content is consumed.
+         */
+        public void onContent(Response response, ByteBuffer content, Callback callback);
+    }
+
     /**
      * Listener for the response succeeded event.
      */
@@ -187,9 +195,9 @@ public interface Response
         /**
          * Callback method invoked when the request <em><b>and</b></em> the response have been processed,
          * either successfully or not.
-         * <p/>
+         * <p>
          * The {@code result} parameter contains the request, the response, and eventual failures.
-         * <p/>
+         * <p>
          * Requests may complete <em>after</em> response, for example in case of big uploads that are
          * discarded or read asynchronously by the server.
          * This method is always invoked <em>after</em> {@link SuccessListener#onSuccess(Response)} or
@@ -204,7 +212,7 @@ public interface Response
     /**
      * Listener for all response events.
      */
-    public interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, SuccessListener, FailureListener, CompleteListener
+    public interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, AsyncContentListener, SuccessListener, FailureListener, CompleteListener
     {
         /**
          * An empty implementation of {@link Listener}
@@ -230,6 +238,20 @@ public interface Response
             @Override
             public void onContent(Response response, ByteBuffer content)
             {
+            }
+
+            @Override
+            public void onContent(Response response, ByteBuffer content, Callback callback)
+            {
+                try
+                {
+                    onContent(response, content);
+                    callback.succeeded();
+                }
+                catch (Throwable x)
+                {
+                    callback.failed(x);
+                }
             }
 
             @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,18 +32,15 @@ import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.FileResource;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
 
 /**
  * DefaultFileLocatorHelper
- * 
- * 
+ * <p> 
  * From a bundle to its location on the filesystem. Assumes the bundle is not a
  * jar.
- * 
- * @author hmalphettes
  */
 public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 {
@@ -63,7 +60,25 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
     // DirZipBundleEntry
 
     private static Field ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE = null;// ZipFile
+    
+    private static final String[] FILE_BUNDLE_ENTRY_CLASSES = {"org.eclipse.osgi.baseadaptor.bundlefile.FileBundleEntry","org.eclipse.osgi.storage.bundlefile.FileBundleEntry"};
+    private static final String[] ZIP_BUNDLE_ENTRY_CLASSES = {"org.eclipse.osgi.baseadaptor.bundlefile.ZipBundleEntry","org.eclipse.osgi.storage.bundlefile.ZipBundleEntry"};
+    private static final String[] DIR_ZIP_BUNDLE_ENTRY_CLASSES = {"org.eclipse.osgi.baseadaptor.bundlefile.DirZipBundleEntry","org.eclipse.osgi.storage.bundlefile.DirZipBundleEntry"};
+    private static final String[] BUNDLE_URL_CONNECTION_CLASSES = {"org.eclipse.osgi.framework.internal.core.BundleURLConnection", "org.eclipse.osgi.storage.url.BundleURLConnection"};
 
+
+    public static boolean match (String name, String... names)
+    {
+        if (name == null || names == null)
+            return false;
+        boolean matched = false;
+        for (int i=0; i< names.length && !matched; i++)
+            if (name.equals(names[i]))
+                matched = true;
+        return matched;
+    }
+    
+    
     /**
      * Works with equinox, felix, nuxeo and probably more. Not exactly in the
      * spirit of OSGi but quite necessary to support self-contained webapps and
@@ -71,7 +86,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * 
      * @param bundle The bundle
      * @return Its installation location as a file.
-     * @throws Exception
+     * @throws Exception if unable to get the bundle install location
      */
     public File getBundleInstallLocation(Bundle bundle) throws Exception
     {
@@ -82,10 +97,10 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 
         if (url.getProtocol().equals("file"))
         {
-            // some osgi frameworks do use the file protocole directly in some
+            // some osgi frameworks do use the file protocol directly in some
             // situations. Do use the FileResource to transform the URL into a
             // File: URL#toURI is broken
-            return new FileResource(url).getFile().getParentFile().getParentFile();
+            return new PathResource(url).getFile().getParentFile().getParentFile();
         }
         else if (url.getProtocol().equals("bundleentry"))
         {
@@ -107,7 +122,8 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 BUNDLE_ENTRY_FIELD.setAccessible(true);
             }
             Object bundleEntry = BUNDLE_ENTRY_FIELD.get(con);
-            if (bundleEntry.getClass().getName().equals("org.eclipse.osgi.baseadaptor.bundlefile.FileBundleEntry"))
+           
+            if (match(bundleEntry.getClass().getName(), FILE_BUNDLE_ENTRY_CLASSES))
             {
                 if (FILE_FIELD == null)
                 {
@@ -117,7 +133,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 File f = (File) FILE_FIELD.get(bundleEntry);
                 return f.getParentFile().getParentFile();
             }
-            else if (bundleEntry.getClass().getName().equals("org.eclipse.osgi.baseadaptor.bundlefile.ZipBundleEntry"))
+            else if (match(bundleEntry.getClass().getName(), ZIP_BUNDLE_ENTRY_CLASSES))
             {
                 url = bundle.getEntry("/");
 
@@ -144,7 +160,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 ZipFile zipFile = (ZipFile) ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE.get(zipBundleFile);
                 return new File(zipFile.getName());
             }
-            else if (bundleEntry.getClass().getName().equals("org.eclipse.osgi.baseadaptor.bundlefile.DirZipBundleEntry"))
+            else if (match (bundleEntry.getClass().getName(), DIR_ZIP_BUNDLE_ENTRY_CLASSES))
             {
                 // that will not happen as we did ask for the manifest not a
                 // directory.
@@ -193,10 +209,10 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
     /**
      * Locate a file inside a bundle.
      * 
-     * @param bundle
-     * @param path
+     * @param bundle the bundle
+     * @param path the path
      * @return file object
-     * @throws Exception
+     * @throws Exception if unable to get the file in the bundle
      */
     public File getFileInBundle(Bundle bundle, String path) throws Exception
     {
@@ -220,8 +236,8 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * it searches for entries in the fragments by using the Bundle#findEntries
      * method.
      * 
-     * @param bundle
-     * @param entryPath
+     * @param bundle the bundle
+     * @param entryPath the entry path
      * @return null or all the entries found for that path.
      */
     public Enumeration<URL> findEntries(Bundle bundle, String entryPath)
@@ -247,7 +263,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * kept in a jar.
      * </p>
      * 
-     * @param bundle
+     * @param bundle the bundle
      * @return The jar(s) file that is either the bundle itself, either the jars
      *         embedded inside it.
      */
@@ -309,7 +325,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 
             URLConnection conn = url.openConnection();
             conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
-            if (BUNDLE_URL_CONNECTION_getLocalURL == null && conn.getClass().getName().equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
+            if (BUNDLE_URL_CONNECTION_getLocalURL == null && match(conn.getClass().getName(), BUNDLE_URL_CONNECTION_CLASSES))
             {
                 BUNDLE_URL_CONNECTION_getLocalURL = conn.getClass().getMethod("getLocalURL", null);
                 BUNDLE_URL_CONNECTION_getLocalURL.setAccessible(true);
@@ -330,7 +346,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * @return a URL to the content of the bundle entry that uses the file:
      *         protocol
      *         </p>
-     * @throws IOException 
+     * @throws Exception if unable to get the file url 
      */
     public URL getFileURL(URL url) throws Exception
  
@@ -340,7 +356,9 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 
             URLConnection conn = url.openConnection();
             conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
-            if (BUNDLE_URL_CONNECTION_getFileURL == null && conn.getClass().getName().equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
+            if (BUNDLE_URL_CONNECTION_getFileURL == null 
+                && 
+                match (conn.getClass().getName(), BUNDLE_URL_CONNECTION_CLASSES))
             {
                 BUNDLE_URL_CONNECTION_getFileURL = conn.getClass().getMethod("getFileURL", null);
                 BUNDLE_URL_CONNECTION_getFileURL.setAccessible(true);

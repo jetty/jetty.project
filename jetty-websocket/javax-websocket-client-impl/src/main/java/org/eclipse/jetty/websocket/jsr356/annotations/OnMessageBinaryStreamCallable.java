@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.lang.reflect.Method;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
+import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
@@ -32,7 +33,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 /**
  * Callable for {@link OnMessage} annotated methods for {@link InputStream} based binary message objects
  * 
- * @see BinaryStream
+ * @see javax.websocket.Decoder.BinaryStream
  */
 public class OnMessageBinaryStreamCallable extends OnMessageCallable
 {
@@ -45,6 +46,7 @@ public class OnMessageBinaryStreamCallable extends OnMessageCallable
 
     /**
      * Copy Constructor
+     * @param copy the callable to copy from
      */
     public OnMessageBinaryStreamCallable(OnMessageCallable copy)
     {
@@ -53,8 +55,12 @@ public class OnMessageBinaryStreamCallable extends OnMessageCallable
 
     public Object call(Object endpoint, InputStream stream) throws DecodeException, IOException
     {
-        super.args[idxMessageObject] = binaryDecoder.decode(stream);
-        return super.call(endpoint,super.args);
+        // Bug-430088 - streaming based calls are dispatched.
+        // create a copy of the calling args array to prevent concurrency problems.
+        Object copy[] = new Object[super.args.length];
+        System.arraycopy(super.args,0,copy,0,super.args.length);
+        copy[idxMessageObject] = binaryDecoder.decode(stream);
+        return super.call(endpoint,copy);
     }
 
     @Override

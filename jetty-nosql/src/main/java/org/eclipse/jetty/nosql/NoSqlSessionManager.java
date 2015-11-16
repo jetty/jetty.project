@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.log.Logger;
  * NoSqlSessionManager
  *
  * Base class for SessionManager implementations using nosql frameworks
- * 
  */
 public abstract class NoSqlSessionManager extends AbstractSessionManager implements SessionManager
 {
@@ -97,10 +96,13 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
                     session=race;
                 }
                 else
+                {
                     __log.debug("session loaded ", idInCluster);
+                    _sessionsStats.increment();
+                }
                 
                 //check if the session we just loaded has actually expired, maybe while we weren't running
-                if (getMaxInactiveInterval() > 0 && session.getAccessed() > 0 && ((getMaxInactiveInterval()*1000)+session.getAccessed()) < System.currentTimeMillis())
+                if (getMaxInactiveInterval() > 0 && session.getAccessed() > 0 && ((getMaxInactiveInterval()*1000L)+session.getAccessed()) < System.currentTimeMillis())
                 {
                     __log.debug("session expired ", idInCluster);
                     expire(idInCluster);
@@ -176,70 +178,62 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     @Override
     protected boolean removeSession(String idInCluster)
     {
-        synchronized (this)
+        NoSqlSession session = _sessions.remove(idInCluster);
+
+        try
         {
-            NoSqlSession session = _sessions.remove(idInCluster);
-
-            try
+            if (session != null)
             {
-                if (session != null)
-                {
-                    return remove(session);
-                }
+                return remove(session);
             }
-            catch (Exception e)
-            {
-                __log.warn("Problem deleting session {}", idInCluster,e);
-            }
-
-            return session != null;
         }
+        catch (Exception e)
+        {
+            __log.warn("Problem deleting session {}", idInCluster,e);
+        }
+
+        return session != null;
+
     }
 
     /* ------------------------------------------------------------ */
     protected void expire( String idInCluster )
     {
-        synchronized (this)
-        {
-            //get the session from memory
-            NoSqlSession session = _sessions.get(idInCluster);
+        //get the session from memory
+        NoSqlSession session = _sessions.get(idInCluster);
 
-            try
+        try
+        {
+            if (session == null)
             {
-                if (session == null)
-                {
-                    //we need to expire the session with its listeners, so load it
-                    session = loadSession(idInCluster);
-                }
-               
-                if (session != null)
-                    session.timeout();
+                //we need to expire the session with its listeners, so load it
+                session = loadSession(idInCluster);
             }
-            catch (Exception e)
-            {
-                __log.warn("Problem expiring session {}", idInCluster,e);
-            }
+
+            if (session != null)
+                session.timeout();
+        }
+        catch (Exception e)
+        {
+            __log.warn("Problem expiring session {}", idInCluster,e);
         }
     }
-    
-    
+
+
     public void invalidateSession (String idInCluster)
     {
-        synchronized (this)
+        NoSqlSession session = _sessions.get(idInCluster);
+        try
         {
-            NoSqlSession session = _sessions.get(idInCluster);
-            try
+            __log.debug("invalidating session {}", idInCluster);
+            if (session != null)
             {
-                __log.debug("invalidating session {}", idInCluster);
-                if (session != null)
-                {
-                    session.invalidate();
-                }
+                session.invalidate();
             }
-            catch (Exception e)
-            {
-                __log.warn("Problem invalidating session {}", idInCluster,e); 
-            }
+        }
+        catch (Exception e)
+        {
+            __log.warn("Problem invalidating session {}", idInCluster,e); 
         }
     }
 
@@ -249,7 +243,7 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
      * The State Period is the maximum time in seconds that an in memory session is allows to be stale:
      * <ul>  
      * <li>If this period is exceeded, the DB will be checked to see if a more recent version is available.</li>
-     * <li>If the state period is set to a value < 0, then no staleness check will be made.</li>
+     * <li>If the state period is set to a value &lt; 0, then no staleness check will be made.</li>
      * <li>If the state period is set to 0, then a staleness check is made whenever the active request count goes from 0 to 1.</li>
      * </ul>
      * @return the stalePeriod in seconds
@@ -264,7 +258,7 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
      * The State Period is the maximum time in seconds that an in memory session is allows to be stale:
      * <ul>  
      * <li>If this period is exceeded, the DB will be checked to see if a more recent version is available.</li>
-     * <li>If the state period is set to a value < 0, then no staleness check will be made.</li>
+     * <li>If the state period is set to a value &lt; 0, then no staleness check will be made.</li>
      * <li>If the state period is set to 0, then a staleness check is made whenever the active request count goes from 0 to 1.</li>
      * </ul>
      * @param stalePeriod the stalePeriod in seconds
@@ -282,9 +276,9 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
      * <li>a save period of -1 means the session is never saved to the DB other than on a shutdown</li>
      * <li>a save period of 0 means the session is written to the DB whenever the active request count goes from 1 to 0.</li>
      * <li>a save period of 1 means the session is written to the DB whenever the active request count goes from 1 to 0 and the session is dirty.</li>
-     * <li>a save period of > 1 means the session is written after that period in seconds of being dirty.</li>
+     * <li>a save period of &gt; 1 means the session is written after that period in seconds of being dirty.</li>
      * </ul>
-     * @return the savePeriod -2,-1,0,1 or the period in seconds >=2 
+     * @return the savePeriod -2,-1,0,1 or the period in seconds &gt;=2 
      */
     public int getSavePeriod()
     {
@@ -299,9 +293,9 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
      * <li>a save period of -1 means the session is never saved to the DB other than on a shutdown</li>
      * <li>a save period of 0 means the session is written to the DB whenever the active request count goes from 1 to 0.</li>
      * <li>a save period of 1 means the session is written to the DB whenever the active request count goes from 1 to 0 and the session is dirty.</li>
-     * <li>a save period of > 1 means the session is written after that period in seconds of being dirty.</li>
+     * <li>a save period of &gt; 1 means the session is written after that period in seconds of being dirty.</li>
      * </ul>
-     * @param savePeriod the savePeriod -2,-1,0,1 or the period in seconds >=2 
+     * @param savePeriod the savePeriod -2,-1,0,1 or the period in seconds &gt;=2 
      */
     public void setSavePeriod(int savePeriod)
     {
@@ -312,7 +306,7 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     /**
      * The Idle Period is the time in seconds before an in memory session is passivated.
      * When this period is exceeded, the session will be passivated and removed from memory.  If the session was dirty, it will be written to the DB.
-     * If the idle period is set to a value < 0, then the session is never idled.
+     * If the idle period is set to a value &lt; 0, then the session is never idled.
      * If the save period is set to 0, then the session is idled whenever the active request count goes from 1 to 0.
      * @return the idlePeriod
      */
@@ -325,7 +319,7 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     /**
      * The Idle Period is the time in seconds before an in memory session is passivated.
      * When this period is exceeded, the session will be passivated and removed from memory.  If the session was dirty, it will be written to the DB.
-     * If the idle period is set to a value < 0, then the session is never idled.
+     * If the idle period is set to a value &lt; 0, then the session is never idled.
      * If the save period is set to 0, then the session is idled whenever the active request count goes from 1 to 0.
      * @param idlePeriod the idlePeriod in seconds
      */
@@ -367,7 +361,7 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     /* ------------------------------------------------------------ */
     /**
      * Preserve sessions when the session manager is stopped otherwise remove them from the DB.
-     * @param removeOnStop the removeOnStop to set
+     * @param preserveOnStop the preserveOnStop to set
      */
     public void setPreserveOnStop(boolean preserveOnStop)
     {

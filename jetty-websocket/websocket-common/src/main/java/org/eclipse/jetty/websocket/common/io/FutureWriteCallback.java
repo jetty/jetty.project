@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
+import java.util.concurrent.Future;
+
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -33,14 +35,16 @@ public class FutureWriteCallback extends FutureCallback implements WriteCallback
     @Override
     public void writeFailed(Throwable cause)
     {
-        LOG.debug(".writeFailed",cause);
+        if (LOG.isDebugEnabled())
+            LOG.debug(".writeFailed",cause);
         failed(cause);
     }
 
     @Override
     public void writeSuccess()
     {
-        LOG.debug(".writeSuccess");
+        if (LOG.isDebugEnabled())
+            LOG.debug(".writeSuccess");
         succeeded();
     }
 }

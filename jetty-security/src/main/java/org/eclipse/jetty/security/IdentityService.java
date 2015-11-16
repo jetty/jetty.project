@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,13 +22,10 @@ import java.security.Principal;
 
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 
-/* ------------------------------------------------------------ */
 /**
  * Associates UserIdentities from with threads and UserIdentity.Contexts.
- *
  */
 public interface IdentityService
 {
@@ -38,7 +35,7 @@ public interface IdentityService
     /**
      * Associate a user identity with the current thread.
      * This is called with as a thread enters the
-     * {@link SecurityHandler#handle(String, Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
+     * {@link SecurityHandler#handle(String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
      * method and then again with a null argument as that call exits.
      * @param user The current user or null for no user to associated.
      * @return an object representing the previous associated state

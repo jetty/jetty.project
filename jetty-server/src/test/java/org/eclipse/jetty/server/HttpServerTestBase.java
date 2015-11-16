@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,20 +51,25 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.AbstractLogger;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+
 /**
  *
  */
+@RunWith(AdvancedRunner.class)
 public abstract class HttpServerTestBase extends HttpServerTestFixture
 {
     private static final String REQUEST1_HEADER = "POST / HTTP/1.0\n" + "Host: localhost\n" + "Content-Type: text/xml; charset=utf-8\n" + "Connection: close\n" + "Content-Length: ";
-    private static final String REQUEST1_CONTENT = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n"
+    private static final String REQUEST1_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
             + "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" + "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n"
             + "</nimbus>";
     private static final String REQUEST1 = REQUEST1_HEADER + REQUEST1_CONTENT.getBytes().length + "\n\n" + REQUEST1_CONTENT;
@@ -82,7 +87,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "Content-Type: text/xml; charset=ISO-8859-1\n" +
                     "Content-Length: ";
     protected static final String REQUEST2_CONTENT =
-            "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" +
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                     "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
                     "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n" +
                     "    <request requestId=\"1\">\n" +
@@ -94,7 +99,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     protected static final String REQUEST2 = REQUEST2_HEADER + REQUEST2_CONTENT.getBytes().length + "\n\n" + REQUEST2_CONTENT;
 
     protected static final String RESPONSE2_CONTENT =
-            "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" +
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                     "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
                     "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n" +
                     "    <request requestId=\"1\">\n" +
@@ -105,7 +110,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     + "</nimbus>\n";
     protected static final String RESPONSE2 =
             "HTTP/1.1 200 OK\n" +
-                    "Content-Type: text/xml; charset=ISO-8859-1\n" +
+                    "Content-Type: text/xml;charset=iso-8859-1\n" +
                     "Content-Length: " + RESPONSE2_CONTENT.getBytes().length + "\n" +
                     "Server: Jetty(" + Server.getVersion() + ")\n" +
                     "\n" +
@@ -131,6 +136,45 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
+    @Test
+    public void testOPTIONS() throws Exception
+    {
+        configureServer(new OptionsHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            os.write(("OPTIONS * HTTP/1.1\r\n"
+                    + "Host: "+_serverURI.getHost()+"\r\n"
+                    + "Connection: close\r\n"
+                    + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
+            Assert.assertThat(response, Matchers.containsString("Allow: GET"));
+        }
+        
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            os.write(("GET * HTTP/1.1\r\n"
+                    + "Host: "+_serverURI.getHost()+"\r\n"
+                    + "Connection: close\r\n"
+                    + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
+            Assert.assertThat(response, Matchers.not(Matchers.containsString("Allow: ")));
+        }
+    }
 
     /*
     * Feed a full header method
@@ -144,7 +188,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             client.setSoTimeout(10000);
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
+            ((AbstractLogger) Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -175,7 +219,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect URI is too large, then ISE extra data ...");
+            ((AbstractLogger)Log.getLogger(HttpConnection.class)).info("expect URI is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -201,7 +245,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    public void testExceptionThrownInHandler() throws Exception
+    public void testExceptionThrownInHandlerLoop() throws Exception
     {
         configureServer(new AbstractHandler()
         {
@@ -226,7 +270,41 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.flush();
 
             String response = readResponse(client);
-            assertThat("response code is 500", response.contains("500"), is(true));
+            assertThat(response,Matchers.containsString(" 500 "));
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+        }
+    }
+    
+    @Test
+    public void testExceptionThrownInHandler() throws Exception
+    {
+        configureServer(new AbstractHandler()
+        {
+            @Override
+            public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                throw new QuietServletException("TEST handler exception");
+            }
+        });
+
+        StringBuffer request = new StringBuffer("GET / HTTP/1.0\r\n");
+        request.append("Host: localhost\r\n\r\n");
+
+        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
+        OutputStream os = client.getOutputStream();
+
+        try
+        { 
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+            Log.getLogger(HttpChannel.class).info("Expecting ServletException: TEST handler exception...");
+            os.write(request.toString().getBytes());
+            os.flush();
+
+            String response = readResponse(client);
+            assertThat(response,Matchers.containsString(" 500 "));
         }
         finally
         {
@@ -242,7 +320,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 int contentLength = request.getContentLength();
@@ -256,7 +334,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     catch (EofException e)
                     {
                         earlyEOFException.set(true);
-                        throw e;
+                        throw new QuietServletException(e);
                     }
                     if (i == 3)
                         fourBytesRead.set(true);
@@ -295,7 +373,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect header is too large, then ISE extra data ...");
+            ((AbstractLogger)Log.getLogger(HttpConnection.class)).info("expect header is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -926,7 +1004,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
-                            "\r\n").getBytes("iso-8859-1"));
+                            "\r\n").getBytes(StandardCharsets.ISO_8859_1));
 
             os.write((
                     "123456789\n"
@@ -938,7 +1016,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "\r\n"
-            ).getBytes("iso-8859-1"));
+            ).getBytes(StandardCharsets.ISO_8859_1));
 
             os.write((
                     "abcdefghZ\n"
@@ -953,7 +1031,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "content-length: " + contentB.length + "\r\n" +
                             "connection: close\r\n" +
                             "\r\n"
-            ).getBytes("iso-8859-1"));
+            ).getBytes(StandardCharsets.ISO_8859_1));
             os.write(contentB);
 
             os.flush();
@@ -986,8 +1064,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
 
             String in = new String(b, 0, i, StandardCharsets.UTF_8);
-            assertTrue(in.contains("123456789"));
-            assertTrue(in.contains("abcdefghZ"));
+            assertThat(in,containsString("123456789"));
+            assertThat(in,containsString("abcdefghZ"));
             assertFalse(in.contains("Wibble"));
 
             in = new String(b, i, b.length - i, StandardCharsets.UTF_16);
@@ -1028,7 +1106,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "\015\012" +
                             "abcdefghi\n"
 
-            ).getBytes("iso-8859-1"));
+            ).getBytes(StandardCharsets.ISO_8859_1));
 
 
             String in = IO.toString(is);
@@ -1053,7 +1131,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
-                            "\r\n").getBytes("iso-8859-1"));
+                            "\r\n").getBytes(StandardCharsets.ISO_8859_1));
 
             os.write((
                     "123456789\n"
@@ -1065,14 +1143,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "\r\n"
-            ).getBytes("iso-8859-1"));
+            ).getBytes(StandardCharsets.ISO_8859_1));
 
             os.write((
                     "abcdefghi\n"
-            ).getBytes("utf-8"));
+            ).getBytes(StandardCharsets.UTF_8));
 
             String content = "Wibble";
-            byte[] contentB = content.getBytes("utf-16");
+            byte[] contentB = content.getBytes(StandardCharsets.UTF_16);
             os.write((
                     "POST /echo?charset=utf-8 HTTP/1.1\r\n" +
                             "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
@@ -1080,15 +1158,15 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "content-length: " + contentB.length + "\r\n" +
                             "connection: close\r\n" +
                             "\r\n"
-            ).getBytes("iso-8859-1"));
+            ).getBytes(StandardCharsets.ISO_8859_1));
             os.write(contentB);
 
             os.flush();
 
             String in = IO.toString(is);
-            assertTrue(in.contains("123456789"));
-            assertTrue(in.contains("abcdefghi"));
-            assertTrue(in.contains("Wibble"));
+            assertThat(in,containsString("123456789"));
+            assertThat(in,containsString("abcdefghi"));
+            assertThat(in,containsString("Wibble"));
         }
     }
 
@@ -1137,7 +1215,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         try
         {
             ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).info("Expecting exception after commit then could not send 500....");
+            ((AbstractLogger)Log.getLogger(HttpChannel.class)).info("Expecting exception after commit then could not send 500....");
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 
@@ -1154,10 +1232,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             assertEquals(-1, is.read()); // Closed by error!
 
-            assertTrue(in.contains("HTTP/1.1 200 OK"));
+            assertThat(in,containsString("HTTP/1.1 200 OK"));
             assertTrue(in.indexOf("Transfer-Encoding: chunked") > 0);
             assertTrue(in.indexOf("Now is the time for all good men to come to the aid of the party") > 0);
-            assertTrue(in.contains("\r\n0\r\n"));
+            assertThat(in, Matchers.not(Matchers.containsString("\r\n0\r\n")));
 
             client.close();
             Thread.sleep(200);
@@ -1277,6 +1355,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         AvailableHandler ah = new AvailableHandler();
         configureServer(ah);
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(false);
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -1383,6 +1462,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             int point = points[j];
 
+            // System.err.println("write: "+new String(bytes, last, point - last));
             os.write(bytes, last, point - last);
             last = point;
             os.flush();
@@ -1393,6 +1473,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         // Write the last fragment
+        // System.err.println("Write: "+new String(bytes, last, bytes.length - last));
         os.write(bytes, last, bytes.length - last);
         os.flush();
         Thread.sleep(PAUSE);
@@ -1403,9 +1484,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new NoopHandler());
         final int REQS = 2;
-        char[] fill = new char[65 * 1024];
-        Arrays.fill(fill, '.');
-        String content = "This is a loooooooooooooooooooooooooooooooooo" +
+        final String content = "This is a coooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
@@ -1414,9 +1493,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
-                "oooooooooooonnnnnnnnnnnnnnnnggggggggg content" +
-                new String(fill);
-        final byte[] bytes = content.getBytes();
+                "oooooooooooonnnnnnnnnnnnnnnntent";
+        final int cl = content.getBytes().length;
 
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         final OutputStream out = client.getOutputStream();
@@ -1428,12 +1506,15 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             {
                 try
                 {
+                    byte[] bytes=(
+                            "GET / HTTP/1.1\r\n"+
+                                    "Host: localhost\r\n"
+                                    +"Content-Length: " + cl + "\r\n" +
+                                    "\r\n"+
+                                    content).getBytes(StandardCharsets.ISO_8859_1);
+                                    
                     for (int i = 0; i < REQS; i++)
-                    {
-                        out.write("GET / HTTP/1.1\r\nHost: localhost\r\n".getBytes(StandardCharsets.ISO_8859_1));
-                        out.write(("Content-Length: " + bytes.length + "\r\n" + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
                         out.write(bytes, 0, bytes.length);
-                    }
                     out.write("GET / HTTP/1.1\r\nHost: last\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
                     out.flush();
                 }
@@ -1445,7 +1526,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }.start();
 
         String resps = readResponse(client);
-
+                
         int offset = 0;
         for (int i = 0; i < (REQS + 1); i++)
         {

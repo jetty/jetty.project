@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -96,17 +96,12 @@ public class TestABCase9 extends AbstractABCase
         expect.add(toDataFrame(opcode).setPayload(copyOf(msg)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,8);
-        }
-        finally
-        {
-            fuzzer.close();
+            fuzzer.expect(expect,8,TimeUnit.SECONDS);
         }
     }
 
@@ -124,23 +119,19 @@ public class TestABCase9 extends AbstractABCase
         expect.add(toDataFrame(opcode).setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
             fuzzer.setSlowSendSegmentSize(segmentSize);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,8);
-        }
-        finally
-        {
-            fuzzer.close();
+            fuzzer.expect(expect,8,TimeUnit.SECONDS);
         }
     }
 
     /**
      * Echo 64KB text message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase9_1_1() throws Exception
@@ -157,22 +148,18 @@ public class TestABCase9 extends AbstractABCase
         expect.add(new TextFrame().setPayload(msg));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
      * Echo 256KB text message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase9_1_2() throws Exception
@@ -189,25 +176,20 @@ public class TestABCase9 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
      * Echo 1MB text message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_1_3() throws Exception
     {
         byte utf[] = new byte[1 * MBYTE];
@@ -222,25 +204,20 @@ public class TestABCase9 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,4);
-        }
-        finally
-        {
-            fuzzer.close();
+            fuzzer.expect(expect,4,TimeUnit.SECONDS);
         }
     }
 
     /**
      * Echo 4MB text message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_1_4() throws Exception
     {
         byte utf[] = new byte[4 * MBYTE];
@@ -255,22 +232,18 @@ public class TestABCase9 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,8);
-        }
-        finally
-        {
-            fuzzer.close();
+            fuzzer.expect(expect,8,TimeUnit.SECONDS);
         }
     }
 
     /**
      * Echo 8MB text message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -288,22 +261,18 @@ public class TestABCase9 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,16);
-        }
-        finally
-        {
-            fuzzer.close();
+            fuzzer.expect(expect,16,TimeUnit.SECONDS);
         }
     }
 
     /**
      * Echo 16MB text message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -321,22 +290,18 @@ public class TestABCase9 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,32);
-        }
-        finally
-        {
-            fuzzer.close();
+            fuzzer.expect(expect,32,TimeUnit.SECONDS);
         }
     }
 
     /**
      * Echo 64KB binary message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase9_2_1() throws Exception
@@ -352,22 +317,18 @@ public class TestABCase9 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(copyOf(data)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
      * Echo 256KB binary message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase9_2_2() throws Exception
@@ -384,22 +345,18 @@ public class TestABCase9 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
      * Echo 1MB binary message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -417,22 +374,18 @@ public class TestABCase9 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,4);
-        }
-        finally
-        {
-            fuzzer.close();
+            fuzzer.expect(expect,4,TimeUnit.SECONDS);
         }
     }
 
     /**
      * Echo 4MB binary message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -450,22 +403,18 @@ public class TestABCase9 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,8);
-        }
-        finally
-        {
-            fuzzer.close();
+            fuzzer.expect(expect,8,TimeUnit.SECONDS);
         }
     }
 
     /**
      * Echo 8MB binary message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -483,22 +432,18 @@ public class TestABCase9 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,16);
-        }
-        finally
-        {
-            fuzzer.close();
+            fuzzer.expect(expect,16,TimeUnit.SECONDS);
         }
     }
 
     /**
      * Echo 16MB binary message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -516,22 +461,18 @@ public class TestABCase9 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,32);
-        }
-        finally
-        {
-            fuzzer.close();
+            fuzzer.expect(expect,32,TimeUnit.SECONDS);
         }
     }
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -542,6 +483,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -552,6 +494,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -562,6 +505,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -572,6 +516,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -582,6 +527,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -592,6 +538,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -602,6 +549,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -612,6 +560,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -622,6 +571,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -632,6 +582,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -642,6 +593,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -652,6 +604,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -662,6 +615,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -672,6 +626,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -682,6 +637,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -692,6 +648,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -702,6 +659,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -712,6 +670,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB text message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -722,6 +681,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB text message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -732,6 +692,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB text message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -742,6 +703,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB text message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -752,6 +714,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB text message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -762,6 +725,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB text message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -772,6 +736,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB binary message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -782,6 +747,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB binary message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -792,6 +758,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB binary message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -802,6 +769,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB binary message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -812,6 +780,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB binary message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -822,6 +791,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB binary message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")

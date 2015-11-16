@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,10 +37,6 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* --------------------------------------------------------------------- */
-/**
- *
- */
 public class FilterHolder extends Holder<Filter>
 {
     private static final Logger LOG = Log.getLogger(FilterHolder.class);
@@ -61,6 +57,7 @@ public class FilterHolder extends Holder<Filter>
 
     /* ---------------------------------------------------------------- */
     /** Constructor
+     * @param source the holder source
      */
     public FilterHolder(Holder.Source source)
     {
@@ -69,6 +66,7 @@ public class FilterHolder extends Holder<Filter>
 
     /* ---------------------------------------------------------------- */
     /** Constructor
+     * @param filter the filter class
      */
     public FilterHolder(Class<? extends Filter> filter)
     {
@@ -78,6 +76,7 @@ public class FilterHolder extends Holder<Filter>
 
     /* ---------------------------------------------------------------- */
     /** Constructor for existing filter.
+     * @param filter the filter
      */
     public FilterHolder(Filter filter)
     {
@@ -133,7 +132,8 @@ public class FilterHolder extends Holder<Filter>
         }
 
         _config=new Config();
-        LOG.debug("Filter.init {}",_filter);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Filter.init {}",_filter);
         _filter.init(_config);
     }
 

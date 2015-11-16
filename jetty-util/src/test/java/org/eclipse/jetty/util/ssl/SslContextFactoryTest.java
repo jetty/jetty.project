@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -34,6 +36,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.Resource;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,7 +56,6 @@ public class SslContextFactoryTest
     @Test
     public void testNoTsFileKs() throws Exception
     {
-        String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
 
@@ -100,6 +102,8 @@ public class SslContextFactoryTest
         cf.setKeyStoreResource(keystoreResource);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
+        cf.setTrustStoreResource(keystoreResource);
+        cf.setTrustStorePassword(null);
 
         cf.start();
 
@@ -126,7 +130,6 @@ public class SslContextFactoryTest
     @Test
     public void testResourceTsResourceKsWrongPW() throws Exception
     {
-        SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,null): java.security.UnrecoverableKeyException: Cannot recover key...");
         Resource keystoreResource = Resource.newSystemResource("keystore");
         Resource truststoreResource = Resource.newSystemResource("keystore");
 
@@ -144,13 +147,13 @@ public class SslContextFactoryTest
         }
         catch(java.security.UnrecoverableKeyException e)
         {
+            Assert.assertThat(e.toString(),Matchers.containsString("UnrecoverableKeyException"));
         }
     }
 
     @Test
     public void testResourceTsWrongPWResourceKs() throws Exception
     {
-        SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,null): java.io.IOException: Keystore was tampered with ...");
         Resource keystoreResource = Resource.newSystemResource("keystore");
         Resource truststoreResource = Resource.newSystemResource("keystore");
 
@@ -168,6 +171,7 @@ public class SslContextFactoryTest
         }
         catch(IOException e)
         {
+            Assert.assertThat(e.toString(),Matchers.containsString("java.io.IOException: Keystore was tampered with, or password was incorrect"));
         }
     }
 
@@ -176,7 +180,6 @@ public class SslContextFactoryTest
     {
         try
         {
-            SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,/foo): java.lang.IllegalStateException: SSL doesn't have a valid keystore...");
             ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
             cf.setTrustStorePath("/foo");
             cf.start();
@@ -184,11 +187,7 @@ public class SslContextFactoryTest
         }
         catch (IllegalStateException e)
         {
-
-        }
-        catch (Exception e)
-        {
-            Assert.fail("Unexpected exception");
+            Assert.assertThat(e.toString(),Matchers.containsString("IllegalStateException: no valid keystore"));
         }
     }
 
@@ -201,50 +200,68 @@ public class SslContextFactoryTest
         String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();
         assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(0));
         for (String enabledCipherSuite : enabledCipherSuites)
-            assertThat("CipherSuite does not contain RC4", enabledCipherSuite.contains("RC4"), is(false));
+            assertThat("CipherSuite does not contain RC4", enabledCipherSuite.contains("RC4"), equalTo(false));
     }
 
     @Test
     public void testSetIncludeCipherSuitesRegex() throws Exception
     {
-        cf.setIncludeCipherSuites(".*RC4.*");
+        cf.setIncludeCipherSuites(".*ECDHE.*",".*WIBBLE.*");
         cf.start();
         SSLEngine sslEngine = cf.newSSLEngine();
         String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();
-        assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(0));
+        assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(1));
         for (String enabledCipherSuite : enabledCipherSuites)
-            assertThat("CipherSuite contains RC4", enabledCipherSuite.contains("RC4"), is(true));
+            assertThat("CipherSuite contains ECDHE", enabledCipherSuite.contains("ECDHE"), equalTo(true));
     }
 
     @Test
-    public void testSetIncludeCipherSuitesPreservesOrder()
+    public void testProtocolAndCipherSettingsAreNPESafe()
     {
-        String[] supportedCipherSuites = new String[]{"cipher4", "cipher2", "cipher1", "cipher3"};
-        String[] includeCipherSuites = {"cipher1", "cipher3", "cipher4"};
-
-        cf.setIncludeCipherSuites(includeCipherSuites);
-        String[] selectedCipherSuites = cf.selectCipherSuites(null, supportedCipherSuites);
-
-        assertSelectedMatchesIncluded(includeCipherSuites, selectedCipherSuites);
+    	assertNotNull(cf.getExcludeProtocols());
+    	assertNotNull(cf.getIncludeProtocols());
+    	assertNotNull(cf.getExcludeCipherSuites());
+    	assertNotNull(cf.getIncludeCipherSuites());
     }
-
+    
     @Test
-    public void testSetIncludeProtocolsPreservesOrder()
+    public void testSNICertificates() throws Exception
     {
-        String[] supportedProtocol = new String[]{"cipher4", "cipher2", "cipher1", "cipher3"};
-        String[] includeProtocol = {"cipher1", "cipher3", "cipher4"};
+        Resource keystoreResource = Resource.newSystemResource("snikeystore");
 
-        cf.setIncludeProtocols(includeProtocol);
-        String[] selectedProtocol = cf.selectProtocols(null, supportedProtocol);
-
-        assertSelectedMatchesIncluded(includeProtocol, selectedProtocol);
-    }
-
-    private void assertSelectedMatchesIncluded(String[] includeStrings, String[] selectedStrings)
-    {
-        assertThat(includeStrings.length + " strings are selected", selectedStrings.length, is(includeStrings.length));
-        assertThat("order from includeStrings is preserved", selectedStrings[0], equalTo(includeStrings[0]));
-        assertThat("order from includeStrings is preserved", selectedStrings[1], equalTo(includeStrings[1]));
-        assertThat("order from includeStrings is preserved", selectedStrings[2], equalTo(includeStrings[2]));
+        cf.setKeyStoreResource(keystoreResource);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+        
+        cf.start();
+        
+        assertThat(cf.getAliases(),containsInAnyOrder("jetty","other","san","wild"));
+        
+        assertThat(cf.getX509("jetty").getHosts(),containsInAnyOrder("jetty.eclipse.org"));
+        assertTrue(cf.getX509("jetty").getWilds().isEmpty());
+        assertTrue(cf.getX509("jetty").matches("JETTY.Eclipse.Org"));
+        assertFalse(cf.getX509("jetty").matches("m.jetty.eclipse.org"));
+        assertFalse(cf.getX509("jetty").matches("eclipse.org"));
+        
+        assertThat(cf.getX509("other").getHosts(),containsInAnyOrder("www.example.com"));
+        assertTrue(cf.getX509("other").getWilds().isEmpty());
+        assertTrue(cf.getX509("other").matches("www.example.com"));
+        assertFalse(cf.getX509("other").matches("eclipse.org"));
+        
+        assertThat(cf.getX509("san").getHosts(),containsInAnyOrder("www.san.com","m.san.com"));
+        assertTrue(cf.getX509("san").getWilds().isEmpty());
+        assertTrue(cf.getX509("san").matches("www.san.com"));
+        assertTrue(cf.getX509("san").matches("m.san.com"));
+        assertFalse(cf.getX509("san").matches("other.san.com"));
+        assertFalse(cf.getX509("san").matches("san.com"));
+        assertFalse(cf.getX509("san").matches("eclipse.org"));
+        
+        assertTrue(cf.getX509("wild").getHosts().isEmpty());
+        assertThat(cf.getX509("wild").getWilds(),containsInAnyOrder("domain.com"));
+        assertTrue(cf.getX509("wild").matches("domain.com"));
+        assertTrue(cf.getX509("wild").matches("www.domain.com"));
+        assertTrue(cf.getX509("wild").matches("other.domain.com"));
+        assertFalse(cf.getX509("wild").matches("foo.bar.domain.com"));
+        assertFalse(cf.getX509("wild").matches("other.com"));
     }
 }

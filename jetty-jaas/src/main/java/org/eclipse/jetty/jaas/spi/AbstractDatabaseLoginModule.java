@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -54,12 +54,9 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
     private String dbUserRoleTableUserField;
     private String dbUserRoleTableRoleField;
 
-
-
-
     /**
      * @return a java.sql.Connection from the database
-     * @throws Exception
+     * @throws Exception if unable to get the connection
      */
     public abstract Connection getConnection () throws Exception;
 
@@ -68,7 +65,7 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
     /* ------------------------------------------------ */
     /** Load info from database
      * @param userName user info to load
-     * @exception SQLException
+     * @exception Exception if unable to get the user info
      */
     public UserInfo getUserInfo (String userName)
         throws Exception

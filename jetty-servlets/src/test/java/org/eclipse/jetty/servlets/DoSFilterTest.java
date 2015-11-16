@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -62,7 +62,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     }
 
     @Test
-    public void isRateExceededTest() throws InterruptedException
+    public void testRateIsRateExceeded() throws InterruptedException
     {
         DoSFilter doSFilter = new DoSFilter();
 
@@ -79,19 +79,20 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     {
         DoSFilter filter = new DoSFilter();
         List<String> whitelist = new ArrayList<String>();
-        whitelist.add("192.168.0.1");
+        whitelist.add("192.168.0.1/32");
         whitelist.add("10.0.0.0/8");
         whitelist.add("4d8:0:a:1234:ABc:1F:b18:17");
         whitelist.add("4d8:0:a:1234:ABc:1F:0:0/96");
-        Assert.assertTrue(filter.checkWhitelist(whitelist, "192.168.0.1"));
-        Assert.assertFalse(filter.checkWhitelist(whitelist, "192.168.0.2"));
-        Assert.assertFalse(filter.checkWhitelist(whitelist, "11.12.13.14"));
-        Assert.assertTrue(filter.checkWhitelist(whitelist, "10.11.12.13"));
-        Assert.assertTrue(filter.checkWhitelist(whitelist, "10.0.0.0"));
-        Assert.assertFalse(filter.checkWhitelist(whitelist, "0.0.0.0"));
-        Assert.assertTrue(filter.checkWhitelist(whitelist, "4d8:0:a:1234:ABc:1F:b18:17"));
-        Assert.assertTrue(filter.checkWhitelist(whitelist, "4d8:0:a:1234:ABc:1F:b18:0"));
-        Assert.assertFalse(filter.checkWhitelist(whitelist, "4d8:0:a:1234:ABc:1D:0:0"));
+        filter.setWhitelist("192.168.0.1/32,10.0.0.0/8,4d8:0:a:1234:ABc:1F:b18:17,4d8:0:a:1234:ABc:1F:0:0/96");
+        Assert.assertTrue(filter.checkWhitelist("192.168.0.1"));
+        Assert.assertFalse(filter.checkWhitelist("192.168.0.2"));
+        Assert.assertFalse(filter.checkWhitelist("11.12.13.14"));
+        Assert.assertTrue(filter.checkWhitelist("10.11.12.13"));
+        Assert.assertTrue(filter.checkWhitelist("10.0.0.0"));
+        Assert.assertFalse(filter.checkWhitelist("0.0.0.0"));
+        Assert.assertTrue(filter.checkWhitelist("4d8:0:a:1234:ABc:1F:b18:17"));
+        Assert.assertTrue(filter.checkWhitelist("4d8:0:a:1234:ABc:1F:b18:0"));
+        Assert.assertFalse(filter.checkWhitelist("4d8:0:a:1234:ABc:1D:0:0"));
     }
 
     private boolean hitRateTracker(DoSFilter doSFilter, int sleep) throws InterruptedException

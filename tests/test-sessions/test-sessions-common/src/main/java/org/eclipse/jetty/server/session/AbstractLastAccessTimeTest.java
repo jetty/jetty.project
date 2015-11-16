@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -65,15 +65,19 @@ public abstract class AbstractLastAccessTimeTest
         ServletHolder holder1 = new ServletHolder(servlet1);
         ServletContextHandler context = server1.addContext(contextPath);
         TestSessionListener listener1 = new TestSessionListener();
-        context.addEventListener(listener1);
+        context.getSessionHandler().addEventListener(listener1);
         context.addServlet(holder1, servletMapping);
+        AbstractSessionManager m1 = (AbstractSessionManager)context.getSessionHandler().getSessionManager();
+        
 
         try
         {
             server1.start();
             int port1=server1.getPort();
             AbstractTestServer server2 = createServer(0, maxInactivePeriod, scavengePeriod);
-            server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+            ServletContextHandler context2 = server2.addContext(contextPath);
+            context2.addServlet(TestServlet.class, servletMapping);
+            AbstractSessionManager m2 = (AbstractSessionManager)context2.getSessionHandler().getSessionManager();
 
             try
             {
@@ -87,11 +91,14 @@ public abstract class AbstractLastAccessTimeTest
                     ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     assertEquals("test", response1.getContentAsString());
-                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
+                    String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue( sessionCookie != null );
+                    assertEquals(1, m1.getSessions());
+                    assertEquals(1, m1.getSessionsMax());
+                    assertEquals(1, m1.getSessionsTotal());
                     // Mangle the cookie, replacing Path with $Path, etc.
-                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
+                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");        
+                    
                     // Perform some request to server2 using the session cookie from the previous request
                     // This should migrate the session from server1 to server2, and leave server1's
                     // session in a very stale state, while server2 has a very fresh session.
@@ -106,19 +113,20 @@ public abstract class AbstractLastAccessTimeTest
                         assertEquals(HttpServletResponse.SC_OK , response2.getStatus());
                         assertEquals("test", response2.getContentAsString());
 
-                        String setCookie = response2.getHeaders().getStringField("Set-Cookie");
+                        String setCookie = response2.getHeaders().get("Set-Cookie");
                         if (setCookie!=null)
                             sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                         Thread.sleep(requestInterval);
+                        assertSessionCounts(1,1,1, m2);
                     }
-
                     // At this point, session1 should be eligible for expiration.
                     // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                     Thread.sleep(scavengePeriod * 2500L);
 
                     //check that the session was not scavenged over on server1 by ensuring that the SessionListener destroy method wasn't called
                     assertFalse(listener1.destroyed);
+                    assertAfterScavenge(m1);
                 }
                 finally
                 {
@@ -134,6 +142,23 @@ public abstract class AbstractLastAccessTimeTest
         {
             server1.stop();
         }
+    }
+    
+    public void assertAfterSessionCreated (AbstractSessionManager m)
+    {
+        assertSessionCounts(1, 1, 1, m);
+    }
+    
+    public void assertAfterScavenge (AbstractSessionManager manager)
+    {
+        assertSessionCounts(1,1,1, manager);
+    }
+    
+    public void assertSessionCounts (int current, int max, int total, AbstractSessionManager manager)
+    {
+        assertEquals(current, manager.getSessions());
+        assertEquals(max, manager.getSessionsMax());
+        assertEquals(total, manager.getSessionsTotal());
     }
 
     public static class TestSessionListener implements HttpSessionListener

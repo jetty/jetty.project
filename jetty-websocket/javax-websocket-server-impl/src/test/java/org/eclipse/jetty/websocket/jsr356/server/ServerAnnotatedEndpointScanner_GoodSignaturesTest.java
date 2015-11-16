@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,6 +34,9 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrCallable;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicBinaryMessageByteBufferSocket;
@@ -182,7 +185,8 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
     @Test
     public void testScan_Basic() throws Exception
     {
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(testcase.pojo,null);
+        WebSocketContainerScope container = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,testcase.pojo,null);
         AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
 

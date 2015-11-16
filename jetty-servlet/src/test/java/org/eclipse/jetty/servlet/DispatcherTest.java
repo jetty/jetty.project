@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -78,6 +78,7 @@ public class DispatcherTest
         _server = new Server();
         _connector = new LocalConnector(_server);
         _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
+        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
 
         _contextCollection = new ContextHandlerCollection();
         _contextHandler = new ServletContextHandler();
@@ -348,7 +349,6 @@ public class DispatcherTest
                 dispatcher = getServletContext().getRequestDispatcher("/IncludeServlet/includepath?do=assertforwardinclude");
             else if(request.getParameter("do").equals("assertincludeforward"))
                 dispatcher = getServletContext().getRequestDispatcher("/AssertIncludeForwardServlet/assertpath?do=end");
-          
             else if(request.getParameter("do").equals("assertforward"))
                 dispatcher = getServletContext().getRequestDispatcher("/AssertForwardServlet?do=end&do=the");
             else if(request.getParameter("do").equals("ctx.echo"))

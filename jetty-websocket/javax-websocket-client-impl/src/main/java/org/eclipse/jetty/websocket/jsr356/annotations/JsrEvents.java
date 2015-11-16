@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,10 @@ import java.util.Map;
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 import javax.websocket.EndpointConfig;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
 import javax.websocket.RemoteEndpoint;
 
 import org.eclipse.jetty.util.log.Log;
@@ -36,6 +40,8 @@ import org.eclipse.jetty.websocket.jsr356.JsrSession;
 
 /**
  * The live event methods found for a specific Annotated Endpoint
+ * @param <T> the annotation type
+ * @param <C> the endpoint config type
  */
 public class JsrEvents<T extends Annotation, C extends EndpointConfig>
 {
@@ -110,7 +116,10 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onBinary.call(websocket,buf,fin);
         if (ret != null)
         {
-            LOG.debug("returning: {}",ret);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("returning: {}",ret);
+            }
             endpoint.sendObject(ret);
         }
     }
@@ -125,7 +134,10 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onBinaryStream.call(websocket,stream);
         if (ret != null)
         {
-            LOG.debug("returning: {}",ret);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("returning: {}",ret);
+            }
             endpoint.sendObject(ret);
         }
     }
@@ -143,6 +155,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
     {
         if (onError == null)
         {
+            LOG.warn("Unable to report throwable to websocket (no @OnError handler declared): " + websocket.getClass().getName(), cause);
             return;
         }
         onError.call(websocket,cause);
@@ -157,7 +170,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         onOpen.call(websocket,config);
     }
 
-    public void callPong(RemoteEndpoint.Async endpoint, Object websocket, ByteBuffer pong) throws DecodeException, IOException
+    public void callPong(RemoteEndpoint.Async endpoint, Object websocket, ByteBuffer pong)
     {
         if (onPong == null)
         {
@@ -167,7 +180,10 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onPong.call(websocket,pong);
         if (ret != null)
         {
-            LOG.debug("returning: {}",ret);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("returning: {}",ret);
+            }
             endpoint.sendObject(ret);
         }
     }
@@ -181,7 +197,10 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onText.call(websocket,text,fin);
         if (ret != null)
         {
-            LOG.debug("returning: {}",ret);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("returning: {}",ret);
+            }
             endpoint.sendObject(ret);
         }
     }
@@ -195,7 +214,10 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onTextStream.call(websocket,reader);
         if (ret != null)
         {
-            LOG.debug("returning: {}",ret);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("returning: {}",ret);
+            }
             endpoint.sendObject(ret);
         }
     }

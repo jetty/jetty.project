@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -47,6 +47,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public class MavenServerConnector extends AbstractLifeCycle implements Connector
 {
+    public static String PORT_SYSPROPERTY = "jetty.http.port";
+    
     public static final int DEFAULT_PORT = 8080;
     public static final String DEFAULT_PORT_STR = String.valueOf(DEFAULT_PORT);
     public static final int DEFAULT_MAX_IDLE_TIME = 30000;

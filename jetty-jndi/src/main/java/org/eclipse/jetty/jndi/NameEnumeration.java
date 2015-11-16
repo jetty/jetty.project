@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,14 +25,8 @@ import javax.naming.NameClassPair;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
-/** NameEnumeration
- * <p>Implementation of NamingEnumeration interface.
- *
- * <p><h4>Notes</h4>
- * <p>Used for returning results of Context.list();
- *
- * <p><h4>Usage</h4>
- *
+/** 
+ * NameEnumeration
  */
 public class NameEnumeration implements NamingEnumeration<NameClassPair>
 {

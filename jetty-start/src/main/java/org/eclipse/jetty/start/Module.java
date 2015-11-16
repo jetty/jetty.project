@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,135 +19,103 @@
 package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.CollationKey;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Represents a Module metadata, as defined in Jetty.
  */
 public class Module
 {
-    public static class DepthComparator implements Comparator<Module>
-    {
-        private Collator collator = Collator.getInstance();
+    private static final String VERSION_UNSPECIFIED = "9.2";
 
-        @Override
-        public int compare(Module o1, Module o2)
-        {
-            // order by depth first.
-            int diff = o1.depth - o2.depth;
-            if (diff != 0)
-            {
-                return diff;
-            }
-            // then by name (not really needed, but makes for predictable test cases)
-            CollationKey k1 = collator.getCollationKey(o1.fileRef);
-            CollationKey k2 = collator.getCollationKey(o2.fileRef);
-            return k1.compareTo(k2);
-        }
-    }
-
-    public static class NameComparator implements Comparator<Module>
-    {
-        private Collator collator = Collator.getInstance();
-
-        @Override
-        public int compare(Module o1, Module o2)
-        {
-            // by name (not really needed, but makes for predictable test cases)
-            CollationKey k1 = collator.getCollationKey(o1.fileRef);
-            CollationKey k2 = collator.getCollationKey(o2.fileRef);
-            return k1.compareTo(k2);
-        }
-    }
-
-    /** The file of the module */
-    private File file;
     /** The name of this Module (as a filesystem reference) */
     private String fileRef;
-    /**
-     * The logical name of this module (for property selected references), And to aid in duplicate detection.
-     */
-    private String logicalName;
-    /** The depth of the module in the tree */
-    private int depth = 0;
-    /** Set of Modules, by name, that this Module depends on */
-    private Set<String> parentNames;
-    /** Set of Modules, by name, that this Module optionally depend on */
-    private Set<String> optionalParentNames;
-    /** The Edges to parent modules */
-    private Set<Module> parentEdges;
-    /** The Edges to child modules */
-    private Set<Module> childEdges;
+    
+    /** The file of the module */
+    private final Path file;
+
+    /** The name of the module */
+    private String name;
+    
+    /** The module description */
+    private List<String> description;
+    
+    /** The version of Jetty the module supports */
+    private Version version;
+
     /** List of xml configurations for this Module */
     private List<String> xmls;
+    
     /** List of ini template lines */
-    private List<String> initialise;
+    private List<String> iniTemplate;
+    
+    /** List of default config */
+    private List<String> defaultConfig;
+    
     /** List of library options for this Module */
     private List<String> libs;
+    
     /** List of files for this Module */
     private List<String> files;
+    
+    /** List of selections for this Module */
+    private Set<String> selections;
+    
+    /** Boolean true if directly enabled, false if selections are transitive */
+    private boolean enabled;
+    
+    /** Skip File Validation (default: false) */
+    private boolean skipFilesValidation = false;
+    
+    /** List of jvm Args */
+    private List<String> jvmArgs;
+    
+    /** License lines */
+    private List<String> license;
+    
+    /** Dependencies */
+    private Set<String> depends;
+    
+    /** Optional */
+    private  Set<String> optional;
 
-    /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini ? */
-    private boolean enabled = false;
-    /** List of sources that enabled this module */
-    private final Set<String> sources = new HashSet<>();
-
-    public Module(BaseHome basehome, File file) throws FileNotFoundException, IOException
+    public Module(BaseHome basehome, Path file) throws FileNotFoundException, IOException
     {
+        super();
         this.file = file;
 
         // Strip .mod
-        this.fileRef = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(file.getName()).replaceFirst("");
-        this.logicalName = fileRef;
+        this.fileRef = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(file.getFileName().toString()).replaceFirst("");
+        name=fileRef;
 
         init(basehome);
         process(basehome);
     }
 
-    public void addChildEdge(Module child)
+    public String getName()
     {
-        if (childEdges.contains(child))
-        {
-            // already present, skip
-            return;
-        }
-        this.childEdges.add(child);
+        return name;
     }
-
-    public void addParentEdge(Module parent)
-    {
-        if (parentEdges.contains(parent))
-        {
-            // already present, skip
-            return;
-        }
-        this.parentEdges.add(parent);
-    }
-
-    public void addSources(List<String> sources)
-    {
-        this.sources.addAll(sources);
-    }
-
-    public void clearSources()
-    {
-        this.sources.clear();
-    }
-
+    
     @Override
     public boolean equals(Object obj)
     {
@@ -180,24 +148,19 @@ public class Module
 
     public void expandProperties(Props props)
     {
-        // Expand Parents
-        Set<String> parents = new HashSet<>();
-        for (String parent : parentNames)
-        {
-            parents.add(props.expand(parent));
-        }
-        parentNames.clear();
-        parentNames.addAll(parents);
+        Function<String,String> expander = d->{return props.expand(d);};
+        depends=depends.stream().map(expander).collect(Collectors.toSet());
+        optional=optional.stream().map(expander).collect(Collectors.toSet());
     }
 
-    public Set<Module> getChildEdges()
+    public List<String> getDefaultConfig()
     {
-        return childEdges;
+        return defaultConfig;
     }
-
-    public int getDepth()
+    
+    public List<String> getIniTemplate()
     {
-        return depth;
+        return iniTemplate;
     }
 
     public List<String> getFiles()
@@ -205,14 +168,19 @@ public class Module
         return files;
     }
 
+    public boolean isSkipFilesValidation()
+    {
+        return skipFilesValidation;
+    }
+
     public String getFilesystemRef()
     {
         return fileRef;
     }
 
-    public List<String> getInitialise()
+    public List<String> getJvmArgs()
     {
-        return initialise;
+        return jvmArgs;
     }
 
     public List<String> getLibs()
@@ -220,34 +188,29 @@ public class Module
         return libs;
     }
 
-    public String getName()
+    public List<String> getLicense()
     {
-        return logicalName;
-    }
-
-    public Set<String> getOptionalParentNames()
-    {
-        return optionalParentNames;
-    }
-
-    public Set<Module> getParentEdges()
-    {
-        return parentEdges;
-    }
-
-    public Set<String> getParentNames()
-    {
-        return parentNames;
+        return license;
     }
     
-    public Set<String> getSources()
-    {
-        return Collections.unmodifiableSet(sources);
-    }
-
     public List<String> getXmls()
     {
         return xmls;
+    }
+    
+    public Version getVersion()
+    {
+        return version;
+    }
+
+    public boolean hasDefaultConfig()
+    {
+        return !defaultConfig.isEmpty();
+    }
+    
+    public boolean hasIniTemplate()
+    {
+        return !iniTemplate.isEmpty();
     }
 
     @Override
@@ -259,8 +222,25 @@ public class Module
         return result;
     }
 
+    public boolean hasLicense()
+    {
+        return (license != null) && (license.size() > 0);
+    }
+
     private void init(BaseHome basehome)
     {
+        description = new ArrayList<>();
+        xmls = new ArrayList<>();
+        defaultConfig = new ArrayList<>();
+        iniTemplate = new ArrayList<>();
+        libs = new ArrayList<>();
+        files = new ArrayList<>();
+        jvmArgs = new ArrayList<>();
+        license = new ArrayList<>();
+        depends = new HashSet<>();
+        optional = new HashSet<>();
+        selections = new HashSet<>();
+
         String name = basehome.toShortForm(file);
 
         // Find module system name (usually in the form of a filesystem reference)
@@ -271,21 +251,31 @@ public class Module
             throw new RuntimeException("Invalid Module location (must be located under /modules/ directory): " + name);
         }
         this.fileRef = mat.group(1).replace('\\','/');
-        this.logicalName = this.fileRef;
-
-        parentNames = new HashSet<>();
-        optionalParentNames = new HashSet<>();
-        parentEdges = new HashSet<>();
-        childEdges = new HashSet<>();
-        xmls = new ArrayList<>();
-        initialise = new ArrayList<>();
-        libs = new ArrayList<>();
-        files = new ArrayList<>();
+        this.name=this.fileRef;
     }
 
-    public boolean isEnabled()
+    /**
+     * Indicates a module that is dynamic in nature
+     * 
+     * @return a module where the declared metadata name does not match the filename reference (aka a dynamic module)
+     */
+    public boolean isDynamic()
     {
-        return enabled;
+        return !name.equals(fileRef);
+    }
+
+    public boolean hasFiles(BaseHome baseHome, Props props)
+    {
+        for (String ref : getFiles())
+        {
+            FileArg farg = new FileArg(this,props.expand(ref));
+            Path refPath = baseHome.getBasePath(farg.location);
+            if (!Files.exists(refPath))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     public void process(BaseHome basehome) throws FileNotFoundException, IOException
@@ -298,101 +288,174 @@ public class Module
             return;
         }
 
-        try (FileReader reader = new FileReader(file))
+        try (BufferedReader buf = Files.newBufferedReader(file,StandardCharsets.UTF_8))
         {
-            try (BufferedReader buf = new BufferedReader(reader))
+            String sectionType = "";
+            String line;
+            while ((line = buf.readLine()) != null)
             {
-                String sectionType = "";
-                String line;
-                while ((line = buf.readLine()) != null)
+                line = line.trim();
+
+                Matcher sectionMatcher = section.matcher(line);
+
+                if (sectionMatcher.matches())
                 {
-                    line = line.trim();
-
-                    Matcher sectionMatcher = section.matcher(line);
-
-                    if (sectionMatcher.matches())
+                    sectionType = sectionMatcher.group(1).trim().toUpperCase(Locale.ENGLISH);
+                }
+                else
+                {
+                    // blank lines and comments are valid for ini-template section
+                    if ((line.length() == 0) || line.startsWith("#"))
                     {
-                        sectionType = sectionMatcher.group(1).trim().toUpperCase(Locale.ENGLISH);
+                        // Remember ini comments and whitespace (empty lines)
+                        // for the [ini-template] section
+                        if ("INI-TEMPLATE".equals(sectionType))
+                        {
+                            iniTemplate.add(line);
+                        }
                     }
                     else
                     {
-                        // blank lines and comments are valid for ini-template section
-                        if ((line.length() == 0) || line.startsWith("#"))
+                        switch (sectionType)
                         {
-                            if ("INI-TEMPLATE".equals(sectionType))
-                            {
-                                initialise.add(line);
-                            }
-                        }
-                        else
-                        {
-                            switch (sectionType)
-                            {
-                                case "":
-                                    // ignore (this would be entries before first section)
-                                    break;
-                                case "NAME":
-                                    logicalName = line;
-                                    break;
-                                case "DEPEND":
-                                    parentNames.add(line);
-                                    break;
-                                case "LIB":
-                                    libs.add(line);
-                                    break;
-                                case "XML":
-                                    xmls.add(line);
-                                    break;
-                                case "OPTIONAL":
-                                    optionalParentNames.add(line);
-                                    break;
-                                case "FILES":
-                                    files.add(line);
-                                    break;
-                                case "INI-TEMPLATE":
-                                    initialise.add(line);
-                                    break;
-                                default:
-                                    throw new IOException("Unrecognized Module section: [" + sectionType + "]");
-                            }
+                            case "":
+                                // ignore (this would be entries before first section)
+                                break;
+                            case "DESCRIPTION":
+                                description.add(line);
+                                break;
+                            case "DEPEND":
+                                depends.add(line);
+                                break;
+                            case "FILES":
+                                files.add(line);
+                                break;
+                            case "DEFAULTS": // old name introduced in 9.2.x
+                            case "INI": // new name for 9.3+
+                                defaultConfig.add(line);
+                                break;
+                            case "INI-TEMPLATE":
+                                iniTemplate.add(line);
+                                break;
+                            case "LIB":
+                                libs.add(line);
+                                break;
+                            case "LICENSE":
+                            case "LICENCE":
+                                license.add(line);
+                                break;
+                            case "NAME":
+                                name=line;
+                                break;
+                            case "OPTIONAL":
+                                optional.add(line);
+                                break;
+                            case "EXEC":
+                                jvmArgs.add(line);
+                                break;
+                            case "VERSION":
+                                if (version != null)
+                                {
+                                    throw new IOException("[version] already specified");
+                                }
+                                version = new Version(line);
+                                break;
+                            case "XML":
+                                xmls.add(line);
+                                break;
+                            default:
+                                throw new IOException("Unrecognized Module section: [" + sectionType + "]");
                         }
                     }
                 }
             }
         }
-    }
-
-    public void setDepth(int depth)
-    {
-        this.depth = depth;
+        
+        if (version == null)
+        {
+            version = new Version(VERSION_UNSPECIFIED);
+        }
     }
 
     public void setEnabled(boolean enabled)
     {
-        this.enabled = enabled;
+        throw new RuntimeException("Don't enable directly");
     }
-
-    public void setParentNames(Set<String> parents)
+    
+    public void setSkipFilesValidation(boolean skipFilesValidation)
     {
-        this.parentNames.clear();
-        this.parentEdges.clear();
-        if (parents != null)
-        {
-            this.parentNames.addAll(parents);
-        }
+        this.skipFilesValidation = skipFilesValidation;
     }
-
+    
     @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();
-        str.append("Module[").append(logicalName);
-        str.append(",").append(fileRef);
-        if (enabled)
+        str.append("Module[").append(getName());
+        if (isDynamic())
         {
-            str.append(",enabled");
+            str.append(",file=").append(fileRef);
+        }
+        if (isSelected())
+        {
+            str.append(",selected");
+        }
+        if (isTransitive())
+        {
+            str.append(",transitive");
         }
         str.append(']');
         return str.toString();
+    }
+
+    public Set<String> getDepends()
+    {
+        return Collections.unmodifiableSet(depends);
+    }
+
+    public Set<String> getOptional()
+    {
+        return Collections.unmodifiableSet(optional);
+    }
+    
+    public List<String> getDescription()
+    {
+        return description;
+    }
+    
+    public boolean isSelected()
+    {
+        return !selections.isEmpty();
+    }
+    
+    public Set<String> getSelections()
+    {
+        return Collections.unmodifiableSet(selections);
+    }
+
+    public boolean addSelection(String enabledFrom,boolean transitive)
+    {
+        boolean updated=selections.isEmpty();
+        if (transitive)
+        {
+            if (!enabled)
+                selections.add(enabledFrom);
+        }
+        else
+        {
+            if (!enabled)
+            {
+                updated=true;
+                selections.clear(); // clear any transitive enabling
+            }
+            enabled=true;
+            selections.add(enabledFrom);
+        }
+        return updated;
+    }
+
+    public boolean isTransitive()
+    {
+        return isSelected() && !enabled;
     }
 }

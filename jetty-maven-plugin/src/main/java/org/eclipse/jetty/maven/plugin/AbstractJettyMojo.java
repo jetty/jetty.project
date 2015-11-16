@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,7 +17,6 @@
 //
 
 package org.eclipse.jetty.maven.plugin;
-
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,33 +39,22 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.PathWatcher;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-
-
 /**
- * AbstractJettyMojo
- *
  * Common base class for most jetty mojos.
- * 
- * 
  */
 public abstract class AbstractJettyMojo extends AbstractMojo
 {
-    /**
-     * 
-     */
-    public String PORT_SYSPROPERTY = "jetty.port";
-    
-    
     /**
      * Whether or not to include dependencies on the plugin's classpath with &lt;scope&gt;provided&lt;/scope&gt;
      * Use WITH CAUTION as you may wind up with duplicate jars/classes.
@@ -76,7 +64,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected boolean useProvidedScope;
     
-    
     /**
      * List of goals that are NOT to be used
      * 
@@ -84,9 +71,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @parameter
      */
     protected String[] excludedGoals;
-    
-
-  
     
     /**
      * List of other contexts to set up. Consider using instead
@@ -98,7 +82,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected ContextHandler[] contextHandlers;
     
-    
     /**
      * List of security realms to set up. Consider using instead
      * the &lt;jettyXml&gt; element to specify external jetty xml config file. 
@@ -108,7 +91,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @parameter
      */
     protected LoginService[] loginServices;
-    
 
     /**
      * A RequestLog implementation to use for the webapp at runtime.
@@ -120,7 +102,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected RequestLog requestLog;
     
-    
     /**
      * An instance of org.eclipse.jetty.webapp.WebAppContext that represents the webapp.
      * Use any of its setters to configure the webapp. This is the preferred and most
@@ -131,17 +112,15 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected JettyWebAppContext webApp;
 
-
     /**
      * The interval in seconds to scan the webapp for changes 
      * and restart the context if necessary. Ignored if reload
      * is enabled. Disabled by default.
      * 
-     * @parameter expression="${jetty.scanIntervalSeconds}" default-value="0"
+     * @parameter property="jetty.scanIntervalSeconds" default-value="0"
      * @required
      */
     protected int scanIntervalSeconds;
-    
     
     /**
      * reload can be set to either 'automatic' or 'manual'
@@ -149,7 +128,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * if 'manual' then the context can be reloaded by a linefeed in the console
      * if 'automatic' then traditional reloading on changed files is enabled.
      * 
-     * @parameter expression="${jetty.reload}" default-value="automatic"
+     * @parameter property="jetty.reload" default-value="automatic"
      */
     protected String reload;
 
@@ -161,7 +140,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * that have been set on the command line, by the JVM, or directly 
      * in the POM via systemProperties. Optional.
      * 
-     * @parameter expression="${jetty.systemPropertiesFile}"
+     * @parameter property="jetty.systemPropertiesFile"
      */
     protected File systemPropertiesFile;
 
@@ -207,31 +186,15 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * Use the dump() facility of jetty to print out the server configuration to logging
      * 
-     * @parameter expression"${dumponStart}" default-value="false"
+     * @parameter property="dumponStart" default-value="false"
      */
     protected boolean dumpOnStart;
-    
-    /**
-     * <p>
-     * Determines whether or not the server blocks when started. The default
-     * behavior (daemon = false) will cause the server to pause other processes
-     * while it continues to handle web requests. This is useful when starting the
-     * server with the intent to work with it interactively.
-     * </p><p>
-     * Often, it is desirable to let the server start and continue running subsequent
-     * processes in an automated build environment. This can be facilitated by setting
-     * daemon to true.
-     * </p>
-     * 
-     * @parameter expression="${jetty.daemon}" default-value="false"
-     */
-    protected boolean daemon;
     
     
     /**  
      * Skip this mojo execution.
      * 
-     * @parameter expression="${jetty.skip}" default-value="false"
+     * @parameter property="jetty.skip" default-value="false"
      */
     protected boolean skip;
 
@@ -249,7 +212,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * The maven project.
      *
-     * @parameter expression="${project}"
+     * @parameter default-value="${project}"
      * @readonly
      */
     protected MavenProject project;
@@ -258,14 +221,14 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * The artifacts for the project.
      * 
-     * @parameter expression="${project.artifacts}"
+     * @parameter default-value="${project.artifacts}"
      * @readonly
      */
     protected Set projectArtifacts;
     
     
     /** 
-     * @parameter expression="${mojoExecution}" 
+     * @parameter default-value="${mojoExecution}" 
      * @readonly
      */
     protected org.apache.maven.plugin.MojoExecution execution;
@@ -274,7 +237,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * The artifacts for the plugin itself.
      * 
-     * @parameter expression="${plugin.artifacts}"
+     * @parameter default-value="${plugin.artifacts}"
      * @readonly
      */
     protected List pluginArtifacts;
@@ -291,26 +254,16 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     
     /**
      * A wrapper for the Server object
+     * @parameter
      */
-    protected JettyServer server = new JettyServer();
+    protected Server server;
     
     
     /**
      * A scanner to check for changes to the webapp
      */
-    protected Scanner scanner;
+    protected PathWatcher scanner;
     
-    
-    /**
-     *  List of files and directories to scan
-     */
-    protected ArrayList<File> scanList;
-    
-    
-    /**
-     * List of Listeners for the scanner
-     */
-    protected ArrayList<Scanner.BulkListener> scannerListeners;
     
     
     /**
@@ -318,10 +271,25 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected Thread consoleScanner;
     
+    protected ServerSupport serverSupport;
     
     
     
     
+    /**
+     * <p>
+     * Determines whether or not the server blocks when started. The default
+     * behavior (false) will cause the server to pause other processes
+     * while it continues to handle web requests. This is useful when starting the
+     * server with the intent to work with it interactively. This is the 
+     * behaviour of the jetty:run, jetty:run-war, jetty:run-war-exploded goals. 
+     * </p><p>
+     * If true, the server will not block the execution of subsequent code. This
+     * is the behaviour of the jetty:start and default behaviour of the jetty:deploy goals.
+     * </p>
+     */
+    protected boolean nonblocking = false;
+      
     
     public abstract void restartWebApp(boolean reconfigureScanner) throws Exception;
 
@@ -363,9 +331,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     
     
     
-    /**
-     * @throws MojoExecutionException
-     */
     public void configurePluginClasspath() throws MojoExecutionException
     {  
         //if we are configured to include the provided dependencies on the plugin's classpath
@@ -405,13 +370,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
     }
     
-    
-    
-    
-    /**
-     * @param artifact
-     * @return
-     */
     public boolean isPluginArtifact(Artifact artifact)
     {
         if (pluginArtifacts == null || pluginArtifacts.isEmpty())
@@ -429,12 +387,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         return isPluginArtifact;
     }
 
-    
-    
-    
-    /**
-     * @throws Exception
-     */
     public void finishConfigurationBeforeStart() throws Exception
     {
         HandlerCollection contexts = (HandlerCollection)server.getChildHandlerByClass(ContextHandlerCollection.class);
@@ -447,114 +399,58 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
     }
 
-   
-   
-    
-    /**
-     * @throws Exception
-     */
     public void applyJettyXml() throws Exception
-    {
-        if (getJettyXmlFiles() == null)
-            return;
-
-        XmlConfiguration last = null;
-        for ( File xmlFile : getJettyXmlFiles() )
-        {
-            getLog().info( "Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath() );        
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(xmlFile));
-            
-            //chain ids from one config file to another
-            if (last == null)
-                xmlConfiguration.getIdMap().put("Server", this.server); 
-            else
-                xmlConfiguration.getIdMap().putAll(last.getIdMap());
-            
-            //Set the system properties each time in case the config file set a new one
-            Enumeration<?> ensysprop = System.getProperties().propertyNames();
-            while (ensysprop.hasMoreElements())
-            {
-                String name = (String)ensysprop.nextElement();
-                xmlConfiguration.getProperties().put(name,System.getProperty(name));
-            }
-            last = xmlConfiguration;
-            xmlConfiguration.configure(); 
-        }
+    {        
+        Server tmp = ServerSupport.applyXmlConfigurations(server, getJettyXmlFiles());
+        if (server == null)
+            server = tmp;
+        
+        if (server == null)
+            server = new Server();
     }
 
-
-
-    
-    /**
-     * @throws MojoExecutionException
-     */
     public void startJetty () throws MojoExecutionException
     {
         try
         {
             getLog().debug("Starting Jetty Server ...");
             
-            if(stopPort>0 && stopKey!=null)
-            {
-                ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-                monitor.setPort(stopPort);
-                monitor.setKey(stopKey);
-                monitor.setExitVm(!daemon);
-            }
+            //make sure Jetty does not use URLConnection caches with the plugin
+            Resource.setDefaultUseCaches(false);
+         
+            configureMonitor();
             
             printSystemProperties();
             
             //apply any config from a jetty.xml file first which is able to
             //be overwritten by config in the pom.xml
             applyJettyXml ();      
-
+            
             // if a <httpConnector> was specified in the pom, use it
             if (httpConnector != null)
             {
                 // check that its port was set
                 if (httpConnector.getPort() <= 0)
                 {
-                    //use any jetty.port settings provided
-                    String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR); 
+                    //use any jetty.http.port settings provided
+                    String tmp = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, System.getProperty("jetty.port", MavenServerConnector.DEFAULT_PORT_STR));
                     httpConnector.setPort(Integer.parseInt(tmp.trim()));
                 }  
-                if (httpConnector.getServer() == null)
-                    httpConnector.setServer(this.server);
-                this.server.addConnector(httpConnector);
+                httpConnector.setServer(server);
             }
 
-            // if the user hasn't configured the connectors in a jetty.xml file so use a default one
-            Connector[] connectors = this.server.getConnectors();
-            if (connectors == null|| connectors.length == 0)
-            {
-                //if <httpConnector> not configured in the pom, create one
-                if (httpConnector == null)
-                {
-                    httpConnector = new MavenServerConnector();               
-                    //use any jetty.port settings provided
-                    String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR);
-                    httpConnector.setPort(Integer.parseInt(tmp.trim()));
-                }
-                if (httpConnector.getServer() == null)
-                    httpConnector.setServer(this.server);
-                this.server.setConnectors(new Connector[] {httpConnector});
-            }
+            ServerSupport.configureConnectors(server, httpConnector);
 
-            //set up a RequestLog if one is provided
-            if (this.requestLog != null)
-                this.server.setRequestLog(this.requestLog);
-
-            //set up the webapp and any context provided
-            this.server.configureHandlers();
+            //set up a RequestLog if one is provided and the handle structure
+            ServerSupport.configureHandlers(server, this.requestLog);
+            
+            //Set up list of default Configurations to apply to a webapp
+            ServerSupport.configureDefaultConfigurationClasses(server);
             configureWebApplication();
-            this.server.addWebApplication(webApp);
+            ServerSupport.addWebApplication(server, webApp);
 
             // set up security realms
-            for (int i = 0; (this.loginServices != null) && i < this.loginServices.length; i++)
-            {
-                getLog().debug(this.loginServices[i].getClass().getName() + ": "+ this.loginServices[i].toString());
-                this.server.addBean(this.loginServices[i]);
-            }
+            ServerSupport.configureLoginServices(server, loginServices);
 
             //do any other configuration required by the
             //particular Jetty version
@@ -564,22 +460,25 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             this.server.start();
 
             getLog().info("Started Jetty Server");
-           
-            
+
             if ( dumpOnStart )
             {
                 getLog().info(this.server.dump());
             }
-            
+
             // start the scanner thread (if necessary) on the main webapp
-            configureScanner ();
-            startScanner();
-            
+            if (isScanningEnabled())
+            {
+                scanner = new PathWatcher();
+                configureScanner ();
+                startScanner();
+            }
+
             // start the new line scanner thread if necessary
             startConsoleScanner();
 
             // keep the thread going if not in daemon mode
-            if (!daemon )
+            if (!nonblocking )
             {
                 server.join();
             }
@@ -590,7 +489,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
         finally
         {
-            if (!daemon )
+            if (!nonblocking )
             {
                 getLog().info("Jetty server exiting.");
             }            
@@ -598,13 +497,27 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     }
     
     
+    public void configureMonitor()
+    { 
+        if(stopPort>0 && stopKey!=null)
+        {
+            ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+            monitor.setPort(stopPort);
+            monitor.setKey(stopKey);
+            monitor.setExitVm(!nonblocking);
+        }
+    }
 
+    
+    
+    
+    
     
     /**
      * Subclasses should invoke this to setup basic info
      * on the webapp
      * 
-     * @throws MojoExecutionException
+     * @throws Exception if unable to configure web application 
      */
     public void configureWebApplication () throws Exception
     {
@@ -654,39 +567,40 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * Run a scanner thread on the given list of files and directories, calling
      * stop/start on the given list of LifeCycle objects if any of the watched
      * files change.
-     *
+     * @throws Exception if unable to start scanner 
      */
-    private void startScanner() throws Exception
+    public void startScanner() throws Exception
     {
-        // check if scanning is enabled
-        if (scanIntervalSeconds <= 0) return;
-
-        // check if reload is manual. It disables file scanning
-        if ( "manual".equalsIgnoreCase( reload ) )
-        {
-            // issue a warning if both scanIntervalSeconds and reload
-            // are enabled
-            getLog().warn("scanIntervalSeconds is set to " + scanIntervalSeconds + " but will be IGNORED due to manual reloading");
+        if (!isScanningEnabled())
             return;
-        }
 
-        scanner = new Scanner();
-        scanner.setReportExistingFilesOnStartup(false);
-        scanner.setScanInterval(scanIntervalSeconds);
-        scanner.setScanDirs(scanList);
-        scanner.setRecursive(true);
-        Iterator itor = (this.scannerListeners==null?null:this.scannerListeners.iterator());
-        while (itor!=null && itor.hasNext())
-            scanner.addListener((Scanner.Listener)itor.next());
-        getLog().info("Starting scanner at interval of " + scanIntervalSeconds + " seconds.");
+        scanner.setNotifyExistingOnStart(false);
+       
+       
         scanner.start();
     }
     
     
+    public boolean isScanningEnabled ()
+    {
+        if (scanIntervalSeconds <=0 || "manual".equalsIgnoreCase( reload ))
+            return false;
+        return true;
+    }
+    
+    public void stopScanner() throws Exception
+    {
+        if (!isScanningEnabled())
+            return;
+        
+        if (scanner != null)
+            scanner.stop();
+    }
     
     
     /**
      * Run a thread that monitors the console input to detect ENTER hits.
+     * @throws Exception if unable to start the console
      */
     protected void startConsoleScanner() throws Exception
     {
@@ -698,13 +612,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }       
     }
 
-    
-    
-    
-    /**
-     * 
-     */
-    private void printSystemProperties ()
+    protected void printSystemProperties ()
     {
         // print out which system properties were set up
         if (getLog().isDebugEnabled())
@@ -721,13 +629,10 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
     }
 
-    
-    
-    
     /**
      * Try and find a jetty-web.xml file, using some
      * historical naming conventions if necessary.
-     * @param webInfDir
+     * @param webInfDir the web inf directory
      * @return the jetty web xml file
      */
     public File findJettyWebXmlFile (File webInfDir)
@@ -749,13 +654,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         return null;
     }
 
-
-   
-    
-    /**
-     * @param file
-     * @throws Exception
-     */
     public void setSystemPropertiesFile(File file) throws Exception
     {
         this.systemPropertiesFile = file;
@@ -781,12 +679,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         } 
     }
     
-    
-    
-    
-    /**
-     * @param systemProperties
-     */
     public void setSystemProperties(SystemProperties systemProperties)
     {
         if (this.systemProperties == null)
@@ -800,15 +692,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
     }
     
-
-    
-
-    
-    
-    
-    /**
-     * @return
-     */
     public List<File> getJettyXmlFiles()
     {
         if ( this.jettyXml == null )
@@ -824,7 +707,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
         else
         {
-            String[] files = this.jettyXml.split(",");
+            String[] files = StringUtil.csvSplit(this.jettyXml);
             
             for ( String file : files )
             {
@@ -835,12 +718,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         return jettyXmlFiles;
     }
 
-    
-    
-    /**
-     * @param goal
-     * @return
-     */
     public boolean isExcluded (String goal)
     {
         if (excludedGoals == null || goal == null)

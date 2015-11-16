@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,8 +21,10 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
+import javax.websocket.OnMessage;
+
 import org.eclipse.jetty.websocket.common.message.MessageAppender;
+import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 
 /**
@@ -31,12 +33,14 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 public class TextPartialOnMessage implements MessageAppender
 {
     private final JsrAnnotatedEventDriver driver;
+    private final Utf8PartialBuilder utf8Partial;
     private boolean finished;
 
     public TextPartialOnMessage(JsrAnnotatedEventDriver driver)
     {
         this.driver = driver;
         this.finished = false;
+        this.utf8Partial = new Utf8PartialBuilder();
     }
 
     @Override
@@ -46,15 +50,9 @@ public class TextPartialOnMessage implements MessageAppender
         {
             throw new IOException("Cannot append to finished buffer");
         }
-        if (payload == null)
-        {
-            driver.onPartialTextMessage("",isLast);
-        }
-        else
-        {
-            String text = BufferUtil.toUTF8String(payload);
-            driver.onPartialTextMessage(text,isLast);
-        }
+        
+        String text = utf8Partial.toPartialString(payload);
+        driver.onPartialTextMessage(text,isLast);
     }
 
     @Override

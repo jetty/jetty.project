@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,14 +42,10 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 
-/**
- * @deprecated use *ServerAuthentication
- * @version $Rev: 4627 $ $Date: 2009-02-20 00:07:19 +0100 (Fri, 20 Feb 2009) $
- */
+@Deprecated
 public class DigestAuthModule extends BaseAuthModule
 {
     private static final Logger LOG = Log.getLogger(DigestAuthModule.class);
-
 
     protected long maxNonceAge = 0;
 
@@ -213,11 +209,10 @@ public class DigestAuthModule extends BaseAuthModule
     }
 
     /**
-     * @param nonce
+     * @param nonce the nonce
      * @param timestamp should be timestamp of request.
      * @return -1 for a bad nonce, 0 for a stale none, 1 for a good nonce
      */
-    /* ------------------------------------------------------------ */
     public int checkNonce(String nonce, long timestamp)
     {
         try

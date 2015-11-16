@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,10 @@ import java.lang.annotation.Annotation;
 import java.util.LinkedList;
 
 import javax.websocket.EndpointConfig;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
 
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadataSet;
@@ -33,6 +37,8 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
  * 
  * @param <T>
  *            the annotation this metadata is based off of
+ * @param <C>
+ *            the endpoint configuration this is based off of
  */
 public abstract class AnnotatedEndpointMetadata<T extends Annotation, C extends EndpointConfig> implements EndpointMetadata
 {

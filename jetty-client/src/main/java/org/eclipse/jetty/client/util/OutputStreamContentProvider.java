@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -27,15 +28,16 @@ import org.eclipse.jetty.client.AsyncContentProvider;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * A {@link ContentProvider} that provides content asynchronously through an {@link OutputStream}
  * similar to {@link DeferredContentProvider}.
- * <p />
+ * <p>
  * {@link OutputStreamContentProvider} can only be used in conjunction with
  * {@link Request#send(Response.CompleteListener)} (and not with its blocking counterpart {@link Request#send()})
  * because it provides content asynchronously.
- * <p />
+ * <p>
  * The deferred content is provided once by writing to the {@link #getOutputStream() output stream}
  * and then fully consumed.
  * Invocations to the {@link #iterator()} method after the first will return an "empty" iterator
@@ -43,10 +45,10 @@ import org.eclipse.jetty.client.api.Response;
  * However, it is possible for subclasses to support multiple invocations of {@link #iterator()}
  * by overriding {@link #write(ByteBuffer)} and {@link #close()}, copying the bytes and making them
  * available for subsequent invocations.
- * <p />
+ * <p>
  * Content must be provided by writing to the {@link #getOutputStream() output stream}, that must be
  * {@link OutputStream#close() closed} when all content has been provided.
- * <p />
+ * <p>
  * Example usage:
  * <pre>
  * HttpClient httpClient = ...;
@@ -59,7 +61,7 @@ import org.eclipse.jetty.client.api.Response;
  *             .content(content)
  *             .send(new Response.CompleteListener()
  *             {
- *                 &#64Override
+ *                 &#64;Override
  *                 public void onComplete(Result result)
  *                 {
  *                     // Your logic here
@@ -71,11 +73,17 @@ import org.eclipse.jetty.client.api.Response;
  * }
  * </pre>
  */
-public class OutputStreamContentProvider implements AsyncContentProvider
+public class OutputStreamContentProvider implements AsyncContentProvider, Callback, Closeable
 {
     private final DeferredContentProvider deferred = new DeferredContentProvider();
     private final OutputStream output = new DeferredOutputStream();
 
+    @Override
+    public boolean isNonBlocking()
+    {
+        return deferred.isNonBlocking();
+    }
+    
     @Override
     public long getLength()
     {
@@ -104,9 +112,22 @@ public class OutputStreamContentProvider implements AsyncContentProvider
         deferred.offer(buffer);
     }
 
-    protected void close()
+    @Override
+    public void close()
     {
         deferred.close();
+    }
+
+    @Override
+    public void succeeded()
+    {
+        deferred.succeeded();
+    }
+
+    @Override
+    public void failed(Throwable failure)
+    {
+        deferred.failed(failure);
     }
 
     private class DeferredOutputStream extends OutputStream
@@ -121,6 +142,13 @@ public class OutputStreamContentProvider implements AsyncContentProvider
         public void write(byte[] b, int off, int len) throws IOException
         {
             OutputStreamContentProvider.this.write(ByteBuffer.wrap(b, off, len));
+            flush();
+        }
+
+        @Override
+        public void flush() throws IOException
+        {
+            deferred.flush();
         }
 
         @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -248,10 +248,10 @@ public class ResourceCollection extends Resource
     
     /* ------------------------------------------------------------ */
     /**
-     * @param path
+     * @param path the path to look for
      * @return the resource(file) if found, returns a list of resource dirs if its a dir, else null.
-     * @throws IOException
-     * @throws MalformedURLException
+     * @throws IOException if unable to look for path
+     * @throws MalformedURLException if failed to look for path due to url issue
      */
     protected Object findResource(String path) throws IOException, MalformedURLException
     {        

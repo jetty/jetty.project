@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,9 +22,8 @@ import java.io.IOException;
 import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -33,6 +32,7 @@ import java.util.concurrent.Future;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -45,7 +45,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.io.ConnectPromise;
@@ -60,15 +59,16 @@ import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 /**
  * WebSocketClient provides a means of establishing connections to remote websocket endpoints.
  */
-public class WebSocketClient extends ContainerLifeCycle implements SessionListener
+public class WebSocketClient extends ContainerLifeCycle implements SessionListener, WebSocketContainerScope
 {
     private static final Logger LOG = Log.getLogger(WebSocketClient.class);
 
-    private final WebSocketPolicy policy;
+    private final WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
     private final SslContextFactory sslContextFactory;
     private final WebSocketExtensionFactory extensionRegistry;
     private boolean daemon = false;
@@ -76,18 +76,20 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     private SessionFactory sessionFactory;
     private ByteBufferPool bufferPool;
     private Executor executor;
+    private DecoratedObjectFactory objectFactory;
     private Scheduler scheduler;
     private CookieStore cookieStore;
     private ConnectionManager connectionManager;
     private Masker masker;
     private SocketAddress bindAddress;
     private long connectTimeout = SelectorManager.DEFAULT_CONNECT_TIMEOUT;
+    private boolean dispatchIO = true;
 
     public WebSocketClient()
     {
-        this(null,null);
+        this((SslContextFactory)null,null);
     }
-
+    
     public WebSocketClient(Executor executor)
     {
         this(null,executor);
@@ -108,22 +110,37 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         this(sslContextFactory,executor,new MappedByteBufferPool());
     }
     
+    public WebSocketClient(WebSocketContainerScope scope)
+    {
+        this(scope.getSslContextFactory(), scope.getExecutor(), scope.getBufferPool(), scope.getObjectFactory());
+    }
+    
+    public WebSocketClient(WebSocketContainerScope scope, SslContextFactory sslContextFactory)
+    {
+        this(sslContextFactory, scope.getExecutor(), scope.getBufferPool(), scope.getObjectFactory());
+    }
+
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
+    {
+        this(sslContextFactory, executor, bufferPool, new DecoratedObjectFactory());
+    }
+
+    public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
         this.executor = executor;
         this.sslContextFactory = sslContextFactory;
-        this.policy = WebSocketPolicy.newClientPolicy();
         this.bufferPool = bufferPool;
-        this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
+        this.objectFactory = objectFactory;
+        this.extensionRegistry = new WebSocketExtensionFactory(this);
+        
         this.masker = new RandomMasker();
         this.eventDriverFactory = new EventDriverFactory(policy);
-        this.sessionFactory = new WebSocketSessionFactory(this);
         
         addBean(this.executor);
         addBean(this.sslContextFactory);
         addBean(this.bufferPool);
     }
-
+    
     public Future<Session> connect(Object websocket, URI toUri) throws IOException
     {
         ClientUpgradeRequest request = new ClientUpgradeRequest(toUri);
@@ -174,11 +191,11 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
             }
         }
 
-        // Validate websocket URI
-        LOG.debug("connect websocket {} to {}",websocket,toUri);
+        if (LOG.isDebugEnabled())
+            LOG.debug("connect websocket {} to {}",websocket,toUri);
 
         // Grab Connection Manager
-        initialiseClient();
+        initializeClient();
         ConnectionManager manager = getConnectionManager();
 
         // Setup Driver for user provided websocket
@@ -207,7 +224,8 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
             promise.setUpgradeListener(upgradeListener);
         }
 
-        LOG.debug("Connect Promise: {}",promise);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Connect Promise: {}",promise);
 
         // Execute the connection on the executor thread
         executor.execute(promise);
@@ -219,7 +237,8 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     @Override
     protected void doStart() throws Exception
     {
-        LOG.debug("Starting {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Starting {}",this);
 
         if (sslContextFactory != null)
         {
@@ -245,15 +264,32 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
             cookieStore = new HttpCookieStore.Empty();
         }
 
-        super.doStart();
+        if(this.sessionFactory == null)
+        {
+            this.sessionFactory = new WebSocketSessionFactory(this);
+        }
+        
+        if(this.objectFactory == null)
+        {
+            this.objectFactory = new DecoratedObjectFactory();
+        }
 
-        LOG.debug("Started {}",this);
+        super.doStart();
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("Started {}",this);
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        LOG.debug("Stopping {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stopping {}",this);
+        
+        if (ShutdownThread.isRegistered(this))
+        {
+            ShutdownThread.deregister(this);
+        }
 
         if (cookieStore != null)
         {
@@ -262,7 +298,14 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         }
 
         super.doStop();
-        LOG.debug("Stopped {}",this);
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stopped {}",this);
+    }
+
+    public boolean isDispatchIO()
+    {
+        return dispatchIO;
     }
 
     /**
@@ -370,9 +413,15 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         return this.policy.getMaxTextMessageSize();
     }
 
+    @Override
+    public DecoratedObjectFactory getObjectFactory()
+    {
+        return this.objectFactory;
+    }
+
     public Set<WebSocketSession> getOpenSessions()
     {
-        return new HashSet<>(getBeans(WebSocketSession.class));
+        return Collections.unmodifiableSet(new HashSet<>(getBeans(WebSocketSession.class)));
     }
 
     public WebSocketPolicy getPolicy()
@@ -384,7 +433,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     {
         return scheduler;
     }
-
+    
     public SessionFactory getSessionFactory()
     {
         return sessionFactory;
@@ -399,29 +448,12 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         return sslContextFactory;
     }
 
-    public List<Extension> initExtensions(List<ExtensionConfig> requested)
+    private synchronized void initializeClient() throws IOException
     {
-        List<Extension> extensions = new ArrayList<Extension>();
-
-        for (ExtensionConfig cfg : requested)
+        if (!ShutdownThread.isRegistered(this))
         {
-            Extension extension = extensionRegistry.newInstance(cfg);
-
-            if (extension == null)
-            {
-                continue;
-            }
-
-            LOG.debug("added {}",extension);
-            extensions.add(extension);
+            ShutdownThread.register(this);
         }
-        LOG.debug("extensions={}",extensions);
-        return extensions;
-    }
-
-    private synchronized void initialiseClient() throws IOException
-    {
-        ShutdownThread.register(this);
 
         if (executor == null)
         {
@@ -430,30 +462,17 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
             threadPool.setName(name);
             threadPool.setDaemon(daemon);
             executor = threadPool;
-            addBean(executor,true);
+            addManaged(threadPool);
         }
         else
         {
             addBean(executor,false);
         }
 
-        if (connectionManager != null)
-        {
-            return;
-        }
-        try
+        if (connectionManager == null)
         {
             connectionManager = newConnectionManager();
-            addBean(connectionManager);
-            connectionManager.start();
-        }
-        catch (IOException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new IOException(e);
+            addManaged(connectionManager);
         }
     }
 
@@ -470,22 +489,35 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
-        LOG.debug("Session Closed: {}",session);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Session Closed: {}",session);
         removeBean(session);
     }
 
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
-        LOG.debug("Session Opened: {}",session);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Session Opened: {}",session);
+        addManaged(session);
     }
-
+    
     public void setAsyncWriteTimeout(long ms)
     {
         this.policy.setAsyncWriteTimeout(ms);
     }
 
+    /**
+     * @param bindAddress the address to bind to
+     * @deprecated use {@link #setBindAddress(SocketAddress)} instead
+     */
+    @Deprecated
     public void setBindAdddress(SocketAddress bindAddress)
+    {
+        setBindAddress(bindAddress);
+    }
+
+    public void setBindAddress(SocketAddress bindAddress)
     {
         this.bindAddress = bindAddress;
     }
@@ -518,6 +550,11 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     public void setDaemon(boolean daemon)
     {
         this.daemon = daemon;
+    }
+
+    public void setDispatchIO(boolean dispatchIO)
+    {
+        this.dispatchIO = dispatchIO;
     }
 
     public void setEventDriverFactory(EventDriverFactory factory)

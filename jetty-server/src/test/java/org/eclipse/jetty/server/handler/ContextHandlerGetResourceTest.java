@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -33,14 +35,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ContextHandlerGetResourceTest
 {
+    private static boolean OS_ALIAS_SUPPORTED;
     private static Server server;
     private static ContextHandler context;
     private static File docroot;
@@ -51,8 +56,9 @@ public class ContextHandlerGetResourceTest
     @BeforeClass
     public static void beforeClass()  throws Exception
     {
-        docroot = new File("target/tests/docroot").getCanonicalFile().getAbsoluteFile();
-        FS.ensureDirExists(docroot);
+        File testRoot = MavenTestingUtils.getTargetTestingDir(ContextHandlerGetResourceTest.class.getSimpleName());
+        FS.ensureEmpty(testRoot);
+        docroot = new File(testRoot,"docroot").getCanonicalFile().getAbsoluteFile();
         FS.ensureEmpty(docroot);
         File index = new File(docroot,"index.html");
         index.createNewFile();
@@ -63,14 +69,12 @@ public class ContextHandlerGetResourceTest
         File verylong = new File(sub,"TextFile.Long.txt");
         verylong.createNewFile();
 
-        otherroot = new File("target/tests/otherroot").getCanonicalFile().getAbsoluteFile();
-        FS.ensureDirExists(otherroot);
+        otherroot = new File(testRoot, "otherroot").getCanonicalFile().getAbsoluteFile();
         FS.ensureEmpty(otherroot);
         File other = new File(otherroot,"other.txt");
         other.createNewFile();
         
         File transit = new File(docroot.getParentFile(),"transit");
-        System.err.println("transit "+transit);
         transit.delete();
         
         if (OS.IS_UNIX)
@@ -83,9 +87,12 @@ public class ContextHandlerGetResourceTest
             Files.createSymbolicLink(transit.toPath(),otherroot.toPath());
         }
         
+        OS_ALIAS_SUPPORTED = new File(sub, "TEXTFI~1.TXT").exists(); 
         
         server = new Server();
         context =new ContextHandler("/");
+        context.clearAliasChecks();
+        context.addAliasCheck(new ContextHandler.ApproveNonExistentDirectoryAliases());
         context.setBaseResource(Resource.newResource(docroot));
         context.addAliasCheck(new ContextHandler.AliasCheck()
         {
@@ -119,7 +126,7 @@ public class ContextHandlerGetResourceTest
         try
         {
             context.getResource(path);
-            fail();
+            fail("Expected " + MalformedURLException.class);
         }
         catch(MalformedURLException e)
         {
@@ -128,7 +135,7 @@ public class ContextHandlerGetResourceTest
         try
         {
             context.getServletContext().getResource(path);
-            fail();
+            fail("Expected " + MalformedURLException.class);
         }
         catch(MalformedURLException e)
         {
@@ -297,22 +304,26 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testSlashSlash() throws Exception
     {
+        File expected = new File(docroot, OS.separators("subdir/data.txt"));
+        URL expectedUrl = expected.toURI().toURL();
+        
         String path="//subdir/data.txt";
         Resource resource=context.getResource(path);
-        assertNull(resource);
+        assertThat("Resource: " + resource, resource.getFile(), is(expected));
         URL url=context.getServletContext().getResource(path);
-        assertNull(url);
+        assertThat("Resource: " + url, url, is(expectedUrl));
         
         path="/subdir//data.txt";
         resource=context.getResource(path);
-        assertNull(resource);
+        assertThat("Resource: " + resource, resource.getFile(), is(expected));
         url=context.getServletContext().getResource(path);
-        assertNull(url);
+        assertThat("Resource: " + url, url, is(expectedUrl));
     }
 
     @Test
     public void testAliasedFile() throws Exception
     {
+        Assume.assumeTrue("OS Supports 8.3 Aliased / Alternate References",OS_ALIAS_SUPPORTED);
         final String path="/subdir/TEXTFI~1.TXT";
         
         Resource resource=context.getResource(path);
@@ -325,6 +336,7 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testAliasedFileAllowed() throws Exception
     {
+        Assume.assumeTrue("OS Supports 8.3 Aliased / Alternate References",OS_ALIAS_SUPPORTED);
         try
         {
             allowAliases.set(true);
@@ -348,8 +360,8 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testSymlinkKnown() throws Exception
     {
-        if (!OS.IS_UNIX)
-            return;
+        Assume.assumeTrue(OS.IS_UNIX);
+        
         try
         {
             allowSymlinks.set(true);

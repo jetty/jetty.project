@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -63,7 +63,7 @@ public class DataRateLimitedServlet extends HttpServlet
 {
     private static final long serialVersionUID = -4771757707068097025L;
     private int buffersize=8192;
-    private int pause=100;
+    private long pauseNS=TimeUnit.MILLISECONDS.toNanos(100);
     ScheduledThreadPoolExecutor scheduler;
     private final ConcurrentHashMap<String, ByteBuffer> cache=new ConcurrentHashMap<>();
     
@@ -76,7 +76,7 @@ public class DataRateLimitedServlet extends HttpServlet
             buffersize=Integer.parseInt(tmp);
         tmp = getInitParameter("pause");
         if (tmp!=null)
-            pause=Integer.parseInt(tmp);
+            pauseNS=TimeUnit.MILLISECONDS.toNanos(Integer.parseInt(tmp));
         tmp = getInitParameter("pool");
         int pool=tmp==null?Runtime.getRuntime().availableProcessors():Integer.parseInt(tmp);
         
@@ -205,7 +205,7 @@ public class DataRateLimitedServlet extends HttpServlet
                 
                 // Schedule a timer callback to pause writing.  Because isReady() is not called,
                 // a onWritePossible callback is no scheduled.
-                scheduler.schedule(this,pause,TimeUnit.MILLISECONDS);
+                scheduler.schedule(this,pauseNS,TimeUnit.NANOSECONDS);
             }
         }
         
@@ -261,7 +261,7 @@ public class DataRateLimitedServlet extends HttpServlet
         {            
             // If we are able to write
             if(out.isReady())
-            {
+            {   
                 // Position our buffers limit to allow only buffersize bytes to be written
                 int l=content.position()+buffersize;
                 // respect the ultimate limit
@@ -276,7 +276,7 @@ public class DataRateLimitedServlet extends HttpServlet
                     async.complete();
                     return;
                 }
-
+                
                 // write our limited buffer.  This will be an asynchronous write
                 // and will always return immediately without blocking.  If a subsequent
                 // call to out.isReady() returns false, then this onWritePossible method
@@ -284,8 +284,8 @@ public class DataRateLimitedServlet extends HttpServlet
                 out.write(content);
 
                 // Schedule a timer callback to pause writing.  Because isReady() is not called,
-                // a onWritePossible callback is no scheduled.
-                scheduler.schedule(this,pause,TimeUnit.MILLISECONDS);
+                // a onWritePossible callback is not scheduled.
+                scheduler.schedule(this,pauseNS,TimeUnit.NANOSECONDS);
             }
         }
         

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,17 +18,15 @@
 
 package org.eclipse.jetty.continuation;
 
-import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.Servlet;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 
-/* ------------------------------------------------------------ */
 /**
  * Continuation.
- * 
+ * <p> 
  * A continuation is a mechanism by which a HTTP Request can be suspended and
  * restarted after a timeout or an asynchronous event has occurred.
  * <p>
@@ -53,7 +51,7 @@ import javax.servlet.ServletResponseWrapper;
  * <p>
  * There are two distinct style of operation of the continuation API.
  * </p>
- * <h3>Suspend/Resume Usage</h3> 
+ * <h1>Suspend/Resume Usage</h1> 
  * <p>The suspend/resume style is used when a servlet and/or
  * filter is used to generate the response after a asynchronous wait that is
  * terminated by an asynchronous handler.
@@ -88,7 +86,7 @@ import javax.servlet.ServletResponseWrapper;
  *     response.getOutputStream().write(process(results));
  *   }
  * </pre> 
- * <h3>Suspend/Complete Usage</h3> 
+ * <h1>Suspend/Complete Usage</h1> 
  * <p>
  * The suspend/complete style is used when an asynchronous handler is used to 
  * generate the response:
@@ -153,7 +151,7 @@ public interface Continuation
      * @param timeoutMs
      *            The time in milliseconds to wait before expiring this
      *            continuation after a call to {@link #suspend()} or {@link #suspend(ServletResponse)}.
-     *            A timeout of <=0 means the continuation will never expire.
+     *            A timeout of &lt;=0 means the continuation will never expire.
      */
     void setTimeout(long timeoutMs);
 
@@ -165,8 +163,8 @@ public interface Continuation
      * <p>
      * After this method has been called, the lifecycle of the request will be
      * extended beyond the return to the container from the
-     * {@link Servlet#service(ServletRequest, ServletResponse)} method and
-     * {@link Filter#doFilter(ServletRequest, ServletResponse, FilterChain)}
+     * {@link javax.servlet.Servlet#service(ServletRequest, ServletResponse)} method and
+     * {@link javax.servlet.Filter#doFilter(ServletRequest, ServletResponse, FilterChain)}
      * calls. When a suspended request is returned to the container after
      * a dispatch, then the container will not commit the associated response
      * (unless an exception other than {@link ContinuationThrowable} is thrown).
@@ -201,8 +199,8 @@ public interface Continuation
      * <p>
      * After this method has been called, the lifecycle of the request will be
      * extended beyond the return to the container from the
-     * {@link Servlet#service(ServletRequest, ServletResponse)} method and
-     * {@link Filter#doFilter(ServletRequest, ServletResponse, FilterChain)}
+     * {@link javax.servlet.Servlet#service(ServletRequest, ServletResponse)} method and
+     * {@link javax.servlet.Filter#doFilter(ServletRequest, ServletResponse, FilterChain)}
      * calls. When a suspended request is returned to the container after
      * a dispatch, then the container will not commit the associated response
      * (unless an exception other than {@link ContinuationThrowable} is thrown).
@@ -366,7 +364,7 @@ public interface Continuation
     /** 
      * Add a ContinuationListener.
      * 
-     * @param listener
+     * @param listener the listener
      */
     void addContinuationListener(ContinuationListener listener);
     

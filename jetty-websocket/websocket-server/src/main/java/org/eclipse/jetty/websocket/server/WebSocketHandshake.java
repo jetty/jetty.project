@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,8 +28,9 @@ public interface WebSocketHandshake
     /**
      * Formulate a WebSocket upgrade handshake response.
      * 
-     * @param request
-     * @param response
+     * @param request the request
+     * @param response the response
+     * @throws IOException if unable to handshake
      */
     public void doHandshakeResponse(ServletUpgradeRequest request, ServletUpgradeResponse response) throws IOException;
 }

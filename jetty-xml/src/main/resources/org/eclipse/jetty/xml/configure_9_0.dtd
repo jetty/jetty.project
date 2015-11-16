@@ -274,15 +274,6 @@ Property Element.
 This element allows arbitrary properties to be retrieved by name.
 The name attribute specifies the property name and the optional
 default argument provides a default value.
-
-A Property element can contain a sequence of elements such as Set, Put, Call, etc.
-which act on the retrieved object:
-
- <Property name="Server">
-   <Call id="jdbcIdMgr" name="getAttribute">
-     <Arg>jdbcIdMgr</Arg>
-   </Call>
- </Property>
 -->
 <!ELEMENT Property (%CONFIG;)* >
 <!ATTLIST Property %NAMEATTR; %DEFAULTATTR; %IDATTR; >

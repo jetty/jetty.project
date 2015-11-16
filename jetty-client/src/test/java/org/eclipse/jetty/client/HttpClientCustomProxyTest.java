@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -93,7 +93,7 @@ public class HttpClientCustomProxyTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                if (!URI.create(baseRequest.getUri().toString()).isAbsolute())
+                if (!URI.create(baseRequest.getHttpURI().toString()).isAbsolute())
                     response.setStatus(HttpServletResponse.SC_USE_PROXY);
                 else if (serverHost.equals(request.getServerName()))
                     response.setStatus(status);
@@ -146,7 +146,7 @@ public class HttpClientCustomProxyTest
         }
     }
 
-    private class CAFEBABEConnection extends AbstractConnection
+    private class CAFEBABEConnection extends AbstractConnection implements Callback
     {
         private final ClientConnectionFactory connectionFactory;
         private final Map<String, Object> context;
@@ -162,8 +162,19 @@ public class HttpClientCustomProxyTest
         public void onOpen()
         {
             super.onOpen();
+            getEndPoint().write(this, ByteBuffer.wrap(CAFE_BABE));
+        }
+
+        @Override
+        public void succeeded()
+        {
             fillInterested();
-            getEndPoint().write(new Callback.Adapter(), ByteBuffer.wrap(CAFE_BABE));
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            close();
         }
 
         @Override
@@ -177,7 +188,7 @@ public class HttpClientCustomProxyTest
                 Assert.assertArrayEquals(CAFE_BABE, buffer.array());
 
                 // We are good, upgrade the connection
-                ClientConnectionFactory.Helper.replaceConnection(this, connectionFactory.newConnection(getEndPoint(), context));
+                getEndPoint().upgrade(connectionFactory.newConnection(getEndPoint(), context));
             }
             catch (Throwable x)
             {
@@ -206,7 +217,7 @@ public class HttpClientCustomProxyTest
         }
     }
 
-    private class CAFEBABEServerConnection extends AbstractConnection
+    private class CAFEBABEServerConnection extends AbstractConnection implements Callback
     {
         private final org.eclipse.jetty.server.ConnectionFactory connectionFactory;
 
@@ -232,15 +243,25 @@ public class HttpClientCustomProxyTest
                 int filled = getEndPoint().fill(buffer);
                 Assert.assertEquals(4, filled);
                 Assert.assertArrayEquals(CAFE_BABE, buffer.array());
-                getEndPoint().write(new Callback.Adapter(), buffer);
-
-                // We are good, upgrade the connection
-                ClientConnectionFactory.Helper.replaceConnection(this, connectionFactory.newConnection(connector, getEndPoint()));
+                getEndPoint().write(this, buffer);
             }
             catch (Throwable x)
             {
                 close();
             }
+        }
+
+        @Override
+        public void succeeded()
+        {
+            // We are good, upgrade the connection
+            getEndPoint().upgrade(connectionFactory.newConnection(connector, getEndPoint()));
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            close();
         }
     }
 }

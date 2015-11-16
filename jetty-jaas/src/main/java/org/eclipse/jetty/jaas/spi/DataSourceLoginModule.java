@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,12 +42,15 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
     private DataSource dataSource;
 
     /* ------------------------------------------------ */
-    /** Init LoginModule.
+    /** 
+     * Init LoginModule.
+     * <p>
      * Called once by JAAS after new instance created.
-     * @param subject
-     * @param callbackHandler
-     * @param sharedState
-     * @param options
+     * 
+     * @param subject the subject
+     * @param callbackHandler the callback handler
+     * @param sharedState the shared state map
+     * @param options the option map
      */
     public void initialize(Subject subject,
                            CallbackHandler callbackHandler,
@@ -70,21 +73,15 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
         }
     }
 
-
     /**
      * Get a connection from the DataSource
      * @see AbstractDatabaseLoginModule#getConnection()
      * @return the connection for the datasource
-     * @throws Exception
+     * @throws Exception if unable to get the connection
      */
     public Connection getConnection ()
     throws Exception
     {
         return dataSource.getConnection();
     }
-
-
-
-
-
 }

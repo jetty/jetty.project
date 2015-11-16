@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,6 +32,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -41,6 +42,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -63,19 +65,21 @@ public class SelectChannelEndPointTest
     protected SelectorManager _manager = new SelectorManager(_threadPool, _scheduler)
     {
         @Override
-        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
             return SelectChannelEndPointTest.this.newConnection(channel, endpoint);
         }
 
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, selectionKey, getScheduler(), 60000);
+            SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
+            endp.setIdleTimeout(60000);
             _lastEndPoint = endp;
             _lastEndPointLatch.countDown();
             return endp;
         }
+        
     };
 
     // Must be volatile or the test may fail spuriously
@@ -109,13 +113,14 @@ public class SelectChannelEndPointTest
         return new Socket(_connector.socket().getInetAddress(), _connector.socket().getLocalPort());
     }
 
-    protected Connection newConnection(SocketChannel channel, EndPoint endpoint)
+    protected Connection newConnection(SelectableChannel channel, EndPoint endpoint)
     {
         return new TestConnection(endpoint);
     }
 
     public class TestConnection extends AbstractConnection
     {
+        volatile FutureCallback _blockingRead;
         ByteBuffer _in = BufferUtil.allocate(32 * 1024);
         ByteBuffer _out = BufferUtil.allocate(32 * 1024);
         long _last = -1;
@@ -133,8 +138,29 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        public synchronized void onFillable()
+        public void onFillInterestedFailed(Throwable cause)
         {
+            Callback blocking = _blockingRead;
+            if (blocking!=null)
+            {
+                _blockingRead=null;
+                blocking.failed(cause);
+                return;
+            }
+            super.onFillInterestedFailed(cause);
+        }
+        
+        @Override
+        public void onFillable()
+        {
+            Callback blocking = _blockingRead;
+            if (blocking!=null)
+            {
+                _blockingRead=null;
+                blocking.succeeded();
+                return;
+            }
+            
             EndPoint _endp = getEndPoint();
             try
             {
@@ -145,6 +171,7 @@ public class SelectChannelEndPointTest
                     progress = false;
 
                     // Fill the input buffer with everything available
+                    BufferUtil.compact(_in);
                     if (BufferUtil.isFull(_in))
                         throw new IllegalStateException("FULL " + BufferUtil.toDetailString(_in));
                     int filled = _endp.fill(_in);
@@ -154,15 +181,15 @@ public class SelectChannelEndPointTest
                     // If the tests wants to block, then block
                     while (_blockAt > 0 && _endp.isOpen() && _in.remaining() < _blockAt)
                     {
-                        FutureCallback blockingRead = new FutureCallback();
-                        fillInterested(blockingRead);
-                        blockingRead.get();
+                        FutureCallback future = _blockingRead = new FutureCallback();
+                        fillInterested();
+                        future.get();
                         filled = _endp.fill(_in);
                         progress |= filled > 0;
                     }
 
                     // Copy to the out buffer
-                    if (BufferUtil.hasContent(_in) && BufferUtil.flipPutFlip(_in, _out) > 0)
+                    if (BufferUtil.hasContent(_in) && BufferUtil.append(_out, _in) > 0)
                         progress = true;
 
                     // Blocking writes
@@ -183,6 +210,9 @@ public class SelectChannelEndPointTest
                     if (_endp.isInputShutdown())
                         _endp.shutdownOutput();
                 }
+
+                if (_endp.isOpen())
+                    fillInterested();
             }
             catch (ExecutionException e)
             {
@@ -201,16 +231,14 @@ public class SelectChannelEndPointTest
             }
             catch (InterruptedException | EofException e)
             {
-                SelectChannelEndPoint.LOG.ignore(e);
+                Log.getRootLogger().ignore(e);
             }
             catch (Exception e)
             {
-                SelectChannelEndPoint.LOG.warn(e);
+                Log.getRootLogger().warn(e);
             }
             finally
             {
-                if (_endp.isOpen())
-                    fillInterested();
             }
         }
     }

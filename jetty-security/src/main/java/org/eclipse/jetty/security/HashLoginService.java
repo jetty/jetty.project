@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,18 +31,18 @@ import org.eclipse.jetty.util.security.Credential;
 /* ------------------------------------------------------------ */
 /**
  * Properties User Realm.
- * 
+ * <p>
  * An implementation of UserRealm that stores users and roles in-memory in HashMaps.
- * <P>
+ * <p>
  * Typically these maps are populated by calling the load() method or passing a properties resource to the constructor. The format of the properties file is:
  * 
- * <PRE>
+ * <pre>
  *  username: password [,rolename ...]
- * </PRE>
+ * </pre>
  * 
  * Passwords may be clear text, obfuscated or checksummed. The class com.eclipse.Util.Password should be used to generate obfuscated passwords or password
  * checksums.
- * 
+ * <p>
  * If DIGEST Authentication is used, the password must be in a recoverable format, either plain text or OBF:.
  */
 public class HashLoginService extends MappedLoginService implements UserListener
@@ -53,7 +53,7 @@ public class HashLoginService extends MappedLoginService implements UserListener
     private String _config;
     private Resource _configResource;
     private Scanner _scanner;
-    private int _refreshInterval = 0;// default is not to reload
+    private boolean hotReload = false; // default is not to reload
 
     /* ------------------------------------------------------------ */
     public HashLoginService()
@@ -102,17 +102,51 @@ public class HashLoginService extends MappedLoginService implements UserListener
     {
         _config = config;
     }
-
-    /* ------------------------------------------------------------ */
-    public void setRefreshInterval(int msec)
+    
+    /**
+     * Is hot reload enabled on this user store
+     * 
+     * @return true if hot reload was enabled before startup
+     */
+    public boolean isHotReload()
     {
-        _refreshInterval = msec;
+        return hotReload;
+    }
+
+    /**
+     * Enable Hot Reload of the Property File
+     * 
+     * @param enable true to enable, false to disable
+     */
+    public void setHotReload(boolean enable)
+    {
+        if (isRunning())
+        {
+            throw new IllegalStateException("Cannot set hot reload while user store is running");
+        }
+        this.hotReload = enable;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * sets the refresh interval (in seconds)
+     * @param sec the refresh interval
+     * @deprecated use {@link #setHotReload(boolean)} instead
+     */
+    @Deprecated
+    public void setRefreshInterval(int sec)
+    {
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return refresh interval in seconds for how often the properties file should be checked for changes
+     * @deprecated use {@link #isHotReload()} instead
+     */
+    @Deprecated
     public int getRefreshInterval()
     {
-        return _refreshInterval;
+        return (hotReload)?1:0;
     }
 
     /* ------------------------------------------------------------ */
@@ -133,6 +167,7 @@ public class HashLoginService extends MappedLoginService implements UserListener
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         super.doStart();
@@ -140,11 +175,11 @@ public class HashLoginService extends MappedLoginService implements UserListener
         if (_propertyUserStore == null)
         {
             if(LOG.isDebugEnabled())
-                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _config + " refreshInterval: " + _refreshInterval);
+                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _config + " hotReload: " + hotReload);
             
             _propertyUserStore = new PropertyUserStore();
-            _propertyUserStore.setRefreshInterval(_refreshInterval);
-            _propertyUserStore.setConfig(_config);
+            _propertyUserStore.setHotReload(hotReload);
+            _propertyUserStore.setConfigPath(_config);
             _propertyUserStore.registerUserListener(this);
             _propertyUserStore.start();
         }
@@ -154,6 +189,7 @@ public class HashLoginService extends MappedLoginService implements UserListener
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();
@@ -163,6 +199,7 @@ public class HashLoginService extends MappedLoginService implements UserListener
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void update(String userName, Credential credential, String[] roleArray)
     {
         if (LOG.isDebugEnabled())
@@ -171,6 +208,7 @@ public class HashLoginService extends MappedLoginService implements UserListener
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void remove(String userName)
     {
         if (LOG.isDebugEnabled())

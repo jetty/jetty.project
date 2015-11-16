@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -308,10 +308,10 @@ public interface SessionManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /** Change the existing session id.
     * 
-    * @param oldClusterId
-    * @param oldNodeId
-    * @param newClusterId
-    * @param newNodeId
+    * @param oldClusterId the old cluster id
+    * @param oldNodeId the old node id
+    * @param newClusterId the new cluster id
+    * @param newNodeId the new node id
     */
     public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId);  
 }

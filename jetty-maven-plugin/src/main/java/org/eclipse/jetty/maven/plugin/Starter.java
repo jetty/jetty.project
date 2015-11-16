@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,10 +31,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -44,20 +45,16 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 
 
 /**
- * Starter
- * 
- * Class which is exec'ed to create a new jetty process. Used by the JettyRunForked mojo.
- *
+ * Starter Class which is exec'ed to create a new jetty process. Used by the JettyRunForked mojo.
  */
 public class Starter
 { 
-    public static final String PORT_SYSPROPERTY = "jetty.port";
     private static final Logger LOG = Log.getLogger(Starter.class);
 
     private List<File> jettyXmls; // list of jetty.xml config files to apply - Mandatory
     private File contextXml; //name of context xml file to configure the webapp - Mandatory
 
-    private JettyServer server = new JettyServer();
+    private Server server;
     private JettyWebAppContext webApp;
 
     
@@ -85,7 +82,7 @@ public class Starter
         {
             if (csv != null && !"".equals(csv))
             {
-                String[] atoms = csv.split(",");
+                String[] atoms = StringUtil.csvSplit(csv);
                 if (atoms.length >= 3)
                 {
                     gid = atoms[0].trim();
@@ -115,45 +112,35 @@ public class Starter
     
     
     
-    /**
-     * @throws Exception
-     */
     public void configureJetty () throws Exception
     {
         LOG.debug("Starting Jetty Server ...");
-
+        Resource.setDefaultUseCaches(false);
+        
         //apply any configs from jetty.xml files first 
         applyJettyXml ();
 
-        // if the user hasn't configured a connector in the jetty.xml
-        //then use a default
-        Connector[] connectors = this.server.getConnectors();
-        if (connectors == null|| connectors.length == 0)
-        {
-            //if a SystemProperty -Djetty.port=<portnum> has been supplied, use that as the default port
-            MavenServerConnector httpConnector = new MavenServerConnector();
-            httpConnector.setServer(this.server);
-            String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR);
-            httpConnector.setPort(Integer.parseInt(tmp.trim()));
-            connectors = new Connector[] {httpConnector};
-            this.server.setConnectors(connectors);
-        }
-
-        //check that everything got configured, and if not, make the handlers
-        HandlerCollection handlers = (HandlerCollection) server.getChildHandlerByClass(HandlerCollection.class);
-        if (handlers == null)
-        {
-            handlers = new HandlerCollection();
-            server.setHandler(handlers);
-        }
+        //ensure there's a connector
+        ServerSupport.configureConnectors(server, null);
 
         //check if contexts already configured, create if not
-        this.server.configureHandlers();
-
+        ServerSupport.configureHandlers(server, null);
+        
+        //Set up list of default Configurations to apply to a webapp
+        ServerSupport.configureDefaultConfigurationClasses(server);
+        
         webApp = new JettyWebAppContext();
         
         //configure webapp from properties file describing unassembled webapp
         configureWebApp();
+        
+        //make it a quickstart if the quickstart-web.xml file exists
+        if (webApp.getTempDirectory() != null)
+        {
+            File qs = new File (webApp.getTempDirectory(), "quickstart-web.xml");
+            if (qs.exists() && qs.isFile())
+                webApp.setQuickStartWebDescriptor(Resource.newResource(qs));
+        }
         
         //set up the webapp from the context xml file provided
         //NOTE: just like jetty:run mojo this means that the context file can
@@ -168,9 +155,8 @@ public class Starter
             xmlConfiguration.configure(webApp);
         }
 
-        this.server.addWebApplication(webApp);
+        ServerSupport.addWebApplication(server, webApp);
 
-        System.err.println("STOP PORT="+stopPort+", STOP KEY="+stopKey);
         if(stopPort>0 && stopKey!=null)
         {
             ShutdownMonitor monitor = ShutdownMonitor.getInstance();
@@ -180,10 +166,6 @@ public class Starter
         }
     }
     
-    
-    /**
-     * @throws Exception
-     */
     public void configureWebApp ()
     throws Exception
     {
@@ -202,6 +184,9 @@ public class Starter
         if (str != null)
             webApp.setDescriptor(str); 
         
+        str = (String)props.get("quickstart.web.xml");
+        if (str != null)
+            webApp.setQuickStartWebDescriptor(Resource.newResource(new File(str)));
         
         // - the tmp directory
         str = (String)props.getProperty("tmp.dir");
@@ -211,20 +196,23 @@ public class Starter
         str = (String)props.getProperty("tmp.dir.persist");
         if (str != null)
             webApp.setPersistTempDirectory(Boolean.valueOf(str));
-
-        // - the base directories
+        
+        //Get the calculated base dirs which includes the overlays
         str = (String)props.getProperty("base.dirs");
         if (str != null && !"".equals(str.trim()))
         {
-            webApp.setWar(str);
-            webApp.setBaseResource(new ResourceCollection(str.split(File.pathSeparator)));
+            ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
+            webApp.setWar(null);
+            webApp.setBaseResource(bases);
         }
-        
-        // - put virtual webapp base resource first on resource path or not
-        str = (String)props.getProperty("base.first");
+
+        //Get the original base dirs without the overlays
+        str = (String)props.get("base.dirs.orig");
         if (str != null && !"".equals(str.trim()))
-            webApp.setBaseAppFirst(Boolean.valueOf(str));
-        
+        {
+            ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
+            webApp.setAttribute ("org.eclipse.jetty.resources.originalBases", bases);
+        }
         
         //For overlays
         str = (String)props.getProperty("maven.war.includes");
@@ -318,7 +306,7 @@ public class Starter
         if (str != null && !"".equals(str.trim()))
         {
             List<File> jars = new ArrayList<File>();
-            String[] names = str.split(",");
+            String[] names = StringUtil.csvSplit(str);
             for (int j=0; names != null && j < names.length; j++)
                 jars.add(new File(names[j].trim()));
             webApp.setWebInfLib(jars);
@@ -326,10 +314,6 @@ public class Starter
         
     }
 
-    /**
-     * @param args
-     * @throws Exception
-     */
     public void getConfiguration (String[] args)
     throws Exception
     {
@@ -347,7 +331,7 @@ public class Starter
             if ("--jetty-xml".equals(args[i]))
             {
                 jettyXmls = new ArrayList<File>();
-                String[] names = args[++i].split(",");
+                String[] names = StringUtil.csvSplit(args[++i]);
                 for (int j=0; names!= null && j < names.length; j++)
                 {
                     jettyXmls.add(new File(names[j].trim()));
@@ -380,9 +364,6 @@ public class Starter
     }
 
 
-    /**
-     * @throws Exception
-     */
     public void run() throws Exception
     {
         LOG.info("Started Jetty Server");
@@ -390,18 +371,12 @@ public class Starter
     }
 
     
-    /**
-     * @throws Exception
-     */
     public void join () throws Exception
     {
         server.join();
     }
     
     
-    /**
-     * @param e
-     */
     public void communicateStartupResult (Exception e)
     {
         if (token != null)
@@ -415,28 +390,22 @@ public class Starter
     
     
     /**
-     * @throws Exception
+     * Apply any jetty xml files given
+     * @throws Exception if unable to apply the xml
      */
     public void applyJettyXml() throws Exception
     {
-        if (jettyXmls == null)
-            return;
+        Server tmp = ServerSupport.applyXmlConfigurations(server, jettyXmls);
+        if (server == null)
+            server = tmp;
         
-        for ( File xmlFile : jettyXmls )
-        {
-            LOG.info( "Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath() );        
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(xmlFile));
-            xmlConfiguration.configure(this.server);
-        }
+        if (server == null)
+            server = new Server();
     }
 
 
 
 
-    /**
-     * @param handler
-     * @param handlers
-     */
     protected void prependHandler (Handler handler, HandlerCollection handlers)
     {
         if (handler == null || handlers == null)
@@ -451,11 +420,6 @@ public class Starter
     
     
     
-    /**
-     * @param c
-     * @param wars
-     * @return
-     */
     protected Artifact getArtifactForOverlayConfig (OverlayConfig c, List<Artifact> wars)
     {
         if (wars == null || wars.isEmpty() || c == null)
@@ -481,7 +445,7 @@ public class Starter
     {
         if (csv == null || "".equals(csv.trim()))
             return null;
-        String[] atoms = csv.split(",");
+        String[] atoms = StringUtil.csvSplit(csv);
         List<String> list = new ArrayList<String>();
         for (String a:atoms)
         {
@@ -490,11 +454,6 @@ public class Starter
         return list;
     }
     
-    
-    
-    /**
-     * @param args
-     */
     public static final void main(String[] args)
     {
         if (args == null)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -27,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
@@ -128,8 +130,12 @@ public abstract class WebSocketServlet extends HttpServlet
             factory = WebSocketServletFactory.Loader.create(policy);
 
             configure(factory);
+            
+            ServletContext ctx = getServletContext();
 
-            factory.init();
+            factory.init(ctx);
+            
+            ctx.setAttribute(WebSocketServletFactory.class.getName(),factory);
         }
         catch (Exception x)
         {

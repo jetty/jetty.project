@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
+import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
@@ -30,9 +31,9 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 /**
  * Callable for {@link OnMessage} annotated methods with a whole or partial binary messages.
  * <p>
- * Not for use with {@link InputStream} based {@link OnMessage} method objects.
+ * Not for use with {@link java.io.InputStream} based {@link OnMessage} method objects.
  * 
- * @see Binary
+ * @see javax.websocket.Decoder.Binary
  */
 public class OnMessageBinaryCallable extends OnMessageCallable
 {
@@ -45,6 +46,7 @@ public class OnMessageBinaryCallable extends OnMessageCallable
 
     /**
      * Copy Constructor
+     * @param copy the callable to copy
      */
     public OnMessageBinaryCallable(OnMessageCallable copy)
     {

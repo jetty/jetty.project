@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,11 +40,12 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * Implementation of the HTTP "Digest" authentication defined in RFC 2617.
- * <p />
+ * <p>
  * Applications should create objects of this class and add them to the
  * {@link AuthenticationStore} retrieved from the {@link HttpClient}
  * via {@link HttpClient#getAuthenticationStore()}.
@@ -102,7 +103,7 @@ public class DigestAuthentication implements Authentication
         String clientQOP = null;
         if (serverQOP != null)
         {
-            List<String> serverQOPValues = Arrays.asList(serverQOP.split(","));
+            List<String> serverQOPValues = StringUtil.csvSplit(null,serverQOP,0,serverQOP.length());
             if (serverQOPValues.contains("auth"))
                 clientQOP = "auth";
             else if (serverQOPValues.contains("auth-int"))

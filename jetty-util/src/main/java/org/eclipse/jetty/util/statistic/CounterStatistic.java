@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,20 +40,30 @@ public class CounterStatistic
     /* ------------------------------------------------------------ */
     public void reset()
     {
-        reset(0);
+        _total.set(0);
+        _max.set(0);
+        long current=_curr.get();
+        _total.addAndGet(current);
+        Atomics.updateMax(_max,current);
     }
 
     /* ------------------------------------------------------------ */
     public void reset(final long value)
     {
-        _max.set(value);
+        _total.set(0);
+        _max.set(0);
         _curr.set(value);
-        _total.set(0); // total always set to 0 to properly calculate cumulative total
+        if (value>0)
+        {
+            _total.addAndGet(value);
+            Atomics.updateMax(_max,value);
+        }
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @param delta the amount to add to the count
+     * @return the new value
      */
     public long add(final long delta)
     {
@@ -68,6 +78,8 @@ public class CounterStatistic
 
     /* ------------------------------------------------------------ */
     /**
+     * increment the value by one
+     * @return the new value, post increment
      */
     public long increment()
     {
@@ -76,6 +88,8 @@ public class CounterStatistic
 
     /* ------------------------------------------------------------ */
     /**
+     * decrement by 1
+     * @return the new value, post-decrement
      */
     public long decrement()
     {

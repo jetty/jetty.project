@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,6 +38,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.junit.After;
 import org.junit.Test;
 
 
@@ -77,7 +78,7 @@ public class DirtyAttributeTest
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
                 
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+                String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -126,6 +127,14 @@ public class DirtyAttributeTest
             server.stop();
         }
     }
+    
+    
+    @After
+    public void tearDown() throws Exception 
+    {
+        JdbcTestServer.shutdown(null);
+    }
+    
     
     public static class TestValue implements HttpSessionActivationListener, HttpSessionBindingListener, Serializable
     {

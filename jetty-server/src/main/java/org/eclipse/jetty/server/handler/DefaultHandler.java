@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,7 +48,6 @@ import org.eclipse.jetty.util.resource.Resource;
  * For all other requests a normal 404 is served.
  *
  *
- * @org.apache.xbean.XBean
  */
 public class DefaultHandler extends AbstractHandler
 {
@@ -117,61 +116,63 @@ public class DefaultHandler extends AbstractHandler
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         response.setContentType(MimeTypes.Type.TEXT_HTML.toString());
 
-        ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(1500);
-
-        writer.write("<HTML>\n<HEAD>\n<TITLE>Error 404 - Not Found");
-        writer.write("</TITLE>\n<BODY>\n<H2>Error 404 - Not Found.</H2>\n");
-        writer.write("No context on this server matched or handled this request.<BR>");
-        writer.write("Contexts known to this server are: <ul>");
-
-        Server server = getServer();
-        Handler[] handlers = server==null?null:server.getChildHandlersByClass(ContextHandler.class);
-
-        for (int i=0;handlers!=null && i<handlers.length;i++)
+        try (ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(1500);)
         {
-            ContextHandler context = (ContextHandler)handlers[i];
-            if (context.isRunning())
-            {
-                writer.write("<li><a href=\"");
-                if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                    writer.write("http://"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                writer.write(context.getContextPath());
-                if (context.getContextPath().length()>1 && context.getContextPath().endsWith("/"))
-                    writer.write("/");
-                writer.write("\">");
-                writer.write(context.getContextPath());
-                if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                    writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                writer.write("&nbsp;--->&nbsp;");
-                writer.write(context.toString());
-                writer.write("</a></li>\n");
-            }
-            else
-            {
-                writer.write("<li>");
-                writer.write(context.getContextPath());
-                if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                    writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                writer.write("&nbsp;--->&nbsp;");
-                writer.write(context.toString());
-                if (context.isFailed())
-                    writer.write(" [failed]");
-                if (context.isStopped())
-                    writer.write(" [stopped]");
-                writer.write("</li>\n");
-            }
-        }
+            writer.write("<HTML>\n<HEAD>\n<TITLE>Error 404 - Not Found");
+            writer.write("</TITLE>\n<BODY>\n<H2>Error 404 - Not Found.</H2>\n");
+            writer.write("No context on this server matched or handled this request.<BR>");
+            writer.write("Contexts known to this server are: <ul>");
 
-        writer.write("</ul><hr>");
-        writer.write("<a href=\"http://eclipse.org/jetty\"><img border=0 src=\"/favicon.ico\"/></a>&nbsp;");
-        writer.write("<a href=\"http://eclipse.org/jetty\">Powered by Jetty:// Java Web Server</a><hr/>\n");
+            Server server = getServer();
+            Handler[] handlers = server==null?null:server.getChildHandlersByClass(ContextHandler.class);
 
-        writer.write("\n</BODY>\n</HTML>\n");
-        writer.flush();
-        response.setContentLength(writer.size());
-        try (OutputStream out=response.getOutputStream())
-        {
-            writer.writeTo(out);
+            for (int i=0;handlers!=null && i<handlers.length;i++)
+            {
+                ContextHandler context = (ContextHandler)handlers[i];
+                if (context.isRunning())
+                {
+                    writer.write("<li><a href=\"");
+                    if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
+                        writer.write(request.getScheme()+"://"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
+                    writer.write(context.getContextPath());
+                    if (context.getContextPath().length()>1 && context.getContextPath().endsWith("/"))
+                        writer.write("/");
+                    writer.write("\">");
+                    writer.write(context.getContextPath());
+                    if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
+                        writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
+                    writer.write("&nbsp;--->&nbsp;");
+                    writer.write(context.toString());
+                    writer.write("</a></li>\n");
+                }
+                else
+                {
+                    writer.write("<li>");
+                    writer.write(context.getContextPath());
+                    if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
+                        writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
+                    writer.write("&nbsp;--->&nbsp;");
+                    writer.write(context.toString());
+                    if (context.isFailed())
+                        writer.write(" [failed]");
+                    if (context.isStopped())
+                        writer.write(" [stopped]");
+                    writer.write("</li>\n");
+                }
+            }
+
+            writer.write("</ul><hr>");
+
+            baseRequest.getHttpChannel().getHttpConfiguration()
+                .writePoweredBy(writer,"<a href=\"http://eclipse.org/jetty\"><img border=0 src=\"/favicon.ico\"/></a>&nbsp;","<hr/>\n");
+
+            writer.write("\n</BODY>\n</HTML>\n");
+            writer.flush();
+            response.setContentLength(writer.size());
+            try (OutputStream out=response.getOutputStream())
+            {
+                writer.writeTo(out);
+            }
         }
     }
 

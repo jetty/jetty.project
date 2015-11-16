@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<!-- ================================================================ -->
+<!-- Configure the Jetty SetUIDListener                                -->
+<!-- ================================================================ -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <Call name="addLifeCycleListener">
+    <Arg>
+      <New class="org.eclipse.jetty.setuid.SetUIDListener">
+        <Set name="startServerAsPrivileged"><Property name="jetty.setuid.startServerAsPrivileged" deprecated="jetty.startServerAsPrivileged" default="false"/></Set>
+        <Set name="umaskOctal"><Property name="jetty.setuid.umask" deprecated="jetty.umask" default="002"/></Set>
+        <Set name="username"><Property name="jetty.setuid.userName" deprecated="jetty.username" default="jetty"/></Set>
+        <Set name="groupname"><Property name="jetty.setuid.groupName" deprecated="jetty.groupname" default="jetty"/></Set>
+        <!-- uncomment to change the limits on number of open file descriptors for root -->
+        <!--
+        <Call name="setRLimitNoFiles">
+          <Arg>
+            <New class="org.eclipse.jetty.setuid.RLimit">
+              <Set name="soft">20000</Set>
+              <Set name="hard">40000</Set>
+            </New>
+          </Arg>
+        </Call>
+        -->
+      </New>
+    </Arg>
+  </Call>
+</Configure>

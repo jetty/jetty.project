@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -108,7 +107,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             public void succeeded(Connection connection)
             {
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-                if (HttpScheme.HTTPS.is(destination.getScheme()))
+                if (destination.isSecure())
                 {
                     SslContextFactory sslContextFactory = destination.getHttpClient().getSslContextFactory();
                     if (sslContextFactory != null)
@@ -119,7 +118,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                     {
                         String message = String.format("Cannot perform requests over SSL, no %s in %s",
                                 SslContextFactory.class.getSimpleName(), HttpClient.class.getSimpleName());
-                        promise.failed(new IllegalStateException(message));
+                        tunnelFailed(new IllegalStateException(message));
                     }
                 }
                 else
@@ -131,7 +130,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             @Override
             public void failed(Throwable x)
             {
-                promise.failed(x);
+                tunnelFailed(x);
             }
 
             private void tunnel(HttpDestination destination, final Connection connection)
@@ -139,33 +138,31 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                 String target = destination.getOrigin().getAddress().asString();
                 Origin.Address proxyAddress = destination.getConnectAddress();
                 HttpClient httpClient = destination.getHttpClient();
+                long connectTimeout = httpClient.getConnectTimeout();
                 Request connect = httpClient.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
                         .scheme(HttpScheme.HTTP.asString())
                         .method(HttpMethod.CONNECT)
                         .path(target)
                         .header(HttpHeader.HOST, target)
-                        .timeout(httpClient.getConnectTimeout(), TimeUnit.MILLISECONDS);
+                        .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS)
+                        .timeout(connectTimeout, TimeUnit.MILLISECONDS);
 
-                connection.send(connect, new Response.CompleteListener()
+                connection.send(connect, result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
+                    if (result.isFailed())
                     {
-                        if (result.isFailed())
+                        tunnelFailed(result.getFailure());
+                    }
+                    else
+                    {
+                        Response response = result.getResponse();
+                        if (response.getStatus() == 200)
                         {
-                            tunnelFailed(result.getFailure());
+                            tunnelSucceeded();
                         }
                         else
                         {
-                            Response response = result.getResponse();
-                            if (response.getStatus() == 200)
-                            {
-                                tunnelSucceeded();
-                            }
-                            else
-                            {
-                                tunnelFailed(new HttpResponseException("Received " + response + " for " + result.getRequest(), response));
-                            }
+                            tunnelFailed(new HttpResponseException("Received " + response + " for " + result.getRequest(), response));
                         }
                     }
                 });
@@ -182,11 +179,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                     ClientConnectionFactory sslConnectionFactory = new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
                     HttpConnectionOverHTTP oldConnection = (HttpConnectionOverHTTP)endPoint.getConnection();
                     org.eclipse.jetty.io.Connection newConnection = sslConnectionFactory.newConnection(endPoint, context);
-                    Helper.replaceConnection(oldConnection, newConnection);
-                    // Avoid setting fill interest in the old Connection,
-                    // without closing the underlying EndPoint.
-                    oldConnection.softClose();
-                    LOG.debug("HTTP tunnel established: {} over {}", oldConnection, newConnection);
+                    endPoint.upgrade(newConnection);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP tunnel established: {} over {}", oldConnection, newConnection);
                 }
                 catch (Throwable x)
                 {
@@ -197,7 +192,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             private void tunnelFailed(Throwable failure)
             {
                 endPoint.close();
-                failed(failure);
+                promise.failed(failure);
             }
         }
     }

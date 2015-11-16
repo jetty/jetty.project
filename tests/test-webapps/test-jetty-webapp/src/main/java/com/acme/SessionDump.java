@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,6 +36,23 @@ import javax.servlet.http.HttpSession;
 @SuppressWarnings("serial")
 public class SessionDump extends HttpServlet
 {
+    /** 
+      * Simple object attribute to test serialization
+      */
+    public class ObjectAttributeValue implements java.io.Serializable
+    {
+        long l;
+        
+        public ObjectAttributeValue(long l)
+        {
+            this.l = l;
+        }
+
+        public long getValue()
+        {
+            return l;
+        }
+    }
 
     int redirectCount=0;
     /* ------------------------------------------------------------ */
@@ -64,6 +81,7 @@ public class SessionDump extends HttpServlet
             {
                 session = request.getSession(true);
                 session.setAttribute("test","value");
+                session.setAttribute("obj", new ObjectAttributeValue(System.currentTimeMillis()));
             }
             else if (session!=null)
             {

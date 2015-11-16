@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,21 +27,23 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
-/* ------------------------------------------------------------ */
-/** Lazy List creation.
+/** 
+ * Lazy List creation.
+ * <p>
  * A List helper class that attempts to avoid unnecessary List
  * creation.   If a method needs to create a List to return, but it is
  * expected that this will either be empty or frequently contain a
  * single item, then using LazyList will avoid additional object
  * creations by using {@link Collections#EMPTY_LIST} or
  * {@link Collections#singletonList(Object)} where possible.
+ * </p>
  * <p>
  * LazyList works by passing an opaque representation of the list in
  * and out of all the LazyList methods.  This opaque object is either
  * null for an empty list, an Object for a list with a single entry
  * or an {@link ArrayList} for a list of items.
- *
- * <p><h4>Usage</h4>
+ * </p>
+ * <strong>Usage</strong>
  * <pre>
  *   Object lazylist =null;
  *   while(loopCondition)
@@ -57,6 +59,7 @@ import java.util.ListIterator;
  *
  * @see java.util.List
  */
+@SuppressWarnings("serial")
 public class LazyList
     implements Cloneable, Serializable
 {
@@ -161,7 +164,9 @@ public class LazyList
 
     /* ------------------------------------------------------------ */
     /** Ensure the capacity of the underlying list.
-     * 
+     * @param list the list to grow 
+     * @param initialSize the size to grow to
+     * @return the new List with new size
      */
     public static Object ensureSize(Object list, int initialSize)
     {
@@ -229,6 +234,7 @@ public class LazyList
      * @param list A LazyList returned from LazyList.add(Object)
      * @return The List of added items, which may be an EMPTY_LIST
      * or a SingletonList.
+     * @param <E> the list entry type
      */
     public static<E> List<E> getList(Object list)
     {
@@ -244,6 +250,7 @@ public class LazyList
      * empty list.
      * @return The List of added items, which may be null, an EMPTY_LIST
      * or a SingletonList.
+     * @param <E> the list entry type
      */
     @SuppressWarnings("unchecked")
     public static<E> List<E> getList(Object list, boolean nullForEmpty)
@@ -258,6 +265,38 @@ public class LazyList
             return (List<E>)list;
         
         return (List<E>)Collections.singletonList(list);
+    }
+    
+    /**
+     * Simple utility method to test if List has at least 1 entry.
+     * 
+     * @param list
+     *            a LazyList, {@link List} or {@link Object}
+     * @return true if not-null and is not empty
+     */
+    public static boolean hasEntry(Object list)
+    {
+        if (list == null)
+            return false;
+        if (list instanceof List)
+            return !((List<?>)list).isEmpty();
+        return true;
+    }
+    
+    /**
+     * Simple utility method to test if List is empty
+     * 
+     * @param list
+     *            a LazyList, {@link List} or {@link Object}
+     * @return true if null or is empty
+     */
+    public static boolean isEmpty(Object list)
+    {
+        if (list == null)
+            return true;
+        if (list instanceof List)
+            return ((List<?>)list).isEmpty();
+        return false;
     }
 
     
@@ -332,6 +371,7 @@ public class LazyList
      * @param list  A LazyList returned from LazyList.add(Object) or null
      * @param i int index
      * @return the item from the list.
+     * @param <E> the list entry type
      */
     @SuppressWarnings("unchecked")
     public static <E> E get(Object list, int i)

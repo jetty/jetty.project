@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,22 +18,22 @@
 
 package org.eclipse.jetty.annotations;
 
-import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
+import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * AnnotationDecorator
- *
- *
  */
 public class AnnotationDecorator implements Decorator
 {
-    AnnotationIntrospector _introspector = new AnnotationIntrospector();
+    protected AnnotationIntrospector _introspector = new AnnotationIntrospector();
 
-    /**
-     * @param context
-     */
     public AnnotationDecorator(WebAppContext context)
+    {
+       registerHandlers(context);
+    }
+    
+    public void registerHandlers (WebAppContext context)
     {
         _introspector.registerHandler(new ResourceAnnotationHandler(context));
         _introspector.registerHandler(new ResourcesAnnotationHandler(context));
@@ -48,13 +48,13 @@ public class AnnotationDecorator implements Decorator
     /**
      * Look for annotations that can be discovered with introspection:
      * <ul>
-     * <li> Resource
-     * <li> Resources
-     * <li> PostConstruct
-     * <li> PreDestroy
-     * <li> ServletSecurity?
+     * <li> Resource </li>
+     * <li> Resources </li>
+     * <li> PostConstruct </li>
+     * <li> PreDestroy </li>
+     * <li> ServletSecurity? </li>
      * </ul>
-     * @param o
+     * @param o the object ot introspect
      */
     protected void introspect (Object o)
     {

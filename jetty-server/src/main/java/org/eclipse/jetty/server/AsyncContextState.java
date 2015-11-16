@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,11 +33,18 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 
 public class AsyncContextState implements AsyncContext
 {
+    private final HttpChannel _channel;
     volatile HttpChannelState _state;
 
     public AsyncContextState(HttpChannelState state)
     {
         _state=state;
+        _channel=_state.getHttpChannel();
+    }
+    
+    public HttpChannel getHttpChannel()
+    {
+        return _channel;
     }
     
     HttpChannelState state()
@@ -68,7 +75,7 @@ public class AsyncContextState implements AsyncContext
             @Override
             public void onError(AsyncEvent event) throws IOException
             {
-                listener.onComplete(new AsyncEvent(event.getAsyncContext(),request,response,event.getThrowable()));
+                listener.onError(new AsyncEvent(event.getAsyncContext(),request,response,event.getThrowable()));
             }
             
             @Override
@@ -147,7 +154,7 @@ public class AsyncContextState implements AsyncContext
     @Override
     public boolean hasOriginalRequestAndResponse()
     {
-        HttpChannel<?> channel=state().getHttpChannel();
+        HttpChannel channel=state().getHttpChannel();
         return channel.getRequest()==getRequest() && channel.getResponse()==getResponse();
     }
 
@@ -160,12 +167,13 @@ public class AsyncContextState implements AsyncContext
     @Override
     public void start(final Runnable task)
     {
-        state().getHttpChannel().execute(new Runnable()
+        final HttpChannel channel = state().getHttpChannel();
+        channel.execute(new Runnable()
         {
             @Override
             public void run()
             {
-                state().getAsyncContextEvent().getContext().getContextHandler().handle(task);
+                state().getAsyncContextEvent().getContext().getContextHandler().handle(channel.getRequest(),task);
             }
         });
     }

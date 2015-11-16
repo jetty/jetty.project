@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,14 +37,12 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 
-/** javaRootURLContext
- * <p>This is the root of the java: url namespace
- *
- * <p><h4>Notes</h4>
- * <p>Thanks to Rickard Oberg for the idea of binding an ObjectFactory at "comp".
- *
- * <p><h4>Usage</h4>
- * <pre>
+/** 
+ * javaRootURLContext
+ * <p>
+ * This is the root of the <code>java:</code> url namespace
+ * <p>
+ * (Thanks to Rickard Oberg for the idea of binding an ObjectFactory at "comp")
  */
 public class javaRootURLContext implements Context
 {

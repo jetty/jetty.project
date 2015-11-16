@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,9 +25,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * The @ManagedOperation annotation is used to indicate that a given method 
+ * The <code>&#064;ManagedOperation</code> annotation is used to indicate that a given method 
  * should be considered a JMX operation.
- *
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
@@ -36,6 +35,7 @@ public @interface ManagedOperation
 {
     /**
      * Description of the Managed Object
+     * @return value
      */
     String value() default "Not Specified";
     

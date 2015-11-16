@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,11 +21,20 @@ package org.eclipse.jetty.embedded;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
+/**
+ * Configures and Starts a Jetty server from an XML declaration.
+ * <p>
+ * See <a href=
+ * "http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/examples/embedded/src/main/resources/exampleserver.xml"
+ * >exampleserver.xml</a>
+ * </p>
+ */
 public class ExampleServerXml
 {
-    public static void main(String[] args) throws Exception
+    public static void main( String[] args ) throws Exception
     {
-        Resource fileserver_xml = Resource.newSystemResource("exampleserver.xml");
-        XmlConfiguration.main(fileserver_xml.getFile().getAbsolutePath());
+        // Find Jetty XML (in classpath) that configures and starts Server.
+        Resource serverXml = Resource.newSystemResource("exampleserver.xml");
+        XmlConfiguration.main(serverXml.getFile().getAbsolutePath());
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,8 @@
 //
 
 package org.eclipse.jetty.websocket.common.extensions;
+
+import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,8 +37,6 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
 
 public class IdentityExtensionTest
 {
@@ -71,6 +71,7 @@ public class IdentityExtensionTest
 
     /**
      * Verify that outgoing frames are unmodified
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingFrames() throws IOException

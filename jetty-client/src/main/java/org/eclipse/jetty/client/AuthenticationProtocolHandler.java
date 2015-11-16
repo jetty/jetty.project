@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
-    public static final int DEFAULT_MAX_CONTENT_LENGTH = 4096;
+    public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
     private static final Pattern AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+realm=\"([^\"]+)\"(.*)", Pattern.CASE_INSENSITIVE);
     private static final String AUTHENTICATION_ATTRIBUTE = AuthenticationProtocolHandler.class.getName() + ".authentication";
@@ -50,7 +50,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     {
         this.client = client;
         this.maxContentLength = maxContentLength;
-        this.notifier = new ResponseNotifier(client);
+        this.notifier = new ResponseNotifier();
     }
 
     protected HttpClient getHttpClient()
@@ -82,11 +82,12 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         public void onComplete(Result result)
         {
             HttpRequest request = (HttpRequest)result.getRequest();
-            ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(), getEncoding());
+            ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding());
             if (result.isFailed())
             {
                 Throwable failure = result.getFailure();
-                LOG.debug("Authentication challenge failed {}", failure);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Authentication challenge failed {}", failure);
                 forwardFailureComplete(request, result.getRequestFailure(), response, result.getResponseFailure());
                 return;
             }
@@ -95,7 +96,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             if (conversation.getAttribute(AUTHENTICATION_ATTRIBUTE) != null)
             {
                 // We have already tried to authenticate, but we failed again
-                LOG.debug("Bad credentials for {}", request);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Bad credentials for {}", request);
                 forwardSuccessComplete(request, response);
                 return;
             }
@@ -104,7 +106,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             List<Authentication.HeaderInfo> headerInfos = parseAuthenticateHeader(response, header);
             if (headerInfos.isEmpty())
             {
-                LOG.debug("Authentication challenge without {} header", header);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Authentication challenge without {} header", header);
                 forwardFailureComplete(request, null, response, new HttpResponseException("HTTP protocol violation: Authentication challenge without " + header + " header", response));
                 return;
             }
@@ -126,13 +129,15 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             }
             if (authentication == null)
             {
-                LOG.debug("No authentication available for {}", request);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("No authentication available for {}", request);
                 forwardSuccessComplete(request, response);
                 return;
             }
 
             final Authentication.Result authnResult = authentication.authenticate(request, response, headerInfo, conversation);
-            LOG.debug("Authentication result {}", authnResult);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Authentication result {}", authnResult);
             if (authnResult == null)
             {
                 forwardSuccessComplete(request, response);

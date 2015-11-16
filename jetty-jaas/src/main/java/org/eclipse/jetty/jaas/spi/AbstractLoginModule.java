@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,7 +44,6 @@ import org.eclipse.jetty.jaas.callback.ObjectCallback;
  *
  * Abstract base class for all LoginModules. Subclasses should
  * just need to implement getUserInfo method.
- *
  */
 public abstract class AbstractLoginModule implements LoginModule
 {
@@ -109,8 +108,6 @@ public abstract class AbstractLoginModule implements LoginModule
         }
     }
 
-
-
     public Subject getSubject ()
     {
         return this.subject;
@@ -162,7 +159,7 @@ public abstract class AbstractLoginModule implements LoginModule
     }
     /**
      * @see javax.security.auth.spi.LoginModule#abort()
-     * @throws LoginException
+     * @throws LoginException if unable to abort
      */
     public boolean abort() throws LoginException
     {
@@ -173,7 +170,7 @@ public abstract class AbstractLoginModule implements LoginModule
     /**
      * @see javax.security.auth.spi.LoginModule#commit()
      * @return true if committed, false if not (likely not authenticated)
-     * @throws LoginException
+     * @throws LoginException if unable to commit
      */
     public boolean commit() throws LoginException
     {
@@ -215,7 +212,7 @@ public abstract class AbstractLoginModule implements LoginModule
     /**
      * @see javax.security.auth.spi.LoginModule#login()
      * @return true if is authenticated, false otherwise
-     * @throws LoginException
+     * @throws LoginException if unable to login
      */
     public boolean login() throws LoginException
     {
@@ -278,7 +275,7 @@ public abstract class AbstractLoginModule implements LoginModule
     /**
      * @see javax.security.auth.spi.LoginModule#logout()
      * @return true always
-     * @throws LoginException
+     * @throws LoginException if unable to logout
      */
     public boolean logout() throws LoginException
     {
@@ -288,10 +285,10 @@ public abstract class AbstractLoginModule implements LoginModule
 
     /**
      * @see javax.security.auth.spi.LoginModule#initialize(javax.security.auth.Subject, javax.security.auth.callback.CallbackHandler, java.util.Map, java.util.Map)
-     * @param subject
-     * @param callbackHandler
-     * @param sharedState
-     * @param options
+     * @param subject the subject
+     * @param callbackHandler the callback handler
+     * @param sharedState the shared state map
+     * @param options the option map
      */
     public void initialize(Subject subject, CallbackHandler callbackHandler,
             Map<String,?> sharedState, Map<String,?> options)

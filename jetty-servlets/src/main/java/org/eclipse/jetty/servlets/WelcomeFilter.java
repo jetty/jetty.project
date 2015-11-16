@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -49,15 +49,15 @@ public  class WelcomeFilter implements Filter
     public void init(FilterConfig filterConfig)
     {
         welcome=filterConfig.getInitParameter("welcome");
-	if (welcome==null)
-	    welcome="index.html";
+        if (welcome==null)
+            welcome="index.html";
     }
 
     /* ------------------------------------------------------------ */
     public void doFilter(ServletRequest request,
                          ServletResponse response,
                          FilterChain chain)
-	throws IOException, ServletException
+        throws IOException, ServletException
     {
         String path=((HttpServletRequest)request).getServletPath();
         if (welcome!=null && path.endsWith("/"))

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -96,7 +96,6 @@ public abstract class WebSocketFrame implements Frame
 
     /**
      * Combined FIN + RSV1 + RSV2 + RSV3 + OpCode byte.
-     * <p>
      * 
      * <pre>
      *   1000_0000 (0x80) = fin
@@ -119,6 +118,7 @@ public abstract class WebSocketFrame implements Frame
 
     /**
      * Construct form opcode
+     * @param opcode the opcode the frame is based on
      */
     protected WebSocketFrame(byte opcode)
     {
@@ -154,10 +154,7 @@ public abstract class WebSocketFrame implements Frame
         masked = copy.masked;
         mask = null;
         if (copy.mask != null)
-        {
-            mask = new byte[copy.mask.length];
-            System.arraycopy(copy.mask,0,mask,0,mask.length);
-        }
+            mask = Arrays.copyOf(copy.mask, copy.mask.length);
     }
 
     @Override
@@ -344,6 +341,7 @@ public abstract class WebSocketFrame implements Frame
      * 
      * @param buf
      *            the bytebuffer to set
+     * @return the frame itself
      */
     public WebSocketFrame setPayload(ByteBuffer buf)
     {

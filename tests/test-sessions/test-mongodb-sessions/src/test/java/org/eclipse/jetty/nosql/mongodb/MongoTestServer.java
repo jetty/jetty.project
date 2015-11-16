@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,18 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
-import java.util.concurrent.TimeUnit;
+import java.net.UnknownHostException;
 
-import org.eclipse.jetty.nosql.mongodb.MongoSessionIdManager;
-import org.eclipse.jetty.nosql.mongodb.MongoSessionManager;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.SessionHandler;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoException;
 
 
 /**
@@ -35,6 +39,29 @@ public class MongoTestServer extends AbstractTestServer
 {
     static int __workers=0;
     private boolean _saveAllAttributes = false; // false save dirty, true save all
+    private int _saveInterval = 0;
+    
+    
+    public static class TestMongoSessionIdManager extends MongoSessionIdManager 
+    {
+
+        public TestMongoSessionIdManager(Server server) throws UnknownHostException, MongoException
+        {
+            super(server);
+        }
+        
+        
+        public void deleteAll ()
+        {
+            
+            DBCursor checkSessions = _sessions.find();
+
+            for (DBObject session : checkSessions)
+            {
+                _sessions.remove(session);
+            }
+        }
+    }
     
     public MongoTestServer(int port)
     {
@@ -44,22 +71,22 @@ public class MongoTestServer extends AbstractTestServer
     public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod)
     {
         super(port, maxInactivePeriod, scavengePeriod);
+        _saveInterval = 0;
     }
     
     
     public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, boolean saveAllAttributes)
     {
         super(port, maxInactivePeriod, scavengePeriod);
-        
         _saveAllAttributes = saveAllAttributes;
     }
 
-    public SessionIdManager newSessionIdManager(String config)
+    public SessionIdManager newSessionIdManager(Object config)
     {
         try
         {
             System.err.println("MongoTestServer:SessionIdManager scavenge: delay:"+ _scavengePeriod + " period:"+_scavengePeriod);
-            MongoSessionIdManager idManager = new MongoSessionIdManager(_server);
+            MongoSessionIdManager idManager = new TestMongoSessionIdManager(_server);
             idManager.setWorkerName("w"+(__workers++));
             idManager.setScavengePeriod(_scavengePeriod);                  
 
@@ -83,10 +110,9 @@ public class MongoTestServer extends AbstractTestServer
             throw new RuntimeException(e);
         }
         
-        manager.setSavePeriod(1);
+        manager.setSavePeriod(_saveInterval);
         manager.setStalePeriod(0);
         manager.setSaveAllAttributes(_saveAllAttributes);
-        //manager.setScavengePeriod((int)TimeUnit.SECONDS.toMillis(_scavengePeriod));
         return manager;
     }
 

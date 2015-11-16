@@ -1,6 +1,5 @@
-#
-# Jetty JASPI Module
-#
+[description]
+Enable JASPI authentication for deployed webapplications.
 
 [depend]
 security

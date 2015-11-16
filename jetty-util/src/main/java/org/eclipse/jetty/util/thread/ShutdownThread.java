@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -120,6 +120,12 @@ public class ShutdownThread extends Thread
     }
 
     /* ------------------------------------------------------------ */
+    public static synchronized boolean isRegistered(LifeCycle lifeCycle)
+    {
+        return _thread._lifeCycles.contains(lifeCycle);
+    }
+
+    /* ------------------------------------------------------------ */
     @Override
     public void run()
     {
@@ -132,7 +138,7 @@ public class ShutdownThread extends Thread
                     lifeCycle.stop();
                     LOG.debug("Stopped {}",lifeCycle);
                 }
-                
+
                 if (lifeCycle instanceof Destroyable)
                 {
                     ((Destroyable)lifeCycle).destroy();

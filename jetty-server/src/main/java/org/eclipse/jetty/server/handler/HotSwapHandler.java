@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -77,7 +77,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
             throw new IllegalArgumentException("Parameter handler is null.");
         try
         {
-            updateBean(_handler,handler);
+            updateBean(_handler,handler,true);
             _handler=handler;
             Server server = getServer();
             handler.setServer(server);
@@ -120,20 +120,6 @@ public class HotSwapHandler extends AbstractHandlerContainer
         {
             _handler.handle(target,baseRequest,request,response);
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void setServer(Server server)
-    {
-        if (isRunning())
-            throw new IllegalStateException(RUNNING);
-
-        super.setServer(server);
-
-        Handler h = getHandler();
-        if (h != null)
-            h.setServer(server);
     }
 
     /* ------------------------------------------------------------ */

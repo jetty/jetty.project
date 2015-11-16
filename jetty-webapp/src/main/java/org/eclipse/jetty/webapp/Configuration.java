@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,7 +41,7 @@ public interface Configuration
      * <p>
      * Typically this step discovers configuration resources
      * @param context The context to configure
-     * @throws Exception
+     * @throws Exception if unable to pre configure
      */
     public void preConfigure (WebAppContext context) throws Exception;
     
@@ -52,7 +52,7 @@ public interface Configuration
      * Typically this step applies the discovered configuration resources to
      * either the {@link WebAppContext} or the associated {@link MetaData}.
      * @param context The context to configure
-     * @throws Exception
+     * @throws Exception if unable to configure
      */
     public void configure (WebAppContext context) throws Exception;
     
@@ -60,7 +60,7 @@ public interface Configuration
     /* ------------------------------------------------------------------------------- */
     /** Clear down after configuration.
      * @param context The context to configure
-     * @throws Exception
+     * @throws Exception if unable to post configure
      */
     public void postConfigure (WebAppContext context) throws Exception;
     
@@ -69,7 +69,7 @@ public interface Configuration
      * This method is called to undo all configuration done. This is
      * called to allow the context to work correctly over a stop/start cycle
      * @param context The context to configure
-     * @throws Exception
+     * @throws Exception if unable to deconfigure
      */
     public void deconfigure (WebAppContext context) throws Exception;
 
@@ -78,7 +78,7 @@ public interface Configuration
      * This method is called to destroy a webappcontext. It is typically called when a context 
      * is removed from a server handler hierarchy by the deployer.
      * @param context The context to configure
-     * @throws Exception
+     * @throws Exception if unable to destroy
      */
     public void destroy (WebAppContext context) throws Exception;
     
@@ -90,7 +90,7 @@ public interface Configuration
      * has previously been configured by this Configuration.
      * @param template The template context
      * @param context The context to configure
-     * @throws Exception
+     * @throws Exception if unable to clone
      */
     public void cloneConfigure (WebAppContext template, WebAppContext context) throws Exception;
     
@@ -128,14 +128,18 @@ public interface Configuration
          */
         public static ClassList serverDefault(Server server)
         {
-            ClassList cl=server.getBean(ClassList.class);
-            if (cl!=null)
-                return new ClassList(cl);
-            Object attr = server.getAttribute(ATTR);
-            if (attr instanceof ClassList)
-                return new ClassList((ClassList)attr);
-            if (attr instanceof String[])
-                return new ClassList((String[])attr);
+            ClassList cl=null;
+            if (server!=null)
+            {
+                cl= server.getBean(ClassList.class);
+                if (cl!=null)
+                    return new ClassList(cl);
+                Object attr = server.getAttribute(ATTR);
+                if (attr instanceof ClassList)
+                    return new ClassList((ClassList)attr);
+                if (attr instanceof String[])
+                    return new ClassList((String[])attr);
+            }
             return new ClassList();
         }
         

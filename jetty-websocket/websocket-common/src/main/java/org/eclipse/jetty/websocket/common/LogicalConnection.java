@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -60,11 +61,13 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
 
     /**
      * Get the ByteBufferPool in use by the connection
+     * @return the buffer pool
      */
     ByteBufferPool getBufferPool();
     
     /**
      * Get the Executor used by this connection.
+     * @return the executor
      */
     Executor getExecutor();
 
@@ -113,13 +116,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     InetSocketAddress getRemoteAddress();
 
     /**
-     * Get the Session for this connection
-     * 
-     * @return the Session for this connection
-     */
-    WebSocketSession getSession();
-
-    /**
      * Test if logical connection is still open
      * 
      *  @return true if connection is open
@@ -155,15 +151,8 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     void setNextIncomingFrames(IncomingFrames incoming);
 
     /**
-     * Set the session associated with this connection
-     * 
-     * @param session
-     *            the session
-     */
-    void setSession(WebSocketSession session);
-
-    /**
      * Suspend a the incoming read events on the connection.
+     * @return the suspend token
      */
     SuspendToken suspend();
 }

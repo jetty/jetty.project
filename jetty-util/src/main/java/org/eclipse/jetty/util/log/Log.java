@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,19 +20,20 @@ package org.eclipse.jetty.util.log;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
 /**
@@ -90,24 +91,18 @@ public class Log
                  * configuration of the Log class in situations where access to the System.properties are
                  * either too late or just impossible.
                  */
-                URL testProps = Loader.getResource(Log.class,"jetty-logging.properties");
-                if (testProps != null)
+                loadProperties("jetty-logging.properties",__props);
+
+                /*
+                 * Next see if an OS specific jetty-logging.properties object exists in the classpath. 
+                 * This really for setting up test specific logging behavior based on OS.
+                 */
+                String osName = System.getProperty("os.name");
+                // NOTE: cannot use jetty-util's StringUtil as that initializes logging itself.
+                if (osName != null && osName.length() > 0)
                 {
-                    InputStream in = null;
-                    try
-                    {
-                        in = testProps.openStream();
-                        __props.load(in);
-                    }
-                    catch (IOException e)
-                    {
-                        System.err.println("Unable to load " + testProps);
-                        e.printStackTrace(System.err);
-                    }
-                    finally
-                    {
-                        safeCloseInputStream(in);
-                    }
+                    osName = osName.toLowerCase(Locale.ENGLISH).replace(' ','-');
+                    loadProperties("jetty-logging-" + osName + ".properties",__props);
                 }
 
                 /* Now load the System.properties as-is into the __props, these values will override
@@ -119,9 +114,11 @@ public class Log
                 {
                     String key = systemKeyEnum.nextElement();
                     String val = System.getProperty(key);
-                    //protect against application code insertion of non-String values (returned as null)
+                    // protect against application code insertion of non-String values (returned as null)
                     if (val != null)
+                    {
                         __props.setProperty(key,val);
+                    }
                 }
 
                 /* Now use the configuration properties to configure the Log statics
@@ -132,58 +129,62 @@ public class Log
             }
         });
     }
-
-    private static void safeCloseInputStream(InputStream in)
+    
+    static void loadProperties(String resourceName, Properties props)
     {
-        try
+        URL testProps = Loader.getResource(Log.class,resourceName);
+        if (testProps != null)
         {
-            if (in != null)
-                in.close();
-        }
-        catch (IOException e)
-        {
-            LOG.ignore(e);
+            try (InputStream in = testProps.openStream())
+            {
+                Properties p = new Properties();
+                p.load(in);
+                for (Object key : p.keySet())
+                {
+                    Object value = p.get(key);
+                    if (value != null)
+                    {
+                        props.put(key,value);
+                    }
+                }
+            }
+            catch (IOException e)
+            {
+                System.err.println("[WARN] Error loading logging config: " + testProps);
+                e.printStackTrace(System.err);
+            }
         }
     }
 
     private static Logger LOG;
-    private static boolean __initialized;
+    private static boolean __initialized=false;
 
-    public static boolean initialized()
-    {
-        if (LOG != null)
-        {
-            return true;
-        }
-
+    public static void initialized()
+    {   
         synchronized (Log.class)
         {
             if (__initialized)
-            {
-                return LOG != null;
-            }
+                return;
             __initialized = true;
-        }
 
-        try
-        {
-            Class<?> log_class = Loader.loadClass(Log.class, __logClass);
-            if (LOG == null || !LOG.getClass().equals(log_class))
+            try
             {
-                LOG = (Logger)log_class.newInstance();
-                LOG.debug("Logging to {} via {}", LOG, log_class.getName());
+                Class<?> log_class = __logClass==null?null:Loader.loadClass(Log.class, __logClass);
+                if (LOG == null || (log_class!=null && !LOG.getClass().equals(log_class)))
+                {
+                    LOG = (Logger)log_class.newInstance();
+                    LOG.debug("Logging to {} via {}", LOG, log_class.getName());
+                }
             }
-        }
-        catch(Throwable e)
-        {
-            // Unable to load specified Logger implementation, default to standard logging.
-            initStandardLogging(e);
-        }
-        
-        if (LOG!=null)
-            LOG.info(String.format("Logging initialized @%dms",ManagementFactory.getRuntimeMXBean().getUptime()));
+            catch(Throwable e)
+            {
+                // Unable to load specified Logger implementation, default to standard logging.
+                initStandardLogging(e);
+            }
 
-        return LOG != null;
+            if (LOG!=null)
+                LOG.info(String.format("Logging initialized @%dms",Uptime.getUptime()));
+        }
     }
 
     private static void initStandardLogging(Throwable e)
@@ -191,7 +192,7 @@ public class Log
         Class<?> log_class;
         if(e != null && __ignored)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
 
         if (LOG == null)
@@ -208,9 +209,19 @@ public class Log
         return LOG;
     }
 
+    /**
+     * Set the root logger.
+     * <p>
+     * Note that if any classes have statically obtained their logger instance prior to this call, their Logger will not
+     * be affected by this call.
+     * 
+     * @param log
+     *            the root logger implementation to set
+     */
     public static void setLog(Logger log)
     {
         Log.LOG = log;
+        __logClass=null;
     }
 
     /**
@@ -284,12 +295,7 @@ public class Log
      */
     public static Logger getLogger(String name)
     {
-        if (!initialized())
-        {
-            IllegalStateException e = new IllegalStateException();
-            e.printStackTrace();
-            throw e;
-        }
+        initialized();
 
         if(name==null)
             return LOG;

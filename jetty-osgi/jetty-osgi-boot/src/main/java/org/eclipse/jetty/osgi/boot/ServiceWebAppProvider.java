@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,18 +36,14 @@ import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
-
-
 /**
  * ServiceWebAppProvider
- *
+ * <p>
  * Jetty Provider that knows how to deploy a WebApp that has been registered as an OSGi service.
- * 
  */
 public class ServiceWebAppProvider extends AbstractWebAppProvider implements ServiceProvider
 {   
     private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
-    
     
     /**
      * Map of ServiceRef to App. Used when it is an osgi service that is a WebAppContext.
@@ -55,7 +51,6 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
     private Map<ServiceReference, App> _serviceMap = new HashMap<ServiceReference, App>();
     
     private ServiceRegistration _serviceRegForServices;
-    
     
     /**
      * ServiceApp
@@ -91,9 +86,6 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
     
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param wrapper
-     */
     public ServiceWebAppProvider (ServerInstanceWrapper wrapper)
     {
         super(wrapper);
@@ -127,6 +119,8 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
             return false; //No context path
      
         String base = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH);
+        if (base == null)
+            base = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH);
         if (base == null)
             base = (String)serviceRef.getProperty(OSGiWebappConstants.SERVICE_PROP_WAR);
         

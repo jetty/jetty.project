@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -39,22 +39,24 @@ public class WebSocketJsrServer
     public static class EchoJsrSocket
     {
         @OnMessage
-        public void onMessage(Session session, String message)
+        public void onMessage( Session session, String message )
         {
             session.getAsyncRemote().sendText(message);
         }
     }
 
-    public static void main(String[] args) throws Exception
+    public static void main( String[] args ) throws Exception
     {
         Server server = new Server(8080);
 
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(
+                ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 
         // Enable javax.websocket configuration for the context
-        ServerContainer wsContainer = WebSocketServerContainerInitializer.configureContext(context);
+        ServerContainer wsContainer = WebSocketServerContainerInitializer
+                .configureContext(context);
 
         // Add your websockets to the container
         wsContainer.addEndpoint(EchoJsrSocket.class);

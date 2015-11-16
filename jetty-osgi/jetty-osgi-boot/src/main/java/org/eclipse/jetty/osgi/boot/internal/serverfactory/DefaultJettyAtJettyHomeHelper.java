@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 
 import java.io.File;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Dictionary;
@@ -32,7 +31,6 @@ import java.util.StringTokenizer;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.osgi.boot.utils.OSGiClassLoader;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
@@ -44,12 +42,11 @@ import org.osgi.framework.BundleContext;
 
 /**
  * DefaultJettyAtJettyHomeHelper
- * 
- * 
+ * <p>
  * Creates a default instance of Jetty, based on the values of the
  * System properties "jetty.home" or "jetty.home.bundle", one of which
  * must be specified in order to create the default instance.
- * 
+ * <p> 
  * Called by the {@link JettyBootstrapActivator} during the starting of the
  * bundle. 
  */
@@ -65,7 +62,7 @@ public class DefaultJettyAtJettyHomeHelper
     /**
      * Set of config files to apply to a jetty Server instance if none are supplied by SYS_PROP_JETTY_ETC_FILES
      */
-    public static final String DEFAULT_JETTY_ETC_FILES = "etc/jetty.xml,etc/jetty-selector.xml,etc/jetty-deployer.xml";
+    public static final String DEFAULT_JETTY_ETC_FILES = "etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deployer.xml";
     
     /**
      * Default location within bundle of a jetty home dir.
@@ -90,10 +87,13 @@ public class DefaultJettyAtJettyHomeHelper
      * files.
      * </p>
      * <p>
-     * In both cases the system properties jetty.host, jetty.port and
-     * jetty.port.ssl are passed to the configuration files that might use them
+     * In both cases the system properties jetty.http.host, jetty.http.port and
+     * jetty.ssl.port are passed to the configuration files that might use them
      * as part of their properties.
      * </p>
+     * @param bundleContext the bundle context
+     * @return the configured server
+     * @throws Exception if unable to create / configure / or start the server
      */
     public static Server startJettyAtJettyHome(BundleContext bundleContext) throws Exception
     {
@@ -128,6 +128,9 @@ public class DefaultJettyAtJettyHomeHelper
             jettyHomeBundleSysProp = Util.resolvePropertyValue(jettyHomeBundleSysProp);
             for (Bundle b : bundleContext.getBundles())
             {
+                if (b.getState() == Bundle.UNINSTALLED)
+                    continue;
+                
                 if (b.getSymbolicName().equals(jettyHomeBundleSysProp))
                 {
                     jettyHomeBundle = b;
@@ -154,7 +157,12 @@ public class DefaultJettyAtJettyHomeHelper
         List<URL> configURLs = jettyHomeDir != null ? getJettyConfigurationURLs(jettyHomeDir) : getJettyConfigurationURLs(jettyHomeBundle, properties);
 
         LOG.info("Configuring the default jetty server with {}",configURLs);
-        LOG.info("JETTY.HOME="+properties.get(OSGiServerConstants.JETTY_HOME));
+        String home=properties.get(OSGiServerConstants.JETTY_HOME);
+        String base=properties.get(OSGiServerConstants.JETTY_BASE);
+        if (base==null)
+            base=home;
+        LOG.info("JETTY.HOME="+home);
+        LOG.info("JETTY.BASE="+base);
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
         {
@@ -163,19 +171,24 @@ public class DefaultJettyAtJettyHomeHelper
             // these properties usually are the ones passed to this type of
             // configuration.
             properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME);
-            Util.setProperty(properties, OSGiServerConstants.JETTY_HOST, System.getProperty(OSGiServerConstants.JETTY_HOST));
-            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT));
-            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL));
-
+            Util.setProperty(properties, OSGiServerConstants.JETTY_HOST, System.getProperty(OSGiServerConstants.JETTY_HOST, System.getProperty("jetty.host")));
+            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT, System.getProperty("jetty.port")));
+            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL, System.getProperty("ssl.port")));
+            Util.setProperty(properties, OSGiServerConstants.JETTY_HOME, home);
+            Util.setProperty(properties, OSGiServerConstants.JETTY_BASE, base);
             Server server = ServerInstanceWrapper.configure(null, configURLs, properties);
-            //ensure jetty.home is set
-            server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
+            
             
             //Register the default Server instance as an OSGi service.
             //The JettyServerServiceTracker will notice it and set it up to deploy bundles as wars etc
             bundleContext.registerService(Server.class.getName(), server, properties);
             LOG.info("Default jetty server configured");
             return server;
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+            throw e;
         }
         finally
         {
@@ -277,9 +290,9 @@ public class DefaultJettyAtJettyHomeHelper
     /**
      * Get a resource representing a directory inside a bundle. If the dir is null,
      * return a resource representing the installation location of the bundle.
-     * @param bundle
-     * @param dir
-     * @return
+     * @param bundle the bundle
+     * @param dir the directory
+     * @return the resource found
      */
     public static Resource findDir (Bundle bundle, String dir)
     {

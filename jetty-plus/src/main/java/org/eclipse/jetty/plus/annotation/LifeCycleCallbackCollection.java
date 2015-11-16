@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,11 +28,8 @@ import java.util.Map;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
 /**
  * LifeCycleCallbackCollection
- *
- *
  */
 public class LifeCycleCallbackCollection
 {
@@ -46,7 +43,7 @@ public class LifeCycleCallbackCollection
     /**
      * Add a Callback to the list of callbacks.
      * 
-     * @param callback
+     * @param callback the callback
      */
     public void add (LifeCycleCallback callback)
     {
@@ -95,10 +92,10 @@ public class LifeCycleCallbackCollection
     }
     
     /**
-     * Call the method, if one exists, that is annotated with PostConstruct
-     * or with &lt;post-construct&gt; in web.xml
+     * Call the method, if one exists, that is annotated with <code>&#064;PostConstruct</code>
+     * or with <code>&lt;post-construct&gt;</code> in web.xml
      * @param o the object on which to attempt the callback
-     * @throws Exception
+     * @throws Exception if unable to call {@link PostConstructCallback}
      */
     public void callPostConstructCallback (Object o)
     throws Exception
@@ -120,9 +117,10 @@ public class LifeCycleCallbackCollection
 
     
     /**
-     * Call the method, if one exists, that is annotated with PreDestroy
-     * or with &lt;pre-destroy&gt; in web.xml
+     * Call the method, if one exists, that is annotated with <code>&#064;PreDestroy</code>
+     * or with <code>&lt;pre-destroy&gt;</code> in web.xml
      * @param o the object on which to attempt the callback
+     * @throws Exception if unable to call {@link PreDestroyCallback}
      */
     public void callPreDestroyCallback (Object o)
     throws Exception
@@ -141,7 +139,7 @@ public class LifeCycleCallbackCollection
     
     /**
      * Generate a read-only view of the post-construct callbacks
-     * @return
+     * @return the map of {@link PostConstructCallback}s
      */
     public Map<String, List<LifeCycleCallback>> getPostConstructCallbackMap()
     {
@@ -150,7 +148,7 @@ public class LifeCycleCallbackCollection
     
     /**
      * Generate a read-only view of the pre-destroy callbacks
-     * @return
+     * @return the map of {@link PreDestroyCallback}s
      */
     public Map<String, List<LifeCycleCallback>> getPreDestroyCallbackMap()
     {
@@ -159,7 +157,7 @@ public class LifeCycleCallbackCollection
     
     /**
      * Amalgamate all post-construct callbacks and return a read only list
-     * @return
+     * @return the collection of {@link PostConstructCallback}s
      */
     public Collection<LifeCycleCallback> getPostConstructCallbacks()
     {
@@ -173,7 +171,7 @@ public class LifeCycleCallbackCollection
     
     /**
      * Amalgamate all pre-destroy callbacks and return a read only list
-     * @return
+     * @return the collection of {@link PreDestroyCallback}s
      */
     public Collection<LifeCycleCallback> getPreDestroyCallbacks()
     {

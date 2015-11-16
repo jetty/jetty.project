@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.osgi.boot.jsp;
 
-import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
+
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.jasper.ContainerTldBundleDiscoverer;
-import org.eclipse.jetty.osgi.boot.jasper.JSTLBundleDiscoverer;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
 /**
  * FragmentActivator
  * 
- * Sets up support for jsp. All relevant jsp jars must also be installed
+ * Sets up support for jsp and jstl. All relevant jsp jars must also be installed
  * into the osgi environment.
  *  <p>
  * Note that as this is part of a bundle fragment, this activator is NOT
@@ -54,7 +53,6 @@ public class FragmentActivator implements BundleActivator
         //set up some classes that will look for bundles with tlds that must be converted
         //to urls and treated as if they are on the Jetty container's classpath so that 
         //jasper can deal with them
-        ServerInstanceWrapper.addContainerTldBundleDiscoverer(new JSTLBundleDiscoverer());
         ServerInstanceWrapper.addContainerTldBundleDiscoverer(new ContainerTldBundleDiscoverer());      
     }
 

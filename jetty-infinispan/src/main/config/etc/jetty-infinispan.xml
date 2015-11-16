@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- ===================================================================== -->
+  <!-- Get a reference to the default local cache.                           -->
+  <!-- ===================================================================== -->
+  <New id="local" class="org.infinispan.manager.DefaultCacheManager">
+     <Get id="cache" name="cache"></Get>
+  </New>
+
+  <!-- ===================================================================== -->
+  <!-- Get a reference to a hotrod client for a remote cache.               -->
+  <!-- Change the name of the cache to match your setup.                    -->
+  <!-- ===================================================================== -->
+  <!--
+  <New id="hotrodMgr" class="org.infinispan.client.hotrod.RemoteCacheManager">
+    <Call id="cache" name="getCache">
+      <Arg>sessions</Arg>
+    </Call>
+  </New>
+  -->
+
+
+  <!-- ===================================================================== -->
+  <!-- Configure a SessionIdManager with the cache selected above.          -->
+  <!-- ===================================================================== -->
+  <Set name="sessionIdManager">
+    <New id="idMgr" class="org.eclipse.jetty.session.infinispan.InfinispanSessionIdManager">
+      <Arg>
+        <Ref refid="Server"/>
+      </Arg>
+      <Set name="workerName"><Property name="jetty.infinispanSession.workerName" default="node1"/></Set>
+      <Set name="cache"><Ref refid="cache"/></Set>
+    </New>
+  </Set>
+
+</Configure>

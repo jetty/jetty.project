@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -27,21 +28,19 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /* ------------------------------------------------------------ */
-/** A collection of handlers.
+/** 
+ * A collection of handlers.
  * <p>
  * The default implementations  calls all handlers in list order,
  * regardless of the response status or exceptions. Derived implementation
  * may alter the order or the conditions of calling the contained
  * handlers.
- * <p>
- *
  */
 @ManagedObject("Handler of multiple handlers")
 public class HandlerCollection extends AbstractHandlerContainer
@@ -85,9 +84,9 @@ public class HandlerCollection extends AbstractHandlerContainer
             for (Handler handler:handlers)
                 if (handler.getServer()!=getServer())
                     handler.setServer(getServer());
-        
-        updateBeans(_handlers, handlers);
+        Handler[] old=_handlers;;
         _handlers = handlers;
+        updateBeans(old, handlers);
     }
 
     /* ------------------------------------------------------------ */
@@ -135,17 +134,6 @@ public class HandlerCollection extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public void setServer(Server server)
-    {
-        super.setServer(server);
-        Handler[] handlers=getHandlers();
-        if (handlers!=null)
-            for (Handler h : handlers)
-                h.setServer(server);
-    }
-
-    /* ------------------------------------------------------------ */
     /* Add a handler.
      * This implementation adds the passed handler to the end of the existing collection of handlers.
      * @see org.eclipse.jetty.server.server.HandlerContainer#addHandler(org.eclipse.jetty.server.server.Handler)
@@ -184,5 +172,13 @@ public class HandlerCollection extends AbstractHandlerContainer
         for (Handler child: children)
             child.destroy();
         super.destroy();
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        Handler[] handlers=getHandlers();
+        return super.toString()+(handlers==null?"[]":Arrays.asList(getHandlers()).toString());
     }
 }

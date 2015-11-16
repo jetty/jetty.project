@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
@@ -32,24 +34,22 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.is;
 
 public class ServerReadThread extends Thread
 {
     private static final int BUFFER_SIZE = 8192;
     private static final Logger LOG = Log.getLogger(ServerReadThread.class);
-    private final ServerConnection conn;
+    private final IBlockheadServerConnection conn;
     private boolean active = true;
     private int slowness = -1; // disabled is default
     private final AtomicInteger frameCount = new AtomicInteger();
     private final CountDownLatch expectedMessageCount;
 
-    public ServerReadThread(ServerConnection conn, int expectedMessages)
+    public ServerReadThread(IBlockheadServerConnection sconnection, int expectedMessages)
     {
-        this.conn = conn;
+        this.conn = sconnection;
         this.expectedMessageCount = new CountDownLatch(expectedMessages);
     }
 

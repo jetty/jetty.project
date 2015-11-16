@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,19 +20,17 @@ package org.eclipse.jetty.websocket.server;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
-public class WebSocketServerConnection extends AbstractWebSocketConnection
+public class WebSocketServerConnection extends AbstractWebSocketConnection implements Connection.UpgradeTo
 {
-    private final AtomicBoolean opened = new AtomicBoolean(false);
-
     public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         super(endp,executor,scheduler,policy,bufferPool);
@@ -52,17 +50,6 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection
     public InetSocketAddress getRemoteAddress()
     {
         return getEndPoint().getRemoteAddress();
-    }
-
-    @Override
-    public void onOpen()
-    {
-        boolean beenOpened = opened.getAndSet(true);
-        if (!beenOpened)
-        {
-            getSession().open();
-        }
-        super.onOpen();
     }
     
     @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,13 +19,10 @@
 package org.eclipse.jetty.websocket.client.io;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
@@ -33,7 +30,6 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
 /**
@@ -41,7 +37,6 @@ import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
  */
 public class WebSocketClientConnection extends AbstractWebSocketConnection
 {
-    private static final Logger LOG = Log.getLogger(WebSocketClientConnection.class);
     private final ConnectPromise connectPromise;
     private final Masker masker;
     private final AtomicBoolean opened = new AtomicBoolean(false);
@@ -67,32 +62,14 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     }
 
     @Override
-    public void onClose()
-    {
-        super.onClose();
-        ConnectionManager connectionManager = connectPromise.getClient().getConnectionManager();
-        connectionManager.removeSession(getSession());
-    }
-
-    @Override
     public void onOpen()
     {
+        super.onOpen();
         boolean beenOpened = opened.getAndSet(true);
         if (!beenOpened)
         {
-            WebSocketSession session = getSession();
-            ConnectionManager connectionManager = connectPromise.getClient().getConnectionManager();
-            connectionManager.addSession(session);
-            connectPromise.succeeded(session);
-
-            ByteBuffer extraBuf = connectPromise.getResponse().getRemainingBuffer();
-            if (extraBuf.hasRemaining())
-            {
-                LOG.debug("Parsing extra remaining buffer from UpgradeConnection");
-                getParser().parse(extraBuf);
-            }
+            connectPromise.succeeded();
         }
-        super.onOpen();
     }
 
     /**

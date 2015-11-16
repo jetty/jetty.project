@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -89,7 +89,10 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
     @Override
     public void onMethodAnnotation(AnnotatedEndpointMetadata<T, C> metadata, Class<?> pojo, Method method, Annotation annotation)
     {
-        LOG.debug("onMethodAnnotation({}, {}, {}, {})",metadata,pojo,method,annotation);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onMethodAnnotation({}, {}, {}, {})",metadata,pojo,method,annotation);
+        }
 
         if (isAnnotation(annotation,OnOpen.class))
         {
@@ -190,11 +193,17 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
     {
         for (IJsrParamId paramId : paramIds)
         {
-            LOG.debug("{}.process()",paramId);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("{}.process()",paramId);
+            }
             if (paramId.process(param,callable))
             {
                 // Successfully identified
-                LOG.debug("Identified: {}",param);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Identified: {}",param);
+                }
                 return true;
             }
         }

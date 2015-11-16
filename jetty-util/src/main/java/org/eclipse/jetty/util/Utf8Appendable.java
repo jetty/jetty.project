@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * License information for Bjoern Hoehrmann's code:
  *
- * Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
+ * Copyright (c) 2008-2009 Bjoern Hoehrmann &lt;bjoern@hoehrmann.de&gt;
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
@@ -98,6 +98,58 @@ public abstract class Utf8Appendable
         _state = UTF8_ACCEPT;
     }
 
+    
+    private void checkCharAppend() throws IOException
+    {
+        if (_state != UTF8_ACCEPT)
+        {
+            _appendable.append(REPLACEMENT);
+            int state=_state;
+            _state=UTF8_ACCEPT;
+            throw new NotUtf8Exception("char appended in state "+state);
+        }
+    }
+    
+    public void append(char c)
+    {
+        try
+        {
+            checkCharAppend();
+            _appendable.append(c); 
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void append(String s)
+    {
+        try
+        {
+            checkCharAppend();
+            _appendable.append(s); 
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    public void append(String s,int offset,int length)
+    {
+        try
+        {
+            checkCharAppend();
+            _appendable.append(s,offset,offset+length); 
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    
     public void append(byte b)
     {
         try

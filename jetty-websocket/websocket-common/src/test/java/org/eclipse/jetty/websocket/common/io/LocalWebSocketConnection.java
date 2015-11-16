@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,6 @@ import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.junit.rules.TestName;
 
@@ -82,21 +81,24 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     @Override
     public void close(int statusCode, String reason)
     {
-        LOG.debug("close({}, {})",statusCode,reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("close({}, {})",statusCode,reason);
         CloseInfo close = new CloseInfo(statusCode,reason);
         ioState.onCloseLocal(close);
     }
 
     public void connect()
     {
-        LOG.debug("connect()");
+        if (LOG.isDebugEnabled())
+            LOG.debug("connect()");
         ioState.onConnected();
     }
 
     @Override
     public void disconnect()
     {
-        LOG.debug("disconnect()");
+        if (LOG.isDebugEnabled())
+            LOG.debug("disconnect()");
     }
 
     @Override
@@ -147,12 +149,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
-    public WebSocketSession getSession()
-    {
-        return null;
-    }
-
-    @Override
     public void incomingError(Throwable e)
     {
         incoming.incomingError(e);
@@ -179,7 +175,8 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     @Override
     public void onConnectionStateChange(ConnectionState state)
     {
-        LOG.debug("Connection State Change: {}",state);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Connection State Change: {}",state);
         switch (state)
         {
             case CLOSED:
@@ -200,7 +197,8 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
 
     public void open()
     {
-        LOG.debug("open()");
+        if (LOG.isDebugEnabled())
+            LOG.debug("open()");
         ioState.onOpened();
     }
 
@@ -228,11 +226,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     public void setPolicy(WebSocketPolicy policy)
     {
         this.policy = policy;
-    }
-
-    @Override
-    public void setSession(WebSocketSession session)
-    {
     }
 
     @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,16 @@
 
 package org.eclipse.jetty.websocket.server.browser;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.common.extensions.FrameCaptureExtension;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -83,21 +88,34 @@ public class BrowserDebugTool implements WebSocketCreator
 
         String ua = req.getHeader("User-Agent");
         String rexts = req.getHeader("Sec-WebSocket-Extensions");
-        
-        LOG.debug("User-Agent: {}", ua);
-        LOG.debug("Sec-WebSocket-Extensions (Request) : {}", rexts);
+
+        // manually negotiate extensions
+        List<ExtensionConfig> negotiated = new ArrayList<>();
+        // adding frame debug
+        negotiated.add(new ExtensionConfig("@frame-capture; output-dir=target"));
+        for (ExtensionConfig config : req.getExtensions())
+        {
+            if (config.getName().equals("permessage-deflate"))
+            {
+                // what we are interested in here
+                negotiated.add(config);
+                continue;
+            }
+            // skip all others
+        }
+
+        resp.setExtensions(negotiated);
+
+        LOG.debug("User-Agent: {}",ua);
+        LOG.debug("Sec-WebSocket-Extensions (Request) : {}",rexts);
+
+        req.getExtensions();
         return new BrowserSocket(ua,rexts);
     }
 
-    public void start() throws Exception
+    public int getPort()
     {
-        server.start();
-        LOG.info("Server available on port {}", getPort());
-    }
-
-    public void stop() throws Exception
-    {
-        server.stop();
+        return connector.getLocalPort();
     }
 
     public void prepare(int port)
@@ -114,15 +132,17 @@ public class BrowserDebugTool implements WebSocketCreator
             {
                 LOG.debug("Configuring WebSocketServerFactory ...");
 
-                // factory.getExtensionFactory().unregister("deflate-frame");
-                // factory.getExtensionFactory().unregister("permessage-deflate");
-                // factory.getExtensionFactory().unregister("x-webkit-deflate-frame");
+                // Registering Frame Debug
+                factory.getExtensionFactory().register("@frame-capture",FrameCaptureExtension.class);
 
                 // Setup the desired Socket to use for all incoming upgrade requests
                 factory.setCreator(BrowserDebugTool.this);
 
                 // Set the timeout
                 factory.getPolicy().setIdleTimeout(30000);
+
+                // Set top end message size
+                factory.getPolicy().setMaxTextMessageSize(15 * 1024 * 1024);
             }
         };
 
@@ -138,8 +158,14 @@ public class BrowserDebugTool implements WebSocketCreator
         LOG.info("{} setup on port {}",this.getClass().getName(),port);
     }
 
-    public int getPort()
+    public void start() throws Exception
     {
-        return connector.getLocalPort();
+        server.start();
+        LOG.info("Server available on port {}",getPort());
+    }
+
+    public void stop() throws Exception
+    {
+        server.stop();
     }
 }

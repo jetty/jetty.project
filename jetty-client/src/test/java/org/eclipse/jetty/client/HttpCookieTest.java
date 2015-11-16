@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -83,12 +84,13 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
+                baseRequest.setHandled(true);
                 Cookie[] cookies = request.getCookies();
+                Assert.assertNotNull(cookies);
                 Assert.assertEquals(1, cookies.length);
                 Cookie cookie = cookies[0];
                 Assert.assertEquals(name, cookie.getName());
                 Assert.assertEquals(value, cookie.getValue());
-                baseRequest.setHandled(true);
             }
         });
 
@@ -121,5 +123,33 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 .send();
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(client.getCookieStore().getCookies().isEmpty());
+    }
+
+    @Test
+    public void test_PerRequestCookieIsSent() throws Exception
+    {
+        final String name = "foo";
+        final String value = "bar";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                Cookie[] cookies = request.getCookies();
+                Assert.assertNotNull(cookies);
+                Assert.assertEquals(1, cookies.length);
+                Cookie cookie = cookies[0];
+                Assert.assertEquals(name, cookie.getName());
+                Assert.assertEquals(value, cookie.getValue());
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .cookie(new HttpCookie(name, value))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertEquals(200, response.getStatus());
     }
 }

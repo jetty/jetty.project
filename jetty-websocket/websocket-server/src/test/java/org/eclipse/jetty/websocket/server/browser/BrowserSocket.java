@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,17 @@
 
 package org.eclipse.jetty.websocket.server.browser;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.Random;
 
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -109,8 +114,48 @@ public class BrowserSocket
     @OnWebSocketMessage
     public void onTextMessage(String message)
     {
-        LOG.info("onTextMessage({})",message);
+        if (message.length() > 300)
+        {
+            int len = message.length();
+            LOG.info("onTextMessage({} ... {}) size:{}",message.substring(0,15),message.substring(len - 15,len).replaceAll("[\r\n]*",""),len);
+        }
+        else
+        {
+            LOG.info("onTextMessage({})",message);
+        }
 
+        // Is multi-line?
+        if (message.contains("\n"))
+        {
+            // echo back exactly
+            writeMessage(message);
+            return;
+        }
+
+        // Is resource lookup?
+        if (message.charAt(0) == '@')
+        {
+            String name = message.substring(1);
+            URL url = Loader.getResource(BrowserSocket.class,name);
+            if (url == null)
+            {
+                writeMessage("Unable to find resource: " + name);
+                return;
+            }
+            try (InputStream in = url.openStream())
+            {
+                String data = IO.toString(in);
+                writeMessage(data);
+            }
+            catch (IOException e)
+            {
+                writeMessage("Unable to read resource: " + name);
+                LOG.warn("Unable to read resource: " + name,e);
+            }
+            return;
+        }
+
+        // Is parameterized?
         int idx = message.indexOf(':');
         if (idx > 0)
         {
@@ -186,12 +231,11 @@ public class BrowserSocket
                     writeMessage("key[%s] val[%s]",key,val);
                 }
             }
+            return;
         }
-        else
-        {
-            // Not parameterized, echo it back
-            writeMessage(message);
-        }
+
+        // Not parameterized, echo it back as-is
+        writeMessage(message);
     }
 
     private void writeManyAsync(int size, int count)

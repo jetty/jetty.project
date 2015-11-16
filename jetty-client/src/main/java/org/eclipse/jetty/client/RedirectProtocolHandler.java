@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,13 +22,24 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 
+/**
+ * <p>A protocol handler that handles redirect status codes 301, 302, 303, 307 and 308.</p>
+ */
 public class RedirectProtocolHandler extends Response.Listener.Adapter implements ProtocolHandler
 {
+    public static final String NAME = "redirect";
+
     private final HttpRedirector redirector;
 
     public RedirectProtocolHandler(HttpClient client)
     {
         redirector = new HttpRedirector(client);
+    }
+
+    @Override
+    public String getName()
+    {
+        return NAME;
     }
 
     @Override

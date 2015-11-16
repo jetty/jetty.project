@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
@@ -79,6 +78,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         private static final Pattern IPv4_PATTERN = Pattern.compile("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})");
         private static final Logger LOG = Log.getLogger(Socks4ProxyConnection.class);
 
+        private final Socks4Parser parser = new Socks4Parser();
         private final ClientConnectionFactory connectionFactory;
         private final Map<String, Object> context;
 
@@ -133,7 +133,8 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         @Override
         public void succeeded()
         {
-            LOG.debug("Written SOCKS4 connect request");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Written SOCKS4 connect request");
             fillInterested();
         }
 
@@ -151,21 +152,40 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         {
             try
             {
-                ByteBuffer buffer = BufferUtil.allocate(8);
-                int filled = getEndPoint().fill(buffer);
-                LOG.debug("Read SOCKS4 connect response, {} bytes", filled);
-                if (filled != 8)
-                    throw new IOException("Invalid response from SOCKS4 proxy");
-                int result = buffer.get(1);
-                if (result == 0x5A)
-                    tunnel();
-                else
-                    throw new IOException("SOCKS4 tunnel failed with code " + result);
+                while (true)
+                {
+                    // Avoid to read too much from the socket: ask
+                    // the parser how much left there is to read.
+                    ByteBuffer buffer = BufferUtil.allocate(parser.expected());
+                    int filled = getEndPoint().fill(buffer);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Read SOCKS4 connect response, {} bytes", filled);
+
+                    if (filled < 0)
+                        throw new IOException("SOCKS4 tunnel failed, connection closed");
+
+                    if (filled == 0)
+                    {
+                        fillInterested();
+                        return;
+                    }
+
+                    if (parser.parse(buffer))
+                        return;
+                }
             }
             catch (Throwable x)
             {
                 failed(x);
             }
+        }
+
+        private void onSocks4Response(int responseCode) throws IOException
+        {
+            if (responseCode == 0x5A)
+                tunnel();
+            else
+                throw new IOException("SOCKS4 tunnel failed with code " + responseCode);
         }
 
         private void tunnel()
@@ -175,15 +195,45 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
                 HttpClient client = destination.getHttpClient();
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
-                if (HttpScheme.HTTPS.is(destination.getScheme()))
+                if (destination.isSecure())
                     connectionFactory = new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
-                org.eclipse.jetty.io.Connection connection = connectionFactory.newConnection(getEndPoint(), context);
-                ClientConnectionFactory.Helper.replaceConnection(this, connection);
-                LOG.debug("SOCKS4 tunnel established: {} over {}", this, connection);
+                org.eclipse.jetty.io.Connection newConnection = connectionFactory.newConnection(getEndPoint(), context);
+                getEndPoint().upgrade(newConnection);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("SOCKS4 tunnel established: {} over {}", this, newConnection);
             }
             catch (Throwable x)
             {
                 failed(x);
+            }
+        }
+
+        private class Socks4Parser
+        {
+            private static final int EXPECTED_LENGTH = 8;
+            private int cursor;
+            private int response;
+
+            private boolean parse(ByteBuffer buffer) throws IOException
+            {
+                while (buffer.hasRemaining())
+                {
+                    byte current = buffer.get();
+                    if (cursor == 1)
+                        response = current & 0xFF;
+                    ++cursor;
+                    if (cursor == EXPECTED_LENGTH)
+                    {
+                        onSocks4Response(response);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            private int expected()
+            {
+                return EXPECTED_LENGTH - cursor;
             }
         }
     }

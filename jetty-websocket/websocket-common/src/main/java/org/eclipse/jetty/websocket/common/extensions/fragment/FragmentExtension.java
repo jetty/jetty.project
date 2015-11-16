@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -69,7 +69,8 @@ public class FragmentExtension extends AbstractExtension
         }
 
         FrameEntry entry = new FrameEntry(frame, callback, batchMode);
-        LOG.debug("Queuing {}", entry);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queuing {}", entry);
         entries.offer(entry);
         flusher.iterate();
     }
@@ -143,18 +144,27 @@ public class FragmentExtension extends AbstractExtension
             ByteBuffer payloadFragment = payload.slice();
             payload.limit(limit);
             fragment.setPayload(payloadFragment);
-            LOG.debug("Fragmented {}->{}", frame, fragment);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Fragmented {}->{}", frame, fragment);
             payload.position(newLimit);
 
             nextOutgoingFrame(fragment, this, entry.batchMode);
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             // This IteratingCallback never completes.
         }
-
+        
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            // This IteratingCallback never fails.
+            // The callback are those provided by WriteCallback (implemented
+            // below) and even in case of writeFailed() we call succeeded().
+        }
+        
         @Override
         public void writeSuccess()
         {
@@ -185,7 +195,8 @@ public class FragmentExtension extends AbstractExtension
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying success of callback " + callback, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while notifying success of callback " + callback, x);
             }
         }
 
@@ -198,7 +209,8 @@ public class FragmentExtension extends AbstractExtension
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying failure of callback " + callback, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while notifying failure of callback " + callback, x);
             }
         }
     }

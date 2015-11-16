@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -63,14 +62,7 @@ public class ExternalSiteTest
         int port = 80;
 
         // Verify that we have connectivity
-        try
-        {
-            new Socket(host, port).close();
-        }
-        catch (IOException x)
-        {
-            Assume.assumeNoException(x);
-        }
+        assumeCanConnectTo(host, port);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
         client.newRequest(host, port).send(new Response.CompleteListener()
@@ -110,14 +102,7 @@ public class ExternalSiteTest
         int port = 443;
 
         // Verify that we have connectivity
-        try
-        {
-            new Socket(host, port).close();
-        }
-        catch (IOException x)
-        {
-            Assume.assumeNoException(x);
-        }
+        assumeCanConnectTo(host, port);
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(host, port).scheme("https").path("/nvp").send(new Response.CompleteListener()
@@ -139,14 +124,7 @@ public class ExternalSiteTest
         int port = 22; // SSH port
 
         // Verify that we have connectivity
-        try
-        {
-            new Socket(host, port).close();
-        }
-        catch (IOException x)
-        {
-            Assume.assumeNoException(x);
-        }
+        assumeCanConnectTo(host, port);
 
         for (int i = 0; i < 2; ++i)
         {
@@ -186,19 +164,24 @@ public class ExternalSiteTest
         int port = 443;
 
         // Verify that we have connectivity
-        try
-        {
-            new Socket(host, port).close();
-        }
-        catch (IOException x)
-        {
-            Assume.assumeNoException(x);
-        }
+        assumeCanConnectTo(host, port);
 
         ContentResponse response = client.newRequest(host, port)
                 .scheme(HttpScheme.HTTPS.asString())
                 .path("/twitter")
                 .send();
         Assert.assertEquals(200, response.getStatus());
+    }
+
+    protected void assumeCanConnectTo(String host, int port)
+    {
+        try
+        {
+            new Socket(host, port).close();
+        }
+        catch (Throwable x)
+        {
+            Assume.assumeNoException(x);
+        }
     }
 }

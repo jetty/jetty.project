@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,19 +22,29 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
+/**
+ * AbstractSessionExpiryTest
+ *
+ *
+ */
 public abstract class AbstractSessionExpiryTest
 {
     public abstract AbstractTestServer createServer(int port, int max, int scavenge);
@@ -50,6 +60,23 @@ public abstract class AbstractSessionExpiryTest
             e.printStackTrace();
         }
     }
+    
+    public class TestHttpSessionListener implements HttpSessionListener
+    {
+        public List<String> createdSessions = new ArrayList<String>();
+        public List<String> destroyedSessions = new ArrayList<String>();
+        
+        public void sessionDestroyed(HttpSessionEvent se)
+        {
+            destroyedSessions.add(se.getSession().getId());
+        }
+        
+        public void sessionCreated(HttpSessionEvent se)
+        {
+            createdSessions.add(se.getSession().getId());
+        }
+    };
+    
 
     @Test
     public void testSessionNotExpired() throws Exception
@@ -75,13 +102,14 @@ public abstract class AbstractSessionExpiryTest
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-            String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+            String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
             //now stop the server
             server1.stop();
+   
 
             //start the server again, before the session times out
             server1.start();
@@ -101,18 +129,26 @@ public abstract class AbstractSessionExpiryTest
             server1.stop();
         }
     }
+    
 
     @Test
     public void testSessionExpiry() throws Exception
     {
+     
+        
         String contextPath = "";
         String servletMapping = "/server";
         int inactivePeriod = 2;
-        int scavengePeriod = 10;
+        int scavengePeriod = 1;
         AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
-        server1.addContext(contextPath).addServlet(holder, servletMapping);
+        ServletContextHandler context = server1.addContext(contextPath);
+        context.addServlet(holder, servletMapping);
+        TestHttpSessionListener listener = new TestHttpSessionListener();
+        
+        context.getSessionHandler().addEventListener(listener);
+        
         server1.start();
         int port1 = server1.getPort();
 
@@ -125,19 +161,24 @@ public abstract class AbstractSessionExpiryTest
             //make a request to set up a session on the server
             ContentResponse response1 = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
-            String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
+            String sessionCookie = response1.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+            
+            String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
 
+            verifySessionCreated(listener,sessionId);
+            
             //now stop the server
             server1.stop();
-
+            
             //and wait until the expiry time has passed
             pause(inactivePeriod);
 
             //restart the server
             server1.start();
+            
             port1 = server1.getPort();
             url = "http://localhost:" + port1 + contextPath + servletMapping;
 
@@ -146,12 +187,27 @@ public abstract class AbstractSessionExpiryTest
             request.getHeaders().add("Cookie", sessionCookie);
             ContentResponse response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+            
+            //and wait until the expiry time has passed
+            pause(inactivePeriod);
+            
+            verifySessionDestroyed (listener, sessionId);
         }
         finally
         {
             server1.stop();
-        }
+        }     
     }
+    public void verifySessionCreated (TestHttpSessionListener listener, String sessionId)
+    {
+        assertTrue(listener.createdSessions.contains(sessionId));
+    }
+    public void verifySessionDestroyed (TestHttpSessionListener listener, String sessionId)
+    {
+        assertTrue (listener.destroyedSessions.contains(sessionId));
+    }
+
+
 
     public static class TestServlet extends HttpServlet
     {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.api.util;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -135,5 +136,21 @@ public class QuoteUtilTest
     {
         Iterator<String> iter = QuoteUtil.splitAt("Key = Value","=");
         assertSplitAt(iter,"Key","Value");
+    }
+    
+    @Test
+    public void testQuoteIfNeeded()
+    {
+        StringBuilder buf = new StringBuilder();
+        QuoteUtil.quoteIfNeeded(buf, "key",",");
+        assertThat("key",buf.toString(),is("key"));
+    }
+    
+    @Test
+    public void testQuoteIfNeeded_null()
+    {
+        StringBuilder buf = new StringBuilder();
+        QuoteUtil.quoteIfNeeded(buf, null,";=");
+        assertThat("<null>",buf.toString(),is(""));
     }
 }

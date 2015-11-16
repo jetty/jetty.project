@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -37,13 +41,8 @@ import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-@Ignore
 public class NetworkTrafficListenerTest
 {
     private static final byte END_OF_CONTENT = '~';
@@ -113,6 +112,7 @@ public class NetworkTrafficListenerTest
     {
         initConnector(new AbstractHandler()
         {
+            @Override
             public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
             {
                 request.setHandled(true);
@@ -175,6 +175,7 @@ public class NetworkTrafficListenerTest
         final String responseContent = "response_content";
         initConnector(new AbstractHandler()
         {
+            @Override
             public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
             {
                 request.setHandled(true);
@@ -190,12 +191,14 @@ public class NetworkTrafficListenerTest
         final CountDownLatch outgoingLatch = new CountDownLatch(2);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
+            @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
                 incomingData.set(BufferUtil.toString(bytes,StandardCharsets.UTF_8));
                 incomingLatch.countDown();
             }
 
+            @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
                 outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
@@ -240,6 +243,7 @@ public class NetworkTrafficListenerTest
         final String responseChunk2 = "response_content".substring(responseContent.length() / 2, responseContent.length());
         initConnector(new AbstractHandler()
         {
+            @Override
             public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
             {
                 request.setHandled(true);
@@ -254,19 +258,22 @@ public class NetworkTrafficListenerTest
         final AtomicReference<String> incomingData = new AtomicReference<>();
         final CountDownLatch incomingLatch = new CountDownLatch(1);
         final AtomicReference<String> outgoingData = new AtomicReference<>("");
-        final CountDownLatch outgoingLatch = new CountDownLatch(4);
+        final CountDownLatch outgoingLatch = new CountDownLatch(1);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
+            @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
                 incomingData.set(BufferUtil.toString(bytes,StandardCharsets.UTF_8));
                 incomingLatch.countDown();
             }
 
+            @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
-                outgoingLatch.countDown();
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));                
+                if (outgoingData.get().endsWith("\r\n0\r\n\r\n"))
+                    outgoingLatch.countDown();
             }
         });
         int port = connector.getLocalPort();
@@ -310,6 +317,7 @@ public class NetworkTrafficListenerTest
         final String location = "/redirect";
         initConnector(new AbstractHandler()
         {
+            @Override
             public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
             {
                 request.setHandled(true);
@@ -323,12 +331,14 @@ public class NetworkTrafficListenerTest
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
+            @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
                 incomingData.set(BufferUtil.toString(bytes,StandardCharsets.UTF_8));
                 incomingLatch.countDown();
             }
 
+            @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
                 outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
@@ -374,6 +384,7 @@ public class NetworkTrafficListenerTest
     {
         initConnector(new AbstractHandler()
         {
+            @Override
             public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
             {
                 // Read and discard the request body to make the test more
@@ -396,11 +407,13 @@ public class NetworkTrafficListenerTest
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
+            @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
                 incomingData.set(incomingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
             }
 
+            @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
                 outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));

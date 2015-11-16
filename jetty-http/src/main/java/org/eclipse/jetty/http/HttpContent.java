@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,150 +23,51 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
-/** HttpContent.
- * 
+/** HttpContent interface.
+ * <p>This information represents all the information about a 
+ * static resource that is needed to evaluate conditional headers
+ * and to serve the content if need be.     It can be implemented
+ * either transiently (values and fields generated on demand) or 
+ * persistently (values and fields pre-generated in anticipation of
+ * reuse in from a cache).
+ * </p> 
  *
  */
 public interface HttpContent
 {
-    String getContentType();
-    String getLastModified();
+    HttpField getContentType();
+    String getContentTypeValue();
+    String getCharacterEncoding();
+    Type getMimeType();
+
+    HttpField getContentEncoding();
+    String getContentEncodingValue();
+    
+    HttpField getContentLength();
+    long getContentLengthValue();
+    
+    HttpField getLastModified();
+    String getLastModifiedValue();
+    
+    HttpField getETag();
+    String getETagValue();
+    
     ByteBuffer getIndirectBuffer();
     ByteBuffer getDirectBuffer();
-    String getETag();
     Resource getResource();
-    long getContentLength();
     InputStream getInputStream() throws IOException;
     ReadableByteChannel getReadableByteChannel() throws IOException;
     void release();
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    public class ResourceAsHttpContent implements HttpContent
+    HttpContent getGzipContent();
+    
+    
+    public interface Factory
     {
-        final Resource _resource;
-        final String _mimeType;
-        final int _maxBuffer;
-        final String _etag;
-
-        /* ------------------------------------------------------------ */
-        public ResourceAsHttpContent(final Resource resource, final String mimeType)
-        {
-            this(resource,mimeType,-1,false);
-        }
-
-        /* ------------------------------------------------------------ */
-        public ResourceAsHttpContent(final Resource resource, final String mimeType, int maxBuffer)
-        {
-            this(resource,mimeType,maxBuffer,false);
-        }
-
-        /* ------------------------------------------------------------ */
-        public ResourceAsHttpContent(final Resource resource, final String mimeType, boolean etag)
-        {
-            this(resource,mimeType,-1,etag);
-        }
-
-        /* ------------------------------------------------------------ */
-        public ResourceAsHttpContent(final Resource resource, final String mimeType, int maxBuffer, boolean etag)
-        {
-            _resource=resource;
-            _mimeType=mimeType;
-            _maxBuffer=maxBuffer;
-            _etag=etag?resource.getWeakETag():null;
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public String getContentType()
-        {
-            return _mimeType;
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public String getLastModified()
-        {
-            return null;
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public ByteBuffer getDirectBuffer()
-        {
-            if (_resource.length()<=0 || _maxBuffer<_resource.length())
-                return null;
-            try
-            {
-                return BufferUtil.toBuffer(_resource,true);
-            }
-            catch(IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-        
-        /* ------------------------------------------------------------ */
-        @Override
-        public String getETag()
-        {
-            return _etag;
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public ByteBuffer getIndirectBuffer()
-        {
-            if (_resource.length()<=0 || _maxBuffer<_resource.length())
-                return null;
-            try
-            {
-                return BufferUtil.toBuffer(_resource,false);
-            }
-            catch(IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public long getContentLength()
-        {
-            return _resource.length();
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public InputStream getInputStream() throws IOException
-        {
-            return _resource.getInputStream();
-        }
-        
-        /* ------------------------------------------------------------ */
-        @Override
-        public ReadableByteChannel getReadableByteChannel() throws IOException
-        {
-            return _resource.getReadableByteChannel();
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public Resource getResource()
-        {
-            return _resource;
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public void release()
-        {
-            _resource.close();
-        }
+        HttpContent getContent(String path) throws IOException;
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import java.io.OutputStream;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -48,9 +49,9 @@ public class ResourceCacheTest
         Resource[] r = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false,false);
-        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false,false);
-        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false,false);
+        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false,false,false);
+        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false,false,false);
+        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false,false,false);
 
         assertEquals("1 - one", getContent(rc1, "1.txt"));
         assertEquals("2 - two", getContent(rc1, "2.txt"));
@@ -78,8 +79,8 @@ public class ResourceCacheTest
         Resource[] r = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false,false);
-        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false,false)
+        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false,false,false);
+        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false,false,false)
         {
             @Override
             public boolean isCacheable(Resource resource)
@@ -88,7 +89,7 @@ public class ResourceCacheTest
             }
         };
 
-        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false,false);
+        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false,false,false);
 
         assertEquals("1 - one", getContent(rc1, "1.txt"));
         assertEquals("2 - two", getContent(rc1, "2.txt"));
@@ -129,19 +130,19 @@ public class ResourceCacheTest
         directory=Resource.newResource(files[0].getParentFile().getAbsolutePath());
 
 
-        cache=new ResourceCache(null,directory,new MimeTypes(),false,false);
+        cache=new ResourceCache(null,directory,new MimeTypes(),false,false,false);
 
         cache.setMaxCacheSize(95);
         cache.setMaxCachedFileSize(85);
         cache.setMaxCachedFiles(4);
 
         assertTrue(cache.lookup("does not exist")==null);
-        assertTrue(cache.lookup(names[9]) instanceof HttpContent.ResourceAsHttpContent);
+        assertTrue(cache.lookup(names[9]) instanceof ResourceHttpContent);
 
         HttpContent content;
         content=cache.lookup(names[8]);
         assertTrue(content!=null);
-        assertEquals(80,content.getContentLength());
+        assertEquals(80,content.getContentLengthValue());
 
         assertEquals(80,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
@@ -242,7 +243,7 @@ public class ResourceCacheTest
         Resource[] resources = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        ResourceCache cache = new ResourceCache(null,resources[0],mime,false,false);
+        ResourceCache cache = new ResourceCache(null,resources[0],mime,false,false,false);
 
         assertEquals("4 - four", getContent(cache, "four.txt"));
         assertEquals("4 - four (no extension)", getContent(cache, "four"));

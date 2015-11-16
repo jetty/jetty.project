@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,8 +37,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class URLResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(URLResource.class);
-    protected URL _url;
-    protected String _urlString;
+    protected final URL _url;
+    protected final String _urlString;
     
     protected URLConnection _connection;
     protected InputStream _in=null;
@@ -48,7 +48,7 @@ public class URLResource extends Resource
     protected URLResource(URL url, URLConnection connection)
     {
         _url = url;
-        _urlString=_url.toString();
+        _urlString=_url.toExternalForm();
         _connection=connection;
     }
     
@@ -116,14 +116,14 @@ public class URLResource extends Resource
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns true if the respresenetd resource is a container/directory.
+     * Returns true if the represented resource is a container/directory.
      * If the resource is not a file, resources ending with "/" are
      * considered directories.
      */
     @Override
     public boolean isDirectory()
     {
-        return exists() && _url.toString().endsWith("/");
+        return exists() && _urlString.endsWith("/");
     }
 
 
@@ -197,13 +197,35 @@ public class URLResource extends Resource
         return _url.toExternalForm();
     }
 
+    
     /* ------------------------------------------------------------ */
     /**
-     * Returns an input stream to the resource
+     * Returns an input stream to the resource. The underlying 
+     * url connection will be nulled out to prevent re-use.
      */
     @Override
     public synchronized InputStream getInputStream()
         throws java.io.IOException
+    {
+        return getInputStream (true); //backwards compatibility
+    }
+    
+    
+ 
+    /* ------------------------------------------------------------ */
+    /**
+     * Returns an input stream to the resource, optionally nulling
+     * out the underlying url connection. If the connection is not
+     * nulled out, a subsequent call to getInputStream() may return
+     * an existing and already in-use input stream - this depends on
+     * the url protocol. Eg JarURLConnection does not reuse inputstreams.
+     * 
+     * @param resetConnection if true the connection field is set to null
+     * @return the inputstream for this resource
+     * @throws IOException if unable to open the input stream
+     */
+    protected synchronized InputStream getInputStream(boolean resetConnection)
+        throws IOException
     {
         if (!checkConnection())
             throw new IOException( "Invalid resource");
@@ -220,7 +242,11 @@ public class URLResource extends Resource
         }
         finally
         {
-            _connection=null;
+            if (resetConnection)
+            {
+                _connection=null;
+                if (LOG.isDebugEnabled()) LOG.debug("Connection nulled");
+            }
         }
     }
 
@@ -277,7 +303,7 @@ public class URLResource extends Resource
 
         path = URIUtil.canonicalPath(path);
 
-        return newResource(URIUtil.addPaths(_url.toExternalForm(),path));
+        return newResource(URIUtil.addPaths(_url.toExternalForm(),URIUtil.encodePath(path)), _useCaches);
     }
 
     /* ------------------------------------------------------------ */

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,47 +27,51 @@ public class Atomics
     {
     }
 
-    public static void updateMin(AtomicLong currentMin, long newValue)
+    public static boolean updateMin(AtomicLong currentMin, long newValue)
     {
         long oldValue = currentMin.get();
         while (newValue < oldValue)
         {
             if (currentMin.compareAndSet(oldValue, newValue))
-                break;
+                return true;
             oldValue = currentMin.get();
         }
+        return false;
     }
 
-    public static void updateMax(AtomicLong currentMax, long newValue)
+    public static boolean updateMax(AtomicLong currentMax, long newValue)
     {
         long oldValue = currentMax.get();
         while (newValue > oldValue)
         {
             if (currentMax.compareAndSet(oldValue, newValue))
-                break;
+                return true;
             oldValue = currentMax.get();
         }
+        return false;
     }
 
-    public static void updateMin(AtomicInteger currentMin, int newValue)
+    public static boolean updateMin(AtomicInteger currentMin, int newValue)
     {
         int oldValue = currentMin.get();
         while (newValue < oldValue)
         {
             if (currentMin.compareAndSet(oldValue, newValue))
-                break;
+                return true;
             oldValue = currentMin.get();
         }
+        return false;
     }
 
-    public static void updateMax(AtomicInteger currentMax, int newValue)
+    public static boolean updateMax(AtomicInteger currentMax, int newValue)
     {
         int oldValue = currentMax.get();
         while (newValue > oldValue)
         {
             if (currentMax.compareAndSet(oldValue, newValue))
-                break;
+                return true;
             oldValue = currentMax.get();
         }
+        return false;
     }
 }

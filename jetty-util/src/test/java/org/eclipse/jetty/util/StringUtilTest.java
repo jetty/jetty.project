@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,17 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.Matchers.arrayContaining;
+import static org.hamcrest.Matchers.emptyArray;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -201,7 +206,8 @@ public class StringUtilTest
     }
 
     @Test
-    public void testIsBlank() {
+    public void testIsBlank() 
+    {
         Assert.assertTrue(StringUtil.isBlank(null));
         Assert.assertTrue(StringUtil.isBlank(""));
         Assert.assertTrue(StringUtil.isBlank("\r\n"));
@@ -216,7 +222,8 @@ public class StringUtilTest
     }
 
     @Test
-    public void testIsNotBlank() {
+    public void testIsNotBlank() 
+    {
         Assert.assertFalse(StringUtil.isNotBlank(null));
         Assert.assertFalse(StringUtil.isNotBlank(""));
         Assert.assertFalse(StringUtil.isNotBlank("\r\n"));
@@ -229,4 +236,42 @@ public class StringUtilTest
         Assert.assertTrue(StringUtil.isNotBlank("."));
         Assert.assertTrue(StringUtil.isNotBlank(";\n"));
     }
+    
+    @Test
+    public void testSanitizeHTML()
+    {
+        assertEquals(null,StringUtil.sanitizeXmlString(null));
+        assertEquals("",StringUtil.sanitizeXmlString(""));
+        assertEquals("&lt;&amp;&gt;",StringUtil.sanitizeXmlString("<&>"));
+        assertEquals("Hello &lt;Cruel&gt; World",StringUtil.sanitizeXmlString("Hello <Cruel> World"));
+        assertEquals("Hello ? World",StringUtil.sanitizeXmlString("Hello \u0000 World"));
+    }
+    
+    @Test
+    public void testSplit()
+    {
+        assertThat(StringUtil.csvSplit(null),nullValue());
+        assertThat(StringUtil.csvSplit(null),nullValue());
+        
+        assertThat(StringUtil.csvSplit(""),emptyArray());
+        assertThat(StringUtil.csvSplit(" \t\n"),emptyArray());
+        
+        assertThat(StringUtil.csvSplit("aaa"),arrayContaining("aaa"));
+        assertThat(StringUtil.csvSplit(" \taaa\n"),arrayContaining("aaa"));
+        assertThat(StringUtil.csvSplit(" \ta\n"),arrayContaining("a"));
+        assertThat(StringUtil.csvSplit(" \t\u1234\n"),arrayContaining("\u1234"));
+        
+        assertThat(StringUtil.csvSplit("aaa,bbb,ccc"),arrayContaining("aaa","bbb","ccc"));
+        assertThat(StringUtil.csvSplit("aaa,,ccc"),arrayContaining("aaa","","ccc"));
+        assertThat(StringUtil.csvSplit(",b b,"),arrayContaining("","b b"));
+        assertThat(StringUtil.csvSplit(",,bbb,,"),arrayContaining("","","bbb",""));
+        
+        assertThat(StringUtil.csvSplit(" aaa, bbb, ccc"),arrayContaining("aaa","bbb","ccc"));
+        assertThat(StringUtil.csvSplit("aaa,\t,ccc"),arrayContaining("aaa","","ccc"));
+        assertThat(StringUtil.csvSplit("  ,  b b  ,   "),arrayContaining("","b b"));
+        assertThat(StringUtil.csvSplit(" ,\n,bbb, , "),arrayContaining("","","bbb",""));
+        
+        assertThat(StringUtil.csvSplit("\"aaa\", \" b,\\\"\",\"\""),arrayContaining("aaa"," b,\"",""));
+    }
+    
 }

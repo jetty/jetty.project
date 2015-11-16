@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,9 @@ package org.eclipse.jetty.annotations;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -36,6 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
@@ -44,6 +47,7 @@ import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -56,13 +60,12 @@ import org.eclipse.jetty.webapp.WebDescriptor;
 
 /**
  * Configuration for Annotations
- *
- *
  */
 public class AnnotationConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(AnnotationConfiguration.class);
     
+    public static final String SERVLET_CONTAINER_INITIALIZER_EXCLUSION_PATTERN = "org.eclipse.jetty.containerInitializerExclusionPattern";
     public static final String SERVLET_CONTAINER_INITIALIZER_ORDER = "org.eclipse.jetty.containerInitializerOrder";
     public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";
     public static final String CONTAINER_INITIALIZERS = "org.eclipse.jetty.containerInitializers";
@@ -84,7 +87,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
     protected CounterStatistic _containerPathStats;
     protected CounterStatistic _webInfLibStats;
     protected CounterStatistic _webInfClassesStats;
-  
+    protected Pattern _sciExcludePattern;
+    protected ServiceLoader<ServletContainerInitializer> _loadedInitializers = null;
     /**
      * TimeStatistic
      *
@@ -270,7 +274,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             {
                 _ordering = ordering;
                 
-                String[] tmp = ordering.split(",");
+                String[] tmp = StringUtil.csvSplit(ordering);
                 
                 for (int i=0; i<tmp.length; i++)
                 {
@@ -288,8 +292,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
         
         /**
-         * True if "*" is one of the values.
-         * @return
+         * @return true if "*" is one of the values.
          */
         public boolean hasWildcard()
         {
@@ -297,8 +300,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
         
         /**
-         * Get the index of the "*" element, if it is specified. -1 otherwise.
-         * @return
+         * @return the index of the "*" element, if it is specified. -1 otherwise.
          */
         public int getWildcardIndex()
         {
@@ -308,8 +310,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
         
         /**
-         * True if the ordering contains a single value of "*"
-         * @return
+         * @return true if the ordering contains a single value of "*"
          */
         public boolean isDefaultOrder ()
         {
@@ -318,8 +319,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
         
         /**
          * Get the order index of the given classname
-         * @param name
-         * @return
+         * @param name the classname to look up
+         * @return the index of the class name (or -1 if not found)
          */
         public int getIndexOf (String name)
         {
@@ -331,7 +332,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         
         /**
          * Get the number of elements of the ordering
-         * @return
+         * @return the size of the index
          */
         public int getSize()
         {
@@ -391,6 +392,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         _webAppClassNameResolver = new WebAppClassNameResolver(context);
         _containerClassNameResolver = new ContainerClassNameResolver(context);
+        String tmp = (String)context.getAttribute(SERVLET_CONTAINER_INITIALIZER_EXCLUSION_PATTERN);
+        _sciExcludePattern = (tmp==null?null:Pattern.compile(tmp));
     }
 
    
@@ -410,6 +413,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
             context.removeBean(starter);
             context.removeAttribute(CONTAINER_INITIALIZER_STARTER);
         }
+        
+        if (_loadedInitializers != null)
+            _loadedInitializers.reload();
     }
     
     /** 
@@ -418,7 +424,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-       context.addDecorator(new AnnotationDecorator(context));
+       context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
 
        //Even if metadata is complete, we still need to scan for ServletContainerInitializers - if there are any
       
@@ -442,14 +448,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
        
        // Resolve container initializers
        List<ContainerInitializer> initializers = 
-    		   (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
+                   (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
        if (initializers != null && initializers.size()>0)
        {
            Map<String, Set<String>> map = ( Map<String, Set<String>>) context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
            if (map == null)
-               throw new IllegalStateException ("No class hierarchy");
+               LOG.warn ("ServletContainerInitializers: detected. Class hierarchy: empty");
            for (ContainerInitializer i : initializers)
-        	   i.resolveClasses(context,map);
+                   i.resolveClasses(context,map);
        }
     }
 
@@ -492,8 +498,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Perform scanning of classes for annotations
      * 
-     * @param context
-     * @throws Exception
+     * @param context the context for the scan
+     * @throws Exception if unable to scan
      */
     protected void scanForAnnotations (WebAppContext context)
     throws Exception
@@ -557,16 +563,16 @@ public class AnnotationConfiguration extends AbstractConfiguration
         boolean timeout = !latch.await(getMaxScanWait(context), TimeUnit.SECONDS);
           
         if (LOG.isDebugEnabled())
-        {       
+        {
             for (ParserTask p:_parserTasks)
                 LOG.debug("Scanned {} in {}ms", p.getResource(), TimeUnit.MILLISECONDS.convert(p.getStatistic().getElapsed(), TimeUnit.NANOSECONDS));
+
+            LOG.debug("Scanned {} container path jars, {} WEB-INF/lib jars, {} WEB-INF/classes dirs in {}ms for context {}",
+                    _containerPathStats.getTotal(), _webInfLibStats.getTotal(), _webInfClassesStats.getTotal(),
+                    (TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS)),
+                    context);
         }
-        
-        LOG.info("Scanned {} container path jars, {} WEB-INF/lib jars, {} WEB-INF/classes dirs in {}ms for context {}",
-                 _containerPathStats.getTotal(), _webInfLibStats.getTotal(), _webInfClassesStats.getTotal(),
-                 (TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS)),
-                 context);
-     
+
         if (timeout)
             me.add(new Exception("Timeout scanning annotations"));
         me.ifExceptionThrow();   
@@ -585,8 +591,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     
     /**
      * Check if we should use multiple threads to scan for annotations or not
-     * @param context
-     * @return
+     * @param context the context of the multi threaded setting
+     * @return true if multi threading is enabled on the context, server, or via a System property.
+     * @see #MULTI_THREADED
      */
     protected boolean isUseMultiThreading(WebAppContext context)
     {
@@ -611,8 +618,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Work out how long we should wait for the async scanning to occur.
      * 
-     * @param context
-     * @return
+     * @param context the context of the max scan wait setting
+     * @return the max scan wait setting on the context, or server, or via a System property.
+     * @see #MAX_SCAN_WAIT
      */
     protected int getMaxScanWait (WebAppContext context)
     {
@@ -632,24 +640,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
         return Integer.getInteger(MAX_SCAN_WAIT, DEFAULT_MAX_SCAN_WAIT).intValue();
     }
     
-    
-    
     /** 
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#cloneConfigure(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.webapp.WebAppContext)
      */
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-        context.addDecorator(new AnnotationDecorator(context));
+        context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
     }
 
-
-    
-    /**
-     * @param context
-     * @param scis
-     * @throws Exception
-     */
     public void createServletContainerInitializerAnnotationHandlers (WebAppContext context, List<ServletContainerInitializer> scis)
     throws Exception
     {
@@ -669,6 +668,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 Class<?>[] classes = annotation.value();
                 if (classes != null)
                 {
+
+                    if (LOG.isDebugEnabled()){LOG.debug("HandlesTypes {} on initializer {}",Arrays.asList(classes),service.getClass());}
+                    
                     initializer = new ContainerInitializer(service, classes);
 
                     //If we haven't already done so, we need to register a handler that will
@@ -701,7 +703,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             else
             {
                 initializer = new ContainerInitializer(service, null);
-                if (LOG.isDebugEnabled()) LOG.debug("No annotation on initializer "+service.getClass());
+                if (LOG.isDebugEnabled()) LOG.debug("No HandlesTypes annotation on initializer "+service.getClass());
             }
             
             initializers.add(initializer);
@@ -717,11 +719,18 @@ public class AnnotationConfiguration extends AbstractConfiguration
         context.addBean(starter, true);
     }
 
-    
     public Resource getJarFor (ServletContainerInitializer service) 
     throws MalformedURLException, IOException
     {
-        String loadingJarName = Thread.currentThread().getContextClassLoader().getResource(service.getClass().getName().replace('.','/')+".class").toString();
+        //try the thread context classloader to get the jar that loaded the class
+        URL jarURL = Thread.currentThread().getContextClassLoader().getResource(service.getClass().getName().replace('.','/')+".class");
+        
+        //if for some reason that failed (eg we're in osgi and the TCCL does not know about the service) try the classloader that
+        //loaded the class
+        if (jarURL == null)
+            jarURL = service.getClass().getClassLoader().getResource(service.getClass().getName().replace('.','/')+".class");
+  
+        String loadingJarName = jarURL.toString();
 
         int i = loadingJarName.indexOf(".jar");
         if (i < 0)
@@ -732,13 +741,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
         return Resource.newResource(loadingJarName);
     }
     
-
     /**
      * Check to see if the ServletContainerIntializer loaded via the ServiceLoader came
      * from a jar that is excluded by the fragment ordering. See ServletSpec 3.0 p.85.
-     * @param context
-     * @param sci
+     * 
+     * @param context the context for the jars
+     * @param sci the servlet container initializer
+     * @param sciResource  the resource for the servlet container initializer
      * @return true if excluded
+     * @throws Exception if unable to determine exclusion
      */
     public boolean isFromExcludedJar (WebAppContext context, ServletContainerInitializer sci, Resource sciResource)
     throws Exception
@@ -748,16 +759,19 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (context == null)
             throw new IllegalArgumentException("WebAppContext null");
         
+        if (LOG.isDebugEnabled()) LOG.debug("Checking {} for jar exclusion", sci);
+        
         //A ServletContainerInitializer that came from the container's classpath cannot be excluded by an ordering
         //of WEB-INF/lib jars
-        if (sci.getClass().getClassLoader()==context.getClassLoader().getParent())
+        if (isFromContainerClassPath(context, sci))
             return false;
         
-        List<Resource> orderedJars = context.getMetaData().getOrderedWebInfJars();
-
         //If no ordering, nothing is excluded
         if (context.getMetaData().getOrdering() == null)
             return false;
+        
+        
+        List<Resource> orderedJars = context.getMetaData().getOrderedWebInfJars();
 
         //there is an ordering, but there are no jars resulting from the ordering, everything excluded
         if (orderedJars.isEmpty())
@@ -779,103 +793,157 @@ public class AnnotationConfiguration extends AbstractConfiguration
     }
 
 
+    /**
+     * Test if the ServletContainerIntializer is excluded by the 
+     * o.e.j.containerInitializerExclusionPattern
+     * 
+     * @param sci the ServletContainerIntializer
+     * @return true if the ServletContainerIntializer is excluded
+     */
+    public boolean matchesExclusionPattern(ServletContainerInitializer sci)
+    {
+        //no exclusion pattern, no SCI is excluded by it
+        if (_sciExcludePattern == null)
+            return false;
+        
+        //test if name of class matches the regex
+        if (LOG.isDebugEnabled()) LOG.debug("Checking {} against containerInitializerExclusionPattern",sci.getClass().getName());
+        return _sciExcludePattern.matcher(sci.getClass().getName()).matches();
+    }
+    
+    
+    /**
+     * Test if the ServletContainerInitializer is from the container classpath
+     * 
+     * @param context the context for the webapp classpath
+     * @param sci the ServletContainerIntializer
+     * @return true if ServletContainerIntializer is from container classpath
+     */
+    public boolean isFromContainerClassPath (WebAppContext context, ServletContainerInitializer sci)
+    {
+        if (sci == null)
+            return false;
+        return sci.getClass().getClassLoader()==context.getClassLoader().getParent();
+    }
 
     /**
-     * @param context
-     * @return list of non-excluded {@link ServletContainerInitializer}s
-     * @throws Exception
+     * Get SCIs that are not excluded from consideration
+     * @param context the web app context 
+     * @return the list of non-excluded servlet container initializers
+     * @throws Exception if unable to get list 
      */
     public List<ServletContainerInitializer> getNonExcludedInitializers (WebAppContext context)
     throws Exception
     {
         ArrayList<ServletContainerInitializer> nonExcludedInitializers = new ArrayList<ServletContainerInitializer>();
-
-        
+      
         //We use the ServiceLoader mechanism to find the ServletContainerInitializer classes to inspect
         long start = 0;
-        if (LOG.isDebugEnabled())
-            start = System.nanoTime();
-        ServiceLoader<ServletContainerInitializer> loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class, context.getClassLoader());
+
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+       
+        try
+        {        
+            if (LOG.isDebugEnabled())
+                start = System.nanoTime();
+            Thread.currentThread().setContextClassLoader(context.getClassLoader());
+            _loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+        
         if (LOG.isDebugEnabled())
             LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime()-start), TimeUnit.NANOSECONDS)));
+     
         
-        //no ServletContainerInitializers found
-        if (loadedInitializers == null)
-            return Collections.emptyList();
-
+        Map<ServletContainerInitializer,Resource> sciResourceMap = new HashMap<ServletContainerInitializer,Resource>();
         ServletContainerInitializerOrdering initializerOrdering = getInitializerOrdering(context);
-       
+
+        //Get initial set of SCIs that aren't from excluded jars or excluded by the containerExclusionPattern, or excluded
+        //because containerInitializerOrdering omits it
+        for (ServletContainerInitializer sci:_loadedInitializers)
+        { 
+            
+            if (matchesExclusionPattern(sci)) 
+            {
+                if (LOG.isDebugEnabled()) LOG.debug("{} excluded by pattern", sci);
+                continue;
+            }
+
+            Resource sciResource = getJarFor(sci);
+            if (isFromExcludedJar(context, sci, sciResource)) 
+            { 
+                if (LOG.isDebugEnabled()) LOG.debug("{} is from excluded jar", sci);
+                continue;
+            }
+            
+            //check containerInitializerOrdering doesn't exclude it
+            String name = sci.getClass().getName();
+            if (initializerOrdering != null
+                && (!initializerOrdering.hasWildcard() && initializerOrdering.getIndexOf(name) < 0))
+            {
+                if (LOG.isDebugEnabled()) LOG.debug("{} is excluded by ordering", sci);
+                continue;
+            }
+            
+            sciResourceMap.put(sci, sciResource);
+        }
+
+        //Order the SCIs that are included
         if (initializerOrdering != null && !initializerOrdering.isDefaultOrder())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Ordering ServletContainerInitializers with "+initializerOrdering);
-            
+
             //There is an ordering that is not just "*".
             //Arrange ServletContainerInitializers according to the ordering of classnames given, irrespective of coming from container or webapp classpaths
-            for (ServletContainerInitializer sci:loadedInitializers)
-            {
-                Resource sciResource = getJarFor(sci);
-                if (!isFromExcludedJar(context, sci, sciResource))
-                {
-                    String name = sci.getClass().getName();
-                    if (initializerOrdering.getIndexOf(name) >= 0 || initializerOrdering.hasWildcard())
-                        nonExcludedInitializers.add(sci);
-                }
-            }
-      
-            //apply the ordering
+            nonExcludedInitializers.addAll(sciResourceMap.keySet());
             Collections.sort(nonExcludedInitializers, new ServletContainerInitializerComparator(initializerOrdering));
         }
         else
         {
-            //No ordering specified, or just the wildcard value "*" specified.
+            //No jetty-specific ordering specified, or just the wildcard value "*" specified.
             //Fallback to ordering the ServletContainerInitializers according to:
-            //container classpath first, WEB-INF/clases then WEB-INF/lib (obeying any web.xml jar ordering)
-            if (LOG.isDebugEnabled())
-                LOG.debug("Ordering ServletContainerInitializers as container path, webapp path");
-            
-            Map<ServletContainerInitializer,Resource> webappPathInitializerResourceMap = new HashMap<ServletContainerInitializer,Resource>();
-            for (ServletContainerInitializer sci : loadedInitializers)
-            {
-                //if its on the container's classpath then add it
-                if (sci.getClass().getClassLoader() == context.getClassLoader().getParent())
-                {
-                    nonExcludedInitializers.add(sci);
-                }
-                else
-                {
-                    //if on the webapp's classpath then check the containing jar is not excluded from consideration
-                    Resource sciResource = getJarFor(sci);        
-                    if (!isFromExcludedJar(context, sci, sciResource))
-                    {   
-                        webappPathInitializerResourceMap.put(sci, sciResource);                       
-                    }
-                }
-            }            
-
-            //add the webapp classpath ones according to any web.xml ordering
+            //container classpath first, WEB-INF/classes then WEB-INF/lib (obeying any web.xml jar ordering)
+             
+            //no web.xml ordering defined, add SCIs in any order
             if (context.getMetaData().getOrdering() == null)
-                nonExcludedInitializers.addAll(webappPathInitializerResourceMap.keySet()); //no ordering, just add them
+            {
+                if (LOG.isDebugEnabled())  LOG.debug("No web.xml ordering, ServletContainerInitializers in random order");
+                nonExcludedInitializers.addAll(sciResourceMap.keySet());
+            }
             else
             {
-                //add in any ServletContainerInitializers which are not in a jar, as they must be from WEB-INF/classes
-                for (Map.Entry<ServletContainerInitializer, Resource> entry:webappPathInitializerResourceMap.entrySet())
+                if (LOG.isDebugEnabled())  LOG.debug("Ordering ServletContainerInitializers with ordering {}",context.getMetaData().getOrdering());
+                for (Map.Entry<ServletContainerInitializer, Resource> entry:sciResourceMap.entrySet())
                 {
-                    if (entry.getValue() == null)
+                    //add in SCIs from the container classpath
+                    if (entry.getKey().getClass().getClassLoader()==context.getClassLoader().getParent())
+                        nonExcludedInitializers.add(entry.getKey());
+                    else if (entry.getValue() == null) //add in SCIs not in a jar, as they must be from WEB-INF/classes and can't be ordered
                         nonExcludedInitializers.add(entry.getKey());
                 }
-                
-                //add ServletContainerInitializers according to the ordering of its containing jar
+              
+                //add SCIs according to the ordering of its containing jar
                 for (Resource webInfJar:context.getMetaData().getOrderedWebInfJars())
                 {
-                    for (Map.Entry<ServletContainerInitializer, Resource> entry:webappPathInitializerResourceMap.entrySet())
+                    for (Map.Entry<ServletContainerInitializer, Resource> entry:sciResourceMap.entrySet())
                     {
-                        if (webInfJar.equals(entry.getValue()))
+                      if (webInfJar.equals(entry.getValue()))
                             nonExcludedInitializers.add(entry.getKey());
                     }
                 }
             }
         }   
+
+        if (LOG.isDebugEnabled()) 
+        {
+            int i=0;
+            for (ServletContainerInitializer sci:nonExcludedInitializers)
+                LOG.debug("ServletContainerInitializer: {} {} from {}",(++i), sci.getClass().getName(), sciResourceMap.get(sci));
+        }    
         
         return nonExcludedInitializers;
     }
@@ -884,7 +952,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Jetty-specific extension that allows an ordering to be applied across ALL ServletContainerInitializers.
      * 
-     * @return
+     * @param context the context for the initializer ordering configuration 
+     * @return the ordering of the ServletContainerIntializer's
      */
     public ServletContainerInitializerOrdering getInitializerOrdering (WebAppContext context)
     {
@@ -902,9 +971,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Scan jars on container path.
      * 
-     * @param context
-     * @param parser
-     * @throws Exception
+     * @param context the context for the scan
+     * @param parser the parser to scan with
+     * @throws Exception if unable to scan
      */
     public void parseContainerPath (final WebAppContext context, final AnnotationParser parser) throws Exception
     {
@@ -935,9 +1004,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Scan jars in WEB-INF/lib
      * 
-     * @param context
-     * @param parser
-     * @throws Exception
+     * @param context the context for the scan
+     * @param parser the annotation parser to use
+     * @throws Exception if unable to scan and/or parse
      */
     public void parseWebInfLib (final WebAppContext context, final AnnotationParser parser) throws Exception
     {   
@@ -948,10 +1017,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //they have to participate in the ordering
         ArrayList<URI> webInfUris = new ArrayList<URI>();
 
-        List<Resource> jars = context.getMetaData().getOrderedWebInfJars();
-
-        //No ordering just use the jars in any order
-        if (jars == null || jars.isEmpty())
+        List<Resource> jars = null;
+        
+        if (context.getMetaData().getOrdering() != null)
+            jars = context.getMetaData().getOrderedWebInfJars();
+        else
+            //No ordering just use the jars in any order
             jars = context.getMetaData().getWebInfJars();
 
         _webInfLibStats = new CounterStatistic();
@@ -996,9 +1067,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Scan classes in WEB-INF/classes
      * 
-     * @param context
-     * @param parser
-     * @throws Exception
+     * @param context the context for the scan
+     * @param parser the annotation parser to use
+     * @throws Exception if unable to scan and/or parse
      */
     public void parseWebInfClasses (final WebAppContext context, final AnnotationParser parser)
     throws Exception
@@ -1029,10 +1100,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Get the web-fragment.xml from a jar
      * 
-     * @param jar
-     * @param frags
-     * @return the fragment if found, or null of not found
-     * @throws Exception
+     * @param jar the jar to look in for a fragment
+     * @param frags the fragments previously found
+     * @return true if the fragment if found, or null of not found
+     * @throws Exception if unable to determine the the fragment contains
      */
     public FragmentDescriptor getFragmentFromJar (Resource jar,  List<FragmentDescriptor> frags)
     throws Exception

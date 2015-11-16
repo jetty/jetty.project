@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -33,13 +34,16 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.FileChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
@@ -432,9 +436,9 @@ public class IOTest
         connector.bind(null);
         InetSocketAddress addr=(InetSocketAddress)connector.getLocalAddress();
         Future<AsynchronousSocketChannel> acceptor = connector.accept();
-        
+
         AsynchronousSocketChannel client = AsynchronousSocketChannel.open();
-        
+
         client.connect(new InetSocketAddress("127.0.0.1",addr.getPort())).get(5, TimeUnit.SECONDS);
 
         AsynchronousSocketChannel server = acceptor.get(5, TimeUnit.SECONDS);
@@ -451,5 +455,36 @@ public class IOTest
         read.flip();
 
         Assert.assertEquals(ByteBuffer.wrap(data), read);
+    }
+
+    @Test
+    public void testGatherWrite() throws Exception
+    {
+        File dir = MavenTestingUtils.getTargetTestingDir();
+        if (!dir.exists())
+            dir.mkdir();
+
+        File file = File.createTempFile("test",".txt",dir);
+        file.deleteOnExit();
+        FileChannel out = FileChannel.open(file.toPath(),
+                StandardOpenOption.CREATE,
+                StandardOpenOption.READ,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.DELETE_ON_CLOSE);
+
+        ByteBuffer[] buffers = new ByteBuffer[4096];
+        long expected=0;
+        for (int i=0;i<buffers.length;i++)
+        {
+            buffers[i]=BufferUtil.toBuffer(i);
+            expected+=buffers[i].remaining();
+        }
+
+        long wrote = IO.write(out,buffers,0,buffers.length);
+
+        assertEquals(expected,wrote);
+
+        for (int i=0;i<buffers.length;i++)
+            assertEquals(0,buffers[i].remaining());
     }
 }

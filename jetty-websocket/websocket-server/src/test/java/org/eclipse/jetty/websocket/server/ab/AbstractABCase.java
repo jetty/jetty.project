@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,17 +20,18 @@ package org.eclipse.jetty.websocket.server.ab;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzed;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.common.test.RawFrameBuilder;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.junit.AfterClass;
@@ -79,7 +80,7 @@ public abstract class AbstractABCase implements Fuzzed
     protected static SimpleServletServer server;
 
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     @Before
     public void initGenerators()
@@ -113,9 +114,7 @@ public abstract class AbstractABCase implements Fuzzed
      */
     protected ByteBuffer copyOf(byte[] payload)
     {
-        byte copy[] = new byte[payload.length];
-        System.arraycopy(payload,0,copy,0,payload.length);
-        return ByteBuffer.wrap(copy);
+        return ByteBuffer.wrap(Arrays.copyOf(payload,payload.length));
     }
     
     /**
@@ -177,6 +176,8 @@ public abstract class AbstractABCase implements Fuzzed
     public TestName testname = new TestName();
 
     /**
+     * @param clazz the class to enable
+     * @param enabled true to enable the stack traces (or not)
      * @deprecated use {@link StacklessLogging} in a try-with-resources block instead
      */
     @Deprecated

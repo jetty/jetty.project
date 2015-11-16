@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -65,6 +65,25 @@ public class ServletMapping
     {
         _pathSpecs = pathSpecs;
     }
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Test if the list of path specs contains a particular one.
+     * @param pathSpec the path spec
+     * @return true if path spec matches something in mappings
+     */
+    public boolean containsPathSpec (String pathSpec)
+    {
+        if (_pathSpecs == null || _pathSpecs.length == 0)
+            return false;
+        
+        for (String p:_pathSpecs)
+        {
+            if (p.equals(pathSpec))
+                return true;
+        }
+        return false;
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -86,9 +105,6 @@ public class ServletMapping
     
     
     /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
     @ManagedAttribute(value="default", readonly=true)
     public boolean isDefault()
     {
@@ -97,9 +113,6 @@ public class ServletMapping
     
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param fromDefault
-     */
     public void setDefault(boolean fromDefault)
     {
         _default = fromDefault;

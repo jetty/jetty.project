@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -82,6 +83,8 @@ public class UnitGenerator extends Generator
 
     /**
      * Generate a single giant buffer of all provided frames Not appropriate for production code, but useful for testing.
+     * @param frames the list of frames to generate from
+     * @return the bytebuffer representing all of the generated frames
      */
     public static ByteBuffer generate(List<WebSocketFrame> frames)
     {
@@ -123,7 +126,7 @@ public class UnitGenerator extends Generator
 
     public UnitGenerator()
     {
-        super(WebSocketPolicy.newServerPolicy(),new LeakTrackingBufferPool("UnitGenerator",new MappedByteBufferPool()));
+        super(WebSocketPolicy.newServerPolicy(),new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
     }
     
     public UnitGenerator(ByteBufferPool bufferPool)

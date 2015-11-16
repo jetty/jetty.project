@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,27 +44,41 @@ public class TimeoutCompleteListener implements Response.CompleteListener, Runna
     @Override
     public void onComplete(Result result)
     {
-        Scheduler.Task task = this.task.getAndSet(null);
-        if (task != null)
-        {
-            boolean cancelled = task.cancel();
-            LOG.debug("Cancelled (successfully: {}) timeout task {}", cancelled, task);
-        }
+        cancel();
     }
 
     public boolean schedule(Scheduler scheduler)
     {
         long timeout = request.getTimeout();
         Scheduler.Task task = scheduler.schedule(this, timeout, TimeUnit.MILLISECONDS);
-        if (this.task.getAndSet(task) != null)
+        Scheduler.Task existing = this.task.getAndSet(task);
+        if (existing != null)
+        {
+            existing.cancel();
+            cancel();
             throw new IllegalStateException();
-        LOG.debug("Scheduled timeout task {} in {} ms", task, timeout);
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Scheduled timeout task {} in {} ms for {}", task, timeout, request);
         return true;
     }
 
     @Override
     public void run()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Executing timeout task {} for {}", task, request);
         request.abort(new TimeoutException("Total timeout elapsed"));
+    }
+
+    public void cancel()
+    {
+        Scheduler.Task task = this.task.getAndSet(null);
+        if (task != null)
+        {
+            boolean cancelled = task.cancel();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Cancelled (successfully: {}) timeout task {}", cancelled, task);
+        }
     }
 }

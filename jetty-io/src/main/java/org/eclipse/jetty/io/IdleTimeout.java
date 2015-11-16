@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * An Abstract implementation of an Idle Timeout.
- * <p/>
+ * <p>
  * This implementation is optimised that timeout operations are not cancelled on
  * every operation. Rather timeout are allowed to expire and a check is then made
  * to see when the last operation took place.  If the idle timeout has not expired,
@@ -61,9 +61,19 @@ public abstract class IdleTimeout
         _scheduler = scheduler;
     }
 
+    public Scheduler getScheduler()
+    {
+        return _scheduler;
+    }
+    
     public long getIdleTimestamp()
     {
         return _idleTimestamp;
+    }
+
+    public long getIdleFor()
+    {
+        return System.currentTimeMillis() - getIdleTimestamp();
     }
 
     public long getIdleTimeout()
@@ -142,13 +152,15 @@ public abstract class IdleTimeout
             long idleElapsed = System.currentTimeMillis() - idleTimestamp;
             long idleLeft = idleTimeout - idleElapsed;
 
-            LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
 
             if (idleTimestamp != 0 && idleTimeout > 0)
             {
                 if (idleLeft <= 0)
                 {
-                    LOG.debug("{} idle timeout expired", this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} idle timeout expired", this);
                     try
                     {
                         onIdleExpired(new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms"));

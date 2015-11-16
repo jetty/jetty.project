@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -102,6 +102,9 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
 
             Subject serviceSubject=findServiceSubject(server);
             String serverName=findServerName(server,serviceSubject);
+            String contextPath=context.getContextPath();
+            if (contextPath==null || contextPath.length()==0)
+                contextPath="/";
             String appContext = serverName + " " + context.getContextPath();
             
             AuthConfigProvider authConfigProvider = authConfigFactory.getConfigProvider(MESSAGE_LAYER,appContext,listener);
@@ -132,6 +135,8 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
      * If {@link #setServiceSubject(Subject)} has not been used to 
      * set a subject, then the {@link Server#getBeans(Class)} method is
      * used to look for a Subject.
+     * @param server the server to pull the Subject from
+     * @return the subject
      */
     protected Subject findServiceSubject(Server server)
     {
@@ -148,6 +153,9 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
      * If {@link #setServerName(String)} has not been called, then
      * use the name of the a principal in the service subject.
      * If not found, return "server".
+     * @param server not used
+     * @param subject the subject to use
+     * @return the server name from the subject (or default value if not found in subject or principals)
      */
     protected String findServerName(Server server, Subject subject)
     {

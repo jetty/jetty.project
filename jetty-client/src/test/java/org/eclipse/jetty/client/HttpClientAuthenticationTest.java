@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -187,7 +189,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             {
                 baseRequest.setHandled(true);
                 if (requests.incrementAndGet() == 1)
-                    response.sendRedirect(scheme + "://" + request.getServerName() + ":" + request.getServerPort() + request.getRequestURI());
+                    response.sendRedirect(URIUtil.newURI(scheme,request.getServerName(),request.getServerPort(),request.getRequestURI(),null));
             }
         });
 
@@ -226,7 +228,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             {
                 baseRequest.setHandled(true);
                 if (request.getRequestURI().endsWith("/redirect"))
-                    response.sendRedirect(scheme + "://" + request.getServerName() + ":" + request.getServerPort() + "/secure");
+                    response.sendRedirect(URIUtil.newURI(scheme,request.getServerName(),request.getServerPort(),"/secure",null));
             }
         });
 

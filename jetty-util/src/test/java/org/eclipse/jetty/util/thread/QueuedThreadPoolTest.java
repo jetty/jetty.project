@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.util.thread;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
@@ -26,6 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -255,7 +260,52 @@ public class QueuedThreadPoolTest
             {}
             now=System.currentTimeMillis();
         }
-        Assert.assertEquals(threads,tp.getThreads());
+        assertEquals(threads,tp.getThreads());
     }
 
+    @Test
+    public void testException() throws Exception
+    {
+        QueuedThreadPool tp= new QueuedThreadPool();
+        tp.setMinThreads(5);
+        tp.setMaxThreads(10);
+        tp.setIdleTimeout(1000);
+        tp.start();
+        try
+        {
+            ((StdErrLog)Log.getLogger(QueuedThreadPool.class)).setHideStacks(true);
+            tp.execute(new Runnable(){ public void run () { throw new IllegalStateException(); } });
+            tp.execute(new Runnable(){ public void run () { throw new Error(); } });
+            tp.execute(new Runnable(){ public void run () { throw new RuntimeException(); } });
+            tp.execute(new Runnable(){ public void run () { throw new ThreadDeath(); } });
+            
+            Thread.sleep(100);
+            assertThat(tp.getThreads(),greaterThanOrEqualTo(5));
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(QueuedThreadPool.class)).setHideStacks(false);
+        }
+    }
+
+    @Test
+    public void testZeroMinThreads() throws Exception
+    {
+        int maxThreads = 10;
+        int minThreads = 0;
+        QueuedThreadPool pool = new QueuedThreadPool(maxThreads, minThreads);
+        pool.start();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        pool.execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                latch.countDown();
+            }
+        });
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
 }

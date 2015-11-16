@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -45,7 +46,6 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 public class ClientUpgradeRequest extends UpgradeRequest
 {
     private static final Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
-    private static final int MAX_KEYS = -1; // maximum number of parameter keys to decode
     private static final Set<String> FORBIDDEN_HEADERS;
 
     static
@@ -167,7 +167,17 @@ public class ClientUpgradeRequest extends UpgradeRequest
                 {
                     request.append("; ");
                 }
-                request.append(cookie.toString());
+                
+                request.append(cookie.getName()).append("=");
+                if (cookie.getVersion() == 1)
+                {
+                    // must be enclosed with quotes
+                    request.append('"').append(cookie.getValue()).append('"');
+                }
+                else
+                {
+                    request.append(cookie.getValue());
+                }
                 needDelim = true;
             }
             request.append("\r\n");
@@ -210,7 +220,19 @@ public class ClientUpgradeRequest extends UpgradeRequest
             return;
         }
 
-        setCookies(cookieStore.get(getRequestURI()));
+        List<HttpCookie> existing = getCookies();
+        List<HttpCookie> extra = cookieStore.get(getRequestURI());
+
+        List<HttpCookie> cookies = new ArrayList<>();
+        if (LazyList.hasEntry(existing))
+        {
+            cookies.addAll(existing);
+        }
+        if (LazyList.hasEntry(extra))
+        {
+            cookies.addAll(extra);
+        }
+        setCookies(cookies);
     }
 
     @Override
@@ -226,7 +248,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
         if (StringUtil.isNotBlank(query))
         {
             MultiMap<String> params = new MultiMap<String>();
-            UrlEncoded.decodeTo(uri.getQuery(),params,StandardCharsets.UTF_8,MAX_KEYS);
+            UrlEncoded.decodeTo(uri.getQuery(),params,StandardCharsets.UTF_8);
 
             for (String key : params.keySet())
             {

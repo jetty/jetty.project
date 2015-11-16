@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -59,7 +60,12 @@ public class ServletUpgradeResponse extends UpgradeResponse
 
     public boolean isCommitted()
     {
-        return response.isCommitted();
+        if (response != null)
+        {
+            return response.isCommitted();
+        }
+        // True in all other cases
+        return true;
     }
 
     public boolean isExtensionsNegotiated()
@@ -75,16 +81,18 @@ public class ServletUpgradeResponse extends UpgradeResponse
     public void sendError(int statusCode, String message) throws IOException
     {
         setSuccess(false);
-        complete();
+        commitHeaders();
         response.sendError(statusCode, message);
+        response = null;
     }
 
     @Override
     public void sendForbidden(String message) throws IOException
     {
         setSuccess(false);
-        complete();
+        commitHeaders();
         response.sendError(HttpServletResponse.SC_FORBIDDEN, message);
+        response = null;
     }
 
     @Override
@@ -103,13 +111,19 @@ public class ServletUpgradeResponse extends UpgradeResponse
 
     public void complete()
     {
+        commitHeaders();
+        response = null;
+    }
+
+    private void commitHeaders()
+    {
         // Transfer all headers to the real HTTP response
-       for (Map.Entry<String, List<String>> entry : getHeaders().entrySet())
-       {
-           for (String value : entry.getValue())
-           {
-               response.addHeader(entry.getKey(), value);
-           }
-       }
+        for (Map.Entry<String, List<String>> entry : getHeaders().entrySet())
+        {
+            for (String value : entry.getValue())
+            {
+                response.addHeader(entry.getKey(), value);
+            }
+        }
     }
 }

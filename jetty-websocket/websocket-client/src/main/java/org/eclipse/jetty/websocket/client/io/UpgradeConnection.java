@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.client.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -28,6 +29,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
@@ -48,14 +50,18 @@ import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParser;
 import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParser.ParseException;
 
 /**
- * This is the initial connection handling that exists immediately after physical connection is established to destination server.
+ * This is the initial connection handling that exists immediately after physical connection is established to
+ * destination server.
  * <p>
- * Eventually, upon successful Upgrade request/response, this connection swaps itself out for the WebSocektClientConnection handler.
+ * Eventually, upon successful Upgrade request/response, this connection swaps itself out for the
+ * WebSocektClientConnection handler.
  */
-public class UpgradeConnection extends AbstractConnection
+public class UpgradeConnection extends AbstractConnection implements Connection.UpgradeFrom
 {
     public class SendUpgradeRequest extends FutureCallback implements Runnable
     {
+        private final Logger LOG = Log.getLogger(UpgradeConnection.SendUpgradeRequest.class);
+        
         @Override
         public void run()
         {
@@ -70,15 +76,20 @@ public class UpgradeConnection extends AbstractConnection
 
             String rawRequest = request.generate();
 
-            ByteBuffer buf = BufferUtil.toBuffer(rawRequest, StandardCharsets.UTF_8);
+            ByteBuffer buf = BufferUtil.toBuffer(rawRequest,StandardCharsets.UTF_8);
             getEndPoint().write(this,buf);
         }
 
         @Override
         public void succeeded()
         {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Upgrade Request Write Success");
+            }
             // Writing the request header is complete.
             super.succeeded();
+            state = State.RESPONSE;
             // start the interest in fill
             fillInterested();
         }
@@ -86,7 +97,12 @@ public class UpgradeConnection extends AbstractConnection
         @Override
         public void failed(Throwable cause)
         {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Upgrade Request Write Failure",cause);
+            }
             super.failed(cause);
+            state = State.FAILURE;
             // Fail the connect promise when a fundamental exception during connect occurs.
             connectPromise.failed(cause);
         }
@@ -95,11 +111,21 @@ public class UpgradeConnection extends AbstractConnection
     /** HTTP Response Code: 101 Switching Protocols */
     private static final int SWITCHING_PROTOCOLS = 101;
 
+    private enum State
+    {
+        REQUEST,
+        RESPONSE,
+        FAILURE,
+        UPGRADE
+    }
+
     private static final Logger LOG = Log.getLogger(UpgradeConnection.class);
     private final ByteBufferPool bufferPool;
     private final ConnectPromise connectPromise;
     private final HttpResponseHeaderParser parser;
+    private State state = State.REQUEST;
     private ClientUpgradeRequest request;
+    private ClientUpgradeResponse response;
 
     public UpgradeConnection(EndPoint endp, Executor executor, ConnectPromise connectPromise)
     {
@@ -117,13 +143,26 @@ public class UpgradeConnection extends AbstractConnection
         EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
-        LOG.debug("Shutting down output {}",endPoint);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Shutting down output {}",endPoint);
+        }
+        
         endPoint.shutdownOutput();
         if (!onlyOutput)
         {
-            LOG.debug("Closing {}",endPoint);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Closing {}",endPoint);
+            }
             endPoint.close();
         }
+    }
+
+    private void failUpgrade(Throwable cause)
+    {
+        close();
+        connectPromise.failed(cause);
     }
 
     private void notifyConnect(ClientUpgradeResponse response)
@@ -136,25 +175,40 @@ public class UpgradeConnection extends AbstractConnection
             handshakeListener.onHandshakeResponse(response);
         }
     }
+    
+    @Override
+    public ByteBuffer onUpgradeFrom()
+    {
+        return connectPromise.getResponse().getRemainingBuffer();
+    }
 
     @Override
     public void onFillable()
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onFillable");
+        }
         ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),false);
         BufferUtil.clear(buffer);
-        boolean readMore = false;
         try
         {
-            readMore = read(buffer);
+            read(buffer);
         }
         finally
         {
             bufferPool.release(buffer);
         }
 
-        if (readMore)
+        if (state == State.RESPONSE)
         {
+            // Continue Reading
             fillInterested();
+        }
+        else if (state == State.UPGRADE)
+        {
+            // Stop Reading, upgrade the connection now
+            upgradeConnection(response);
         }
     }
 
@@ -162,8 +216,30 @@ public class UpgradeConnection extends AbstractConnection
     public void onOpen()
     {
         super.onOpen();
-        // TODO: handle timeout?
         getExecutor().execute(new SendUpgradeRequest());
+    }
+
+    @Override
+    public void onClose()
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Closed connection {}",this);
+        }
+        super.onClose();
+    }
+
+    @Override
+    protected boolean onReadTimeout()
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Timeout on connection {}",this);
+        }
+
+        failUpgrade(new IOException("Timeout while performing WebSocket Upgrade"));
+
+        return super.onReadTimeout();
     }
 
     /**
@@ -171,9 +247,8 @@ public class UpgradeConnection extends AbstractConnection
      * 
      * @param buffer
      *            the buffer to fill into from the endpoint
-     * @return true if there is more to read, false if reading should stop
      */
-    private boolean read(ByteBuffer buffer)
+    private void read(ByteBuffer buffer)
     {
         EndPoint endPoint = getEndPoint();
         try
@@ -183,12 +258,14 @@ public class UpgradeConnection extends AbstractConnection
                 int filled = endPoint.fill(buffer);
                 if (filled == 0)
                 {
-                    return true;
+                    return;
                 }
                 else if (filled < 0)
                 {
-                    LOG.debug("read - EOF Reached");
-                    return false;
+                    LOG.warn("read - EOF Reached");
+                    state = State.FAILURE;
+                    failUpgrade(new EOFException("Reading WebSocket Upgrade response"));
+                    return;
                 }
                 else
                 {
@@ -196,34 +273,32 @@ public class UpgradeConnection extends AbstractConnection
                     {
                         LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
                     }
-                    ClientUpgradeResponse resp = (ClientUpgradeResponse)parser.parse(buffer);
-                    if (resp != null)
+                    response = (ClientUpgradeResponse)parser.parse(buffer);
+                    if (response != null)
                     {
                         // Got a response!
-                        validateResponse(resp);
-                        notifyConnect(resp);
-                        upgradeConnection(resp);
-                        if (buffer.hasRemaining())
-                        {
-                            LOG.debug("Has remaining client bytebuffer of {}",buffer.remaining());
-                        }
-                        return false; // do no more reading
+                        validateResponse(response);
+                        notifyConnect(response);
+                        state = State.UPGRADE;
+                        return; // do no more reading
                     }
                 }
             }
         }
         catch (IOException | ParseException e)
         {
+            LOG.ignore(e);
+            state = State.FAILURE;
             UpgradeException ue = new UpgradeException(request.getRequestURI(),e);
             connectPromise.failed(ue);
             disconnect(false);
-            return false;
         }
         catch (UpgradeException e)
         {
+            LOG.ignore(e);
+            state = State.FAILURE;
             connectPromise.failed(e);
             disconnect(false);
-            return false;
         }
     }
 
@@ -231,7 +306,7 @@ public class UpgradeConnection extends AbstractConnection
     {
         EndPoint endp = getEndPoint();
         Executor executor = getExecutor();
-        
+
         EventDriver websocket = connectPromise.getDriver();
         WebSocketPolicy policy = websocket.getPolicy();
 
@@ -240,9 +315,10 @@ public class UpgradeConnection extends AbstractConnection
         SessionFactory sessionFactory = connectPromise.getClient().getSessionFactory();
         WebSocketSession session = sessionFactory.createSession(request.getRequestURI(),websocket,connection);
         session.setPolicy(policy);
+        session.setUpgradeRequest(request);
         session.setUpgradeResponse(response);
-
-        connection.setSession(session);
+        connection.addListener(session);
+        connectPromise.setSession(session);
 
         // Initialize / Negotiate Extensions
         ExtensionStack extensionStack = new ExtensionStack(connectPromise.getClient().getExtensionFactory());
@@ -259,12 +335,11 @@ public class UpgradeConnection extends AbstractConnection
         session.setOutgoingHandler(extensionStack);
         extensionStack.setNextOutgoing(connection);
 
-        session.addBean(extensionStack);
-        connectPromise.getClient().addBean(session);
+        session.addManaged(extensionStack);
+        connectPromise.getClient().addManaged(session);
 
         // Now swap out the connection
-        endp.setConnection(connection);
-        connection.onOpen();
+        endp.upgrade(connection);
     }
 
     private void validateResponse(ClientUpgradeResponse response)
@@ -272,7 +347,9 @@ public class UpgradeConnection extends AbstractConnection
         // Validate Response Status Code
         if (response.getStatusCode() != SWITCHING_PROTOCOLS)
         {
-            throw new UpgradeException(request.getRequestURI(),response.getStatusCode(),"Didn't switch protocols");
+            // TODO: use jetty-http and org.eclipse.jetty.http.HttpStatus for more meaningful exception messages 
+            throw new UpgradeException(request.getRequestURI(),response.getStatusCode(),"Didn't switch protocols, expected status <" + SWITCHING_PROTOCOLS
+                    + ">, but got <" + response.getStatusCode() + ">");
         }
 
         // Validate Connection header

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.*;
+
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -32,20 +35,16 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 
 @RunWith(AdvancedRunner.class)
 public class WebSocketClientTest
@@ -106,7 +105,7 @@ public class WebSocketClientTest
             request.setSubProtocols("echo");
             Future<Session> future = client.connect(cliSock,wsUri,request);
 
-            final ServerConnection srvSock = server.accept();
+            final IBlockheadServerConnection srvSock = server.accept();
             srvSock.upgrade();
 
             Session sess = future.get(500,TimeUnit.MILLISECONDS);
@@ -118,13 +117,14 @@ public class WebSocketClientTest
             cliSock.assertWasOpened();
             cliSock.assertNotClosed();
 
-            Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
+            Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
+            Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
 
             RemoteEndpoint remote = cliSock.getSession().getRemote();
             remote.sendStringByFuture("Hello World!");
             if (remote.getBatchMode() == BatchMode.ON)
                 remote.flush();
-            srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
+            srvSock.echoMessage(1,500,TimeUnit.MILLISECONDS);
             // wait for response from server
             cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
 
@@ -152,7 +152,7 @@ public class WebSocketClientTest
             request.setSubProtocols("echo");
             Future<Session> future = client.connect(cliSock,wsUri,request);
 
-            final ServerConnection srvSock = server.accept();
+            final IBlockheadServerConnection srvSock = server.accept();
             srvSock.upgrade();
 
             Session sess = future.get(500,TimeUnit.MILLISECONDS);
@@ -164,7 +164,8 @@ public class WebSocketClientTest
             cliSock.assertWasOpened();
             cliSock.assertNotClosed();
 
-            Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
+            Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
+            Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
 
             FutureWriteCallback callback = new FutureWriteCallback();
 
@@ -188,7 +189,7 @@ public class WebSocketClientTest
             Future<Session> future = client.connect(wsocket,server.getWsUri());
 
             // Server
-            final ServerConnection srvSock = server.accept();
+            final IBlockheadServerConnection srvSock = server.accept();
             srvSock.upgrade();
 
             // Validate connect
@@ -226,7 +227,7 @@ public class WebSocketClientTest
             URI wsUri = server.getWsUri();
             Future<Session> future = fact.connect(wsocket,wsUri);
 
-            ServerConnection ssocket = server.accept();
+            IBlockheadServerConnection ssocket = server.accept();
             ssocket.upgrade();
 
             future.get(500,TimeUnit.MILLISECONDS);
@@ -266,7 +267,7 @@ public class WebSocketClientTest
             URI wsUri = server.getWsUri();
             Future<Session> future = factSmall.connect(wsocket,wsUri);
 
-            ServerConnection ssocket = server.accept();
+            IBlockheadServerConnection ssocket = server.accept();
             ssocket.upgrade();
 
             future.get(500,TimeUnit.MILLISECONDS);
@@ -304,7 +305,7 @@ public class WebSocketClientTest
             URI wsUri = server.getWsUri();
             Future<Session> future = client.connect(wsocket,wsUri);
 
-            ServerConnection ssocket = server.accept();
+            IBlockheadServerConnection ssocket = server.accept();
             ssocket.upgrade();
 
             wsocket.awaitConnect(1,TimeUnit.SECONDS);
@@ -320,13 +321,13 @@ public class WebSocketClientTest
             String msg = StringUtil.toUTF8String(buf,0,buf.length);
 
             wsocket.getSession().getRemote().sendStringByFuture(msg);
-            ssocket.echoMessage(1,TimeUnit.MILLISECONDS,500);
+            ssocket.echoMessage(1,2,TimeUnit.SECONDS);
             // wait for response from server
-            wsocket.waitForMessage(500,TimeUnit.MILLISECONDS);
+            wsocket.waitForMessage(1,TimeUnit.SECONDS);
 
             wsocket.assertMessage(msg);
 
-            Assert.assertTrue(wsocket.dataLatch.await(1000,TimeUnit.SECONDS));
+            Assert.assertTrue(wsocket.dataLatch.await(2,TimeUnit.SECONDS));
         }
         finally
         {
@@ -346,7 +347,7 @@ public class WebSocketClientTest
             URI wsUri = server.getWsUri().resolve("/test?snack=cashews&amount=handful&brand=off");
             Future<Session> future = fact.connect(wsocket,wsUri);
 
-            ServerConnection ssocket = server.accept();
+            IBlockheadServerConnection ssocket = server.accept();
             ssocket.upgrade();
 
             future.get(500,TimeUnit.MILLISECONDS);

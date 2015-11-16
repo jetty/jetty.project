@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,21 +35,20 @@ import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
-import org.eclipse.jetty.webapp.Origin;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * ServletSecurityAnnotationHandler
  *
- * Inspect a class to see if it has an @ServletSecurity annotation on it,
- * setting up the <security-constraint>s.
+ * Inspect a class to see if it has an <code>&#064;ServletSecurity</code> annotation on it,
+ * setting up the <code>&lt;security-constraint&gt;s</code>.
  *
  * A servlet can be defined in:
  * <ul>
- * <li>web.xml
- * <li>web-fragment.xml
- * <li>@WebServlet annotation discovered
- * <li>ServletContext.createServlet
+ * <li>web.xml</li>
+ * <li>web-fragment.xml</li>
+ * <li>@WebServlet annotation discovered</li>
+ * <li>ServletContext.createServlet</li>
  * </ul>
  *
  * The ServletSecurity annotation for a servlet should only be processed
@@ -120,12 +119,14 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
 
 
     /**
-     * Make a jetty Constraint object, which represents the <auth-constraint> and
-     * <user-data-constraint> elements, based on the security annotation.
-     * @param servlet
-     * @param rolesAllowed
-     * @param permitOrDeny
-     * @param transport
+     * Make a jetty Constraint object, which represents the <code>&lt;auth-constraint&gt;</code> and
+     * <code>&lt;user-data-constraint&gt;</code> elements, based on the security annotation.
+     * 
+     * @param servlet the servlet
+     * @param rolesAllowed the roles allowed
+     * @param permitOrDeny the role / permission semantic
+     * @param transport the transport guarantee
+     * @return the constraint
      */
     protected Constraint makeConstraint (Class servlet, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
     {
@@ -136,7 +137,8 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
 
     /**
      * Get the ServletMappings for the servlet's class.
-     * @param className
+     * @param className the class name
+     * @return the servlet mappings for the class
      */
     protected List<ServletMapping> getServletMappings(String className)
     {
@@ -155,9 +157,12 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
 
 
     /**
-     * Check if there are already <security-constraint> elements defined that match the url-patterns for
+     * Check if there are already <code>&lt;security-constraint&gt;</code> elements defined that match the url-patterns for
      * the servlet.
-     * @param servletMappings
+     * 
+     * @param servletMappings the servlet mappings
+     * @param constraintMappings the constraint mappings
+     * @return true if constraint exists
      */
     protected boolean constraintsExist (List<ServletMapping> servletMappings, List<ConstraintMapping> constraintMappings)
     {

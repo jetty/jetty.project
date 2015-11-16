@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import java.util.regex.Matcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 
 /**
@@ -96,11 +95,11 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
 
     /* ------------------------------------------------------------ */
     @Override
-    public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
+    public void applyURI(Request request, String oldURI, String newURI) throws IOException
     {
         if (_query==null)
         {
-            request.setRequestURI(newTarget);
+            request.setURIPathQuery(newURI);
         }
         else
         {
@@ -108,9 +107,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
             
             if (!_queryGroup && request.getQueryString()!=null)
                 query=request.getQueryString()+"&"+query;
-            HttpURI uri=new HttpURI(newTarget+"?"+query);
-            request.setUri(uri);
-            request.setRequestURI(newTarget);
+            request.setURIPathQuery(newURI);
             request.setQueryString(query);
         }
     }

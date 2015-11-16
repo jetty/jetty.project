@@ -20,7 +20,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.1.3-SNAPSHOT</version>
+    <version>9.4.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -29,6 +29,9 @@
   <name>Test :: Jetty Test Webapp</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>war</packaging>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.tests.webapp</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>
@@ -70,15 +73,6 @@
           </execution>
         </executions>
       </plugin>
-      <!-- also make this webapp an osgi bundle -->
-      <plugin>
-        <artifactId>maven-war-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
@@ -87,32 +81,29 @@
           <supportedProjectTypes>
             <supportedProjectType>war</supportedProjectType>
           </supportedProjectTypes>
+          <instructions>
+            <Import-Package>javax.servlet.jsp.*;version="[2.2.0,3.0)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
+            <Export-Package>!com.acme*</Export-Package>
+            <!-- the test webapp is configured via a jetty xml file
+            in order to add the security handler. -->
+            <Web-ContextPath>/</Web-ContextPath>
+            <!-- in fact the '.' must not be there
+            but Felix-BND has a bug:
+            http://www.mail-archive.com/users@felix.apache.org/msg04730.html
+            https://issues.apache.org/jira/browse/FELIX-1571
+            -->
+            <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
+          </instructions>
         </configuration>
-        <executions>
-          <execution>
-            <id>bundle-manifest</id>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-            <configuration>
-              <instructions>
-                <Bundle-SymbolicName>org.eclipse.jetty.test-jetty-webapp</Bundle-SymbolicName>
-                <Import-Package>javax.servlet.jsp.*;version="[2.2.0, 3.0)",javax.servlet.*;version="[2.6,3.2)",org.eclipse.jetty.*;version="9.1",*</Import-Package>
-                <Export-Package>!com.acme*</Export-Package>
-                <!-- the test webapp is configured via a jetty xml file
-                in order to add the security handler. -->
-                <Web-ContextPath>/</Web-ContextPath>
-                <!-- in fact the '.' must not be there
-                but Felix-BND has a bug:
-                http://www.mail-archive.com/users@felix.apache.org/msg04730.html
-                https://issues.apache.org/jira/browse/FELIX-1571
-                -->
-                <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
-              </instructions>
-            </configuration>
-           </execution>
-        </executions>
+      </plugin>
+      <!-- also make this webapp an osgi bundle -->
+      <plugin>
+        <artifactId>maven-war-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.eclipse.jetty</groupId>
@@ -157,33 +148,6 @@
           </loginServices>
         </configuration>
       </plugin>
-      <!-- uncomment to precompile jsps -->
-      <!--
-      <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-jspc-maven-plugin</artifactId>
-          <version>${project.version}</version>
-          <executions>
-            <execution>
-              <id>jspc</id>
-              <goals>
-                <goal>jspc</goal>
-              </goals>
-              <configuration>
-                 <includes>**/*.foo</includes>
-                 <excludes>**/*.fff</excludes>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-war-plugin</artifactId>
-          <configuration>
-            <webXml>${basedir}/target/web.xml</webXml>
-          </configuration>
-        </plugin>
-        -->
     </plugins>
   </build>
   <dependencies>
@@ -226,6 +190,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <version>${project.version}</version>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
@@ -243,12 +214,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-http-server</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>jstl</artifactId>
       <version>1.2</version>
@@ -261,4 +226,41 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
+  <profiles>
+    <profile>
+      <id>precompile-jsp</id>
+      <build>
+        <plugins>
+         <plugin>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-jspc-maven-plugin</artifactId>
+          <version>${project.version}</version>
+          <executions>
+            <execution>
+              <id>jspc</id>
+              <goals>
+                <goal>jspc</goal>
+              </goals>
+             <!-- example configuration
+              <configuration>
+                <includes>**/*.foo</includes>
+                <excludes>**/*.fff</excludes>
+                <sourceVersion>1.8</sourceVersion>
+                <targetVersion>1.8</targetVersion>
+              </configuration>
+              -->
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <configuration>
+            <webXml>${basedir}/target/web.xml</webXml>
+          </configuration>
+        </plugin>
+       </plugins>
+     </build>
+    </profile>
+  </profiles>
 </project>

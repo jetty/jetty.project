@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -85,7 +85,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
      * @param parent The parent classloader.
      * @param context The WebAppContext
      * @param contributor The bundle that defines this web-application.
-     * @throws IOException
+     * @throws IOException if unable to cerate the OSGiWebappClassLoader
      */
     public OSGiWebappClassLoader(ClassLoader parent, WebAppContext context, Bundle contributor)
     throws IOException
@@ -97,6 +97,12 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
     
     
     
+    @Override
+    public Class<?> loadClass(String name) throws ClassNotFoundException
+    {
+        return super.loadClass(name);
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * Returns the <code>Bundle</code> that defined this web-application.
@@ -266,6 +272,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
      * WebappContext So we place a fake one there to start with. We replace it
      * with the actual webapp context with this method. We also apply the
      * extraclasspath there at the same time.
+     * @param webappContext the web app context
      */
     public void setWebappContext(WebAppContext webappContext)
     {

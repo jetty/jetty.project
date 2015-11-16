@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,13 +21,12 @@ package org.eclipse.jetty.embedded;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 
-/* ------------------------------------------------------------ */
 /**
  * A Jetty server with one connectors.
  */
 public class OneConnector
 {
-    public static void main(String[] args) throws Exception
+    public static void main( String[] args ) throws Exception
     {
         // The Server
         Server server = new Server();
@@ -37,7 +36,7 @@ public class OneConnector
         http.setHost("localhost");
         http.setPort(8080);
         http.setIdleTimeout(30000);
-        
+
         // Set the connector
         server.addConnector(http);
 

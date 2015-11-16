@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,19 +18,13 @@
 
 package org.eclipse.jetty.plus.jndi;
 
-
 import javax.naming.NamingException;
-
-
 
 /**
  * Resource
- *
- *
  */
 public class Resource extends NamingEntry
 {
-    
     public  Resource (Object scope, String jndiName, Object objToBind)
     throws NamingException
     {
@@ -38,15 +32,10 @@ public class Resource extends NamingEntry
         save(objToBind);
     }
     
-    /**
-     * @param jndiName
-     * @param objToBind
-     */
     public Resource (String jndiName, Object objToBind)
     throws NamingException
     {
         super(jndiName);
         save(objToBind);
     }
-
 }

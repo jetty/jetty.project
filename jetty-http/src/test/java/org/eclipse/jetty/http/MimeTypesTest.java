@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -90,9 +90,9 @@ public class MimeTypesTest
         assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar other = param ; charset = abc"));
         assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar other = param ; charset = \"abc\" ; some=else"));
         assertEquals(null,MimeTypes.getCharsetFromContentType("foo/bar"));
-        assertEquals("UTF-8",MimeTypes.getCharsetFromContentType("foo/bar;charset=uTf8"));
-        assertEquals("UTF-8",MimeTypes.getCharsetFromContentType("foo/bar;other=\"charset=abc\";charset=uTf8"));
-        assertEquals("UTF-8",MimeTypes.getCharsetFromContentType("text/html;charset=utf-8"));
+        assertEquals("utf-8",MimeTypes.getCharsetFromContentType("foo/bar;charset=uTf8"));
+        assertEquals("utf-8",MimeTypes.getCharsetFromContentType("foo/bar;other=\"charset=abc\";charset=uTf8"));
+        assertEquals("utf-8",MimeTypes.getCharsetFromContentType("text/html;charset=utf-8"));
 
     }
 

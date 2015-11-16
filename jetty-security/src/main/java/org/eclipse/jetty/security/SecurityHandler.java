@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,25 +29,22 @@ import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Abstract SecurityHandler.
+ * <p>
  * Select and apply an {@link Authenticator} to a request.
  * <p>
  * The Authenticator may either be directly set on the handler
@@ -58,7 +55,6 @@ import org.eclipse.jetty.util.log.Logger;
  * Authentication.Configuration. At startup, any context init parameters
  * that start with "org.eclipse.jetty.security." that do not have
  * values in the SecurityHandler init parameters, are copied.
- *
  */
 public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.AuthConfiguration
 {
@@ -74,8 +70,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private LoginService _loginService;
     private IdentityService _identityService;
     private boolean _renewSession=true;
-    private boolean _discoveredIdentityService = false;
-    private boolean _discoveredLoginService = false;
 
     /* ------------------------------------------------------------ */
     protected SecurityHandler()
@@ -135,8 +129,9 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
 
     /* ------------------------------------------------------------ */
-    /** Set the authenticator.
-     * @param authenticator
+    /** 
+     * Set the authenticator.
+     * @param authenticator the authenticator
      * @throws IllegalStateException if the SecurityHandler is running
      */
     public void setAuthenticator(Authenticator authenticator)
@@ -253,8 +248,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     /* ------------------------------------------------------------ */
     /** Set an initialization parameter.
-     * @param key
-     * @param value
+     * @param key the init key
+     * @param value the init value
      * @return previous value
      * @throws IllegalStateException if the SecurityHandler is running
      */
@@ -266,20 +261,24 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
 
     /* ------------------------------------------------------------ */
-    protected LoginService findLoginService()
+    protected LoginService findLoginService() throws Exception
     {
         Collection<LoginService> list = getServer().getBeans(LoginService.class);
-
+        LoginService service = null;
         String realm=getRealmName();
         if (realm!=null)
         {
-            for (LoginService service : list)
-                if (service.getName()!=null && service.getName().equals(realm))
-                    return service;
+            for (LoginService s : list)
+                if (s.getName()!=null && s.getName().equals(realm))
+                {
+                    service=s;
+                    break;
+                }
         }
         else if (list.size()==1)
-            return list.iterator().next();
-        return null;
+            service =  list.iterator().next();
+        
+        return service;
     }
 
     /* ------------------------------------------------------------ */
@@ -307,33 +306,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                         getInitParameter(name)==null)
                     setInitParameter(name,context.getInitParameter(name));
             }
-            
-            //register a session listener to handle securing sessions when authentication is performed
-            context.getContextHandler().addEventListener(new HttpSessionListener()
-            {
-                @Override
-                public void sessionDestroyed(HttpSessionEvent se)
-                {
-                }
-
-                @Override
-                public void sessionCreated(HttpSessionEvent se)
-                {                    
-                    //if current request is authenticated, then as we have just created the session, mark it as secure, as it has not yet been returned to a user
-                    HttpChannel<?> channel = HttpChannel.getCurrentHttpChannel();              
-                    
-                    if (channel == null)
-                        return;
-                    Request request = channel.getRequest();
-                    if (request == null)
-                        return;
-                    
-                    if (request.isSecure())
-                    {
-                        se.getSession().setAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
-                    }
-                }
-            });
         }
 
         // complicated resolution of login and identity service to handle
@@ -342,9 +314,10 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         if (_loginService==null)
         {
             setLoginService(findLoginService());
-            _discoveredLoginService = true;
+            if (_loginService!=null)
+                unmanage(_loginService);
         }
-
+        
         if (_identityService==null)
         {
             if (_loginService!=null)
@@ -353,10 +326,16 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             if (_identityService==null)
                 setIdentityService(findIdentityService());
 
-            if (_identityService==null && _realmName!=null)
-                setIdentityService(new DefaultIdentityService());
-
-            _discoveredIdentityService = true;
+            if (_identityService==null)
+            {
+                if (_realmName!=null)
+                { 
+                    setIdentityService(new DefaultIdentityService());
+                    manage(_identityService);
+                }
+            }
+            else
+                unmanage(_identityService);
         }
 
         if (_loginService!=null)
@@ -387,17 +366,16 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     protected void doStop() throws Exception
     {
         //if we discovered the services (rather than had them explicitly configured), remove them.
-        if (_discoveredIdentityService)
+        if (!isManaged(_identityService))
         {
             removeBean(_identityService);
-            _identityService = null;
-            
+            _identityService = null;   
         }
         
-        if (_discoveredLoginService)
+        if (!isManaged(_loginService))
         {
             removeBean(_loginService);
-            _loginService = null;
+            _loginService=null;
         }
         
         super.doStop();
@@ -427,6 +405,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /**
      * @see org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
      */
+    @Override
     public boolean isSessionRenewedOnAuthentication()
     {
         return _renewSession;
@@ -436,6 +415,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /** Set renew the session on Authentication.
      * <p>
      * If set to true, then on authentication, the session associated with a reqeuest is invalidated and replaced with a new session.
+     * @param renew true to renew the authentication on session
      * @see org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
      */
     public void setSessionRenewedOnAuthentication(boolean renew)
@@ -473,7 +453,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             {
                 if (!baseRequest.isHandled())
                 {
-                    response.sendError(Response.SC_FORBIDDEN);
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     baseRequest.setHandled(true);
                 }
                 return;
@@ -488,7 +468,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 LOG.warn("No authenticator for: "+roleInfo);
                 if (!baseRequest.isHandled())
                 {
-                    response.sendError(Response.SC_FORBIDDEN);
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     baseRequest.setHandled(true);
                 }
                 return;
@@ -524,7 +504,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                         boolean authorized=checkWebResourcePermissions(pathInContext, baseRequest, base_response, roleInfo, userAuth.getUserIdentity());
                         if (!authorized)
                         {
-                            response.sendError(Response.SC_FORBIDDEN, "!role");
+                            response.sendError(HttpServletResponse.SC_FORBIDDEN, "!role");
                             baseRequest.setHandled(true);
                             return;
                         }
@@ -574,7 +554,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             {
                 // jaspi 3.8.3 send HTTP 500 internal server error, with message
                 // from AuthException
-                response.sendError(Response.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
             }
             finally
             {
@@ -634,6 +614,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /* ------------------------------------------------------------ */
     public class NotChecked implements Principal
     {
+        @Override
         public String getName()
         {
             return null;
@@ -656,6 +637,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /* ------------------------------------------------------------ */
     public static final Principal __NO_USER = new Principal()
     {
+        @Override
         public String getName()
         {
             return null;
@@ -680,6 +662,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
      */
     public static final Principal __NOBODY = new Principal()
     {
+        @Override
         public String getName()
         {
             return "Nobody";

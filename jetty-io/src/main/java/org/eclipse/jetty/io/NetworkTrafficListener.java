@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -67,7 +67,7 @@ public interface NetworkTrafficListener
     /**
      * <p>Callback method invoked when a connection to a remote client has been closed.</p>
      * <p>The {@code socket} parameter is already closed when this method is called, so it
-     * cannot be queried for socket address information of the remote client.<br />
+     * cannot be queried for socket address information of the remote client.<br>
      * However, the {@code socket} parameter is the same object passed to {@link #opened(Socket)},
      * so it is possible to map socket information in {@link #opened(Socket)} and retrieve it
      * in this method.

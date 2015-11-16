@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,13 +23,12 @@ import java.util.Map;
 
 import javax.security.auth.Subject;
 
-/* ------------------------------------------------------------ */
-/** User object that encapsulates user identity and operations such as run-as-role actions,
+/** 
+ * User object that encapsulates user identity and operations such as run-as-role actions,
  * checking isUserInRole and getUserPrincipal.
- *
+ * <p>
  * Implementations of UserIdentity should be immutable so that they may be
  * cached by Authenticators and LoginServices.
- *
  */
 public interface UserIdentity
 {
@@ -50,7 +49,7 @@ public interface UserIdentity
      * This call is used to satisfy authorization calls from
      * container code which will be using translated role names.
      * @param role A role name.
-     * @param scope
+     * @param scope the scope
      * @return True if the user can act in that role.
      */
     boolean isUserInRole(String role, Scope scope);

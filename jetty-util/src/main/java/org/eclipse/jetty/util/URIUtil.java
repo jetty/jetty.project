@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,22 +21,29 @@ package org.eclipse.jetty.util;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
-
-/* ------------------------------------------------------------ */
-/** URI Holder.
+/** 
+ * URI Utility methods.
+ * <p>
  * This class assists with the decoding and encoding or HTTP URI's.
  * It differs from the java.net.URL class as it does not provide
  * communications ability, but it does assist with query string
  * formatting.
- * <P>UTF-8 encoding is used by default for % encoded characters. This
+ * </p>
+ * <p>
+ * UTF-8 encoding is used by default for % encoded characters. This
  * may be overridden with the org.eclipse.jetty.util.URI.charset system property.
- * @see UrlEncoded
+ * </p>
  * 
+ * @see UrlEncoded
  */
 public class URIUtil
     implements Cloneable
 {
+    private static final Logger LOG = Log.getLogger(URIUtil.class);
     public static final String SLASH="/";
     public static final String HTTP="http";
     public static final String HTTP_COLON="http:";
@@ -44,13 +51,7 @@ public class URIUtil
     public static final String HTTPS_COLON="https:";
 
     // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
-    public static final Charset __CHARSET;
-
-    static
-    {
-        String charset = System.getProperty("org.eclipse.jetty.util.URI.charset");
-        __CHARSET = charset == null ? StandardCharsets.UTF_8 : Charset.forName(charset);
-    }
+    public static final Charset __CHARSET=StandardCharsets.UTF_8 ;
 
     private URIUtil()
     {}
@@ -82,8 +83,7 @@ public class URIUtil
         byte[] bytes=null;
         if (buf==null)
         {
-        loop:
-            for (int i=0;i<path.length();i++)
+            loop: for (int i=0;i<path.length();i++)
             {
                 char c=path.charAt(i);
                 switch(c)
@@ -97,6 +97,8 @@ public class URIUtil
                     case '<':
                     case '>':
                     case ' ':
+                    case '[':
+                    case ']':
                         buf=new StringBuilder(path.length()*2);
                         break loop;
                     default:
@@ -106,103 +108,111 @@ public class URIUtil
                             buf=new StringBuilder(path.length()*2);
                             break loop;
                         }
-                       
                 }
             }
             if (buf==null)
                 return null;
         }
-        
-        synchronized(buf)
+
+        if (bytes!=null)
         {
-            if (bytes!=null)
+            for (int i=0;i<bytes.length;i++)
             {
-                for (int i=0;i<bytes.length;i++)
+                byte c=bytes[i];       
+                switch(c)
                 {
-                    byte c=bytes[i];       
-                    switch(c)
-                    {
-                      case '%':
-                          buf.append("%25");
-                          continue;
-                      case '?':
-                          buf.append("%3F");
-                          continue;
-                      case ';':
-                          buf.append("%3B");
-                          continue;
-                      case '#':
-                          buf.append("%23");
-                          continue;
-                      case '"':
-                          buf.append("%22");
-                          continue;
-                      case '\'':
-                          buf.append("%27");
-                          continue;
-                      case '<':
-                          buf.append("%3C");
-                          continue;
-                      case '>':
-                          buf.append("%3E");
-                          continue;
-                      case ' ':
-                          buf.append("%20");
-                          continue;
-                      default:
-                          if (c<0)
-                          {
-                              buf.append('%');
-                              TypeUtil.toHex(c,buf);
-                          }
-                          else
-                              buf.append((char)c);
-                          continue;
-                    }
-                }
-                
-            }
-            else
-            {
-                for (int i=0;i<path.length();i++)
-                {
-                    char c=path.charAt(i);       
-                    switch(c)
-                    {
-                        case '%':
-                            buf.append("%25");
-                            continue;
-                        case '?':
-                            buf.append("%3F");
-                            continue;
-                        case ';':
-                            buf.append("%3B");
-                            continue;
-                        case '#':
-                            buf.append("%23");
-                            continue;
-                        case '"':
-                            buf.append("%22");
-                            continue;
-                        case '\'':
-                            buf.append("%27");
-                            continue;
-                        case '<':
-                            buf.append("%3C");
-                            continue;
-                        case '>':
-                            buf.append("%3E");
-                            continue;
-                        case ' ':
-                            buf.append("%20");
-                            continue;
-                        default:
-                            buf.append(c);
-                            continue;
-                    }
+                    case '%':
+                        buf.append("%25");
+                        continue;
+                    case '?':
+                        buf.append("%3F");
+                        continue;
+                    case ';':
+                        buf.append("%3B");
+                        continue;
+                    case '#':
+                        buf.append("%23");
+                        continue;
+                    case '"':
+                        buf.append("%22");
+                        continue;
+                    case '\'':
+                        buf.append("%27");
+                        continue;
+                    case '<':
+                        buf.append("%3C");
+                        continue;
+                    case '>':
+                        buf.append("%3E");
+                        continue;
+                    case ' ':
+                        buf.append("%20");
+                        continue;
+                    case '[':
+                        buf.append("%5B");
+                        continue;
+                    case ']':
+                        buf.append("%5D");
+                        continue;
+                    default:
+                        if (c<0)
+                        {
+                            buf.append('%');
+                            TypeUtil.toHex(c,buf);
+                        }
+                        else
+                            buf.append((char)c);
+                        continue;
                 }
             }
         }
+        else
+        {
+            for (int i=0;i<path.length();i++)
+            {
+                char c=path.charAt(i);       
+                switch(c)
+                {
+                    case '%':
+                        buf.append("%25");
+                        continue;
+                    case '?':
+                        buf.append("%3F");
+                        continue;
+                    case ';':
+                        buf.append("%3B");
+                        continue;
+                    case '#':
+                        buf.append("%23");
+                        continue;
+                    case '"':
+                        buf.append("%22");
+                        continue;
+                    case '\'':
+                        buf.append("%27");
+                        continue;
+                    case '<':
+                        buf.append("%3C");
+                        continue;
+                    case '>':
+                        buf.append("%3E");
+                        continue;
+                    case ' ':
+                        buf.append("%20");
+                        continue;
+                    case '[':
+                        buf.append("%5B");
+                        continue;
+                    case ']':
+                        buf.append("%5D");
+                        continue;
+                    default:
+                        buf.append(c);
+                        continue;
+                }
+            }
+        }
+
 
         return buf;
     }
@@ -254,123 +264,163 @@ public class URIUtil
     
     /* ------------------------------------------------------------ */
     /* Decode a URI path and strip parameters
-     * @param path The path the encode
-     * @param buf StringBuilder to encode path into
      */
     public static String decodePath(String path)
     {
-        if (path==null)
-            return null;
-        // Array to hold all converted characters
-        char[] chars=null;
-        int n=0;
-        // Array to hold a sequence of %encodings
-        byte[] bytes=null;
-        int b=0;
-        
-        int len=path.length();
-        
-        for (int i=0;i<len;i++)
-        {
-            char c = path.charAt(i);
-
-            if (c=='%' && (i+2)<len)
-            {
-                if (chars==null)
-                {
-                    chars=new char[len];
-                    bytes=new byte[len];
-                    path.getChars(0,i,chars,0);
-                }
-                bytes[b++]=(byte)(0xff&TypeUtil.parseInt(path,i+1,2,16));
-                i+=2;
-                continue;
-            }
-            else if (c==';')
-            {
-                if (chars==null)
-                {
-                    chars=new char[len];
-                    path.getChars(0,i,chars,0);
-                    n=i;
-                }
-                break;
-            }
-            else if (bytes==null)
-            {
-                n++;
-                continue;
-            }
-            
-            // Do we have some bytes to convert?
-            if (b>0)
-            {
-                String s=new String(bytes,0,b,__CHARSET);
-                s.getChars(0,s.length(),chars,n);
-                n+=s.length();
-                b=0;
-            }
-            
-            chars[n++]=c;
-        }
-
-        if (chars==null)
-            return path;
-
-        // if we have a remaining sequence of bytes
-        if (b>0)
-        {
-            String s=new String(bytes,0,b,__CHARSET);
-            s.getChars(0,s.length(),chars,n);
-            n+=s.length();
-        }
-        
-        return new String(chars,0,n);
+        return decodePath(path,0,path.length());
     }
+
+    /* ------------------------------------------------------------ */
+    /* Decode a URI path and strip parameters of UTF-8 path
+     */
+    public static String decodePath(String path, int offset, int length)
+    {
+        try
+        {
+            Utf8StringBuilder builder=null;
+            int end=offset+length;
+            for (int i=offset;i<end;i++)
+            {
+                char c = path.charAt(i);
+                switch(c)
+                {
+                    case '%':
+                        if (builder==null)
+                        {
+                            builder=new Utf8StringBuilder(path.length());
+                            builder.append(path,offset,i-offset);
+                        }
+                        if ((i+2)<end)
+                        {
+                            char u=path.charAt(i+1);
+                            if (u=='u')
+                            {
+                                // TODO this is wrong. This is a codepoint not a char
+                                builder.append((char)(0xffff&TypeUtil.parseInt(path,i+2,4,16)));
+                                i+=5;
+                            }
+                            else
+                            {
+                                builder.append((byte)(0xff&(TypeUtil.convertHexDigit(u)*16+TypeUtil.convertHexDigit(path.charAt(i+2)))));
+                                i+=2;
+                            }
+                        }
+                        else
+                        {
+                            throw new IllegalArgumentException("Bad URI % encoding");
+                        }
+
+                        break;
+
+                    case ';':
+                        if (builder==null)
+                        {
+                            builder=new Utf8StringBuilder(path.length());
+                            builder.append(path,offset,i-offset);
+                        }
+                        
+                        while(++i<end)
+                        {
+                            if (path.charAt(i)=='/')
+                            {
+                                builder.append('/');
+                                break;
+                            }
+                        }
+                        
+                        break;
+
+                    default:
+                        if (builder!=null)
+                            builder.append(c);
+                        break;
+                }
+            }
+
+            if (builder!=null)
+                return builder.toString();
+            if (offset==0 && length==path.length())
+                return path;
+            return path.substring(offset,end);   
+        }
+        catch(NotUtf8Exception e)
+        {
+            LOG.warn(path.substring(offset,offset+length)+" "+e);
+            LOG.debug(e);
+            return decodeISO88591Path(path,offset,length);
+        }
+    }
+
     
     /* ------------------------------------------------------------ */
-    /* Decode a URI path and strip parameters.
-     * @param path The path the encode
-     * @param buf StringBuilder to encode path into
+    /* Decode a URI path and strip parameters of ISO-8859-1 path
      */
-    public static String decodePath(byte[] buf, int offset, int length)
+    private static String decodeISO88591Path(String path, int offset, int length)
     {
-        byte[] bytes=null;
-        int n=0;
-        
-        for (int i=0;i<length;i++)
+        StringBuilder builder=null;
+        int end=offset+length;
+        for (int i=offset;i<end;i++)
         {
-            byte b = buf[i + offset];
-            
-            if (b=='%' && (i+2)<length)
+            char c = path.charAt(i);
+            switch(c)
             {
-                b=(byte)(0xff&TypeUtil.parseInt(buf,i+offset+1,2,16));
-                i+=2;
+                case '%':
+                    if (builder==null)
+                    {
+                        builder=new StringBuilder(path.length());
+                        builder.append(path,offset,i-offset);
+                    }
+                    if ((i+2)<end)
+                    {
+                        char u=path.charAt(i+1);
+                        if (u=='u')
+                        {
+                            // TODO this is wrong. This is a codepoint not a char
+                            builder.append((char)(0xffff&TypeUtil.parseInt(path,i+2,4,16)));
+                            i+=5;
+                        }
+                        else
+                        {
+                            builder.append((byte)(0xff&(TypeUtil.convertHexDigit(u)*16+TypeUtil.convertHexDigit(path.charAt(i+2)))));
+                            i+=2;
+                        }
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException();
+                    }
+                    
+                    break;
+                    
+                case ';':
+                    if (builder==null)
+                    {
+                        builder=new StringBuilder(path.length());
+                        builder.append(path,offset,i-offset);
+                    }
+                    while(++i<end)
+                    {
+                        if (path.charAt(i)=='/')
+                        {
+                            builder.append('/');
+                            break;
+                        }
+                    }
+                    break;
+                    
+                    
+                default:
+                    if (builder!=null)
+                        builder.append(c);
+                    break;
             }
-            else if (b==';')
-            {
-                length=i;
-                break;
-            }
-            else if (bytes==null)
-            {
-                n++;
-                continue;
-            }
-            
-            if (bytes==null)
-            {
-                bytes=new byte[length];
-                for (int j=0;j<n;j++)
-                    bytes[j]=buf[j + offset];
-            }
-            
-            bytes[n++]=b;
         }
 
-        if (bytes==null)
-            return new String(buf,offset,length,__CHARSET);
-        return new String(bytes,0,n,__CHARSET);
+        if (builder!=null)
+            return builder.toString();
+        if (offset==0 && length==path.length())
+            return path;
+        return path.substring(offset,end);        
     }
 
     
@@ -431,6 +481,8 @@ public class URIUtil
     /* ------------------------------------------------------------ */
     /** Return the parent Path.
      * Treat a URI like a directory path and return the parent directory.
+     * @param p the path to return a parent reference to
+     * @return the parent path of the URI
      */
     public static String parentPath(String p)
     {
@@ -446,7 +498,7 @@ public class URIUtil
     /** Convert a path to a cananonical form.
      * All instances of "." and ".." are factored out.  Null is returned
      * if the path tries to .. above its root.
-     * @param path 
+     * @param path the path to convert
      * @return path or null.
      */
     public static String canonicalPath(String path)
@@ -580,8 +632,8 @@ public class URIUtil
     /* ------------------------------------------------------------ */
     /** Convert a path to a compact form.
      * All instances of "//" and "///" etc. are factored out to single "/" 
-     * @param path 
-     * @return path
+     * @param path the path to compact 
+     * @return the compacted path 
      */
     public static String compactPath(String path)
     {
@@ -663,7 +715,49 @@ public class URIUtil
         }
         return false;
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Create a new URI from the arguments, handling IPv6 host encoding and default ports
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
+     * @param path the URI path
+     * @param query the URI query
+     * @return A String URI
+     */
+    public static String newURI(String scheme,String server, int port,String path,String query)
+    {
+        StringBuilder builder = newURIBuilder(scheme, server, port);
+        builder.append(path);
+        if (query!=null && query.length()>0)
+            builder.append('?').append(query);
+        return builder.toString();
+    }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * Create a new URI StringBuilder from the arguments, handling IPv6 host encoding and default ports
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
+     * @return a StringBuilder containing URI prefix
+     */
+    public static StringBuilder newURIBuilder(String scheme,String server, int port)
+    {
+        StringBuilder builder = new StringBuilder();
+        appendSchemeHostPort(builder, scheme, server, port);
+        return builder;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Append scheme, host and port URI prefix, handling IPv6 address encoding and default ports
+     * @param url StringBuilder to append to
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
+     */
     public static void appendSchemeHostPort(StringBuilder url,String scheme,String server, int port)
     {
         if (server.indexOf(':')>=0&&server.charAt(0)!='[')
@@ -671,10 +765,34 @@ public class URIUtil
         else
             url.append(scheme).append("://").append(server);
 
-        if (port > 0 && (("http".equalsIgnoreCase(scheme) && port != 80) || ("https".equalsIgnoreCase(scheme) && port != 443)))
-            url.append(':').append(port);
+        if (port > 0)
+        {
+            switch(scheme)
+            {
+                case "http":
+                    if (port!=80) 
+                        url.append(':').append(port);
+                    break;
+                    
+                case "https":
+                    if (port!=443) 
+                        url.append(':').append(port);
+                    break;
+
+                default:
+                    url.append(':').append(port);
+            }
+        }
     }
     
+    /* ------------------------------------------------------------ */
+    /** 
+     * Append scheme, host and port URI prefix, handling IPv6 address encoding and default ports
+     * @param url StringBuffer to append to
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
+     */
     public static void appendSchemeHostPort(StringBuffer url,String scheme,String server, int port)
     {
         synchronized (url)
@@ -684,9 +802,53 @@ public class URIUtil
             else
                 url.append(scheme).append("://").append(server);
 
-            if (port > 0 && (("http".equalsIgnoreCase(scheme) && port != 80) || ("https".equalsIgnoreCase(scheme) && port != 443)))
-                url.append(':').append(port);
+            if (port > 0)
+            {
+                switch(scheme)
+                {
+                    case "http":
+                        if (port!=80) 
+                            url.append(':').append(port);
+                        break;
+                        
+                    case "https":
+                        if (port!=443) 
+                            url.append(':').append(port);
+                        break;
+
+                    default:
+                        url.append(':').append(port);
+                }
+            }
         }
+    }
+
+    public static boolean equalsIgnoreEncodings(String uriA, String uriB)
+    {
+        int lenA=uriA.length();
+        int lenB=uriB.length();
+        int a=0;
+        int b=0;
+        
+        while (a<lenA && b<lenB)
+        {
+            int oa=uriA.charAt(a++);
+            int ca=oa;
+            if (ca=='%')
+                ca=TypeUtil.convertHexDigit(uriA.charAt(a++))*16+TypeUtil.convertHexDigit(uriA.charAt(a++));
+            
+            int ob=uriB.charAt(b++);
+            int cb=ob;
+            if (cb=='%')
+                cb=TypeUtil.convertHexDigit(uriB.charAt(b++))*16+TypeUtil.convertHexDigit(uriB.charAt(b++));
+            
+            if (ca=='/' && oa!=ob)
+                return false;
+            
+            if (ca!=cb )
+                return URIUtil.decodePath(uriA).equals(URIUtil.decodePath(uriB));
+        }
+        return a==lenA && b==lenB;
     }
 }
 

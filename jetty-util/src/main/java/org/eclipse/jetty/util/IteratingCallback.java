@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,38 +18,88 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.nio.channels.ClosedChannelException;
+
+import org.eclipse.jetty.util.thread.Locker;
 
 /**
  * This specialized callback implements a pattern that allows
  * a large job to be broken into smaller tasks using iteration
  * rather than recursion.
- * <p/>
+ * <p>
  * A typical example is the write of a large content to a socket,
  * divided in chunks. Chunk C1 is written by thread T1, which
  * also invokes the callback, which writes chunk C2, which invokes
  * the callback again, which writes chunk C3, and so forth.
- * <p/>
+ * </p>
+ * <p>
  * The problem with the example is that if the callback thread
  * is the same that performs the I/O operation, then the process
  * is recursive and may result in a stack overflow.
  * To avoid the stack overflow, a thread dispatch must be performed,
  * causing context switching and cache misses, affecting performance.
- * <p/>
+ * </p>
+ * <p>
  * To avoid this issue, this callback uses an AtomicReference to
  * record whether success callback has been called during the processing
  * of a sub task, and if so then the processing iterates rather than
  * recurring.
- * <p/>
+ * </p>
+ * <p>
  * Subclasses must implement method {@link #process()} where the sub
  * task is executed and a suitable {@link IteratingCallback.Action} is
  * returned to this callback to indicate the overall progress of the job.
  * This callback is passed to the asynchronous execution of each sub
  * task and a call the {@link #succeeded()} on this callback represents
  * the completion of the sub task.
+ * </p>
  */
 public abstract class IteratingCallback implements Callback
 {
+    /**
+     * The internal states of this callback
+     */
+    private enum State
+    {
+        /**
+         * This callback is IDLE, ready to iterate.
+         */
+        IDLE,
+
+        /**
+         * This callback is iterating calls to {@link #process()} and is dealing with
+         * the returns.  To get into processing state, it much of held the lock state
+         * and set iterating to true.
+         */
+        PROCESSING,
+
+        /**
+         * Waiting for a schedule callback
+         */
+        PENDING,
+
+        /**
+         * Called by a schedule callback
+         */
+        CALLED,
+
+        /**
+         * The overall job has succeeded as indicated by a {@link Action#SUCCEEDED} return
+         * from {@link IteratingCallback#process()}
+         */
+        SUCCEEDED,
+
+        /**
+         * The overall job has failed as indicated by a call to {@link IteratingCallback#failed(Throwable)}
+         */
+        FAILED,
+
+        /**
+         * This callback has been closed and cannot be reset.
+         */
+        CLOSED
+    }
+
     /**
      * The indication of the overall progress of the overall job that
      * implementations of {@link #process()} must return.
@@ -68,31 +118,43 @@ public abstract class IteratingCallback implements Callback
          * may have not yet been invoked.
          */
         SCHEDULED,
+
         /**
          * Indicates that {@link #process()} has completed the overall job.
          */
-        SUCCEEDED,
-        /**
-         * Indicates that {@link #process()} has failed the overall job.
-         */
-        FAILED
+        SUCCEEDED
     }
 
-    private final AtomicReference<State> _state = new AtomicReference<>(State.INACTIVE);
+    private Locker _locker = new Locker();
+    private State _state;
+    private boolean _iterate;
+
+
+    protected IteratingCallback()
+    {
+        _state = State.IDLE;
+    }
+
+    protected IteratingCallback(boolean needReset)
+    {
+        _state = needReset ? State.SUCCEEDED : State.IDLE;
+    }
 
     /**
      * Method called by {@link #iterate()} to process the sub task.
-     * <p/>
+     * <p>
      * Implementations must start the asynchronous execution of the sub task
      * (if any) and return an appropriate action:
+     * </p>
      * <ul>
      * <li>{@link Action#IDLE} when no sub tasks are available for execution
      * but the overall job is not completed yet</li>
      * <li>{@link Action#SCHEDULED} when the sub task asynchronous execution
      * has been started</li>
      * <li>{@link Action#SUCCEEDED} when the overall job is completed</li>
-     * <li>{@link Action#FAILED} when the overall job cannot be completed</li>
      * </ul>
+     *
+     * @return the appropriate Action
      *
      * @throws Exception if the sub task processing throws
      */
@@ -100,118 +162,167 @@ public abstract class IteratingCallback implements Callback
 
     /**
      * Invoked when the overall task has completed successfully.
+     *
+     * @see #onCompleteFailure(Throwable)
      */
-    protected abstract void completed();
+    protected void onCompleteSuccess()
+    {
+    }
+
+    /**
+     * Invoked when the overall task has completed with a failure.
+     * @param cause the throwable to indicate cause of failure
+     *
+     * @see #onCompleteSuccess()
+     */
+    protected void onCompleteFailure(Throwable cause)
+    {
+    }
 
     /**
      * This method must be invoked by applications to start the processing
-     * of sub tasks.
-     * <p/>
-     * If {@link #process()} returns {@link Action#IDLE}, then this method
-     * should be called again to restart processing.
-     * It is safe to call iterate multiple times from multiple threads since only
-     * the first thread to move the state out of INACTIVE will actually do any iteration
-     * and processing.
+     * of sub tasks.  It can be called at any time by any thread, and it's
+     * contract is that when called, then the {@link #process()} method will
+     * be called during or soon after, either by the calling thread or by
+     * another thread.
      */
     public void iterate()
     {
-        try
+        boolean process=false;
+
+        loop: while (true)
         {
-            while (true)
+            try (Locker.Lock lock = _locker.lock())
             {
-                switch (_state.get())
+                switch (_state)
                 {
-                    case INACTIVE:
-                    {
-                        if (processIterations())
-                            return;
-                        break;
-                    }
-                    case ITERATING:
-                    {
-                        if (_state.compareAndSet(State.ITERATING, State.ITERATE_AGAIN))
-                            return;
-                        break;
-                    }
+                    case PENDING:
+                    case CALLED:
+                        // process will be called when callback is handled
+                        break loop;
+
+                    case IDLE:
+                        _state=State.PROCESSING;
+                        process=true;
+                        break loop;
+
+                    case PROCESSING:
+                        _iterate=true;
+                        break loop;
+
+                    case FAILED:
+                    case SUCCEEDED:
+                        break loop;
+
+                    case CLOSED:
                     default:
-                    {
-                        return;
-                    }
+                        throw new IllegalStateException(toString());
                 }
             }
         }
-        catch (Throwable x)
-        {
-            failed(x);
-        }
+        if (process)
+            processing();
     }
 
-    private boolean processIterations() throws Exception
+    private void processing()
     {
-        // Keeps iterating as long as succeeded() is called during process().
-        // If we are in INACTIVE state, either this is the first iteration or
-        // succeeded()/failed() were called already.
-        while (_state.compareAndSet(State.INACTIVE, State.ITERATING))
+        // This should only ever be called when in processing state, however a failed or close call
+        // may happen concurrently, so state is not assumed.
+
+        boolean on_complete_success=false;
+
+        // While we are processing
+        processing: while (true)
         {
-            // Method process() can only be called by one thread at a time because
-            // it is guarded by the CaS above. However, the case blocks below may
-            // be executed concurrently in this case: T1 calls process() which
-            // executes the asynchronous sub task, which calls succeeded(), which
-            // moves the state into INACTIVE, then returns SCHEDULED; T2 calls
-            // iterate(), state is now INACTIVE and process() is called again and
-            // returns another action. Now we have 2 threads that may execute the
-            // action case blocks below concurrently; therefore each case block
-            // has to be prepared to fail the CaS it's doing.
-
-            Action action = process();
-            switch (action)
+            // Call process to get the action that we have to take.
+            Action action;
+            try
             {
-                case IDLE:
-                {
-                    // No more progress can be made.
-                    if (_state.compareAndSet(State.ITERATING, State.INACTIVE))
-                        return true;
+                action = process();
+            }
+            catch (Throwable x)
+            {
+                failed(x);
+                break processing;
+            }
 
-                    // Was iterate() called again since we already decided to go INACTIVE ?
-                    // If so, try another iteration as more work may have been added
-                    // while the previous call to process() was returning.
-                    if (_state.compareAndSet(State.ITERATE_AGAIN, State.INACTIVE))
-                        continue;
+            // acted on the action we have just received
+            try(Locker.Lock lock = _locker.lock())
+            {
+                switch (_state)
+                {
+                    case PROCESSING:
+                    {
+                        switch (action)
+                        {
+                            case IDLE:
+                            {
+                                // Has iterate been called while we were processing?
+                                if (_iterate)
+                                {
+                                    // yes, so skip idle and keep processing
+                                    _iterate=false;
+                                    _state=State.PROCESSING;
+                                    continue processing;
+                                }
 
-                    // State may have changed concurrently, try again.
-                    continue;
-                }
-                case SCHEDULED:
-                {
-                    // The sub task is executing, and the callback for it may or
-                    // may not have already been called yet, which we figure out below.
-                    // Can double CaS here because state never changes directly ITERATING_AGAIN --> ITERATE.
-                    if (_state.compareAndSet(State.ITERATING, State.ACTIVE) ||
-                            _state.compareAndSet(State.ITERATE_AGAIN, State.ACTIVE))
-                        // Not called back yet, so wait.
-                        return true;
-                    // Call back must have happened, so iterate.
-                    continue;
-                }
-                case SUCCEEDED:
-                {
-                    // The overall job has completed.
-                    if (completeSuccess())
-                        completed();
-                    return true;
-                }
-                case FAILED:
-                {
-                    completeFailure();
-                    return true;
-                }
-                default:
-                {
-                    throw new IllegalStateException(toString());
+                                // No, so we can go idle
+                                _state=State.IDLE;
+                                break processing;
+                            }
+
+                            case SCHEDULED:
+                            {
+                                // we won the race against the callback, so the callback has to process and we can break processing
+                                _state=State.PENDING;
+                                break processing;
+                            }
+
+                            case SUCCEEDED:
+                            {
+                                // we lost the race against the callback,
+                                _iterate=false;
+                                _state=State.SUCCEEDED;
+                                on_complete_success=true;
+                                break processing;
+                            }
+
+                            default:
+                                throw new IllegalStateException(String.format("%s[action=%s]", this, action));
+                        }
+                    }
+
+                    case CALLED:
+                    {
+                        switch (action)
+                        {
+                            case SCHEDULED:
+                            {
+                                // we lost the race, so we have to keep processing
+                                _state=State.PROCESSING;
+                                continue processing;
+                            }
+
+                            default:
+                                throw new IllegalStateException(String.format("%s[action=%s]", this, action));
+                        }
+                    }
+
+                    case SUCCEEDED:
+                    case FAILED:
+                    case CLOSED:
+                        break processing;
+
+                    case IDLE:
+                    case PENDING:
+                    default:
+                        throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                 }
             }
         }
-        return false;
+
+        if (on_complete_success)
+            onCompleteSuccess();
     }
 
     /**
@@ -222,34 +333,27 @@ public abstract class IteratingCallback implements Callback
     @Override
     public void succeeded()
     {
-        while (true)
+        boolean process=false;
+        try(Locker.Lock lock = _locker.lock())
         {
-            State current = _state.get();
-            switch (current)
+            switch (_state)
             {
-                case ITERATE_AGAIN:
-                case ITERATING:
+                case PROCESSING:
                 {
-                    if (_state.compareAndSet(current, State.INACTIVE))
-                        return;
-                    continue;
+                    _state=State.CALLED;
+                    break;
                 }
-                case ACTIVE:
+                case PENDING:
                 {
-                    // If we can move from ACTIVE to INACTIVE
-                    // then we are responsible to call iterate().
-                    if (_state.compareAndSet(current, State.INACTIVE))
-                        iterate();
-                    // If we can't CaS, then failed() must have been
-                    // called, and we just return.
-                    return;
+                    _state=State.PROCESSING;
+                    process=true;
+                    break;
                 }
-                case INACTIVE:
+                case CLOSED:
+                case FAILED:
                 {
-                    // Support the case where the callback is scheduled
-                    // externally without a call to iterate().
-                    iterate();
-                    return;
+                    // Too late!
+                    break;
                 }
                 default:
                 {
@@ -257,6 +361,8 @@ public abstract class IteratingCallback implements Callback
                 }
             }
         }
+        if (process)
+            processing();
     }
 
     /**
@@ -267,51 +373,78 @@ public abstract class IteratingCallback implements Callback
     @Override
     public void failed(Throwable x)
     {
-        completeFailure();
-    }
-
-    private boolean completeSuccess()
-    {
-        while (true)
+        boolean failure=false;
+        try(Locker.Lock lock = _locker.lock())
         {
-            State current = _state.get();
-            if (current == State.FAILED)
+            switch (_state)
             {
-                // Success arrived too late, sorry.
-                return false;
-            }
-            else
-            {
-                if (_state.compareAndSet(current, State.SUCCEEDED))
-                    return true;
-            }
-        }
-    }
-
-    private void completeFailure()
-    {
-        while (true)
-        {
-            State current = _state.get();
-            if (current == State.SUCCEEDED)
-            {
-                // Failed arrived too late, sorry.
-                return;
-            }
-            else
-            {
-                if (_state.compareAndSet(current, State.FAILED))
+                case SUCCEEDED:
+                case FAILED:
+                case IDLE:
+                case CLOSED:
+                case CALLED:
+                    // too late!.
                     break;
+
+                case PENDING:
+                case PROCESSING:
+                {
+                    _state=State.FAILED;
+                    failure=true;
+                    break;
+                }
+                default:
+                    throw new IllegalStateException(toString());
             }
         }
+        if (failure)
+            onCompleteFailure(x);
     }
 
-    /**
+    public void close()
+    {
+        boolean failure=false;
+        try(Locker.Lock lock = _locker.lock())
+        {
+            switch (_state)
+            {
+                case IDLE:
+                case SUCCEEDED:
+                case FAILED:
+                    _state=State.CLOSED;
+                    break;
+
+                case CLOSED:
+                    break;
+
+                default:
+                    _state=State.CLOSED;
+                    failure=true;
+            }
+        }
+
+        if(failure)
+            onCompleteFailure(new ClosedChannelException());
+    }
+
+    /*
+     * only for testing
      * @return whether this callback is idle and {@link #iterate()} needs to be called
      */
-    public boolean isIdle()
+    boolean isIdle()
     {
-        return _state.get() == State.INACTIVE;
+        try(Locker.Lock lock = _locker.lock())
+        {
+            return _state == State.IDLE;
+        }
+    }
+
+    public boolean isClosed()
+    {
+        try(Locker.Lock lock = _locker.lock())
+        {
+            return _state == State.CLOSED;
+        }
     }
 
     /**
@@ -319,7 +452,10 @@ public abstract class IteratingCallback implements Callback
      */
     public boolean isFailed()
     {
-        return _state.get() == State.FAILED;
+        try(Locker.Lock lock = _locker.lock())
+        {
+            return _state == State.FAILED;
+        }
     }
 
     /**
@@ -327,48 +463,45 @@ public abstract class IteratingCallback implements Callback
      */
     public boolean isSucceeded()
     {
-        return _state.get() == State.SUCCEEDED;
+        try(Locker.Lock lock = _locker.lock())
+        {
+            return _state == State.SUCCEEDED;
+        }
+    }
+
+    /**
+     * Resets this callback.
+     * <p>
+     * A callback can only be reset to IDLE from the
+     * SUCCEEDED or FAILED states or if it is already IDLE.
+     * </p>
+     *
+     * @return true if the reset was successful
+     */
+    public boolean reset()
+    {
+        try(Locker.Lock lock = _locker.lock())
+        {
+            switch(_state)
+            {
+                case IDLE:
+                    return true;
+
+                case SUCCEEDED:
+                case FAILED:
+                    _iterate=false;
+                    _state=State.IDLE;
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
     }
 
     @Override
     public String toString()
     {
         return String.format("%s[%s]", super.toString(), _state);
-    }
-
-    /**
-     * The internal states of this callback
-     */
-    private enum State
-    {
-        /**
-         * This callback is inactive, ready to iterate.
-         */
-        INACTIVE,
-        /**
-         * This callback is iterating and {@link #process()} has scheduled an
-         * asynchronous operation by returning {@link Action#SCHEDULED}, but
-         * the operation is still undergoing.
-         */
-        ACTIVE,
-        /**
-         * This callback is iterating and {@link #process()} has been called
-         * but not returned yet.
-         */
-        ITERATING,
-        /**
-         * While this callback was iterating, another request for iteration
-         * has been issued, so the iteration must continue even if a previous
-         * call to {@link #process()} returned {@link Action#IDLE}.
-         */
-        ITERATE_AGAIN,
-        /**
-         * The overall job has succeeded.
-         */
-        SUCCEEDED,
-        /**
-         * The overall job has failed.
-         */
-        FAILED
     }
 }

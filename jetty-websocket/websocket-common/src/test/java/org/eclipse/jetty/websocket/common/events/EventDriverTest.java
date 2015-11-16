@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.common.events;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -31,7 +30,10 @@ import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -49,7 +51,15 @@ public class EventDriverTest
     public TestName testname = new TestName();
 
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
+    
+    private WebSocketContainerScope container;
+    
+    @Before
+    public void initContainer()
+    {
+        this.container = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+    }
 
     private Frame makeBinaryFrame(String content, boolean fin)
     {
@@ -62,7 +72,7 @@ public class EventDriverTest
         AdapterConnectCloseSocket socket = new AdapterConnectCloseSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver,bufferPool))
+        try (LocalWebSocketSession conn = new LocalWebSocketSession(container,testname,driver))
         {
             conn.open();
             driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -79,7 +89,7 @@ public class EventDriverTest
         AnnotatedBinaryArraySocket socket = new AnnotatedBinaryArraySocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver,bufferPool))
+        try (LocalWebSocketSession conn = new LocalWebSocketSession(container,testname,driver))
         {
             conn.open();
             driver.incomingFrame(makeBinaryFrame("Hello World",true));
@@ -98,7 +108,7 @@ public class EventDriverTest
         AnnotatedTextSocket socket = new AnnotatedTextSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver,bufferPool))
+        try (LocalWebSocketSession conn = new LocalWebSocketSession(container,testname,driver))
         {
             conn.open();
             driver.incomingError(new WebSocketException("oof"));
@@ -117,7 +127,7 @@ public class EventDriverTest
         AnnotatedFramesSocket socket = new AnnotatedFramesSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver,bufferPool))
+        try (LocalWebSocketSession conn = new LocalWebSocketSession(container,testname,driver))
         {
             conn.open();
             driver.incomingFrame(new PingFrame().setPayload("PING"));
@@ -141,7 +151,7 @@ public class EventDriverTest
         AnnotatedBinaryStreamSocket socket = new AnnotatedBinaryStreamSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver,bufferPool))
+        try (LocalWebSocketSession conn = new LocalWebSocketSession(container,testname,driver))
         {
             conn.open();
             driver.incomingFrame(makeBinaryFrame("Hello World",true));
@@ -155,12 +165,12 @@ public class EventDriverTest
     }
 
     @Test
-    public void testListener_Text() throws Exception
+    public void testListenerBasic_Text() throws Exception
     {
         ListenerBasicSocket socket = new ListenerBasicSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver,bufferPool))
+        try (LocalWebSocketSession conn = new LocalWebSocketSession(container,testname,driver))
         {
             conn.start();
             conn.open();

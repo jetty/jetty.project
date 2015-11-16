@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,30 +20,49 @@ package org.eclipse.jetty.xml;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.Map;
 import java.util.Stack;
 
+import org.eclipse.jetty.util.StringUtil;
+
 public class XmlAppendable
 {
-    private final String SPACES="                                            ";
+    private final String SPACES="                                                                 ";
     private final Appendable _out;
     private final int _indent;
     private final Stack<String> _tags = new Stack<>();
     private String _space="";
+
+    public XmlAppendable(OutputStream out,String encoding) throws IOException
+    {
+        this(new OutputStreamWriter(out,encoding),encoding);
+    }
     
     public XmlAppendable(Appendable out) throws IOException
     {
         this(out,2);
     }
     
+    public XmlAppendable(Appendable out,String encoding) throws IOException
+    {
+        this(out,2,encoding);
+    }
+    
     public XmlAppendable(Appendable out, int indent) throws IOException
+    {
+        this(out,indent,"utf-8");
+    }
+    
+    public XmlAppendable(Appendable out, int indent, String encoding) throws IOException
     {
         _out=out;
         _indent=indent;
-        _out.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+        _out.append("<?xml version=\"1.0\" encoding=\""+encoding+"\"?>\n");
     }
 
-    public XmlAppendable open(String tag, Map<String,String> attributes) throws IOException
+    public XmlAppendable openTag(String tag, Map<String,String> attributes) throws IOException
     {
         _out.append(_space).append('<').append(tag);
         attributes(attributes);
@@ -54,7 +73,7 @@ public class XmlAppendable
         return this;
     }
     
-    public XmlAppendable open(String tag) throws IOException
+    public XmlAppendable openTag(String tag) throws IOException
     {
         _out.append(_space).append('<').append(tag).append(">\n");
         _space=_space+SPACES.substring(0,_indent);
@@ -65,32 +84,7 @@ public class XmlAppendable
     public XmlAppendable content(String s) throws IOException
     {
         if (s!=null)
-        {
-            for (int i=0;i<s.length();i++)
-            {
-                char c = s.charAt(i);
-                switch(c)
-                {
-                    case '<':
-                        _out.append("&lt;");
-                        break;
-                    case '>':
-                        _out.append("&gt;");
-                        break;
-                    case '&':
-                        _out.append("&amp;");
-                        break;
-                    case '\'':
-                        _out.append("&apos;");
-                        break;
-                    case '"':
-                        _out.append("&quot;");
-                        break;
-                    default:
-                        _out.append(c);
-                }
-            }
-        }
+            _out.append(StringUtil.sanitizeXmlString(s));
         
         return this;
     }
@@ -123,6 +117,14 @@ public class XmlAppendable
         return this;
     }
     
+    public XmlAppendable tagCDATA(String tag,String data) throws IOException
+    {
+        _out.append(_space).append('<').append(tag).append('>');
+        cdata(data);
+        _out.append("</").append(tag).append(">\n");
+        return this;
+    }
+    
     public XmlAppendable tag(String tag, Map<String,String> attributes,String content) throws IOException
     {
         _out.append(_space).append('<').append(tag);
@@ -133,7 +135,7 @@ public class XmlAppendable
         return this;
     }
     
-    public XmlAppendable close() throws IOException
+    public XmlAppendable closeTag() throws IOException
     {
         if (_tags.isEmpty())
             throw new IllegalStateException("Tags closed");
@@ -156,8 +158,9 @@ public class XmlAppendable
         }
     }
     
-    public Stack<String> getOpenTags()
+    public void literal(String xml) throws IOException
     {
-        return (Stack<String>)_tags.clone();
+        _out.append(xml);
     }
+
 }

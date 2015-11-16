@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -57,7 +57,7 @@ public class ConnectorServer extends AbstractLifeCycle
      * The actual address of the new connector server, as returned
      * by its getAddress method, will not necessarily be exactly the same.
      * @param name object name string to be assigned to connector server bean
-     * @throws Exception
+     * @throws Exception if unable to setup connector server
      */
     public ConnectorServer(JMXServiceURL serviceURL, String name)
         throws Exception
@@ -77,28 +77,28 @@ public class ConnectorServer extends AbstractLifeCycle
      * be Strings. The appropriate type of each associated value depends on
      * the attribute. The contents of environment are not changed by this call.
      * @param name object name string to be assigned to connector server bean
-     * @throws Exception
+     * @throws Exception if unable to create connector server
      */
     public ConnectorServer(JMXServiceURL svcUrl, Map<String,?> environment, String name)
          throws Exception
     {
-    	String urlPath = svcUrl.getURLPath();
-    	int idx = urlPath.indexOf("rmi://");
-    	if (idx > 0)
-    	{
-    	    String hostPort = urlPath.substring(idx+6, urlPath.indexOf('/', idx+6));
-    	    String regHostPort = startRegistry(hostPort);
-    	    if (regHostPort != null) {
-    	        urlPath = urlPath.replace(hostPort,regHostPort);
-    	        svcUrl = new JMXServiceURL(svcUrl.getProtocol(), svcUrl.getHost(), svcUrl.getPort(), urlPath);
-    	    }
-    	}
+        String urlPath = svcUrl.getURLPath();
+        int idx = urlPath.indexOf("rmi://");
+        if (idx > 0)
+        {
+            String hostPort = urlPath.substring(idx+6, urlPath.indexOf('/', idx+6));
+            String regHostPort = startRegistry(hostPort);
+            if (regHostPort != null) {
+                urlPath = urlPath.replace(hostPort,regHostPort);
+                svcUrl = new JMXServiceURL(svcUrl.getProtocol(), svcUrl.getHost(), svcUrl.getPort(), urlPath);
+            }
+        }
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         _connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(svcUrl, environment, mbeanServer);
         mbeanServer.registerMBean(_connectorServer,new ObjectName(name));
     }
 
-	/* ------------------------------------------------------------ */
+        /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */

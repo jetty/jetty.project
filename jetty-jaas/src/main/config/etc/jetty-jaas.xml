@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-
 
     <!-- ======================================================== -->
     <!-- java.security.auth.login.config System property          -->
@@ -11,7 +10,7 @@
     <!-- ======================================================== -->
     <Call class="java.lang.System" name="setProperty">
       <Arg>java.security.auth.login.config</Arg>
-      <Arg><Property name="jetty.base" default="." />/<Property name="jaas.login.conf" default="etc/login.conf"/></Arg>
+      <Arg><Property name="jetty.base" default="." />/<Property name="jetty.jaas.login.conf" deprecated="jaas.login.conf" default="etc/login.conf"/></Arg>
     </Call>
 
 </Configure>

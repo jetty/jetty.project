@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.*;
+
 import java.net.URI;
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -28,14 +31,11 @@ import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class SessionTest
 {
@@ -70,7 +70,7 @@ public class SessionTest
             request.setSubProtocols("echo");
             Future<Session> future = client.connect(cliSock,wsUri,request);
 
-            final ServerConnection srvSock = server.accept();
+            final IBlockheadServerConnection srvSock = server.accept();
             srvSock.upgrade();
 
             Session sess = future.get(500,TimeUnit.MILLISECONDS);
@@ -82,18 +82,21 @@ public class SessionTest
             cliSock.assertWasOpened();
             cliSock.assertNotClosed();
 
-            Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
+            Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
+            Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
 
             RemoteEndpoint remote = cliSock.getSession().getRemote();
             remote.sendStringByFuture("Hello World!");
             if (remote.getBatchMode() == BatchMode.ON)
+            {
                 remote.flush();
-            srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
+            }
+            srvSock.echoMessage(1,500,TimeUnit.MILLISECONDS);
             // wait for response from server
             cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
             
             Set<WebSocketSession> open = client.getOpenSessions();
-            Assert.assertThat("Open Sessions.size", open.size(), is(1));
+            Assert.assertThat("(Before Close) Open Sessions.size", open.size(), is(1));
 
             cliSock.assertMessage("Hello World!");
             cliSock.close();
@@ -101,7 +104,7 @@ public class SessionTest
             
             cliSock.waitForClose(500,TimeUnit.MILLISECONDS);
             open = client.getOpenSessions();
-            Assert.assertThat("Open Sessions.size", open.size(), is(0));
+            Assert.assertThat("(After Close) Open Sessions.size", open.size(), is(0));
         }
         finally
         {

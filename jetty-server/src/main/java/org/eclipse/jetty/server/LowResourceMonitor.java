@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,11 +37,14 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 
-/* ------------------------------------------------------------ */
-/** A monitor for low resources
- * <p>An instance of this class will monitor all the connectors of a server (or a set of connectors
+/** 
+ * A monitor for low resources
+ * <p>
+ * An instance of this class will monitor all the connectors of a server (or a set of connectors
  * configured with {@link #setMonitoredConnectors(Collection)}) for a low resources state.
- * Low resources can be detected by:<ul>
+ * <p>
+ * Low resources can be detected by:
+ * <ul>
  * <li>{@link ThreadPool#isLowOnThreads()} if {@link Connector#getExecutor()} is
  * an instance of {@link ThreadPool} and {@link #setMonitorThreads(boolean)} is true.<li>
  * <li>If {@link #setMaxMemory(long)} is non zero then low resources is detected if the JVMs
@@ -50,14 +53,13 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * <li>If {@link #setMaxConnections(int)} is non zero then low resources is dected if the total number
  * of connections exceeds {@link #getMaxConnections()}</li>
  * </ul>
- * </p>
- * <p>Once low resources state is detected, the cause is logged and all existing connections returned
+ * <p>
+ * Once low resources state is detected, the cause is logged and all existing connections returned
  * by {@link Connector#getConnectedEndPoints()} have {@link EndPoint#setIdleTimeout(long)} set
  * to {@link #getLowResourcesIdleTimeout()}.  New connections are not affected, however if the low
  * resources state persists for more than {@link #getMaxLowResourcesTime()}, then the
  * {@link #getLowResourcesIdleTimeout()} to all connections again.  Once the low resources state is
  * cleared, the idle timeout is reset to the connector default given by {@link Connector#getIdleTimeout()}.
- * </p>
  */
 @ManagedObject ("Monitor for low resource conditions and activate a low resource mode if detected")
 public class LowResourceMonitor extends AbstractLifeCycle

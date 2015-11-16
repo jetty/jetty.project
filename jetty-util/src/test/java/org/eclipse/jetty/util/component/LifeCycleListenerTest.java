@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -71,7 +71,6 @@ public class LifeCycleListenerTest
 
         // check that the lifecycle's state is started
         assertTrue("The lifecycle state is not started",lifecycle.isStarted());
-
     }
 
     @Test
@@ -138,6 +137,7 @@ public class LifeCycleListenerTest
         lifecycle.stop();
         assertFalse("The stopping event occurred", listener.stopping);
     }
+    
     private static class TestLifeCycle extends AbstractLifeCycle
     {
         Exception cause;
@@ -168,11 +168,9 @@ public class LifeCycleListenerTest
         }
     }
 
-
-
     private class TestListener extends AbstractLifeCycle.AbstractLifeCycleListener
     {
-
+        @SuppressWarnings("unused")
         private boolean failure = false;
         private boolean started = false;
         private boolean starting = false;

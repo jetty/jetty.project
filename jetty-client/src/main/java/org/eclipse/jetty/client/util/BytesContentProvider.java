@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,13 +27,19 @@ import org.eclipse.jetty.client.api.ContentProvider;
 /**
  * A {@link ContentProvider} for byte arrays.
  */
-public class BytesContentProvider implements ContentProvider
+public class BytesContentProvider extends AbstractTypedContentProvider
 {
     private final byte[][] bytes;
     private final long length;
 
     public BytesContentProvider(byte[]... bytes)
     {
+        this("application/octet-stream", bytes);
+    }
+
+    public BytesContentProvider(String contentType, byte[]... bytes)
+    {
+        super(contentType);
         this.bytes = bytes;
         long length = 0;
         for (byte[] buffer : bytes)

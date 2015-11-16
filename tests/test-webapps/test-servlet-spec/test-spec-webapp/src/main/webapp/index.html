@@ -29,13 +29,21 @@ The source repository for this test is available <a href="http://git.eclipse.org
   <button type="submit">Test</button>
 </form>
 
-<h3>DeclaresRoles</h3>
+<h3>Test Static Content from Fragment </h3>
+<p>Click the link to test accessing static content from a fragment's META-INF/resources</p>
+<a href="fragmentA/index.html">Static resource from a fragment </a>
+
+<h3>Test Servlet from Fragment </h3>
+<p>Click the link to test accessing a servlet added from a fragment's web-fragment.xml</p>
+<a href="fragment">Servlet added by web-fragment.xml</a>
+
+<h3>Test DeclaresRoles</h3>
 <p>Login as user <code>admin</code> with password <code>admin</code> when prompted after clicking the button below to test @DeclareRoles annotation</p>
 <form action="role" method="post">
   <button type="submit">Test Role Annotations</button>
 </form>
 
-<h3>ServletSecurity</h3>
+<h3>Test Servlet Security</h3>
 <p>Login as user <code>admin</code> with password <code>admin</code> when prompted after clicking the button below to test @ServletSecurity annotation</p>
 <form action="sec/foo" method="post">
   <button type="submit">Test ServletSecurity Annotation</button>

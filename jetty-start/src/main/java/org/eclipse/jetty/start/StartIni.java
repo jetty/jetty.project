@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,16 +18,17 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * Simple Start .INI handler
  */
 public class StartIni extends TextFile
 {
-    public StartIni(File file) throws FileNotFoundException, IOException
+    private Path basedir;
+
+    public StartIni(Path file) throws IOException
     {
         super(file);
     }
@@ -41,12 +42,40 @@ public class StartIni extends TextFile
             String value = line.substring(idx + 1);
             for (String part : value.split(","))
             {
-                super.addUniqueLine("--module=" + part);
+                super.addUniqueLine("--module=" + expandBaseDir(part));
             }
         }
         else
         {
-            super.addUniqueLine(line);
+            super.addUniqueLine(expandBaseDir(line));
         }
+    }
+
+    private String expandBaseDir(String line)
+    {
+        if (line == null)
+        {
+            return line;
+        }
+
+        return line.replace("${start.basedir}",basedir.toString());
+    }
+
+    @Override
+    public void init()
+    {
+        try
+        {
+            basedir = getFile().getParent().toRealPath();
+        }
+        catch (IOException e)
+        {
+            basedir = getFile().getParent().normalize().toAbsolutePath();
+        }
+    }
+
+    public Path getBaseDir()
+    {
+        return basedir;
     }
 }

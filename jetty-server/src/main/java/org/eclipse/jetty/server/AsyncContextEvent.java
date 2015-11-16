@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,14 +29,14 @@ import javax.servlet.ServletResponse;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public class AsyncContextEvent extends AsyncEvent
+public class AsyncContextEvent extends AsyncEvent implements Runnable
 {
     final private Context _context;
     final private AsyncContextState _asyncContext;
-    volatile HttpChannelState _state;
+    private volatile HttpChannelState _state;
     private ServletContext _dispatchContext;
     private String _dispatchPath;
-    private Scheduler.Task _timeoutTask;
+    private volatile Scheduler.Task _timeoutTask;
     private Throwable _throwable;
 
     public AsyncContextEvent(Context context,AsyncContextState asyncContext, HttpChannelState state, Request baseRequest, ServletRequest request, ServletResponse response)
@@ -77,7 +77,7 @@ public class AsyncContextEvent extends AsyncEvent
     {
         return _context;
     }
-    
+
     public Context getContext()
     {
         return _context;
@@ -100,12 +100,12 @@ public class AsyncContextEvent extends AsyncEvent
     {
         return _dispatchPath;
     }
-    
+
     public void setTimeoutTask(Scheduler.Task task)
     {
         _timeoutTask = task;
     }
-    
+
     public void cancelTimeoutTask()
     {
         Scheduler.Task task=_timeoutTask;
@@ -119,36 +119,54 @@ public class AsyncContextEvent extends AsyncEvent
     {
         return _asyncContext;
     }
-    
+
     @Override
     public Throwable getThrowable()
     {
         return _throwable;
     }
-    
-    public void setThrowable(Throwable throwable)
-    {
-        _throwable=throwable;
-    }
+
+//    public void setThrowable(Throwable throwable)
+//    {
+//        _throwable=throwable;
+//    }
 
     public void setDispatchContext(ServletContext context)
     {
         _dispatchContext=context;
     }
-    
+
     public void setDispatchPath(String path)
     {
         _dispatchPath=path;
     }
-    
+
     public void completed()
     {
+        _timeoutTask=null;
         _asyncContext.reset();
     }
 
     public HttpChannelState getHttpChannelState()
     {
         return _state;
+    }
+
+    @Override
+    public void run()
+    {
+        Scheduler.Task task=_timeoutTask;
+        _timeoutTask=null;
+        if (task!=null)
+            _state.onTimeout();
+    }
+
+    public void addThrowable(Throwable e)
+    {
+        if (_throwable==null)
+            _throwable=e;
+        else
+            _throwable.addSuppressed(e);
     }
 
 }

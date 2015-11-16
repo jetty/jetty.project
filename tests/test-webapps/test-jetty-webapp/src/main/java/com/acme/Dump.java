@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -68,16 +68,16 @@ public class Dump extends HttpServlet
     @Override
     public void init(ServletConfig config) throws ServletException
     {
-    	super.init(config);
+        super.init(config);
 
-    	if (config.getInitParameter("unavailable")!=null && !fixed)
-    	{
+        if (config.getInitParameter("unavailable")!=null && !fixed)
+        {
 
-    	    fixed=true;
-    	    throw new UnavailableException("Unavailable test",Integer.parseInt(config.getInitParameter("unavailable")));
-    	}
+            fixed=true;
+            throw new UnavailableException("Unavailable test",Integer.parseInt(config.getInitParameter("unavailable")));
+        }
 
-    	_timer=new Timer(true);
+        _timer=new Timer(true);
     }
 
     /* ------------------------------------------------------------ */
@@ -118,7 +118,7 @@ public class Dump extends HttpServlet
             }
             catch(ServletException se)
             {
-            	se.printStackTrace();
+                getServletContext().log(se.toString());
             }
         }
 

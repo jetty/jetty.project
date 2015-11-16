@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -175,7 +175,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         // Look for extra resource
         @SuppressWarnings("unchecked")
         Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
-        if (resources!=null)
+        if (resources!=null && !resources.isEmpty())
         {
             Resource[] collection=new Resource[resources.size()+1];
             int i=0;
@@ -192,15 +192,17 @@ public class WebInfConfiguration extends AbstractConfiguration
         //if we're not persisting the temp dir contents delete it
         if (!context.isPersistTempDirectory())
         {
-            IO.delete(context.getTempDirectory());
+           IO.delete(context.getTempDirectory());
         }
         
         //if it wasn't explicitly configured by the user, then unset it
-        Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
+       Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
         if (tmpdirConfigured != null && !tmpdirConfigured) 
             context.setTempDirectory(null);
 
         //reset the base resource back to what it was before we did any unpacking of resources
+        if (context.getBaseResource() != null)
+            context.getBaseResource().close();
         context.setBaseResource(_preUnpackBaseResource);
     }
 
@@ -227,8 +229,8 @@ public class WebInfConfiguration extends AbstractConfiguration
      * Get a temporary directory in which to unpack the war etc etc.
      * The algorithm for determining this is to check these alternatives
      * in the order shown:
-     *
-     * <p>A. Try to use an explicit directory specifically for this webapp:</p>
+     * <p>
+     * A. Try to use an explicit directory specifically for this webapp:
      * <ol>
      * <li>
      * Iff an explicit directory is set for this webapp, use it. Set delete on
@@ -236,19 +238,21 @@ public class WebInfConfiguration extends AbstractConfiguration
      * </li>
      * <li>
      * Iff javax.servlet.context.tempdir context attribute is set for
-     * this webapp && exists && writeable, then use it. Set delete on exit depends on
+     * this webapp &amp;&amp; exists &amp;&amp; writeable, then use it. Set delete on exit depends on
      * value of persistTempDirectory.
      * </li>
      * </ol>
      *
-     * <p>B. Create a directory based on global settings. The new directory
-     * will be called "Jetty-"+host+"-"+port+"__"+context+"-"+virtualhost+"-"+randomdigits+".dir"
-     * </p>
+     * <p>
+     * B. Create a directory based on global settings. The new directory
+     * will be called <code>"Jetty-"+host+"-"+port+"__"+context+"-"+virtualhost+"-"+randomdigits+".dir"</code>
      * <p>
      * If the user has specified the context attribute org.eclipse.jetty.webapp.basetempdir, the
      * directory specified by this attribute will be the parent of the temp dir created. Otherwise,
-     * the parent dir is $(java.io.tmpdir). Set delete on exit depends on value of persistTempDirectory. 
-     * </p>
+     * the parent dir is <code>${java.io.tmpdir}</code>. Set delete on exit depends on value of persistTempDirectory.
+     *  
+     * @param context the context to resolve the temp directory from
+     * @throws Exception if unable to resolve the temp directory
      */
     public void resolveTempDirectory (WebAppContext context)
     throws Exception
@@ -360,7 +364,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         context.setTempDirectory(tmpDir);
     }
 
-    private void configureTempDirectory (File dir, WebAppContext context)
+    public void configureTempDirectory (File dir, WebAppContext context)
     {
         if (dir == null)
             throw new IllegalArgumentException("Null temp dir");
@@ -402,7 +406,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 throw new IllegalStateException("No resourceBase or war set for context");
 
             // Accept aliases for WAR files
-            if (web_app.getAlias() != null)
+            if (web_app.isAlias())
             {
                 LOG.debug(web_app + " anti-aliased to " + web_app.getAlias());
                 web_app = context.newResource(web_app.getAlias());
@@ -546,18 +550,18 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
     }
 
-
-
-
     /**
      * Create a canonical name for a webapp temp directory.
+     * <p>
      * The form of the name is:
-     *  <code>"jetty-"+host+"-"+port+"-"+resourceBase+"-_"+context+"-"+virtualhost+"-"+randomdigits+".dir"</code>
+     * 
+     * <pre>"jetty-"+host+"-"+port+"-"+resourceBase+"-_"+context+"-"+virtualhost+"-"+randomdigits+".dir"</pre>
      *
      *  host and port uniquely identify the server
      *  context and virtual host uniquely identify the webapp
      *  randomdigits ensure every tmp directory is unique
      *  
+     * @param context the context to get the canonical name from 
      * @return the canonical name for the webapp temp directory
      */
     public static String getCanonicalNameForWebAppTmpDir (WebAppContext context)
@@ -597,7 +601,6 @@ public class WebInfConfiguration extends AbstractConfiguration
                 canonicalName.append("-");
             }
         }
-
 
         //Resource  base
         try
@@ -678,9 +681,9 @@ public class WebInfConfiguration extends AbstractConfiguration
     /**
      * Look for jars that should be treated as if they are in WEB-INF/lib
      * 
-     * @param context
+     * @param context the context to find the jars in
      * @return the list of jar resources found within context
-     * @throws Exception
+     * @throws Exception if unable to find the jars
      */
     protected List<Resource> findJars (WebAppContext context)
     throws Exception
@@ -696,11 +699,11 @@ public class WebInfConfiguration extends AbstractConfiguration
     }
     
     /**
-     *  Look for jars in WEB-INF/lib
+     * Look for jars in <code>WEB-INF/lib</code>
      *  
-     * @param context
-     * @return
-     * @throws Exception
+     * @param context the context to find the lib jars in
+     * @return the list of jars as {@link Resource}
+     * @throws Exception if unable to scan for lib jars
      */
     protected List<Resource> findWebInfLibJars(WebAppContext context)
     throws Exception
@@ -741,9 +744,9 @@ public class WebInfConfiguration extends AbstractConfiguration
     /**
      * Get jars from WebAppContext.getExtraClasspath as resources
      * 
-     * @param context
-     * @return
-     * @throws Exception
+     * @param context the context to find extra classpath jars in
+     * @return the list of Resources with the extra classpath, or null if not found
+     * @throws Exception if unable to find the extra classpath jars
      */
     protected List<Resource>  findExtraClasspathJars(WebAppContext context)
     throws Exception
@@ -769,11 +772,11 @@ public class WebInfConfiguration extends AbstractConfiguration
     }
     
     /**
-     * Get WEB-INF/classes dir
+     * Get <code>WEB-INF/classes</code> dir
      * 
-     * @param context
-     * @return
-     * @throws Exception
+     * @param context the context to look for the <code>WEB-INF/classes</code> directory
+     * @return the Resource for the <code>WEB-INF/classes</code> directory
+     * @throws Exception if unable to find the <code>WEB-INF/classes</code> directory
      */
     protected Resource findWebInfClassesDir (WebAppContext context)
     throws Exception
@@ -798,9 +801,9 @@ public class WebInfConfiguration extends AbstractConfiguration
     /**
      * Get class dirs from WebAppContext.getExtraClasspath as resources
      * 
-     * @param context
-     * @return
-     * @throws Exception
+     * @param context the context to look for extra classpaths in
+     * @return the list of Resources to the extra classpath 
+     * @throws Exception if unable to find the extra classpaths
      */
     protected List<Resource>  findExtraClasspathDirs(WebAppContext context)
     throws Exception

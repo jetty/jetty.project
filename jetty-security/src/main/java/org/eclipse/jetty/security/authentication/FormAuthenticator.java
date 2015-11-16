@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,7 +42,6 @@ import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
@@ -65,8 +64,6 @@ import org.eclipse.jetty.util.security.Constraint;
  * to the /j_security_check URI within the context.  FormAuthentication uses
  * {@link SessionAuthentication} to wrap Authentication results so that they
  * are  associated with the session.</p>
- *
- *
  */
 public class FormAuthenticator extends LoginAuthenticator
 {
@@ -110,7 +107,7 @@ public class FormAuthenticator extends LoginAuthenticator
      * be remembered. If false, only the first uri that leads to a login
      * page redirect is remembered.
      * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=379909
-     * @param alwaysSave
+     * @param alwaysSave true to always save the uri
      */
     public void setAlwaysSaveUri (boolean alwaysSave)
     {
@@ -236,9 +233,8 @@ public class FormAuthenticator extends LoginAuthenticator
         
         //restore the original request's method on this request
         if (LOG.isDebugEnabled()) LOG.debug("Restoring original method {} for {} with method {}", method, juri,httpRequest.getMethod());
-        Request base_request = HttpChannel.getCurrentHttpChannel().getRequest();
-        HttpMethod m = HttpMethod.fromString(method);
-        base_request.setMethod(m,m.asString());
+        Request base_request = Request.getBaseRequest(request);
+        base_request.setMethod(method);
     }
 
     /* ------------------------------------------------------------ */
@@ -247,6 +243,9 @@ public class FormAuthenticator extends LoginAuthenticator
     {
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
+        Request base_request = Request.getBaseRequest(request);
+        Response base_response = base_request.getResponse();
+        
         String uri = request.getRequestURI();
         if (uri==null)
             uri=URIUtil.SLASH;
@@ -291,8 +290,6 @@ public class FormAuthenticator extends LoginAuthenticator
                     LOG.debug("authenticated {}->{}",form_auth,nuri);
 
                     response.setContentLength(0);
-                    Response base_response = HttpChannel.getCurrentHttpChannel().getResponse();
-                    Request base_request = HttpChannel.getCurrentHttpChannel().getRequest();
                     int redirectCode = (base_request.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
                     base_response.sendRedirect(redirectCode, response.encodeRedirectURL(nuri));
                     return form_auth;
@@ -318,8 +315,6 @@ public class FormAuthenticator extends LoginAuthenticator
                 else
                 {
                     LOG.debug("auth failed {}->{}",username,_formErrorPage);
-                    Response base_response = HttpChannel.getCurrentHttpChannel().getResponse();
-                    Request base_request = HttpChannel.getCurrentHttpChannel().getRequest();
                     int redirectCode = (base_request.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
                     base_response.sendRedirect(redirectCode, response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),_formErrorPage)));
                 }
@@ -359,8 +354,7 @@ public class FormAuthenticator extends LoginAuthenticator
                                 if (j_post!=null)
                                 {
                                     LOG.debug("auth rePOST {}->{}",authentication,j_uri);
-                                    Request base_request = HttpChannel.getCurrentHttpChannel().getRequest();
-                                    base_request.setParameters(j_post);
+                                    base_request.setContentParameters(j_post);
                                 }
                                 session.removeAttribute(__J_URI);
                                 session.removeAttribute(__J_METHOD);
@@ -394,9 +388,9 @@ public class FormAuthenticator extends LoginAuthenticator
 
                     if (MimeTypes.Type.FORM_ENCODED.is(req.getContentType()) && HttpMethod.POST.is(request.getMethod()))
                     {
-                        Request base_request = (req instanceof Request)?(Request)req:HttpChannel.getCurrentHttpChannel().getRequest();
-                        base_request.extractParameters();
-                        session.setAttribute(__J_POST, new MultiMap<String>(base_request.getParameters()));
+                        MultiMap<String> formParameters = new MultiMap<>();
+                        base_request.extractFormParameters(formParameters);
+                        session.setAttribute(__J_POST, formParameters);
                     }
                 }
             }
@@ -413,8 +407,6 @@ public class FormAuthenticator extends LoginAuthenticator
             else
             {
                 LOG.debug("challenge {}->{}",session.getId(),_formLoginPage);
-                Response base_response = HttpChannel.getCurrentHttpChannel().getResponse();
-                Request base_request = HttpChannel.getCurrentHttpChannel().getRequest();
                 int redirectCode = (base_request.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
                 base_response.sendRedirect(redirectCode, response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),_formLoginPage)));
             }

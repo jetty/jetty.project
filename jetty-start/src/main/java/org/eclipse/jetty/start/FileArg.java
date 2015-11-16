@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,24 +20,40 @@ package org.eclipse.jetty.start;
 
 public class FileArg
 {
-    public String uri;
-    public String location;
-
-    public FileArg(String uriLocation)
+    public final String moduleName;
+    public final String uri;
+    public final String location;
+    
+    public FileArg(final Module module, final String uriLocation)
     {
-        String parts[] = uriLocation.split(":",3);
-        if (parts.length == 3)
+        this(module == null?(String)null:module.getName(),uriLocation);
+    }
+    
+    public FileArg(final String uriLocation)
+    {
+        this((String)null,uriLocation);
+    }
+    
+    private FileArg(final String moduleName, final String uriLocation)
+    {
+        this.moduleName = moduleName;
+        String parts[] = uriLocation.split("\\|",3);
+        if (parts.length > 2)
         {
-            if (!"http".equalsIgnoreCase(parts[0]))
-            {
-                throw new IllegalArgumentException("Download only supports http protocol");
-            }
-            if (!parts[1].startsWith("//"))
-            {
-                throw new IllegalArgumentException("Download URI invalid: " + uriLocation);
-            }
-            this.uri = String.format("%s:%s",parts[0],parts[1]);
-            this.location = parts[2];
+            StringBuilder err = new StringBuilder();
+            final String LN = System.lineSeparator();
+            err.append("Unrecognized [file] argument: ").append(uriLocation);
+            err.append(LN).append("Valid Syntaxes: ");
+            err.append(LN).append("          <relative-path> - eg: resources/");
+            err.append(LN).append(" or       <absolute-path> - eg: /var/run/jetty.pid");
+            err.append(LN).append(" or <uri>|<relative-path> - eg: http://machine/my.conf|resources/my.conf");
+            err.append(LN).append(" or <uri>|<absolute-path> - eg: http://machine/glob.dat|/opt/run/glob.dat");
+            throw new IllegalArgumentException(err.toString());
+        }
+        if (parts.length == 2)
+        {
+            this.uri = parts[0];
+            this.location = parts[1];
         }
         else
         {
@@ -45,7 +61,7 @@ public class FileArg
             this.location = uriLocation;
         }
     }
-
+    
     @Override
     public boolean equals(Object obj)
     {

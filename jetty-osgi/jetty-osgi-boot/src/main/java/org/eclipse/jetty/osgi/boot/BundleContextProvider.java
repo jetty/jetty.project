@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,28 +33,20 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 
-
-
 /**
  * BundleContextProvider
- *
+ * <p>
  * Handles deploying OSGi bundles that define a context xml file for configuring them.
- * 
- *
  */
 public class BundleContextProvider extends AbstractContextProvider implements BundleProvider
 {    
     private static final Logger LOG = Log.getLogger(AbstractContextProvider.class);
-    
 
     private Map<String, App> _appMap = new HashMap<String, App>();
     
     private Map<Bundle, List<App>> _bundleMap = new HashMap<Bundle, List<App>>();
     
     private ServiceRegistration _serviceRegForBundles;
-    
-
-    
   
     /* ------------------------------------------------------------ */
     public BundleContextProvider(ServerInstanceWrapper wrapper)
@@ -96,16 +88,18 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
 
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param bundle
-     * @param contextFiles
-     * @return
-     */
     public boolean bundleAdded (Bundle bundle) throws Exception
     {
         if (bundle == null)
             return false;
 
+        //If the bundle defines a Web-ContextPath then its probably a webapp and the BundleWebAppProvider should deploy it
+        if ((String)bundle.getHeaders().get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) != null)
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("BundleContextProvider ignoring bundle {} with {} set", bundle.getSymbolicName(), OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
+            return false;
+        }
+        
         String contextFiles  = (String)bundle.getHeaders().get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
         if (contextFiles == null)
             contextFiles = (String)bundle.getHeaders().get(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH);
@@ -113,11 +107,12 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         if (contextFiles == null)
             return false;
         
+        
         boolean added = false;
         //bundle defines JETTY_CONTEXT_FILE_PATH header,
         //a comma separated list of context xml files that each define a ContextHandler
         //TODO: (could be WebAppContexts)       
-        String[] tmp = contextFiles.split(",;");
+        String[] tmp = contextFiles.split("[,;]");
         for (String contextFile : tmp)
         {
             String originId = bundle.getSymbolicName() + "-" + bundle.getVersion().toString() + "-"+contextFile;
@@ -141,8 +136,8 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
     /* ------------------------------------------------------------ */
     /** 
      * Bundle has been removed. If it was a context we deployed, undeploy it.
-     * @param bundle
      * 
+     * @param bundle the bundle
      * @return true if this was a context we had deployed, false otherwise
      */
     public boolean bundleRemoved (Bundle bundle) throws Exception

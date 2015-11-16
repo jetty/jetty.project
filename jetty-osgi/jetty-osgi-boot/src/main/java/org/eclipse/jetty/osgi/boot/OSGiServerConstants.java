@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,6 +30,7 @@ public class OSGiServerConstants
      * configuration.
      */
     public static final String JETTY_HOME = "jetty.home";
+    public static final String JETTY_BASE = "jetty.base";
 
     /**
      * System property to point to a bundle that embeds a jetty configuration
@@ -42,21 +43,20 @@ public class OSGiServerConstants
      * Usual system property used as the hostname for a typical jetty
      * configuration.
      */
-    public static final String JETTY_HOST = "jetty.host";
+    public static final String JETTY_HOST = "jetty.http.host";
 
     /**
      * Usual system property used as the port for http for a typical jetty
      * configuration.
      */
-    public static final String JETTY_PORT = "jetty.port";
+    public static final String JETTY_PORT = "jetty.http.port";
 
     /**
      * Usual system property used as the port for https for a typical jetty
      * configuration.
      */
-    public static final String JETTY_PORT_SSL = "jetty.port.ssl";
-    
-    
+    public static final String JETTY_PORT_SSL = "jetty.ssl.port";
+
     //for managed jetty instances, name of the configuration parameters
     /**
      * PID of the jetty servers's ManagedFactory
@@ -85,5 +85,4 @@ public class OSGiServerConstants
      * List of URLs to the folders where the legacy J2EE shared libraries are stored aka lib/ext, lib/jsp etc.
      */
     public static final String MANAGED_JETTY_SHARED_LIB_FOLDER_URLS = "managedJettySharedLibFolderUrls";
-    
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
@@ -57,12 +56,6 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.eclipse.jetty.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest,
-     * javax.servlet.http.HttpServletResponse)
-     */
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
@@ -71,25 +64,24 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     }
 
     /* ------------------------------------------------------------ */
-
     /**
      * This method will add _query to the requests's queryString and also combine it with existing queryStrings in
      * the request. However it won't take care for duplicate. E.g. if request.getQueryString contains a parameter
-     * "param1 = true" and _query will contain "param1=false" the result will be param1=true&param1=false.
+     * <code>param1 = true</code> and _query will contain <code>param1=false</code> the result will be <code>param1=true&amp;param1=false</code>.
      * To cover this use case some more complex pattern matching is necessary. We can implement this if there's use
      * cases.
      *
-     * @param request
-     * @param oldTarget
-     * @param newTarget
-     * @throws IOException
+     * @param request the request
+     * @param oldURI the old URI
+     * @param newURI the new URI
+     * @throws IOException if unable to apply the URI
      */
     @Override
-    public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
+    public void applyURI(Request request, String oldURI, String newURI) throws IOException
     {
         if (_query == null)
         {
-            request.setRequestURI(newTarget);
+            request.setURIPathQuery(newURI);
         }
         else
         {
@@ -98,9 +90,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
                 queryString = queryString + "&" + _query;
             else
                 queryString = _query;
-            HttpURI uri = new HttpURI(newTarget + "?" + queryString);
-            request.setUri(uri);
-            request.setRequestURI(newTarget);
+            request.setURIPathQuery(newURI);
             request.setQueryString(queryString);
         }
     }

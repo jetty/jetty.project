@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
@@ -73,9 +74,9 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
 
-    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id, SessionListener... sessionListeners)
+    public JsrSession(ClientContainer container, String id, URI requestURI, EventDriver websocket, LogicalConnection connection, SessionListener... sessionListeners)
     {
-        super(requestURI, websocket, connection, sessionListeners);
+        super(container, requestURI, websocket, connection, sessionListeners);
         if (!(websocket instanceof AbstractJsrEventDriver))
         {
             throw new IllegalArgumentException("Cannot use, not a JSR WebSocket: " + websocket);
@@ -85,8 +86,8 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         this.metadata = jsr.getMetadata();
         this.container = container;
         this.id = id;
-        this.decoderFactory = new DecoderFactory(metadata.getDecoders(),container.getDecoderFactory());
-        this.encoderFactory = new EncoderFactory(metadata.getEncoders(),container.getEncoderFactory());
+        this.decoderFactory = new DecoderFactory(this,metadata.getDecoders(),container.getDecoderFactory());
+        this.encoderFactory = new EncoderFactory(this,metadata.getEncoders(),container.getEncoderFactory());
         this.messageHandlerFactory = new MessageHandlerFactory();
         this.wrappers = new MessageHandlerWrapper[MessageType.values().length];
         this.messageHandlerSet = new HashSet<>();

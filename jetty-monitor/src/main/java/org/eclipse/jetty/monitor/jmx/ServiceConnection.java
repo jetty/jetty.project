@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -54,7 +54,7 @@ public class ServiceConnection
     /**
      * Construct a loopback connection to an internal server
      * 
-     * @throws IOException
+     * @throws IOException if unable to construct service connection
      */
     public ServiceConnection()
         throws IOException
@@ -67,7 +67,7 @@ public class ServiceConnection
      * Construct a connection to specified server
      * 
      * @param url URL of JMX server
-     * @throws IOException
+     * @throws IOException if unable to construct service connection
      */
     public ServiceConnection(String url)
         throws IOException
@@ -82,7 +82,7 @@ public class ServiceConnection
      */
     public String getServiceUrl()
     {
-    	return _serviceUrl;
+        return _serviceUrl;
     }
     
     /* ------------------------------------------------------------ */

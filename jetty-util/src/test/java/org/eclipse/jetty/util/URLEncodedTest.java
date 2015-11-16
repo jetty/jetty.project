@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -165,9 +165,9 @@ public class URLEncodedTest
         assertEquals("encoded param size",1, url_encoded.size());
         assertEquals("encoded get", "xx\ufffdyy", url_encoded.getString("Name15"));
 
-        byte[] bad="Name=%FF%FF%FF".getBytes(StandardCharsets.UTF_8);
+        String bad="Name=%FF%FF%FF";
         MultiMap<String> map = new MultiMap<String>();
-        UrlEncoded.decodeUtf8To(bad,0,bad.length,map);
+        UrlEncoded.decodeUtf8To(bad,map);
         assertEquals("encoded param size",1, map.size());
         assertEquals("encoded get", "\ufffd\ufffd\ufffd", map.getString("Name"));
         
@@ -199,7 +199,7 @@ public class URLEncodedTest
     /* -------------------------------------------------------------- */
     @Test
     public void testUrlEncodedStream()
-    	throws Exception
+        throws Exception
     {
         String [][] charsets = new String[][]
         {
@@ -214,7 +214,7 @@ public class URLEncodedTest
         {
             ByteArrayInputStream in = new ByteArrayInputStream(("name\n=value+"+charsets[i][2]+"&name1=&name2&n\u00e3me3=value+3").getBytes(charsets[i][0]));
             MultiMap<String> m = new MultiMap<>();
-            UrlEncoded.decodeTo(in, m, charsets[i][1]==null?null:Charset.forName(charsets[i][1]), -1,-1);
+            UrlEncoded.decodeTo(in, m, charsets[i][1]==null?null:Charset.forName(charsets[i][1]),-1,-1);
             assertEquals(charsets[i][1]+" stream length",4,m.size());
             assertEquals(charsets[i][1]+" stream name\\n","value 0",m.getString("name\n"));
             assertEquals(charsets[i][1]+" stream name1","",m.getString("name1"));
@@ -227,7 +227,7 @@ public class URLEncodedTest
         {
             ByteArrayInputStream in2 = new ByteArrayInputStream("name=%83e%83X%83g".getBytes(StandardCharsets.ISO_8859_1));
             MultiMap<String> m2 = new MultiMap<>();
-            UrlEncoded.decodeTo(in2, m2, Charset.forName("Shift_JIS"), -1,-1);
+            UrlEncoded.decodeTo(in2, m2, Charset.forName("Shift_JIS"),-1,-1);
             assertEquals("stream length",1,m2.size());
             assertEquals("stream name","\u30c6\u30b9\u30c8",m2.getString("name"));
         }
@@ -279,12 +279,12 @@ public class URLEncodedTest
 
         MultiMap<String> map = new MultiMap<>();
         UrlEncoded.LOG.info("EXPECT 4 Not Valid UTF8 warnings...");
-        UrlEncoded.decodeUtf8To(query.getBytes(StandardCharsets.ISO_8859_1),0,query.length(),map);
+        UrlEncoded.decodeUtf8To(query,0,query.length(),map);
         assertEquals("X"+Utf8Appendable.REPLACEMENT+Utf8Appendable.REPLACEMENT+"Z",map.getValue("name",0));
 
         map.clear();
 
-        UrlEncoded.decodeUtf8To(new ByteArrayInputStream(query.getBytes(StandardCharsets.ISO_8859_1)),map,100,2);
+        UrlEncoded.decodeUtf8To(new ByteArrayInputStream(query.getBytes(StandardCharsets.ISO_8859_1)),map,100,-1);
         assertEquals("X"+Utf8Appendable.REPLACEMENT+Utf8Appendable.REPLACEMENT+"Z",map.getValue("name",0));
     }
 }

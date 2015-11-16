@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,6 @@ import java.util.NoSuchElementException;
  * Provide some consistent Http header value and Extension configuration parameter quoting support.
  * <p>
  * While QuotedStringTokenizer exists in jetty-util, and works great with http header values, using it in websocket-api is undesired.
- * <p>
  * <ul>
  * <li>Using QuotedStringTokenizer would introduce a dependency to jetty-util that would need to be exposed via the WebAppContext classloader</li>
  * <li>ABNF defined extension parameter parsing requirements of RFC-6455 (WebSocket) ABNF, is slightly different than the ABNF parsing defined in RFC-2616
@@ -47,8 +46,6 @@ public class QuoteUtil
             QUOTE_SINGLE,
             QUOTE_DOUBLE
         }
-
-        private static final boolean DEBUG = false;
 
         private final String input;
         private final String delims;
@@ -81,14 +78,6 @@ public class QuoteUtil
                     token.append(c);
                     hasToken = true;
                 }
-            }
-        }
-
-        private void debug(String format, Object... args)
-        {
-            if (DEBUG)
-            {
-                System.out.printf(format,args);
             }
         }
 
@@ -134,7 +123,7 @@ public class QuoteUtil
                     {
                         if (delims.indexOf(c) >= 0)
                         {
-                            debug("hasNext/t: %b [%s]%n",hasToken,token);
+                            // System.out.printf("hasNext/t: %b [%s]%n",hasToken,token);
                             return hasToken;
                         }
                         else if (c == '\'')
@@ -193,10 +182,9 @@ public class QuoteUtil
                         break;
                     }
                 }
-                debug("%s <%s> : [%s]%n",state,c,token);
+                // System.out.printf("%s <%s> : [%s]%n",state,c,token);
             }
-
-            debug("hasNext/e: %b [%s]%n",hasToken,token);
+            // System.out.printf("hasNext/e: %b [%s]%n",hasToken,token);
             return hasToken;
         }
 
@@ -345,8 +333,16 @@ public class QuoteUtil
      */
     public static void quoteIfNeeded(StringBuilder buf, String str, String delim)
     {
+        if (str == null)
+        {
+            return;
+        }
         // check for delimiters in input string
         int len = str.length();
+        if (len == 0)
+        {
+            return;
+        }
         int ch;
         for (int i = 0; i < len; i++)
         {

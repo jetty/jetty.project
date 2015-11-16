@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,9 @@ import java.util.List;
 
 import javax.websocket.DeploymentException;
 
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.decoders.PrimitiveDecoderMetadataSet;
 import org.eclipse.jetty.websocket.jsr356.handlers.ByteArrayPartialHandler;
 import org.eclipse.jetty.websocket.jsr356.handlers.StringPartialHandler;
@@ -44,9 +47,11 @@ public class MessageHandlerFactoryTest
     @Before
     public void init() throws DeploymentException
     {
-        DecoderFactory primitivesFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE);
+        WebSocketContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+        
+        DecoderFactory primitivesFactory = new DecoderFactory(containerScope,PrimitiveDecoderMetadataSet.INSTANCE);
         metadatas = new DecoderMetadataSet();
-        decoders = new DecoderFactory(metadatas,primitivesFactory);
+        decoders = new DecoderFactory(containerScope,metadatas,primitivesFactory);
         factory = new MessageHandlerFactory();
     }
 

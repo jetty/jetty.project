@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.start;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.text.CollationKey;
 import java.text.Collator;
 import java.util.Comparator;
@@ -28,6 +29,19 @@ import java.util.Comparator;
  */
 public class NaturalSort
 {
+    public static class Paths implements Comparator<Path>
+    {
+        private final Collator collator = Collator.getInstance();
+
+        @Override
+        public int compare(Path o1, Path o2)
+        {
+            CollationKey key1 = collator.getCollationKey(o1.toString());
+            CollationKey key2 = collator.getCollationKey(o2.toString());
+            return key1.compareTo(key2);
+        }
+    }
+
     public static class Files implements Comparator<File>
     {
         private final Collator collator = Collator.getInstance();

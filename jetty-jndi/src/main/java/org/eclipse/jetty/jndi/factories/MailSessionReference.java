@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -92,17 +92,8 @@ public class MailSessionReference extends Reference implements ObjectFactory
         {
             this.password = password;
         }
-
-
     };
 
-
-
-
-
-    /**
-     *
-     */
     public MailSessionReference()
     {
        super ("javax.mail.Session", MailSessionReference.class.getName(), null);
@@ -117,7 +108,7 @@ public class MailSessionReference extends Reference implements ObjectFactory
      * @param arg2 not used
      * @param arg3 not used
      * @return the object found
-     * @throws Exception
+     * @throws Exception if unable to get object instance
      */
     public Object getObjectInstance(Object ref, Name arg1, Context arg2, Hashtable arg3) throws Exception
     {

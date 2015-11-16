@@ -20,7 +20,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.1.3-SNAPSHOT</version>
+    <version>9.4.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -28,6 +28,9 @@
   <artifactId>test-proxy-webapp</artifactId>
   <name>Test :: Jetty Proxy Webapp</name>
   <packaging>war</packaging>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>
@@ -83,16 +86,28 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-server</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-server</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-annotations</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>javax.servlet.jsp</groupId>
       <artifactId>jsp-api</artifactId>
       <version>2.1</version>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-http-server</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>

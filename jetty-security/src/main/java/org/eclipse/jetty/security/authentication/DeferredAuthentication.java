@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -140,7 +140,7 @@ public class DeferredAuthentication implements Authentication.Deferred
 
     /* ------------------------------------------------------------ */
     /**
-     * @param response
+     * @param response the response
      * @return true if this response is from a deferred call to {@link #authenticate(ServletRequest)}
      */
     public static boolean isDeferred(HttpServletResponse response)
@@ -331,28 +331,28 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
 
         @Override
-	public Collection<String> getHeaderNames()
-	{
-	    return Collections.emptyList();
-	}
-
-	@Override
-	public String getHeader(String arg0)
-	{
-	    return null;
-	}
-
-	@Override
-	public Collection<String> getHeaders(String arg0)
-	{
+        public Collection<String> getHeaderNames()
+        {
             return Collections.emptyList();
-	}
+        }
 
-	@Override
-	public int getStatus()
-	{
-	    return 0;
-	}
+        @Override
+        public String getHeader(String arg0)
+        {
+            return null;
+        }
+
+        @Override
+        public Collection<String> getHeaders(String arg0)
+        {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public int getStatus()
+        {
+            return 0;
+        }
 
 
     };

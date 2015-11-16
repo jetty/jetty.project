@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -68,7 +71,7 @@ public class AsyncContextListenersTest
     @Test
     public void testListenerClearedOnSecondRequest() throws Exception
     {
-        final AtomicInteger completes = new AtomicInteger();
+        final AtomicReference<CountDownLatch> completes = new AtomicReference<>(new CountDownLatch(1));
         String path = "/path";
         prepare(path, new HttpServlet()
         {
@@ -86,7 +89,7 @@ public class AsyncContextListenersTest
                     @Override
                     public void onComplete(AsyncEvent event) throws IOException
                     {
-                        completes.incrementAndGet();
+                        completes.get().countDown();
                     }
 
                     @Override
@@ -118,23 +121,23 @@ public class AsyncContextListenersTest
             SimpleHttpParser parser = new SimpleHttpParser();
             SimpleHttpResponse response = parser.readResponse(reader);
             Assert.assertEquals("200", response.getCode());
-            Assert.assertEquals(1, completes.get());
+            completes.get().await(10,TimeUnit.SECONDS);
 
             // Send a second request
-            completes.set(0);
+            completes.set(new CountDownLatch(1));
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = parser.readResponse(reader);
             Assert.assertEquals("200", response.getCode());
-            Assert.assertEquals(1, completes.get());
+            completes.get().await(10,TimeUnit.SECONDS);
         }
     }
 
     @Test
     public void testListenerAddedFromListener() throws Exception
     {
-        final AtomicInteger completes = new AtomicInteger();
+        final AtomicReference<CountDownLatch> completes = new AtomicReference<>(new CountDownLatch(1));
         String path = "/path";
         prepare(path, new HttpServlet()
         {
@@ -157,7 +160,7 @@ public class AsyncContextListenersTest
                     @Override
                     public void onComplete(AsyncEvent event) throws IOException
                     {
-                        completes.incrementAndGet();
+                        completes.get().countDown();
                     }
 
                     @Override
@@ -189,22 +192,22 @@ public class AsyncContextListenersTest
             SimpleHttpParser parser = new SimpleHttpParser();
             SimpleHttpResponse response = parser.readResponse(reader);
             Assert.assertEquals("200", response.getCode());
-            Assert.assertEquals(1, completes.get());
+            completes.get().await(10,TimeUnit.SECONDS);
 
             // Send a second request
-            completes.set(0);
+            completes.set(new CountDownLatch(1));
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = parser.readResponse(reader);
             Assert.assertEquals("200", response.getCode());
-            Assert.assertEquals(1, completes.get());
+            completes.get().await(10,TimeUnit.SECONDS);
         }
     }
     @Test
     public void testAsyncDispatchAsyncCompletePreservesListener() throws Exception
     {
-        final AtomicInteger completes = new AtomicInteger();
+        final AtomicReference<CountDownLatch> completes = new AtomicReference<>(new CountDownLatch(1));
         final String path = "/path";
         prepare(path + "/*", new HttpServlet()
         {
@@ -226,7 +229,7 @@ public class AsyncContextListenersTest
                         @Override
                         public void onComplete(AsyncEvent event) throws IOException
                         {
-                            completes.incrementAndGet();
+                            completes.get().countDown();
                         }
 
                         @Override
@@ -267,16 +270,16 @@ public class AsyncContextListenersTest
             SimpleHttpParser parser = new SimpleHttpParser();
             SimpleHttpResponse response = parser.readResponse(reader);
             Assert.assertEquals("200", response.getCode());
-            Assert.assertEquals(1, completes.get());
+            completes.get().await(10,TimeUnit.SECONDS);
 
             // Send a second request
-            completes.set(0);
+            completes.set(new CountDownLatch(1));
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = parser.readResponse(reader);
             Assert.assertEquals("200", response.getCode());
-            Assert.assertEquals(1, completes.get());
+            completes.get().await(10,TimeUnit.SECONDS);
         }
     }
 }

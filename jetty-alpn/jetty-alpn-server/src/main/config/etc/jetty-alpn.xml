@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
+
+  <Call name="addConnectionFactory">
+    <Arg>
+      <New class="org.eclipse.jetty.server.SslConnectionFactory">
+        <Arg name="next">alpn</Arg>
+        <Arg name="sslContextFactory"><Ref refid="sslContextFactory"/></Arg>
+      </New>
+    </Arg>
+  </Call>
+  
+  <Call name="addConnectionFactory">
+    <Arg>
+      <New id="alpn" class="org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory">
+        <Arg type="String">
+          <Property name="jetty.alpn.protocols" deprecated="alpn.protocols" default="" />
+        </Arg>
+        <Set name="defaultProtocol">
+          <Property name="jetty.alpn.defaultProtocol" deprecated="alpn.defaultProtocol" />
+        </Set>
+      </New>
+    </Arg>
+  </Call>
+
+  <!-- ALPN debugging on System.err -->
+  <Set class="org.eclipse.jetty.alpn.ALPN" name="debug" type="boolean"><Property name="jetty.alpn.debug" default="false" /></Set>
+
+</Configure>
+

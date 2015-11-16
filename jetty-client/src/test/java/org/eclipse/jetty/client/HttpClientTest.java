@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,16 +19,22 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.channels.UnresolvedAddressException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,12 +43,15 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.GZIPOutputStream;
+import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -55,27 +64,33 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static java.nio.file.StandardOpenOption.CREATE;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
@@ -99,7 +114,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(200, response.getStatus());
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        ConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
         long start = System.nanoTime();
         HttpConnectionOverHTTP connection = null;
@@ -116,8 +131,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.stop();
 
         Assert.assertEquals(0, client.getDestinations().size());
-        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
-        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnectionCount());
         Assert.assertFalse(connection.getEndPoint().isOpen());
     }
 
@@ -165,6 +180,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
+        client.setConnectBlocking(true);
         ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
 
         Assert.assertNotNull(response);
@@ -277,6 +293,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         final String paramName = "a";
         final String paramValue = "\u20AC";
+        final String encodedParamValue = URLEncoder.encode(paramValue, "UTF-8");
         start(new AbstractHandler()
         {
             @Override
@@ -293,7 +310,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort() + "/path?" + paramName + "=" + paramValue);
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort() + "/path?" + paramName + "=" + encodedParamValue);
         ContentResponse response = client.newRequest(uri)
                 .method(HttpMethod.PUT)
                 .timeout(5, TimeUnit.SECONDS)
@@ -316,6 +333,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
+                consume(request.getInputStream(), true);
                 String value = request.getParameter(paramName);
                 if (paramValue.equals(value))
                 {
@@ -340,20 +358,24 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_POST_WithContent_NotifiesRequestContentListener() throws Exception
     {
-        final byte[] content = {0, 1, 2, 3};
-        start(new EmptyServerHandler());
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                consume(request.getInputStream(), true);
+            }
+        });
 
+        final byte[] content = {0, 1, 2, 3};
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
-                .onRequestContent(new Request.ContentListener()
+                .onRequestContent((request, buffer) ->
                 {
-                    @Override
-                    public void onContent(Request request, ByteBuffer buffer)
-                    {
-                        byte[] bytes = new byte[buffer.remaining()];
-                        buffer.get(bytes);
-                        if (!Arrays.equals(content, bytes))
-                            request.abort(new Exception());
-                    }
+                    byte[] bytes = new byte[buffer.remaining()];
+                    buffer.get(bytes);
+                    if (!Arrays.equals(content, bytes))
+                        request.abort(new Exception());
                 })
                 .content(new BytesContentProvider(content))
                 .timeout(5, TimeUnit.SECONDS)
@@ -366,20 +388,24 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_POST_WithContent_TracksProgress() throws Exception
     {
-        start(new EmptyServerHandler());
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                consume(request.getInputStream(), true);
+            }
+        });
 
         final AtomicInteger progress = new AtomicInteger();
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
-                .onRequestContent(new Request.ContentListener()
+                .onRequestContent((request, buffer) ->
                 {
-                    @Override
-                    public void onContent(Request request, ByteBuffer buffer)
-                    {
-                        byte[] bytes = new byte[buffer.remaining()];
-                        Assert.assertEquals(1, bytes.length);
-                        buffer.get(bytes);
-                        Assert.assertEquals(bytes[0], progress.getAndIncrement());
-                    }
+                    byte[] bytes = new byte[buffer.remaining()];
+                    Assert.assertEquals(1, bytes.length);
+                    buffer.get(bytes);
+                    Assert.assertEquals(bytes[0], progress.getAndIncrement());
                 })
                 .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{2}, new byte[]{3}, new byte[]{4}))
                 .timeout(5, TimeUnit.SECONDS)
@@ -401,19 +427,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final CountDownLatch successLatch = new CountDownLatch(2);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onRequestBegin(new Request.BeginListener()
+                .onRequestBegin(request ->
                 {
-                    @Override
-                    public void onBegin(Request request)
+                    try
                     {
-                        try
-                        {
-                            latch.await();
-                        }
-                        catch (InterruptedException x)
-                        {
-                            x.printStackTrace();
-                        }
+                        latch.await();
+                    }
+                    catch (InterruptedException x)
+                    {
+                        x.printStackTrace();
                     }
                 })
                 .send(new Response.Listener.Adapter()
@@ -428,14 +450,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onRequestQueued(new Request.QueuedListener()
-                {
-                    @Override
-                    public void onQueued(Request request)
-                    {
-                        latch.countDown();
-                    }
-                })
+                .onRequestQueued(request -> latch.countDown())
                 .send(new Response.Listener.Adapter()
                 {
                     @Override
@@ -449,7 +464,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Slow
     @Test
     public void test_QueuedRequest_IsSent_WhenPreviousRequestClosedConnection() throws Exception
     {
@@ -484,44 +498,32 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         latch.countDown();
                     }
                 })
-                .onResponseFailure(new Response.FailureListener()
-                {
-                    @Override
-                    public void onFailure(Response response, Throwable failure)
-                    {
-                        latch.countDown();
-                    }
-                })
+                .onResponseFailure((response, failure) -> latch.countDown())
                 .send(null);
 
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .path("/two")
-                .onResponseSuccess(new Response.SuccessListener()
+                .onResponseSuccess(response ->
                 {
-                    @Override
-                    public void onSuccess(Response response)
-                    {
-                        Assert.assertEquals(200, response.getStatus());
-                        latch.countDown();
-                    }
+                    Assert.assertEquals(200, response.getStatus());
+                    latch.countDown();
                 })
                 .send(null);
 
         Assert.assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
-    @Slow
     @Test
     public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete() throws Exception
     {
-        start(new EmptyServerHandler());
+        start(new RespondThenConsumeHandler());
 
         // Prepare a big file to upload
-        Path targetTestsDir = testdir.getEmptyDir().toPath();
+        Path targetTestsDir = testdir.getEmptyPathDir();
         Files.createDirectories(targetTestsDir);
         Path file = Paths.get(targetTestsDir.toString(), "http_client_conversation.big");
-        try (OutputStream output = Files.newOutputStream(file, CREATE))
+        try (OutputStream output = Files.newOutputStream(file, StandardOpenOption.CREATE))
         {
             byte[] kb = new byte[1024];
             for (int i = 0; i < 10 * 1024; ++i)
@@ -535,14 +537,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .file(file)
-                .onRequestSuccess(new Request.SuccessListener()
+                .onRequestSuccess(request ->
                 {
-                    @Override
-                    public void onSuccess(Request request)
-                    {
-                        requestTime.set(System.nanoTime());
-                        latch.countDown();
-                    }
+                    requestTime.set(System.nanoTime());
+                    latch.countDown();
                 })
                 .send(new Response.Listener.Adapter()
                 {
@@ -645,14 +643,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final int port = connector.getLocalPort();
         client.newRequest(host, port)
                 .scheme(scheme)
-                .onRequestBegin(new Request.BeginListener()
+                .onRequestBegin(request ->
                 {
-                    @Override
-                    public void onBegin(Request request)
-                    {
-                        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-                        destination.getConnectionPool().getActiveConnections().peek().close();
-                    }
+                    HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
+                    DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+                    connectionPool.getActiveConnections().iterator().next().close();
                 })
                 .send(new Response.Listener.Adapter()
                 {
@@ -664,32 +659,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-    }
-
-    @Test
-    public void test_GZIP_ContentEncoding() throws Exception
-    {
-        final byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-                response.setHeader("Content-Encoding", "gzip");
-                GZIPOutputStream gzipOutput = new GZIPOutputStream(response.getOutputStream());
-                gzipOutput.write(data);
-                gzipOutput.finish();
-            }
-        });
-
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
-
-        Assert.assertEquals(200, response.getStatus());
-        Assert.assertArrayEquals(data, response.getContent());
     }
 
     @Slow
@@ -770,20 +739,44 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onResponseHeader(new Response.HeaderListener()
-                {
-                    @Override
-                    public boolean onHeader(Response response, HttpField field)
-                    {
-                        return !field.getName().equals(headerName);
-                    }
-                })
+                .onResponseHeader((response1, field) -> !field.getName().equals(headerName))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertFalse(response.getHeaders().containsKey(headerName));
+    }
+
+    @Test
+    public void testAllHeadersDiscarded() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        int count = 10;
+        final CountDownLatch latch = new CountDownLatch(count);
+        for (int i = 0; i < count; ++i)
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .send(new Response.Listener.Adapter()
+                    {
+                        @Override
+                        public boolean onHeader(Response response, HttpField field)
+                        {
+                            return false;
+                        }
+
+                        @Override
+                        public void onComplete(Result result)
+                        {
+                            if (result.isSucceeded())
+                                latch.countDown();
+                        }
+                    });
+        }
+
+        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
     @Test
@@ -824,23 +817,68 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void testConnectThrowsUnresolvedAddressException() throws Exception
+    public void testConnectThrowsUnknownHostException() throws Exception
     {
         start(new EmptyServerHandler());
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("idontexist", 80)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        Assert.assertTrue(result.isFailed());
-                        Assert.assertTrue(result.getFailure() instanceof UnresolvedAddressException);
-                        latch.countDown();
-                    }
+                    Assert.assertTrue(result.isFailed());
+                    Throwable failure = result.getFailure();
+                    Assert.assertTrue(failure instanceof UnknownHostException);
+                    latch.countDown();
                 });
         Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testConnectHostWithMultipleAddresses() throws Exception
+    {
+        String host = "google.com";
+        try
+        {
+            // Likely that the DNS for google.com returns multiple addresses.
+            Assume.assumeTrue(InetAddress.getAllByName(host).length > 1);
+        }
+        catch (Throwable x)
+        {
+            Assume.assumeNoException(x);
+        }
+
+        startClient();
+        client.setFollowRedirects(false); // Avoid redirects from 80 to 443.
+        client.setSocketAddressResolver(new SocketAddressResolver.Async(client.getExecutor(), client.getScheduler(), client.getConnectTimeout())
+        {
+            @Override
+            public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
+            {
+                super.resolve(host, port, new Promise<List<InetSocketAddress>>()
+                {
+                    @Override
+                    public void succeeded(List<InetSocketAddress> result)
+                    {
+                        // Add as first address an invalid address so that we test
+                        // that the connect operation iterates over the addresses.
+                        result.add(0, new InetSocketAddress("idontexist", 80));
+                        promise.succeeded(result);
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        promise.failed(x);
+                    }
+                });
+            }
+        });
+
+        // Response code may be 200 or 302;
+        // if no exceptions the test passes.
+        client.newRequest(host, 80)
+                .header(HttpHeader.CONNECTION, "close")
+                .send();
     }
 
     @Test
@@ -869,7 +907,53 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
+                .header(HttpHeader.USER_AGENT, null)
                 .header(HttpHeader.USER_AGENT, userAgent)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void testUserAgentCanBeRemoved() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                ArrayList<String> userAgents = Collections.list(request.getHeaders("User-Agent"));
+                if ("/ua".equals(target))
+                    Assert.assertEquals(1, userAgents.size());
+                else
+                    Assert.assertEquals(0, userAgents.size());
+            }
+        });
+
+        // User agent not specified, use default.
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/ua")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+
+        // User agent explicitly removed.
+        response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .agent(null)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+
+        // User agent explicitly removed.
+        response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .header(HttpHeader.USER_AGENT, null)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
@@ -983,6 +1067,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
 
             @Override
+            public void onContent(Response response, ByteBuffer content, Callback callback)
+            {
+                // Should not be invoked
+                counter.incrementAndGet();
+            }
+
+            @Override
             public void onSuccess(Response response)
             {
                 counter.incrementAndGet();
@@ -1009,6 +1100,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .onResponseHeader(listener)
                 .onResponseHeaders(listener)
                 .onResponseContent(listener)
+                .onResponseContentAsync(listener)
                 .onResponseSuccess(listener)
                 .onResponseFailure(listener)
                 .send(listener);
@@ -1035,26 +1127,33 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        final AtomicInteger complete = new AtomicInteger();
+        final Exchanger<Response> ex = new Exchanger<>();
         BufferingResponseListener listener = new BufferingResponseListener()
         {
             @Override
             public void onComplete(Result result)
             {
-                complete.incrementAndGet();
+                try
+                {
+                    ex.exchange(result.getResponse());
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
             }
         };
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+
+        client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onResponseContent(listener)
-                .onComplete(listener)
-                .send();
+                .send(listener);
+
+        Response response = ex.exchange(null);
 
         Assert.assertEquals(200, response.getStatus());
-        Assert.assertEquals(1, complete.get());
         Assert.assertArrayEquals(content, listener.getContent());
-        Assert.assertArrayEquals(content, response.getContent());
+
     }
 
     @Test
@@ -1159,5 +1258,346 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(response.getHeaders().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString()));
+    }
+
+    @Test
+    public void testLongPollIsAbortedWhenClientIsStopped() throws Exception
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                request.startAsync();
+                latch.countDown();
+            }
+        });
+
+        final CountDownLatch completeLatch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .send(result ->
+                {
+                    if (result.isFailed())
+                        completeLatch.countDown();
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        // Stop the client, the complete listener must be invoked.
+        client.stop();
+
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testSmallContentDelimitedByEOFWithSlowRequestHTTP10() throws Exception
+    {
+        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 1024);
+    }
+
+    @Test
+    public void testBigContentDelimitedByEOFWithSlowRequestHTTP10() throws Exception
+    {
+        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 128 * 1024);
+    }
+
+    @Test
+    public void testSmallContentDelimitedByEOFWithSlowRequestHTTP11() throws Exception
+    {
+        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_1, 1024);
+    }
+
+    @Test
+    public void testBigContentDelimitedByEOFWithSlowRequestHTTP11() throws Exception
+    {
+        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_1, 128 * 1024);
+    }
+
+    private void testContentDelimitedByEOFWithSlowRequest(final HttpVersion version, int length) throws Exception
+    {
+        // This test is crafted in a way that the response completes before the request is fully written.
+        // With SSL, the response coming down will close the SSLEngine so it would not be possible to
+        // write the last chunk of the request content, and the request will be failed, failing also the
+        // test, which is not what we want.
+        // This is a limit of Java's SSL implementation that does not allow half closes.
+        Assume.assumeTrue(sslContextFactory == null);
+
+        final byte[] data = new byte[length];
+        new Random().nextBytes(data);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                // Send Connection: close to avoid that the server chunks the content with HTTP 1.1.
+                if (version.compareTo(HttpVersion.HTTP_1_0) > 0)
+                    response.setHeader("Connection", "close");
+                response.getOutputStream().write(data);
+            }
+        });
+
+        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0}));
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .version(version)
+                .content(content);
+        FutureResponseListener listener = new FutureResponseListener(request);
+        request.send(listener);
+        // Wait some time to simulate a slow request.
+        Thread.sleep(1000);
+        content.close();
+
+        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(data, response.getContent());
+    }
+
+    @Test
+    public void testRequestRetries() throws Exception
+    {
+        final int maxRetries = 3;
+        final AtomicInteger requests = new AtomicInteger();
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                int count = requests.incrementAndGet();
+                if (count == maxRetries)
+                    baseRequest.setHandled(true);
+                consume(request.getInputStream(), true);
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        new RetryListener(client, scheme, "localhost", connector.getLocalPort(), maxRetries)
+        {
+            @Override
+            protected void completed(Result result)
+            {
+                latch.countDown();
+            }
+        }.perform();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testCompleteNotInvokedUntilContentConsumed() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                ServletOutputStream output = response.getOutputStream();
+                output.write(new byte[1024]);
+            }
+        });
+
+        final AtomicReference<Callback> callbackRef = new AtomicReference<>();
+        final CountDownLatch contentLatch = new CountDownLatch(1);
+        final CountDownLatch completeLatch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onContent(Response response, ByteBuffer content, Callback callback)
+                    {
+                        // Do not notify the callback yet.
+                        callbackRef.set(callback);
+                        contentLatch.countDown();
+                    }
+
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isSucceeded())
+                            completeLatch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
+
+        // Make sure the complete event is not emitted.
+        Assert.assertFalse(completeLatch.await(1, TimeUnit.SECONDS));
+
+        // Consume the content.
+        callbackRef.get().succeeded();
+
+        // Now the complete event is emitted.
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testRequestSentOnlyAfterConnectionOpen() throws Exception
+    {
+        startServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+            }
+        });
+
+        final AtomicBoolean open = new AtomicBoolean();
+        client = new HttpClient(new HttpClientTransportOverHTTP()
+        {
+            @Override
+            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+            {
+                return new HttpConnectionOverHTTP(endPoint, destination, promise)
+                {
+                    @Override
+                    public void onOpen()
+                    {
+                        open.set(true);
+                        super.onOpen();
+                    }
+                };
+            }
+        }, sslContextFactory);
+        client.start();
+
+        final CountDownLatch latch = new CountDownLatch(2);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .onRequestBegin(request ->
+                {
+                    Assert.assertTrue(open.get());
+                    latch.countDown();
+                })
+                .send(result ->
+                {
+                    if (result.isSucceeded())
+                        latch.countDown();
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testCONNECTWithHTTP10() throws Exception
+    {
+        try (ServerSocket server = new ServerSocket(0))
+        {
+            startClient();
+
+            String host = "localhost";
+            int port = server.getLocalPort();
+
+            Request request = client.newRequest(host, port)
+                    .method(HttpMethod.CONNECT)
+                    .version(HttpVersion.HTTP_1_0);
+            FuturePromise<Connection> promise = new FuturePromise<>();
+            client.getDestination("http", host, port).newConnection(promise);
+            Connection connection = promise.get(5, TimeUnit.SECONDS);
+            FutureResponseListener listener = new FutureResponseListener(request);
+            connection.send(request, listener);
+
+            try (Socket socket = server.accept())
+            {
+                InputStream input = socket.getInputStream();
+                consume(input, false);
+
+                // HTTP/1.0 response, the client must not close the connection.
+                String httpResponse = "" +
+                        "HTTP/1.0 200 OK\r\n" +
+                        "\r\n";
+                OutputStream output = socket.getOutputStream();
+                output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+                Assert.assertEquals(200, response.getStatus());
+
+                // Test that I can send another request on the same connection.
+                request = client.newRequest(host, port);
+                listener = new FutureResponseListener(request);
+                connection.send(request, listener);
+
+                consume(input, false);
+
+                httpResponse = "" +
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n";
+                output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                listener.get(5, TimeUnit.SECONDS);
+            }
+        }
+    }
+
+    private void consume(InputStream input, boolean eof) throws IOException
+    {
+        int crlfs = 0;
+        while (true)
+        {
+            int read = input.read();
+            if (read == '\r' || read == '\n')
+                ++crlfs;
+            else
+                crlfs = 0;
+            if (!eof && crlfs == 4)
+                break;
+            if (read < 0)
+                break;
+        }
+    }
+
+    public static abstract class RetryListener implements Response.CompleteListener
+    {
+        private final HttpClient client;
+        private final String scheme;
+        private final String host;
+        private final int port;
+        private final int maxRetries;
+        private int retries;
+
+        public RetryListener(HttpClient client, String scheme, String host, int port, int maxRetries)
+        {
+            this.client = client;
+            this.scheme = scheme;
+            this.host = host;
+            this.port = port;
+            this.maxRetries = maxRetries;
+        }
+
+        protected abstract void completed(Result result);
+
+        @Override
+        public void onComplete(Result result)
+        {
+            if (retries > maxRetries || result.isSucceeded() && result.getResponse().getStatus() == 200)
+                completed(result);
+            else
+                retry();
+        }
+
+        private void retry()
+        {
+            ++retries;
+            perform();
+        }
+
+        public void perform()
+        {
+            client.newRequest(host, port)
+                    .scheme(scheme)
+                    .method("POST")
+                    .param("attempt", String.valueOf(retries))
+                    .content(new StringContentProvider("0123456789ABCDEF"))
+                    .send(this);
+        }
     }
 }

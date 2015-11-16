@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,9 +22,12 @@ import static org.hamcrest.Matchers.is;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
+import java.nio.file.Path;
 
+import org.eclipse.jetty.start.config.CommandLineConfigSource;
+import org.eclipse.jetty.start.config.ConfigSources;
+import org.eclipse.jetty.start.config.JettyBaseConfigSource;
+import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
@@ -33,30 +36,39 @@ import org.junit.Test;
 
 public class ModuleGraphWriterTest
 {
-    @SuppressWarnings("unused")
-    private final static List<String> TEST_SOURCE = Collections.singletonList("<test>");
-    
-    private StartArgs DEFAULT_ARGS = new StartArgs(new String[]{"jetty.version=TEST"}).parseCommandLine();
-
     @Rule
     public TestingDir testdir = new TestingDir();
 
     @Test
     public void testGenerate_NothingEnabled() throws IOException
     {
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        // Test Env
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyDir();
-        BaseHome basehome = new BaseHome(homeDir,baseDir);
+        String cmdLine[] = new String[] {"jetty.version=TEST"};
+        
+        // Configuration
+        CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
+        ConfigSources config = new ConfigSources();
+        config.add(cmdLineSource);
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        
+        // Initialize
+        BaseHome basehome = new BaseHome(config);
+        
+        StartArgs args = new StartArgs();
+        args.parse(config);
 
-        Modules modules = new Modules();
-        modules.registerAll(basehome, DEFAULT_ARGS);
-        modules.buildGraph();
+        Modules modules = new Modules(basehome, args);
+        modules.registerAll();
+        modules.sort();
 
-        File outputFile = new File(baseDir,"graph.dot");
+        Path outputFile = basehome.getBasePath("graph.dot");
 
         ModuleGraphWriter writer = new ModuleGraphWriter();
         writer.write(modules,outputFile);
 
-        Assert.assertThat("Output File Exists",outputFile.exists(),is(true));
+        Assert.assertThat("Output File Exists",FS.exists(outputFile),is(true));
     }
 }

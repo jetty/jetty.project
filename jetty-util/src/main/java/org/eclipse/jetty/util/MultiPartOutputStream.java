@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 
-/* ================================================================ */
 /** Handle a multipart MIME response.
  *
  * 
@@ -100,6 +99,8 @@ public class MultiPartOutputStream extends FilterOutputStream
     
     /* ------------------------------------------------------------ */
     /** Start creation of the next Content.
+     * @param contentType the content type of the part
+     * @throws IOException if unable to write the part
      */
     public void startPart(String contentType)
          throws IOException
@@ -118,6 +119,9 @@ public class MultiPartOutputStream extends FilterOutputStream
         
     /* ------------------------------------------------------------ */
     /** Start creation of the next Content.
+     * @param contentType the content type of the part
+     * @param headers the part headers
+     * @throws IOException if unable to write the part
      */
     public void startPart(String contentType, String[] headers)
          throws IOException

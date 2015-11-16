@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+ 
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addBean">
+    <Arg>
+      <New class="org.jminix.console.tool.StandaloneMiniConsole">
+        <Arg type="int"><Property name="jminix.port" default="8088" /></Arg>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.proxy;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
@@ -40,15 +42,19 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -158,21 +164,17 @@ public class ConnectHandler extends HandlerWrapper
     protected void doStart() throws Exception
     {
         if (executor == null)
-        {
-            setExecutor(getServer().getThreadPool());
-        }
+            executor = getServer().getThreadPool();
+
         if (scheduler == null)
-        {
-            setScheduler(new ScheduledExecutorScheduler());
-            addBean(getScheduler());
-        }
+            addBean(scheduler = new ScheduledExecutorScheduler());
+
         if (bufferPool == null)
-        {
-            setByteBufferPool(new MappedByteBufferPool());
-            addBean(getByteBufferPool());
-        }
+            addBean(bufferPool = new MappedByteBufferPool());
+
         addBean(selector = newSelectorManager());
         selector.setConnectTimeout(getConnectTimeout());
+
         super.doStart();
     }
 
@@ -187,17 +189,10 @@ public class ConnectHandler extends HandlerWrapper
         if (HttpMethod.CONNECT.is(request.getMethod()))
         {
             String serverAddress = request.getRequestURI();
-            LOG.debug("CONNECT request for {}", serverAddress);
-            try
-            {
-                handleConnect(baseRequest, request, response, serverAddress);
-            }
-            catch (Exception x)
-            {
-                // TODO
-                LOG.warn("ConnectHandler " + baseRequest.getUri() + " " + x);
-                LOG.debug(x);
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("CONNECT request for {}", serverAddress);
+
+            handleConnect(baseRequest, request, response, serverAddress);
         }
         else
         {
@@ -210,20 +205,21 @@ public class ConnectHandler extends HandlerWrapper
      * <p>CONNECT requests may have authentication headers such as {@code Proxy-Authorization}
      * that authenticate the client with the proxy.</p>
      *
-     * @param jettyRequest  Jetty-specific http request
+     * @param baseRequest  Jetty-specific http request
      * @param request       the http request
      * @param response      the http response
      * @param serverAddress the remote server address in the form {@code host:port}
      */
-    protected void handleConnect(Request jettyRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
+    protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
     {
-        jettyRequest.setHandled(true);
+        baseRequest.setHandled(true);
         try
         {
             boolean proceed = handleAuthentication(request, response, serverAddress);
             if (!proceed)
             {
-                LOG.debug("Missing proxy authentication");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Missing proxy authentication");
                 sendConnectResponse(request, response, HttpServletResponse.SC_PROXY_AUTHENTICATION_REQUIRED);
                 return;
             }
@@ -239,23 +235,46 @@ public class ConnectHandler extends HandlerWrapper
 
             if (!validateDestination(host, port))
             {
-                LOG.debug("Destination {}:{} forbidden", host, port);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Destination {}:{} forbidden", host, port);
                 sendConnectResponse(request, response, HttpServletResponse.SC_FORBIDDEN);
                 return;
             }
 
-            SocketChannel channel = SocketChannel.open();
-            channel.socket().setTcpNoDelay(true);
-            channel.configureBlocking(false);
-            InetSocketAddress address = new InetSocketAddress(host, port);
-            channel.connect(address);
+            HttpTransport transport = baseRequest.getHttpChannel().getHttpTransport();
+            // TODO Handle CONNECT over HTTP2!
+            if (!(transport instanceof HttpConnection))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("CONNECT not supported for {}", transport);
+                sendConnectResponse(request, response, HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
 
             AsyncContext asyncContext = request.startAsync();
             asyncContext.setTimeout(0);
 
-            LOG.debug("Connecting to {}", address);
-            ConnectContext connectContext = new ConnectContext(request, response, asyncContext, HttpConnection.getCurrentConnection());
-            selector.connect(channel, connectContext);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connecting to {}:{}", host, port);
+
+            connectToServer(request, host, port, new Promise<SocketChannel>()
+            {
+                @Override
+                public void succeeded(SocketChannel channel)
+                {
+                    ConnectContext connectContext = new ConnectContext(request, response, asyncContext, (HttpConnection)transport);
+                    if (channel.isConnected())
+                        selector.accept(channel, connectContext);
+                    else
+                        selector.connect(channel, connectContext);
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    onConnectFailure(request, response, asyncContext, x);
+                }
+            });
         }
         catch (Exception x)
         {
@@ -263,42 +282,78 @@ public class ConnectHandler extends HandlerWrapper
         }
     }
 
+    protected void connectToServer(HttpServletRequest request, String host, int port, Promise<SocketChannel> promise)
+    {
+        SocketChannel channel = null;
+        try
+        {
+            channel = SocketChannel.open();
+            channel.socket().setTcpNoDelay(true);
+            channel.configureBlocking(false);
+            InetSocketAddress address = newConnectAddress(host, port);
+            channel.connect(address);
+            promise.succeeded(channel);
+        }
+        catch (Throwable x)
+        {
+            close(channel);
+            promise.failed(x);
+        }
+    }
+
+    private void close(Closeable closeable)
+    {
+        try
+        {
+            if (closeable != null)
+                closeable.close();
+        }
+        catch (Throwable x)
+        {
+            LOG.ignore(x);
+        }
+    }
+
+    /**
+     * Creates the server address to connect to.
+     *
+     * @param host The host from the CONNECT request
+     * @param port The port from the CONNECT request
+     * @return The InetSocketAddress to connect to.
+     */
+    protected InetSocketAddress newConnectAddress(String host, int port)
+    {
+        return new InetSocketAddress(host, port);
+    }
+
     protected void onConnectSuccess(ConnectContext connectContext, UpstreamConnection upstreamConnection)
     {
-        HttpConnection httpConnection = connectContext.getHttpConnection();
-        ByteBuffer requestBuffer = httpConnection.getRequestBuffer();
-        ByteBuffer buffer = BufferUtil.EMPTY_BUFFER;
-        int remaining = requestBuffer.remaining();
-        if (remaining > 0)
-        {
-            buffer = bufferPool.acquire(remaining, requestBuffer.isDirect());
-            BufferUtil.flipToFill(buffer);
-            buffer.put(requestBuffer);
-            buffer.flip();
-        }
-
         ConcurrentMap<String, Object> context = connectContext.getContext();
         HttpServletRequest request = connectContext.getRequest();
         prepareContext(request, context);
 
+        HttpConnection httpConnection = connectContext.getHttpConnection();
         EndPoint downstreamEndPoint = httpConnection.getEndPoint();
-        DownstreamConnection downstreamConnection = newDownstreamConnection(downstreamEndPoint, context, buffer);
+        DownstreamConnection downstreamConnection = newDownstreamConnection(downstreamEndPoint, context);
         downstreamConnection.setInputBufferSize(getBufferSize());
 
         upstreamConnection.setConnection(downstreamConnection);
         downstreamConnection.setConnection(upstreamConnection);
-        LOG.debug("Connection setup completed: {}<->{}", downstreamConnection, upstreamConnection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Connection setup completed: {}<->{}", downstreamConnection, upstreamConnection);
 
         HttpServletResponse response = connectContext.getResponse();
         sendConnectResponse(request, response, HttpServletResponse.SC_OK);
 
         upgradeConnection(request, response, downstreamConnection);
+
         connectContext.getAsyncContext().complete();
     }
 
     protected void onConnectFailure(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, Throwable failure)
     {
-        LOG.debug("CONNECT failed", failure);
+        if (LOG.isDebugEnabled())
+            LOG.debug("CONNECT failed", failure);
         sendConnectResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         if (asyncContext != null)
             asyncContext.complete();
@@ -312,11 +367,13 @@ public class ConnectHandler extends HandlerWrapper
             if (statusCode != HttpServletResponse.SC_OK)
                 response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
             response.getOutputStream().close();
-            LOG.debug("CONNECT response sent {} {}", request.getProtocol(), response.getStatus());
+            if (LOG.isDebugEnabled())
+                LOG.debug("CONNECT response sent {} {}", request.getProtocol(), response.getStatus());
         }
         catch (IOException x)
         {
-            // TODO: nothing we can do, close the connection
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not send CONNECT response", x);
         }
     }
 
@@ -334,9 +391,9 @@ public class ConnectHandler extends HandlerWrapper
         return true;
     }
 
-    protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context, ByteBuffer buffer)
+    protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
     {
-        return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context, buffer);
+        return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context);
     }
 
     protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
@@ -354,7 +411,8 @@ public class ConnectHandler extends HandlerWrapper
         // so that Jetty understands that it has to upgrade the connection
         request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
-        LOG.debug("Upgraded connection to {}", connection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Upgraded connection to {}", connection);
     }
 
     /**
@@ -362,13 +420,17 @@ public class ConnectHandler extends HandlerWrapper
      *
      * @param endPoint the endPoint to read from
      * @param buffer   the buffer to read data into
+     * @param context  the context information related to the connection
      * @return the number of bytes read (possibly 0 since the read is non-blocking)
      *         or -1 if the channel has been closed remotely
      * @throws IOException if the endPoint cannot be read
      */
-    protected int read(EndPoint endPoint, ByteBuffer buffer) throws IOException
+    protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
     {
-        return endPoint.fill(buffer);
+        int read = endPoint.fill(buffer);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} read {} bytes", this, read);
+        return read;
     }
 
     /**
@@ -377,10 +439,12 @@ public class ConnectHandler extends HandlerWrapper
      * @param endPoint the endPoint to write to
      * @param buffer   the buffer to write
      * @param callback the completion callback to invoke
+     * @param context  the context information related to the connection
      */
-    protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback)
+    protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
     {
-        LOG.debug("{} writing {} bytes", this, buffer.remaining());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} writing {} bytes", this, buffer.remaining());
         endPoint.write(callback, buffer);
     }
 
@@ -408,7 +472,8 @@ public class ConnectHandler extends HandlerWrapper
         {
             if (!whiteList.contains(hostPort))
             {
-                LOG.debug("Host {}:{} not whitelisted", host, port);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Host {}:{} not whitelisted", host, port);
                 return false;
             }
         }
@@ -416,7 +481,8 @@ public class ConnectHandler extends HandlerWrapper
         {
             if (blackList.contains(hostPort))
             {
-                LOG.debug("Host {}:{} blacklisted", host, port);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Host {}:{} blacklisted", host, port);
                 return false;
             }
         }
@@ -432,22 +498,24 @@ public class ConnectHandler extends HandlerWrapper
 
     protected class ConnectManager extends SelectorManager
     {
-
-        private ConnectManager(Executor executor, Scheduler scheduler, int selectors)
+        protected ConnectManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
         }
 
         @Override
-        protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
+        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key) throws IOException
         {
-            return new SelectChannelEndPoint(channel, selector, selectionKey, getScheduler(), getIdleTimeout());
+            SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
+            endp.setIdleTimeout(getIdleTimeout());
+            return endp;
         }
 
         @Override
-        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            ConnectHandler.LOG.debug("Connected to {}", channel.getRemoteAddress());
+            if (ConnectHandler.LOG.isDebugEnabled())
+                ConnectHandler.LOG.debug("Connected to {}", ((SocketChannel)channel).getRemoteAddress());
             ConnectContext connectContext = (ConnectContext)attachment;
             UpstreamConnection connection = newUpstreamConnection(endpoint, connectContext);
             connection.setInputBufferSize(getBufferSize());
@@ -455,8 +523,9 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
+        protected void connectionFailed(SelectableChannel channel, final Throwable ex, final Object attachment)
         {
+            close(channel);
             ConnectContext connectContext = (ConnectContext)attachment;
             onConnectFailure(connectContext.request, connectContext.response, connectContext.asyncContext, ex);
         }
@@ -518,31 +587,36 @@ public class ConnectHandler extends HandlerWrapper
         public void onOpen()
         {
             super.onOpen();
-            onConnectSuccess(connectContext, this);
+            onConnectSuccess(connectContext, UpstreamConnection.this);
             fillInterested();
         }
 
         @Override
         protected int read(EndPoint endPoint, ByteBuffer buffer) throws IOException
         {
-            return ConnectHandler.this.read(endPoint, buffer);
+            return ConnectHandler.this.read(endPoint, buffer, getContext());
         }
 
         @Override
         protected void write(EndPoint endPoint, ByteBuffer buffer,Callback callback)
         {
-            ConnectHandler.this.write(endPoint, buffer, callback);
+            ConnectHandler.this.write(endPoint, buffer, callback, getContext());
         }
     }
 
-    public class DownstreamConnection extends ProxyConnection
+    public class DownstreamConnection extends ProxyConnection implements Connection.UpgradeTo
     {
-        private final ByteBuffer buffer;
+        private ByteBuffer buffer;
 
-        public DownstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context, ByteBuffer buffer)
+        public DownstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
         {
             super(endPoint, executor, bufferPool, context);
-            this.buffer = buffer;
+        }
+
+        @Override
+        public void onUpgradeTo(ByteBuffer buffer)
+        {
+            this.buffer = buffer == null ? BufferUtil.EMPTY_BUFFER : buffer;
         }
 
         @Override
@@ -555,14 +629,16 @@ public class ConnectHandler extends HandlerWrapper
                 @Override
                 public void succeeded()
                 {
-                    LOG.debug("{} wrote initial {} bytes to server", DownstreamConnection.this, remaining);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} wrote initial {} bytes to server", DownstreamConnection.this, remaining);
                     fillInterested();
                 }
 
                 @Override
                 public void failed(Throwable x)
                 {
-                    LOG.debug(this + " failed to write initial " + remaining + " bytes to server", x);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug(this + " failed to write initial " + remaining + " bytes to server", x);
                     close();
                     getConnection().close();
                 }
@@ -572,13 +648,13 @@ public class ConnectHandler extends HandlerWrapper
         @Override
         protected int read(EndPoint endPoint, ByteBuffer buffer) throws IOException
         {
-            return ConnectHandler.this.read(endPoint, buffer);
+            return ConnectHandler.this.read(endPoint, buffer, getContext());
         }
 
         @Override
         protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback)
         {
-            ConnectHandler.this.write(endPoint, buffer, callback);
+            ConnectHandler.this.write(endPoint, buffer, callback, getContext());
         }
     }
 }

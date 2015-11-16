@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -175,5 +176,85 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
                     }
                 });
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testAbortOnContentBeforeRequestTermination() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                try
+                {
+                    baseRequest.setHandled(true);
+                    OutputStream output = response.getOutputStream();
+                    output.write(1);
+                    output.flush();
+                    output.write(2);
+                    output.flush();
+                }
+                catch (IOException ignored)
+                {
+                    // The client may have already closed, and we'll get an exception here, but it's expected
+                }
+            }
+        });
+
+        final CountDownLatch abortLatch = new CountDownLatch(1);
+        final AtomicInteger completes = new AtomicInteger();
+        final CountDownLatch completeLatch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .onRequestSuccess(new org.eclipse.jetty.client.api.Request.SuccessListener()
+                {
+                    @Override
+                    public void onSuccess(org.eclipse.jetty.client.api.Request request)
+                    {
+                        try
+                        {
+                            abortLatch.await(5, TimeUnit.SECONDS);
+                        }
+                        catch (InterruptedException x)
+                        {
+                            x.printStackTrace();
+                        }
+                    }
+                })
+                .onResponseContent(new Response.ContentListener()
+                {
+                    @Override
+                    public void onContent(Response response, ByteBuffer content)
+                    {
+                        try
+                        {
+                            response.abort(new Exception());
+                            abortLatch.countDown();
+                            // Delay to let the request side to finish its processing.
+                            Thread.sleep(1000);
+                        }
+                        catch (InterruptedException x)
+                        {
+                            x.printStackTrace();
+                        }
+                    }
+                })
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        completes.incrementAndGet();
+                        Assert.assertTrue(result.isFailed());
+                        completeLatch.countDown();
+                    }
+                });
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+
+        // Wait to be sure that the complete event is only notified once.
+        Thread.sleep(1000);
+
+        Assert.assertEquals(1, completes.get());
     }
 }

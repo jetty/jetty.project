@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,18 +26,24 @@ import org.eclipse.jetty.client.api.ContentProvider;
 
 /**
  * A {@link ContentProvider} for {@link ByteBuffer}s.
- * <p />
+ * <p>
  * The position and limit of the {@link ByteBuffer}s passed to the constructor are not modified,
  * and each invocation of the {@link #iterator()} method returns a {@link ByteBuffer#slice() slice}
  * of the original {@link ByteBuffer}.
  */
-public class ByteBufferContentProvider implements ContentProvider
+public class ByteBufferContentProvider extends AbstractTypedContentProvider
 {
     private final ByteBuffer[] buffers;
     private final int length;
 
     public ByteBufferContentProvider(ByteBuffer... buffers)
     {
+        this("application/octet-stream", buffers);
+    }
+
+    public ByteBufferContentProvider(String contentType, ByteBuffer... buffers)
+    {
+        super(contentType);
         this.buffers = buffers;
         int length = 0;
         for (ByteBuffer buffer : buffers)

@@ -2,26 +2,27 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.1.3-SNAPSHOT</version>
+    <version>9.4.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-runner</artifactId>
   <name>Jetty :: Runner</name>
 
  <properties>
     <assembly-directory>target/distribution</assembly-directory>
+    <bundle-symbolic-name>${project.groupId}.runner</bundle-symbolic-name>
   </properties>
   <url>http://www.eclipse.org/jetty</url>
   <build>
     <plugins>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
             <id>unpack-dependencies</id>
-            <phase>package</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack-dependencies</goal>
             </goals>
@@ -36,33 +37,34 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins
-        </groupId>
-        <artifactId>maven-jar-plugin</artifactId>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
         <executions>
           <execution>
-            <id>package</id>
-            <phase>package</phase>
+            <id>bundle-manifest</id>
+            <phase>process-classes</phase>
             <goals>
-              <goal>jar</goal>
+              <goal>manifest</goal>
             </goals>
-            <configuration>
-              <archive>
-                <manifest>
-                  <mainClass>org.eclipse.jetty.runner.Runner</mainClass>
-                </manifest>
-                <manifestEntries>
-                  <mode>development</mode>
-                  <url>http://eclipse.org/jetty</url>
-                  <Built-By>${user.name}</Built-By>
-                  <package>org.eclipse.jetty.runner</package>
-                  <Bundle-Name>Jetty Runner</Bundle-Name>
-                  <Bundle-Vendor>Mort Bay Consulting</Bundle-Vendor>
-                </manifestEntries>
-              </archive>
-            </configuration>
           </execution>
         </executions>
+        <configuration>
+          <instructions>
+            <Main-Class>org.eclipse.jetty.runner.Runner</Main-Class>
+            <Import-Package>!*</Import-Package>
+            <Export-Package></Export-Package>
+          </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -95,7 +97,12 @@
     </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-jsp</artifactId>
+        <artifactId>apache-jsp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>apache-jstl</artifactId>
         <version>${project.version}</version>
       </dependency>
   </dependencies>

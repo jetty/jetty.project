@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -49,15 +49,12 @@ import org.eclipse.jetty.util.security.Credential;
 
 /**
  * A LdapLoginModule for use with JAAS setups
- * <p/>
+ * <p>
  * The jvm should be started with the following parameter:
- * <br><br>
- * <code>
+ * <pre>
  * -Djava.security.auth.login.config=etc/ldap-loginModule.conf
- * </code>
- * <br><br>
+ * </pre>
  * and an example of the ldap-loginModule.conf would be:
- * <br><br>
  * <pre>
  * ldaploginmodule {
  *    org.eclipse.jetty.server.server.plus.jaas.spi.LdapLoginModule required
@@ -80,11 +77,7 @@ import org.eclipse.jetty.util.security.Credential;
  *    roleMemberAttribute="uniqueMember"
  *    roleObjectClass="groupOfUniqueNames";
  *    };
- *  </pre>
- *
- *
- *
- *
+ * </pre>
  */
 public class LdapLoginModule extends AbstractLoginModule
 {
@@ -137,7 +130,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
     /**
      * name of the attribute that a users password is stored under
-     * <p/>
+     * <p>
      * NOTE: not always accessible, see force binding login
      */
     private String _userPasswordAttribute = "userPassword";
@@ -185,15 +178,15 @@ public class LdapLoginModule extends AbstractLoginModule
 
     /**
      * get the available information about the user
-     * <p/>
+     * <p>
      * for this LoginModule, the credential can be null which will result in a
      * binding ldap authentication scenario
-     * <p/>
+     * <p>
      * roles are also an optional concept if required
      *
-     * @param username
+     * @param username the user name
      * @return the userinfo for the username
-     * @throws Exception
+     * @throws Exception if unable to get the user info
      */
     public UserInfo getUserInfo(String username) throws Exception
     {
@@ -244,7 +237,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
     /**
      * attempts to get the users credentials from the users context
-     * <p/>
+     * <p>
      * NOTE: this is not an user authenticated operation
      *
      * @param username
@@ -307,7 +300,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
     /**
      * attempts to get the users roles from the root context
-     * <p/>
+     * <p>
      * NOTE: this is not an user authenticated operation
      *
      * @param dirContext
@@ -373,13 +366,13 @@ public class LdapLoginModule extends AbstractLoginModule
 
     /**
      * since ldap uses a context bind for valid authentication checking, we override login()
-     * <p/>
+     * <p>
      * if credentials are not available from the users context or if we are forcing the binding check
      * then we try a binding authentication check, otherwise if we have the users encoded password then
      * we can try authentication via that mechanic
      *
      * @return true if authenticated, false otherwise
-     * @throws LoginException
+     * @throws LoginException if unable to login
      */
     public boolean login() throws LoginException
     {
@@ -450,9 +443,9 @@ public class LdapLoginModule extends AbstractLoginModule
     /**
      * password supplied authentication check
      *
-     * @param webCredential
+     * @param webCredential the web credential
      * @return true if authenticated
-     * @throws LoginException
+     * @throws LoginException if unable to login
      */
     protected boolean credentialLogin(Object webCredential) throws LoginException
     {
@@ -466,10 +459,11 @@ public class LdapLoginModule extends AbstractLoginModule
      * has an ACI (access control instruction) that allow the access to any user or at least
      * for the user that logs in.
      *
-     * @param username
-     * @param password
+     * @param username the user name
+     * @param password the password
      * @return true always
-     * @throws LoginException
+     * @throws LoginException if unable to bind the login
+     * @throws NamingException if failure to bind login
      */
     public boolean bindingLogin(String username, Object password) throws LoginException, NamingException
     {
@@ -524,12 +518,13 @@ public class LdapLoginModule extends AbstractLoginModule
 
     /**
      * Init LoginModule.
+     * <p>
      * Called once by JAAS after new instance is created.
      *
-     * @param subject
-     * @param callbackHandler
-     * @param sharedState
-     * @param options
+     * @param subject the subect
+     * @param callbackHandler the callback handler
+     * @param sharedState the shared state map
+     * @param options the option map
      */
     public void initialize(Subject subject,
                            CallbackHandler callbackHandler,

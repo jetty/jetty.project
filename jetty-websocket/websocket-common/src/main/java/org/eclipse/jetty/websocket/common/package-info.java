@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,7 @@
  * <p>
  * A core set of internal implementation classes for the Jetty WebSocket API.
  * <p>
- * Note: do not reference or use classes present in this package space in your code. <br />
+ * Note: do not reference or use classes present in this package space in your code. <br>
  * Restrict your usage to the Jetty WebSocket API classes, the Jetty WebSocket Client API,
  * or the Jetty WebSocket Servlet API.
  */

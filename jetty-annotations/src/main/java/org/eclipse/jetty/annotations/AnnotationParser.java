@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,18 +48,18 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * AnnotationParser
- *
+ * <p>
  * Use asm to scan classes for annotations. A SAX-style parsing is done.
  * Handlers are registered which will be called back when various types of
  * entity are encountered, eg a class, a method, a field. 
- * 
+ * <p> 
  * Handlers are not called back in any particular order and are assumed
  * to be order-independent.
- * 
+ * <p>
  * As a registered Handler will be called back for each annotation discovered
  * on a class, a method, a field, the Handler should test to see if the annotation
  * is one that it is interested in.
- * 
+ * <p>
  * For the servlet spec, we are only interested in annotations on classes, methods and fields,
  * so the callbacks for handling finding a class, a method a field are themselves
  * not fully implemented.
@@ -69,13 +69,15 @@ public class AnnotationParser
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
 
     protected Set<String> _parsedClassNames = new ConcurrentHashSet<String>();
+    
+    protected static int ASM_OPCODE_VERSION = Opcodes.ASM5; //compatibility of api
    
 
     /**
      * Convert internal name to simple name
      * 
-     * @param name
-     * @return
+     * @param name the internal name
+     * @return the simple name
      */
     public static String normalize (String name)
     {
@@ -94,8 +96,8 @@ public class AnnotationParser
     /**
      * Convert internal names to simple names.
      * 
-     * @param list
-     * @return
+     * @param list the list of internal names
+     * @return the list of simple names
      */
     public static String[] normalize (String[] list)
     {
@@ -289,7 +291,6 @@ public class AnnotationParser
         }
     }
     
-    
     /**
      * Handler
      *
@@ -305,13 +306,10 @@ public class AnnotationParser
         public void handle (FieldInfo info, String annotationName);
     }
     
-    
-    
     /**
      * AbstractHandler
      *
      * Convenience base class to provide no-ops for all Handler methods.
-     * 
      */
     public static abstract class AbstractHandler implements Handler
     {
@@ -373,7 +371,7 @@ public class AnnotationParser
                                final String signature,
                                final String[] exceptions)
         {
-            super(Opcodes.ASM4);
+            super(ASM_OPCODE_VERSION);
             _handlers = handlers;
             _mi = new MethodInfo(classInfo, name, access, methodDesc,signature, exceptions);
         }
@@ -417,7 +415,7 @@ public class AnnotationParser
                               final String signature,
                               final Object value)
         {
-            super(Opcodes.ASM4);
+            super(ASM_OPCODE_VERSION);
             _handlers = handlers;
             _fieldInfo = new FieldInfo(classInfo, fieldName, access, fieldType, signature, value);
         }
@@ -456,7 +454,7 @@ public class AnnotationParser
         
         public MyClassVisitor(Set<? extends Handler> handlers, Resource containingResource)
         {
-            super(Opcodes.ASM4);
+            super(ASM_OPCODE_VERSION);
             _handlers = handlers;
             _containingResource = containingResource;
         }
@@ -531,7 +529,8 @@ public class AnnotationParser
 
     /**
      * True if the class has already been processed, false otherwise
-     * @param className
+     * @param className the classname
+     * @return true if class was parsed, false if not
      */
     public boolean isParsed (String className)
     {
@@ -543,9 +542,10 @@ public class AnnotationParser
     /**
      * Parse a given class
      * 
-     * @param className
-     * @param resolver
-     * @throws Exception
+     * @param handlers the set of handlers to find class
+     * @param className the class name to parse
+     * @param resolver the class name resolver to use 
+     * @throws Exception if unable to parse
      */
     public void parse (Set<? extends Handler> handlers, String className, ClassNameResolver resolver)
     throws Exception
@@ -562,7 +562,10 @@ public class AnnotationParser
                 if (resource!= null)
                 {
                     Resource r = Resource.newResource(resource);
-                    scanClass(handlers, null, r.getInputStream());
+                    try (InputStream is = r.getInputStream())
+                    {
+                        scanClass(handlers, null, is);
+                    }
                 }
             }
         }
@@ -573,10 +576,11 @@ public class AnnotationParser
     /**
      * Parse the given class, optionally walking its inheritance hierarchy
      * 
-     * @param clazz
-     * @param resolver
-     * @param visitSuperClasses
-     * @throws Exception
+     * @param handlers the handlers to look for class in 
+     * @param clazz the class to look for
+     * @param resolver the resolver to look up class with
+     * @param visitSuperClasses if true, also visit super classes for parse 
+     * @throws Exception if unable to parse class
      */
     public void parse (Set<? extends Handler> handlers, Class<?> clazz, ClassNameResolver resolver, boolean visitSuperClasses)
     throws Exception
@@ -593,7 +597,10 @@ public class AnnotationParser
                     if (resource!= null)
                     {
                         Resource r = Resource.newResource(resource);
-                        scanClass(handlers, null, r.getInputStream());
+                        try (InputStream is =  r.getInputStream())
+                        {
+                            scanClass(handlers, null, is);
+                        }
                     }
                 }
             }
@@ -610,9 +617,10 @@ public class AnnotationParser
     /**
      * Parse the given classes
      * 
-     * @param classNames
-     * @param resolver
-     * @throws Exception
+     * @param handlers the set of handlers to look for class in 
+     * @param classNames the class name
+     * @param resolver the class name resolver
+     * @throws Exception if unable to parse
      */
     public void parse (Set<? extends Handler> handlers, String[] classNames, ClassNameResolver resolver)
     throws Exception
@@ -627,9 +635,10 @@ public class AnnotationParser
     /**
      * Parse the given classes
      * 
-     * @param classNames
-     * @param resolver
-     * @throws Exception
+     * @param handlers the set of handlers to look for class in 
+     * @param classNames the class names
+     * @param resolver the class name resolver
+     * @throws Exception if unable to parse
      */
     public void parse (Set<? extends Handler> handlers, List<String> classNames, ClassNameResolver resolver)
     throws Exception
@@ -647,7 +656,10 @@ public class AnnotationParser
                     if (resource!= null)
                     {
                         Resource r = Resource.newResource(resource);
-                        scanClass(handlers, null, r.getInputStream());
+                        try (InputStream is = r.getInputStream())
+                        {
+                            scanClass(handlers, null, is);
+                        }
                     }
                 }
             }
@@ -663,14 +675,15 @@ public class AnnotationParser
     /**
      * Parse all classes in a directory
      * 
-     * @param dir
-     * @param resolver
-     * @throws Exception
+     * @param handlers the set of handlers to look for classes in 
+     * @param dir the resource directory to look for classes
+     * @param resolver the class name resolver
+     * @throws Exception if unable to parse
      */
     protected void parseDir (Set<? extends Handler> handlers, Resource dir, ClassNameResolver resolver)
     throws Exception
     {
-        //skip dirs whose name start with . (ie hidden)
+        // skip dirs whose name start with . (ie hidden)
         if (!dir.isDirectory() || !dir.exists() || dir.getName().startsWith("."))
             return;
 
@@ -697,11 +710,15 @@ public class AnnotationParser
                         {
                             Resource r = Resource.newResource(res.getURL());
                             if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
-                            scanClass(handlers, dir, r.getInputStream());
+                            try (InputStream is=r.getInputStream())
+                            {
+                                scanClass(handlers, dir, is);
+                            }
                         }
                     }                  
                     catch (Exception ex)
                     {
+                        if (LOG.isDebugEnabled()) LOG.debug("Error scanning file "+files[f], ex);
                         me.add(new RuntimeException("Error scanning file "+files[f],ex));
                     }
                 }
@@ -720,11 +737,12 @@ public class AnnotationParser
      * Parse classes in the supplied classloader. 
      * Only class files in jar files will be scanned.
      * 
-     * @param loader
-     * @param visitParents
-     * @param nullInclusive
-     * @param resolver
-     * @throws Exception
+     * @param handlers the handlers to look for classes in 
+     * @param loader the classloader for the classes
+     * @param visitParents if true, visit parent classloaders too
+     * @param nullInclusive if true, an empty pattern means all names match, if false, none match
+     * @param resolver the class name resolver
+     * @throws Exception if unable to parse
      */
     public void parse (final Set<? extends Handler> handlers, ClassLoader loader, boolean visitParents, boolean nullInclusive, final ClassNameResolver resolver)
     throws Exception
@@ -762,9 +780,10 @@ public class AnnotationParser
     /**
      * Parse classes in the supplied uris.
      * 
-     * @param uris
-     * @param resolver
-     * @throws Exception
+     * @param handlers the handlers to look for classes in  
+     * @param uris the uris for the jars
+     * @param resolver the class name resolver
+     * @throws Exception if unable to parse
      */
     public void parse (final Set<? extends Handler> handlers, final URI[] uris, final ClassNameResolver resolver)
     throws Exception
@@ -790,9 +809,11 @@ public class AnnotationParser
 
     /**
      * Parse a particular uri
-     * @param uri
-     * @param resolver
-     * @throws Exception
+     * 
+     * @param handlers the handlers to look for classes in 
+     * @param uri the uri for the jar 
+     * @param resolver the class name resolver
+     * @throws Exception if unable to parse
      */
     public void parse (final Set<? extends Handler> handlers, URI uri, final ClassNameResolver resolver)
     throws Exception
@@ -806,9 +827,11 @@ public class AnnotationParser
     
     /**
      * Parse a resource
-     * @param r
-     * @param resolver
-     * @throws Exception
+     * 
+     * @param handlers the handlers to look for classes in  
+     * @param r the resource to parse
+     * @param resolver the class name resolver
+     * @throws Exception if unable to parse
      */
     public void parse (final Set<? extends Handler> handlers, Resource r, final ClassNameResolver resolver)
     throws Exception
@@ -831,8 +854,11 @@ public class AnnotationParser
 
         if (fullname.endsWith(".class"))
         {
-            scanClass(handlers, null, r.getInputStream());
-            return;
+            try (InputStream is=r.getInputStream())
+            {
+                scanClass(handlers, null, is);
+                return;
+            }
         }
         
         if (LOG.isDebugEnabled()) LOG.warn("Resource not scannable for classes: {}", r);
@@ -844,9 +870,10 @@ public class AnnotationParser
     /**
      * Parse a resource that is a jar file.
      * 
-     * @param jarResource
-     * @param resolver
-     * @throws Exception
+     * @param handlers the handlers to look for classes in  
+     * @param jarResource the jar resource to parse
+     * @param resolver the class name resolver
+     * @throws Exception if unable to parse
      */
     protected void parseJar (Set<? extends Handler> handlers, Resource jarResource,  final ClassNameResolver resolver)
     throws Exception
@@ -922,10 +949,12 @@ public class AnnotationParser
 
     /**
      * Parse a single entry in a jar file
-     * @param jar
-     * @param entry
-     * @param resolver
-     * @throws Exception
+     * 
+     * @param handlers the handlers to look for classes in  
+     * @param jar the jar resource to parse
+     * @param entry the entry in the jar resource to parse
+     * @param resolver the class name resolver
+     * @throws Exception if unable to parse
      */
     protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, JarEntry entry, final ClassNameResolver resolver)
     throws Exception
@@ -946,11 +975,14 @@ public class AnnotationParser
 
             if ((resolver == null)
                     ||
-                (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
+               (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
             {
                 Resource clazz = Resource.newResource("jar:"+jar.getURI()+"!/"+name);
                 if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
-                scanClass(handlers, jar, clazz.getInputStream());
+                try (InputStream is = clazz.getInputStream())
+                {
+                    scanClass(handlers, jar, is);
+                }
             }
         }
     }
@@ -960,9 +992,10 @@ public class AnnotationParser
     /**
      * Use ASM on a class
      * 
+     * @param handlers the handlers to look for classes in  
      * @param containingResource the dir or jar that the class is contained within, can be null if not known
-     * @param is
-     * @throws IOException
+     * @param is the input stream to parse
+     * @throws IOException if unable to parse
      */
     protected void scanClass (Set<? extends Handler> handlers, Resource containingResource, InputStream is)
     throws IOException

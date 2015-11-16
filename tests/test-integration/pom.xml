@@ -20,7 +20,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>9.1.3-SNAPSHOT</version>
+    <version>9.4.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-integration</artifactId>
@@ -31,6 +31,8 @@
     <test-wars-dir>${project.build.directory}/test-wars</test-wars-dir>
     <test-libs-dir>${project.build.directory}/test-libs</test-libs-dir>
     <test-dist-dir>${project.build.directory}/test-dist</test-dist-dir>
+    <bundle-symbolic-name>${project.groupId}.integrations</bundle-symbolic-name>
+
   </properties>
   <build>
     <plugins>
@@ -117,13 +119,20 @@
       <type>pom</type>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http</artifactId>
+      <version>${project.version}</version>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jsp</artifactId>
+      <artifactId>apache-jsp</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -131,6 +140,18 @@
       <artifactId>test-webapp-rfc2616</artifactId>
       <version>${project.version}</version>
       <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.alpn</groupId>
+      <artifactId>alpn-api</artifactId>
+      <version>${alpn.api.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-server</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

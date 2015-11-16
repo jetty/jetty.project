@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -206,9 +206,12 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 
     /**
      * Process a Resource annotation on a Method.
-     *
+     * <p>
      * This will generate a JNDI entry, and an Injection to be
      * processed when an instance of the class is created.
+     * 
+     * @param clazz the class to process 
+     * @param method the method to process
      */
     public void handleMethod(Class<?> clazz, Method method)
     {

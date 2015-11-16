@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -83,9 +84,16 @@ public class HttpManyWaysToAsyncCommitBadBehaviourTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             final CyclicBarrier resumeBarrier = new CyclicBarrier(1);
+            
+            if (baseRequest.getDispatcherType()==DispatcherType.ERROR)
+            {
+                response.sendError(500);
+                return;
+            }
+            
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();

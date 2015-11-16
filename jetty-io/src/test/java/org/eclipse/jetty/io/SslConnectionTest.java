@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -53,7 +55,7 @@ import org.junit.Test;
 public class SslConnectionTest
 {
     private static SslContextFactory __sslCtxFactory=new SslContextFactory();
-    private static ByteBufferPool __byteBufferPool = new MappedByteBufferPool();
+    private static ByteBufferPool __byteBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
     protected volatile EndPoint _lastEndp;
     private volatile boolean _testFill=true;
@@ -74,7 +76,7 @@ public class SslConnectionTest
     protected SelectorManager _manager = new SelectorManager(_threadPool, _scheduler)
     {
         @Override
-        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
             SSLEngine engine = __sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
@@ -85,17 +87,48 @@ public class SslConnectionTest
             return sslConnection;
         }
 
+
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet, selectionKey, getScheduler(), 60000);
+            SocketChannelEndPoint endp = new TestEP(channel, selector, selectionKey, getScheduler());
+            endp.setIdleTimeout(60000);
             _lastEndp=endp;
             return endp;
         }
     };
 
-    // Must be volatile or the test may fail spuriously
-    protected volatile int _blockAt=0;
+    static final AtomicInteger __startBlocking = new AtomicInteger();
+    static final AtomicInteger __blockFor = new AtomicInteger();
+    private static class TestEP extends SocketChannelEndPoint
+    {
+        public TestEP(SelectableChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
+        {
+            super((SocketChannel)channel,selector,key,scheduler);
+        }
+
+        @Override
+        protected void onIncompleteFlush()
+        {
+            super.onIncompleteFlush();
+        }
+        
+
+        @Override
+        public boolean flush(ByteBuffer... buffers) throws IOException
+        {
+            if (__startBlocking.get()==0 || __startBlocking.decrementAndGet()==0)
+            {
+                if (__blockFor.get()>0 && __blockFor.getAndDecrement()>0)
+                {
+                    return false;
+                }
+            }
+            boolean flushed=super.flush(buffers);
+            return flushed;
+        }
+    }
+    
 
     @BeforeClass
     public static void initSslEngine() throws Exception
@@ -138,7 +171,7 @@ public class SslConnectionTest
 
         public TestConnection(EndPoint endp)
         {
-            super(endp, _threadPool,false);
+            super(endp, _threadPool);
         }
 
         @Override
@@ -204,11 +237,11 @@ public class SslConnectionTest
             }
             catch(InterruptedException|EofException e)
             {
-                SelectChannelEndPoint.LOG.ignore(e);
+                Log.getRootLogger().ignore(e);
             }
             catch(Exception e)
             {
-                SelectChannelEndPoint.LOG.warn(e);
+                Log.getRootLogger().warn(e);
             }
             finally
             {
@@ -245,7 +278,6 @@ public class SslConnectionTest
         len=5;
         while(len>0)
             len-=client.getInputStream().read(buffer);
-        Assert.assertEquals(0, _dispatches.get());
 
         client.close();
     }
@@ -268,6 +300,36 @@ public class SslConnectionTest
         int len=client.getInputStream().read(buffer);
         Assert.assertEquals("Hello Client",new String(buffer,0,len,StandardCharsets.UTF_8));
         Assert.assertEquals(null,_writeCallback.get(100,TimeUnit.MILLISECONDS));
+        client.close();
+    }
+    
+
+
+    @Test
+    public void testBlockedWrite() throws Exception
+    {
+        Socket client = newClient();
+        client.setSoTimeout(5000);
+
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+        _manager.accept(server);
+
+        __startBlocking.set(5);
+        __blockFor.set(3);
+        
+        client.getOutputStream().write("Hello".getBytes(StandardCharsets.UTF_8));
+        byte[] buffer = new byte[1024];
+        int len=client.getInputStream().read(buffer);
+        Assert.assertEquals(5, len);
+        Assert.assertEquals("Hello",new String(buffer,0,len,StandardCharsets.UTF_8));
+
+        _dispatches.set(0);
+        client.getOutputStream().write("World".getBytes(StandardCharsets.UTF_8));
+        len=5;
+        while(len>0)
+            len-=client.getInputStream().read(buffer);
+        Assert.assertEquals(0, len);
         client.close();
     }
 

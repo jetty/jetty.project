@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.metadata;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 
 /**
- * Thrown when a duplicate coder is encountered when attempting to identify a Endpoint's metadata ( {@link Decoder} or {@link Encoder})
+ * Thrown when a duplicate coder is encountered when attempting to identify a Endpoint's metadata ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder})
  */
 public class DuplicateCoderException extends InvalidWebSocketException
 {

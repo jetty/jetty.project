@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,8 +19,9 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -43,47 +44,30 @@ public class StringUtil
     
     public static final String ALL_INTERFACES="0.0.0.0";
     public static final String CRLF="\015\012";
-    public static final String __LINE_SEPARATOR=
-        System.getProperty("line.separator","\n");
+    
+    /** @deprecated use {@link System#lineSeparator()} instead */
+    @Deprecated
+    public static final String __LINE_SEPARATOR = System.lineSeparator();
        
-    public static final String __ISO_8859_1="ISO-8859-1";
-    public final static String __UTF8="UTF-8";
-    public final static String __UTF16="UTF-16";
-
-    /**
-     * @deprecated Use {@link StandardCharsets#UTF_8}
-     */
-    @Deprecated
-    public final static Charset __UTF8_CHARSET=StandardCharsets.UTF_8;
-    /**
-     * @deprecated Use {@link StandardCharsets#ISO_8859_1}
-     */
-    @Deprecated
-    public final static Charset __ISO_8859_1_CHARSET=StandardCharsets.ISO_8859_1;
-    /**
-     * @deprecated Use {@link StandardCharsets#UTF_16}
-     */
-    @Deprecated
-    public final static Charset __UTF16_CHARSET=StandardCharsets.UTF_16;
-    /**
-     * @deprecated Use {@link StandardCharsets#US_ASCII}
-     */
-    @Deprecated
-    public final static Charset __US_ASCII_CHARSET=StandardCharsets.US_ASCII;
+    public static final String __ISO_8859_1="iso-8859-1";
+    public final static String __UTF8="utf-8";
+    public final static String __UTF16="utf-16";
     
     static
     {
-        CHARSETS.put("UTF-8",__UTF8);
-        CHARSETS.put("UTF8",__UTF8);
-        CHARSETS.put("UTF-16",__UTF16);
-        CHARSETS.put("UTF16",__UTF16);
-        CHARSETS.put("ISO-8859-1",__ISO_8859_1);
-        CHARSETS.put("ISO_8859_1",__ISO_8859_1);
+        CHARSETS.put("utf-8",__UTF8);
+        CHARSETS.put("utf8",__UTF8);
+        CHARSETS.put("utf-16",__UTF16);
+        CHARSETS.put("utf16",__UTF16);
+        CHARSETS.put("iso-8859-1",__ISO_8859_1);
+        CHARSETS.put("iso_8859_1",__ISO_8859_1);
     }
     
     /* ------------------------------------------------------------ */
     /** Convert alternate charset names (eg utf8) to normalized
      * name (eg UTF-8).
+     * @param s the charset to normalize
+     * @return the normalized charset (or null if normalized version not found)
      */
     public static String normalizeCharset(String s)
     {
@@ -94,6 +78,10 @@ public class StringUtil
     /* ------------------------------------------------------------ */
     /** Convert alternate charset names (eg utf8) to normalized
      * name (eg UTF-8).
+     * @param s the charset to normalize
+     * @param offset the offset in the charset
+     * @param length the length of the charset in the input param
+     * @return the normalized charset (or null if not found)
      */
     public static String normalizeCharset(String s,int offset,int length)
     {
@@ -219,6 +207,9 @@ public class StringUtil
     /* ------------------------------------------------------------ */
     /**
      * returns the next index of a character from the chars string
+     * @param s the input string to search
+     * @param chars the chars to look for
+     * @return the index of the character in the input stream found.
      */
     public static int indexFrom(String s,String chars)
     {
@@ -231,6 +222,10 @@ public class StringUtil
     /* ------------------------------------------------------------ */
     /**
      * replace substrings within string.
+     * @param s the input string
+     * @param sub the string to look for
+     * @param with the string to replace with
+     * @return the now replaced string
      */
     public static String replace(String s, String sub, String with)
     {
@@ -258,6 +253,8 @@ public class StringUtil
 
     /* ------------------------------------------------------------ */
     /** Remove single or double quotes.
+     * @param s the input string
+     * @return the string with quotes removed
      */
     public static String unquote(String s)
     {
@@ -293,6 +290,9 @@ public class StringUtil
     /* ------------------------------------------------------------ */
     /**
      * append hex digit
+     * @param buf the buffer to append to
+     * @param b the byte to append
+     * @param base the base of the hex output (almost always 16).
      * 
      */
     public static void append(StringBuilder buf,byte b,int base)
@@ -309,6 +309,12 @@ public class StringUtil
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Append 2 digits (zero padded) to the StringBuffer
+     * 
+     * @param buf the buffer to append to
+     * @param i the value to append
+     */
     public static void append2digits(StringBuffer buf,int i)
     {
         if (i<100)
@@ -319,6 +325,12 @@ public class StringUtil
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * Append 2 digits (zero padded) to the StringBuilder
+     * 
+     * @param buf the buffer to append to
+     * @param i the value to append
+     */
     public static void append2digits(StringBuilder buf,int i)
     {
         if (i<100)
@@ -521,6 +533,8 @@ public class StringUtil
      * http://en.wikipedia.org/wiki/Security_Identifier
      * 
      * S-1-IdentifierAuthority-SubAuthority1-SubAuthority2-...-SubAuthorityn
+     * @param sidBytes the SID bytes to build from
+     * @return the string SID
      */
     public static String sidBytesToString(byte[] sidBytes)
     {
@@ -568,6 +582,8 @@ public class StringUtil
      * http://en.wikipedia.org/wiki/Security_Identifier
      * 
      * S-1-IdentifierAuthority-SubAuthority1-SubAuthority2-...-SubAuthorityn
+     * @param sidString the string SID
+     * @return the binary SID
      */
     public static byte[] sidStringToBytes( String sidString )
     {
@@ -622,17 +638,17 @@ public class StringUtil
     /**
      * Convert String to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
      * 
-     * @param string
-     *            A String containing an integer.
+     * @param string A String containing an integer.
+     * @param from The index to start parsing from
      * @return an int
      */
-    public static int toInt(String string)
+    public static int toInt(String string,int from)
     {
         int val = 0;
         boolean started = false;
         boolean minus = false;
 
-        for (int i = 0; i < string.length(); i++)
+        for (int i = from; i < string.length(); i++)
         {
             char b = string.charAt(i);
             if (b <= ' ')
@@ -657,7 +673,7 @@ public class StringUtil
             return minus?(-val):val;
         throw new NumberFormatException(string);
     }
-
+    
     /**
      * Convert String to an long. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
      * 
@@ -719,6 +735,11 @@ public class StringUtil
         return str.substring(0,maxSize);
     }
 
+    /**
+    * Parse the string representation of a list using {@link #csvSplit(List,String,int,int)}
+    * @param s The string to parse, expected to be enclosed as '[...]'
+    * @return An array of parsed values.
+    */
     public static String[] arrayFromString(String s) 
     {
         if (s==null)
@@ -729,7 +750,261 @@ public class StringUtil
         if (s.length()==2)
             return new String[]{};
 
-        return s.substring(1,s.length()-1).split(" *, *");
+        return csvSplit(s,1,s.length()-2);
+    }
+    
+    /**
+    * Parse a CSV string using {@link #csvSplit(List,String, int, int)}
+    * @param s The string to parse
+    * @return An array of parsed values.
+    */
+    public static String[] csvSplit(String s)
+    {
+        if (s==null)
+            return null;
+        return csvSplit(s,0,s.length());
+    }
+    
+    /**
+     * Parse a CSV string using {@link #csvSplit(List,String, int, int)}
+     * @param s The string to parse
+     * @param off The offset into the string to start parsing
+     * @param len The len in characters to parse
+     * @return An array of parsed values.
+     */
+    public static String[] csvSplit(String s, int off,int len)
+    {
+        if (s==null)
+            return null;
+        if (off<0 || len<0 || off>s.length())
+            throw new IllegalArgumentException();
+
+        List<String> list = new ArrayList<>();
+        csvSplit(list,s,off,len);
+        return list.toArray(new String[list.size()]);
+    }
+
+    enum CsvSplitState { PRE_DATA, QUOTE, SLOSH, DATA, WHITE, POST_DATA };
+
+    /** Split a quoted comma separated string to a list
+     * <p>Handle <a href="https://www.ietf.org/rfc/rfc4180.txt">rfc4180</a>-like 
+     * CSV strings, with the exceptions:<ul>
+     * <li>quoted values may contain double quotes escaped with back-slash
+     * <li>Non-quoted values are trimmed of leading trailing white space
+     * <li>trailing commas are ignored
+     * <li>double commas result in a empty string value
+     * </ul>  
+     * @param list The Collection to split to (or null to get a new list)
+     * @param s The string to parse
+     * @param off The offset into the string to start parsing
+     * @param len The len in characters to parse
+     * @return list containing the parsed list values
+     */
+    public static List<String> csvSplit(List<String> list,String s, int off,int len)
+    {
+        if (list==null)
+            list=new ArrayList<>();
+        CsvSplitState state = CsvSplitState.PRE_DATA;
+        StringBuilder out = new StringBuilder();
+        int last=-1;
+        while (len>0)
+        {
+            char ch = s.charAt(off++);
+            len--;
+            
+            switch(state)
+            {
+                case PRE_DATA:
+                    if (Character.isWhitespace(ch))
+                        continue;
+
+                    if ('"'==ch)
+                    {
+                        state=CsvSplitState.QUOTE;
+                        continue;
+                    }
+                    
+                    if (','==ch)
+                    {
+                        list.add("");
+                        continue;
+                    }
+
+                    state=CsvSplitState.DATA;
+                    out.append(ch);
+                    continue;
+
+                case DATA:
+                    if (Character.isWhitespace(ch))
+                    {
+                        last=out.length();
+                        out.append(ch);
+                        state=CsvSplitState.WHITE;
+                        continue;
+                    }
+                    
+                    if (','==ch)
+                    {
+                        list.add(out.toString());
+                        out.setLength(0);
+                        state=CsvSplitState.PRE_DATA;
+                        continue;
+                    }
+
+                    out.append(ch);
+                    continue;
+                    
+                case WHITE:
+                    if (Character.isWhitespace(ch))
+                    {
+                        out.append(ch);
+                        continue;
+                    }
+                    
+                    if (','==ch)
+                    {
+                        out.setLength(last);
+                        list.add(out.toString());
+                        out.setLength(0);
+                        state=CsvSplitState.PRE_DATA;
+                        continue;
+                    }
+                    
+                    state=CsvSplitState.DATA;
+                    out.append(ch);
+                    last=-1;
+                    continue;
+
+                case QUOTE:
+                    if ('\\'==ch)
+                    {
+                        state=CsvSplitState.SLOSH;
+                        continue;
+                    }
+                    if ('"'==ch)
+                    {
+                        list.add(out.toString());
+                        out.setLength(0);
+                        state=CsvSplitState.POST_DATA;
+                        continue;
+                    }
+                    out.append(ch);
+                    continue;
+                    
+                case SLOSH:
+                    out.append(ch);
+                    state=CsvSplitState.QUOTE;
+                    continue;
+                    
+                case POST_DATA:
+                    if (','==ch)
+                    {
+                        state=CsvSplitState.PRE_DATA;
+                        continue;
+                    }
+                    continue;
+            }
+        }
+
+        switch(state)
+        {
+            case PRE_DATA:
+            case POST_DATA:
+                break;
+
+            case DATA:
+            case QUOTE:
+            case SLOSH:
+                list.add(out.toString());
+                break;
+                
+            case WHITE:
+                out.setLength(last);
+                list.add(out.toString());
+                break;
+        }
+        
+        return list;
+    }
+
+    public static String sanitizeXmlString(String html)
+    {
+        if (html==null)
+            return null;
+        
+        int i=0;
+        
+        // Are there any characters that need sanitizing?
+        loop: for (;i<html.length();i++)
+        {
+            char c=html.charAt(i);
+
+            switch(c)
+            {
+                case '&' :
+                case '<' :
+                case '>' :
+                case '\'':
+                case '"':
+                    break loop;
+
+                default:
+                    if (Character.isISOControl(c) && !Character.isWhitespace(c))
+                        break loop;
+            }
+        }
+
+        // No characters need sanitizing, so return original string
+        if (i==html.length())
+            return html;
+        
+        // Create builder with OK content so far 
+        StringBuilder out = new StringBuilder(html.length()*4/3);
+        out.append(html,0,i);
+        
+        // sanitize remaining content
+        for (;i<html.length();i++)
+        {
+            char c=html.charAt(i);
+
+            switch(c)
+            {
+                case '&' :
+                    out.append("&amp;");
+                    break;
+                case '<' :
+                    out.append("&lt;");
+                    break;
+                case '>' :
+                    out.append("&gt;");
+                    break;
+                case '\'':
+                    out.append("&apos;");
+                    break;
+                case '"':
+                    out.append("&quot;");
+                    break;
+
+                default:
+                    if (Character.isISOControl(c) && !Character.isWhitespace(c))
+                        out.append('?');
+                    else
+                        out.append(c);
+            }
+        }
+        return out.toString();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** The String value of an Object
+     * <p>This method calls {@link String#valueOf(Object)} unless the object is null,
+     * in which case null is returned</p>
+     * @param object The object
+     * @return String value or null
+     */
+    public static String valueOf(Object object)
+    {
+        return object==null?null:String.valueOf(object);
     }
 
 }

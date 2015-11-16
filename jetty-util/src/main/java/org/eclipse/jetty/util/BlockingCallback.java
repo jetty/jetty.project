@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,67 +21,48 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
-/* ------------------------------------------------------------ */
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /**
- * A Callback for simple reusable conversion of an 
- * asynchronous API to blocking.
- * <p>
- * To avoid late redundant calls to {@link #succeeded()} or {@link #failed(Throwable)} from
- * interfering with later reuses of this class, the callback context is used to hold pass a phase indicated
- * and only a single callback per phase is allowed.
- * <p>
- * A typical usage pattern is:
- * <pre>
- * public class MyClass
- * {
- *     BlockingCallback cb = new BlockingCallback();
- *     
- *     public void blockingMethod(Object args) throws Exception
- *     {
- *         asyncMethod(args,cb);
- *         cb.block();
- *     }
- *     
- *     public <C>void asyncMethod(Object args, Callback callback)
- *     {
- *         ...
- *     }
- *  }
+ * An implementation of Callback that blocks until success or failure.
  */
-public class BlockingCallback implements Callback
+@Deprecated
+public class BlockingCallback implements Callback.NonBlocking
 {
-    private static Throwable COMPLETED=new Throwable();
-    private final AtomicBoolean _done=new AtomicBoolean(false);
-    private final Semaphore _semaphore = new Semaphore(0);
-    private Throwable _cause;
+    private static final Logger LOG = Log.getLogger(BlockingCallback.class);
+    private static Throwable SUCCEEDED = new Throwable()
+    {
+        @Override
+        public String toString() { return "SUCCEEDED"; }
+    };
     
+    private final CountDownLatch _latch = new CountDownLatch(1);
+    private final AtomicReference<Throwable> _state = new AtomicReference<>();
+
     public BlockingCallback()
-    {}
+    {
+    }
 
     @Override
     public void succeeded()
     {
-        if (_done.compareAndSet(false,true))
-        {
-            _cause=COMPLETED;
-            _semaphore.release();
-        }
+        if (_state.compareAndSet(null,SUCCEEDED))
+            _latch.countDown();
     }
 
     @Override
     public void failed(Throwable cause)
     {
-        if (_done.compareAndSet(false,true))
-        {
-            _cause=cause;
-            _semaphore.release();
-        }
+        if (_state.compareAndSet(null,cause))
+            _latch.countDown();
     }
 
-    /** Block until the Callback has succeeded or failed and 
+    /**
+     * Blocks until the Callback has succeeded or failed and
      * after the return leave in the state to allow reuse.
      * This is useful for code that wants to repeatable use a FutureCallback to convert
      * an asynchronous API to a blocking API. 
@@ -91,14 +72,15 @@ public class BlockingCallback implements Callback
     {
         try
         {
-            _semaphore.acquire();
-            if (_cause==COMPLETED)
+            _latch.await();
+            Throwable state=_state.get();
+            if (state==SUCCEEDED)
                 return;
-            if (_cause instanceof IOException)
-                throw (IOException) _cause;
-            if (_cause instanceof CancellationException)
-                throw (CancellationException) _cause;
-            throw new IOException(_cause);
+            if (state instanceof IOException)
+                throw (IOException) state;
+            if (state instanceof CancellationException)
+                throw (CancellationException) state;
+            throw new IOException(state);
         }
         catch (final InterruptedException e)
         {
@@ -106,16 +88,13 @@ public class BlockingCallback implements Callback
         }
         finally
         {
-            _done.set(false);
-            _cause=null;
+            _state.set(null);
         }
     }
-    
-    
+
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%b,%b}",BlockingCallback.class.getSimpleName(),hashCode(),_done.get(),_cause==COMPLETED);
+        return String.format("%s@%x{%s}",BlockingCallback.class.getSimpleName(),hashCode(),_state.get());
     }
-
 }

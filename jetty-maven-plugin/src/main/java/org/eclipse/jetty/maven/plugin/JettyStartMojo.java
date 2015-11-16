@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,9 @@
 //
 
 package org.eclipse.jetty.maven.plugin;
+
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 
 
 /**
@@ -37,4 +40,20 @@ package org.eclipse.jetty.maven.plugin;
  */
 public class JettyStartMojo extends JettyRunMojo
 {
+
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException
+    {
+        nonblocking = true; //ensure that starting jetty won't hold up the thread
+        super.execute();
+    }
+    
+
+    @Override
+    public void finishConfigurationBeforeStart() throws Exception
+    {
+        super.finishConfigurationBeforeStart();
+        server.setStopAtShutdown(false); //as we will normally be stopped with a cntrl-c, ensure server stopped 
+    }
+    
 }

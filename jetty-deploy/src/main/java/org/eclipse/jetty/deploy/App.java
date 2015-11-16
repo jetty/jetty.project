@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,6 +34,8 @@ public class App
     /**
      * Create an App with specified Origin ID and archivePath
      * 
+     * @param manager the deployment manager 
+     * @param provider the app provider
      * @param originId
      *            the origin ID (The ID that the {@link AppProvider} knows
      *            about)
@@ -50,6 +52,8 @@ public class App
     /**
      * Create an App with specified Origin ID and archivePath
      * 
+     * @param manager the deployment manager 
+     * @param provider the app provider
      * @param originId
      *            the origin ID (The ID that the {@link AppProvider} knows
      *            about)
@@ -92,7 +96,7 @@ public class App
      * @return the {@link ContextHandler} to use for the App when fully started.
      *         (Portions of which might be ignored when App is not yet 
      *         {@link AppLifeCycle#DEPLOYED} or {@link AppLifeCycle#STARTED})
-     * @throws Exception
+     * @throws Exception if unable to get the context handler
      */
     public ContextHandler getContextHandler() throws Exception
     {

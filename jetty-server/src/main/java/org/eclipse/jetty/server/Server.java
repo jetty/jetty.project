@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -45,13 +44,16 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -59,6 +61,7 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -83,9 +86,12 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
-    
+    private RequestLog _requestLog;
+
+    private final Locker _dateLocker = new Locker();
     private volatile DateField _dateField;
-    
+
+
     /* ------------------------------------------------------------ */
     public Server()
     {
@@ -107,8 +113,11 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /** Convenience constructor
+    /**
+     * Convenience constructor
+     * <p>
      * Creates server and a {@link ServerConnector} at the passed address.
+     * @param addr the inet socket address to create the connector from
      */
     public Server(@Name("address")InetSocketAddress addr)
     {
@@ -119,8 +128,6 @@ public class Server extends HandlerWrapper implements Attributes
         setConnectors(new Connector[]{connector});
     }
 
-
-
     /* ------------------------------------------------------------ */
     public Server(@Name("threadpool") ThreadPool pool)
     {
@@ -129,6 +136,18 @@ public class Server extends HandlerWrapper implements Attributes
         setServer(this);
     }
 
+    /* ------------------------------------------------------------ */
+    public RequestLog getRequestLog()
+    {
+        return _requestLog;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setRequestLog(RequestLog requestLog)
+    {
+        updateBean(_requestLog,requestLog);
+        _requestLog = requestLog;
+    }
 
     /* ------------------------------------------------------------ */
     @ManagedAttribute("version of this server")
@@ -143,7 +162,27 @@ public class Server extends HandlerWrapper implements Attributes
         return _stopAtShutdown;
     }
 
+
     /* ------------------------------------------------------------ */
+    /**
+     * Set a graceful stop time.
+     * The {@link StatisticsHandler} must be configured so that open connections can
+     * be tracked for a graceful shutdown.
+     * @see org.eclipse.jetty.util.component.ContainerLifeCycle#setStopTimeout(long)
+     */
+    @Override
+    public void setStopTimeout(long stopTimeout)
+    {
+        super.setStopTimeout(stopTimeout);
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set stop server at shutdown behaviour.
+     * @param stop If true, this server instance will be explicitly stopped when the
+     * JVM is shutdown. Otherwise the JVM is stopped with the server running.
+     * @see Runtime#addShutdownHook(Thread)
+     * @see ShutdownThread
+     */
     public void setStopAtShutdown(boolean stop)
     {
         //if we now want to stop
@@ -270,15 +309,15 @@ public class Server extends HandlerWrapper implements Attributes
         long now=System.currentTimeMillis();
         long seconds = now/1000;
         DateField df = _dateField;
-        
+
         if (df==null || df._seconds!=seconds)
         {
-            synchronized (this) // Trade some contention for less garbage
+            try(Locker.Lock lock = _dateLocker.lock())
             {
                 df = _dateField;
                 if (df==null || df._seconds!=seconds)
                 {
-                    HttpField field=new HttpGenerator.CachedHttpField(HttpHeader.DATE,DateGenerator.formatDate(now));
+                    HttpField field=new PreEncodedHttpField(HttpHeader.DATE,DateGenerator.formatDate(now));
                     _dateField=new DateField(seconds,field);
                     return field;
                 }
@@ -291,11 +330,16 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     protected void doStart() throws Exception
     {
+        //If the Server should be stopped when the jvm exits, register
+        //with the shutdown handler thread.
         if (getStopAtShutdown())
-        {
             ShutdownThread.register(this);
-        }
 
+        //Register the Server with the handler thread for receiving
+        //remote stop commands
+        ShutdownMonitor.register(this);
+
+        //Start a thread waiting to receive "stop" commands.
         ShutdownMonitor.getInstance().start(); // initialize
 
         LOG.info("jetty-" + getVersion());
@@ -305,21 +349,24 @@ public class Server extends HandlerWrapper implements Attributes
         // check size of thread pool
         SizedThreadPool pool = getBean(SizedThreadPool.class);
         int max=pool==null?-1:pool.getMaxThreads();
-        int needed=1;
+        int selectors=0;
+        int acceptors=0;
         if (mex.size()==0)
         {
             for (Connector connector : _connectors)
             {
                 if (connector instanceof AbstractConnector)
-                    needed+=((AbstractConnector)connector).getAcceptors();
+                    acceptors+=((AbstractConnector)connector).getAcceptors();
+
                 if (connector instanceof ServerConnector)
-                    needed+=((ServerConnector)connector).getSelectorManager().getSelectorCount();
+                    selectors+=((ServerConnector)connector).getSelectorManager().getSelectorCount();
             }
         }
 
+        int needed=1+selectors+acceptors;
         if (max>0 && needed>max)
-            throw new IllegalStateException("Insufficient max threads in ThreadPool: max="+max+" < needed="+needed);
-        
+            throw new IllegalStateException(String.format("Insufficient threads: max=%d < needed(acceptors=%d + selectors=%d + request=1)",max,acceptors,selectors));
+
         try
         {
             super.doStart();
@@ -333,7 +380,7 @@ public class Server extends HandlerWrapper implements Attributes
         for (Connector connector : _connectors)
         {
             try
-            {   
+            {
                 connector.start();
             }
             catch(Throwable e)
@@ -341,13 +388,13 @@ public class Server extends HandlerWrapper implements Attributes
                 mex.add(e);
             }
         }
-        
+
         if (isDumpAfterStart())
             dumpStdErr();
 
         mex.ifExceptionThrow();
 
-        LOG.info(String.format("Started @%dms",ManagementFactory.getRuntimeMXBean().getUptime()));
+        LOG.info(String.format("Started @%dms",Uptime.getUptime()));
     }
 
     @Override
@@ -365,6 +412,9 @@ public class Server extends HandlerWrapper implements Attributes
         if (isDumpBeforeStop())
             dumpStdErr();
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("doStop {}",this);
+        
         MultiException mex=new MultiException();
 
         // list if graceful futures
@@ -375,7 +425,6 @@ public class Server extends HandlerWrapper implements Attributes
             futures.add(connector.shutdown());
 
         // Then tell the contexts that we are shutting down
-        
         Handler[] gracefuls = getChildHandlersByClass(Graceful.class);
         for (Handler graceful : gracefuls)
             futures.add(((Graceful)graceful).shutdown());
@@ -385,7 +434,8 @@ public class Server extends HandlerWrapper implements Attributes
         if (stopTimeout>0)
         {
             long stop_by=System.currentTimeMillis()+stopTimeout;
-            LOG.debug("Graceful shutdown {} by ",this,new Date(stop_by));
+            if (LOG.isDebugEnabled())
+                LOG.debug("Graceful shutdown {} by ",this,new Date(stop_by));
 
             // Wait for shutdowns
             for (Future<Void> future: futures)
@@ -397,7 +447,7 @@ public class Server extends HandlerWrapper implements Attributes
                 }
                 catch (Exception e)
                 {
-                    mex.add(e.getCause());
+                    mex.add(e);
                 }
             }
         }
@@ -433,8 +483,11 @@ public class Server extends HandlerWrapper implements Attributes
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
 
-        mex.ifExceptionThrow();
+        //Unregister the Server with the handler thread for receiving
+        //remote stop commands as we are stopped already
+        ShutdownMonitor.deregister(this);
 
+        mex.ifExceptionThrow();
     }
 
     /* ------------------------------------------------------------ */
@@ -443,17 +496,19 @@ public class Server extends HandlerWrapper implements Attributes
      * or after the entire request has been received (for short requests of known length), or
      * on the dispatch of an async request.
      */
-    public void handle(HttpChannel<?> connection) throws IOException, ServletException
+    public void handle(HttpChannel connection) throws IOException, ServletException
     {
         final String target=connection.getRequest().getPathInfo();
         final Request request=connection.getRequest();
         final Response response=connection.getResponse();
 
         if (LOG.isDebugEnabled())
-            LOG.debug(request.getDispatcherType()+" "+target+" on "+connection);
+            LOG.debug("{} on {}{}",request.getDispatcherType(),connection,"\n"+request.getMethod()+" "+request.getHttpURI()+"\n"+request.getHttpFields());
 
-        if ("*".equals(target))
+        if (HttpMethod.OPTIONS.is(request.getMethod()) || "*".equals(target))
         {
+            if (!HttpMethod.OPTIONS.is(request.getMethod()))
+                response.sendError(HttpStatus.BAD_REQUEST_400);
             handleOptions(request,response);
             if (!request.isHandled())
                 handle(target, request, request, response);
@@ -462,7 +517,7 @@ public class Server extends HandlerWrapper implements Attributes
             handle(target, request, request, response);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus()+" handled="+request.isHandled());
+            LOG.debug("RESPONSE for {} h={}{}",target,request.isHandled(),"\n"+response.getStatus()+" "+response.getReason()+"\n"+response.getHttpFields());
     }
 
     /* ------------------------------------------------------------ */
@@ -470,13 +525,6 @@ public class Server extends HandlerWrapper implements Attributes
      */
     protected void handleOptions(Request request,Response response) throws IOException
     {
-        if (!HttpMethod.OPTIONS.is(request.getMethod()))
-            response.sendError(HttpStatus.BAD_REQUEST_400);
-        request.setHandled(true);
-        response.setStatus(200);
-        response.getHttpFields().put(HttpHeader.ALLOW,"GET,POST,HEAD,OPTIONS");
-        response.setContentLength(0);
-        response.closeOutput();
     }
 
     /* ------------------------------------------------------------ */
@@ -485,7 +533,7 @@ public class Server extends HandlerWrapper implements Attributes
      * or after the entire request has been received (for short requests of known length), or
      * on the dispatch of an async request.
      */
-    public void handleAsync(HttpChannel<?> connection) throws IOException, ServletException
+    public void handleAsync(HttpChannel connection) throws IOException, ServletException
     {
         final HttpChannelState state = connection.getRequest().getHttpChannelState();
         final AsyncContextEvent event = state.getAsyncContextEvent();
@@ -497,12 +545,12 @@ public class Server extends HandlerWrapper implements Attributes
         {
             // this is a dispatch with a path
             ServletContext context=event.getServletContext();
-            HttpURI uri = new HttpURI(context==null?path:URIUtil.addPaths(context.getContextPath(),path));
-            baseRequest.setUri(uri);
-            baseRequest.setRequestURI(null);
-            baseRequest.setPathInfo(baseRequest.getRequestURI());
+            String query=baseRequest.getQueryString();
+            baseRequest.setURIPathQuery(URIUtil.addPaths(context==null?null:context.getContextPath(), path));
+            HttpURI uri = baseRequest.getHttpURI();
+            baseRequest.setPathInfo(uri.getDecodedPath());
             if (uri.getQuery()!=null)
-                baseRequest.mergeQueryString(uri.getQuery()); //we have to assume dispatch path and query are UTF8
+                baseRequest.mergeQueryParameters(query,uri.getQuery(), true); //we have to assume dispatch path and query are UTF8
         }
 
         final String target=baseRequest.getPathInfo();
@@ -511,7 +559,7 @@ public class Server extends HandlerWrapper implements Attributes
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug(request.getDispatcherType()+" "+target+" on "+connection);
+            LOG.debug(request.getDispatcherType()+" "+request.getMethod()+" "+target+" on "+connection);
             handle(target, baseRequest, request, response);
             LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
         }
@@ -606,6 +654,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return The URI of the first {@link NetworkConnector} and first {@link ContextHandler}, or null
      */
+    @SuppressWarnings("resource")
     public URI getURI()
     {
         NetworkConnector connector=null;
@@ -652,6 +701,7 @@ public class Server extends HandlerWrapper implements Attributes
         return this.getClass().getName()+"@"+Integer.toHexString(hashCode());
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
@@ -676,6 +726,6 @@ public class Server extends HandlerWrapper implements Attributes
             _seconds = seconds;
             _dateField = dateField;
         }
-        
+
     }
 }

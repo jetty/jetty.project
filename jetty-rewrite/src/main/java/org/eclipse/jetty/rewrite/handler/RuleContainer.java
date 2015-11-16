@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,19 +23,16 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Base container to group rules. Can be extended so that the contained rules
  * will only be applied under certain conditions
- * 
- * 
  */
-
 public class RuleContainer extends Rule
 {
     private static final Logger LOG = Log.getLogger(RuleContainer.class);
@@ -45,35 +42,7 @@ public class RuleContainer extends Rule
     protected String _originalPathAttribute;
     protected boolean _rewriteRequestURI=true;
     protected boolean _rewritePathInfo=true;
-    
-    protected LegacyRule _legacy;
-
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public LegacyRule getLegacyRule()
-    {
-        if (_legacy==null)
-        {
-            _legacy= new LegacyRule();
-            addRule(_legacy);
-        }
-        return _legacy;
-    }
-    
-
-    /* ------------------------------------------------------------ */
-    /**
-     * To enable configuration from jetty.xml on rewriteRequestURI, rewritePathInfo and
-     * originalPathAttribute
-     * 
-     * @param legacyRule old style rewrite rule
-     */
-    @Deprecated
-    public void setLegacyRule(LegacyRule legacyRule)
-    {
-        _legacy = legacyRule;
-    }
-
+     
     /* ------------------------------------------------------------ */
     /**
      * Returns the list of rules.
@@ -91,16 +60,7 @@ public class RuleContainer extends Rule
      */
     public void setRules(Rule[] rules)
     {
-        if (_legacy==null)
-            _rules = rules;
-        else
-        {
-            _rules=null;
-            addRule(_legacy);
-            if (rules!=null)
-                for (Rule rule:rules)
-                    addRule(rule);
-        }
+        _rules = rules;
     }
 
     /* ------------------------------------------------------------ */
@@ -191,6 +151,8 @@ public class RuleContainer extends Rule
      * @param target target field to pass on to the contained rules
      * @param request request object to pass on to the contained rules
      * @param response response object to pass on to the contained rules
+     * @return the target
+     * @throws IOException if unable to apply the rule
      */
     protected String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
@@ -211,10 +173,11 @@ public class RuleContainer extends Rule
 
                 if (_rewriteRequestURI)
                 {
+                    String encoded=URIUtil.encodePath(applied);
                     if (rule instanceof Rule.ApplyURI)
-                        ((Rule.ApplyURI)rule).applyURI((Request)request, target, applied);
+                        ((Rule.ApplyURI)rule).applyURI((Request)request,((Request)request).getRequestURI(), encoded);
                     else
-                        ((Request)request).setRequestURI(applied);
+                        ((Request)request).setURIPathQuery(encoded);
                 }
 
                 if (_rewritePathInfo)
@@ -225,7 +188,7 @@ public class RuleContainer extends Rule
                 if (rule.isHandling())
                 {
                     LOG.debug("handling {}",rule);
-                    (request instanceof Request?(Request)request:HttpChannel.getCurrentHttpChannel().getRequest()).setHandled(true);
+                    Request.getBaseRequest(request).setHandled(true);
                 }
 
                 if (rule.isTerminating())

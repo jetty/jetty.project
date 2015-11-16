@@ -25,8 +25,7 @@ import java.util.List;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
- * Specifies <contextHandlers/> element in web app configuration.
- * 
+ * Specifies <code>&lt;contextHandlers/&gt;</code> element in web app configuration.
  */
 public class ContextHandlers
 {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,11 +36,11 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A {@link ContentProvider} for files using JDK 7's {@code java.nio.file} APIs.
- * <p />
+ * <p>
  * It is possible to specify, at the constructor, a buffer size used to read content from the
  * stream, by default 4096 bytes.
  */
-public class PathContentProvider implements ContentProvider
+public class PathContentProvider extends AbstractTypedContentProvider
 {
     private static final Logger LOG = Log.getLogger(PathContentProvider.class);
 
@@ -55,6 +55,17 @@ public class PathContentProvider implements ContentProvider
 
     public PathContentProvider(Path filePath, int bufferSize) throws IOException
     {
+        this("application/octet-stream", filePath, bufferSize);
+    }
+
+    public PathContentProvider(String contentType, Path filePath) throws IOException
+    {
+        this(contentType, filePath, 4096);
+    }
+
+    public PathContentProvider(String contentType, Path filePath, int bufferSize) throws IOException
+    {
+        super(contentType);
         if (!Files.isRegularFile(filePath))
             throw new NoSuchFileException(filePath.toString());
         if (!Files.isReadable(filePath))
@@ -96,7 +107,8 @@ public class PathContentProvider implements ContentProvider
                 if (channel == null)
                 {
                     channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
-                    LOG.debug("Opened file {}", filePath);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Opened file {}", filePath);
                 }
 
                 buffer.clear();
@@ -120,7 +132,7 @@ public class PathContentProvider implements ContentProvider
                 close();
                 throw x;
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 close();
                 throw (NoSuchElementException)new NoSuchElementException().initCause(x);
@@ -141,7 +153,7 @@ public class PathContentProvider implements ContentProvider
                 if (channel != null)
                     channel.close();
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 LOG.ignore(x);
             }

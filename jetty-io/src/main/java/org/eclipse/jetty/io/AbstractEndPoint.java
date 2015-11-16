@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,10 +19,11 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -30,34 +31,255 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 {
+    enum State {OPEN, ISHUTTING, ISHUT, OSHUTTING, OSHUT, CLOSED};
     private static final Logger LOG = Log.getLogger(AbstractEndPoint.class);
+    private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
     private final long _created=System.currentTimeMillis();
-    private final InetSocketAddress _local;
-    private final InetSocketAddress _remote;
     private volatile Connection _connection;
 
     private final FillInterest _fillInterest = new FillInterest()
     {
         @Override
-        protected boolean needsFill() throws IOException
+        protected void needsFillInterest() throws IOException
         {
-            return AbstractEndPoint.this.needsFill();
+            AbstractEndPoint.this.needsFillInterest();
         }
     };
+
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
-        protected void onIncompleteFlushed()
+        protected void onIncompleteFlush()
         {
             AbstractEndPoint.this.onIncompleteFlush();
         }
     };
 
-    protected AbstractEndPoint(Scheduler scheduler,InetSocketAddress local,InetSocketAddress remote)
+    protected AbstractEndPoint(Scheduler scheduler)
     {
         super(scheduler);
-        _local=local;
-        _remote=remote;
+    }
+
+
+    protected final void shutdownInput()
+    {
+        while(true)
+        {
+            State s = _state.get();
+            switch(s)
+            {       
+                case OPEN:
+                    if (!_state.compareAndSet(s,State.ISHUTTING))
+                        continue;
+                    try
+                    {
+                        doShutdownInput();
+                    }
+                    finally
+                    {
+                        if(!_state.compareAndSet(State.ISHUTTING,State.ISHUT))
+                        {
+                            // If somebody else switched to CLOSED while we were ishutting,
+                            // then we do the close for them
+                            if (_state.get()==State.CLOSED)
+                                doOnClose();
+                            else
+                                throw new IllegalStateException();
+                        }
+                    }
+                    return;
+                
+                case ISHUTTING:  // Somebody else ishutting
+                case ISHUT: // Already ishut
+                    return;
+                    
+                case OSHUTTING:
+                    if (!_state.compareAndSet(s,State.CLOSED))
+                        continue;
+                    // The thread doing the OSHUT will close
+                    return;
+                    
+                case OSHUT:
+                    if (!_state.compareAndSet(s,State.CLOSED))
+                        continue;
+                    // Already OSHUT so we close
+                    doOnClose();
+                    return;
+
+                case CLOSED: // already closed
+                    return;
+            }
+        }
+    }
+
+    @Override
+    public final void shutdownOutput()
+    {
+        while(true)
+        {
+            State s = _state.get();
+            switch(s)
+            {
+                case OPEN:
+                    if (!_state.compareAndSet(s,State.OSHUTTING))
+                        continue;
+                    try
+                    {
+                        doShutdownOutput();
+                    }
+                    finally
+                    {
+                        if(!_state.compareAndSet(State.OSHUTTING,State.OSHUT))
+                        {
+                            // If somebody else switched to CLOSED while we were oshutting,
+                            // then we do the close for them
+                            if (_state.get()==State.CLOSED)
+                                doOnClose();
+                            else
+                                throw new IllegalStateException();
+                        }
+                    }
+                    return;
+                    
+                case ISHUTTING:
+                    if (!_state.compareAndSet(s,State.CLOSED))
+                        continue;
+                    // The thread doing the ISHUT will close
+                    return;
+                    
+                case ISHUT:
+                    if (!_state.compareAndSet(s,State.CLOSED))
+                        continue;
+                    // Already ISHUT so we close
+                    doOnClose();
+                    return;
+                
+                case OSHUTTING:  // Somebody else oshutting
+                case OSHUT: // Already oshut
+                    return;
+
+                case CLOSED: // already closed
+                    return;
+            }
+        }
+    }
+
+    @Override
+    public final void close()
+    {
+        while(true)
+        {
+            State s = _state.get();
+            switch(s)
+            {
+                case OPEN:
+                case ISHUT: // Already ishut
+                case OSHUT: // Already oshut
+                    if (!_state.compareAndSet(s,State.CLOSED))
+                        continue;
+                    doOnClose();
+                    return;
+
+                case ISHUTTING: // Somebody else ishutting
+                case OSHUTTING: // Somebody else oshutting
+                    if (!_state.compareAndSet(s,State.CLOSED))
+                        continue;
+                    // The thread doing the IO SHUT will call doOnClose
+                    return;                
+
+                case CLOSED: // already closed
+                    return;
+            }
+        }
+    }
+    
+    protected void doShutdownInput()
+    {}
+    
+    protected void doShutdownOutput()
+    {}
+    
+    protected void doClose()
+    {}
+    
+    private void doOnClose()
+    {
+        try
+        {
+            doClose();
+        }
+        finally
+        {
+            onClose();
+        }
+    }
+        
+
+    @Override
+    public boolean isOutputShutdown()
+    {
+        switch(_state.get())
+        {
+            case CLOSED:
+            case OSHUT:
+            case OSHUTTING:
+                return true;
+            default:
+                return false;            
+        }
+    }
+    @Override
+    public boolean isInputShutdown()
+    {
+        switch(_state.get())
+        {
+            case CLOSED:
+            case ISHUT:
+            case ISHUTTING:
+                return true;
+            default:
+                return false;            
+        }
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        switch(_state.get())
+        {
+            case CLOSED:
+                return false;
+            default:
+                return true;            
+        }
+    }
+    
+    public void checkFlush() throws IOException
+    {
+        State s=_state.get();
+        switch(s)
+        {
+            case OSHUT:
+            case OSHUTTING:
+            case CLOSED:
+                throw new IOException(s.toString());
+            default:
+                break;
+        }
+    }
+    
+    public void checkFill() throws IOException
+    {
+        State s=_state.get();
+        switch(s)
+        {
+            case ISHUT:
+            case ISHUTTING:
+            case CLOSED:
+                throw new IOException(s.toString());
+            default:
+                break;
+        }
     }
 
     @Override
@@ -66,18 +288,6 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         return _created;
     }
 
-    @Override
-    public InetSocketAddress getLocalAddress()
-    {
-        return _local;
-    }
-
-    @Override
-    public InetSocketAddress getRemoteAddress()
-    {
-        return _remote;
-    }
-    
     @Override
     public Connection getConnection()
     {
@@ -91,25 +301,37 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return false;
+    }
+
+
+    
+    protected void reset()
+    {
+        _state.set(State.OPEN);
+        _writeFlusher.onClose();
+        _fillInterest.onClose();
+    }
+    
+    @Override
     public void onOpen()
     {
-        LOG.debug("onOpen {}",this);
-        super.onOpen();
+        if (LOG.isDebugEnabled())
+            LOG.debug("onOpen {}",this);
+        if (_state.get()!=State.OPEN)
+            throw new IllegalStateException();
     }
 
     @Override
     public void onClose()
     {
         super.onClose();
-        LOG.debug("onClose {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onClose {}",this);
         _writeFlusher.onClose();
         _fillInterest.onClose();
-    }
-    
-    @Override
-    public void close()
-    {
-        onClose();
     }
 
     @Override
@@ -120,6 +342,12 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
+    public boolean isFillInterested()
+    {
+        return _fillInterest.isInterested();
+    }
+
+    @Override
     public void write(Callback callback, ByteBuffer... buffers) throws IllegalStateException
     {
         _writeFlusher.write(callback, buffers);
@@ -127,9 +355,9 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
     protected abstract void onIncompleteFlush();
 
-    protected abstract boolean needsFill() throws IOException;
+    protected abstract void needsFillInterest() throws IOException;
 
-    protected FillInterest getFillInterest()
+    public FillInterest getFillInterest()
     {
         return _fillInterest;
     }
@@ -143,25 +371,64 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     protected void onIdleExpired(TimeoutException timeout)
     {
         boolean output_shutdown=isOutputShutdown();
-        _fillInterest.onFail(timeout);
-        _writeFlusher.onFail(timeout);
-        if (output_shutdown)
+        boolean input_shutdown=isInputShutdown();
+        boolean fillFailed = _fillInterest.onFail(timeout);
+        boolean writeFailed = _writeFlusher.onFail(timeout);
+
+        // If the endpoint is half closed and there was no fill/write handling, then close here.
+        // This handles the situation where the connection has completed its close handling
+        // and the endpoint is half closed, but the other party does not complete the close.
+        // This perhaps should not check for half closed, however the servlet spec case allows
+        // for a dispatched servlet or suspended request to extend beyond the connections idle
+        // time.  So if this test would always close an idle endpoint that is not handled, then
+        // we would need a mode to ignore timeouts for some HTTP states
+        if (isOpen() && (output_shutdown || input_shutdown) && !(fillFailed || writeFailed))
             close();
+        else
+            LOG.debug("Ignored idle endpoint {}",this);
+    }
+
+    @Override
+    public void upgrade(Connection newConnection)
+    {
+        Connection old_connection = getConnection();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} upgrading from {} to {}", this, old_connection, newConnection);
+
+        ByteBuffer prefilled = (old_connection instanceof Connection.UpgradeFrom)
+                ?((Connection.UpgradeFrom)old_connection).onUpgradeFrom():null;
+        old_connection.onClose();
+        old_connection.getEndPoint().setConnection(newConnection);
+
+        if (newConnection instanceof Connection.UpgradeTo)
+            ((Connection.UpgradeTo)newConnection).onUpgradeTo(prefilled);
+        else if (BufferUtil.hasContent(prefilled))
+            throw new IllegalStateException();
+
+        newConnection.onOpen();
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s<->%d,%s,%s,%s,%s,%s,%d,%s}",
-                getClass().getSimpleName(),
+        Class<?> c=getClass();
+        String name=c.getSimpleName();
+        while (name.length()==0 && c.getSuperclass()!=null)
+        {
+            c=c.getSuperclass();
+            name=c.getSimpleName();
+        }
+        
+        return String.format("%s@%x{%s<->%s,%s,%s|%s,%d/%d,%s}",
+                name,
                 hashCode(),
                 getRemoteAddress(),
-                getLocalAddress().getPort(),
-                isOpen()?"Open":"CLOSED",
-                isInputShutdown()?"ISHUT":"in",
-                isOutputShutdown()?"OSHUT":"out",
-                _fillInterest.isInterested()?"R":"-",
-                _writeFlusher.isInProgress()?"W":"-",
+                getLocalAddress(),
+                _state.get(),
+                _fillInterest.toStateString(),
+                _writeFlusher.toStateString(),
+                getIdleFor(),
                 getIdleTimeout(),
                 getConnection()==null?null:getConnection().getClass().getSimpleName());
     }

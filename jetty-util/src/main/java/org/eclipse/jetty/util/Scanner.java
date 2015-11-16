@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -221,7 +221,7 @@ public class Scanner extends AbstractLifeCycle
     /**
      * Apply a filter to files found in the scan directory.
      * Only files matching the filter will be reported as added/changed/removed.
-     * @param filter
+     * @param filter the filename filter to use
      */
     public void setFilenameFilter (FilenameFilter filter)
     {
@@ -257,7 +257,7 @@ public class Scanner extends AbstractLifeCycle
     
     /* ------------------------------------------------------------ */
     /** Set if found directories should be reported.
-     * @param dirs
+     * @param dirs true to report directory changes as well
      */
     public void setReportDirs(boolean dirs)
     {
@@ -273,7 +273,7 @@ public class Scanner extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * Add an added/removed/changed listener
-     * @param listener
+     * @param listener the listener to add
      */
     public synchronized void addListener (Listener listener)
     {
@@ -370,6 +370,7 @@ public class Scanner extends AbstractLifeCycle
     }
 
     /**
+     * @param path tests if the path exists
      * @return true if the path exists in one of the scandirs
      */
     public boolean exists(String path)
@@ -557,12 +558,16 @@ public class Scanner extends AbstractLifeCycle
             {
                 if ((_filter == null) || ((_filter != null) && _filter.accept(f.getParentFile(), f.getName())))
                 {
-                    LOG.debug("scan accepted {}",f);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("scan accepted {}",f);
                     String name = f.getCanonicalPath();
-                    scanInfoMap.put(name, new TimeNSize(f.lastModified(),f.length()));
+                    scanInfoMap.put(name, new TimeNSize(f.lastModified(),f.isDirectory()?0:f.length()));
                 }
                 else
-                    LOG.debug("scan rejected {}",f);
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("scan rejected {}",f);
+                }
             }
             
             // If it is a directory, scan if it is a known directory or the depth is OK.

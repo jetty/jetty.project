@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<!-- ============================================================= -->
+<!-- Display a Warning Message if {jetty.home} == {jetty.base}     -->
+<!-- ============================================================= -->
+<Configure id="homeBaseWarning" class="org.eclipse.jetty.server.HomeBaseWarning">
+</Configure>

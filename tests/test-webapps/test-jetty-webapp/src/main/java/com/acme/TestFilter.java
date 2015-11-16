@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -64,6 +64,7 @@ public class TestFilter implements Filter
         _remote=Boolean.parseBoolean(filterConfig.getInitParameter("remote"));
         _allowed.add("/favicon.ico");
         _allowed.add("/jetty_banner.gif");
+        _allowed.add("/remote.html");
 
         LOG.debug("TestFilter#remote="+_remote);
     }
@@ -76,18 +77,13 @@ public class TestFilter implements Filter
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException
     {
-        String from = request.getRemoteHost();
-        String to = request.getServerName();
+        String from = request.getRemoteAddr();
+        String to = request.getLocalAddr();
         String path=((HttpServletRequest)request).getServletPath();
-
-        if (!"/remote.html".equals(path) && !_remote && !_allowed.contains(path) && (
-            !from.equals("localhost") && !from.startsWith("127.") && from.indexOf(":1")<0 ||
-            !to.equals("localhost")&&!to.startsWith("127.0.0.") && to.indexOf(":1")<0))
+        
+        if (!_remote && !_allowed.contains(path) && !from.equals(to))
         {
-            if ("/".equals(path))
-                _context.getRequestDispatcher("/remote.html").forward(request,response);
-            else
-                ((HttpServletResponse)response).sendRedirect("/remote.html");
+            _context.getRequestDispatcher("/remote.html").forward(request,response);
             return;
         }
 

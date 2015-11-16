@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
-import java.nio.ByteBuffer;
+import java.util.zip.DataFormatException;
 
+import org.eclipse.jetty.websocket.api.BadPayloadException;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.OpCode;
 
 /**
  * Implementation of the
@@ -35,6 +35,18 @@ public class DeflateFrameExtension extends CompressExtension
     {
         return "deflate-frame";
     }
+    
+    @Override
+    int getRsvUseMode()
+    {
+        return RSV_USE_ALWAYS;
+    }
+    
+    @Override
+    int getTailDropMode()
+    {
+        return TAIL_DROP_ALWAYS;
+    }
 
     @Override
     public void incomingFrame(Frame frame)
@@ -43,18 +55,22 @@ public class DeflateFrameExtension extends CompressExtension
         // they are read and parsed with a single thread, and
         // therefore there is no need for synchronization.
 
-        if (OpCode.isControlFrame(frame.getOpCode()) || !frame.isRsv1() || !frame.hasPayload())
+        if ( frame.getType().isControl() || !frame.isRsv1() || !frame.hasPayload() )
         {
             nextIncomingFrame(frame);
             return;
         }
 
-        ByteBuffer payload = frame.getPayload();
-        int remaining = payload.remaining();
-        byte[] input = new byte[remaining + TAIL_BYTES.length];
-        payload.get(input, 0, remaining);
-        System.arraycopy(TAIL_BYTES, 0, input, remaining, TAIL_BYTES.length);
-
-        forwardIncoming(frame, decompress(input));
+        try
+        {
+            ByteAccumulator accumulator = newByteAccumulator();
+            decompress(accumulator, frame.getPayload());
+            decompress(accumulator, TAIL_BYTES_BUF.slice());
+            forwardIncoming(frame, accumulator);
+        }
+        catch (DataFormatException e)
+        {
+            throw new BadPayloadException(e);
+        }
     }
 }

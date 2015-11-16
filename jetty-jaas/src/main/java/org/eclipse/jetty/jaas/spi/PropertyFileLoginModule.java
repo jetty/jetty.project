@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,8 +36,6 @@ import org.eclipse.jetty.util.security.Credential;
 
 /**
  * PropertyFileLoginModule
- *
- *
  */
 public class PropertyFileLoginModule extends AbstractLoginModule
 {
@@ -55,10 +53,11 @@ public class PropertyFileLoginModule extends AbstractLoginModule
      *
      * @see javax.security.auth.spi.LoginModule#initialize(javax.security.auth.Subject, javax.security.auth.callback.CallbackHandler, java.util.Map,
      *      java.util.Map)
-     * @param subject
-     * @param callbackHandler
-     * @param sharedState
-     * @param options
+     *      
+     * @param subject the subject
+     * @param callbackHandler the callback handler
+     * @param sharedState the shared state map
+     * @param options the options map
      */
     public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options)
     {
@@ -104,8 +103,8 @@ public class PropertyFileLoginModule extends AbstractLoginModule
     /**
      * Don't implement this as we want to pre-fetch all of the users.
      *
-     * @param userName
-     * @throws Exception
+     * @param userName the user name
+     * @throws Exception if unable to get the user information
      */
     public UserInfo getUserInfo(String userName) throws Exception
     {

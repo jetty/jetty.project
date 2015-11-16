@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.ab;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -39,8 +40,7 @@ public class TestABCase4
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
-        expected.put(new byte[]
-                { (byte)0x8b, 0x00 });
+        expected.put(new byte[] { (byte)0x8b, 0x00 });
 
         expected.flip();
 
@@ -50,10 +50,17 @@ public class TestABCase4
         {
             Parser parser = new UnitParser(policy);
             parser.setIncomingFramesHandler(capture);
-            parser.parse(expected);
+            try
+            {
+                parser.parse(expected);
+            }
+            catch (ProtocolException ignore)
+            {
+                // ignore
+            }
         }
 
-        Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
+        Assert.assertEquals("error on undefined opcode",1,capture.getErrorCount(WebSocketException.class));
 
         Throwable known = capture.getErrors().poll();
 
@@ -65,8 +72,7 @@ public class TestABCase4
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
-        expected.put(new byte[]
-                { (byte)0x8c, 0x01, 0x00 });
+        expected.put(new byte[] { (byte)0x8c, 0x01, 0x00 });
 
         expected.flip();
 
@@ -76,24 +82,29 @@ public class TestABCase4
         {
             Parser parser = new UnitParser(policy);
             parser.setIncomingFramesHandler(capture);
-            parser.parse(expected);
+            try
+            {
+                parser.parse(expected);
+            }
+            catch (ProtocolException ignore)
+            {
+                // ignore
+            }
         }
 
-        Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
+        Assert.assertEquals("error on undefined opcode",1,capture.getErrorCount(WebSocketException.class));
 
         Throwable known = capture.getErrors().poll();
 
         Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 12"));
     }
 
-
     @Test
     public void testParserNonControlOpCode3Case4_1_1() throws Exception
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
-        expected.put(new byte[]
-                { (byte)0x83, 0x00 });
+        expected.put(new byte[] { (byte)0x83, 0x00 });
 
         expected.flip();
 
@@ -103,10 +114,17 @@ public class TestABCase4
         {
             Parser parser = new UnitParser(policy);
             parser.setIncomingFramesHandler(capture);
-            parser.parse(expected);
+            try
+            {
+                parser.parse(expected);
+            }
+            catch (ProtocolException ignore)
+            {
+                // ignore
+            }
         }
 
-        Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
+        Assert.assertEquals("error on undefined opcode",1,capture.getErrorCount(WebSocketException.class));
 
         Throwable known = capture.getErrors().poll();
 
@@ -118,8 +136,7 @@ public class TestABCase4
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
-        expected.put(new byte[]
-                { (byte)0x84, 0x01, 0x00 });
+        expected.put(new byte[] { (byte)0x84, 0x01, 0x00 });
 
         expected.flip();
 
@@ -129,10 +146,17 @@ public class TestABCase4
         {
             Parser parser = new UnitParser(policy);
             parser.setIncomingFramesHandler(capture);
-            parser.parse(expected);
+            try
+            {
+                parser.parse(expected);
+            }
+            catch (ProtocolException ignore)
+            {
+                // ignore
+            }
         }
 
-        Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
+        Assert.assertEquals("error on undefined opcode",1,capture.getErrorCount(WebSocketException.class));
 
         Throwable known = capture.getErrors().poll();
 

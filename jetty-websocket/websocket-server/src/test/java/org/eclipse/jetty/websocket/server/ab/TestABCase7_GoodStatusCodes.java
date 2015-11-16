@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -78,6 +78,7 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
 
     /**
      * just the close code, no reason
+     * @throws Exception on test failure
      */
     @Test
     public void testStatusCode() throws Exception
@@ -93,8 +94,7 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(clone(payload)));
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -102,14 +102,11 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
      * the good close code, with reason
+     * @throws Exception on test failure
      */
     @Test
     public void testStatusCodeWithReason() throws Exception
@@ -125,18 +122,13 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(clone(payload)));
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 }

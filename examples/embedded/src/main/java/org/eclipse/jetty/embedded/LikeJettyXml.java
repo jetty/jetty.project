@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,18 @@
 
 package org.eclipse.jetty.embedded;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.lang.management.ManagementFactory;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.PropertiesConfigurationManager;
+import org.eclipse.jetty.deploy.bindings.DebugListenerBinding;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.server.DebugListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -42,15 +47,38 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.webapp.Configuration;
 
+/**
+ * Starts the Jetty Distribution's demo-base directory using entirely
+ * embedded jetty techniques.
+ */
 public class LikeJettyXml
 {
-    public static void main(String[] args) throws Exception
+    public static void main( String[] args ) throws Exception
     {
-        String jetty_home = System.getProperty("jetty.home","../../jetty-distribution/target/distribution");
-        String jetty_base = System.getProperty("jetty.home","../../jetty-distribution/target/distribution/demo-base");
-        System.setProperty("jetty.home",jetty_home);
-        System.setProperty("jetty.base",jetty_base);
+        // Path to as-built jetty-distribution directory
+        String jettyHomeBuild = "../../jetty-distribution/target/distribution";
+        
+        // Find jetty home and base directories
+        String homePath = System.getProperty("jetty.home", jettyHomeBuild);
+        File homeDir = new File(homePath);
+        if (!homeDir.exists())
+        {
+            throw new FileNotFoundException(homeDir.getAbsolutePath());
+        }
+        String basePath = System.getProperty("jetty.base", homeDir + "/demo-base");
+        File baseDir = new File(basePath);
+        if(!baseDir.exists())
+        {
+            throw new FileNotFoundException(baseDir.getAbsolutePath());
+        }
+        
+        // Configure jetty.home and jetty.base system properties
+        String jetty_home = homeDir.getAbsolutePath();
+        String jetty_base = baseDir.getAbsolutePath();
+        System.setProperty("jetty.home", jetty_home);
+        System.setProperty("jetty.base", jetty_base);
 
 
         // === jetty.xml ===
@@ -86,14 +114,15 @@ public class LikeJettyXml
         server.setDumpBeforeStop(false);
         server.setStopAtShutdown(true);
 
-
         // === jetty-jmx.xml ===
-        MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        MBeanContainer mbContainer = new MBeanContainer(
+                ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
 
 
         // === jetty-http.xml ===
-        ServerConnector http = new ServerConnector(server,new HttpConnectionFactory(http_config));
+        ServerConnector http = new ServerConnector(server,
+                new HttpConnectionFactory(http_config));
         http.setPort(8080);
         http.setIdleTimeout(30000);
         server.addConnector(http);
@@ -102,15 +131,13 @@ public class LikeJettyXml
         // === jetty-https.xml ===
         // SSL Context Factory
         SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(jetty_home + "/etc/keystore");
+        sslContextFactory.setKeyStorePath(jetty_home + "/../../../jetty-server/src/test/config/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        sslContextFactory.setTrustStorePath(jetty_home + "/etc/keystore");
+        sslContextFactory.setTrustStorePath(jetty_home + "/../../../jetty-server/src/test/config/etc/keystore");
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setExcludeCipherSuites(
-                "SSL_RSA_WITH_DES_CBC_SHA",
-                "SSL_DHE_RSA_WITH_DES_CBC_SHA",
-                "SSL_DHE_DSS_WITH_DES_CBC_SHA",
+        sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA",
+                "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
                 "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
                 "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
@@ -122,7 +149,7 @@ public class LikeJettyXml
 
         // SSL Connector
         ServerConnector sslConnector = new ServerConnector(server,
-            new SslConnectionFactory(sslContextFactory,"http/1.1"),
+            new SslConnectionFactory(sslContextFactory,HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(https_config));
         sslConnector.setPort(8443);
         server.addConnector(sslConnector);
@@ -130,8 +157,13 @@ public class LikeJettyXml
 
         // === jetty-deploy.xml ===
         DeploymentManager deployer = new DeploymentManager();
+        DebugListener debug = new DebugListener(System.out,true,true,true);
+        server.addBean(debug);        
+        deployer.addLifeCycleBinding(new DebugListenerBinding(debug));
         deployer.setContexts(contexts);
-        deployer.setContextAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",".*/servlet-api-[^/]*\\.jar$");
+        deployer.setContextAttribute(
+                "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+                ".*/servlet-api-[^/]*\\.jar$");
 
         WebAppProvider webapp_provider = new WebAppProvider();
         webapp_provider.setMonitoredDirName(jetty_base + "/webapps");
@@ -142,7 +174,12 @@ public class LikeJettyXml
 
         deployer.addAppProvider(webapp_provider);
         server.addBean(deployer);
-
+        
+        // === setup jetty plus ==
+        Configuration.ClassList.setServerDefault(server).addAfter(
+                "org.eclipse.jetty.webapp.FragmentConfiguration",
+                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
+                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
 
         // === jetty-stats.xml ===
         StatisticsHandler stats = new StatisticsHandler();
@@ -179,10 +216,9 @@ public class LikeJettyXml
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
         login.setConfig(jetty_base + "/etc/realm.properties");
-        login.setRefreshInterval(0);
+        login.setHotReload(false);
         server.addBean(login);
-
-
+        
         // Start the server
         server.start();
         server.join();

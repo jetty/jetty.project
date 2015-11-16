@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,9 +36,20 @@ import org.eclipse.jetty.util.log.Logger;
  * Beans can be added the ContainerLifeCycle either as managed beans or as unmanaged beans.  A managed bean is started, stopped and destroyed with the aggregate.
  * An unmanaged bean is associated with the aggregate for the purposes of {@link #dump()}, but it's lifecycle must be managed externally.
  * <p>
- * When a {@link LifeCycle} bean is added with out a managed state being specified, if it is already started, then it is assumed to be an unmanaged bean.
- * If it is not started then it is added in and auto managed state, which means that when this bean is itself started, it if must also start the added bean, then it
- * is switched from Auto to be a managed bean.  Otherwise it becomes an unmanaged bean.    Simply put an Auto bean will be stopped by this aggregate only if it
+ * When a {@link LifeCycle} bean is added without a managed state being specified the state is determined heuristically:
+ * <ul>
+ *   <li>If the added bean is running, it will be added as an unmanaged bean.
+ *   <li>If the added bean is !running and the container is !running, it will be added as an AUTO bean (see below).
+ *   <li>If the added bean is !running and the container is starting, it will be added as an managed bean and will be started (this handles the frequent case of 
+ *   new beans added during calls to doStart).
+ *   <li>If the added bean is !running and the container is started, it will be added as an unmanaged bean.
+ * </ul>
+ * When the container is started, then all contained managed beans will also be started.  Any contained Auto beans 
+ * will be check for their status and if already started will be switched unmanaged beans, else they will be 
+ * started and switched to managed beans.  Beans added after a container is started are not started and their state needs to
+ * be explicitly managed.
+ * <p>
+ * When stopping the container, a contained bean will be stopped by this aggregate only if it
  * is started by this aggregate.
  * <p>
  * The methods {@link #addBean(Object, boolean)}, {@link #manage(Object)} and {@link #unmanage(Object)} can be used to
@@ -56,13 +67,17 @@ import org.eclipse.jetty.util.log.Logger;
  *   +? referenced AUTO object that could become MANAGED or UNMANAGED.
  * </pre>
  */
+
+/* ------------------------------------------------------------ */
+/**
+ */
 @ManagedObject("Implementation of Container and LifeCycle")
 public class ContainerLifeCycle extends AbstractLifeCycle implements Container, Destroyable, Dumpable
 {
     private static final Logger LOG = Log.getLogger(ContainerLifeCycle.class);
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();
     private final List<Container.Listener> _listeners = new CopyOnWriteArrayList<>();
-    private boolean _started = false;
+    private boolean _doStarted = false;
 
 
     public ContainerLifeCycle()
@@ -76,7 +91,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     protected void doStart() throws Exception
     {
         // indicate that we are started, so that addBean will start other beans added.
-        _started = true;
+        _doStarted = true;
 
         // start our managed and auto beans
         for (Bean b : _beans)
@@ -109,8 +124,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     /**
      * Starts the given lifecycle.
      *
-     * @param l
-     * @throws Exception
+     * @param l the lifecycle to start
+     * @throws Exception if unable to start lifecycle
      */
     protected void start(LifeCycle l) throws Exception
     {
@@ -120,8 +135,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     /**
      * Stops the given lifecycle.
      *
-     * @param l
-     * @throws Exception
+     * @param l the lifecycle to stop
+     * @throws Exception if unable to stop the lifecycle
      */
     protected void stop(LifeCycle l) throws Exception
     {
@@ -134,7 +149,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @Override
     protected void doStop() throws Exception
     {
-        _started = false;
+        _doStarted = false;
         super.doStop();
         List<Bean> reverse = new ArrayList<>(_beans);
         Collections.reverse(reverse);
@@ -143,8 +158,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             if (b._managed==Managed.MANAGED && b._bean instanceof LifeCycle)
             {
                 LifeCycle l = (LifeCycle)b._bean;
-                if (l.isRunning())
-                    stop(l);
+                stop(l);
             }
         }
     }
@@ -259,7 +273,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 case MANAGED:
                     manage(new_bean);
 
-                    if (_started)
+                    if (isStarting() && _doStarted)
                     {
                         LifeCycle l = (LifeCycle)o;
                         if (!l.isRunning())
@@ -271,16 +285,20 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     if (o instanceof LifeCycle)
                     {
                         LifeCycle l = (LifeCycle)o;
-                        if (_started)
+                        if (isStarting())
                         {
                             if (l.isRunning())
                                 unmanage(new_bean);
-                            else
+                            else if (_doStarted)
                             {
                                 manage(new_bean);
                                 start(l);
                             }
+                            else
+                                new_bean._managed=Managed.AUTO;      
                         }
+                        else if (isStarted())
+                            unmanage(new_bean);
                         else
                             new_bean._managed=Managed.AUTO;
                     }
@@ -301,12 +319,38 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             throw new RuntimeException(e);
         }
 
-        LOG.debug("{} added {}",this,new_bean);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} added {}",this,new_bean);
 
         return true;
     }
 
     
+    /* ------------------------------------------------------------ */
+    /** Add a managed lifecycle.
+     * <p>This is a convenience method that uses addBean(lifecycle,true)
+     * and then ensures that the added bean is started iff this container
+     * is running.  Exception from nested calls to start are caught and 
+     * wrapped as RuntimeExceptions
+     * @param lifecycle the managed lifecycle to add
+     */
+    public void addManaged(LifeCycle lifecycle)
+    {
+        addBean(lifecycle,true);
+        try
+        {
+            if (isRunning() && !lifecycle.isRunning())
+                start(lifecycle);
+        }
+        catch (RuntimeException | Error e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public void addEventListener(Container.Listener listener)
@@ -479,6 +523,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     {
         if (_beans.remove(bean))
         {
+            boolean wasManaged = bean.isManaged();
             
             unmanage(bean);
 
@@ -489,7 +534,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 removeEventListener((Container.Listener)bean._bean);
 
             // stop managed beans
-            if (bean._managed==Managed.MANAGED && bean._bean instanceof LifeCycle)
+            if (wasManaged && bean._bean instanceof LifeCycle)
             {
                 try
                 {
@@ -729,6 +774,17 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 removeBean(oldBean);
             if (newBean!=null)
                 addBean(newBean);
+        }
+    }
+    
+    public void updateBean(Object oldBean, final Object newBean, boolean managed)
+    {
+        if (newBean!=oldBean)
+        {
+            if (oldBean!=null)
+                removeBean(oldBean);
+            if (newBean!=null)
+                addBean(newBean,managed);
         }
     }
 

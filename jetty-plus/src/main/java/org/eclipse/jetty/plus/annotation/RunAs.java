@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,8 +22,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 
 /**
  * RunAs
- * <p/>
- * Represents a &lt;run-as&gt; element in web.xml, or a runAs annotation.
+ * <p>
+ * Represents a <code>&lt;run-as&gt;</code> element in web.xml, or a <code>&#064;RunAs</code> annotation.
  */
 public class RunAs
 {
@@ -54,10 +54,6 @@ public class RunAs
         return _roleName;
     }
 
-
-    /**
-     * @param holder
-     */
     public void setRunAs (ServletHolder holder)
     {
         if (holder == null)
@@ -70,6 +66,5 @@ public class RunAs
             if (holder.getRegistration().getRunAsRole() == null)
                 holder.getRegistration().setRunAsRole(_roleName);
         }
-            
     }
 }

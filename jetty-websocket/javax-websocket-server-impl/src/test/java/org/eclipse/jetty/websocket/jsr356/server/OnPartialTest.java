@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
@@ -31,6 +35,9 @@ import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.test.DummyConnection;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
@@ -40,9 +47,6 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class OnPartialTest
 {
@@ -65,8 +69,11 @@ public class OnPartialTest
         Class<?> endpoint = websocket.getClass();
         ServerEndpoint anno = endpoint.getAnnotation(ServerEndpoint.class);
         Assert.assertThat("Endpoint: " + endpoint + " should be annotated with @ServerEndpoint",anno,notNullValue());
-        ServerEndpointConfig config = new BasicServerEndpointConfig(endpoint,"/");
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(endpoint,config);
+        
+        WebSocketContainerScope containerScope = new SimpleContainerScope(policy);
+        
+        ServerEndpointConfig config = new BasicServerEndpointConfig(containerScope,endpoint,"/");
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(containerScope,endpoint,config);
         AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
         EndpointInstance ei = new EndpointInstance(websocket,config,metadata);
@@ -79,7 +86,7 @@ public class OnPartialTest
         DummyConnection connection = new DummyConnection();
         ClientContainer container = new ClientContainer();
         @SuppressWarnings("resource")
-        JsrSession session = new JsrSession(requestURI,driver,connection,container,id);
+        JsrSession session = new JsrSession(container,id,requestURI,driver,connection);
         session.setPolicy(policy);
         session.open();
         return driver;

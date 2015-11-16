@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -62,8 +62,8 @@ public class CommandLineBuilder
      * Perform an optional quoting of the argument, being intelligent with spaces and quotes as needed. If a subString is set in quotes it won't the subString
      * won't be escaped.
      * 
-     * @param arg
-     * @return
+     * @param arg the argument to quote
+     * @return the quoted and escaped argument
      */
     public static String quote(String arg)
     {
@@ -126,7 +126,6 @@ public class CommandLineBuilder
     /**
      * Similar to {@link #addArg(String)} but concats both name + value with an "=" sign, quoting were needed, and excluding the "=" portion if the value is
      * undefined or empty.
-     * <p>
      * 
      * <pre>
      *   addEqualsArg("-Dname", "value") = "-Dname=value"
@@ -177,19 +176,37 @@ public class CommandLineBuilder
     @Override
     public String toString()
     {
+        return toString(" ");
+    }
+  
+    public String toString(String delim)
+    {
         StringBuilder buf = new StringBuilder();
 
-        boolean delim = false;
         for (String arg : args)
         {
-            if (delim)
+            if (buf.length()>0)
             {
-                buf.append(' ');
+                buf.append(delim);
             }
             buf.append(quote(arg));
-            delim = true;
         }
 
         return buf.toString();
+    }
+
+    public void debug()
+    {
+        if (!StartLog.isDebugEnabled())
+        {
+            return;
+        }
+
+        int len = args.size();
+        StartLog.debug("Command Line: %,d entries",args.size());
+        for (int i = 0; i < len; i++)
+        {
+            StartLog.debug(" [%d]: \"%s\"",i,args.get(i));
+        }
     }
 }

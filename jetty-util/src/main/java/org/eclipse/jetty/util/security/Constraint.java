@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,13 +21,10 @@ package org.eclipse.jetty.util.security;
 import java.io.Serializable;
 import java.util.Arrays;
 
-/* ------------------------------------------------------------ */
 /**
  * Constraint
  * 
  * Describe an auth and/or data constraint.
- * 
- * 
  */
 public class Constraint implements Cloneable, Serializable
 {
@@ -93,10 +90,10 @@ public class Constraint implements Cloneable, Serializable
 
     /* ------------------------------------------------------------ */
     /**
-     * Conveniance Constructor.
+     * Convenience Constructor.
      * 
-     * @param name
-     * @param role
+     * @param name the name
+     * @param role the role
      */
     public Constraint(String name, String role)
     {
@@ -113,7 +110,7 @@ public class Constraint implements Cloneable, Serializable
 
     /* ------------------------------------------------------------ */
     /**
-     * @param name
+     * @param name the name
      */
     public void setName(String name)
     {
@@ -172,7 +169,7 @@ public class Constraint implements Cloneable, Serializable
 
     /* ------------------------------------------------------------ */
     /**
-     * @param role
+     * @param role the role
      * @return True if the constraint contains the role.
      */
     public boolean hasRole(String role)
@@ -212,7 +209,7 @@ public class Constraint implements Cloneable, Serializable
 
     /* ------------------------------------------------------------ */
     /**
-     * @param c Data constrain indicator: 0=DC+NONE, 1=DC_INTEGRAL &
+     * @param c Data constrain indicator: 0=DC+NONE, 1=DC_INTEGRAL &amp;
      *                2=DC_CONFIDENTIAL
      */
     public void setDataConstraint(int c)
@@ -223,7 +220,7 @@ public class Constraint implements Cloneable, Serializable
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Data constrain indicator: 0=DC+NONE, 1=DC_INTEGRAL &
+     * @return Data constrain indicator: 0=DC+NONE, 1=DC_INTEGRAL &amp;
      *         2=DC_CONFIDENTIAL
      */
     public int getDataConstraint()

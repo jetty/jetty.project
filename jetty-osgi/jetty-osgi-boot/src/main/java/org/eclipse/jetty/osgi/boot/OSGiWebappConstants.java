@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -67,16 +67,23 @@ public class OSGiWebappConstants
     public static final String JETTY_CONTEXT_FILE_PATH = "Jetty-ContextFilePath";
 
     /** path within the bundle to the folder that contains the basic resources. */
+    @Deprecated
     public static final String JETTY_WAR_FOLDER_PATH = "Jetty-WarFolderPath";
+    public static final String JETTY_WAR_RESOURCE_PATH = "Jetty-WarResourcePath";
 
     /** path within a fragment hosted by a web-bundle to a folder that contains basic resources.
      * the path is appended to the lookup path where jetty locates static resources */
+    @Deprecated
     public static final String JETTY_WAR_FRAGMENT_FOLDER_PATH = "Jetty-WarFragmentFolderPath";
+    public static final String JETTY_WAR_FRAGMENT_RESOURCE_PATH = "Jetty-WarFragmentResourcePath";
+    
 
     /** path within a fragment hosted by a web-bundle to a folder that contains basic resources.
      * The path is prefixed to the lookup path where jetty locates static resources:
      * this will override static resources with the same name in the web-bundle. */
+    @Deprecated
     public static final String JETTY_WAR_PATCH_FRAGMENT_FOLDER_PATH = "Jetty-WarPatchFragmentFolderPath";
+    public static final String JETTY_WAR_PREPEND_FRAGMENT_RESOURCE_PATH = "Jetty-WarPrependFragmentResourcePath";
 
   
     /** installation path of webapp bundle

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -89,7 +88,7 @@ public class PropertyPassingTest
 
     @Rule
     public TestingDir testingdir = new TestingDir();
-
+    
     @Test
     public void testAsJvmArg() throws IOException, InterruptedException
     {
@@ -166,6 +165,8 @@ public class PropertyPassingTest
         cp.append(MavenTestingUtils.getProjectDir("target/classes"));
         cp.append(pathSep);
         cp.append(MavenTestingUtils.getProjectDir("target/test-classes"));
+        cp.append(pathSep);
+        cp.append(MavenTestingUtils.getProjectDir("../jetty-util/target/classes")); // TODO horrible hack!
         return cp.toString();
     }
 

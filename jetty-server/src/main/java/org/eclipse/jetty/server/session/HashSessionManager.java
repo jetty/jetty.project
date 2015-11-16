@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.DataInputStream;
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,8 +26,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +35,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -62,9 +58,7 @@ public class HashSessionManager extends AbstractSessionManager
     final static Logger LOG = SessionHandler.LOG;
 
     protected final ConcurrentMap<String,HashedSession> _sessions=new ConcurrentHashMap<String,HashedSession>();
-    private static int __id;
     private Scheduler _timer;
-    private boolean _timerStop=false;
     private Scheduler.Task _task;
     long _scavengePeriodMs=30000;
     long _savePeriodMs=0; //don't do period saves by default
@@ -91,8 +85,9 @@ public class HashSessionManager extends AbstractSessionManager
             }
             finally
             {
-                if (_timer != null && _timer.isRunning())
-                    _timer.schedule(this, _scavengePeriodMs, TimeUnit.MILLISECONDS);
+                if (_timer != null && _timer.isRunning()) {
+                    _task = _timer.schedule(this, _scavengePeriodMs, TimeUnit.MILLISECONDS);
+                }
             }
         }
     }
@@ -117,7 +112,7 @@ public class HashSessionManager extends AbstractSessionManager
             finally
             {
                 if (_timer != null && _timer.isRunning())
-                    _timer.schedule(this, _savePeriodMs, TimeUnit.MILLISECONDS);
+                    _saveTask = _timer.schedule(this, _savePeriodMs, TimeUnit.MILLISECONDS);
             }
         }        
     }
@@ -136,27 +131,26 @@ public class HashSessionManager extends AbstractSessionManager
     @Override
     public void doStart() throws Exception
     {
-        super.doStart();
-
-        _timerStop=false;
         //try shared scheduler from Server first
         _timer = getSessionHandler().getServer().getBean(Scheduler.class);
         if (_timer == null)
         {
-            //try one passwed into the context
+            //try one passed into the context
             ServletContext context = ContextHandler.getCurrentContext();
             if (context!=null)
                 _timer = (Scheduler)context.getAttribute("org.eclipse.jetty.server.session.timer");   
-        }         
+        }    
       
         if (_timer == null)
         {
-          //make a scheduler if none useable
-            _timerStop=true;
-            _timer=new ScheduledExecutorScheduler();
-            _timer.start();
+            //make a scheduler if none useable
+            _timer=new ScheduledExecutorScheduler(toString()+"Timer",true);
+            addBean(_timer,true);
         }
-     
+        else
+            addBean(_timer,false);
+        
+        super.doStart();
 
         setScavengePeriod(getScavengePeriod());
 
@@ -184,14 +178,15 @@ public class HashSessionManager extends AbstractSessionManager
         {
             if (_saveTask!=null)
                 _saveTask.cancel();
+
             _saveTask=null;
             if (_task!=null)
                 _task.cancel();
+
             _task=null;
-            if (_timer!=null && _timerStop)
-                _timer.stop();
             _timer=null;
         }
+       
 
         // This will callback invalidate sessions - where we decide if we will save
         super.doStop();
@@ -314,15 +309,16 @@ public class HashSessionManager extends AbstractSessionManager
 
         _scavengePeriodMs=period;
     
-        if (_timer!=null && (period!=old_period || _task==null))
+        synchronized (this)
         {
-            synchronized (this)
+            if (_timer!=null && (period!=old_period || _task==null))
             {
                 if (_task!=null)
                 {
                     _task.cancel();
                     _task = null;
                 }
+
                 _task = _timer.schedule(new Scavenger(),_scavengePeriodMs, TimeUnit.MILLISECONDS);
             }
         }
@@ -429,7 +425,7 @@ public class HashSessionManager extends AbstractSessionManager
     /* ------------------------------------------------------------ */
     @Override
     protected void shutdownSessions() throws Exception
-    {
+    {   
         // Invalidate all sessions to cause unbind events
         ArrayList<HashedSession> sessions=new ArrayList<HashedSession>(_sessions.values());
         int loop=100;
@@ -575,18 +571,22 @@ public class HashSessionManager extends AbstractSessionManager
     {        
         File file = new File(_storeDir,idInCuster);
 
-        FileInputStream in = null;
         Exception error = null;
-        try
+        if (!file.exists())
         {
-            if (file.exists())
+            if (LOG.isDebugEnabled())
             {
-                in = new FileInputStream(file);
-                HashedSession session = restoreSession(in, null);
-                addSession(session, false);
-                session.didActivate();
-                return session;
+                LOG.debug("Not loading: {}",file);
             }
+            return null;
+        }
+        
+        try (FileInputStream in = new FileInputStream(file))
+        {
+            HashedSession session = restoreSession(in,null);
+            addSession(session,false);
+            session.didActivate();
+            return session;
         }
         catch (Exception e)
         {
@@ -594,22 +594,25 @@ public class HashSessionManager extends AbstractSessionManager
         }
         finally
         {
-            if (in != null) IO.close(in);
-            
             if (error != null)
             {
                 if (isDeleteUnrestorableSessions() && file.exists() && file.getParentFile().equals(_storeDir) )
                 {
                     file.delete();
-                    LOG.warn("Deleting file for unrestorable session "+idInCuster, error);
+                    LOG.warn("Deleting file for unrestorable session {} {}",idInCuster,error);
+                    __log.debug(error);
                 }
                 else
                 {
-                    __log.warn("Problem restoring session "+idInCuster, error);
+                    __log.warn("Problem restoring session {} {}",idInCuster, error);
+                    __log.debug(error);
                 }
             }
             else
-               file.delete(); //delete successfully restored file
+            {
+                // delete successfully restored file
+                file.delete();
+            }
         }
         return null;
     }
@@ -647,8 +650,10 @@ public class HashSessionManager extends AbstractSessionManager
 
         if (session == null)
             session = (HashedSession)newSession(created, accessed, clusterId);
+        
         session.setRequests(requests);
 
+        // Attributes
         int size = di.readInt();
 
         restoreSessionAttributes(di, size, session);
@@ -658,7 +663,7 @@ public class HashSessionManager extends AbstractSessionManager
             int maxIdle = di.readInt();
             session.setMaxInactiveInterval(maxIdle);
         }
-        catch (EOFException e)
+        catch (IOException e)
         {
             LOG.debug("No maxInactiveInterval persisted for session "+clusterId);
             LOG.ignore(e);
@@ -667,14 +672,15 @@ public class HashSessionManager extends AbstractSessionManager
         return session;
     }
 
-    
+
+    @SuppressWarnings("resource")
     private void restoreSessionAttributes (InputStream is, int size, HashedSession session)
     throws Exception
     {
         if (size>0)
         {
+            // input stream should not be closed here
             ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(is);
-        
             for (int i=0; i<size;i++)
             {
                 String key = ois.readUTF();

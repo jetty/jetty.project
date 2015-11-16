@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
@@ -46,8 +48,8 @@ public class JettyEchoSocket
     private static final Logger LOG = Log.getLogger(JettyEchoSocket.class);
     @SuppressWarnings("unused")
     private Session session;
+    private Lock remoteLock = new ReentrantLock();
     private RemoteEndpoint remote;
-    private Boolean closed = null;
     private EventQueue<String> incomingMessages = new EventQueue<>();
 
     public Queue<String> awaitMessages(int expected) throws TimeoutException, InterruptedException
@@ -56,17 +58,32 @@ public class JettyEchoSocket
         return incomingMessages;
     }
 
-    public Boolean getClosed()
+    public boolean getClosed()
     {
-        return closed;
+        remoteLock.lock();
+        try
+        {
+            return (remote == null);
+        }
+        finally
+        {
+            remoteLock.unlock();
+        }
     }
 
     @OnWebSocketClose
     public void onClose(int code, String reason)
     {
-        closed = true;
         session = null;
-        remote = null;
+        remoteLock.lock();
+        try
+        {
+            remote = null;
+        }
+        finally
+        {
+            remoteLock.unlock();
+        }
     }
 
     @OnWebSocketError
@@ -85,15 +102,36 @@ public class JettyEchoSocket
     @OnWebSocketConnect
     public void onOpen(Session session)
     {
-        this.closed = false;
         this.session = session;
-        this.remote = session.getRemote();
+        remoteLock.lock();
+        try
+        {
+            this.remote = session.getRemote();
+        }
+        finally
+        {
+            remoteLock.unlock();
+        }
     }
 
     public void sendMessage(String msg) throws IOException
     {
-        remote.sendStringByFuture(msg);
-        if (remote.getBatchMode() == BatchMode.ON)
-            remote.flush();
+        remoteLock.lock();
+        try
+        {
+            RemoteEndpoint r = remote;
+            if (r == null)
+            {
+                return;
+            }
+
+            r.sendStringByFuture(msg);
+            if (r.getBatchMode() == BatchMode.ON)
+                r.flush();
+        }
+        finally
+        {
+            remoteLock.unlock();
+        }
     }
 }

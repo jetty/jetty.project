@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.websocket.Decoder;
@@ -26,6 +27,8 @@ import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadataSet;
 
@@ -72,18 +75,26 @@ public class DecoderFactory implements Configurable
     private static final Logger LOG = Log.getLogger(DecoderFactory.class);
 
     private final DecoderMetadataSet metadatas;
+    private final WebSocketContainerScope containerScope;
     private DecoderFactory parentFactory;
     private Map<Class<?>, Wrapper> activeWrappers;
 
-    public DecoderFactory(DecoderMetadataSet metadatas)
+    public DecoderFactory(WebSocketContainerScope containerScope, DecoderMetadataSet metadatas)
     {
-        this.metadatas = metadatas;
-        this.activeWrappers = new ConcurrentHashMap<>();
+        this(containerScope,metadatas,null);
+    }
+    
+    public DecoderFactory(WebSocketSessionScope sessionScope, DecoderMetadataSet metadatas, DecoderFactory parentFactory)
+    {
+        this(sessionScope.getContainerScope(),metadatas,parentFactory);
     }
 
-    public DecoderFactory(DecoderMetadataSet metadatas, DecoderFactory parentFactory)
+    protected DecoderFactory(WebSocketContainerScope containerScope, DecoderMetadataSet metadatas, DecoderFactory parentFactory)
     {
-        this(metadatas);
+        Objects.requireNonNull(containerScope,"Container Scope cannot be null");
+        this.containerScope = containerScope;
+        this.metadatas = metadatas;
+        this.activeWrappers = new ConcurrentHashMap<>();
         this.parentFactory = parentFactory;
     }
 
@@ -99,7 +110,11 @@ public class DecoderFactory implements Configurable
 
     public DecoderMetadata getMetadataFor(Class<?> type)
     {
-        LOG.debug("getMetadataFor({})",type);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("getMetadataFor({})",type);
+        }
+        
         DecoderMetadata metadata = metadatas.getMetadataByType(type);
 
         if (metadata != null)
@@ -147,7 +162,10 @@ public class DecoderFactory implements Configurable
     @Override
     public void init(EndpointConfig config)
     {
-        LOG.debug("init({})",config);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("init({})",config);
+        }
         // Instantiate all declared decoders
         for (DecoderMetadata metadata : metadatas)
         {
@@ -167,7 +185,7 @@ public class DecoderFactory implements Configurable
         Class<? extends Decoder> decoderClass = metadata.getCoderClass();
         try
         {
-            Decoder decoder = decoderClass.newInstance();
+            Decoder decoder = containerScope.getObjectFactory().createInstance(decoderClass);
             return new Wrapper(decoder,metadata);
         }
         catch (InstantiationException | IllegalAccessException e)

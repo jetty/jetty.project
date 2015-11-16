@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Utility class that handles HTTP redirects.
- * <p />
+ * <p>
  * Applications can disable redirection via {@link Request#followRedirects(boolean)}
  * and then rely on this class to perform the redirect in a simpler way, for example:
  * <pre>
@@ -76,7 +76,7 @@ public class HttpRedirector
     public HttpRedirector(HttpClient client)
     {
         this.client = client;
-        this.notifier = new ResponseNotifier(client);
+        this.notifier = new ResponseNotifier();
     }
 
     /**
@@ -91,6 +91,7 @@ public class HttpRedirector
             case 302:
             case 303:
             case 307:
+            case 308:
                 return true;
             default:
                 return false;
@@ -118,7 +119,7 @@ public class HttpRedirector
             {
                 resultRef.set(new Result(result.getRequest(),
                         result.getRequestFailure(),
-                        new HttpContentResponse(result.getResponse(), getContent(), getEncoding()),
+                        new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding()),
                         result.getResponseFailure()));
                 latch.countDown();
             }
@@ -156,7 +157,8 @@ public class HttpRedirector
             URI newURI = extractRedirectURI(response);
             if (newURI != null)
             {
-                LOG.debug("Redirecting to {} (Location: {})", newURI, location);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Redirecting to {} (Location: {})", newURI, location);
                 return redirect(request, response, listener, newURI);
             }
             else
@@ -259,6 +261,7 @@ public class HttpRedirector
                     return redirect(request, response, listener, newURI, HttpMethod.GET.asString());
             }
             case 307:
+            case 308:
             {
                 // Keep same method
                 return redirect(request, response, listener, newURI, request.getMethod());
@@ -271,7 +274,7 @@ public class HttpRedirector
         }
     }
 
-    private Request redirect(final Request request, Response response, Response.CompleteListener listener, URI location, String method)
+    private Request redirect(Request request, Response response, Response.CompleteListener listener, URI location, String method)
     {
         HttpRequest httpRequest = (HttpRequest)request;
         HttpConversation conversation = httpRequest.getConversation();
@@ -281,9 +284,20 @@ public class HttpRedirector
         if (redirects < client.getMaxRedirects())
         {
             ++redirects;
-            if (conversation != null)
-                conversation.setAttribute(ATTRIBUTE, redirects);
+            conversation.setAttribute(ATTRIBUTE, redirects);
+            return sendRedirect(httpRequest, response, listener, location, method);
+        }
+        else
+        {
+            fail(request, response, new HttpResponseException("Max redirects exceeded " + redirects, response));
+            return null;
+        }
+    }
 
+    private Request sendRedirect(final HttpRequest httpRequest, Response response, Response.CompleteListener listener, URI location, String method)
+    {
+        try
+        {
             Request redirect = client.copyRequest(httpRequest, location);
 
             // Use given method
@@ -294,7 +308,7 @@ public class HttpRedirector
                 @Override
                 public void onBegin(Request redirect)
                 {
-                    Throwable cause = request.getAbortCause();
+                    Throwable cause = httpRequest.getAbortCause();
                     if (cause != null)
                         redirect.abort(cause);
                 }
@@ -303,9 +317,9 @@ public class HttpRedirector
             redirect.send(listener);
             return redirect;
         }
-        else
+        catch (Throwable x)
         {
-            fail(request, response, new HttpResponseException("Max redirects exceeded " + redirects, response));
+            fail(httpRequest, response, x);
             return null;
         }
     }

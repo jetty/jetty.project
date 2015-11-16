@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,13 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.File;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.server.handler.ContextHandler.AliasCheck;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -41,54 +40,62 @@ public class AllowSymLinkAliasChecker implements AliasCheck
     private static final Logger LOG = Log.getLogger(AllowSymLinkAliasChecker.class);
     
     @Override
-    public boolean check(String path, Resource resource)
+    public boolean check(String uri, Resource resource)
     {
+        // Only support PathResource alias checking
+        if (!(resource instanceof PathResource))
+            return false;
+        
+        PathResource pathResource = (PathResource)resource;
+
         try
         {
-            File file =resource.getFile();
-            if (file==null)
-                return false;
+            Path path = pathResource.getPath();
+            Path alias = pathResource.getAliasPath();
             
-            // If the file exists
-            if (file.exists())
-            {
-                // we can use the real path method to check the symlinks resolve to the alias
-                URI real = file.toPath().toRealPath().toUri();
-                if (real.equals(resource.getAlias()))
+            // is the file itself a symlink?
+            if (Files.isSymbolicLink(path))
+            {        
+                alias = path.getParent().resolve(alias);
+                if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("Allow symlink {} --> {}",resource,real);
+                    LOG.debug("path ={}",path);
+                    LOG.debug("alias={}",alias);
+                }
+                if (Files.isSameFile(path,alias))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Allow symlink {} --> {}",resource,pathResource.getAliasPath());
                     return true;
                 }
             }
-            else
+            
+            // No, so let's check each element ourselves
+            Path d = path.getRoot();
+            for (Path e:path)
             {
-                // file does not exists, so we have to walk the path and links ourselves.
-                Path p = file.toPath().toAbsolutePath();
-                File d = p.getRoot().toFile();
-                for (Path e:p)
+                d=d.resolve(e);
+                
+                while (Files.exists(d) && Files.isSymbolicLink(d))
                 {
-                    d=new File(d,e.toString());
-                    
-                    while (d.exists() && Files.isSymbolicLink(d.toPath()))
-                    {
-                        Path link=Files.readSymbolicLink(d.toPath());
-                        if (!link.isAbsolute())
-                            link=link.resolve(d.toPath());
-                        d=link.toFile().getAbsoluteFile().getCanonicalFile();
-                    }
+                    Path link=Files.readSymbolicLink(d);                    
+                    if (!link.isAbsolute())
+                        link=d.resolve(link);
+                    d=link;
                 }
-                if (resource.getAlias().equals(d.toURI()))
-                {
-                    LOG.debug("Allow symlink {} --> {}",resource,d);
-                    return true;
-                }
+            }
+            if (pathResource.getAliasPath().equals(d))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Allow path symlink {} --> {}",resource,d);
+                return true;
             }
         }
         catch(Exception e)
         {
-            e.printStackTrace();
             LOG.ignore(e);
         }
+        
         return false;
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,17 +38,19 @@ public enum HttpMethod
     DELETE,
     TRACE,
     CONNECT,
-    MOVE;
+    MOVE,
+    PROXY,
+    PRI;
 
     /* ------------------------------------------------------------ */
     /**
-     * Optimised lookup to find a method name and trailing space in a byte array.
+     * Optimized lookup to find a method name and trailing space in a byte array.
      * @param bytes Array containing ISO-8859-1 characters
      * @param position The first valid index
      * @param limit The first non valid index
      * @return A HttpMethod if a match or null if no easy match.
      */
-    public static HttpMethod lookAheadGet(byte[] bytes, int position, int limit)
+    public static HttpMethod lookAheadGet(byte[] bytes, final int position, int limit)
     {
         int length=limit-position;
         if (length<4)
@@ -62,35 +64,39 @@ public enum HttpMethod
             case 'P':
                 if (bytes[position+1]=='O' && bytes[position+2]=='S' && bytes[position+3]=='T' && length>=5 && bytes[position+4]==' ')
                     return POST;
+                if (bytes[position+1]=='R' && bytes[position+2]=='O' && bytes[position+3]=='X' && length>=6 && bytes[position+4]=='Y' && bytes[position+5]==' ')
+                    return PROXY;
                 if (bytes[position+1]=='U' && bytes[position+2]=='T' && bytes[position+3]==' ')
                     return PUT;
+                if (bytes[position+1]=='R' && bytes[position+2]=='I' && bytes[position+3]==' ')
+                    return PRI;
                 break;
             case 'H':
                 if (bytes[position+1]=='E' && bytes[position+2]=='A' && bytes[position+3]=='D' && length>=5 && bytes[position+4]==' ')
                     return HEAD;
                 break;
             case 'O':
-                if (bytes[position+1]=='O' && bytes[position+2]=='T' && bytes[position+3]=='I' && length>=8 &&
-                bytes[position+4]=='O' && bytes[position+5]=='N' && bytes[position+6]=='S' && bytes[position+7]==' ' )
+                if (bytes[position+1]=='P' && bytes[position+2]=='T' && bytes[position+3]=='I' && length>=8 &&
+                    bytes[position+4]=='O' && bytes[position+5]=='N' && bytes[position+6]=='S' && bytes[position+7]==' ' )
                     return OPTIONS;
                 break;
             case 'D':
                 if (bytes[position+1]=='E' && bytes[position+2]=='L' && bytes[position+3]=='E' && length>=7 &&
-                bytes[position+4]=='T' && bytes[position+5]=='E' && bytes[position+6]==' ' )
+                    bytes[position+4]=='T' && bytes[position+5]=='E' && bytes[position+6]==' ' )
                     return DELETE;
                 break;
             case 'T':
                 if (bytes[position+1]=='R' && bytes[position+2]=='A' && bytes[position+3]=='C' && length>=6 &&
-                bytes[position+4]=='E' && bytes[position+5]==' ' )
+                    bytes[position+4]=='E' && bytes[position+5]==' ' )
                     return TRACE;
                 break;
             case 'C':
                 if (bytes[position+1]=='O' && bytes[position+2]=='N' && bytes[position+3]=='N' && length>=8 &&
-                bytes[position+4]=='E' && bytes[position+5]=='C' && bytes[position+6]=='T' && bytes[position+7]==' ' )
+                    bytes[position+4]=='E' && bytes[position+5]=='C' && bytes[position+6]=='T' && bytes[position+7]==' ' )
                     return CONNECT;
                 break;
             case 'M':
-                if (bytes[position+1]=='O' && bytes[position+2]=='V' && bytes[position+3]=='E' &&  bytes[position+4]==' ')
+                if (bytes[position+1]=='O' && bytes[position+2]=='V' && bytes[position+3]=='E' && length>=5 && bytes[position+4]==' ')
                     return MOVE;
                 break;
 
@@ -102,17 +108,26 @@ public enum HttpMethod
 
     /* ------------------------------------------------------------ */
     /**
-     * Optimised lookup to find a method name and trailing space in a byte array.
-     * @param buffer buffer containing ISO-8859-1 characters
+     * Optimized lookup to find a method name and trailing space in a byte array.
+     * @param buffer buffer containing ISO-8859-1 characters, it is not modified.
      * @return A HttpMethod if a match or null if no easy match.
      */
     public static HttpMethod lookAheadGet(ByteBuffer buffer)
     {
         if (buffer.hasArray())
             return lookAheadGet(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.arrayOffset()+buffer.limit());
-
-        // TODO use cache and check for space
-        // return CACHE.getBest(buffer,0,buffer.remaining());
+        
+        int l = buffer.remaining();
+        if (l>=4)
+        {
+            HttpMethod m = CACHE.getBest(buffer,0,l);
+            if (m!=null)
+            {
+                int ml = m.asString().length();
+                if (l>ml && buffer.get(buffer.position()+ml)==' ')
+                    return m;
+            }
+        }
         return null;
     }
 
@@ -159,6 +174,7 @@ public enum HttpMethod
         return toString();
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * Converts the given String parameter to an HttpMethod
      * @param method the String to get the equivalent HttpMethod from

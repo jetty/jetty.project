@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,8 @@ public interface EventNotifier
     /* ------------------------------------------------------------ */
     /**
      * This method is called when a notification event is received by the containing object
-     *  
+     * 
+     * @param trigger the event trigger 
      * @param state an {@link org.eclipse.jetty.monitor.jmx.EventState event state} 
      * @param timestamp time stamp of the event
      */

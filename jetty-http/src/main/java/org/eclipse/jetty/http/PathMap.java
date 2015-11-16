@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,48 +18,61 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.function.BiFunction;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
+import org.eclipse.jetty.util.RegexSet;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.URIUtil;
 
-/* ------------------------------------------------------------ */
-/** URI path map to Object.
+/** 
+ * URI path map to Object.
+ * <p>
  * This mapping implements the path specification recommended
  * in the 2.2 Servlet API.
+ * </p>
  *
- * Path specifications can be of the following forms:<PRE>
+ * <p>
+ * Path specifications can be of the following forms:
+ * </p>
+ * <pre>
  * /foo/bar           - an exact path specification.
  * /foo/*             - a prefix path specification (must end '/*').
  * *.ext              - a suffix path specification.
  * /                  - the default path specification.
  * ""                 - the / path specification
- * </PRE>
- * Matching is performed in the following order <NL>
- * <LI>Exact match.
- * <LI>Longest prefix match.
- * <LI>Longest suffix match.
- * <LI>default.
- * </NL>
+ * </pre>
+ * 
+ * Matching is performed in the following order 
+ * <ol>
+ * <li>Exact match.</li>
+ * <li>Longest prefix match.</li>
+ * <li>Longest suffix match.</li>
+ * <li>default.</li>
+ * </ol>
+ * 
+ * <p>
  * Multiple path specifications can be mapped by providing a list of
  * specifications. By default this class uses characters ":," as path
  * separators, unless configured differently by calling the static
  * method @see PathMap#setPathSpecSeparators(String)
- * <P>
+ * <p>
  * Special characters within paths such as '?� and ';' are not treated specially
  * as it is assumed they would have been either encoded in the original URL or
  * stripped from the path.
- * <P>
+ * <p>
  * This class is not synchronized.  If concurrent modifications are
  * possible then it should be synchronized at a higher level.
- *
- *
+ * 
+ * @param <O> the Map.Entry value type 
  */
 public class PathMap<O> extends HashMap<String,O>
 {
@@ -114,11 +127,13 @@ public class PathMap<O> extends HashMap<String,O>
     }
 
     /* --------------------------------------------------------------- */
-    /** Construct from dictionary PathMap.
+    /** 
+     * Construct from dictionary PathMap.
+     * @param dictMap the map representing the dictionary to build this PathMap from
      */
-    public PathMap(Map<String, ? extends O> m)
+    public PathMap(Map<String, ? extends O> dictMap)
     {
-        putAll(m);
+        putAll(dictMap);
     }
 
     /* --------------------------------------------------------------- */
@@ -382,20 +397,23 @@ public class PathMap<O> extends HashMap<String,O>
 
     /* --------------------------------------------------------------- */
     /**
+     * @param pathSpec the path spec
+     * @param path the path
      * @return true if match.
      */
     public static boolean match(String pathSpec, String path)
-        throws IllegalArgumentException
     {
         return match(pathSpec, path, false);
     }
 
     /* --------------------------------------------------------------- */
     /**
+     * @param pathSpec the path spec
+     * @param path the path
+     * @param noDefault true to not handle the default path "/" special, false to allow matcher rules to run  
      * @return true if match.
      */
     public static boolean match(String pathSpec, String path, boolean noDefault)
-        throws IllegalArgumentException
     {
         if (pathSpec.length()==0)
             return "/".equals(path);
@@ -431,6 +449,8 @@ public class PathMap<O> extends HashMap<String,O>
 
     /* --------------------------------------------------------------- */
     /** Return the portion of a path that matches a path spec.
+     * @param pathSpec the path spec
+     * @param path the path
      * @return null if no match at all.
      */
     public static String pathMatch(String pathSpec, String path)
@@ -459,6 +479,8 @@ public class PathMap<O> extends HashMap<String,O>
 
     /* --------------------------------------------------------------- */
     /** Return the portion of a path that is after a path spec.
+     * @param pathSpec the path spec
+     * @param path the path
      * @return The path info string
      */
     public static String pathInfo(String pathSpec, String path)
@@ -568,5 +590,49 @@ public class PathMap<O> extends HashMap<String,O>
         {
             this.mapped = mapped;
         }
+    }
+    
+    public static class PathSet extends AbstractSet<String>
+    {
+        public static final BiFunction<PathSet,String,Boolean> MATCHER=(s,e)->{return s.containsMatch(e);};
+        private final PathMap<Boolean> _map = new PathMap<>();
+        
+        @Override
+        public Iterator<String> iterator()
+        {
+            return _map.keySet().iterator();
+        }
+
+        @Override
+        public int size()
+        {
+            return _map.size();
+        }
+        
+        @Override
+        public boolean add(String item)
+        {
+            return _map.put(item,Boolean.TRUE)==null;
+        }
+        
+        @Override
+        public boolean remove(Object item)
+        {
+            return _map.remove(item)!=null;
+        }
+
+        @Override
+        public boolean contains(Object o) 
+        { 
+            return _map.containsKey(o); 
+        }
+        
+        
+        public boolean containsMatch(String s) 
+        { 
+            return _map.containsMatch(s); 
+        }
+        
+        
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,8 @@ import java.util.Set;
 
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.annotations.ClassNameResolver;
+import org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
-import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -66,6 +66,10 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
     }
     
     
+    public AnnotationConfiguration()
+    {
+    }
+    
     /**
      * This parser scans the bundles using the OSGi APIs instead of assuming a jar.
      */
@@ -92,12 +96,16 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
         AnnotationParser oparser = (AnnotationParser)parser;
         
         Bundle webbundle = (Bundle) context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
-        Bundle[] fragAndRequiredBundles = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles(webbundle);
+        Set<Bundle> fragAndRequiredBundles = (Set<Bundle>)context.getAttribute(OSGiWebInfConfiguration.FRAGMENT_AND_REQUIRED_BUNDLES);
         if (fragAndRequiredBundles != null)
         {
             //index and scan fragments
             for (Bundle bundle : fragAndRequiredBundles)
             {
+                //skip bundles that have been uninstalled since we discovered them
+                if (bundle.getState() == Bundle.UNINSTALLED)
+                    continue;
+                
                 Resource bundleRes = oparser.indexBundle(bundle);
                 if (!context.getMetaData().getWebInfJars().contains(bundleRes))
                 {
@@ -122,6 +130,10 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
             //scan the required bundles
             for (Bundle requiredBundle : fragAndRequiredBundles)
             {
+                //skip bundles that have been uninstalled since we discovered them
+                if (requiredBundle.getState() == Bundle.UNINSTALLED)
+                    continue;
+                
                 if (requiredBundle.getHeaders().get(Constants.FRAGMENT_HOST) == null)
                 {
                     //a bundle indeed:
@@ -137,7 +149,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
      * @param parser The parser
      * @param webbundle The current webbundle
      * @param fragmentBundle The OSGi fragment bundle to scan
-     * @throws Exception
+     * @throws Exception if unable to parse fragment bundle
      */
     protected void parseFragmentBundle(WebAppContext context, AnnotationParser parser,
             Bundle webbundle, Bundle fragmentBundle) throws Exception
@@ -150,8 +162,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
      * @param context The webapp context
      * @param parser The parser
      * @param webbundle The current webbundle
-     * @param fragmentBundle The OSGi required bundle to scan
-     * @throws Exception
+     * @throws Exception if unable to parse the web bundle
      */
     protected void parseWebBundle(WebAppContext context, AnnotationParser parser, Bundle webbundle)
     throws Exception
@@ -164,8 +175,8 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
      * @param context The webapp context
      * @param parser The parser
      * @param webbundle The current webbundle
-     * @param fragmentBundle The OSGi required bundle to scan
-     * @throws Exception
+     * @param requiredBundle The OSGi required bundle to scan
+     * @throws Exception if unable to parse the required bundle
      */
     protected void parseRequiredBundle(WebAppContext context, AnnotationParser parser,
             Bundle webbundle, Bundle requiredBundle) throws Exception
@@ -196,8 +207,8 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
     
     /**
      * Returns the same classname resolver than for the webInfjar scanner
-     * @param context
-     * @return
+     * @param context the web app context
+     * @return the class name resolver
      */
     protected ClassNameResolver createClassNameResolver(final WebAppContext context)
     {

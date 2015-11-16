@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -259,7 +259,7 @@ public class WarBundleManifestGenerator
         {
             poundIndex = url.length();
         }
-        UrlEncoded.decodeUtf8To(url.getBytes(), questionMarkIndex+1,
+        UrlEncoded.decodeUtf8To(url, questionMarkIndex+1,
                     poundIndex - questionMarkIndex - 1, res);
         return res;
     }

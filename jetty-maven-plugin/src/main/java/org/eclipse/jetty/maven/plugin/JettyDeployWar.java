@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+
 /**
  * <p>
  * This goal is used to run Jetty with a pre-assembled war.
@@ -27,7 +30,7 @@ package org.eclipse.jetty.maven.plugin;
  * However, it doesn't assume that the current artifact is a
  * webapp and doesn't try to assemble it into a war before its execution. 
  * So using it makes sense only when used in conjunction with the 
- * <a href="run-war-mojo.html#webApp">webApp</a> configuration parameter pointing to a pre-built WAR.
+ * <a href="run-war-mojo.html#webApp">war</a> configuration parameter pointing to a pre-built WAR.
  * </p>
  * <p>
  * This goal is useful e.g. for launching a web app in Jetty as a target for unit-tested 
@@ -42,4 +45,34 @@ package org.eclipse.jetty.maven.plugin;
  */
 public class JettyDeployWar extends JettyRunWarMojo
 {
+
+    
+    /**
+     * If true, the plugin should continue and not block. Otherwise the
+     * plugin will block further execution and you will need to use
+     * cntrl-c to stop it.
+     * 
+     * 
+     * @parameter  default-value="true"
+     */
+    protected boolean daemon = true;
+    
+    
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException
+    {
+        nonblocking = daemon; 
+        super.execute();
+    }
+    
+
+
+    @Override
+    public void finishConfigurationBeforeStart() throws Exception
+    {
+        super.finishConfigurationBeforeStart();
+        //only stop the server at shutdown if we are blocking
+        server.setStopAtShutdown(!nonblocking); 
+    }
+
 }

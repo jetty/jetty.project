@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.util.log;
 import java.io.PrintStream;
 import java.security.AccessControlException;
 import java.util.Properties;
+import java.util.logging.Level;
 
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -37,10 +38,10 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * <dl>
  *   <dt>${name|hierarchy}.LEVEL=(ALL|DEBUG|INFO|WARN|OFF)</dt>
  *   <dd>
- *   Sets the level that the Logger should log at.<br/>
- *   Names can be a package name, or a fully qualified class name.<br/>
- *   Default: INFO<br/>
- *   <br/>
+ *   Sets the level that the Logger should log at.<br>
+ *   Names can be a package name, or a fully qualified class name.<br>
+ *   Default: INFO<br>
+ *   <br>
  *   Examples:
  *   <dl>
  *   <dt>org.eclipse.jetty.LEVEL=WARN</dt>
@@ -56,35 +57,35 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  *   <dt>${name}.SOURCE=(true|false)</dt>
  *   <dd>
  *   Logger specific, attempt to print the java source file name and line number
- *   where the logging event originated from.<br/>
+ *   where the logging event originated from.<br>
  *   Name must be a fully qualified class name (package name hierarchy is not supported
- *   by this configurable)<br/>
- *   Warning: this is a slow operation and will have an impact on performance!<br/>
+ *   by this configurable)<br>
+ *   Warning: this is a slow operation and will have an impact on performance!<br>
  *   Default: false
  *   </dd>
  *   
  *   <dt>${name}.STACKS=(true|false)</dt>
  *   <dd>
- *   Logger specific, control the display of stacktraces.<br/>
+ *   Logger specific, control the display of stacktraces.<br>
  *   Name must be a fully qualified class name (package name hierarchy is not supported
- *   by this configurable)<br/>
+ *   by this configurable)<br>
  *   Default: true
  *   </dd>
  *   
  *   <dt>org.eclipse.jetty.util.log.stderr.SOURCE=(true|false)</dt>
  *   <dd>Special Global Configuration, attempt to print the java source file name and line number
- *   where the logging event originated from.<br/>
+ *   where the logging event originated from.<br>
  *   Default: false
  *   </dd>
  *   
  *   <dt>org.eclipse.jetty.util.log.stderr.LONG=(true|false)</dt>
  *   <dd>Special Global Configuration, when true, output logging events to STDERR using
- *   long form, fully qualified class names.  when false, use abbreviated package names<br/>
+ *   long form, fully qualified class names.  when false, use abbreviated package names<br>
  *   Default: false
  *   </dd>
  *   <dt>org.eclipse.jetty.util.log.stderr.ESCAPE=(true|false)</dt>
  *   <dd>Global Configuration, when true output logging events to STDERR are always
- *   escaped so that control characters are replaced with '?";  '\r' with '<' and '\n' replaced '|'<br/>
+ *   escaped so that control characters are replaced with '?";  '\r' with '&lt;' and '\n' replaced '|'<br>
  *   Default: true
  *   </dd>
  * </dl>
@@ -93,18 +94,17 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 public class StdErrLog extends AbstractLogger
 {
     private static final String EOL = System.getProperty("line.separator");
+    // Do not change output format lightly, people rely on this output format now.
+    private static int __tagpad = Integer.parseInt(Log.__props.getProperty("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD","0"));
     private static DateCache _dateCache;
-    private static final Properties __props = new Properties();
 
     private final static boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
             Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
     private final static boolean __long = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.LONG","false"));
     private final static boolean __escape = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.ESCAPE","true"));
-
+    
     static
     {
-        __props.putAll(Log.__props);
-
         String deprecatedProperties[] =
         { "DEBUG", "org.eclipse.jetty.util.log.DEBUG", "org.eclipse.jetty.util.log.stderr.DEBUG" };
 
@@ -127,11 +127,11 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
-    public static final int LEVEL_ALL = 0;
-    public static final int LEVEL_DEBUG = 1;
-    public static final int LEVEL_INFO = 2;
-    public static final int LEVEL_WARN = 3;
-    public static final int LEVEL_OFF = 10;
+    public static void setTagPad(int pad)
+    {
+        __tagpad=pad;
+    }
+    
 
     private int _level = LEVEL_INFO;
     // Level that this Logger was configured as (remembered in special case of .setDebugEnabled())
@@ -146,6 +146,20 @@ public class StdErrLog extends AbstractLogger
     private final String _abbrevname;
     private boolean _hideStacks = false;
 
+    
+    public static int getLoggingLevel(Properties props,String name)
+    {
+        int level = lookupLoggingLevel(props,name);
+        if (level==LEVEL_DEFAULT)
+        {
+            level = lookupLoggingLevel(props,"log");
+            if (level==LEVEL_DEFAULT)
+                level=LEVEL_INFO;
+        }
+        return level;
+    }
+    
+    
     /**
      * Obtain a StdErrLog reference for the specified class, a convenience method used most often during testing to allow for control over a specific logger.
      * <p>
@@ -185,7 +199,7 @@ public class StdErrLog extends AbstractLogger
      */
     public StdErrLog(String name)
     {
-        this(name,__props);
+        this(name,null);
     }
 
     /**
@@ -198,16 +212,16 @@ public class StdErrLog extends AbstractLogger
      */
     public StdErrLog(String name, Properties props)
     {
-        if (props!=null && props!=__props)
-            __props.putAll(props);
-        this._name = name == null?"":name;
-        this._abbrevname = condensePackageString(this._name);
-        this._level = getLoggingLevel(props,this._name);
-        this._configuredLevel = this._level;
+        if (props!=null && props!=Log.__props)
+            Log.__props.putAll(props);
+        _name = name == null?"":name;
+        _abbrevname = condensePackageString(this._name);
+        _level = getLoggingLevel(Log.__props,this._name);
+        _configuredLevel = _level;
 
         try
         {
-            String source = getLoggingProperty(props,_name,"SOURCE");
+            String source = getLoggingProperty(Log.__props,_name,"SOURCE");
             _source = source==null?__source:Boolean.parseBoolean(source);
         }
         catch (AccessControlException ace)
@@ -218,138 +232,13 @@ public class StdErrLog extends AbstractLogger
         try
         {
             // allow stacktrace display to be controlled by properties as well
-            String stacks = getLoggingProperty(props,_name,"STACKS");
+            String stacks = getLoggingProperty(Log.__props,_name,"STACKS");
             _hideStacks = stacks==null?false:!Boolean.parseBoolean(stacks);
         }
         catch (AccessControlException ignore)
         {
             /* ignore */
         }        
-    }
-
-    /**
-     * Get the Logging Level for the provided log name. Using the FQCN first, then each package segment from longest to
-     * shortest.
-     *
-     * @param props
-     *            the properties to check
-     * @param name
-     *            the name to get log for
-     * @return the logging level
-     */
-    public static int getLoggingLevel(Properties props, final String name)
-    {
-        // Calculate the level this named logger should operate under.
-        // Checking with FQCN first, then each package segment from longest to shortest.
-        String nameSegment = name;
-
-        while ((nameSegment != null) && (nameSegment.length() > 0))
-        {
-            String levelStr = props.getProperty(nameSegment + ".LEVEL");
-            // System.err.printf("[StdErrLog.CONFIG] Checking for property [%s.LEVEL] = %s%n",nameSegment,levelStr);
-            int level = getLevelId(nameSegment + ".LEVEL",levelStr);
-            if (level != (-1))
-            {
-                return level;
-            }
-
-            // Trim and try again.
-            int idx = nameSegment.lastIndexOf('.');
-            if (idx >= 0)
-            {
-                nameSegment = nameSegment.substring(0,idx);
-            }
-            else
-            {
-                nameSegment = null;
-            }
-        }
-
-        // Default Logging Level
-        return getLevelId("log.LEVEL",props.getProperty("log.LEVEL","INFO"));
-    }
-    
-    public static String getLoggingProperty(Properties props, String name, String property)
-    {
-        // Calculate the level this named logger should operate under.
-        // Checking with FQCN first, then each package segment from longest to shortest.
-        String nameSegment = name;
-
-        while ((nameSegment != null) && (nameSegment.length() > 0))
-        {
-            String s = props.getProperty(nameSegment+"."+property);
-            if (s!=null)
-                return s;
-
-            // Trim and try again.
-            int idx = nameSegment.lastIndexOf('.');
-            nameSegment = (idx >= 0)?nameSegment.substring(0,idx):null;
-        }
-
-        return null;
-    }
-
-    protected static int getLevelId(String levelSegment, String levelName)
-    {
-        if (levelName == null)
-        {
-            return -1;
-        }
-        String levelStr = levelName.trim();
-        if ("ALL".equalsIgnoreCase(levelStr))
-        {
-            return LEVEL_ALL;
-        }
-        else if ("DEBUG".equalsIgnoreCase(levelStr))
-        {
-            return LEVEL_DEBUG;
-        }
-        else if ("INFO".equalsIgnoreCase(levelStr))
-        {
-            return LEVEL_INFO;
-        }
-        else if ("WARN".equalsIgnoreCase(levelStr))
-        {
-            return LEVEL_WARN;
-        }
-        else if ("OFF".equalsIgnoreCase(levelStr))
-        {
-            return LEVEL_OFF;
-        }
-
-        System.err.println("Unknown StdErrLog level [" + levelSegment + "]=[" + levelStr + "], expecting only [ALL, DEBUG, INFO, WARN, OFF] as values.");
-        return -1;
-    }
-
-    /**
-     * Condenses a classname by stripping down the package name to just the first character of each package name
-     * segment.Configured
-     * <p>
-     *
-     * <pre>
-     * Examples:
-     * "org.eclipse.jetty.test.FooTest"           = "oejt.FooTest"
-     * "org.eclipse.jetty.server.logging.LogTest" = "orjsl.LogTest"
-     * </pre>
-     *
-     * @param classname
-     *            the fully qualified class name
-     * @return the condensed name
-     */
-    protected static String condensePackageString(String classname)
-    {
-        String parts[] = classname.split("\\.");
-        StringBuilder dense = new StringBuilder();
-        for (int i = 0; i < (parts.length - 1); i++)
-        {
-            dense.append(parts[i].charAt(0));
-        }
-        if (dense.length() > 0)
-        {
-            dense.append('.');
-        }
-        dense.append(parts[parts.length - 1]);
-        return dense.toString();
     }
 
     public String getName()
@@ -583,16 +472,26 @@ public class StdErrLog extends AbstractLogger
             buffer.append(".00");
         }
         buffer.append(ms).append(tag);
-        if (_printLongNames)
+        
+        String name=_printLongNames?_name:_abbrevname;
+        String tname=Thread.currentThread().getName();
+
+        int p=__tagpad>0?(name.length()+tname.length()-__tagpad):0;
+
+        if (p<0)
         {
-            buffer.append(_name);
+            buffer
+            .append(name)
+            .append(':')
+            .append("                                                  ",0,-p)
+            .append(tname);
         }
-        else
+        else if (p==0)
         {
-            buffer.append(_abbrevname);
+            buffer.append(name).append(':').append(tname);
         }
         buffer.append(':');
-        buffer.append(Thread.currentThread().getName()).append(": ");
+        
         if (_source)
         {
             Throwable source = new Throwable();
@@ -622,6 +521,8 @@ public class StdErrLog extends AbstractLogger
                 break;
             }
         }
+
+        buffer.append(' ');
     }
 
     private void format(StringBuilder builder, String msg, Object... args)
@@ -688,7 +589,12 @@ public class StdErrLog extends AbstractLogger
             builder.append(string);
     }
 
-    private void format(StringBuilder buffer, Throwable thrown)
+    protected void format(StringBuilder buffer, Throwable thrown)
+    {
+        format(buffer,thrown,"");
+    }
+    
+    protected void format(StringBuilder buffer, Throwable thrown, String indent)
     {
         if (thrown == null)
         {
@@ -696,20 +602,26 @@ public class StdErrLog extends AbstractLogger
         }
         else
         {
-            buffer.append(EOL);
+            buffer.append(EOL).append(indent);
             format(buffer,thrown.toString());
             StackTraceElement[] elements = thrown.getStackTrace();
             for (int i = 0; elements != null && i < elements.length; i++)
             {
-                buffer.append(EOL).append("\tat ");
+                buffer.append(EOL).append(indent).append("\tat ");
                 format(buffer,elements[i].toString());
             }
 
+            for (Throwable suppressed:thrown.getSuppressed())
+            {
+                buffer.append(EOL).append(indent).append("Suppressed: ");
+                format(buffer,suppressed,"\t|"+indent);
+            }
+            
             Throwable cause = thrown.getCause();
             if (cause != null && cause != thrown)
             {
-                buffer.append(EOL).append("Caused by: ");
-                format(buffer,cause);
+                buffer.append(EOL).append(indent).append("Caused by: ");
+                format(buffer,cause,indent);
             }
         }
     }
@@ -759,12 +671,6 @@ public class StdErrLog extends AbstractLogger
                 break;
         }
         return s.toString();
-    }
-
-    public static void setProperties(Properties props)
-    {
-        __props.clear();
-        __props.putAll(props);
     }
 
     public void ignore(Throwable ignored)

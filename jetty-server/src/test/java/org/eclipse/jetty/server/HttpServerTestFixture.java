@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
@@ -36,16 +37,19 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Before;
 
 public class HttpServerTestFixture
 {    // Useful constants
     protected static final long PAUSE=10L;
-    protected static final int LOOPS=PropertyFlag.isEnabled("test.stress")?250:50;
+    protected static final int LOOPS= PropertyFlag.isEnabled("test.stress")?250:50;
 
+    protected QueuedThreadPool _threadPool;
     protected Server _server;
     protected URI _serverURI;
+    protected HttpConfiguration _httpConfiguration;
     protected ServerConnector _connector;
     protected String _scheme="http";
 
@@ -61,14 +65,23 @@ public class HttpServerTestFixture
     @Before
     public void before()
     {
-        _server = new Server();
+        _threadPool = new QueuedThreadPool();
+        _server = new Server(_threadPool);
     }
 
     protected void startServer(ServerConnector connector) throws Exception
     {
+        startServer(connector,new HandlerWrapper());
+    }
+    
+    protected void startServer(ServerConnector connector, Handler handler) throws Exception
+    {
         _connector = connector;
+        _httpConfiguration=_connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
+        _httpConfiguration.setBlockingTimeout(-1);
+        _httpConfiguration.setSendDateHeader(false);
         _server.addConnector(_connector);
-        _server.setHandler(new HandlerWrapper());
+        _server.setHandler(handler);
         _server.start();
         _serverURI = _server.getURI();
     }
@@ -148,6 +161,21 @@ public class HttpServerTestFixture
         }
     }
 
+    protected static class OptionsHandler extends AbstractHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            if (request.getMethod().equals("OPTIONS"))
+                response.setStatus(200);
+            else
+                response.setStatus(500);
+
+            response.setHeader("Allow", "GET");
+        }
+    }
+    
     protected static class HelloWorldHandler extends AbstractHandler
     {
         @Override
@@ -168,7 +196,7 @@ public class HttpServerTestFixture
             response.setStatus(200);
 
             InputStream in = request.getInputStream();
-            String input=IO.toString(in);
+            String input= IO.toString(in);
 
             String tmp = request.getParameter("writes");
             int writes=Integer.parseInt(tmp==null?"10":tmp);
@@ -185,7 +213,7 @@ public class HttpServerTestFixture
             response.setContentType("text/plain");
             if (encoding==null)
             {
-                byte[] bytes=chunk.getBytes("ISO-8859-1");
+                byte[] bytes=chunk.getBytes(StandardCharsets.ISO_8859_1);
                 OutputStream out=response.getOutputStream();
                 for (int i=0;i<writes;i++)
                 {

@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-parent</artifactId>
-        <version>9.1.3-SNAPSHOT</version>
+        <version>9.4.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -13,6 +13,23 @@
     <properties>
         <bundle-symbolic-name>${project.groupId}.servlet</bundle-symbolic-name>
     </properties>
+    <build>
+      <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Bundle-Description>Websocket Servlet Interface</Bundle-Description>
+                        <Bundle-Classpath />
+                        <DynamicImport-Package>org.eclipse.jetty.websocket.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}",org.eclipse.jetty.websocket.server.pathmap.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"</DynamicImport-Package>
+                        <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.websocket.servlet.WebSocketServletFactory)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)"</Require-Capability>
+                    </instructions>
+                </configuration>
+            </plugin>
+      </plugins>
+    </build>
 
     <dependencies>
         <dependency>
@@ -25,13 +42,6 @@
          <artifactId>javax.servlet-api</artifactId>
         </dependency>
 
-<!--
-        <dependency>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet</artifactId>
-            <scope>provided</scope>
-        </dependency>
--->
         <dependency>
             <groupId>org.eclipse.jetty.toolchain</groupId>
             <artifactId>jetty-test-helper</artifactId>

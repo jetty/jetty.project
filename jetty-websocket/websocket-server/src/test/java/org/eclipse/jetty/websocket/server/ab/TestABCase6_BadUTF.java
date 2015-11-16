@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -163,18 +163,15 @@ public class TestABCase6_BadUTF extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try(StacklessLogging supress = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.UNCLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
+            try (StacklessLogging supress = new StacklessLogging(Parser.class))
+            {
+                fuzzer.connect();
+                fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+                fuzzer.send(send);
+                fuzzer.expect(expect);
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,9 +25,7 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * FragmentConfiguration
- * 
- * 
- * 
+ * <p>
  * Process web-fragments in jars
  */
 public class FragmentConfiguration extends AbstractConfiguration
@@ -45,15 +43,6 @@ public class FragmentConfiguration extends AbstractConfiguration
         
     }
 
-    @Override
-    public void configure(WebAppContext context) throws Exception
-    { 
-        if (!context.isConfigurationDiscovered())
-            return;
-        
-        //order the fragments
-        context.getMetaData().orderFragments(); 
-    }
 
     @Override
     public void postConfigure(WebAppContext context) throws Exception
@@ -64,8 +53,10 @@ public class FragmentConfiguration extends AbstractConfiguration
     /* ------------------------------------------------------------------------------- */
     /**
      * Look for any web-fragment.xml fragments in META-INF of jars in WEB-INF/lib
+     * @param context the web app context to look in
+     * @param metaData the metadata to populate with fragments
      * 
-     * @throws Exception
+     * @throws Exception if unable to find web fragments
      */
     public void findWebFragments (final WebAppContext context, final MetaData metaData) throws Exception
     {
@@ -75,10 +66,10 @@ public class FragmentConfiguration extends AbstractConfiguration
         {
             for (Resource key : frags.keySet())
             {
-            	if (key.isDirectory()) //tolerate the case where the library is a directory, not a jar. useful for OSGi for example
-            	{
-                    metaData.addFragment(key, frags.get(key));            		
-            	}
+                if (key.isDirectory()) //tolerate the case where the library is a directory, not a jar. useful for OSGi for example
+                {
+                    metaData.addFragment(key, frags.get(key));                          
+                }
                 else //the standard case: a jar most likely inside WEB-INF/lib
                 {
                     metaData.addFragment(key, frags.get(key));

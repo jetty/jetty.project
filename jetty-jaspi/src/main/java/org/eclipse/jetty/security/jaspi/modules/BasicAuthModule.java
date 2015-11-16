@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,10 +36,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 
-/**
- * @deprecated use *ServerAuthentication
- * @version $Rev: 4660 $ $Date: 2009-02-25 17:29:53 +0100 (Wed, 25 Feb 2009) $
- */
+@Deprecated
 public class BasicAuthModule extends BaseAuthModule
 {
     private static final Logger LOG = Log.getLogger(BasicAuthModule.class);

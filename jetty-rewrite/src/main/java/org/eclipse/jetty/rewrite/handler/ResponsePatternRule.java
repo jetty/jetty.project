@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,7 +53,7 @@ public class ResponsePatternRule extends PatternRule
      * Sets the reason for the response status code. Reasons will only reflect
      * if the code value is greater or equal to 400.
      * 
-     * @param reason
+     * @param reason the reason
      */
     public void setReason(String reason)
     {

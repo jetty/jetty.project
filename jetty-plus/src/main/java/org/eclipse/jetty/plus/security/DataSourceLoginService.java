@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,6 +32,7 @@ import java.util.Locale;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
+import javax.servlet.ServletRequest;
 import javax.sql.DataSource;
 
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
@@ -41,14 +42,12 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.security.Password;
+import org.eclipse.jetty.util.security.Credential;
 
 
 /**
- *
- * //TODO JASPI cf JDBCLoginService
  * DataSourceUserRealm
- *
+ * <p>
  * Obtain user/password/role information from a database
  * via jndi DataSource.
  */
@@ -70,6 +69,7 @@ public class DataSourceLoginService extends MappedLoginService
     private String _userRoleTableUserKey = "user_id";
     private String _userRoleTableRoleKey = "role_id";
     private int _cacheMs = 30000;
+    private long _lastPurge = 0;
     private String _userSql;
     private String _roleSql;
     private boolean _createTables = false;
@@ -282,20 +282,21 @@ public class DataSourceLoginService extends MappedLoginService
     protected void loadUsers()
     {
     }
-
+    
+ 
+    
     /* ------------------------------------------------------------ */
     /** Load user's info from database.
      *
-     * @param userName
+     * @param userName the user name
      */
     @Override
     protected UserIdentity loadUser (String userName)
     {
         try
         {
-            initDb();
             try (Connection connection = getConnection();
-                    PreparedStatement statement1 = connection.prepareStatement(_userSql))
+                 PreparedStatement statement1 = connection.prepareStatement(_userSql))
             {
                 statement1.setObject(1, userName);
                 try (ResultSet rs1 = statement1.executeQuery())
@@ -311,10 +312,12 @@ public class DataSourceLoginService extends MappedLoginService
                             try (ResultSet rs2 = statement2.executeQuery())
                             {
                                 while (rs2.next())
+                                {
                                     roles.add(rs2.getString(_roleTableRoleField));
+                                }
                             }
                         }
-                        return putUser(userName,new Password(credentials), roles.toArray(new String[roles.size()]));
+                        return putUser(userName, Credential.getCredential(credentials), roles.toArray(new String[roles.size()]));
                     }
                 }
             }
@@ -329,6 +332,22 @@ public class DataSourceLoginService extends MappedLoginService
         }
         return null;
     }
+    
+    
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public UserIdentity login(String username, Object credentials, ServletRequest request)
+    {
+        long now = System.currentTimeMillis();
+        if (now - _lastPurge > _cacheMs || _cacheMs == 0)
+        {
+            _users.clear();
+            _lastPurge = now;
+        }
+ 
+        return super.login(username,credentials, request);
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -336,7 +355,8 @@ public class DataSourceLoginService extends MappedLoginService
      * necessary sql query strings based on the configured table
      * and column names.
      *
-     * @throws NamingException
+     * @throws NamingException if unable to init jndi
+     * @throws SQLException if unable to init database
      */
     public void initDb() throws NamingException, SQLException
     {
@@ -347,9 +367,9 @@ public class DataSourceLoginService extends MappedLoginService
         InitialContext ic = new InitialContext();
         assert ic!=null;
 
-        //TODO webapp scope?
+        // TODO Should we try webapp scope too?
 
-        //try finding the datasource in the Server scope
+        // try finding the datasource in the Server scope
         if (_server != null)
         {
             try

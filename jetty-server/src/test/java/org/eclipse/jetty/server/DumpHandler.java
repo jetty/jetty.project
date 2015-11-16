@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -66,7 +66,7 @@ public class DumpHandler extends AbstractHandler
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (!isStarted())
             return;
@@ -81,6 +81,9 @@ public class DumpHandler extends AbstractHandler
                 read.append((char)in.read());
         }
 
+        if (request.getParameter("date")!=null)
+            response.setHeader("Date",request.getParameter("date"));
+        
         if (request.getParameter("ISE")!=null)
         {
             throw new IllegalStateException("Testing ISE");
@@ -103,6 +106,8 @@ public class DumpHandler extends AbstractHandler
         writer.write("<pre>\ncontentType="+request.getContentType()+"\n</pre>\n");
         writer.write("<pre>\nencoding="+request.getCharacterEncoding()+"\n</pre>\n");
         writer.write("<pre>\nservername="+request.getServerName()+"\n</pre>\n");
+        writer.write("<pre>\nlocal="+request.getLocalAddr()+":"+request.getLocalPort()+"\n</pre>\n");
+        writer.write("<pre>\nremote="+request.getRemoteAddr()+":"+request.getRemotePort()+"\n</pre>\n");
         writer.write("<h3>Header:</h3><pre>");
         writer.write(request.getMethod()+" "+request.getRequestURI()+" "+request.getProtocol()+"\n");
         Enumeration<String> headers = request.getHeaderNames();

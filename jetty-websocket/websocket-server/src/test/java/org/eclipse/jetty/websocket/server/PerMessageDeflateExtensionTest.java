@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,21 +18,22 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.common.test.HttpResponse;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 public class PerMessageDeflateExtensionTest
 {
@@ -53,10 +54,14 @@ public class PerMessageDeflateExtensionTest
 
     /**
      * Default configuration for permessage-deflate
+     * @throws Exception on test failure
      */
     @Test
     public void testPerMessageDeflateDefault() throws Exception
     {
+        Assume.assumeTrue("Server has permessage-deflate registered",
+                server.getWebSocketServletFactory().getExtensionFactory().isAvailable("permessage-deflate"));
+
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.clearExtensions();
         client.addExtensions("permessage-deflate");
@@ -65,7 +70,7 @@ public class PerMessageDeflateExtensionTest
         try
         {
             // Make sure the read times out if there are problems with the implementation
-            client.setTimeout(TimeUnit.SECONDS,1);
+            client.setTimeout(1,TimeUnit.SECONDS);
             client.connect();
             client.sendStandardRequest();
             HttpResponse resp = client.expectUpgradeResponse();
@@ -77,8 +82,8 @@ public class PerMessageDeflateExtensionTest
             // Client sends first message
             client.write(new TextFrame().setPayload(msg));
 
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
-            WebSocketFrame frame = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1000,TimeUnit.MILLISECONDS);
+            WebSocketFrame frame = frames.poll();
             Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is(msg.toString()));
 
             // Client sends second message
@@ -86,8 +91,8 @@ public class PerMessageDeflateExtensionTest
             msg = "There";
             client.write(new TextFrame().setPayload(msg));
 
-            capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            frame = capture.getFrames().poll();
+            frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            frame = frames.poll();
             Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is(msg.toString()));
         }
         finally

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,7 @@ public abstract class Rule
      */
     public interface ApplyURI
     {
-        void applyURI(Request request, String oldTarget, String newTarget) throws IOException;   
+        void applyURI(Request request, String oldURI, String newURI) throws IOException;   
     }
     
     protected boolean _terminating;
@@ -44,20 +44,18 @@ public abstract class Rule
     /**
      * This method calls tests the rule against the request/response pair and if the Rule 
      * applies, then the rule's action is triggered.
-     * @param target The target of the request
-     * @param request
-     * @param response
      * 
+     * @param target The target of the request
+     * @param request the request
+     * @param response the response
      * @return The new target if the rule has matched, else null
-     * @throws IOException
+     * @throws IOException if unable to match the rule
      */
     public abstract String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException;   
     
     /**
      * Sets terminating to true or false.
-     * If true, this rule will terminate the loop if this rule has been applied.
-     * 
-     * @param terminating
+     * @param terminating If true, this rule will terminate the loop if this rule has been applied.
      */    
     public void setTerminating(boolean terminating)
     {

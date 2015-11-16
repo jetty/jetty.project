@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,7 +33,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.security.CrossContextPsuedoSession;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
@@ -45,10 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 
-/**
- * @deprecated use *ServerAuthentication
- * @version $Rev: 4792 $ $Date: 2009-03-18 22:55:52 +0100 (Wed, 18 Mar 2009) $
- */
+@Deprecated
 public class FormAuthModule extends BaseAuthModule
 {
     private static final Logger LOG = Log.getLogger(FormAuthModule.class);
@@ -79,7 +75,6 @@ public class FormAuthModule extends BaseAuthModule
 
     private String _formLoginPath;
 
-    private CrossContextPsuedoSession<UserInfo> ssoSource;
 
     public FormAuthModule()
     {
@@ -92,14 +87,6 @@ public class FormAuthModule extends BaseAuthModule
         setErrorPage(errorPage);
     }
 
-    public FormAuthModule(CallbackHandler callbackHandler, CrossContextPsuedoSession<UserInfo> ssoSource, 
-                          String loginPage, String errorPage)
-    {
-        super(callbackHandler);
-        this.ssoSource = ssoSource;
-        setLoginPage(loginPage);
-        setErrorPage(errorPage);
-    }
 
     @Override
     public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy, 
@@ -109,7 +96,6 @@ public class FormAuthModule extends BaseAuthModule
         super.initialize(requestPolicy, responsePolicy, handler, options);
         setLoginPage((String) options.get(LOGIN_PAGE_KEY));
         setErrorPage((String) options.get(ERROR_PAGE_KEY));
-        ssoSource = (CrossContextPsuedoSession<UserInfo>) options.get(SSO_SOURCE_KEY);
     }
 
     private void setLoginPage(String path)
@@ -161,7 +147,8 @@ public class FormAuthModule extends BaseAuthModule
         HttpSession session = request.getSession(mandatory);
         
         // not mandatory or its the login or login error page don't authenticate
-        if (!mandatory || isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()))) return AuthStatus.SUCCESS;
+        if (!mandatory || isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()))) 
+            return AuthStatus.SUCCESS;  // TODO return null for do nothing?
 
         try
         {
@@ -228,17 +215,7 @@ public class FormAuthModule extends BaseAuthModule
 
                 return AuthStatus.SUCCESS;  
             }
-            else if (ssoSource != null)
-            {
-                UserInfo userInfo = ssoSource.fetch(request);
-                if (userInfo != null)
-                {
-                    boolean success = tryLogin(messageInfo, clientSubject, response, session, userInfo.getUserName(), new Password(new String(userInfo.getPassword())));
-                    if (success) { return AuthStatus.SUCCESS; }
-                }
-            }
             
-           
 
             // if we can't send challenge
             if (DeferredAuthentication.isDeferred(response))
@@ -307,12 +284,6 @@ public class FormAuthModule extends BaseAuthModule
                 }
             }
 
-            // Sign-on to SSO mechanism
-            if (ssoSource != null)
-            {
-                UserInfo userInfo = new UserInfo(username, pwdChars);
-                ssoSource.store(userInfo, response);
-            }
             return true;
         }
         return false;

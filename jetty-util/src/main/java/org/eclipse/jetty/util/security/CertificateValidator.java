@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -72,8 +72,8 @@ public class CertificateValidator
     /**
      * creates an instance of the certificate validator 
      *
-     * @param trustStore 
-     * @param crls
+     * @param trustStore the truststore to use 
+     * @param crls the Certificate Revocation List to use 
      */
     public CertificateValidator(KeyStore trustStore, Collection<? extends CRL> crls)
     {
@@ -89,8 +89,8 @@ public class CertificateValidator
     /**
      * validates all aliases inside of a given keystore
      * 
-     * @param keyStore
-     * @throws CertificateException
+     * @param keyStore the keystore to validate
+     * @throws CertificateException if keystore error and unable to validate 
      */
     public void validate( KeyStore keyStore ) throws CertificateException
     {
@@ -116,10 +116,10 @@ public class CertificateValidator
     /**
      * validates a specific alias inside of the keystore being passed in
      * 
-     * @param keyStore
-     * @param keyAlias
+     * @param keyStore the keystore to validate
+     * @param keyAlias the keyalias in the keystore to valid with
      * @return the keyAlias if valid
-     * @throws CertificateException
+     * @throws CertificateException if keystore error and unable to validate
      */
     public String validate(KeyStore keyStore, String keyAlias) throws CertificateException
     {
@@ -146,9 +146,9 @@ public class CertificateValidator
     /**
      * validates a specific certificate inside of the keystore being passed in
      * 
-     * @param keyStore
-     * @param cert
-     * @throws CertificateException
+     * @param keyStore the keystore to validate against
+     * @param cert the certificate to validate
+     * @throws CertificateException if keystore error and unable to validate
      */
     public void validate(KeyStore keyStore, Certificate cert) throws CertificateException
     {

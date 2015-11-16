@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -85,7 +85,8 @@ public class HttpResponseTesterTest
         rawResponse.append("\n");
         rawResponse.append("Host=Default\n");
         rawResponse.append("Resource=R1\n");
-        
+        rawResponse.append("\n");
+
         rawResponse.append("HTTP/1.1 200 OK\n");
         rawResponse.append("Date: Mon, 08 Jun 2009 23:05:26 GMT\n");
         rawResponse.append("Content-Type: text/plain\n");
@@ -96,30 +97,28 @@ public class HttpResponseTesterTest
         rawResponse.append("\n");
         rawResponse.append("Host=Default\n");
         rawResponse.append("Resource=R2\n");
-        rawResponse.append("\n");
-        
-       
+
         List<HttpTester.Response> responses = HttpTesting.readResponses(rawResponse.toString());
 
         Assert.assertNotNull("Responses should not be null",responses);
         Assert.assertEquals("Responses.size",3,responses.size());
 
         HttpTester.Response resp1 = responses.get(0);
-        System.err.println(resp1.toString());
+        // System.err.println(resp1.toString());
         Assert.assertEquals(HttpStatus.OK_200, resp1.getStatus());
         Assert.assertEquals("text/plain", resp1.get("Content-Type"));
         Assert.assertTrue(resp1.getContent().contains("ABCDEFGHIJKLMNOPQRSTTUVWXYZ\n"));
         assertThat(resp1.get("Connection"),is(not("close")));
 
         HttpTester.Response resp2 = responses.get(1);
-        System.err.println(resp2.toString());
+        // System.err.println(resp2.toString());
         Assert.assertEquals(HttpStatus.OK_200, resp2.getStatus());
         Assert.assertEquals("text/plain", resp2.get("Content-Type"));
         Assert.assertTrue(resp2.getContent().contains("Host=Default\nResource=R1\n"));
         assertThat(resp2.get("Connection"),is(not("close")));
 
         HttpTester.Response resp3 = responses.get(2);
-        System.err.println(resp3.toString());
+        // System.err.println(resp3.toString());
         Assert.assertEquals(HttpStatus.OK_200, resp3.getStatus());
         Assert.assertEquals("text/plain", resp3.get("Content-Type"));
         Assert.assertTrue(resp3.getContent().contains("Host=Default\nResource=R2\n"));

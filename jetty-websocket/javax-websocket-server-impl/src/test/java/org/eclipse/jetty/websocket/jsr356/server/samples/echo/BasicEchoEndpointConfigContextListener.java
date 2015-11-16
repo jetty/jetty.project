@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,7 @@ import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
 
 /**
- * Example of adding a server WebSocket (extending {@link Endpoint}) programmatically via config
+ * Example of adding a server WebSocket (extending {@link javax.websocket.Endpoint}) programmatically via config
  */
 public class BasicEchoEndpointConfigContextListener implements ServletContextListener
 {
@@ -39,6 +39,9 @@ public class BasicEchoEndpointConfigContextListener implements ServletContextLis
     public void contextInitialized(ServletContextEvent sce)
     {
         ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
+        if (container==null)
+            throw new IllegalStateException("No Websocket ServerContainer in "+sce.getServletContext());
+        
         // Build up a configuration with a specific path
         String path = "/echo";
         ServerEndpointConfig.Builder builder = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class,path);

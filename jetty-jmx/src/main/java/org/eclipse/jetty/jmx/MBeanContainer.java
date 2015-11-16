@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -128,7 +128,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
     @Override
     public void beanAdded(Container parent, Object obj)
     {
-        LOG.debug("beanAdded {}->{}",parent,obj);
+        if (LOG.isDebugEnabled())
+            LOG.debug("beanAdded {}->{}",parent,obj);
         
         // Is their an object name for the parent
         ObjectName pname=null;
@@ -206,7 +207,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
             }
 
             ObjectInstance oinstance = _mbeanServer.registerMBean(mbean, oname);
-            LOG.debug("Registered {}", oinstance.getObjectName());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Registered {}", oinstance.getObjectName());
             _beans.put(obj, oinstance.getObjectName());
 
         }
@@ -219,7 +221,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
     @Override
     public void beanRemoved(Container parent, Object obj)
     {
-        LOG.debug("beanRemoved {}",obj);
+        if (LOG.isDebugEnabled())
+            LOG.debug("beanRemoved {}",obj);
         ObjectName bean = _beans.remove(obj);
 
         if (bean != null)
@@ -227,7 +230,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
             try
             {
                 _mbeanServer.unregisterMBean(bean);
-                LOG.debug("Unregistered {}", bean);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unregistered {}", bean);
             }
             catch (javax.management.InstanceNotFoundException e)
             {

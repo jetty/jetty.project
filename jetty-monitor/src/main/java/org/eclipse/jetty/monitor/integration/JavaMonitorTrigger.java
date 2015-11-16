@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,8 @@ import javax.management.ObjectName;
 import org.eclipse.jetty.monitor.triggers.AttrEventTrigger;
 
 
-/* ------------------------------------------------------------ */
 /**
+ * @param <TYPE> the trigger type
  */
 public class JavaMonitorTrigger <TYPE extends Comparable<TYPE>>
     extends AttrEventTrigger<TYPE>
@@ -35,13 +35,6 @@ public class JavaMonitorTrigger <TYPE extends Comparable<TYPE>>
     private int _count;
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param nameObject
-     * @param attributeName
-     * @param id
-     * @param dynamic
-     * @throws IllegalArgumentException
-     */
     public JavaMonitorTrigger(ObjectName nameObject, String attributeName, String id, String name, boolean dynamic)
         throws IllegalArgumentException
     {   

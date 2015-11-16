@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -60,12 +61,24 @@ public class MultipartFilterTest
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            assertNotNull(req.getParameter("fileName"));
-            assertEquals(getServletContext().getAttribute("fileName"), req.getParameter("fileName"));
-            assertNotNull(req.getParameter("desc"));
-            assertEquals(getServletContext().getAttribute("desc"), req.getParameter("desc"));
-            assertNotNull(req.getParameter("title"));
-            assertEquals(getServletContext().getAttribute("title"), req.getParameter("title"));
+            //we have configured the multipart filter to always store to disk (file size threshold == 1)
+            //but fileName has no filename param, so only the attribute should be set
+            assertNull(req.getParameter("fileName"));
+            assertNotNull(req.getAttribute("fileName"));
+            File f = (File)req.getAttribute("fileName");
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            IO.copy(new FileInputStream(f), baos);
+            assertEquals(getServletContext().getAttribute("fileName"), baos.toString());
+            assertNull(req.getParameter("desc"));
+            assertNotNull(req.getAttribute("desc"));
+            baos = new ByteArrayOutputStream();
+            IO.copy(new FileInputStream((File)req.getAttribute("desc")), baos);
+            assertEquals(getServletContext().getAttribute("desc"), baos.toString());
+            assertNull(req.getParameter("title"));
+            assertNotNull(req.getAttribute("title"));
+            baos = new ByteArrayOutputStream();
+            IO.copy(new FileInputStream((File)req.getAttribute("title")), baos);
+            assertEquals(getServletContext().getAttribute("title"), baos.toString());
             super.doPost(req, resp);
         }
     }
@@ -77,6 +90,7 @@ public class MultipartFilterTest
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             assertNotNull(req.getParameter("fileup"));
+            System.err.println("Fileup="+req.getParameter("fileup"));
             assertNotNull(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
             assertEquals(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX), "application/octet-stream");
             super.doPost(req, resp);
@@ -101,6 +115,7 @@ public class MultipartFilterTest
         tester.getContext().setAttribute("javax.servlet.context.tempdir", _dir);
         FilterHolder multipartFilter = tester.getContext().addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
         multipartFilter.setInitParameter("deleteFiles", "true");
+        multipartFilter.setInitParameter("fileOutputBuffer", "1"); //write a file if  there's more than 1 byte content
         tester.start();
     }
 
@@ -765,10 +780,6 @@ public class MultipartFilterTest
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
     }
 
-    /*
-     * see the testParameterMap test
-     *
-     */
     public static class TestServletParameterMap extends DumpServlet
     {
         @Override
@@ -783,7 +794,7 @@ public class MultipartFilterTest
     /**
      * Validate that the getParameterMap() call is correctly unencoding the parameters in the
      * map that it returns.
-     * @throws Exception
+     * @throws Exception on test failure
      */
     @Test
     public void testParameterMap() throws Exception

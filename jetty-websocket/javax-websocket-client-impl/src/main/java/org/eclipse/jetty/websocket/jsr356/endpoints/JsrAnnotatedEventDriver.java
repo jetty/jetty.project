@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,13 +26,13 @@ import java.util.Map;
 
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
+import javax.websocket.MessageHandler.Whole;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
@@ -45,7 +45,7 @@ import org.eclipse.jetty.websocket.jsr356.messages.TextPartialOnMessage;
 /**
  * Base implementation for JSR-356 Annotated event drivers.
  */
-public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements EventDriver
+public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
 {
     private static final Logger LOG = Log.getLogger(JsrAnnotatedEventDriver.class);
     private final JsrEvents<?, ?> events;
@@ -84,13 +84,19 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
                 if (events.isBinaryPartialSupported())
                 {
                     // Partial Message Support (does not use messageAppender)
-                    LOG.debug("Partial Binary Message: fin={}",fin);
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Partial Binary Message: fin={}",fin);
+                    }
                     activeMessage = new BinaryPartialOnMessage(this);
                 }
                 else
                 {
                     // Whole Message Support
-                    LOG.debug("Whole Binary Message");
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Whole Binary Message");
+                    }
                     activeMessage = new SimpleBinaryMessage(this);
                 }
             }
@@ -102,8 +108,11 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
             // Streaming Message Support
             if (activeMessage == null)
             {
-                LOG.debug("Binary Message InputStream");
-                final MessageInputStream stream = new MessageInputStream(session.getConnection());
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Binary Message InputStream");
+                }
+                final MessageInputStream stream = new MessageInputStream();
                 activeMessage = stream;
 
                 // Always dispatch streaming read to another thread.
@@ -116,7 +125,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
                         {
                             events.callBinaryStream(jsrsession.getAsyncRemote(),websocket,stream);
                         }
-                        catch (DecodeException | IOException e)
+                        catch (Throwable e)
                         {
                             onFatalError(e);
                         }
@@ -125,7 +134,10 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
             }
         }
 
-        LOG.debug("handled = {}",handled);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("handled = {}",handled);
+        }
 
         // Process any active MessageAppender
         if (handled && (activeMessage != null))
@@ -157,7 +169,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
             // FIN is always true here
             events.callBinary(jsrsession.getAsyncRemote(),websocket,buf,true);
         }
-        catch (DecodeException e)
+        catch (Throwable e)
         {
             onFatalError(e);
         }
@@ -178,7 +190,15 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
     @Override
     public void onError(Throwable cause)
     {
-        events.callError(websocket,cause);
+        try
+        {
+            events.callError(websocket,cause);
+        }
+        catch (Throwable e)
+        {
+            LOG.warn("Unable to call onError with cause", cause);
+            LOG.warn("Call to onError resulted in exception", e);
+        }
     }
 
     private void onFatalError(Throwable t)
@@ -193,15 +213,15 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
     }
 
     @Override
-    public void onInputStream(InputStream stream)
+    public void onInputStream(InputStream stream) throws IOException
     {
         try
         {
             events.callBinaryStream(jsrsession.getAsyncRemote(),websocket,stream);
         }
-        catch (DecodeException | IOException e)
+        catch (DecodeException e)
         {
-            onFatalError(e);
+            throw new RuntimeException("Unable decode input stream", e);
         }
     }
 
@@ -213,7 +233,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
         }
         catch (DecodeException e)
         {
-            onFatalError(e);
+            throw new RuntimeException("Unable decode partial binary message", e);
         }
     }
 
@@ -225,46 +245,33 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
         }
         catch (DecodeException e)
         {
-            onFatalError(e);
+            throw new RuntimeException("Unable decode partial text message", e);
         }
     }
 
     @Override
     public void onPing(ByteBuffer buffer)
     {
-        try
-        {
-            events.callPong(jsrsession.getAsyncRemote(),websocket,buffer);
-        }
-        catch (DecodeException | IOException e)
-        {
-            onFatalError(e);
-        }
+        // Call pong, as there is no "onPing" method in the JSR
+        events.callPong(jsrsession.getAsyncRemote(),websocket,buffer);
     }
     
     @Override
     public void onPong(ByteBuffer buffer)
     {
-        try
-        {
-            events.callPong(jsrsession.getAsyncRemote(),websocket,buffer);
-        }
-        catch (DecodeException | IOException e)
-        {
-            onFatalError(e);
-        }
+        events.callPong(jsrsession.getAsyncRemote(),websocket,buffer);
     }
 
     @Override
-    public void onReader(Reader reader)
+    public void onReader(Reader reader) throws IOException
     {
         try
         {
             events.callTextStream(jsrsession.getAsyncRemote(),websocket,reader);
         }
-        catch (DecodeException | IOException e)
+        catch (DecodeException e)
         {
-            onFatalError(e);
+            throw new RuntimeException("Unable decode reader", e);
         }
     }
 
@@ -291,13 +298,19 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
                 if (events.isTextPartialSupported())
                 {
                     // Partial Message Support
-                    LOG.debug("Partial Text Message: fin={}",fin);
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Partial Text Message: fin={}",fin);
+                    }
                     activeMessage = new TextPartialOnMessage(this);
                 }
                 else
                 {
                     // Whole Message Support
-                    LOG.debug("Whole Text Message");
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Whole Text Message");
+                    }
                     activeMessage = new SimpleTextMessage(this);
                 }
             }
@@ -309,9 +322,12 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
             // Streaming Message Support
             if (activeMessage == null)
             {
-                LOG.debug("Text Message Writer");
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Text Message Writer");
+                }
 
-                final MessageReader stream = new MessageReader(new MessageInputStream(session.getConnection()));
+                final MessageReader stream = new MessageReader(new MessageInputStream());
                 activeMessage = stream;
 
                 // Always dispatch streaming read to another thread.
@@ -324,7 +340,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
                         {
                             events.callTextStream(jsrsession.getAsyncRemote(),websocket,stream);
                         }
-                        catch (DecodeException | IOException e)
+                        catch (Throwable e)
                         {
                             onFatalError(e);
                         }
@@ -333,7 +349,10 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
             }
         }
 
-        LOG.debug("handled = {}",handled);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("handled = {}", handled);
+        }
 
         // Process any active MessageAppender
         if (handled && (activeMessage != null))
@@ -348,14 +367,17 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
     @Override
     public void onTextMessage(String message)
     {
-        LOG.debug("onText({})",message);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onText({})",message);
+        }
 
         try
         {
             // FIN is always true here
             events.callText(jsrsession.getAsyncRemote(),websocket,message,true);
         }
-        catch (DecodeException e)
+        catch (Throwable e)
         {
             onFatalError(e);
         }

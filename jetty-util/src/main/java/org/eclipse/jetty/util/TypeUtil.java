@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
@@ -173,7 +174,9 @@ public class TypeUtil
     /** Array to List.
      * <p>
      * Works like {@link Arrays#asList(Object...)}, but handles null arrays.
+     * @param a the array to convert to a list
      * @return a list backed by the array.
+     * @param <T> the array and list entry type
      */
     public static <T> List<T> asList(T[] a)
     {
@@ -362,6 +365,19 @@ public class TypeUtil
      * @param c An ASCII encoded character 0-9 a-f A-F
      * @return The byte value of the character 0-16.
      */
+    public static int convertHexDigit( char c )
+    {
+        int d= ((c & 0x1f) + ((c >> 6) * 0x19) - 0x10);
+        if (d<0 || d>15)
+            throw new NumberFormatException("!hex "+c);
+        return d;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param c An ASCII encoded character 0-9 a-f A-F
+     * @return The byte value of the character 0-16.
+     */
     public static int convertHexDigit( int c )
     {
         int d= ((c & 0x1f) + ((c >> 6) * 0x19) - 0x10);
@@ -483,6 +499,13 @@ public class TypeUtil
     public static Object call(Class<?> oClass, String methodName, Object obj, Object[] arg)
        throws InvocationTargetException, NoSuchMethodException
     {
+        Objects.requireNonNull(oClass,"Class cannot be null");
+        Objects.requireNonNull(methodName,"Method name cannot be null");
+        if (StringUtil.isBlank(methodName))
+        {
+            throw new IllegalArgumentException("Method name cannot be blank");
+        }
+        
         // Lets just try all methods for now
         for (Method method : oClass.getMethods())
         {
@@ -539,9 +562,17 @@ public class TypeUtil
 
     public static Object construct(Class<?> klass, Object[] arguments) throws InvocationTargetException, NoSuchMethodException
     {
+        Objects.requireNonNull(klass,"Class cannot be null");
+        
         for (Constructor<?> constructor : klass.getConstructors())
         {
-            if (constructor.getParameterTypes().length != arguments.length)
+            if (arguments == null)
+            {
+                // null arguments in .newInstance() is allowed
+                if (constructor.getParameterTypes().length != 0)
+                    continue;
+            }
+            else if (constructor.getParameterTypes().length != arguments.length)
                 continue;
 
             try
@@ -558,19 +589,34 @@ public class TypeUtil
     
     public static Object construct(Class<?> klass, Object[] arguments, Map<String, Object> namedArgMap) throws InvocationTargetException, NoSuchMethodException
     {
+        Objects.requireNonNull(klass,"Class cannot be null");
+        Objects.requireNonNull(namedArgMap,"Named Argument Map cannot be null");
+        
         for (Constructor<?> constructor : klass.getConstructors())
         {
-            if (constructor.getParameterTypes().length != arguments.length)
+            if (arguments == null)
+            {
+                // null arguments in .newInstance() is allowed
+                if (constructor.getParameterTypes().length != 0)
+                    continue;
+            }
+            else if (constructor.getParameterTypes().length != arguments.length)
                 continue;
 
             try
             {
                 Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
                 
-                // target has no annotations
-                if ( parameterAnnotations == null || parameterAnnotations.length == 0 )
-                {                
-                    LOG.debug("Target has no parameter annotations");                   
+                if (arguments == null || arguments.length == 0)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Constructor has no arguments");
+                    return constructor.newInstance(arguments);
+                }
+                else if (parameterAnnotations == null || parameterAnnotations.length == 0)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Constructor has no parameter annotations");
                     return constructor.newInstance(arguments);
                 }
                 else
@@ -588,19 +634,22 @@ public class TypeUtil
                                
                                if (namedArgMap.containsKey(param.value()))
                                {
-                                   LOG.debug("placing named {} in position {}", param.value(), count);
+                                   if (LOG.isDebugEnabled())
+                                       LOG.debug("placing named {} in position {}", param.value(), count);
                                    swizzled[count] = namedArgMap.get(param.value());
                                }
                                else
                                {
-                                   LOG.debug("placing {} in position {}", arguments[count], count);
+                                   if (LOG.isDebugEnabled())
+                                       LOG.debug("placing {} in position {}", arguments[count], count);
                                    swizzled[count] = arguments[count];
                                }
                                ++count;
                            }
                            else
                            {
-                               LOG.debug("passing on annotation {}", annotation);
+                               if (LOG.isDebugEnabled())
+                                   LOG.debug("passing on annotation {}", annotation);
                            }
                        }
                    }
@@ -615,5 +664,33 @@ public class TypeUtil
             }
         }
         throw new NoSuchMethodException("<init>");
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * @param o Object to test for true
+     * @return True if passed object is not null and is either a Boolean with value true or evaluates to a string that evaluates to true.
+     */
+    public static boolean isTrue(Object o)
+    {
+        if (o==null)
+            return false;
+        if (o instanceof Boolean)
+            return ((Boolean)o).booleanValue();
+        return Boolean.parseBoolean(o.toString());
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * @param o Object to test for false
+     * @return True if passed object is not null and is either a Boolean with value false or evaluates to a string that evaluates to false.
+     */
+    public static boolean isFalse(Object o)
+    {
+        if (o==null)
+            return false;
+        if (o instanceof Boolean)
+            return !((Boolean)o).booleanValue();
+        return "false".equalsIgnoreCase(o.toString());
     }
 }

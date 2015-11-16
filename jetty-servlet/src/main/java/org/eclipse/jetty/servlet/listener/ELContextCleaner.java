@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,7 +52,7 @@ public class ELContextCleaner implements ServletContextListener
         try
         {
             //Check that the BeanELResolver class is on the classpath
-            Class beanELResolver = Loader.loadClass(this.getClass(), "javax.el.BeanELResolver");
+            Class<?> beanELResolver = Loader.loadClass(this.getClass(), "javax.el.BeanELResolver");
 
             //Get a reference via reflection to the properties field which is holding class references
             Field field = getField(beanELResolver);
@@ -60,22 +60,15 @@ public class ELContextCleaner implements ServletContextListener
             //Get rid of references
             purgeEntries(field);
 
-            LOG.debug("javax.el.BeanELResolver purged");
+            if (LOG.isDebugEnabled())
+                LOG.debug("javax.el.BeanELResolver purged");
         }
 
         catch (ClassNotFoundException e)
         {
             //BeanELResolver not on classpath, ignore
         }
-        catch (SecurityException e)
-        {
-            LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
-        }
-        catch (IllegalArgumentException e)
-        {
-            LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
-        }
-        catch (IllegalAccessException e)
+        catch (SecurityException | IllegalArgumentException | IllegalAccessException e)
         {
             LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
         }
@@ -87,7 +80,7 @@ public class ELContextCleaner implements ServletContextListener
     }
 
 
-    protected Field getField (Class beanELResolver)
+    protected Field getField (Class<?> beanELResolver)
     throws SecurityException, NoSuchFieldException
     {
         if (beanELResolver == null)
@@ -105,22 +98,27 @@ public class ELContextCleaner implements ServletContextListener
         if (!properties.isAccessible())
             properties.setAccessible(true);
 
-        ConcurrentHashMap map = (ConcurrentHashMap) properties.get(null);
+        ConcurrentHashMap<Class<?>, Object> map = (ConcurrentHashMap<Class<?>, Object>) properties.get(null);
         if (map == null)
             return;
 
-        Iterator<Class> itor = map.keySet().iterator();
+        Iterator<Class<?>> itor = map.keySet().iterator();
         while (itor.hasNext())
         {
-            Class clazz = itor.next();
-            LOG.debug("Clazz: "+clazz+" loaded by "+clazz.getClassLoader());
+            Class<?> clazz = itor.next();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Clazz: "+clazz+" loaded by "+clazz.getClassLoader());
             if (Thread.currentThread().getContextClassLoader().equals(clazz.getClassLoader()))
             {
                 itor.remove();
-                LOG.debug("removed");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("removed");
             }
             else
-                LOG.debug("not removed: "+"contextclassloader="+Thread.currentThread().getContextClassLoader()+"clazz's classloader="+clazz.getClassLoader());
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("not removed: "+"contextclassloader="+Thread.currentThread().getContextClassLoader()+"clazz's classloader="+clazz.getClassLoader());
+            }
         }
     }
 }

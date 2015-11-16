@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.net.URI;
 
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 public class SimpleServletServer
 {
@@ -99,7 +101,7 @@ public class SimpleServletServer
             https_config.addCustomizer(new SecureRequestCustomizer());
 
             // SSL Connector
-            connector = new ServerConnector(server,new SslConnectionFactory(sslContextFactory,"http/1.1"),new HttpConnectionFactory(https_config));
+            connector = new ServerConnector(server,new SslConnectionFactory(sslContextFactory,HttpVersion.HTTP_1_1.asString()),new HttpConnectionFactory(https_config));
             connector.setPort(0);
         }
         else
@@ -112,6 +114,7 @@ public class SimpleServletServer
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
+        configureServletContextHandler(context);
         server.setHandler(context);
 
         // Serve capture servlet
@@ -136,6 +139,10 @@ public class SimpleServletServer
         }
     }
 
+    protected void configureServletContextHandler(ServletContextHandler context)
+    {
+    }
+
     public void stop()
     {
         try
@@ -146,5 +153,18 @@ public class SimpleServletServer
         {
             e.printStackTrace(System.err);
         }
+    }
+
+    public WebSocketServletFactory getWebSocketServletFactory()
+    {
+        // Try filter approach first
+        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter)this.servlet.getServletContext().getAttribute(WebSocketUpgradeFilter.class.getName());
+        if (filter != null)
+        {
+            return filter.getFactory();
+        }
+
+        // Try servlet next
+        return (WebSocketServletFactory)this.servlet.getServletContext().getAttribute(WebSocketServletFactory.class.getName());
     }
 }

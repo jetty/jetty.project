@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -43,16 +43,17 @@ public class HttpWriterTest
     {
         _bytes = BufferUtil.allocate(2048);
 
-        final ByteBufferPool bufferPool = new MappedByteBufferPool();
-        HttpChannel<?> channel = new HttpChannel<ByteBuffer>(null,new HttpConfiguration(),null,null,new ByteBufferQueuedHttpInput())
+        final ByteBufferPool pool = new ArrayByteBufferPool();
+        
+        HttpChannel channel = new HttpChannel(null,new HttpConfiguration(),null,null)
         {
             @Override
             public ByteBufferPool getByteBufferPool()
             {
-                return bufferPool;
+                return pool;
             }
         };
-
+        
         _httpOut = new HttpOutput(channel)
         {
             @Override

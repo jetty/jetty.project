@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -123,6 +123,40 @@ public class LocalConnectorTest
 
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("pathInfo=/R2"));
+    }
+    
+    @Test
+    public void testManyGETs() throws Exception
+    {
+        String response=_connector.getResponses(
+            "GET /R1 HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "\r\n"+
+            "GET /R2 HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "\r\n"+
+            "GET /R3 HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "\r\n"+
+            "GET /R4 HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "\r\n"+
+            "GET /R5 HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "\r\n"+
+            "GET /R6 HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "Connection: close\r\n"+
+            "\r\n");
+        
+        String r=response;
+        
+        for (int i=1;i<=6;i++)
+        {
+            assertThat(r,containsString("HTTP/1.1 200 OK"));
+            assertThat(r,containsString("pathInfo=/R"+i));
+            r=r.substring(r.indexOf("</html>")+8);
+        }
     }
 
     @Test

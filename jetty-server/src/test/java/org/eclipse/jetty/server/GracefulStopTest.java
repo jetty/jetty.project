@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,85 +18,286 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assert.assertThat;
+
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.ConnectException;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
-public class GracefulStopTest
+public class GracefulStopTest 
 {
-    private Server server;
-
-    @Before
-    public void setup() throws Exception
+    /**
+     * Test of standard graceful timeout mechanism when a block request does
+     * not complete
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testGracefulNoWaiter() throws Exception
     {
-        server = new Server(0);
-        StatisticsHandler stats = new StatisticsHandler();
-        TestHandler test=new TestHandler();
-        server.setHandler(stats);
-        stats.setHandler(test);
-        server.setStopTimeout(10 * 1000);
-        
+        Server server= new Server();
+        server.setStopTimeout(1000);
+
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        TestHandler handler = new TestHandler();
+        server.setHandler(handler);
+
         server.start();
+        final int port=connector.getLocalPort();
+        Socket client = new Socket("127.0.0.1", port);
+        client.getOutputStream().write((
+                "POST / HTTP/1.0\r\n"+
+                        "Host: localhost:"+port+"\r\n" +
+                        "Content-Type: plain/text\r\n" +
+                        "Content-Length: 10\r\n" +
+                        "\r\n"+
+                        "12345"
+                ).getBytes());
+        client.getOutputStream().flush();
+        handler.latch.await();
+
+        long start = System.nanoTime();
+        server.stop();
+        long stop = System.nanoTime();
+        
+        // No Graceful waiters
+        assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),lessThan(900L));
+
+        assertThat(client.getInputStream().read(),Matchers.is(-1));
+
+        assertThat(handler.handling.get(),Matchers.is(false));
+        assertThat(handler.thrown.get(),
+                Matchers.anyOf(
+                instanceOf(ClosedChannelException.class),
+                instanceOf(EofException.class),
+                instanceOf(EOFException.class))
+                );
+
+        client.close();
     }
 
+    /**
+     * Test of standard graceful timeout mechanism when a block request does
+     * not complete
+     * @throws Exception on test failure
+     */
     @Test
-    public void testGraceful() throws Exception
+    public void testGracefulTimeout() throws Exception
     {
-        new Thread()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    TimeUnit.SECONDS.sleep(1);
-                    server.stop();
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
+        Server server= new Server();
+        server.setStopTimeout(1000);
 
-        try(Socket socket = new Socket("localhost",server.getBean(NetworkConnector.class).getLocalPort());)
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        TestHandler handler = new TestHandler();
+        StatisticsHandler stats = new StatisticsHandler();
+        server.setHandler(stats);
+        stats.setHandler(handler);
+
+        server.start();
+        final int port=connector.getLocalPort();
+        Socket client = new Socket("127.0.0.1", port);
+        client.getOutputStream().write((
+                "POST / HTTP/1.0\r\n"+
+                        "Host: localhost:"+port+"\r\n" +
+                        "Content-Type: plain/text\r\n" +
+                        "Content-Length: 10\r\n" +
+                        "\r\n"+
+                        "12345"
+                ).getBytes());
+        client.getOutputStream().flush();
+        handler.latch.await();
+
+        long start = System.nanoTime();
+        try
         {
-            socket.getOutputStream().write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
-            String out = IO.toString(socket.getInputStream());
-            Assert.assertThat(out,Matchers.containsString("200 OK"));
+            server.stop();
+            Assert.fail();
+        }
+        catch(TimeoutException e)
+        {
+            long stop = System.nanoTime();
+            // No Graceful waiters
+            assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),greaterThan(900L));
+        }
+
+        assertThat(client.getInputStream().read(),Matchers.is(-1));
+
+        assertThat(handler.handling.get(),Matchers.is(false));
+        assertThat(handler.thrown.get(),instanceOf(ClosedChannelException.class));
+
+        client.close();
+    }
+
+
+    /**
+     * Test of standard graceful timeout mechanism when a block request does
+     * complete. Note that even though the request completes after 100ms, the
+     * stop always takes 1000ms
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testGracefulComplete() throws Exception
+    {
+        Server server= new Server();
+        server.setStopTimeout(10000);
+
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        TestHandler handler = new TestHandler();
+        StatisticsHandler stats = new StatisticsHandler();
+        server.setHandler(stats);
+        stats.setHandler(handler);
+
+        server.start();
+        final int port=connector.getLocalPort();
+
+        try(final Socket client1 = new Socket("127.0.0.1", port);final Socket client2 = new Socket("127.0.0.1", port);)
+        {
+            client1.getOutputStream().write((
+                    "POST / HTTP/1.0\r\n"+
+                            "Host: localhost:"+port+"\r\n" +
+                            "Content-Type: plain/text\r\n" +
+                            "Content-Length: 10\r\n" +
+                            "\r\n"+
+                            "12345"
+                    ).getBytes());
+            client1.getOutputStream().flush();
+            handler.latch.await();
+
+            new Thread()
+            {
+                @Override
+                public void run() 
+                {
+                    long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                    long end = now+500;
+                    
+
+                    
+                    try
+                    {
+                        Thread.sleep(100);
+
+                        // Try creating a new connection
+                        try
+                        {
+                            new Socket("127.0.0.1", port);
+                            throw new IllegalStateException();
+                        }
+                        catch(ConnectException e)
+                        {
+                            
+                        }
+                        
+                        // Try another request on existing connection
+
+                        client2.getOutputStream().write((
+                                "GET / HTTP/1.0\r\n"+
+                                        "Host: localhost:"+port+"\r\n" +
+                                        "\r\n"
+                                ).getBytes());
+                        client2.getOutputStream().flush();
+                        String response2 = IO.toString(client2.getInputStream());
+                        assertThat(response2, containsString(" 503 "));
+
+                        now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                        Thread.sleep(end-now);
+                        client1.getOutputStream().write("567890".getBytes());
+                    }
+                    catch(Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
+
+            long start = System.nanoTime();
+            server.stop();
+            long stop = System.nanoTime();
+            assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),greaterThan(490L));
+            assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),lessThan(10000L));
+
+            String response = IO.toString(client1.getInputStream());
+
+            assertThat(handler.handling.get(),Matchers.is(false));
+            assertThat(response, containsString(" 200 OK"));
+            assertThat(response, containsString("read 10/10"));
+            
+            assertThat(stats.getRequests(),Matchers.is(2));
+            assertThat(stats.getResponses5xx(),Matchers.is(1));
         }
     }
 
-    private static class TestHandler extends AbstractHandler
-    {
+
+    static class TestHandler extends AbstractHandler 
+    {		
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicReference<Throwable> thrown = new AtomicReference<Throwable>();
+        final AtomicBoolean handling = new AtomicBoolean(false);
+
         @Override
-        public void handle(final String s, final Request request, final HttpServletRequest httpServletRequest, final HttpServletResponse httpServletResponse)
-            throws IOException, ServletException
+        public void handle(String target, Request baseRequest,
+                HttpServletRequest request, HttpServletResponse response)
+                        throws IOException, ServletException 
         {
+            handling.set(true);
+            latch.countDown();
+            int c=0;
             try
             {
-                TimeUnit.SECONDS.sleep(2);
-            }
-            catch (InterruptedException e)
-            {
-            }
+                int content_length = request.getContentLength();
+                InputStream in = request.getInputStream();
 
-            httpServletResponse.getWriter().write("OK");
-            httpServletResponse.setStatus(200);
-            request.setHandled(true);
+                while(true)
+                {
+                    if (in.read()<0)
+                        break;
+                    c++;
+                }
+
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.getWriter().printf("read %d/%d%n",c,content_length);
+            }
+            catch(Throwable th)
+            {
+                thrown.set(th);
+            }
+            finally
+            {
+                handling.set(false);
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -49,7 +49,8 @@ public class EndpointEchoClient extends Endpoint
     @Override
     public void onOpen(Session session, EndpointConfig config)
     {
-        LOG.debug("onOpen({}, {})",session,config);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onOpen({}, {})",session,config);
         this.session = session;
         Assert.assertThat("Session is required",session,notNullValue());
         Assert.assertThat("EndpointConfig is required",config,notNullValue());

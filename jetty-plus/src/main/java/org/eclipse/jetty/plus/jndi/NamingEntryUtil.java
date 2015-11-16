@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,7 +48,8 @@ public class NamingEntryUtil
      * @param scope the scope of the lookup
      * @param asName the name to bind as
      * @param mappedName the name from the environment to link to asName
-     * @throws NamingException
+     * @return true if bind success, false if not bound
+     * @throws NamingException if unable to bind
      */
     public static boolean bindToENC (Object scope, String asName, String mappedName)
     throws NamingException
@@ -74,10 +75,10 @@ public class NamingEntryUtil
     /**
      * Find a NamingEntry in the given scope.
      *
-     * @param scope
-     * @param jndiName
+     * @param scope the object scope
+     * @param jndiName the jndi name
      * @return the naming entry for the given scope
-     * @throws NamingException
+     * @throws NamingException if unable to lookup naming entry
      */
     public static NamingEntry lookupNamingEntry (Object scope, String jndiName)
     throws NamingException
@@ -112,10 +113,10 @@ public class NamingEntryUtil
      * Get all NameEntries of a certain type in the given naming
      * environment scope (server-wide names or context-specific names)
      *
-     * @param scope
+     * @param scope the object scope
      * @param clazz the type of the entry
      * @return all NameEntries of a certain type in the given naming environment scope (server-wide names or context-specific names)
-     * @throws NamingException
+     * @throws NamingException if unable to lookup the naming entries
      */
     public static List<Object> lookupNamingEntries (Object scope, Class<?> clazz)
     throws NamingException

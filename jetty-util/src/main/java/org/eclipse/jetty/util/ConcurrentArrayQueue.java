@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,14 +34,16 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 /**
  * A concurrent, unbounded implementation of {@link Queue} that uses singly-linked array blocks
  * to store elements.
- * <p/>
+ * <p>
  * This class is a drop-in replacement for {@link ConcurrentLinkedQueue}, with similar performance
  * but producing less garbage because arrays are used to store elements rather than nodes.
- * <p/>
+ * </p>
+ * <p>
  * The algorithm used is a variation of the algorithm from Gidenstam, Sundell and Tsigas
  * (http://www.adm.hb.se/~AGD/Presentations/CacheAwareQueue_OPODIS.pdf).
+ * </p>
  *
- * @param <T>
+ * @param <T> the Array entry type
  */
 public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
 {
@@ -168,6 +170,7 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
         return _blocks.compareAndSet(TAIL_OFFSET,current,update);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public T poll()
     {
@@ -276,7 +279,7 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
             }
             else
             {
-                Object element = currentHeadBlock.peek(head);
+                T element = currentHeadBlock.peek(head);
                 if (element == REMOVED_ELEMENT)
                 {
                     // Already removed, try next index
@@ -284,7 +287,7 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
                 }
                 else
                 {
-                    return (T)element;
+                    return element;
                 }
             }
         }
@@ -421,8 +424,11 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
 
                     advance();
 
-                    if (element != REMOVED_ELEMENT)
-                        return (T)element;
+                    if (element != REMOVED_ELEMENT) {
+                        @SuppressWarnings("unchecked")
+                        T e = (T)element;
+                        return e;
+                    }
                 }
             }
 
@@ -518,9 +524,10 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
             elements = new AtomicReferenceArray<>(blockSize);
         }
 
-        public Object peek(int index)
+        @SuppressWarnings("unchecked")
+        public E peek(int index)
         {
-            return elements.get(index);
+            return (E)elements.get(index);
         }
 
         public boolean store(int index, E item)

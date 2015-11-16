@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,8 +29,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import junit.framework.Assert;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -38,8 +36,10 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import junit.framework.Assert;
+
 /**
- * AbstractNewSessionTest
+ * AbstractSessionCookieTest
  */
 public abstract class AbstractSessionCookieTest
 {
@@ -81,7 +81,7 @@ public abstract class AbstractSessionCookieTest
                 ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
 
-                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+                String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 //sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");

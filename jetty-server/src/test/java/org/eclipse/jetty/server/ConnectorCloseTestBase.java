@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,14 +26,18 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * HttpServer Tester.
  */
+@RunWith(AdvancedRunner.class)
 public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
 {
     private static String __content =
@@ -155,7 +159,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                 "content-type: text/plain; charset=utf-8\r\n"+
                 "content-length: "+bytes.length+"\r\n"+
                 "\r\n"
-            ).getBytes("iso-8859-1"));
+            ).getBytes(StandardCharsets.ISO_8859_1));
 
             int len = bytes.length;
             int offset = 0;

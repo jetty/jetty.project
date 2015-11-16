@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -104,7 +105,7 @@ public class ReloadedSessionMissingClassTest
                 ContentResponse response = client.GET("http://localhost:" + port1 + contextPath +"/bar?action=set");
                 
                 assertEquals( HttpServletResponse.SC_OK, response.getStatus());
-                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+                String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 String sessionId = (String)webApp.getServletContext().getAttribute("foo");
                 assertNotNull(sessionId);
@@ -139,4 +140,11 @@ public class ReloadedSessionMissingClassTest
             server1.stop();
         }
     }
+    
+    @After
+    public void tearDown() throws Exception 
+    {
+        JdbcTestServer.shutdown(null);
+    }
+    
 }

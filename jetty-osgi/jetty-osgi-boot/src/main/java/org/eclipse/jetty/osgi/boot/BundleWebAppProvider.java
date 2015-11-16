@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,19 +25,17 @@ import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
+import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 
-
-
 /**
  * BundleWebAppProvider
- *
+ * <p>
  * A Jetty Provider that knows how to deploy a WebApp contained inside a Bundle.
- * 
  */
 public class BundleWebAppProvider extends AbstractWebAppProvider implements BundleProvider
 {     
@@ -52,16 +50,10 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param wrapper
-     */
     public BundleWebAppProvider (ServerInstanceWrapper wrapper)
     {
         super(wrapper);
     }
-    
-    
-    
     
     /* ------------------------------------------------------------ */
     /** 
@@ -107,7 +99,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     /* ------------------------------------------------------------ */
     /**
      * A bundle has been added that could be a webapp 
-     * @param bundle
+     * @param bundle the bundle
      */
     public boolean bundleAdded (Bundle bundle) throws Exception
     {
@@ -122,9 +114,10 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             Dictionary headers = bundle.getHeaders();
 
             //does the bundle have a OSGiWebappConstants.JETTY_WAR_FOLDER_PATH 
-            if (headers.get(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH) != null)
+            String resourcePath = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH, OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
+            if (resourcePath != null)
             {
-                String base = (String)headers.get(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH);
+                String base = resourcePath;
                 contextPath = getContextPath(bundle);
                 String originId = getOriginId(bundle, base);
  
@@ -188,8 +181,8 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     /* ------------------------------------------------------------ */
     /** 
      * Bundle has been removed. If it was a webapp we deployed, undeploy it.
-     * @param bundle
      * 
+     * @param bundle the bundle
      * @return true if this was a webapp we had deployed, false otherwise
      */
     public boolean bundleRemoved (Bundle bundle) throws Exception

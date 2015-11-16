@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,8 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +37,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
             {"/foo1/bar","n=v",".*","/replace","/replace","n=v"},
             {"/foo2/bar",null,"/xxx.*","/replace",null,null},
             {"/foo3/bar",null,"/(.*)/(.*)","/$2/$1/xxx","/bar/foo3/xxx",null},
+            {"/f%20o3/bar",null,"/(.*)/(.*)","/$2/$1/xxx","/bar/f%20o3/xxx",null},
             {"/foo4/bar",null,"/(.*)/(.*)","/test?p2=$2&p1=$1","/test","p2=bar&p1=foo4"},
             {"/foo5/bar","n=v","/(.*)/(.*)","/test?p2=$2&p1=$1","/test","n=v&p2=bar&p1=foo5"},
             {"/foo6/bar",null,"/(.*)/(.*)","/foo6/bar?p2=$2&p1=$1","/foo6/bar","p2=bar&p1=foo6"},
@@ -64,15 +65,13 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
         for (String[] test : _tests)
         {
             reset();
-            _request.setRequestURI(null);
+            _request.setURIPathQuery(null);
             
             String t=test[0]+"?"+test[1]+">"+test[2]+"|"+test[3];
             _rule.setRegex(test[2]);
             _rule.setReplacement(test[3]);
 
-            _request.setUri(new HttpURI(test[0]+(test[1]==null?"":("?"+test[1]))));
-            _request.getRequestURI();
-
+            _request.setURIPathQuery(test[0]+(test[1]==null?"":("?"+test[1])));
             
             String result = _rule.matchAndApply(test[0], _request, _response);
             assertEquals(t, test[4], result);
@@ -87,7 +86,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
             if (test[5]!=null)
             {
                 MultiMap<String> params=new MultiMap<String>();
-                UrlEncoded.decodeTo(test[5],params, StandardCharsets.UTF_8,-1);
+                UrlEncoded.decodeTo(test[5],params, StandardCharsets.UTF_8);
                                
                 for (String n:params.keySet())
                     assertEquals(params.getString(n),_request.getParameter(n));
@@ -108,12 +107,12 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
             _rule.setRegex(test[2]);
             _rule.setReplacement(test[3]);
 
-            _request.setRequestURI(test[0]);
+            _request.setURIPathQuery(test[0]);
             _request.setQueryString(test[1]);
             _request.getAttributes().clearAttributes();
             
-            String result = container.apply(test[0],_request,_response);
-            assertEquals(t,test[4]==null?test[0]:test[4], result);
+            String result = container.apply(URIUtil.decodePath(test[0]),_request,_response);
+            assertEquals(t,URIUtil.decodePath(test[4]==null?test[0]:test[4]), result);
             assertEquals(t,test[4]==null?test[0]:test[4], _request.getRequestURI());
             assertEquals(t,test[5], _request.getQueryString());
         }

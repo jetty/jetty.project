@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -49,6 +49,8 @@ public class TestABCase6 extends AbstractABCase
 {
     /**
      * Split a message byte array into a series of fragments (frames + continuations) of 1 byte message contents each.
+     * @param frames the frames
+     * @param msg the message
      */
     protected void fragmentText(List<WebSocketFrame> frames, byte msg[])
     {
@@ -78,6 +80,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * text message, 1 frame, 0 length
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_1_1() throws Exception
@@ -90,22 +93,18 @@ public class TestABCase6 extends AbstractABCase
         expect.add(new TextFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
      * text message, 0 length, 3 fragments
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_1_2() throws Exception
@@ -120,22 +119,18 @@ public class TestABCase6 extends AbstractABCase
         expect.add(new TextFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
      * text message, small length, 3 fragments (only middle frame has payload)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_1_3() throws Exception
@@ -150,29 +145,25 @@ public class TestABCase6 extends AbstractABCase
         expect.add(new TextFrame().setPayload("middle"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
      * valid utf8 text message, 2 fragments (on UTF8 code point boundary)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_2_2() throws Exception
     {
         String utf1 = "Hello-\uC2B5@\uC39F\uC3A4";
         String utf2 = "\uC3BC\uC3A0\uC3A1-UTF-8!!";
-        
+
         ByteBuffer b1 = ByteBuffer.wrap(StringUtil.getUtf8Bytes(utf1));
         ByteBuffer b2 = ByteBuffer.wrap(StringUtil.getUtf8Bytes(utf2));
 
@@ -189,22 +180,18 @@ public class TestABCase6 extends AbstractABCase
         expect.add(new TextFrame().setPayload(e1));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
      * valid utf8 text message, many fragments (1 byte each)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_2_3() throws Exception
@@ -220,22 +207,18 @@ public class TestABCase6 extends AbstractABCase
         expect.add(new TextFrame().setPayload(ByteBuffer.wrap(msg)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
      * valid utf8 text message, many fragments (1 byte each)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_2_4() throws Exception
@@ -250,22 +233,18 @@ public class TestABCase6 extends AbstractABCase
         expect.add(new TextFrame().setPayload(ByteBuffer.wrap(msg)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
      * invalid utf8 text message, many fragments (1 byte each)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_3_2() throws Exception
@@ -279,17 +258,12 @@ public class TestABCase6 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -299,6 +273,7 @@ public class TestABCase6 extends AbstractABCase
      * fragment #1 and fragment #3 are both valid in themselves.
      * <p>
      * fragment #2 contains the invalid utf8 code point.
+     * @throws Exception on test failure
      */
     @Test
     @Slow
@@ -311,8 +286,7 @@ public class TestABCase6 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -325,10 +299,6 @@ public class TestABCase6 extends AbstractABCase
 
             fuzzer.expect(expect);
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
@@ -339,6 +309,7 @@ public class TestABCase6 extends AbstractABCase
      * fragment #2 finishes the UTF8 code point but it is invalid
      * <p>
      * fragment #3 contains the remainder of the message.
+     * @throws Exception on test failure
      */
     @Test
     @Slow
@@ -351,8 +322,7 @@ public class TestABCase6 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -363,14 +333,11 @@ public class TestABCase6 extends AbstractABCase
             fuzzer.send(new ContinuationFrame().setPayload(ByteBuffer.wrap(part3)).setFin(true));
             fuzzer.expect(expect);
         }
-        finally
-        {
-            fuzzer.close();
-        }
     }
 
     /**
      * invalid text message, 1 frame/fragment (slowly, and split within code points)
+     * @throws Exception on test failure
      */
     @Test
     @Slow
@@ -393,15 +360,13 @@ public class TestABCase6 extends AbstractABCase
             List<WebSocketFrame> expect = new ArrayList<>();
             expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
-            Fuzzer fuzzer = new Fuzzer(this);
-            try
+            try (Fuzzer fuzzer = new Fuzzer(this))
             {
                 fuzzer.connect();
 
                 ByteBuffer net = fuzzer.asNetworkBuffer(send);
 
-                int splits[] =
-                { 17, 21, net.limit() };
+                int splits[] = { 17, 21, net.limit() };
 
                 ByteBuffer part1 = net.slice(); // Header + good UTF
                 part1.limit(splits[0]);
@@ -419,18 +384,13 @@ public class TestABCase6 extends AbstractABCase
                 fuzzer.send(part3); // the rest (shouldn't work)
 
                 fuzzer.expect(expect);
-
-                fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.UNCLEAN);
-            }
-            finally
-            {
-                fuzzer.close();
             }
         }
     }
 
     /**
      * invalid text message, 1 frame/fragment (slowly, and split within code points)
+     * @throws Exception on test failure
      */
     @Test
     @Slow
@@ -445,8 +405,7 @@ public class TestABCase6 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try(StacklessLogging scope = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging scope = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
 
@@ -459,10 +418,6 @@ public class TestABCase6 extends AbstractABCase
             fuzzer.send(net,100); // the rest
 
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 }

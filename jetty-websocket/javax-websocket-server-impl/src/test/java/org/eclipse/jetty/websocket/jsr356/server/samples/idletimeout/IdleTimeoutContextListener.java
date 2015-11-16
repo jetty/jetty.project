@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,7 @@ import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
 
 /**
- * Example of adding a server WebSocket (extending {@link Endpoint}) programmatically via config
+ * Example of adding a server WebSocket (extending {@link javax.websocket.Endpoint}) programmatically via config
  */
 public class IdleTimeoutContextListener implements ServletContextListener
 {

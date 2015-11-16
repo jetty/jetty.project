@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,14 +51,14 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * Responsibilities:
  * <p>
- * <img src="doc-files/DeploymentManager_Roles.png">
+ * <img alt="deployment manager roles graph" src="doc-files/DeploymentManager_Roles.png">
  * <ol>
  * <li>Tracking Apps and their LifeCycle Location</li>
  * <li>Managing AppProviders and the Apps that they provide.</li>
  * <li>Executing AppLifeCycle on App based on current and desired LifeCycle Location.</li>
  * </ol>
  * <p>
- * <img src="doc-files/DeploymentManager.png">
+ * <img alt="deployment manager graph" src="doc-files/DeploymentManager.png">
  */
 @ManagedObject("Deployment Manager")
 public class DeploymentManager extends ContainerLifeCycle
@@ -131,6 +131,7 @@ public class DeploymentManager extends ContainerLifeCycle
      * Receive an app for processing.
      * 
      * Most commonly used by the various {@link AppProvider} implementations.
+     * @param app the app
      */
     public void addApp(App app)
     {
@@ -151,7 +152,7 @@ public class DeploymentManager extends ContainerLifeCycle
     /** Set the AppProviders.
      * The providers passed are added via {@link #addBean(Object)} so that 
      * their lifecycles may be managed as a {@link ContainerLifeCycle}.
-     * @param providers
+     * @param providers the app provider list
      */
     public void setAppProviders(Collection<AppProvider> providers)
     {
@@ -202,9 +203,9 @@ public class DeploymentManager extends ContainerLifeCycle
     /**
      * Convenience method to allow for insertion of nodes into the lifecycle.
      * 
-     * @param existingFromNodeName
-     * @param existingToNodeName
-     * @param insertedNodeName
+     * @param existingFromNodeName the existing node start
+     * @param existingToNodeName the existing node end
+     * @param insertedNodeName the new node to create between the existing nodes
      */
     public void insertLifeCycleNode(String existingFromNodeName, String existingToNodeName, String insertedNodeName)
     {
@@ -353,7 +354,7 @@ public class DeploymentManager extends ContainerLifeCycle
     /**
      * Get a contextAttribute that will be set for every Context deployed by this provider.
      * 
-     * @param name
+     * @param name context attribute name
      * @return the context attribute value
      */
     public Object getContextAttribute(String name)
@@ -431,7 +432,7 @@ public class DeploymentManager extends ContainerLifeCycle
     /**
      * Remove a contextAttribute that will be set for every Context deployed by this provider.
      * 
-     * @param name
+     * @param name the context attribute name
      */
     public void removeContextAttribute(String name)
     {
@@ -529,8 +530,8 @@ public class DeploymentManager extends ContainerLifeCycle
     /**
      * Set a contextAttribute that will be set for every Context deployed by this provider.
      * 
-     * @param name
-     * @param value
+     * @param name the context attribute name
+     * @param value the context attribute value
      */
     public void setContextAttribute(String name, Object value)
     {

@@ -3,39 +3,47 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>21</version>
+    <version>25</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.1.3-SNAPSHOT</version>
+  <version>9.4.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <properties>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <build-support-version>1.1</build-support-version>
-    <slf4j-version>1.6.1</slf4j-version>
+    <build-support-version>1.4</build-support-version>
+    <slf4j-version>1.6.6</slf4j-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
-    <npn.api.version>1.1.0.v20120525</npn.api.version>
+    <alpn.api.version>1.1.2.v20150522</alpn.api.version>
+    <jsp.version>8.0.27</jsp.version>
+    <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
+    <alpn.version>undefined</alpn.version>
   </properties>
   <scm>
     <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>
     <developerConnection>scm:git:ssh://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</developerConnection>
     <url>http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree</url>
+    <tag>HEAD</tag>
   </scm>
   <build>
     <defaultGoal>install</defaultGoal>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.3</version>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>1.8</source>
+          <target>1.8</target>
+          <testSource>1.8</testSource>
+          <testTarget>1.8</testTarget>
           <verbose>false</verbose>
         </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
+        <version>2.5</version>
         <configuration>
           <autoVersionSubmodules>true</autoVersionSubmodules>
         </configuration>
@@ -74,7 +82,7 @@
                 <manifestEntries>
                   <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
                   <Bundle-Name>${project.name}</Bundle-Name>
-                  <Bundle-SymbolicName>${bundle-symbolic-name}.source;singleton:=true</Bundle-SymbolicName>
+                  <Bundle-SymbolicName>${bundle-symbolic-name}.source</Bundle-SymbolicName>
                   <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
                   <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
                   <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
@@ -126,10 +134,11 @@
               <rules>
                 <requireMavenVersion>
                   <version>[3.0.0,)</version>
+                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.0.0 or newer</message>
                 </requireMavenVersion>
                 <requireJavaVersion>
-                  <version>[1.7,)</version>
-                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 1.7 or newer</message>
+                  <version>[1.8.0,)</version>
+                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 1.8.0 or newer</message>
                 </requireJavaVersion>
                 <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule" />
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
@@ -180,7 +189,7 @@
           </execution>
         </executions>
         <configuration>
-          <targetJdk>1.7</targetJdk>
+          <targetJdk>1.8</targetJdk>
           <rulesets>
             <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
           </rulesets>
@@ -204,7 +213,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-             <copyright-range>${project.inceptionYear}-2014</copyright-range>
+             <copyright-range>${project.inceptionYear}-2015</copyright-range>
           </properties>
           <mapping>
             <java>DOUBLESLASH_STYLE</java>
@@ -217,6 +226,8 @@
             <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/DefaultPolicyLoader.java</exclude>
             <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/PolicyFileScanner.java</exclude>
             <exclude>jetty-ant/**</exclude>
+            <exclude>jetty-infinispan/**</exclude>
+            <exclude>tests/test-sessions/test-infinispan-sessions/**</exclude>
           </excludes>
         </configuration>
         <executions>
@@ -229,6 +240,28 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+           </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+         <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+         </archive>
+        </configuration>
+     </plugin>
+
     </plugins>
     <pluginManagement>
       <plugins>
@@ -236,6 +269,14 @@
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
           <version>1.0.10</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.8.2</version>
+          <configuration>
+            <retryFailedDeploymentCount>10</retryFailedDeploymentCount>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -253,15 +294,23 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.19</version>
           <configuration>
             <argLine>-showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
-            <!--systemProperties>
+            <runMode>random</runMode>
+            <systemProperties>
+              <!--
               <property>
                 <name>org.eclipse.jetty.io.AbstractBuffer.boundsChecking</name>
                 <value>true</value>
               </property>
-            </systemProperties-->
+              -->
+              <property>
+                <name>java.io.tmpdir</name>
+                <value>${project.build.directory}</value>
+              </property>
+            </systemProperties>
           </configuration>
         </plugin>
         <plugin>
@@ -269,15 +318,20 @@
           <artifactId>maven-bundle-plugin</artifactId>
           <extensions>true</extensions>
           <configuration>
+            <supportedProjectTypes>
+              <supportedProjectType>jar</supportedProjectType>
+              <supportedProjectType>maven-plugin</supportedProjectType>
+            </supportedProjectTypes>
             <instructions>
               <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
-              <Bundle-RequiredExecutionEnvironment>JavaSE-1.7</Bundle-RequiredExecutionEnvironment>
+              <Bundle-Description>Jetty module for ${project.name}</Bundle-Description>
+              <Bundle-RequiredExecutionEnvironment>JavaSE-1.8</Bundle-RequiredExecutionEnvironment>
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
               <Export-Package>${bundle-symbolic-name}.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-              <Bundle-Copyright>Copyright (c) 2008-2014 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
-              <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
+              <Bundle-Copyright>Copyright (c) 2008-2015 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <Import-Package>javax.servlet*;version="[2.6.0,3.2)",javax.transaction*;version="[1.1,1.3)",org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
             </instructions>
           </configuration>
         </plugin>
@@ -319,14 +373,64 @@
             <detectJavaApiLink>true</detectJavaApiLink>
             <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
             <links>
-              <link>http://docs.oracle.com/javase/7/docs/api/</link>
+              <link>http://docs.oracle.com/javase/8/docs/api/</link>
               <link>http://docs.oracle.com/javaee/7/api/</link>
+              <link>http://junit.org/javadoc/latest/</link>
               <link>http://download.eclipse.org/jetty/stable-9/apidocs/</link>
-              <link>http://junit.sourceforge.net/javadoc/</link>
             </links>
             <tags>
               <tag>
                 <name>org.apache.xbean.XBean</name>
+                <placement>X</placement>
+                <head />
+              </tag>
+              <tag>
+                <name>phase</name>
+                <placement>t</placement>
+                <head>Phase:</head>
+              </tag>
+              <tag>
+                <name>goal</name>
+                <placement>t</placement>
+                <head>Goal:</head>
+              </tag>
+              <tag>
+                <name>description</name>
+                <placement>a</placement>
+                <head>Description:</head>
+              </tag>
+              <tag>
+                <name>parameter</name>
+                <placement>f</placement>
+                <head>Parameter:</head>
+              </tag>
+              <tag>
+                <name>required</name>
+                <placement>f</placement>
+                <head>Required:</head>
+              </tag>
+              <tag>
+                <name>readonly</name>
+                <placement>f</placement>
+                <head>Read-Only:</head>
+              </tag>
+              <tag>
+                <name>execute</name>
+                <placement>X</placement>
+                <head />
+              </tag>
+              <tag>
+                <name>requiresDependencyResolution</name>
+                <placement>X</placement>
+                <head />
+              </tag>
+              <tag>
+                <name>requiresProject</name>
+                <placement>X</placement>
+                <head />
+              </tag>
+              <tag>
+                <name>threadSafe</name>
                 <placement>X</placement>
                 <head />
               </tag>
@@ -350,7 +454,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>2.7.1</version>
+          <version>3.4</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -391,32 +495,25 @@
       </plugin>
     </plugins>
   </reporting>
-  <repositories>
-    <repository>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <id>sonatype-snapshots</id>
-      <name>Sonatype Jetty Snapshots</name>
-      <url>http://oss.sonatype.org/content/groups/jetty</url>
-    </repository>
-  </repositories>
   <modules>
     <module>jetty-ant</module>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
+    <module>jetty-http2</module>
     <module>jetty-continuation</module>
     <module>jetty-server</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
-    <module>jetty-spdy</module>
+    <module>jetty-fcgi</module>
     <module>jetty-websocket</module>
     <module>jetty-servlets</module>
     <module>jetty-util-ajax</module>
+    <module>apache-jsp</module>
+    <module>apache-jstl</module>
     <module>jetty-maven-plugin</module>
     <module>jetty-jspc-maven-plugin</module>
     <module>jetty-deploy</module>
@@ -424,21 +521,26 @@
     <module>jetty-plus</module>
     <module>jetty-annotations</module>
     <module>jetty-jndi</module>
-    <module>jetty-jsp</module>
     <module>jetty-jaas</module>
+    <module>jetty-cdi</module>
     <module>jetty-spring</module>
     <module>jetty-client</module>
     <module>jetty-proxy</module>
     <module>jetty-jaspi</module>
-    <module>jetty-osgi</module>
     <module>jetty-rewrite</module>
     <module>jetty-nosql</module>
+    <module>jetty-infinispan</module>
+    <module>jetty-gcloud</module>
+    <module>jetty-unixsocket</module>
     <module>tests</module>
     <module>examples</module>
+    <module>jetty-quickstart</module>
     <module>jetty-distribution</module>
     <module>jetty-runner</module>
     <module>jetty-monitor</module>
     <module>jetty-http-spi</module>
+    <module>jetty-osgi</module>
+    <module>jetty-alpn</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>
@@ -465,12 +567,12 @@
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm</artifactId>
-        <version>4.1</version>
+        <version>5.0.1</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-commons</artifactId>
-        <version>4.1</version>
+        <version>5.0.1</version>
       </dependency>
 
       <dependency>
@@ -487,88 +589,29 @@
       </dependency>
 
       <dependency>
-        <groupId>javax.servlet.jsp</groupId>
-        <artifactId>javax.servlet.jsp-api</artifactId>
-        <version>2.3.1</version>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-jsp</artifactId>
+        <version>${jsp.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.glassfish.web</groupId>
-        <artifactId>javax.servlet.jsp</artifactId>
-        <version>2.3.2</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jsp-jdt</artifactId>
-        <version>2.3.3</version>
-      </dependency>
-
-
-      <dependency>
-        <groupId>javax.el</groupId>
-        <artifactId>javax.el-api</artifactId>
-        <version>3.0.0</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.glassfish</groupId>
-        <artifactId>javax.el</artifactId>
-        <version>3.0.0</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>org.eclipse.jdt.core</artifactId>
-       <version>3.8.2.v20130121</version>
-       <exclusions>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet</artifactId>
-         </exclusion>
-        </exclusions>
+        <groupId>org.eclipse.jdt.core.compiler</groupId>
+        <artifactId>ecj</artifactId>
+       <version>4.4.2</version>
       </dependency>
 
     <!-- JSTL Impl -->
     <dependency>
-       <groupId>org.glassfish.web</groupId>
-       <artifactId>javax.servlet.jsp.jstl</artifactId>
-       <version>1.2.2</version>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.servlet.jsp.jstl</groupId>
-          <artifactId>jstl-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>javax.servlet.jsp</groupId>
-          <artifactId>jsp-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>javax.el</groupId>
-          <artifactId>el-api</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>org.apache.taglibs</groupId>
+      <artifactId>taglibs-standard-impl</artifactId>
+      <version>1.2.5</version>
     </dependency>
 
      <!-- JSTL API -->
       <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.servlet.jsp.jstl</artifactId>
-        <version>1.2.0.v201105211821</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet.jsp</artifactId>
-          </exclusion>
-        </exclusions>
+        <groupId>org.apache.taglibs</groupId>
+        <artifactId>taglibs-standard-spec</artifactId>
+        <version>1.2.5</version>
       </dependency>
 
 
@@ -602,7 +645,12 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>2.7</version>
+        <version>3.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-perf-helper</artifactId>
+        <version>1.0.5</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -619,18 +667,10 @@
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j-version}</version>
       </dependency>
-      <!-- NOTICE: we no longer use junit.jar as it bundles/aggregates too many
-           3rd party libraries in itself
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>4.11</version>
-      </dependency>
-        -->
-      <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit-dep</artifactId>
-        <version>4.10</version>
+        <version>4.12</version>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>
@@ -666,10 +706,50 @@
    -->
   <profiles>
     <profile>
+      <id>config</id>
+      <activation>
+        <file>
+          <exists>src/main/config</exists>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <descriptorRefs>
+                    <descriptorRef>config</descriptorRef>
+                  </descriptorRefs>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>eclipse-release</id>
       <modules>
         <module>aggregates/jetty-all</module>
       </modules>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <source>1.8</source>
+              <target>1.8</target>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
     <profile>
       <id>ci</id>
@@ -741,38 +821,15 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <configuration>
-              <excludePackageNames>com.acme</excludePackageNames>
-              <links>
-                <link>http://docs.oracle.com/javase/7/docs/api/</link>
-                <link>http://docs.oracle.com/javaee/6/api</link>
-                <link>http://junit.sourceforge.net/javadoc/</link>
-              </links>
-              <tags>
-                <tag>
-                  <name>org.apache.xbean.XBean</name>
-                  <placement>X</placement>
-                  <head />
-                </tag>
-              </tags>
-              <header>
-                <![CDATA[
-                    <script type="text/javascript">
-                      var _gaq = _gaq || [];
-                      _gaq.push(['_setAccount', 'UA-1149868-7']);
-                      _gaq.push(['_trackPageview']);
-                      (function() {
-                        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-                        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-                        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-                      })();
-                   </script>
-                ]]>
-              </header>
-            </configuration>
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>compact3</id>
+      <modules>
+        <module>aggregates/jetty-all-compact3</module>
+      </modules>
     </profile>
     <profile>
       <id>api-change</id>
@@ -800,137 +857,148 @@
       </build>
     </profile>
     <profile>
-            <id>7u9</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_9</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.3.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>7u10</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_10</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.3.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>7u11</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_11</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.3.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>7u13</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_13</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.4.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>7u15</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_15</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.5.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>7u17</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_17</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.5.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>7u21</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_21</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.5.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-           <id>7u25</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_25</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.5.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-           <id>7u40</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_40</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.6.v20130911</npn.version>
-            </properties>
-        </profile>
-        <profile>
-           <id>7u45</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_45</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.6.v20130911</npn.version>
-            </properties>
-        </profile>
-        <profile>
-           <id>7u51</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_51</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.6.v20130911</npn.version>
-            </properties>
-        </profile>
+      <id>8u00</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.0.v20141016</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u05</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_05</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.0.v20141016</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u11</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_11</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.0.v20141016</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u20</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_20</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.0.v20141016</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u25</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_25</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.2.v20141202</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u31</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_31</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.3.v20150130</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u40</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_40</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.3.v20150130</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u45</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_45</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.3.v20150130</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u51</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_51</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.4.v20150727</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u60</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_60</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.5.v20150921</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u65</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_65</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.6.v20151105</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u66</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_66</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.6.v20151105</alpn.version>
+      </properties>
+    </profile>
   </profiles>
 </project>
-

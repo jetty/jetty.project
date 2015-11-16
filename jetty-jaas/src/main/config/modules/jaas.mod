@@ -1,6 +1,5 @@
-#
-# JAAS Module
-#
+[description]
+Enable JAAS for deployed webapplications.
 
 [depend]
 server
@@ -12,5 +11,6 @@ lib/jetty-jaas-${jetty.version}.jar
 etc/jetty-jaas.xml
 
 [ini-template]
-## JAAS Configuration
-jaas.login.conf=etc/login.conf
+## The file location (relative to $jetty.base) for the
+## JAAS "java.security.auth.login.config" system property
+# jetty.jaas.login.conf=etc/login.conf

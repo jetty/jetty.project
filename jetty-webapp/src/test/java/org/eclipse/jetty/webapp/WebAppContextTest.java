@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -32,8 +33,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
-import junit.framework.Assert;
-
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class WebAppContextTest
@@ -51,7 +51,7 @@ public class WebAppContextTest
         Server server = new Server();
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        Assert.assertEquals(0,wac.getConfigurations().length);
+        assertEquals(0,wac.getConfigurations().length);
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 
@@ -123,7 +123,7 @@ public class WebAppContextTest
     /**
      * tests that the servlet context white list works
      *
-     * @throws Exception
+     * @throws Exception on test failure
      */
     @Test
     public void testContextWhiteList() throws Exception

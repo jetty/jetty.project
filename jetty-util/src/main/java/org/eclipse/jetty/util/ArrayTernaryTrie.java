@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,19 +19,24 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 
-/* ------------------------------------------------------------ */
-/** A Ternary Trie String lookup data structure.
- * This Trie is of a fixed size and cannot grow (which can be a good thing with regards to DOS when used as a cache).
+/** 
+ * <p>A Ternary Trie String lookup data structure.</p>
  * <p>
- * The Trie is stored in 3 arrays:<dl>
+ * This Trie is of a fixed size and cannot grow (which can be a good thing with regards to DOS when used as a cache).
+ * </p>
+ * <p>
+ * The Trie is stored in 3 arrays:
+ * </p>
+ * <dl>
  * <dt>char[] _tree</dt><dd>This is semantically 2 dimensional array flattened into a 1 dimensional char array. The second dimension
  * is that every 4 sequential elements represents a row of: character; hi index; eq index; low index, used to build a
  * ternary trie of key strings.</dd>
- * <dt>String[] _key<dt><dd>An array of key values where each element matches a row in the _tree array. A non zero key element 
+ * <dt>String[] _key</dt><dd>An array of key values where each element matches a row in the _tree array. A non zero key element 
  * indicates that the _tree row is a complete key rather than an intermediate character of a longer key.</dd>
  * <dt>V[] _value</dt><dd>An array of values corresponding to the _key array</dd>
  * </dl>
@@ -39,7 +44,17 @@ import java.util.Set;
  * then the _key array is looked up to see if this is a complete match.  If a match is found then the _value array is looked up
  * to return the matching value.
  * </p>
- * @param <V>
+ * <p>
+ * This Trie may be instantiated either as case sensitive or insensitive.
+ * </p>
+ * <p>This Trie is not Threadsafe and contains no mutual exclusion 
+ * or deliberate memory barriers.  It is intended for an ArrayTrie to be
+ * built by a single thread and then used concurrently by multiple threads
+ * and not mutated during that access.  If concurrent mutations of the
+ * Trie is required external locks need to be applied.
+ * </p>
+ * 
+ * @param <V> the Entry type 
  */
 public class ArrayTernaryTrie<V> extends AbstractTrie<V>
 {
@@ -70,48 +85,85 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
      * The value (if any) for a Trie row. 
      * A row may be a leaf, a node or both in the Trie tree.
      */
-    private final Object[] _value;
+    private final V[] _value;
     
     /**
      * The number of rows allocated
      */
     private char _rows;
 
+    /* ------------------------------------------------------------ */
+    /** Create a case insensitive Trie of default capacity.
+     */
     public ArrayTernaryTrie()
     {
         this(128);
     }
     
+    /* ------------------------------------------------------------ */
+    /** Create a Trie of default capacity
+     * @param insensitive true if the Trie is insensitive to the case of the key.
+     */
     public ArrayTernaryTrie(boolean insensitive)
     {
         this(insensitive,128);
     }
 
-    public ArrayTernaryTrie(int capacityInNodes)
+    /* ------------------------------------------------------------ */
+    /** Create a case insensitive Trie
+     * @param capacity  The capacity of the Trie, which is in the worst case
+     * is the total number of characters of all keys stored in the Trie.
+     * The capacity needed is dependent of the shared prefixes of the keys.
+     * For example, a capacity of 6 nodes is required to store keys "foo" 
+     * and "bar", but a capacity of only 4 is required to
+     * store "bar" and "bat".
+     */
+    public ArrayTernaryTrie(int capacity)
     {
-        this(true,capacityInNodes);
+        this(true,capacity);
     }
     
-    public ArrayTernaryTrie(boolean insensitive, int capacityInNodes)
+    /* ------------------------------------------------------------ */
+    /** Create a Trie
+     * @param insensitive true if the Trie is insensitive to the case of the key.
+     * @param capacity The capacity of the Trie, which is in the worst case
+     * is the total number of characters of all keys stored in the Trie.
+     * The capacity needed is dependent of the shared prefixes of the keys.
+     * For example, a capacity of 6 nodes is required to store keys "foo" 
+     * and "bar", but a capacity of only 4 is required to
+     * store "bar" and "bat".
+     */
+    public ArrayTernaryTrie(boolean insensitive, int capacity)
     {
         super(insensitive);
-        _value=new Object[capacityInNodes];
-        _tree=new char[capacityInNodes*ROW_SIZE];
-        _key=new String[capacityInNodes];
+        _value=(V[])new Object[capacity];
+        _tree=new char[capacity*ROW_SIZE];
+        _key=new String[capacity];
     }
 
     /* ------------------------------------------------------------ */
     /** Copy Trie and change capacity by a factor
-     * @param trie
-     * @param factor
+     * @param trie the trie to copy from
+     * @param factor the factor to grow the capacity by
      */
     public ArrayTernaryTrie(ArrayTernaryTrie<V> trie, double factor)
     {
-        this(trie.isCaseInsensitive(),(int)(trie._value.length*factor));
+        super(trie.isCaseInsensitive());
+        int capacity=(int)(trie._value.length*factor);
         _rows=trie._rows;
-        System.arraycopy(trie._value,0,_value,0,trie._value.length);
-        System.arraycopy(trie._tree,0,_tree,0,trie._tree.length);
-        System.arraycopy(trie._key,0,_key,0,trie._key.length);
+        _value=Arrays.copyOf(trie._value, capacity);
+        _tree=Arrays.copyOf(trie._tree, capacity*ROW_SIZE);
+        _key=Arrays.copyOf(trie._key, capacity);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void clear()
+    {
+        _rows=0;
+        Arrays.fill(_value,null);
+        Arrays.fill(_tree,(char)0);
+        Arrays.fill(_key,null);
     }
     
     /* ------------------------------------------------------------ */
@@ -214,7 +266,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
             }
         }
         
-        return (V)_value[t];
+        return _value[t];
     }
 
     
@@ -271,9 +323,11 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     private V getBest(int t,String s,int offset,int len)
     {
         int node=t;
-        loop: for(int i=0; i<len; i++)
+        int end=offset+len;
+        loop: while(offset<end)
         {
-            char c=s.charAt(offset+i);
+            char c=s.charAt(offset++);
+            len--;
             if(isCaseInsensitive() && c<128)
                 c=StringUtil.lowercases[c];
 
@@ -293,9 +347,9 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     if (_key[t]!=null)
                     {
                         node=t;
-                        V best=getBest(t,s,offset+i+1,len-i-1);
-                        if (best!=null)
-                            return best;
+                        V better=getBest(t,s,offset,len);
+                        if (better!=null)
+                            return better;
                     }
                     break;
                 }
@@ -322,9 +376,11 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     private V getBest(int t,byte[] b, int offset, int len)
     {
         int node=t;
-        loop: for(int i=0; i<len; i++)
+        int end=offset+len;
+        loop: while(offset<end)
         {
-            byte c=(byte)(b[offset+i]&0x7f);
+            byte c=(byte)(b[offset++]&0x7f);
+            len--;
             if(isCaseInsensitive())
                 c=(byte)StringUtil.lowercases[c];
 
@@ -344,9 +400,9 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     if (_key[t]!=null)
                     {
                         node=t;
-                        V best=getBest(t,b,offset+i+1,len-i-1);
-                        if (best!=null)
-                            return best;
+                        V better=getBest(t,b,offset,len);
+                        if (better!=null)
+                            return better;
                     }
                     break;
                 }

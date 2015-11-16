@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,14 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -47,6 +54,31 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
     {
     }
 
+    @Override
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    {
+        if (baseRequest.getDispatcherType()==DispatcherType.ERROR)
+            doError(target,baseRequest,request,response);
+        else
+            doHandle(target,baseRequest,request,response);
+    }    
+
+    /* ------------------------------------------------------------ */
+    protected void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    {
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    {
+        Object o = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+        int code = (o instanceof Integer)?((Integer)o).intValue():(o!=null?Integer.valueOf(o.toString()):500);
+        o = request.getAttribute(RequestDispatcher.ERROR_MESSAGE);
+        String reason = o!=null?o.toString():null;
+        
+        response.sendError(code,reason);
+    }
+    
     /* ------------------------------------------------------------ */
     /* 
      * @see org.eclipse.thread.LifeCycle#start()
@@ -54,7 +86,8 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
     @Override
     protected void doStart() throws Exception
     {
-        LOG.debug("starting {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("starting {}",this);
         if (_server==null)
             LOG.warn("No Server set for {}",this);
         super.doStart();
@@ -67,7 +100,8 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
     @Override
     protected void doStop() throws Exception
     {
-        LOG.debug("stopping {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("stopping {}",this);
         super.doStop();
     }
 

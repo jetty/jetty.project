@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -46,7 +46,9 @@ import org.eclipse.jetty.util.log.Logger;
  * insensitivity).  By default this is turned on, or it can be controlled 
  * by calling the static method @see FileResource#setCheckAliases(boolean)
  * 
+ * @deprecated Use {@link PathResource}
  */
+@Deprecated
 public class FileResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(FileResource.class);
@@ -98,7 +100,7 @@ public class FileResource extends Resource
         
         _file=file;
         _uri=normalizeURI(_file,url.toURI());
-        _alias=checkAlias(_file);
+        _alias=checkFileAlias(_file);
     }
 
     /* -------------------------------------------------------- */
@@ -109,24 +111,19 @@ public class FileResource extends Resource
         URI file_uri=_file.toURI();
         _uri=normalizeURI(_file,uri);
 
-        if (!_uri.equals(file_uri) && !_uri.toString().equals(file_uri.toString()))
-        {
-            // URI and File URI are different.  Is it just an encoding difference?
-            if (!file_uri.toString().equals(URIUtil.decodePath(uri.toString())))
-                 _alias=_file.toURI();
-            else
-                _alias=checkAlias(_file);
-        }
+        // Is it a URI alias?
+        if (!URIUtil.equalsIgnoreEncodings(_uri,file_uri.toString()))
+            _alias=_file.toURI();
         else
-            _alias=checkAlias(_file);
+            _alias=checkFileAlias(_file);
     }
 
     /* -------------------------------------------------------- */
-    FileResource(File file)
+    public FileResource(File file)
     {
         _file=file;
         _uri=normalizeURI(_file,_file.toURI());
-        _alias=checkAlias(_file);
+        _alias=checkFileAlias(_file);
     }
 
     /* -------------------------------------------------------- */
@@ -144,7 +141,7 @@ public class FileResource extends Resource
     }
 
     /* -------------------------------------------------------- */
-    private static URI checkAlias(File file)
+    private static URI checkFileAlias(File file)
     {
         try
         {
@@ -153,11 +150,13 @@ public class FileResource extends Resource
 
             if (!abs.equals(can))
             {
-                LOG.debug("ALIAS abs={} can={}",abs,can);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("ALIAS abs={} can={}",abs,can);
 
                 URI alias=new File(can).toURI();
                 // Have to encode the path as File.toURI does not!
-                return new URI("file://"+URIUtil.encodePath(alias.getPath()));  
+                String uri="file://"+URIUtil.encodePath(alias.getPath());
+                return new URI(uri);
             }
         }
         catch(Exception e)
@@ -181,7 +180,7 @@ public class FileResource extends Resource
     /* -------------------------------------------------------- */
     @Override
     public Resource addPath(String path)
-        throws IOException,MalformedURLException
+        throws IOException, MalformedURLException
     {
         path = org.eclipse.jetty.util.URIUtil.canonicalPath(path);
 
@@ -206,9 +205,14 @@ public class FileResource extends Resource
                 uri=new URI(_uri+path);
             }
         }
-        catch(final URISyntaxException e)
+        catch (final URISyntaxException e)
         {
-            throw new MalformedURLException(){{initCause(e);}};
+            throw new MalformedURLException(e.getMessage())
+            {
+                {
+                    initCause(e);
+                }
+            };
         }
 
         return new FileResource(uri);
@@ -347,7 +351,7 @@ public class FileResource extends Resource
     
     /* ------------------------------------------------------------ */
     /** 
-     * @param o
+     * @param o the object to compare against this instance
      * @return <code>true</code> of the object <code>o</code> is a {@link FileResource} pointing to the same file as this resource. 
      */
     @Override

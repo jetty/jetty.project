@@ -23,11 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 
- * Connectors
- * 
- * Specifies a jetty configuration <connectors/> element for Ant build file.
- *
+ * Specifies a jetty configuration <code>&lt;connectors/&gt;</code> element for Ant build file.
  */
 public class Connectors
 {

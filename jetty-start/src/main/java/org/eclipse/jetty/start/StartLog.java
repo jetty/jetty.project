@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,15 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Date;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import org.eclipse.jetty.start.config.CommandLineConfigSource;
 
 /**
  * Centralized Place for logging.
@@ -35,13 +37,25 @@ import java.util.regex.Pattern;
  */
 public class StartLog
 {
+    private final static PrintStream stdout = System.out;
+    private final static PrintStream stderr = System.err;
+    private static volatile PrintStream out = System.out;
+    private static volatile PrintStream err = System.err;
     private final static StartLog INSTANCE = new StartLog();
 
     public static void debug(String format, Object... args)
     {
         if (INSTANCE.debug)
         {
-            System.out.printf(format + "%n",args);
+            out.printf(format + "%n",args);
+        }
+    }
+    
+    public static void trace(String format, Object... args)
+    {
+        if (INSTANCE.trace)
+        {
+            out.printf("TRACE: " + format + "%n",args);
         }
     }
 
@@ -49,7 +63,7 @@ public class StartLog
     {
         if (INSTANCE.debug)
         {
-            t.printStackTrace(System.out);
+            t.printStackTrace(out);
         }
     }
 
@@ -57,98 +71,125 @@ public class StartLog
     {
         return INSTANCE;
     }
+    
+    public static void log(String type, String msg)
+    {
+        err.println(type + ": " + msg);
+    }
+    
+    public static void log(String type, String format, Object... args)
+    {
+        err.printf(type + ": " + format + "%n",args);
+    }
 
     public static void info(String format, Object... args)
     {
-        System.err.printf("INFO: " + format + "%n",args);
+        log("INFO",format,args);
     }
-    
+
     public static void warn(String format, Object... args)
     {
-        System.err.printf("WARNING: " + format + "%n",args);
+        log("WARNING",format,args);
     }
 
     public static void warn(Throwable t)
     {
-        t.printStackTrace(System.err);
+        t.printStackTrace(err);
     }
-    
+
     public static boolean isDebugEnabled()
     {
         return INSTANCE.debug;
     }
 
+    private boolean trace = false;
     private boolean debug = false;
 
-    public void initialize(BaseHome baseHome, StartArgs args) throws IOException
+    public void initialize(BaseHome baseHome, CommandLineConfigSource cmdLineSource) throws IOException
     {
-        // Debug with boolean
-        Pattern debugBoolPat = Pattern.compile("(-D)?debug=(.*)");
-        // Log file name
-        Pattern logFilePat = Pattern.compile("(-D)?start-log-file=(.*)");
-
-        // TODO: support backward compatible --daemon argument ??
-
-        Matcher matcher;
-        for (String arg : args.getCommandLine())
+        String dbgProp = cmdLineSource.getProperty("debug");
+        if (dbgProp != null)
         {
-            if ("--debug".equals(arg))
+            debug = Boolean.parseBoolean(dbgProp);
+        }
+
+        String logFileName = cmdLineSource.getProperty("start-log-file");
+
+        for (RawArgs.Entry arg : cmdLineSource.getArgs())
+        {
+            if ("--debug".equals(arg.getLine()))
             {
                 debug = true;
                 continue;
             }
 
-            matcher = debugBoolPat.matcher(arg);
-            if (matcher.matches())
+            if (arg.startsWith("--start-log-file"))
             {
-                debug = Boolean.parseBoolean(matcher.group(2));
+                logFileName = Props.getValue(arg.getLine());
                 continue;
             }
+        }
 
-            matcher = logFilePat.matcher(arg);
-            if (matcher.matches())
-            {
-                String filename = matcher.group(2);
-                File logfile = baseHome.getBaseFile(filename);
-                initLogFile(logfile);
-            }
+        if (logFileName != null)
+        {
+            Path logfile = baseHome.getPath(logFileName);
+            logfile = logfile.toAbsolutePath();
+            initLogFile(logfile);
         }
     }
 
-    public void initLogFile(File logfile) throws IOException
+    public void initLogFile(Path logfile) throws IOException
     {
         if (logfile != null)
         {
-            File logDir = logfile.getParentFile();
-            if (!logDir.exists() || !logDir.canWrite())
+            try
             {
-                String err = String.format("Cannot write %s to directory %s [directory doesn't exist or is read-only]",logfile.getName(),
-                        logDir.getAbsolutePath());
-                throw new UsageException(UsageException.ERR_LOGGING,new IOException(err));
+                Path logDir = logfile.getParent();
+                FS.ensureDirectoryWritable(logDir);
+
+                Path startLog = logfile;
+
+                if (!FS.exists(startLog) && !FS.createNewFile(startLog))
+                {
+                    // Output about error is lost in majority of cases.
+                    throw new UsageException(UsageException.ERR_LOGGING,new IOException("Unable to create: " + startLog.toAbsolutePath()));
+                }
+
+                if (!FS.canWrite(startLog))
+                {
+                    // Output about error is lost in majority of cases.
+                    throw new UsageException(UsageException.ERR_LOGGING,new IOException("Unable to write to: " + startLog.toAbsolutePath()));
+                }
+
+                err.println("StartLog to " + logfile);
+                OutputStream fileout = Files.newOutputStream(startLog,StandardOpenOption.CREATE,StandardOpenOption.APPEND);
+                PrintStream logger = new PrintStream(fileout);
+                out=logger;
+                err=logger;
+                System.setErr(logger);
+                System.setOut(logger);
+                err.println("StartLog Establishing " + logfile + " on " + new Date());
             }
-
-            File startLog = logfile;
-
-            if (!startLog.exists() && !startLog.createNewFile())
+            catch (IOException e)
             {
-                // Output about error is lost in majority of cases.
-                throw new UsageException(UsageException.ERR_LOGGING,new IOException("Unable to create: " + startLog.getAbsolutePath()));
+                throw new UsageException(UsageException.ERR_LOGGING,e);
             }
-
-            if (!startLog.canWrite())
-            {
-                // Output about error is lost in majority of cases.
-                throw new UsageException(UsageException.ERR_LOGGING,new IOException("Unable to write to: " + startLog.getAbsolutePath()));
-            }
-            PrintStream logger = new PrintStream(new FileOutputStream(startLog,false));
-            System.setOut(logger);
-            System.setErr(logger);
-            System.out.println("Establishing " + logfile + " on " + new Date());
         }
     }
 
     public static void enableDebug()
     {
         getInstance().debug = true;
+    }
+    
+    public static void endStartLog()
+    {
+        if (stderr!=err && getInstance().debug)
+        {
+            err.println("StartLog ended");
+            stderr.println("StartLog ended");
+        }
+        System.setErr(stderr);
+        System.setOut(stdout);
     }
 }

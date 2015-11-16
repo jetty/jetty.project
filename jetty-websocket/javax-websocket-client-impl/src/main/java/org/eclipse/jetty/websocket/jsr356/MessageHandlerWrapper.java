@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,8 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import javax.websocket.MessageHandler;
+import javax.websocket.MessageHandler.Partial;
+import javax.websocket.MessageHandler.Whole;
 
 import org.eclipse.jetty.websocket.jsr356.metadata.MessageHandlerMetadata;
 
@@ -71,7 +73,7 @@ public class MessageHandlerWrapper
     }
 
     /**
-     * Flag for a onMessage() method that wants MessageHandler.{@link Whole} with a Decoder that is based on {@link TextStream} or {@link BinaryStream}
+     * Flag for a onMessage() method that wants MessageHandler.{@link Whole} with a Decoder that is based on {@link javax.websocket.Decoder.TextStream} or {@link javax.websocket.Decoder.BinaryStream}
      * 
      * @return true for Streaming based Decoder, false for normal decoder for whole messages.
      */

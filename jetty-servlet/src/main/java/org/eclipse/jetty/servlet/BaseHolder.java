@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
  * Base class for all servlet-related classes that may be lazily instantiated  (eg servlet, filter, 
  * listener), and/or require metadata to be held regarding their origin 
  * (web.xml, annotation, programmatic api etc).
- * 
+ * @param <T> the type of holder
  */
 public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpable
 {
@@ -68,7 +68,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     /* ------------------------------------------------------------ */
     /**
      * Do any setup necessary after starting
-     * @throws Exception
+     * @throws Exception if unable to initialize
      */
     public void initialize()
     throws Exception

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -69,10 +69,10 @@ public class Loader
     /* ------------------------------------------------------------ */
     /** Load a class.
      * 
-     * @param loadClass
-     * @param name
+     * @param loadClass the class to use for the ClassLoader that was used
+     * @param name the name of the new class to load, using the same ClassLoader as the <code>loadClass</code> 
      * @return Class
-     * @throws ClassNotFoundException
+     * @throws ClassNotFoundException if not able to find the class
      */
     @SuppressWarnings("rawtypes")
     public static Class loadClass(Class loadClass,String name)
@@ -153,7 +153,9 @@ public class Loader
      * above the given classloader.
      * 
      * This is primarily used for jasper.
+     * @param loader the classloader to use
      * @return the system class path
+     * @throws Exception if unable to generate the classpath from the resource references
      */
     public static String getClassPath(ClassLoader loader) throws Exception
     {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,12 +42,19 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.Decorator;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -169,6 +177,55 @@ public class ServletContextHandlerTest
         response = _connector.getResponses(request.toString());
         assertResponseContains("Hello World", response);
     }
+    
+    @Test
+    public void testHandlerBeforeServletHandler() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        
+        HandlerWrapper extra = new HandlerWrapper();
+        
+        context.getSessionHandler().insertHandler(extra);
+        
+        context.addServlet(TestServlet.class,"/test");
+        context.setContextPath("/");
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponses(request.toString());
+        assertResponseContains("Test", response);
+        
+        assertEquals(extra,context.getSessionHandler().getHandler());
+    }
+    
+    @Test
+    public void testGzipHandlerOption() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS|ServletContextHandler.GZIP);
+        GzipHandler gzip = context.getGzipHandler();        
+        _server.start();
+        assertEquals(context.getSessionHandler(),context.getHandler());
+        assertEquals(gzip,context.getSessionHandler().getHandler());
+        assertEquals(context.getServletHandler(),gzip.getHandler());
+    }
+    
+    @Test
+    public void testGzipHandlerSet() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setSessionHandler(new SessionHandler());
+        context.setGzipHandler(new GzipHandler());
+        GzipHandler gzip = context.getGzipHandler();        
+        _server.start();
+        assertEquals(context.getSessionHandler(),context.getHandler());
+        assertEquals(gzip,context.getSessionHandler().getHandler());
+        assertEquals(context.getServletHandler(),gzip.getHandler());
+    }
 
     @Test
     public void testReplaceServletHandlerWithServlet() throws Exception
@@ -265,7 +322,7 @@ public class ServletContextHandlerTest
 
         ResourceHandler rh = new ResourceHandler();
 
-        servletContextHandler.setHandler(rh);    
+        servletContextHandler.insertHandler(rh);    
         assertEquals(shandler, servletContextHandler.getServletHandler());
         assertEquals(rh, servletContextHandler.getHandler());
         assertEquals(rh.getHandler(), shandler);
@@ -276,7 +333,92 @@ public class ServletContextHandlerTest
         assertTrue(contextDestroy.get());
     }
     
+
+    @Test
+    public void testFallThrough() throws Exception
+    {
+        HandlerList list = new HandlerList();
+        _server.setHandler(list);
+
+        ServletContextHandler root = new ServletContextHandler(list,"/",ServletContextHandler.SESSIONS);
+
+        ServletHandler servlet = root.getServletHandler();
+        servlet.setEnsureDefaultServlet(false);
+        servlet.addServletWithMapping(HelloServlet.class, "/hello/*");
+        
+        list.addHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.sendError(404, "Fell Through");
+            }
+        });
+
+        _server.start();
+
+        String response= _connector.getResponses("GET /hello HTTP/1.0\r\n\r\n");
+        Assert.assertThat(response, Matchers.containsString("200 OK"));
+        
+        response= _connector.getResponses("GET /other HTTP/1.0\r\n\r\n");
+        Assert.assertThat(response, Matchers.containsString("404 Fell Through"));
+        
+    }
     
+    /**
+     * Test behavior of legacy ServletContextHandler.Decorator, with
+     * new DecoratedObjectFactory class
+     * @throws Exception on test failure
+     */
+    @SuppressWarnings("deprecation")
+    @Test
+    public void testLegacyDecorator() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.addDecorator(new DummyLegacyDecorator());
+        _server.setHandler(context);
+        
+        context.addServlet(DecoratedObjectFactoryServlet.class, "/objfactory/*");
+        _server.start();
+
+        String response= _connector.getResponses("GET /objfactory/ HTTP/1.0\r\n\r\n");
+        assertThat("Response status code", response, containsString("200 OK"));
+        
+        String expected = String.format("Attribute[%s] = %s", DecoratedObjectFactory.ATTR, DecoratedObjectFactory.class.getName());
+        assertThat("Has context attribute", response, containsString(expected));
+        
+        assertThat("Decorators size", response, containsString("Decorators.size = [1]"));
+        
+        expected = String.format("decorator[] = %s", DummyLegacyDecorator.class.getName());
+        assertThat("Specific Legacy Decorator", response, containsString(expected));
+    }
+    
+    /**
+     * Test behavior of new {@link org.eclipse.jetty.util.Decorator}, with
+     * new DecoratedObjectFactory class
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testUtilDecorator() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.getObjectFactory().addDecorator(new DummyUtilDecorator());
+        _server.setHandler(context);
+        
+        context.addServlet(DecoratedObjectFactoryServlet.class, "/objfactory/*");
+        _server.start();
+
+        String response= _connector.getResponses("GET /objfactory/ HTTP/1.0\r\n\r\n");
+        assertThat("Response status code", response, containsString("200 OK"));
+        
+        String expected = String.format("Attribute[%s] = %s", DecoratedObjectFactory.ATTR, DecoratedObjectFactory.class.getName());
+        assertThat("Has context attribute", response, containsString(expected));
+        
+        assertThat("Decorators size", response, containsString("Decorators.size = [1]"));
+        
+        expected = String.format("decorator[] = %s", DummyUtilDecorator.class.getName());
+        assertThat("Specific Legacy Decorator", response, containsString(expected));
+    }
 
     private int assertResponseContains(String expected, String response)
     {
@@ -305,6 +447,66 @@ public class ServletContextHandlerTest
             resp.setStatus(HttpServletResponse.SC_OK);
             PrintWriter writer = resp.getWriter();
             writer.write("Hello World");
+        }
+    }
+    
+    public static class DummyUtilDecorator implements org.eclipse.jetty.util.Decorator
+    {
+        @Override
+        public <T> T decorate(T o)
+        {
+            return o;
+        }
+
+        @Override
+        public void destroy(Object o)
+        {
+        }
+    }
+    
+    public static class DummyLegacyDecorator implements org.eclipse.jetty.servlet.ServletContextHandler.Decorator
+    {
+        @Override
+        public <T> T decorate(T o)
+        {
+            return o;
+        }
+
+        @Override
+        public void destroy(Object o)
+        {
+        }
+    }
+
+    public static class DecoratedObjectFactoryServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.setContentType("text/plain");
+            resp.setStatus(HttpServletResponse.SC_OK);
+            PrintWriter out = resp.getWriter();
+            
+            Object obj = req.getServletContext().getAttribute(DecoratedObjectFactory.ATTR);
+            out.printf("Attribute[%s] = %s%n",DecoratedObjectFactory.ATTR,obj.getClass().getName());
+            
+            if (obj instanceof DecoratedObjectFactory)
+            {
+                out.printf("Object is a DecoratedObjectFactory%n");
+                DecoratedObjectFactory objFactory = (DecoratedObjectFactory)obj;
+                List<Decorator> decorators = objFactory.getDecorators();
+                out.printf("Decorators.size = [%d]%n",decorators.size());
+                for (Decorator decorator : decorators)
+                {
+                    out.printf(" decorator[] = %s%n",decorator.getClass().getName());
+                }
+            }
+            else
+            {
+                out.printf("Object is NOT a DecoratedObjectFactory%n");
+            }
         }
     }
 

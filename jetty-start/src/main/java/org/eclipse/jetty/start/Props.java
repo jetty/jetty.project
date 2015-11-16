@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,17 @@
 
 package org.eclipse.jetty.start;
 
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
+
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Stack;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,6 +42,8 @@ import org.eclipse.jetty.start.Props.Prop;
  */
 public final class Props implements Iterable<Prop>
 {
+    private static final Pattern __propertyPattern = Pattern.compile("(?<=[^$]|^)\\$\\{([^}]*)\\}");
+    
     public static class Prop
     {
         public String key;
@@ -57,11 +63,111 @@ public final class Props implements Iterable<Prop>
             this(key,value,origin);
             this.overrides = overrides;
         }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.append("Prop [key=");
+            builder.append(key);
+            builder.append(", value=");
+            builder.append(value);
+            builder.append(", origin=");
+            builder.append(origin);
+            builder.append(", overrides=");
+            builder.append(overrides);
+            builder.append("]");
+            return builder.toString();
+        }
     }
 
     public static final String ORIGIN_SYSPROP = "<system-property>";
+    
+    public static String getValue(String arg)
+    {
+        int idx = arg.indexOf('=');
+        if (idx == (-1))
+        {
+            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
+        }
+        String value = arg.substring(idx + 1).trim();
+        if (value.length() <= 0)
+        {
+            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
+        }
+        return value;
+    }
 
-    private Map<String, Prop> props = new HashMap<>();
+    public static List<String> getValues(String arg)
+    {
+        String v = getValue(arg);
+        ArrayList<String> l = new ArrayList<>();
+        for (String s : v.split(","))
+        {
+            if (s != null)
+            {
+                s = s.trim();
+                if (s.length() > 0)
+                {
+                    l.add(s);
+                }
+            }
+        }
+        return l;
+    }
+
+    private Map<String, Prop> props = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private List<String> sysPropTracking = new ArrayList<>();
+
+    public void addAll(Props other)
+    {
+        this.props.putAll(other.props);
+        this.sysPropTracking.addAll(other.sysPropTracking);
+    }
+    
+    /**
+     * Add a potential argument as a property.
+     * <p>
+     * If arg is not a property, ignore it.
+     * @param arg the argument to parse for a potential property
+     * @param source the source for this argument (to track origin of property from)
+     * @return true if the property was added, false if the property wasn't added
+     */
+    public boolean addPossibleProperty(String arg, String source)
+    {
+        // Start property (syntax similar to System property)
+        if (arg.startsWith("-D"))
+        {
+            String[] assign = arg.substring(2).split("=",2);
+            switch (assign.length)
+            {
+                case 2:
+                    setSystemProperty(assign[0],assign[1]);
+                    setProperty(assign[0],assign[1],source);
+                    return true;
+                case 1:
+                    setSystemProperty(assign[0],"");
+                    setProperty(assign[0],"",source);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        // Is this a raw property declaration?
+        int idx = arg.indexOf('=');
+        if (idx >= 0)
+        {
+            String key = arg.substring(0,idx);
+            String value = arg.substring(idx + 1);
+
+            setProperty(key,value,source);
+            return true;
+        }
+
+        // All other strings are ignored
+        return false;
+    }
 
     public String cleanReference(String property)
     {
@@ -96,15 +202,7 @@ public final class Props implements Iterable<Prop>
             return str;
         }
 
-        if (props.isEmpty())
-        {
-            // nothing to expand
-            // this situation can occur from --add-to-startd on a new blank base directory
-            return str;
-        }
-
-        Pattern pat = Pattern.compile("(?<=[^$]|^)(\\$\\{[^}]*\\})");
-        Matcher mat = pat.matcher(str);
+        Matcher mat = __propertyPattern.matcher(str);
         StringBuilder expanded = new StringBuilder();
         int offset = 0;
         String property;
@@ -112,7 +210,7 @@ public final class Props implements Iterable<Prop>
 
         while (mat.find(offset))
         {
-            property = cleanReference(mat.group(1));
+            property = mat.group(1);
 
             // Loop detection
             if (seenStack.contains(property))
@@ -132,13 +230,13 @@ public final class Props implements Iterable<Prop>
             seenStack.push(property);
 
             // find property name
-            expanded.append(str.subSequence(offset,mat.start(1)));
+            expanded.append(str.subSequence(offset,mat.start()));
             // get property value
             value = getString(property);
             if (value == null)
             {
-                StartLog.debug("Unable to expand: %s",property);
-                expanded.append(property);
+                StartLog.trace("Unable to expand: %s",property);
+                expanded.append(mat.group());
             }
             else
             {
@@ -147,7 +245,7 @@ public final class Props implements Iterable<Prop>
                 expanded.append(value);
             }
             // update offset
-            offset = mat.end(1);
+            offset = mat.end();
         }
 
         // leftover
@@ -164,8 +262,13 @@ public final class Props implements Iterable<Prop>
 
     public Prop getProp(String key)
     {
+        return getProp(key,true);
+    }
+
+    public Prop getProp(String key, boolean searchSystemProps)
+    {
         Prop prop = props.get(key);
-        if (prop == null)
+        if ((prop == null) && searchSystemProps)
         {
             // try system property
             prop = getSystemProperty(key);
@@ -215,10 +318,20 @@ public final class Props implements Iterable<Prop>
         return new Prop(key,value,ORIGIN_SYSPROP);
     }
 
+    public static boolean hasPropertyKey(String name)
+    {
+        return __propertyPattern.matcher(name).find();
+    }
+
     @Override
     public Iterator<Prop> iterator()
     {
         return props.values().iterator();
+    }
+
+    public void reset()
+    {
+        props.clear();
     }
 
     public void setProperty(Prop prop)
@@ -255,5 +368,11 @@ public final class Props implements Iterable<Prop>
         }
         // write normal properties file
         props.store(stream,comments);
+    }
+
+    public void setSystemProperty(String key, String value)
+    {
+        System.setProperty(key,value);
+        sysPropTracking.add(key);
     }
 }

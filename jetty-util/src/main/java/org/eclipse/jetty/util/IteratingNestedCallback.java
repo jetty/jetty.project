@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -46,17 +46,22 @@ public abstract class IteratingNestedCallback extends IteratingCallback
     {
         _callback=callback;
     }
+
+    @Override
+    public boolean isNonBlocking()
+    { 
+        return _callback.isNonBlocking();
+    }
     
     @Override
-    protected void completed()
+    protected void onCompleteSuccess()
     {
         _callback.succeeded();
     }
-
+    
     @Override
-    public void failed(Throwable x)
+    protected void onCompleteFailure(Throwable x)
     {
-        super.failed(x);
         _callback.failed(x);
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -29,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentMap;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Test;
 
@@ -88,6 +90,7 @@ public class MappedByteBufferPoolTest
     /**
      * In a scenario where MappedByteBufferPool is being used improperly, such as releasing a buffer that wasn't created/acquired by the MappedByteBufferPool,
      * an assertion is tested for.
+     * @throws Exception test failure
      */
     @Test
     public void testReleaseAssertion() throws Exception
@@ -112,5 +115,17 @@ public class MappedByteBufferPoolTest
         {
             // Expected path.
         }
+    }
+    
+    @Test
+    public void testTagged()
+    {
+        MappedByteBufferPool pool = new MappedByteBufferPool.Tagged();
+
+        ByteBuffer buffer = pool.acquire(1024,false);
+
+        assertThat(BufferUtil.toDetailString(buffer),containsString("@T00000001"));
+        buffer = pool.acquire(1024,false);
+        assertThat(BufferUtil.toDetailString(buffer),containsString("@T00000002"));
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-/* ------------------------------------------------------------ */
 /**  Date Format Cache.
  * Computes String representations of Dates and caches
  * the results so that subsequent requests within the same second
@@ -37,9 +36,7 @@ import java.util.TimeZone;
  *
  * If consecutive calls are frequently very different, then this
  * may be a little slower than a normal DateFormat.
- *
  */
-
 public class DateCache
 {
     public static final String DEFAULT_FORMAT="EEE MMM dd HH:mm:ss zzz yyyy";
@@ -77,6 +74,7 @@ public class DateCache
     /* ------------------------------------------------------------ */
     /** Constructor.
      * Make a DateCache that will use the given format
+     * @param format the format to use
      */
     public DateCache(String format)
     {
@@ -161,7 +159,7 @@ public class DateCache
 
     /* ------------------------------------------------------------ */
     /** Format a date according to our stored formatter.
-     * @param inDate 
+     * @param inDate the Date
      * @return Formatted date
      */
     public String format(Date inDate)
@@ -187,7 +185,7 @@ public class DateCache
     /** Format a date according to our stored formatter.
      * If it happens to be in the same second as the last formatNow
      * call, then the format is reused.
-     * @param inDate 
+     * @param inDate the date in milliseconds since unix epoch 
      * @return Formatted date
      */
     public String format(long inDate)
@@ -215,7 +213,7 @@ public class DateCache
      * The passed time is expected to be close to the current time, so it is 
      * compared to the last value passed and if it is within the same second,
      * the format is reused.  Otherwise a new cached format is created.
-     * @param now 
+     * @param now the milliseconds since unix epoch 
      * @return Formatted date
      */
     public String formatNow(long now)

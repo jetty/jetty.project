@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,17 +34,38 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public abstract class AbstractTestServer
 {
+    public static int DEFAULT_MAX_INACTIVE = 30;
+    public static int DEFAULT_SCAVENGE = 10;
+    
     protected final Server _server;
     protected final int _maxInactivePeriod;
     protected final int _scavengePeriod;
     protected final ContextHandlerCollection _contexts;
     protected SessionIdManager _sessionIdManager;
 
+  
+    
+    public static String extractSessionId (String sessionCookie)
+    {
+        if (sessionCookie == null)
+            return null;
+        sessionCookie = sessionCookie.trim();
+        int i = sessionCookie.indexOf(';');
+        if (i >= 0)
+            sessionCookie = sessionCookie.substring(0,i);
+        if (sessionCookie.startsWith("JSESSIONID"))
+            sessionCookie = sessionCookie.substring("JSESSIONID=".length());
+        i = sessionCookie.indexOf('.');
+        if (i >=0)
+            sessionCookie = sessionCookie.substring(0,i);
+        return sessionCookie;
+    }
+
     
     
     public AbstractTestServer(int port)
     {
-        this(port, 30, 10);
+        this(port, DEFAULT_MAX_INACTIVE, DEFAULT_SCAVENGE);
     }
 
     public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod)
@@ -52,7 +73,7 @@ public abstract class AbstractTestServer
         this (port, maxInactivePeriod, scavengePeriod, null);
     }
     
-    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, String sessionIdMgrConfig)
+    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, Object sessionIdMgrConfig)
     {
         _server = new Server(port);
         _maxInactivePeriod = maxInactivePeriod;
@@ -64,7 +85,7 @@ public abstract class AbstractTestServer
     
     
 
-    public abstract SessionIdManager newSessionIdManager(String config);
+    public abstract SessionIdManager newSessionIdManager(Object config);
     public abstract SessionManager newSessionManager();
     public abstract SessionHandler newSessionHandler(SessionManager sessionManager);
 

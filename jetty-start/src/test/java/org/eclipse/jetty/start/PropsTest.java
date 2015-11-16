@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.junit.Test;
@@ -91,6 +94,7 @@ public class PropsTest
         assertThat(props.expand("port=8080"),is("port=8080"));
         assertThat(props.expand("jdk=${java.version}"),is("jdk=" + System.getProperty("java.version")));
         assertThat(props.expand("id=${name}-${version}"),is("id=jetty-9.1"));
+        assertThat(props.expand("id=${unknown}-${wibble}"),is("id=${unknown}-${wibble}"));
     }
 
     @Test

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,11 +32,12 @@ import java.util.Random;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
@@ -50,21 +55,19 @@ import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.common.test.OutgoingNetworkBytesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {
+    private static final Logger LOG = Log.getLogger(DeflateFrameExtensionTest.class);
+    
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test", new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private void assertIncoming(byte[] raw, String... expectedTextDatas)
     {
@@ -362,6 +365,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     /**
      * Make sure that the server generated compressed form for "Hello" is consistent with what PyWebSocket creates.
+     * @throws IOException on test failure
      */
     @Test
     public void testServerGeneratedHello() throws IOException
@@ -371,6 +375,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     /**
      * Make sure that the server generated compressed form for "There" is consistent with what PyWebSocket creates.
+     * @throws IOException on test failure
      */
     @Test
     public void testServerGeneratedThere() throws IOException
@@ -384,15 +389,21 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         byte[] input = new byte[1024 * 1024];
         // Make them not compressible.
         new Random().nextBytes(input);
-
+        
+        int maxMessageSize = (1024 * 1024) + 8192;
+        
         DeflateFrameExtension clientExtension = new DeflateFrameExtension();
         clientExtension.setBufferPool(bufferPool);
         clientExtension.setPolicy(WebSocketPolicy.newClientPolicy());
+        clientExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
+        clientExtension.getPolicy().setMaxBinaryMessageBufferSize(maxMessageSize);
         clientExtension.setConfig(ExtensionConfig.parse("deflate-frame"));
 
         final DeflateFrameExtension serverExtension = new DeflateFrameExtension();
         serverExtension.setBufferPool(bufferPool);
         serverExtension.setPolicy(WebSocketPolicy.newServerPolicy());
+        serverExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
+        serverExtension.getPolicy().setMaxBinaryMessageBufferSize(maxMessageSize);
         serverExtension.setConfig(ExtensionConfig.parse("deflate-frame"));
 
         // Chain the next element to decompress.
@@ -401,6 +412,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
             @Override
             public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
             {
+                LOG.debug("outgoingFrame({})", frame);
                 serverExtension.incomingFrame(frame);
                 callback.writeSuccess();
             }
@@ -412,6 +424,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
             @Override
             public void incomingFrame(Frame frame)
             {
+                LOG.debug("incomingFrame({})", frame);
                 try
                 {
                     result.write(BufferUtil.toArray(frame.getPayload()));

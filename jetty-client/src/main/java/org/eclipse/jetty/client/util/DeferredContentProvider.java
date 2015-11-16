@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,27 +19,34 @@
 package org.eclipse.jetty.client.util;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.AsyncContentProvider;
+import org.eclipse.jetty.client.Synchronizable;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.util.ArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * A {@link ContentProvider} that allows to add content after {@link Request#send(Response.CompleteListener)}
  * has been called, therefore providing the request content at a later time.
- * <p />
+ * <p>
  * {@link DeferredContentProvider} can only be used in conjunction with
  * {@link Request#send(Response.CompleteListener)} (and not with its blocking counterpart {@link Request#send()})
  * because it provides content asynchronously.
- * <p />
+ * <p>
  * The deferred content is provided once and then fully consumed.
  * Invocations to the {@link #iterator()} method after the first will return an "empty" iterator
  * because the stream has been consumed on the first invocation.
@@ -48,13 +55,13 @@ import org.eclipse.jetty.client.api.Response;
  * of of {@link #iterator()} returning the iterator provided by this
   * class on the first invocation, and an iterator on the bytes copied to the other location
   * for subsequent invocations.
- * <p />
+ * <p>
  * Typical usage of {@link DeferredContentProvider} is in asynchronous proxies, where HTTP headers arrive
  * separately from HTTP content chunks.
- * <p />
+ * <p>
  * The deferred content must be provided through {@link #offer(ByteBuffer)}, which can be invoked multiple
  * times, and when all content has been provided it must be signaled with a call to {@link #close()}.
- * <p />
+ * <p>
  * Example usage:
  * <pre>
  * HttpClient httpClient = ...;
@@ -66,7 +73,7 @@ import org.eclipse.jetty.client.api.Response;
  *             .content(content)
  *             .send(new Response.CompleteListener()
  *             {
- *                 &#64Override
+ *                 &#64;Override
  *                 public void onComplete(Result result)
  *                 {
  *                     // Your logic here
@@ -78,14 +85,18 @@ import org.eclipse.jetty.client.api.Response;
  * }
  * </pre>
  */
-public class DeferredContentProvider implements AsyncContentProvider, Closeable
+public class DeferredContentProvider implements AsyncContentProvider, Callback, Closeable
 {
-    private static final ByteBuffer CLOSE = ByteBuffer.allocate(0);
+    private static final Chunk CLOSE = new Chunk(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
 
-    private final Queue<ByteBuffer> chunks = new ConcurrentLinkedQueue<>();
+    private final Object lock = this;
+    private final ArrayQueue<Chunk> chunks = new ArrayQueue<>(4, 64, lock);
     private final AtomicReference<Listener> listener = new AtomicReference<>();
-    private final Iterator<ByteBuffer> iterator = new DeferredContentProviderIterator();
+    private final DeferredContentProviderIterator iterator = new DeferredContentProviderIterator();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private long length = -1;
+    private int size;
+    private Throwable failure;
 
     /**
      * Creates a new {@link DeferredContentProvider} with the given initial content
@@ -95,7 +106,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
     public DeferredContentProvider(ByteBuffer... buffers)
     {
         for (ByteBuffer buffer : buffers)
-            chunks.offer(buffer);
+            offer(buffer);
     }
 
     @Override
@@ -104,12 +115,23 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
         if (!this.listener.compareAndSet(null, listener))
             throw new IllegalStateException(String.format("The same %s instance cannot be used in multiple requests",
                     AsyncContentProvider.class.getName()));
+
+        if (isClosed())
+        {
+            synchronized (lock)
+            {
+                long total = 0;
+                for (Chunk chunk : chunks)
+                    total += chunk.buffer.remaining();
+                length = total;
+            }
+        }
     }
 
     @Override
     public long getLength()
     {
-        return -1;
+        return length;
     }
 
     /**
@@ -121,9 +143,63 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
      */
     public boolean offer(ByteBuffer buffer)
     {
-        boolean result = chunks.offer(buffer);
-        notifyListener();
+        return offer(buffer, Callback.NOOP);
+    }
+
+    public boolean offer(ByteBuffer buffer, Callback callback)
+    {
+        return offer(new Chunk(buffer, callback));
+    }
+
+    private boolean offer(Chunk chunk)
+    {
+        Throwable failure;
+        boolean result = false;
+        synchronized (lock)
+        {
+            failure = this.failure;
+            if (failure == null)
+            {
+                result = chunks.offer(chunk);
+                if (result && chunk != CLOSE)
+                    ++size;
+            }
+        }
+        if (failure != null)
+            chunk.callback.failed(failure);
+        else if (result)
+            notifyListener();
         return result;
+    }
+
+    private void clear()
+    {
+        synchronized (lock)
+        {
+            chunks.clear();
+        }
+    }
+
+    public void flush() throws IOException
+    {
+        synchronized (lock)
+        {
+            try
+            {
+                while (true)
+                {
+                    if (failure != null)
+                        throw new IOException(failure);
+                    if (size == 0)
+                        break;
+                    lock.wait();
+                }
+            }
+            catch (InterruptedException x)
+            {
+                throw new InterruptedIOException();
+            }
+        }
     }
 
     /**
@@ -133,10 +209,23 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
     public void close()
     {
         if (closed.compareAndSet(false, true))
-        {
-            chunks.offer(CLOSE);
-            notifyListener();
-        }
+            offer(CLOSE);
+    }
+
+    public boolean isClosed()
+    {
+        return closed.get();
+    }
+
+    @Override
+    public void succeeded()
+    {
+    }
+
+    @Override
+    public void failed(Throwable failure)
+    {
+        iterator.failed(failure);
     }
 
     private void notifyListener()
@@ -152,27 +241,101 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
         return iterator;
     }
 
-    private class DeferredContentProviderIterator implements Iterator<ByteBuffer>
+    private class DeferredContentProviderIterator implements Iterator<ByteBuffer>, Callback, Synchronizable
     {
+        private Chunk current;
+
         @Override
         public boolean hasNext()
         {
-            return chunks.peek() != CLOSE;
+            synchronized (lock)
+            {
+                return chunks.peek() != CLOSE;
+            }
         }
 
         @Override
         public ByteBuffer next()
         {
-            ByteBuffer element = chunks.poll();
-            if (element == CLOSE)
-                throw new NoSuchElementException();
-            return element;
+            synchronized (lock)
+            {
+                Chunk chunk = current = chunks.poll();
+                if (chunk == CLOSE)
+                {
+                    // Slow path: reinsert the CLOSE chunk
+                    // so that hasNext() works correctly.
+                    chunks.add(0, CLOSE);
+                    throw new NoSuchElementException();
+                }
+                return chunk == null ? null : chunk.buffer;
+            }
         }
 
         @Override
         public void remove()
         {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void succeeded()
+        {
+            Chunk chunk;
+            synchronized (lock)
+            {
+                chunk = current;
+                if (chunk != null)
+                {
+                    --size;
+                    lock.notify();
+                }
+            }
+            if (chunk != null)
+                chunk.callback.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            List<Chunk> chunks = new ArrayList<>();
+            synchronized (lock)
+            {
+                failure = x;
+                // Transfer all chunks to fail them all.
+                Chunk chunk = current;
+                current = null;
+                if (chunk != null)
+                    chunks.add(chunk);
+                chunks.addAll(DeferredContentProvider.this.chunks);
+                clear();
+                lock.notify();
+            }
+            for (Chunk chunk : chunks)
+                chunk.callback.failed(x);
+        }
+
+        @Override
+        public Object getLock()
+        {
+            return lock;
+        }
+    }
+
+    public static class Chunk
+    {
+        public final ByteBuffer buffer;
+        public final Callback callback;
+
+        public Chunk(ByteBuffer buffer, Callback callback)
+        {
+            this.buffer = Objects.requireNonNull(buffer);
+            this.callback = Objects.requireNonNull(callback);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x", getClass().getSimpleName(), hashCode());
         }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,12 +22,12 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.events.ParamList;
 
 /**
  * Basic scanner for Annotated Methods
+ * @param <T> The type of metadata
  */
 public abstract class AbstractMethodAnnotationScanner<T>
 {
@@ -39,7 +39,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
             StringBuilder err = new StringBuilder();
             err.append("Invalid declaration of ");
             err.append(method);
-            err.append(StringUtil.__LINE_SEPARATOR);
+            err.append(System.lineSeparator());
 
             err.append("Method modifier must be public");
 
@@ -51,7 +51,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
             StringBuilder err = new StringBuilder();
             err.append("Invalid declaration of ");
             err.append(method);
-            err.append(StringUtil.__LINE_SEPARATOR);
+            err.append(System.lineSeparator());
 
             err.append("Method modifier may not be static");
 
@@ -66,7 +66,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
             StringBuilder err = new StringBuilder();
             err.append("Invalid declaration of ");
             err.append(method);
-            err.append(StringUtil.__LINE_SEPARATOR);
+            err.append(System.lineSeparator());
 
             err.append("Return type must be ").append(type);
 
@@ -87,7 +87,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
             StringBuilder err = new StringBuilder();
             err.append("Duplicate @").append(annoClass.getSimpleName()).append(" declaration on ");
             err.append(method);
-            err.append(StringUtil.__LINE_SEPARATOR);
+            err.append(System.lineSeparator());
 
             err.append("@").append(annoClass.getSimpleName()).append(" previously declared at ");
             err.append(callable.getMethod());

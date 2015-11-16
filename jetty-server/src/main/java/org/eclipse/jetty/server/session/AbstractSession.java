@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,12 +19,8 @@
 package org.eclipse.jetty.server.session;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,11 +46,10 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class AbstractSession implements AbstractSessionManager.SessionIf
 {
     final static Logger LOG = SessionHandler.LOG;
-    public final static String SESSION_KNOWN_ONLY_TO_AUTHENTICATED="org.eclipse.jetty.security.sessionKnownOnlytoAuthenticated";
+    public final static String SESSION_CREATED_SECURE="org.eclipse.jetty.security.sessionCreatedSecure";
     private  String _clusterId; // ID without any node (ie "worker") id appended
     private  String _nodeId;    // ID of session with node(ie "worker") id appended
     private final AbstractSessionManager _manager;
-    private final Map<String,Object> _attributes=new HashMap<String, Object>();
     private boolean _idChanged;
     private final long _created;
     private long _cookieSet;
@@ -103,11 +98,24 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     /* ------------------------------------------------------------- */
     /**
      * asserts that the session is valid
+     * @throws IllegalStateException if the sesion is invalid
      */
     protected void checkValid() throws IllegalStateException
     {
         if (_invalid)
             throw new IllegalStateException();
+    }
+    
+    /* ------------------------------------------------------------- */
+    /** Check to see if session has expired as at the time given.
+     * @param time the time in milliseconds
+     * @return true if expired
+     */
+    protected boolean checkExpiry(long time)
+    {
+        if (_maxIdleMs>0 && _lastAccessed>0 && _lastAccessed + _maxIdleMs < time)
+            return true;
+        return false;
     }
 
     /* ------------------------------------------------------------- */
@@ -127,58 +135,32 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
-    public Map<String,Object> getAttributeMap()
-    {
-        return _attributes;
-    }
+    public abstract Map<String,Object> getAttributeMap();
+
+
+ 
+    
 
     /* ------------------------------------------------------------ */
-    @Override
-    public Object getAttribute(String name)
-    {
-        synchronized (this)
-        {
-            checkValid();
-            return _attributes.get(name);
-        }
-    }
+    public abstract int getAttributes();
+  
+
+ 
 
     /* ------------------------------------------------------------ */
-    public int getAttributes()
-    {
-        synchronized (this)
-        {
-            checkValid();
-            return _attributes.size();
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    @SuppressWarnings({ "unchecked" })
-    @Override
-    public Enumeration<String> getAttributeNames()
-    {
-        synchronized (this)
-        {
-            checkValid();
-            List<String> names=_attributes==null?Collections.EMPTY_LIST:new ArrayList<String>(_attributes.keySet());
-            return Collections.enumeration(names);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public Set<String> getNames()
-    {
-        synchronized (this)
-        {
-            return new HashSet<String>(_attributes.keySet());
-        }
-    }
+    public abstract Set<String> getNames();
+  
 
     /* ------------------------------------------------------------- */
     public long getCookieSetTime()
     {
         return _cookieSet;
+    }
+    
+    /* ------------------------------------------------------------- */
+    public void setCookieSetTime(long time)
+    {
+        _cookieSet = time;
     }
 
     /* ------------------------------------------------------------- */
@@ -260,25 +242,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         return getAttribute(name);
     }
 
-    /* ------------------------------------------------------------- */
-    /**
-     * @deprecated As of Version 2.2, this method is replaced by
-     *             {@link #getAttributeNames}
-     */
-    @Deprecated
-    @Override
-    public String[] getValueNames() throws IllegalStateException
-    {
-        synchronized(this)
-        {
-            checkValid();
-            if (_attributes==null)
-                return new String[0];
-            String[] a=new String[_attributes.size()];
-            return (String[])_attributes.keySet().toArray(a);
-        }
-    }
-
+ 
 
     /* ------------------------------------------------------------ */
     public void renewId(HttpServletRequest request)
@@ -317,7 +281,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             _lastAccessed=_accessed;
             _accessed=time;
 
-            if (_maxIdleMs>0 && _lastAccessed>0 && _lastAccessed + _maxIdleMs < time)
+            if (checkExpiry(time))
             {
                 invalidate();
                 return false;
@@ -376,7 +340,8 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     {
         try
         {
-            LOG.debug("invalidate {}",_clusterId);
+            if (LOG.isDebugEnabled())
+                LOG.debug("invalidate {}",_clusterId);
             if (isValid())
                 clearAttributes();
         }
@@ -391,34 +356,8 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
-    public void clearAttributes()
-    {
-        while (_attributes!=null && _attributes.size()>0)
-        {
-            ArrayList<String> keys;
-            synchronized(this)
-            {
-                keys=new ArrayList<String>(_attributes.keySet());
-            }
-
-            Iterator<String> iter=keys.iterator();
-            while (iter.hasNext())
-            {
-                String key=(String)iter.next();
-
-                Object value;
-                synchronized(this)
-                {
-                    value=doPutOrRemove(key,null);
-                }
-                unbindValue(key,value);
-
-                _manager.doSessionAttributeListeners(this,key,value,null);
-            }
-        }
-        if (_attributes!=null)
-            _attributes.clear();
-    }
+    public abstract void clearAttributes();
+   
 
     /* ------------------------------------------------------------- */
     public boolean isIdChanged()
@@ -443,7 +382,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     @Override
     public void putValue(java.lang.String name, java.lang.Object value) throws IllegalStateException
     {
-        setAttribute(name,value);
+        changeAttribute(name,value);
     }
 
     /* ------------------------------------------------------------ */
@@ -464,27 +403,80 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     {
         removeAttribute(name);
     }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public Enumeration<String> getAttributeNames()
+    {
+        synchronized (this)
+        {
+            checkValid();
+            return doGetAttributeNames();
+        }
+    }
+    
+    /* ------------------------------------------------------------- */
+    /**
+     * @deprecated As of Version 2.2, this method is replaced by
+     *             {@link #getAttributeNames}
+     */
+    @Deprecated
+    @Override
+    public String[] getValueNames() throws IllegalStateException
+    {
+        synchronized(this)
+        {
+            checkValid();
+            Enumeration<String> anames = doGetAttributeNames();
+            if (anames == null)
+                return new String[0];
+            ArrayList<String> names = new ArrayList<String>();
+            while (anames.hasMoreElements())
+                names.add(anames.nextElement());
+            return names.toArray(new String[names.size()]);
+        }
+    }
+    
 
     /* ------------------------------------------------------------ */
-    protected Object doPutOrRemove(String name, Object value)
-    {
-        return value==null?_attributes.remove(name):_attributes.put(name,value);
-    }
+    public abstract Object doPutOrRemove(String name, Object value);
+ 
 
     /* ------------------------------------------------------------ */
-    protected Object doGet(String name)
+    public abstract Object doGet(String name);
+    
+    
+    /* ------------------------------------------------------------ */
+    public abstract Enumeration<String> doGetAttributeNames();
+    
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public Object getAttribute(String name)
     {
-        return _attributes.get(name);
+        synchronized (this)
+        {
+            checkValid();
+            return doGet(name);
+        }
     }
+   
 
     /* ------------------------------------------------------------ */
     @Override
     public void setAttribute(String name, Object value)
     {
-        updateAttribute(name,value);
+        changeAttribute(name,value);
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @param name the name of the attribute
+     * @param value the value of the attribute
+     * @return true if attribute changed
+     * @deprecated use changeAttribute(String,Object) instead
+     */
+    @Deprecated
     protected boolean updateAttribute (String name, Object value)
     {
         Object old=null;
@@ -506,12 +498,54 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         }
         return false;
     }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Either set (perhaps replace) or remove the value of the attribute
+     * in the session. The appropriate session attribute listeners are
+     * also called.
+     * 
+     * @param name the name of the attribute
+     * @param value the value of the attribute
+     * @return the old value for the attribute
+     */
+    protected Object changeAttribute (String name, Object value)
+    {
+        Object old=null;
+        synchronized (this)
+        {
+            checkValid();
+            old=doPutOrRemove(name,value);
+        }
+
+        callSessionAttributeListeners(name, value, old);
+
+        return old;
+    }
 
     /* ------------------------------------------------------------ */
-    protected void addAttributes(Map<String,Object> map)
+    /**
+     * Call binding and attribute listeners based on the new and old
+     * values of the attribute.
+     * 
+     * @param name name of the attribute
+     * @param newValue  new value of the attribute
+     * @param oldValue previous value of the attribute
+     */
+    protected void callSessionAttributeListeners (String name, Object newValue, Object oldValue)
     {
-        _attributes.putAll(map);
+        if (newValue==null || !newValue.equals(oldValue))
+        {
+            if (oldValue!=null)
+                unbindValue(name,oldValue);
+            if (newValue!=null)
+                bindValue(name,newValue);
+
+            _manager.doSessionAttributeListeners(this,name,oldValue,newValue);
+        }
     }
+  
 
     /* ------------------------------------------------------------- */
     public void setIdChanged(boolean changed)
@@ -534,7 +568,11 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
-    /** If value implements HttpSessionBindingListener, call valueBound() */
+    /** 
+     * Bind value if value implements {@link HttpSessionBindingListener} (calls {@link HttpSessionBindingListener#valueBound(HttpSessionBindingEvent)}) 
+     * @param name the name with which the object is bound or unbound  
+     * @param value the bound value
+     */
     public void bindValue(java.lang.String name, Object value)
     {
         if (value!=null&&value instanceof HttpSessionBindingListener)
@@ -575,7 +613,11 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
-    /** If value implements HttpSessionBindingListener, call valueUnbound() */
+    /**
+     * Unbind value if value implements {@link HttpSessionBindingListener} (calls {@link HttpSessionBindingListener#valueUnbound(HttpSessionBindingEvent)}) 
+     * @param name the name with which the object is bound or unbound  
+     * @param value the bound value
+     */
     public void unbindValue(java.lang.String name, Object value)
     {
         if (value!=null&&value instanceof HttpSessionBindingListener)
@@ -588,7 +630,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         synchronized(this)
         {
             HttpSessionEvent event = new HttpSessionEvent(this);
-            for (Iterator<Object> iter = _attributes.values().iterator(); iter.hasNext();)
+            for (Iterator<Object> iter = getAttributeMap().values().iterator(); iter.hasNext();)
             {
                 Object value = iter.next();
                 if (value instanceof HttpSessionActivationListener)
@@ -606,7 +648,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         synchronized(this)
         {
             HttpSessionEvent event = new HttpSessionEvent(this);
-            for (Iterator<Object> iter = _attributes.values().iterator(); iter.hasNext();)
+            for (Iterator<Object> iter = getAttributeMap().values().iterator(); iter.hasNext();)
             {
                 Object value = iter.next();
                 if (value instanceof HttpSessionActivationListener)

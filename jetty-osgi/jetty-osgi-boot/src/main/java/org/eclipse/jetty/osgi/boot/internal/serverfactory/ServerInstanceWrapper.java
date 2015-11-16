@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 
 import java.io.File;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,12 +51,10 @@ import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
-import org.xml.sax.SAXParseException;
 
 /**
  * ServerInstanceWrapper
@@ -147,47 +144,42 @@ public class ServerInstanceWrapper
 
         for (URL jettyConfiguration : jettyConfigurations)
         {
-            InputStream is = null;
-            try
-            {
-                // Execute a Jetty configuration file
-                Resource r = Resource.newResource(jettyConfiguration);
-                if (!r.exists())
-                {
-                    LOG.warn("File does not exist "+r);
-                    throw new IllegalStateException("No such jetty server config file: "+r);
-                }
-                is = r.getInputStream();
-                XmlConfiguration config = new XmlConfiguration(is);
-                config.getIdMap().putAll(id_map);
-                config.getProperties().putAll(properties);
-                
-                // #334062 compute the URL of the folder that contains the
-                // conf file and set it as a property so we can compute relative paths
-                // from it.
-                String urlPath = jettyConfiguration.toString();
-                int lastSlash = urlPath.lastIndexOf('/');
-                if (lastSlash > 4)
-                {
-                    urlPath = urlPath.substring(0, lastSlash);
-                    config.getProperties().put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
-                }
-     
-                Object o = config.configure();
-                if (server == null)
-                    server = (Server)o;
-                
-                id_map = config.getIdMap();
-            }
-            catch (SAXParseException saxparse)
-            {
-                LOG.warn("Unable to configure the jetty/etc file " + jettyConfiguration, saxparse);
-                throw saxparse;
-            }
-            finally
-            {
-                IO.close(is);
-            }
+        	try(Resource r = Resource.newResource(jettyConfiguration))
+        	{
+        		// Execute a Jetty configuration file
+        		if (!r.exists())
+        		{
+        			LOG.warn("File does not exist "+r);
+        			throw new IllegalStateException("No such jetty server config file: "+r);
+        		}
+
+        		XmlConfiguration config = new XmlConfiguration(r.getURL());
+
+        		config.getIdMap().putAll(id_map);
+        		config.getProperties().putAll(properties);
+
+        		// #334062 compute the URL of the folder that contains the
+        		// conf file and set it as a property so we can compute relative paths
+        		// from it.
+        		String urlPath = jettyConfiguration.toString();
+        		int lastSlash = urlPath.lastIndexOf('/');
+        		if (lastSlash > 4)
+        		{
+        			urlPath = urlPath.substring(0, lastSlash);
+        			config.getProperties().put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
+        		}
+
+        		Object o = config.configure();
+        		if (server == null)
+        			server = (Server)o;
+
+        		id_map = config.getIdMap();
+        	}
+        	catch (Exception e)
+        	{
+        		LOG.warn("Configuration error in " + jettyConfiguration);
+        		throw e;
+        	}
         }
 
         return server;
@@ -214,7 +206,7 @@ public class ServerInstanceWrapper
      * The classloader that should be the parent classloader for each webapp
      * deployed on this server.
      * 
-     * @return
+     * @return the classloader
      */
     public ClassLoader getParentClassLoaderForWebapps()
     {
@@ -249,7 +241,6 @@ public class ServerInstanceWrapper
     {
         return _ctxtCollection;
     }
-    
     
     /* ------------------------------------------------------------ */
     public void start(Server server, Dictionary props) throws Exception
@@ -382,10 +373,10 @@ public class ServerInstanceWrapper
 
         _deploymentManager.setUseStandardBindings(false);
         List<AppLifeCycle.Binding> deploymentLifeCycleBindings = new ArrayList<AppLifeCycle.Binding>();
-        deploymentLifeCycleBindings.add(new OSGiDeployer());
+        deploymentLifeCycleBindings.add(new OSGiDeployer(this));
         deploymentLifeCycleBindings.add(new StandardStarter());
         deploymentLifeCycleBindings.add(new StandardStopper());
-        deploymentLifeCycleBindings.add(new OSGiUndeployer());
+        deploymentLifeCycleBindings.add(new OSGiUndeployer(this));
         _deploymentManager.setLifeCycleBindings(deploymentLifeCycleBindings);
         
         if (!providerClassNames.contains(BundleWebAppProvider.class.getName()))

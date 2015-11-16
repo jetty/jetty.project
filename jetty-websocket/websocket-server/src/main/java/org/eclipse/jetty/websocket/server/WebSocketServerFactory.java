@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,16 +22,16 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -39,10 +39,16 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
@@ -59,6 +65,8 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
+import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -67,26 +75,12 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 /**
  * Factory to create WebSocket connections
  */
-public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketServletFactory, SessionListener
+public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketContainerScope, WebSocketServletFactory, SessionListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
-    private static final ThreadLocal<UpgradeContext> ACTIVE_CONTEXT = new ThreadLocal<>();
 
-    public static UpgradeContext getActiveUpgradeContext()
-    {
-        return ACTIVE_CONTEXT.get();
-    }
-
-    protected static void setActiveUpgradeContext(UpgradeContext connection)
-    {
-        ACTIVE_CONTEXT.set(connection);
-    }
-
+    private final ClassLoader contextClassloader;
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
-    {
-        handshakes.put(HandshakeRFC6455.VERSION,new HandshakeRFC6455());
-    }
-
     /**
      * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
      */
@@ -96,37 +90,43 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final EventDriverFactory eventDriverFactory;
     private final ByteBufferPool bufferPool;
     private final WebSocketExtensionFactory extensionFactory;
+    private Executor executor;
     private List<SessionFactory> sessionFactories;
-    private Set<WebSocketSession> openSessions = new CopyOnWriteArraySet<>();
     private WebSocketCreator creator;
     private List<Class<?>> registeredSocketClasses;
+    private DecoratedObjectFactory objectFactory;
 
     public WebSocketServerFactory()
     {
-        this(WebSocketPolicy.newServerPolicy(),new MappedByteBufferPool());
+        this(WebSocketPolicy.newServerPolicy(), new MappedByteBufferPool());
     }
 
     public WebSocketServerFactory(WebSocketPolicy policy)
     {
-        this(policy,new MappedByteBufferPool());
+        this(policy, new MappedByteBufferPool());
     }
-    
+
     public WebSocketServerFactory(ByteBufferPool bufferPool)
     {
-        this(WebSocketPolicy.newServerPolicy(),bufferPool);
+        this(WebSocketPolicy.newServerPolicy(), bufferPool);
     }
 
     public WebSocketServerFactory(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
+        handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
+
         addBean(scheduler);
         addBean(bufferPool);
+        
+        this.contextClassloader = Thread.currentThread().getContextClassLoader();
 
         this.registeredSocketClasses = new ArrayList<>();
 
         this.defaultPolicy = policy;
         this.eventDriverFactory = new EventDriverFactory(defaultPolicy);
         this.bufferPool = bufferPool;
-        this.extensionFactory = new WebSocketExtensionFactory(defaultPolicy,this.bufferPool);
+        this.extensionFactory = new WebSocketExtensionFactory(this);
+        
         this.sessionFactories = new ArrayList<>();
         this.sessionFactories.add(new WebSocketSessionFactory(this));
         this.creator = this;
@@ -137,7 +137,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         {
             versions.add(v);
         }
-        Collections.sort(versions,Collections.reverseOrder()); // newest first
+        Collections.sort(versions, Collections.reverseOrder()); // newest first
         StringBuilder rv = new StringBuilder();
         for (int v : versions)
         {
@@ -153,28 +153,22 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        return acceptWebSocket(getCreator(),request,response);
+        return acceptWebSocket(getCreator(), request, response);
     }
 
     @Override
     public boolean acceptWebSocket(WebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         try
         {
+            Thread.currentThread().setContextClassLoader(contextClassloader);
+            
+            // Create Servlet Specific Upgrade Request/Response objects
             ServletUpgradeRequest sockreq = new ServletUpgradeRequest(request);
             ServletUpgradeResponse sockresp = new ServletUpgradeResponse(response);
 
-            UpgradeContext context = getActiveUpgradeContext();
-            if (context == null)
-            {
-                context = new UpgradeContext();
-                setActiveUpgradeContext(context);
-            }
-
-            context.setRequest(sockreq);
-            context.setResponse(sockresp);
-
-            Object websocketPojo = creator.createWebSocket(sockreq,sockresp);
+            Object websocketPojo = creator.createWebSocket(sockreq, sockresp);
 
             // Handle response forbidden (and similar paths)
             if (sockresp.isCommitted())
@@ -189,16 +183,26 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
                 return false;
             }
 
+            // Allow Decorators to do their thing
+            websocketPojo = getObjectFactory().decorate(websocketPojo);
+            
+            // Get the original HTTPConnection
+            HttpConnection connection = (HttpConnection)request.getAttribute("org.eclipse.jetty.server.HttpConnection");
+            
             // Send the upgrade
             EventDriver driver = eventDriverFactory.wrap(websocketPojo);
-            return upgrade(sockreq,sockresp,driver);
+            return upgrade(connection, sockreq, sockresp, driver);
         }
         catch (URISyntaxException e)
         {
-            throw new IOException("Unable to accept websocket due to mangled URI",e);
+            throw new IOException("Unable to accept websocket due to mangled URI", e);
+        } 
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
         }
     }
-
+    
     public void addSessionFactory(SessionFactory sessionFactory)
     {
         if (sessionFactories.contains(sessionFactory))
@@ -221,19 +225,10 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
     }
 
-    protected void closeAllConnections()
-    {
-        for (WebSocketSession session : openSessions)
-        {
-            session.close();
-        }
-        openSessions.clear();
-    }
-
     @Override
     public WebSocketServletFactory createFactory(WebSocketPolicy policy)
     {
-        return new WebSocketServerFactory(policy,bufferPool);
+        return new WebSocketServerFactory(policy, bufferPool);
     }
 
     private WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
@@ -249,11 +244,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             {
                 try
                 {
-                    return impl.createSession(requestURI,websocket,connection);
+                    return impl.createSession(requestURI, websocket, connection);
                 }
                 catch (Throwable e)
                 {
-                    throw new InvalidWebSocketException("Unable to create Session",e);
+                    throw new InvalidWebSocketException("Unable to create Session", e);
                 }
             }
         }
@@ -280,25 +275,46 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         Class<?> firstClass = registeredSocketClasses.get(0);
         try
         {
-            return firstClass.newInstance();
+            return objectFactory.createInstance(firstClass);
         }
         catch (InstantiationException | IllegalAccessException e)
         {
-            throw new WebSocketException("Unable to create instance of " + firstClass,e);
+            throw new WebSocketException("Unable to create instance of " + firstClass, e);
         }
+    }
+    
+    @Override
+    protected void doStart() throws Exception
+    {
+        if(this.objectFactory == null)
+        {
+            this.objectFactory = new DecoratedObjectFactory();
+        }
+        
+        super.doStart();
     }
 
     @Override
-    protected void doStop() throws Exception
+    public ByteBufferPool getBufferPool()
     {
-        closeAllConnections();
-        super.doStop();
+        return this.bufferPool;
     }
 
     @Override
     public WebSocketCreator getCreator()
     {
         return this.creator;
+    }
+    
+    @Override
+    public Executor getExecutor()
+    {
+        return this.executor;
+    }
+
+    public DecoratedObjectFactory getObjectFactory()
+    {
+        return objectFactory;
     }
 
     public EventDriverFactory getEventDriverFactory()
@@ -311,10 +327,10 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     {
         return extensionFactory;
     }
-
-    public Set<WebSocketSession> getOpenSessions()
+    
+    public Collection<WebSocketSession> getOpenSessions()
     {
-        return Collections.unmodifiableSet(this.openSessions);
+        return getBeans(WebSocketSession.class);
     }
 
     @Override
@@ -322,11 +338,60 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     {
         return defaultPolicy;
     }
-
+    
     @Override
-    public void init() throws Exception
+    public SslContextFactory getSslContextFactory()
     {
-        start(); // start lifecycle
+        /* Not relevant for a Server, as this is defined in the
+         * Connector configuration 
+         */
+        return null;
+    }
+
+    public void init(ServletContextHandler context) throws ServletException
+    {
+        this.objectFactory = (DecoratedObjectFactory)context.getServletContext().getAttribute(DecoratedObjectFactory.ATTR);
+        if (this.objectFactory == null)
+        {
+            this.objectFactory = new DecoratedObjectFactory();
+        }
+        
+        this.executor = context.getServer().getThreadPool();
+    }
+    
+    @Override
+    public void init(ServletContext context) throws ServletException
+    {
+        // Setup ObjectFactory
+        this.objectFactory = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
+        if (this.objectFactory == null)
+        {
+            this.objectFactory = new DecoratedObjectFactory();
+        }
+        
+        // Validate Environment
+        ContextHandler handler = ContextHandler.getContextHandler(context);
+
+        if (handler == null)
+        {
+            throw new ServletException("Not running on Jetty, WebSocket support unavailable");
+        }
+
+        this.executor = handler.getServer().getThreadPool();
+        
+        try
+        {
+            // start lifecycle
+            start();
+        }
+        catch (ServletException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new ServletException(e);
+        }
     }
 
     @Override
@@ -347,7 +412,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         // Test for "Upgrade" token
         boolean foundUpgradeToken = false;
-        Iterator<String> iter = QuoteUtil.splitAt(connection,",");
+        Iterator<String> iter = QuoteUtil.splitAt(connection, ",");
         while (iter.hasNext())
         {
             String token = iter.next();
@@ -388,31 +453,29 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
-        this.openSessions.remove(session);
+        removeBean(session);
     }
 
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
-        this.openSessions.add(session);
+        addManaged(session);
     }
 
     protected String[] parseProtocols(String protocol)
     {
         if (protocol == null)
         {
-            return new String[]
-            { null };
+            return new String[]{null};
         }
         protocol = protocol.trim();
-        if ((protocol == null) || (protocol.length() == 0))
+        if (protocol.length() == 0)
         {
-            return new String[]
-            { null };
+            return new String[]{null};
         }
         String[] passed = protocol.split("\\s*,\\s*");
         String[] protocols = new String[passed.length + 1];
-        System.arraycopy(passed,0,protocols,0,passed.length);
+        System.arraycopy(passed, 0, protocols, 0, passed.length);
         return protocols;
     }
 
@@ -430,19 +493,17 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
     /**
      * Upgrade the request/response to a WebSocket Connection.
-     * <p>
+     * <p/>
      * This method will not normally return, but will instead throw a UpgradeConnectionException, to exit HTTP handling and initiate WebSocket handling of the
      * connection.
-     * 
-     * @param request
-     *            The request to upgrade
-     * @param response
-     *            The response to upgrade
-     * @param driver
-     *            The websocket handler implementation to use
+     *
+     * @param http     the raw http connection
+     * @param request  The request to upgrade
+     * @param response The response to upgrade
+     * @param driver   The websocket handler implementation to use
      * @throws IOException
      */
-    public boolean upgrade(ServletUpgradeRequest request, ServletUpgradeResponse response, EventDriver driver) throws IOException
+    private boolean upgrade(HttpConnection http, ServletUpgradeRequest request, ServletUpgradeResponse response, EventDriver driver) throws IOException
     {
         if (!"websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
         {
@@ -468,10 +529,13 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             warn.append(" (:").append(request.getRemotePort());
             warn.append(") User Agent: ");
             String ua = request.getHeader("User-Agent");
-            if(ua == null) {
+            if (ua == null)
+            {
                 warn.append("[unset] ");
-            } else {
-                warn.append('"').append(ua.replaceAll("<","&lt;")).append("\" ");
+            }
+            else
+            {
+                warn.append('"').append(StringUtil.sanitizeXmlString(ua)).append("\" ");
             }
             warn.append("requested WebSocket version [").append(version);
             warn.append("], Jetty supports version");
@@ -481,11 +545,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             }
             warn.append(": [").append(supportedVersions).append("]");
             LOG.warn(warn.toString());
-            
+
             // Per RFC 6455 - 4.4 - Supporting Multiple Versions of WebSocket Protocol
             // Using the examples as outlined
-            response.setHeader("Sec-WebSocket-Version",supportedVersions);
-            response.sendError(HttpStatus.BAD_REQUEST_400,"Unsupported websocket version specification");
+            response.setHeader("Sec-WebSocket-Version", supportedVersions);
+            response.sendError(HttpStatus.BAD_REQUEST_400, "Unsupported websocket version specification");
             return false;
         }
 
@@ -504,70 +568,63 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             extensionStack.negotiate(request.getExtensions());
         }
 
-        // Create connection
-        UpgradeContext context = getActiveUpgradeContext();
-        LogicalConnection connection = context.getConnection();
+        // Get original HTTP connection
+        EndPoint endp = http.getEndPoint();
+        Connector connector = http.getConnector();
+        Executor executor = connector.getExecutor();
+        ByteBufferPool bufferPool = connector.getByteBufferPool();
 
-        if (connection == null)
+        // Setup websocket connection
+        AbstractWebSocketConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, driver.getPolicy(), bufferPool);
+
+        extensionStack.setPolicy(driver.getPolicy());
+        extensionStack.configure(wsConnection.getParser());
+        extensionStack.configure(wsConnection.getGenerator());
+
+        if (LOG.isDebugEnabled())
         {
-            HttpConnection http = HttpConnection.getCurrentConnection();
-            EndPoint endp = http.getEndPoint();
-            Executor executor = http.getConnector().getExecutor();
-            ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
-            WebSocketServerConnection wsConnection = new WebSocketServerConnection(endp,executor,scheduler,driver.getPolicy(),bufferPool);
-            connection = wsConnection;
-
-            extensionStack.setPolicy(driver.getPolicy());
-            extensionStack.configure(wsConnection.getParser());
-            extensionStack.configure(wsConnection.getGenerator());
-
-            LOG.debug("HttpConnection: {}",http);
-            LOG.debug("AsyncWebSocketConnection: {}",connection);
+            LOG.debug("HttpConnection: {}", http);
+            LOG.debug("WebSocketConnection: {}", wsConnection);
         }
 
         // Setup Session
-        WebSocketSession session = createSession(request.getRequestURI(),driver,connection);
+        WebSocketSession session = createSession(request.getRequestURI(), driver, wsConnection);
         session.setPolicy(driver.getPolicy());
         session.setUpgradeRequest(request);
         // set true negotiated extension list back to response 
         response.setExtensions(extensionStack.getNegotiatedExtensions());
         session.setUpgradeResponse(response);
-        connection.setSession(session);
+        wsConnection.addListener(session);
 
         // Setup Incoming Routing
-        connection.setNextIncomingFrames(extensionStack);
+        wsConnection.setNextIncomingFrames(extensionStack);
         extensionStack.setNextIncoming(session);
 
         // Setup Outgoing Routing
         session.setOutgoingHandler(extensionStack);
-        extensionStack.setNextOutgoing(connection);
+        extensionStack.setNextOutgoing(wsConnection);
 
         // Start Components
-        try
+        session.addManaged(extensionStack);
+        this.addManaged(session);
+        
+        if (session.isFailed())
         {
-            session.start();
-        }
-        catch (Exception e)
-        {
-            throw new IOException("Unable to start Session",e);
-        }
-        try
-        {
-            extensionStack.start();
-        }
-        catch (Exception e)
-        {
-            throw new IOException("Unable to start Extension Stack",e);
+            throw new IOException("Session failed to start");
         }
 
-        // Tell jetty about the new connection
-        request.setServletAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);
+        // Tell jetty about the new upgraded connection
+        request.setServletAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, wsConnection);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Handshake Response: {}", handshaker);
 
         // Process (version specific) handshake response
-        LOG.debug("Handshake Response: {}",handshaker);
-        handshaker.doHandshakeResponse(request,response);
+        handshaker.doHandshakeResponse(request, response);
 
-        LOG.debug("Websocket upgrade {} {} {} {}",request.getRequestURI(),version,response.getAcceptedSubProtocol(),connection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Websocket upgrade {} {} {} {}", request.getRequestURI(), version, response.getAcceptedSubProtocol(), wsConnection);
+
         return true;
     }
 }

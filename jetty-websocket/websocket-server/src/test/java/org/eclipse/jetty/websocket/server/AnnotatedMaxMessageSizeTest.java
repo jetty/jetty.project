@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.net.URI;
@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.EventQueue;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -36,16 +38,19 @@ import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.examples.echo.BigEchoSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class AnnotatedMaxMessageSizeTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+    
     private static Server server;
     private static ServerConnector connector;
     private static URI serverUri;
@@ -100,8 +105,8 @@ public class AnnotatedMaxMessageSizeTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            WebSocketFrame tf = frames.poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
@@ -110,7 +115,7 @@ public class AnnotatedMaxMessageSizeTest
         }
     }
     
-    @Test(timeout=4000)
+    @Test(timeout=8000)
     public void testEchoTooBig() throws IOException, Exception
     {
         BlockheadClient client = new BlockheadClient(serverUri);
@@ -122,13 +127,14 @@ public class AnnotatedMaxMessageSizeTest
             client.expectUpgradeResponse();
 
             // Generate text frame
-            byte buf[] = new byte[90*1024]; // buffer bigger than maxMessageSize
+            int size = 120 * 1024;
+            byte buf[] = new byte[size]; // buffer bigger than maxMessageSize
             Arrays.fill(buf,(byte)'x');
             client.write(new TextFrame().setPayload(ByteBuffer.wrap(buf)));
 
             // Read frame (hopefully close frame saying its too large)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            WebSocketFrame tf = frames.poll();
             Assert.assertThat("Frame is close", tf.getOpCode(), is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(tf);
             Assert.assertThat("Close Code", close.getStatusCode(), is(StatusCode.MESSAGE_TOO_LARGE));

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,27 +30,35 @@ import org.eclipse.jetty.servlet.ServletHandler;
 
 public class MinimalServlets
 {
-    public static void main(String[] args) throws Exception
+    public static void main( String[] args ) throws Exception
     {
-        // Create a basic jetty server object that will listen on port 8080.  Note that if you set this to port 0
-        // then a randomly available port will be assigned that you can either look in the logs for the port,
+        // Create a basic jetty server object that will listen on port 8080.
+        // Note that if you set this to port 0 then a randomly available port
+        // will be assigned that you can either look in the logs for the port,
         // or programmatically obtain it for use in test cases.
         Server server = new Server(8080);
 
-        // The ServletHandler is a dead simple way to create a context handler that is backed by an instance of a
-        // Servlet.  This handler then needs to be registered with the Server object.
+        // The ServletHandler is a dead simple way to create a context handler
+        // that is backed by an instance of a Servlet.
+        // This handler then needs to be registered with the Server object.
         ServletHandler handler = new ServletHandler();
         server.setHandler(handler);
 
-        // Passing in the class for the servlet allows jetty to instantite an instance of that servlet and mount it
-        // on a given context path.
+        // Passing in the class for the Servlet allows jetty to instantiate an
+        // instance of that Servlet and mount it on a given context path.
 
-        // !! This is a raw Servlet, not a servlet that has been configured through a web.xml or anything like that !!
+        // IMPORTANT:
+        // This is a raw Servlet, not a Servlet that has been configured
+        // through a web.xml @WebServlet annotation, or anything similar.
         handler.addServletWithMapping(HelloServlet.class, "/*");
 
-        // Start things up! By using the server.join() the server thread will join with the current thread.
-        // See "http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Thread.html#join()" for more details.
+        // Start things up!
         server.start();
+
+        // The use of server.join() the will make the current thread join and
+        // wait until the server is done executing.
+        // See
+        // http://docs.oracle.com/javase/7/docs/api/java/lang/Thread.html#join()
         server.join();
     }
 
@@ -58,11 +66,13 @@ public class MinimalServlets
     public static class HelloServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet( HttpServletRequest request,
+                              HttpServletResponse response ) throws ServletException,
+                                                            IOException
         {
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().println("<h1>Hello SimpleServlet</h1>");
+            response.getWriter().println("<h1>Hello from HelloServlet</h1>");
         }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -101,6 +101,16 @@ public enum HttpHeader
     WWW_AUTHENTICATE("WWW-Authenticate"),
 
     /* ------------------------------------------------------------ */
+    /** WebSocket Fields.
+     */
+    ORIGIN("Origin"),
+    SEC_WEBSOCKET_KEY("Sec-WebSocket-Key"),
+    SEC_WEBSOCKET_VERSION("Sec-WebSocket-Version"),
+    SEC_WEBSOCKET_EXTENSIONS("Sec-WebSocket-Extensions"),
+    SEC_WEBSOCKET_SUBPROTOCOL("Sec-WebSocket-Protocol"),
+    SEC_WEBSOCKET_ACCEPT("Sec-WebSocket-Accept"),
+
+    /* ------------------------------------------------------------ */
     /** Other Fields.
      */
     COOKIE("Cookie"),
@@ -110,17 +120,28 @@ public enum HttpHeader
     IDENTITY("identity"),
     
     X_POWERED_BY("X-Powered-By"),
+    HTTP2_SETTINGS("HTTP2-Settings"),
 
+    /* ------------------------------------------------------------ */
+    /** HTTP2 Fields.
+     */
+    C_METHOD(":method"),
+    C_SCHEME(":scheme"),
+    C_AUTHORITY(":authority"),
+    C_PATH(":path"),
+    C_STATUS(":status"),
+    
     UNKNOWN("::UNKNOWN::");
 
 
     /* ------------------------------------------------------------ */
-    public final static Trie<HttpHeader> CACHE= new ArrayTrie<>(512);
+    public final static Trie<HttpHeader> CACHE= new ArrayTrie<>(630);
     static
     {
         for (HttpHeader header : HttpHeader.values())
             if (header!=UNKNOWN)
-                CACHE.put(header.toString(),header);
+                if (!CACHE.put(header.toString(),header))
+                    throw new IllegalStateException();
     }
     
     private final String _string;

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <!-- =============================================================== -->
 <!-- Mixin the Start FileNoticeLifeCycleListener                     -->
@@ -8,7 +8,7 @@
   <Call name="addLifeCycleListener">
     <Arg>
       <New class="org.eclipse.jetty.util.component.FileNoticeLifeCycleListener">
-	<Arg><SystemProperty name="jetty.state" default="./jetty.state"/></Arg>
+        <Arg><Property name="jetty.state" default="./jetty.state"/></Arg>
       </New>
     </Arg>
   </Call>

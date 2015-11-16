@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -60,7 +60,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     /**
      * Instantiates a new thread monitor.
      *
-     * @throws Exception
+     * @throws Exception if unable to instantiate thread monitor
      */
     public ThreadMonitor() throws Exception
     {
@@ -72,7 +72,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      * Instantiates a new thread monitor.
      *
      * @param intervalMs scan interval
-     * @throws Exception
+     * @throws Exception if unable to instantiate thread monitor
      */
     public ThreadMonitor(int intervalMs) throws Exception
     {
@@ -85,7 +85,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      *
      * @param intervalMs scan interval
      * @param threshold busy threshold
-     * @throws Exception
+     * @throws Exception if unable to instantiate thread monitor
      */
     public ThreadMonitor(int intervalMs, int threshold) throws Exception
     {
@@ -99,7 +99,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      * @param intervalMs scan interval
      * @param threshold busy threshold
      * @param depth stack compare depth
-     * @throws Exception
+     * @throws Exception if unable to instantiate thread monitor
      */
     public ThreadMonitor(int intervalMs, int threshold, int depth) throws Exception
     {
@@ -114,7 +114,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      * @param threshold busy threshold
      * @param depth stack compare depth
      * @param trail length of stack trail
-     * @throws Exception
+     * @throws Exception if unable to instantiate thread monitor
      */
     public ThreadMonitor(int intervalMs, int threshold, int depth, int trail) throws Exception
     {

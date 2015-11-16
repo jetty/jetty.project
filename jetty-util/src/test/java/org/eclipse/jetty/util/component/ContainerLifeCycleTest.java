@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -108,16 +108,29 @@ public class ContainerLifeCycleTest
         Assert.assertEquals(1,destroyed.get());
 
         a0.addBean(a1);
+        Assert.assertEquals(2,started.get());
+        Assert.assertEquals(2,stopped.get());
+        Assert.assertEquals(1,destroyed.get());
+        Assert.assertFalse(a0.isManaged(a1));
         a0.start();
+        Assert.assertEquals(2,started.get());
+        Assert.assertEquals(2,stopped.get());
+        Assert.assertEquals(1,destroyed.get());
+        a1.start();
+        a0.manage(a1);
         Assert.assertEquals(3,started.get());
         Assert.assertEquals(2,stopped.get());
         Assert.assertEquals(1,destroyed.get());
 
         a0.removeBean(a1);
+        Assert.assertEquals(3,started.get());
+        Assert.assertEquals(3,stopped.get());
+        Assert.assertEquals(1,destroyed.get());
+        
         a0.stop();
         a0.destroy();
         Assert.assertEquals(3,started.get());
-        Assert.assertEquals(2,stopped.get());
+        Assert.assertEquals(3,stopped.get());
         Assert.assertEquals(1,destroyed.get());
 
         a1.stop();
@@ -285,16 +298,16 @@ public class ContainerLifeCycleTest
         dump=trim(a0.dump());
         dump=check(dump,"org.eclipse.jetty.util.component.ContainerLifeCycl");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
-        dump=check(dump," |   += org.eclipse.jetty.util.component.Container");
+        dump=check(dump," |   +~ org.eclipse.jetty.util.component.Container");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
         dump=check(dump,"");
 
         ContainerLifeCycle aa10 = new ContainerLifeCycle();
-        aa1.addBean(aa10);
+        aa1.addBean(aa10,true);
         dump=trim(a0.dump());
         dump=check(dump,"org.eclipse.jetty.util.component.ContainerLifeCycl");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
-        dump=check(dump," |   += org.eclipse.jetty.util.component.Container");
+        dump=check(dump," |   +~ org.eclipse.jetty.util.component.Container");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
         dump=check(dump,"     += org.eclipse.jetty.util.component.Container");
         dump=check(dump,"");
@@ -314,11 +327,11 @@ public class ContainerLifeCycleTest
                 dump(out,indent,TypeUtil.asList(new Object[]{a1,a2}),TypeUtil.asList(new Object[]{a3,a4}));
             }
         };
-        a0.addBean(aa);
+        a0.addBean(aa,true);
         dump=trim(a0.dump());
         dump=check(dump,"org.eclipse.jetty.util.component.ContainerLifeCycl");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
-        dump=check(dump," |   += org.eclipse.jetty.util.component.Container");
+        dump=check(dump," |   +~ org.eclipse.jetty.util.component.Container");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
         dump=check(dump," |   += org.eclipse.jetty.util.component.Container");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
@@ -332,14 +345,14 @@ public class ContainerLifeCycleTest
         dump=trim(a0.dump());
         dump=check(dump,"org.eclipse.jetty.util.component.ContainerLifeCycl");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
-        dump=check(dump," |   += org.eclipse.jetty.util.component.Container");
+        dump=check(dump," |   +~ org.eclipse.jetty.util.component.Container");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
         dump=check(dump," |   += org.eclipse.jetty.util.component.Container");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Container");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Container");
         dump=check(dump,"     |   += org.eclipse.jetty.util.component.Conta");
-        dump=check(dump,"     |       += org.eclipse.jetty.util.component.C");
+        dump=check(dump,"     |       +~ org.eclipse.jetty.util.component.C");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Container");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Container");
         dump=check(dump,"");
@@ -348,7 +361,7 @@ public class ContainerLifeCycleTest
         dump=trim(a0.dump());
         dump=check(dump,"org.eclipse.jetty.util.component.ContainerLifeCycl");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
-        dump=check(dump," |   += org.eclipse.jetty.util.component.Container");
+        dump=check(dump," |   +~ org.eclipse.jetty.util.component.Container");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
         dump=check(dump," |   += org.eclipse.jetty.util.component.Container");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
@@ -363,7 +376,7 @@ public class ContainerLifeCycleTest
         dump=trim(a0.dump());
         dump=check(dump,"org.eclipse.jetty.util.component.ContainerLifeCycl");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
-        dump=check(dump," |   += org.eclipse.jetty.util.component.Container");
+        dump=check(dump," |   +~ org.eclipse.jetty.util.component.Container");
         dump=check(dump," += org.eclipse.jetty.util.component.ContainerLife");
         dump=check(dump," |   += org.eclipse.jetty.util.component.Container");
         dump=check(dump," +~ org.eclipse.jetty.util.component.ContainerLife");
@@ -523,7 +536,10 @@ public class ContainerLifeCycleTest
         c0.addBean(c00);
         c0.start();
         c0.addBean(inherited);
+        c0.manage(inherited);
         c0.addBean(c01);
+        c01.start();
+        c0.manage(c01);
 
         Assert.assertTrue(c0.isManaged(inherited));
         Assert.assertFalse(c00.isManaged(inherited));

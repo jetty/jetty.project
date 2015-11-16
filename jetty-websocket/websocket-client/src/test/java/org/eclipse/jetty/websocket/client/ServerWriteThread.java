@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,32 +19,25 @@
 package org.eclipse.jetty.websocket.client;
 
 import java.io.IOException;
-import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 
 public class ServerWriteThread extends Thread
 {
     private static final Logger LOG = Log.getLogger(ServerWriteThread.class);
-    private final ServerConnection conn;
-    private Exchanger<String> exchanger;
+    private final IBlockheadServerConnection conn;
     private int slowness = -1;
     private int messageCount = 100;
     private String message = "Hello";
 
-    public ServerWriteThread(ServerConnection conn)
+    public ServerWriteThread(IBlockheadServerConnection conn)
     {
         this.conn = conn;
-    }
-
-    public Exchanger<String> getExchanger()
-    {
-        return exchanger;
     }
 
     public String getMessage()
@@ -73,12 +66,6 @@ public class ServerWriteThread extends Thread
             {
                 conn.write(new TextFrame().setPayload(message));
 
-                if (exchanger != null)
-                {
-                    // synchronized on exchange
-                    exchanger.exchange(message);
-                }
-
                 m.incrementAndGet();
 
                 if (slowness > 0)
@@ -91,11 +78,6 @@ public class ServerWriteThread extends Thread
         {
             LOG.warn(e);
         }
-    }
-
-    public void setExchanger(Exchanger<String> exchanger)
-    {
-        this.exchanger = exchanger;
     }
 
     public void setMessage(String message)

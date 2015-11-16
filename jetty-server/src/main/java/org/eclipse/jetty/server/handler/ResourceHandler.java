@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.FileResource;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -57,7 +57,6 @@ import org.eclipse.jetty.util.resource.Resource;
  * Requests for resources that do not exist are let pass (Eg no 404's).
  *
  *
- * @org.apache.xbean.XBean
  */
 public class ResourceHandler extends HandlerWrapper
 {
@@ -72,7 +71,7 @@ public class ResourceHandler extends HandlerWrapper
     String _cacheControl;
     boolean _directory;
     boolean _etags;
-    int _minMemoryMappedContentLength=-1;
+    int _minMemoryMappedContentLength=1024;
     int _minAsyncContentLength=0;
 
     /* ------------------------------------------------------------ */
@@ -240,26 +239,18 @@ public class ResourceHandler extends HandlerWrapper
      */
     public Resource getStylesheet()
     {
-    	if(_stylesheet != null)
-    	{
-    	    return _stylesheet;
-    	}
-    	else
-    	{
-    	    if(_defaultStylesheet == null)
-    	    {
-    	        try
-    	        {
-    	            _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
-    	        }
-    	        catch(IOException e)
-    	        {
-    	            LOG.warn(e.toString());
-    	            LOG.debug(e);
-    	        }
-    	    }
-    	    return _defaultStylesheet;
-    	}
+        if(_stylesheet != null)
+        {
+            return _stylesheet;
+        }
+        else
+        {
+            if(_defaultStylesheet == null)
+            {
+                _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
+            }
+            return _defaultStylesheet;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -277,12 +268,12 @@ public class ResourceHandler extends HandlerWrapper
                 _stylesheet = null;
             }
         }
-    	catch(Exception e)
-    	{
-    		LOG.warn(e.toString());
+        catch(Exception e)
+        {
+            LOG.warn(e.toString());
             LOG.debug(e);
             throw new IllegalArgumentException(stylesheet);
-    	}
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -311,20 +302,28 @@ public class ResourceHandler extends HandlerWrapper
         if (path==null || !path.startsWith("/"))
             throw new MalformedURLException(path);
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} getResource({})",_context==null?_baseResource:_context,_baseResource,path);
+        
         Resource base = _baseResource;
         if (base==null)
         {
             if (_context==null)
                 return null;
-            base=_context.getBaseResource();
-            if (base==null)
-                return null;
+            return _context.getResource(path);
         }
 
         try
         {
             path=URIUtil.canonicalPath(path);
-            return base.addPath(path);
+            Resource r = base.addPath(path);
+            if (r!=null && r.isAlias() && (_context==null || !_context.checkAlias(path, r)))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("resource={} alias={}",r,r.getAlias());
+                return null;
+            }
+            return r;
         }
         catch(Exception e)
         {
@@ -411,6 +410,16 @@ public class ResourceHandler extends HandlerWrapper
         }
 
         Resource resource = getResource(request);
+        
+        if (LOG.isDebugEnabled())
+        { 
+            if (resource==null)
+                LOG.debug("resource=null");
+            else
+                LOG.debug("resource={} alias={} exists={}",resource,resource.getAlias(),resource.exists());
+        }
+        
+        
         // If resource is not found
         if (resource==null || !resource.exists())
         {
@@ -436,7 +445,9 @@ public class ResourceHandler extends HandlerWrapper
         // handle directories
         if (resource.isDirectory())
         {
-            if (!request.getPathInfo().endsWith(URIUtil.SLASH))
+            String pathInfo = request.getPathInfo();
+            boolean endsWithSlash=(pathInfo==null?request.getServletPath():pathInfo).endsWith(URIUtil.SLASH);
+            if (!endsWithSlash)
             {
                 response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH)));
                 return;
@@ -487,10 +498,11 @@ public class ResourceHandler extends HandlerWrapper
         doResponseHeaders(response,resource,mime);
         if (_etags)
             baseRequest.getResponse().getHttpFields().put(HttpHeader.ETAG,etag);
+        if (last_modified>0)
+            response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(),last_modified);
         
         if(skipContentBody)
             return;
-        
         
         // Send the content
         OutputStream out =null;
@@ -511,6 +523,7 @@ public class ResourceHandler extends HandlerWrapper
                 resource.length()>=min_async_size)
             {
                 final AsyncContext async = request.startAsync();
+                async.setTimeout(0);
                 Callback callback = new Callback()
                 {
                     @Override
@@ -531,7 +544,8 @@ public class ResourceHandler extends HandlerWrapper
                 // Can we use a memory mapped file?
                 if (_minMemoryMappedContentLength>0 && 
                     resource.length()>_minMemoryMappedContentLength &&
-                    resource instanceof FileResource)
+                    resource.length()<Integer.MAX_VALUE &&
+                    resource instanceof PathResource)
                 {
                     ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());
                     ((HttpOutput)out).sendContent(buffer,callback);
@@ -551,7 +565,7 @@ public class ResourceHandler extends HandlerWrapper
                 // Can we use a memory mapped file?
                 if (_minMemoryMappedContentLength>0 && 
                     resource.length()>_minMemoryMappedContentLength &&
-                    resource instanceof FileResource)
+                    resource instanceof PathResource)
                 {
                     ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());
                     ((HttpOutput)out).sendContent(buffer);
@@ -575,7 +589,7 @@ public class ResourceHandler extends HandlerWrapper
         if (_directory)
         {
             String listing = resource.getListHTML(request.getRequestURI(),request.getPathInfo().lastIndexOf("/") > 0);
-            response.setContentType("text/html; charset=UTF-8");
+            response.setContentType("text/html;charset=utf-8");
             response.getWriter().println(listing);
         }
         else
@@ -586,9 +600,9 @@ public class ResourceHandler extends HandlerWrapper
     /** Set the response headers.
      * This method is called to set the response headers such as content type and content length.
      * May be extended to add additional headers.
-     * @param response
-     * @param resource
-     * @param mimeType
+     * @param response the http response
+     * @param resource the resource
+     * @param mimeType the mime type
      */
     protected void doResponseHeaders(HttpServletResponse response, Resource resource, String mimeType)
     {

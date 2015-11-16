@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,20 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.start.config.ConfigSources;
+import org.eclipse.jetty.start.config.JettyBaseConfigSource;
+import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Assert;
@@ -32,49 +39,92 @@ import org.junit.Test;
 
 public class BaseHomeTest
 {
-    private void assertFileList(BaseHome hb, String message, List<String> expected, List<File> files)
+    public static void assertPathList(BaseHome hb, String message, List<String> expected, PathFinder finder)
+    {
+        List<String> actual = new ArrayList<>();
+        for (Path path : finder.getHits())
+        {
+            actual.add(hb.toShortForm(path.toFile()));
+        }
+
+        if (actual.size() != expected.size())
+        {
+            System.out.printf("Actual Path(s): %,d hits%n",actual.size());
+            for (String path : actual)
+            {
+                System.out.printf(" %s%n",path);
+            }
+            System.out.printf("Expected Path(s): %,d entries%n",expected.size());
+            for (String path : expected)
+            {
+                System.out.printf(" %s%n",path);
+            }
+        }
+        Assert.assertThat(message + ": " + Utils.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
+    }
+    
+    public static void assertPathList(BaseHome hb, String message, List<String> expected, List<Path> paths)
+    {
+        List<String> actual = new ArrayList<>();
+        for (Path path : paths)
+        {
+            actual.add(hb.toShortForm(path.toFile()));
+        }
+
+        if (actual.size() != expected.size())
+        {
+            System.out.printf("Actual Path(s): %,d hits%n",actual.size());
+            for (String path : actual)
+            {
+                System.out.printf(" %s%n",path);
+            }
+            System.out.printf("Expected Path(s): %,d entries%n",expected.size());
+            for (String path : expected)
+            {
+                System.out.printf(" %s%n",path);
+            }
+        }
+        Assert.assertThat(message + ": " + Utils.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
+    }
+
+    public static void assertFileList(BaseHome hb, String message, List<String> expected, List<File> files)
     {
         List<String> actual = new ArrayList<>();
         for (File file : files)
         {
             actual.add(hb.toShortForm(file));
         }
-        Assert.assertThat(message + ": " + Main.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
-    }
-
-    private void toOsSeparators(List<String> expected)
-    {
-        for (int i = 0; i < expected.size(); i++)
-        {
-            String fixed = FS.separators(expected.get(i));
-            expected.set(i,fixed);
-        }
+        Assert.assertThat(message + ": " + Utils.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
     }
 
     @Test
-    public void testGetFile_OnlyHome() throws IOException
+    public void testGetPath_OnlyHome() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
-        File baseDir = null;
+        
+        ConfigSources config = new ConfigSources();
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
 
-        BaseHome hb = new BaseHome(homeDir,baseDir);
-        File startIni = hb.getFile("/start.ini");
+        BaseHome hb = new BaseHome(config);
+        Path startIni = hb.getPath("start.ini");
 
         String ref = hb.toShortForm(startIni);
         Assert.assertThat("Reference",ref,startsWith("${jetty.home}"));
 
-        String contents = IO.readToString(startIni);
+        String contents = IO.readToString(startIni.toFile());
         Assert.assertThat("Contents",contents,containsString("Home Ini"));
     }
 
     @Test
-    public void testListFiles_OnlyHome() throws IOException
+    public void testGetPaths_OnlyHome() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
-        File baseDir = null;
 
-        BaseHome hb = new BaseHome(homeDir,baseDir);
-        List<File> files = hb.listFiles("/start.d");
+        ConfigSources config = new ConfigSources();
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+
+        BaseHome hb = new BaseHome(config);
+        List<Path> paths = hb.getPaths("start.d/*");
 
         List<String> expected = new ArrayList<>();
         expected.add("${jetty.home}/start.d/jmx.ini");
@@ -82,19 +132,21 @@ public class BaseHomeTest
         expected.add("${jetty.home}/start.d/jsp.ini");
         expected.add("${jetty.home}/start.d/logging.ini");
         expected.add("${jetty.home}/start.d/ssl.ini");
-        toOsSeparators(expected);
+        FSTest.toOsSeparators(expected);
 
-        assertFileList(hb,"Files found",expected,files);
+        assertPathList(hb,"Paths found",expected,paths);
     }
 
     @Test
-    public void testListFiles_Filtered_OnlyHome() throws IOException
+    public void testGetPaths_OnlyHome_InisOnly() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
-        File baseDir = null;
 
-        BaseHome hb = new BaseHome(homeDir,baseDir);
-        List<File> files = hb.listFiles("/start.d",new FS.IniFilter());
+        ConfigSources config = new ConfigSources();
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+
+        BaseHome hb = new BaseHome(config);
+        List<Path> paths = hb.getPaths("start.d/*.ini");
 
         List<String> expected = new ArrayList<>();
         expected.add("${jetty.home}/start.d/jmx.ini");
@@ -102,19 +154,23 @@ public class BaseHomeTest
         expected.add("${jetty.home}/start.d/jsp.ini");
         expected.add("${jetty.home}/start.d/logging.ini");
         expected.add("${jetty.home}/start.d/ssl.ini");
-        toOsSeparators(expected);
+        FSTest.toOsSeparators(expected);
 
-        assertFileList(hb,"Files found",expected,files);
+        assertPathList(hb,"Paths found",expected,paths);
     }
 
     @Test
-    public void testListFiles_Both() throws IOException
+    public void testGetPaths_Both() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = MavenTestingUtils.getTestResourceDir("hb.1/base");
 
-        BaseHome hb = new BaseHome(homeDir,baseDir);
-        List<File> files = hb.listFiles("/start.d");
+        ConfigSources config = new ConfigSources();
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+
+        BaseHome hb = new BaseHome(config);
+        List<Path> paths = hb.getPaths("start.d/*.ini");
 
         List<String> expected = new ArrayList<>();
         expected.add("${jetty.base}/start.d/jmx.ini");
@@ -123,9 +179,9 @@ public class BaseHomeTest
         expected.add("${jetty.base}/start.d/logging.ini");
         expected.add("${jetty.home}/start.d/ssl.ini");
         expected.add("${jetty.base}/start.d/myapp.ini");
-        toOsSeparators(expected);
+        FSTest.toOsSeparators(expected);
 
-        assertFileList(hb,"Files found",expected,files);
+        assertPathList(hb,"Paths found",expected,paths);
     }
 
     @Test
@@ -137,18 +193,22 @@ public class BaseHomeTest
     }
 
     @Test
-    public void testGetFile_Both() throws IOException
+    public void testGetPath_Both() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = MavenTestingUtils.getTestResourceDir("hb.1/base");
 
-        BaseHome hb = new BaseHome(homeDir,baseDir);
-        File startIni = hb.getFile("/start.ini");
+        ConfigSources config = new ConfigSources();
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+
+        BaseHome hb = new BaseHome(config);
+        Path startIni = hb.getPath("start.ini");
 
         String ref = hb.toShortForm(startIni);
         Assert.assertThat("Reference",ref,startsWith("${jetty.base}"));
 
-        String contents = IO.readToString(startIni);
+        String contents = IO.readToString(startIni.toFile());
         Assert.assertThat("Contents",contents,containsString("Base Ini"));
     }
 }

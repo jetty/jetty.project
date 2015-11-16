@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,19 +18,18 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-
-import static org.hamcrest.Matchers.containsString;
 
 public class WebSocketRemoteEndpointTest
 {
@@ -38,7 +37,7 @@ public class WebSocketRemoteEndpointTest
     public TestName testname = new TestName();
 
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("WebSocketRemoteEndpoint");
 
     @Test
     public void testTextBinaryText() throws IOException

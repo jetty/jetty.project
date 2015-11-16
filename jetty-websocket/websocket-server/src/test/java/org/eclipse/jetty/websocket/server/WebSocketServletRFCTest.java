@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -41,10 +42,10 @@ import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -81,6 +82,7 @@ public class WebSocketServletRFCTest
 
     /**
      * Test that aggregation of binary frames into a single message occurs
+     * @throws Exception on test failure
      */
     @Test
     public void testBinaryAggregate() throws Exception
@@ -116,8 +118,8 @@ public class WebSocketServletRFCTest
             client.write(bin); // write buf3 (fin=true)
 
             // Read frame echo'd back (hopefully a single binary frame)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
-            Frame binmsg = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1000,TimeUnit.MILLISECONDS);
+            Frame binmsg = frames.poll();
             int expectedSize = buf1.length + buf2.length + buf3.length;
             Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
 
@@ -166,6 +168,7 @@ public class WebSocketServletRFCTest
 
     /**
      * Test the requirement of issuing socket and receiving echo response
+     * @throws Exception on test failure
      */
     @Test
     public void testEcho() throws Exception
@@ -182,8 +185,8 @@ public class WebSocketServletRFCTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            WebSocketFrame tf = frames.poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
@@ -195,6 +198,7 @@ public class WebSocketServletRFCTest
     /**
      * Test the requirement of responding with server terminated close code 1011 when there is an unhandled (internal server error) being produced by the
      * WebSocket POJO.
+     * @throws Exception on test failure
      */
     @Test
     public void testInternalError() throws Exception
@@ -215,8 +219,8 @@ public class WebSocketServletRFCTest
                 client.write(new TextFrame().setPayload("CRASH"));
 
                 // Read frame (hopefully close frame)
-                IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-                Frame cf = capture.getFrames().poll();
+                EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+                Frame cf = frames.poll();
                 CloseInfo close = new CloseInfo(cf);
                 Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
             }
@@ -233,6 +237,7 @@ public class WebSocketServletRFCTest
      * Test http://tools.ietf.org/html/rfc6455#section-4.1 where server side upgrade handling is supposed to be case insensitive.
      * <p>
      * This test will simulate a client requesting upgrade with all lowercase headers.
+     * @throws Exception on test failure
      */
     @Test
     public void testLowercaseUpgrade() throws Exception
@@ -261,8 +266,8 @@ public class WebSocketServletRFCTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            WebSocketFrame tf = frames.poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
@@ -294,8 +299,8 @@ public class WebSocketServletRFCTest
             client.writeRaw(bbHeader);
             client.writeRaw(txt.getPayload());
 
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.BAD_PAYLOAD));
@@ -312,6 +317,7 @@ public class WebSocketServletRFCTest
      * Test http://tools.ietf.org/html/rfc6455#section-4.1 where server side upgrade handling is supposed to be case insensitive.
      * <p>
      * This test will simulate a client requesting upgrade with all uppercase headers.
+     * @throws Exception on test failure
      */
     @Test
     public void testUppercaseUpgrade() throws Exception
@@ -340,8 +346,8 @@ public class WebSocketServletRFCTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            WebSocketFrame tf = frames.poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 
 public class ByteAccumulator
 {
-    private final List<Chunk> chunks = new ArrayList<>();
+    private final List<byte[]> chunks = new ArrayList<>();
     private final int maxSize;
     private int length = 0;
 
@@ -36,16 +36,20 @@ public class ByteAccumulator
         this.maxSize = maxOverallBufferSize;
     }
 
-    public void addChunk(byte buf[], int offset, int length)
+    public void copyChunk(byte buf[], int offset, int length)
     {
         if (this.length + length > maxSize)
         {
             throw new MessageTooLargeException("Frame is too large");
         }
-        chunks.add(new Chunk(buf, offset, length));
+
+        byte copy[] = new byte[length - offset];
+        System.arraycopy(buf,offset,copy,0,length);
+
+        chunks.add(copy);
         this.length += length;
     }
-
+    
     public int getLength()
     {
         return length;
@@ -54,26 +58,16 @@ public class ByteAccumulator
     public void transferTo(ByteBuffer buffer)
     {
         if (buffer.remaining() < length)
-            throw new IllegalArgumentException();
+        {
+            throw new IllegalArgumentException(String.format("Not enough space in ByteBuffer remaining [%d] for accumulated buffers length [%d]",
+                    buffer.remaining(),length));
+        }
+
         int position = buffer.position();
-        for (Chunk chunk : chunks)
+        for (byte[] chunk : chunks)
         {
-            buffer.put(chunk.buffer, chunk.offset, chunk.length);
+            buffer.put(chunk,0,chunk.length);
         }
-        BufferUtil.flipToFlush(buffer, position);
-    }
-
-    private static class Chunk
-    {
-        private final byte[] buffer;
-        private final int offset;
-        private final int length;
-
-        private Chunk(byte[] buffer, int offset, int length)
-        {
-            this.buffer = buffer;
-            this.offset = offset;
-            this.length = length;
-        }
+        BufferUtil.flipToFlush(buffer,position);
     }
 }

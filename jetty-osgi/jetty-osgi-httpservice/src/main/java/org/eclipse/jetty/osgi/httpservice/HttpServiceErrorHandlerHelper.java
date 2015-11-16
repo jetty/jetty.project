@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,16 +30,16 @@ import javax.servlet.http.HttpServlet;
  */
 public class HttpServiceErrorHandlerHelper
 {
-	private static HttpServlet _customErrorHandler;
+        private static HttpServlet _customErrorHandler;
 
-	public static HttpServlet getCustomErrorHandler()
-	{
-		return _customErrorHandler;
-	}
-	
-	public static void setHttpServiceErrorHandler(HttpServlet servlet)
-	{
-		_customErrorHandler = servlet;
-	}
-	
+        public static HttpServlet getCustomErrorHandler()
+        {
+                return _customErrorHandler;
+        }
+        
+        public static void setHttpServiceErrorHandler(HttpServlet servlet)
+        {
+                _customErrorHandler = servlet;
+        }
+        
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
+  <Call name="addHandler">
+    <Arg>
+      <New class="org.eclipse.jetty.webapp.WebAppContext">
+        <Set name="contextPath">/jolokia</Set>
+        <Set name="war"><Property name="jetty.base" default="."/>/lib/jolokia/jolokia.war</Set>
+        <Set name="extractWAR">true</Set>
+        <Set name="copyWebDir">false</Set>
+        <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

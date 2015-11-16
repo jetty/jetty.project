@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,18 +18,10 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.options;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -37,15 +29,23 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.junit.Configuration;
-import org.ops4j.pax.exam.junit.JUnit4TestRunner;
+import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * TestJettyOSGiBootContextAsService
@@ -55,12 +55,11 @@ import org.osgi.framework.ServiceReference;
  * Tests the ServiceContextProvider.
  * 
  */
-@RunWith(JUnit4TestRunner.class)
+@RunWith(PaxExam.class)
 public class TestJettyOSGiBootContextAsService
 {
-    private static final boolean LOGGING_ENABLED = false;
+    private static final String LOG_LEVEL = "WARN";
 
-    private static final boolean REMOTE_DEBUGGING = false;
 
     @Inject
     BundleContext bundleContext = null;
@@ -69,9 +68,8 @@ public class TestJettyOSGiBootContextAsService
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<Option>();
-        TestOSGiUtil.addMoreOSGiContainers(options);
         options.add(CoreOptions.junitBundles());
-        options.addAll(configureJettyHomeAndPort("jetty-selector.xml"));
+        options.addAll(configureJettyHomeAndPort("jetty-http.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
 
@@ -79,22 +77,10 @@ public class TestJettyOSGiBootContextAsService
         // to pick up and deploy
         options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-context").versionAsInProject().start());
 
-        String logLevel = "WARN";
-        // Enable Logging
-        if (LOGGING_ENABLED)
-            logLevel = "INFO";
+        options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
+        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
         
-
-        options.addAll(Arrays.asList(options(
-                                             // install log service using pax runners profile abstraction (there
-                                             // are more profiles, like DS)
-                                             // logProfile(),
-                                             // this is how you set the default log level when using pax logging
-                                             // (logProfile)
-                                             systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(logLevel),
-                                             systemProperty("org.eclipse.jetty.LEVEL").value(logLevel))));
-
-
         return options.toArray(new Option[options.size()]);
     }
 
@@ -112,11 +98,13 @@ public class TestJettyOSGiBootContextAsService
                 + "/jetty-deployer.xml;"
                 + etc
                 + "/jetty-testrealm.xml"));
-        options.add(systemProperty("jetty.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT)));
+        options.add(systemProperty("jetty.http.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
+        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_SSL_PORT)));
         options.add(systemProperty("jetty.home").value(etcFolder.getParentFile().getAbsolutePath()));
         return options;
     }
 
+    @Ignore
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
@@ -134,7 +122,7 @@ public class TestJettyOSGiBootContextAsService
         try
         {
             client.start();
-            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT + "/acme/index.html");
+            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_HTTP_PORT + "/acme/index.html");
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = new String(response.getContent());
@@ -148,14 +136,6 @@ public class TestJettyOSGiBootContextAsService
         ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
         assertNotNull(refs);
         assertEquals(1, refs.length);
-        //uncomment for debugging
-       /*  
-       String[] keys = refs[0].getPropertyKeys();
-        if (keys != null)
-        {
-            for (String k : keys)
-                System.err.println("service property: " + k + ", " + refs[0].getProperty(k));
-        }*/
         ContextHandler ch = (ContextHandler) bundleContext.getService(refs[0]);
         assertEquals("/acme", ch.getContextPath());
 

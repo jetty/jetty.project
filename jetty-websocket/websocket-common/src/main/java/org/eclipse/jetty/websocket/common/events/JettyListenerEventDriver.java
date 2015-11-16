@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,12 +25,19 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
+import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
+import org.eclipse.jetty.websocket.api.WebSocketPingPongListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.Frame.Type;
 import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.frames.ReadOnlyDelegatedFrame;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
 import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
+import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
 
 /**
  * Handler for {@link WebSocketListener} based User WebSocket implementations.
@@ -38,10 +45,11 @@ import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
 public class JettyListenerEventDriver extends AbstractEventDriver
 {
     private static final Logger LOG = Log.getLogger(JettyListenerEventDriver.class);
-    private final WebSocketListener listener;
+    private final WebSocketConnectionListener listener;
+    private Utf8PartialBuilder utf8Partial;
     private boolean hasCloseBeenCalled = false;
 
-    public JettyListenerEventDriver(WebSocketPolicy policy, WebSocketListener listener)
+    public JettyListenerEventDriver(WebSocketPolicy policy, WebSocketConnectionListener listener)
     {
         super(policy,listener);
         this.listener = listener;
@@ -50,18 +58,29 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     @Override
     public void onBinaryFrame(ByteBuffer buffer, boolean fin) throws IOException
     {
-        if (activeMessage == null)
+        if (listener instanceof WebSocketListener)
         {
-            activeMessage = new SimpleBinaryMessage(this);
+            if (activeMessage == null)
+            {
+                activeMessage = new SimpleBinaryMessage(this);
+            }
+
+            appendMessage(buffer,fin);
         }
 
-        appendMessage(buffer,fin);
+        if (listener instanceof WebSocketPartialListener)
+        {
+            ((WebSocketPartialListener)listener).onWebSocketPartialBinary(buffer.slice().asReadOnlyBuffer(),fin);
+        }
     }
 
     @Override
     public void onBinaryMessage(byte[] data)
     {
-        listener.onWebSocketBinary(data,0,data.length);
+        if (listener instanceof WebSocketListener)
+        {
+            ((WebSocketListener)listener).onWebSocketBinary(data,0,data.length);
+        }
     }
 
     @Override
@@ -82,7 +101,8 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     @Override
     public void onConnect()
     {
-        LOG.debug("onConnect()");
+        if (LOG.isDebugEnabled())
+            LOG.debug("onConnect()");
         listener.onWebSocketConnect(session);
     }
 
@@ -95,7 +115,22 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     @Override
     public void onFrame(Frame frame)
     {
-        /* ignore, not supported by WebSocketListener */
+        if (listener instanceof WebSocketFrameListener)
+        {
+            ((WebSocketFrameListener)listener).onWebSocketFrame(new ReadOnlyDelegatedFrame(frame));
+        }
+
+        if (listener instanceof WebSocketPingPongListener)
+        {
+            if (frame.getType() == Type.PING)
+            {
+                ((WebSocketPingPongListener)listener).onWebSocketPing(frame.getPayload().asReadOnlyBuffer());
+            }
+            else if (frame.getType() == Type.PONG)
+            {
+                ((WebSocketPingPongListener)listener).onWebSocketPong(frame.getPayload().asReadOnlyBuffer());
+            }
+        }
     }
 
     @Override
@@ -113,18 +148,46 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     @Override
     public void onTextFrame(ByteBuffer buffer, boolean fin) throws IOException
     {
-        if (activeMessage == null)
+        if (listener instanceof WebSocketListener)
         {
-            activeMessage = new SimpleTextMessage(this);
+            if (activeMessage == null)
+            {
+                activeMessage = new SimpleTextMessage(this);
+            }
+
+            appendMessage(buffer,fin);
         }
 
-        appendMessage(buffer,fin);
+        if (listener instanceof WebSocketPartialListener)
+        {
+            if (utf8Partial == null)
+            {
+                utf8Partial = new Utf8PartialBuilder();
+            }
+            
+            String partial = utf8Partial.toPartialString(buffer);
+            
+            ((WebSocketPartialListener)listener).onWebSocketPartialText(partial,fin);
+            
+            if (fin)
+            {
+                partial = null;
+            }
+        }
     }
 
+    /**
+     * Whole Message event.
+     * 
+     * @param message the whole message
+     */
     @Override
     public void onTextMessage(String message)
     {
-        listener.onWebSocketText(message);
+        if (listener instanceof WebSocketListener)
+        {
+            ((WebSocketListener)listener).onWebSocketText(message);
+        }
     }
 
     @Override

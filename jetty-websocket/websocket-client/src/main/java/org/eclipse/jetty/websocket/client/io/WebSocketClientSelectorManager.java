@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.client.io;
 
 import java.io.IOException;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
@@ -28,8 +29,10 @@ import javax.net.ssl.SSLEngine;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -52,9 +55,10 @@ public class WebSocketClientSelectorManager extends SelectorManager
     }
 
     @Override
-    protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
+    protected void connectionFailed(SelectableChannel channel, Throwable ex, Object attachment)
     {
-        LOG.debug("Connection Failed",ex);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Connection Failed",ex);
         ConnectPromise connect = (ConnectPromise)attachment;
         connect.failed(ex);
     }
@@ -65,9 +69,10 @@ public class WebSocketClientSelectorManager extends SelectorManager
     }
 
     @Override
-    public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment) throws IOException
+    public Connection newConnection(final SelectableChannel channel, EndPoint endPoint, final Object attachment) throws IOException
     {
-        LOG.debug("newConnection({},{},{})",channel,endPoint,attachment);
+        if (LOG.isDebugEnabled())
+            LOG.debug("newConnection({},{},{})",channel,endPoint,attachment);
         ConnectPromise connectPromise = (ConnectPromise)attachment;
 
         try
@@ -98,7 +103,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
             else
             {
                 // Standard "ws://"
-                endPoint.setIdleTimeout(connectPromise.getClient().getMaxIdleTimeout());
+                endPoint.setIdleTimeout(connectPromise.getDriver().getPolicy().getIdleTimeout());
                 return newUpgradeConnection(channel,endPoint,connectPromise);
             }
         }
@@ -111,23 +116,33 @@ public class WebSocketClientSelectorManager extends SelectorManager
         }
     }
 
+
     @Override
-    protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+    protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
     {
-        LOG.debug("newEndPoint({}, {}, {})",channel,selectSet,selectionKey);
-        return new SelectChannelEndPoint(channel,selectSet,selectionKey,getScheduler(),policy.getIdleTimeout());
+        if (LOG.isDebugEnabled())
+            LOG.debug("newEndPoint({}, {}, {})",channel,selector,selectionKey);
+        SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
+        endp.setIdleTimeout(policy.getIdleTimeout());
+        return endp;
     }
 
-    public SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
+    public SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SelectableChannel channel)
     {
-        String peerHost = channel.socket().getInetAddress().getHostName();
-        int peerPort = channel.socket().getPort();
+        String peerHost = null;
+        int peerPort = 0;
+        if (channel instanceof SocketChannel)
+        {
+            SocketChannel sc = (SocketChannel)channel;
+            peerHost = sc.socket().getInetAddress().getHostName();
+            peerPort = sc.socket().getPort();
+        }
         SSLEngine engine = sslContextFactory.newSSLEngine(peerHost,peerPort);
         engine.setUseClientMode(true);
         return engine;
     }
 
-    public UpgradeConnection newUpgradeConnection(SocketChannel channel, EndPoint endPoint, ConnectPromise connectPromise)
+    public UpgradeConnection newUpgradeConnection(SelectableChannel channel, EndPoint endPoint, ConnectPromise connectPromise)
     {
         WebSocketClient client = connectPromise.getClient();
         Executor executor = client.getExecutor();
@@ -138,5 +153,10 @@ public class WebSocketClientSelectorManager extends SelectorManager
     public void setSslContextFactory(SslContextFactory sslContextFactory)
     {
         this.sslContextFactory = sslContextFactory;
+    }
+    
+    public WebSocketPolicy getPolicy()
+    {
+        return policy;
     }
 }

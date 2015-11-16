@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,7 +51,6 @@ public class OverlayServer
                     org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
                     org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
                     org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName(),
-                    org.eclipse.jetty.webapp.TagLibConfiguration.class.getCanonicalName()
                 }
         );
         
@@ -87,7 +86,7 @@ public class OverlayServer
         server.setStopAtShutdown(true);
         //server.setSendServerVersion(true);
         
-	// Uncomment to work with JNDI examples
+        // Uncomment to work with JNDI examples
         // new org.eclipse.jetty.plus.jndi.Transaction(new com.atomikos.icatch.jta.UserTransactionImp());
         
 

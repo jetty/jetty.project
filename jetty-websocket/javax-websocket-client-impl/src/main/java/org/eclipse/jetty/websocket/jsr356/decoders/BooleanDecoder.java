@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,7 @@ import javax.websocket.Decoder;
 
 
 /**
- * Default implementation of the {@link Text} Message to {@link Boolean} decoder.
+ * Default implementation of the {@link javax.websocket.Decoder.Text} Message to {@link Boolean} decoder.
  * <p>
  * Note: delegates to {@link Boolean#parseBoolean(String)} and will only support "true" and "false" as boolean values.
  */

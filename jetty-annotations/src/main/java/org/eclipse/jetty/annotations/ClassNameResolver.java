@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,7 @@ public interface ClassNameResolver
     /**
      * Based on the execution context, should the class represented
      * by "name" be excluded from consideration?
-     * @param name
+     * @param name the name to test
      * @return true if classname is excluded
      */
     public boolean isExcluded (String name);
@@ -35,7 +35,7 @@ public interface ClassNameResolver
      * Based on the execution context, if a duplicate class 
      * represented by "name" is detected, should the existing
      * one be overridden or not?
-     * @param name
+     * @param name the name to test
      * @return true if name should be overridden
      */
     public boolean shouldOverride (String name);

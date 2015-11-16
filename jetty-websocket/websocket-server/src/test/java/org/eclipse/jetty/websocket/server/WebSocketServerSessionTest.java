@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,17 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.SessionServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -34,10 +36,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static org.hamcrest.Matchers.is;
-
 /**
- * Testing various aspects of the server side support for WebSocket {@link Session}
+ * Testing various aspects of the server side support for WebSocket {@link org.eclipse.jetty.websocket.api.Session}
  */
 @RunWith(AdvancedRunner.class)
 public class WebSocketServerSessionTest
@@ -61,7 +61,7 @@ public class WebSocketServerSessionTest
     public void testDisconnect() throws Exception
     {
         URI uri = server.getServerUri().resolve("/test/disconnect");
-        try (BlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new BlockheadClient(uri))
         {
             client.connect();
             client.sendStandardRequest();
@@ -77,7 +77,7 @@ public class WebSocketServerSessionTest
     public void testUpgradeRequestResponse() throws Exception
     {
         URI uri = server.getServerUri().resolve("/test?snack=cashews&amount=handful&brand=off");
-        try (BlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new BlockheadClient(uri))
         {
             client.connect();
             client.sendStandardRequest();
@@ -90,8 +90,7 @@ public class WebSocketServerSessionTest
             client.write(new TextFrame().setPayload("getParameterMap|cost")); // intentionally invalid
 
             // Read frame (hopefully text frame)
-            IncomingFramesCapture capture = client.readFrames(4, TimeUnit.SECONDS, 5);
-            Queue<WebSocketFrame> frames = capture.getFrames();
+            EventQueue<WebSocketFrame> frames = client.readFrames(4,5,TimeUnit.SECONDS);
             WebSocketFrame tf = frames.poll();
             Assert.assertThat("Parameter Map[snack]", tf.getPayloadAsUTF8(), is("[cashews]"));
             tf = frames.poll();

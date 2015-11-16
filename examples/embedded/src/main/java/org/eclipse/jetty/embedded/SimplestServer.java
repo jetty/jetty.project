@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,15 +20,16 @@ package org.eclipse.jetty.embedded;
 
 import org.eclipse.jetty.server.Server;
 
-/* ------------------------------------------------------------ */
-/** The simplest possible Jetty server.
+/**
+ * The simplest possible Jetty server.
  */
 public class SimplestServer
 {
-    public static void main(String[] args) throws Exception
+    public static void main( String[] args ) throws Exception
     {
         Server server = new Server(8080);
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 }

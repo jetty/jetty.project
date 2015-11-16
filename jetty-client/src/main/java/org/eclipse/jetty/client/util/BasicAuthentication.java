@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.B64Code;
 
 /**
  * Implementation of the HTTP "Basic" authentication defined in RFC 2617.
- * <p />
+ * <p>
  * Applications should create objects of this class and add them to the
  * {@link AuthenticationStore} retrieved from the {@link HttpClient}
  * via {@link HttpClient#getAuthenticationStore()}.

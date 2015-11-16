@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,7 +34,10 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidCloseIntSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidErrorErrorSocket;
@@ -94,7 +97,8 @@ public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
     @Test
     public void testScan_InvalidSignature() throws DeploymentException
     {
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(pojo,null);
+        WebSocketContainerScope container = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,pojo,null);
         AnnotatedEndpointScanner<ServerEndpoint,ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
 
         try
@@ -104,7 +108,8 @@ public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
         }
         catch (InvalidSignatureException e)
         {
-            LOG.debug("{}:{}",e.getClass(),e.getMessage());
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}:{}",e.getClass(),e.getMessage());
             Assert.assertThat("Message",e.getMessage(),containsString(expectedAnnoClass.getSimpleName()));
         }
     }

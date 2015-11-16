@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,28 +22,14 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.AttributesMap;
 
 public class HttpConversation extends AttributesMap
 {
-    private static final AtomicLong ids = new AtomicLong();
-
     private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
-    private final long id;
     private volatile List<Response.ResponseListener> listeners;
-
-    protected HttpConversation()
-    {
-        this.id = ids.incrementAndGet();
-    }
-
-    public long getID()
-    {
-        return id;
-    }
 
     public Deque<HttpExchange> getExchanges()
     {
@@ -55,42 +41,42 @@ public class HttpConversation extends AttributesMap
      * This list changes as the conversation proceeds, as follows:
      * <ol>
      * <li>
-     *     request R1 send => conversation.updateResponseListeners(null)
+     *     request R1 send =&gt; conversation.updateResponseListeners(null)
      *     <ul>
      *         <li>exchanges in conversation: E1</li>
      *         <li>listeners to be notified: E1.listeners</li>
      *     </ul>
      * </li>
      * <li>
-     *     response R1 arrived, 401 => conversation.updateResponseListeners(AuthenticationProtocolHandler.listener)
+     *     response R1 arrived, 401 =&gt; conversation.updateResponseListeners(AuthenticationProtocolHandler.listener)
      *     <ul>
      *         <li>exchanges in conversation: E1</li>
      *         <li>listeners to be notified: AuthenticationProtocolHandler.listener</li>
      *     </ul>
      * </li>
      * <li>
-     *     request R2 send => conversation.updateResponseListeners(null)
+     *     request R2 send =&gt; conversation.updateResponseListeners(null)
      *     <ul>
      *         <li>exchanges in conversation: E1 + E2</li>
      *         <li>listeners to be notified: E2.listeners + E1.listeners</li>
      *     </ul>
      * </li>
      * <li>
-     *     response R2 arrived, 302 => conversation.updateResponseListeners(RedirectProtocolHandler.listener)
+     *     response R2 arrived, 302 =&gt; conversation.updateResponseListeners(RedirectProtocolHandler.listener)
      *     <ul>
      *         <li>exchanges in conversation: E1 + E2</li>
      *         <li>listeners to be notified: E2.listeners + RedirectProtocolHandler.listener</li>
      *     </ul>
      * </li>
      * <li>
-     *     request R3 send => conversation.updateResponseListeners(null)
+     *     request R3 send =&gt; conversation.updateResponseListeners(null)
      *     <ul>
      *         <li>exchanges in conversation: E1 + E2 + E3</li>
      *         <li>listeners to be notified: E3.listeners + E1.listeners</li>
      *     </ul>
      * </li>
      * <li>
-     *     response R3 arrived, 200 => conversation.updateResponseListeners(null)
+     *     response R3 arrived, 200 =&gt; conversation.updateResponseListeners(null)
      *     <ul>
      *         <li>exchanges in conversation: E1 + E2 + E3</li>
      *         <li>listeners to be notified: E3.listeners + E1.listeners</li>
@@ -158,6 +144,6 @@ public class HttpConversation extends AttributesMap
     @Override
     public String toString()
     {
-        return String.format("%s[%d]", HttpConversation.class.getSimpleName(), id);
+        return String.format("%s[%x]", HttpConversation.class.getSimpleName(), hashCode());
     }
 }

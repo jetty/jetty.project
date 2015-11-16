@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,12 +28,11 @@ import java.util.List;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
-
-
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * WarPluginInfo
- *
+ * <p>
  * Information about the maven-war-plugin contained in the pom
  */
 public class WarPluginInfo
@@ -45,10 +44,6 @@ public class WarPluginInfo
     private List<OverlayConfig> _overlayConfigs;
     
     
-    
-    /**
-     * @param project
-     */
     public WarPluginInfo (MavenProject project)
     {
         _project = project;
@@ -59,7 +54,7 @@ public class WarPluginInfo
     
     /**
      * Find the maven-war-plugin, if one is configured
-     * @return
+     * @return the plugin
      */
     public Plugin getPlugin()
     {
@@ -86,7 +81,7 @@ public class WarPluginInfo
 
     /**
      * Get value of dependentWarIncludes for maven-war-plugin
-     * @return
+     * @return the list of dependent war includes
      */
     public List<String> getDependentMavenWarIncludes()
     {
@@ -105,7 +100,7 @@ public class WarPluginInfo
             if (node == null)
                 return null;
             String val = node.getValue();
-            _dependentMavenWarIncludes = Arrays.asList(val.split(",")); 
+            _dependentMavenWarIncludes = StringUtil.csvSplit(null,val,0,val.length());
         }
         return _dependentMavenWarIncludes;
     }
@@ -115,7 +110,7 @@ public class WarPluginInfo
     
     /**
      * Get value of dependentWarExcludes for maven-war-plugin
-     * @return
+     * @return the list of dependent war excludes
      */
     public List<String> getDependentMavenWarExcludes()
     {
@@ -134,7 +129,7 @@ public class WarPluginInfo
             if (node == null)
                 return null;
             String val = node.getValue();
-            _dependentMavenWarExcludes = Arrays.asList(val.split(","));
+            _dependentMavenWarExcludes = StringUtil.csvSplit(null,val,0,val.length());
         }
         return _dependentMavenWarExcludes;
     }
@@ -145,7 +140,7 @@ public class WarPluginInfo
     /**
      * Get config for any overlays that have been declared for the maven-war-plugin.
      * 
-     * @return
+     * @return the list of overlay configs
      */
     public List<OverlayConfig> getMavenWarOverlayConfigs ()
     {

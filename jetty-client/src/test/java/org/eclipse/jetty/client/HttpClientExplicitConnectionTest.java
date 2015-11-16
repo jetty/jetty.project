@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -59,7 +59,7 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
             Assert.assertEquals(200, response.getStatus());
 
             HttpDestinationOverHTTP httpDestination = (HttpDestinationOverHTTP)destination;
-            ConnectionPool connectionPool = httpDestination.getConnectionPool();
+            DuplexConnectionPool connectionPool = (DuplexConnectionPool)httpDestination.getConnectionPool();
             Assert.assertTrue(connectionPool.getActiveConnections().isEmpty());
             Assert.assertTrue(connectionPool.getIdleConnections().isEmpty());
         }
@@ -82,16 +82,19 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
 
         Assert.assertEquals(200, response.getStatus());
 
+        // Wait some time to have the client is an idle state.
+        TimeUnit.SECONDS.sleep(1);
+
         connector.stop();
 
-        // Give the connection some time to process the remote close
+        // Give the connection some time to process the remote close.
         TimeUnit.SECONDS.sleep(1);
 
         HttpConnectionOverHTTP httpConnection = (HttpConnectionOverHTTP)connection;
         Assert.assertFalse(httpConnection.getEndPoint().isOpen());
 
         HttpDestinationOverHTTP httpDestination = (HttpDestinationOverHTTP)destination;
-        ConnectionPool connectionPool = httpDestination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)httpDestination.getConnectionPool();
         Assert.assertTrue(connectionPool.getActiveConnections().isEmpty());
         Assert.assertTrue(connectionPool.getIdleConnections().isEmpty());
     }

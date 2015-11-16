@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,10 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -39,11 +41,11 @@ import org.eclipse.jetty.websocket.common.message.MessageAppender;
 /**
  * EventDriver is the main interface between the User's WebSocket POJO and the internal jetty implementation of WebSocket.
  */
-public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
+public abstract class AbstractEventDriver extends AbstractLifeCycle implements IncomingFrames, EventDriver
 {
     private static final Logger LOG = Log.getLogger(AbstractEventDriver.class);
     protected final Logger TARGET_LOG;
-    protected final WebSocketPolicy policy;
+    protected WebSocketPolicy policy;
     protected final Object websocket;
     protected WebSocketSession session;
     protected MessageAppender activeMessage;
@@ -88,13 +90,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("incoming(WebSocketException)",e);
-        }
-
-        if (e instanceof CloseException)
-        {
-            CloseException close = (CloseException)e;
-            terminateConnection(close.getStatusCode(),close.getMessage());
+            LOG.debug("incomingError(" + e.getClass().getName() + ")",e);
         }
 
         onError(e);
@@ -105,7 +101,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("{}.onFrame({})",websocket.getClass().getSimpleName(),frame);
+            LOG.debug("incomingFrame({})",frame);
         }
 
         try
@@ -120,9 +116,6 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
                     boolean validate = true;
                     CloseFrame closeframe = (CloseFrame)frame;
                     CloseInfo close = new CloseInfo(closeframe,validate);
-
-                    // notify user websocket pojo
-                    onClose(close);
 
                     // process handshake
                     session.getConnection().getIOState().onCloseRemote(close);
@@ -176,7 +169,8 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
                 }
                 default:
                 {
-                    LOG.debug("Unhandled OpCode: {}",opcode);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unhandled OpCode: {}",opcode);
                 }
             }
         }
@@ -216,12 +210,20 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     {
         /* TODO: provide annotation in future */
     }
+    
+    @Override
+    public BatchMode getBatchMode()
+    {
+        return null;
+    }
 
     @Override
     public void openSession(WebSocketSession session)
     {
-        LOG.debug("openSession({})",session);
+        if (LOG.isDebugEnabled())
+            LOG.debug("openSession({})",session);
         this.session = session;
+        this.session.getContainerScope().getObjectFactory().decorate(this.websocket);
         try
         {
             this.onConnect();
@@ -229,12 +231,20 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
         catch (Throwable t)
         {
             unhandled(t);
+            throw t;
         }
+    }
+    
+    @Override
+    protected void doStop() throws Exception
+    {
+        session = null;
     }
 
     protected void terminateConnection(int statusCode, String rawreason)
     {
-        LOG.debug("terminateConnection({},{})",statusCode,rawreason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("terminateConnection({},{})",statusCode,rawreason);
         session.close(statusCode,CloseFrame.truncate(rawreason));
     }
 
@@ -242,6 +252,12 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     {
         TARGET_LOG.warn("Unhandled Error (closing connection)",t);
         onError(t);
+        
+        if (t instanceof CloseException)
+        {
+            terminateConnection(((CloseException)t).getStatusCode(),t.getClass().getSimpleName());
+            return;
+        }
 
         // Unhandled Error, close the connection.
         switch (policy.getBehavior())

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,15 +24,12 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
 
-
 public class JAASGroup implements Group 
 {
     public static final String ROLES = "__roles__";
     
     private String _name = null;
     private HashSet<Principal> _members = null;
-    
-    
    
     public JAASGroup(String n)
     {
@@ -41,42 +38,21 @@ public class JAASGroup implements Group
     }
    
     /* ------------------------------------------------------------ */
-    /**
-     *
-     * @param principal <description>
-     * @return <description>
-     */
     public synchronized boolean addMember(Principal principal)
     {
         return _members.add(principal);
     }
 
-    /**
-     *
-     * @param principal <description>
-     * @return <description>
-     */
     public synchronized boolean removeMember(Principal principal)
     {
         return _members.remove(principal);
     }
 
-    /**
-     *
-     * @param principal <description>
-     * @return <description>
-     */
     public boolean isMember(Principal principal)
     {
         return _members.contains(principal);
     }
 
-
-    
-    /**
-     *
-     * @return <description>
-     */
     public Enumeration<? extends Principal> members()
     {
 
@@ -105,23 +81,11 @@ public class JAASGroup implements Group
         return new MembersEnumeration (_members.iterator());
     }
 
-
-    /**
-     *
-     * @return <description>
-     */
     public int hashCode()
     {
         return getName().hashCode();
     }
 
-
-    
-    /**
-     *
-     * @param object <description>
-          * @return <description>
-     */
     public boolean equals(Object object)
     {
         if (! (object instanceof JAASGroup))
@@ -130,23 +94,14 @@ public class JAASGroup implements Group
         return ((JAASGroup)object).getName().equals(getName());
     }
 
-    /**
-     *
-     * @return <description>
-     */
     public String toString()
     {
         return getName();
     }
 
-    /**
-     *
-     * @return <description>
-     */
     public String getName()
     {
         
         return _name;
     }
-
 }

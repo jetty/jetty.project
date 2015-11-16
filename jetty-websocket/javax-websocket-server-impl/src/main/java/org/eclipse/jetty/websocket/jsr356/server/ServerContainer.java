@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import javax.websocket.DeploymentException;
@@ -43,21 +45,24 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
     private final MappedWebSocketCreator mappedCreator;
     private final WebSocketServerFactory webSocketServerFactory;
+    private List<Class<?>> deferredEndpointClasses;
+    private List<ServerEndpointConfig> deferredEndpointConfigs;
 
     public ServerContainer(MappedWebSocketCreator creator, WebSocketServerFactory factory, Executor executor)
     {
-        super(executor);
+        super(factory);
         this.mappedCreator = creator;
         this.webSocketServerFactory = factory;
         EventDriverFactory eventDriverFactory = this.webSocketServerFactory.getEventDriverFactory();
         eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
         eventDriverFactory.addImplementation(new JsrServerExtendsEndpointImpl());
         this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this,this));
+        addBean(webSocketServerFactory);
     }
     
     public EndpointInstance newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
     {
-        EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass());
+        EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass(),config);
         ServerEndpointConfig cec = config;
         if (config == null)
         {
@@ -67,7 +72,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             }
             else
             {
-                cec = new BasicServerEndpointConfig(endpoint.getClass(),path);
+                cec = new BasicServerEndpointConfig(this,endpoint.getClass(),path);
             }
         }
         return new EndpointInstance(endpoint,cec,metadata);
@@ -76,25 +81,73 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
-        ServerEndpointMetadata metadata = getServerEndpointMetadata(endpointClass,null);
-        addEndpoint(metadata);
+        if (isStarted() || isStarting())
+        {
+            ServerEndpointMetadata metadata = getServerEndpointMetadata(endpointClass,null);
+            addEndpoint(metadata);
+        }
+        else
+        {
+            if (deferredEndpointClasses == null)
+            {
+                deferredEndpointClasses = new ArrayList<Class<?>>();
+            }
+            deferredEndpointClasses.add(endpointClass);
+        }
     }
 
-    public void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
+    private void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
     {
-        JsrCreator creator = new JsrCreator(metadata,webSocketServerFactory.getExtensionFactory());
+        JsrCreator creator = new JsrCreator(this,metadata,webSocketServerFactory.getExtensionFactory());
         mappedCreator.addMapping(new WebSocketPathSpec(metadata.getPath()),creator);
     }
 
     @Override
     public void addEndpoint(ServerEndpointConfig config) throws DeploymentException
     {
-        if (LOG.isDebugEnabled())
+        if (isStarted() || isStarting())
         {
-            LOG.debug("addEndpoint({}) path={} endpoint={}",config,config.getPath(),config.getEndpointClass());
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("addEndpoint({}) path={} endpoint={}",config,config.getPath(),config.getEndpointClass());
+            }
+            ServerEndpointMetadata metadata = getServerEndpointMetadata(config.getEndpointClass(),config);
+            addEndpoint(metadata);
         }
-        ServerEndpointMetadata metadata = getServerEndpointMetadata(config.getEndpointClass(),config);
-        addEndpoint(metadata);
+        else
+        {
+            if (deferredEndpointConfigs == null)
+            {
+                deferredEndpointConfigs = new ArrayList<ServerEndpointConfig>();
+            }
+            deferredEndpointConfigs.add(config);
+        }
+    }
+    
+    @Override
+    protected void doStart() throws Exception
+    {
+        // Proceed with Normal Startup
+        super.doStart();
+        
+        // Process Deferred Endpoints
+        if (deferredEndpointClasses != null)
+        {
+            for (Class<?> endpointClass : deferredEndpointClasses)
+            {
+                addEndpoint(endpointClass);
+            }
+            deferredEndpointClasses.clear();
+        }
+        
+        if (deferredEndpointConfigs != null)
+        {
+            for (ServerEndpointConfig config : deferredEndpointConfigs)
+            {
+                addEndpoint(config);
+            }
+            deferredEndpointConfigs.clear();
+        }
     }
 
     public ServerEndpointMetadata getServerEndpointMetadata(final Class<?> endpoint, final ServerEndpointConfig config) throws DeploymentException
@@ -105,7 +158,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         if (anno != null)
         {
             // Annotated takes precedence here
-            AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(endpoint,config);
+            AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(this,endpoint,config);
             AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(ametadata);
             metadata = ametadata;
             scanner.scan();

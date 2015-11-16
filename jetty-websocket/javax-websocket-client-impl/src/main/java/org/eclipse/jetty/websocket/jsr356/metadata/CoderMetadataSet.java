@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,13 +24,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+
 /**
  * An durable collection of {@link CoderMetadata}.
  * <p>
  * This is a write-only collection, and cannot be modified once initialized.
  * 
  * @param <T>
- *            The type of coder ({@link Decoder} or {@link Encoder}
+ *            The type of coder ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder}
  * @param <M>
  *            The metadata for the coder
  */

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
+import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -49,13 +50,6 @@ import org.eclipse.jetty.util.Fields;
  */
 public interface Request
 {
-    /**
-     * @return the conversation id
-     * @deprecated do not use this method anymore
-     */
-    @Deprecated
-    long getConversationID();
-
     /**
      * @return the scheme of this request, such as "http" or "https"
      */
@@ -160,15 +154,31 @@ public interface Request
      * @param name the name of the header
      * @param value the value of the header
      * @return this request object
+     * @see #header(HttpHeader, String)
      */
     Request header(String name, String value);
 
     /**
+     * <p>Adds the given {@code value} to the specified {@code header}.</p>
+     * <p>Multiple calls with the same parameters will add multiple values;
+     * use the value {@code null} to remove the header completely.</p>
+     *
      * @param header the header name
      * @param value the value of the header
      * @return this request object
      */
     Request header(HttpHeader header, String value);
+
+    /**
+     * @return the cookies associated with this request
+     */
+    List<HttpCookie> getCookies();
+
+    /**
+     * @param cookie a cookie for this request
+     * @return this request object
+     */
+    Request cookie(HttpCookie cookie);
 
     /**
      * @param name the name of the attribute
@@ -195,6 +205,7 @@ public interface Request
 
     /**
      * @param content the content provider of this request
+     * @param contentType the content type
      * @return this request object
      */
     Request content(ContentProvider content, String contentType);
@@ -225,10 +236,17 @@ public interface Request
     String getAgent();
 
     /**
-     * @param agent the user agent for this request
+     * @param agent the user agent for this request (corresponds to the {@code User-Agent} header)
      * @return this request object
      */
     Request agent(String agent);
+
+    /**
+     * @param accepts the media types that are acceptable in the response, such as
+     *                "text/plain;q=0.5" or "text/html" (corresponds to the {@code Accept} header)
+     * @return this request object
+     */
+    Request accept(String... accepts);
 
     /**
      * @return the idle timeout for this request, in milliseconds
@@ -268,6 +286,7 @@ public interface Request
     /**
      * @param listenerClass the class of the listener, or null for all listeners classes
      * @return the listeners for request events of the given class
+     * @param <T> the type of listener class
      */
     <T extends RequestListener> List<T> getRequestListeners(Class<T> listenerClass);
 
@@ -338,10 +357,16 @@ public interface Request
     Request onResponseHeaders(Response.HeadersListener listener);
 
     /**
-     * @param listener a listener for response content events
+     * @param listener a consuming listener for response content events
      * @return this request object
      */
     Request onResponseContent(Response.ContentListener listener);
+
+    /**
+     * @param listener an asynchronous listener for response content events
+     * @return this request object
+     */
+    Request onResponseContentAsync(Response.AsyncContentListener listener);
 
     /**
      * @param listener a listener for response success event
@@ -363,26 +388,31 @@ public interface Request
 
     /**
      * Sends this request and returns the response.
-     * <p />
+     * <p>
      * This method should be used when a simple blocking semantic is needed, and when it is known
      * that the response content can be buffered without exceeding memory constraints.
-     * <p />
+     * <p>
      * For example, this method is not appropriate to download big files from a server; consider using
      * {@link #send(Response.CompleteListener)} instead, passing your own {@link Response.Listener} or a utility
      * listener such as {@link InputStreamResponseListener}.
-     * <p />
+     * <p>
      * The method returns when the {@link Response.CompleteListener complete event} is fired.
      *
      * @return a {@link ContentResponse} for this request
+     * @throws InterruptedException if send thread is interrupted
+     * @throws TimeoutException if send times out
+     * @throws ExecutionException if execution fails
      * @see Response.CompleteListener#onComplete(Result)
      */
     ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException;
 
     /**
-     * Sends this request and asynchronously notifies the given listener for response events.
-     * <p />
-     * This method should be used when the application needs to be notified of the various response events
-     * as they happen, or when the application needs to efficiently manage the response content.
+     * <p>Sends this request and asynchronously notifies the given listener for response events.</p>
+     * <p>This method should be used when the application needs to be notified of the various response events
+     * as they happen, or when the application needs to efficiently manage the response content.</p>
+     * <p>The listener passed to this method may implement not only {@link Response.CompleteListener}
+     * but also other response listener interfaces, and all the events implemented will be notified.
+     * This allows application code to write a single listener class to handle all relevant events.</p>
      *
      * @param listener the listener that receives response events
      */
@@ -473,6 +503,7 @@ public interface Request
          * Callback method invoked when a chunk of request content has been sent successfully.
          * Changes to bytes in the given buffer have no effect, as the content has already been sent.
          * @param request the request that has been committed
+         * @param content the content
          */
         public void onContent(Request request, ByteBuffer content);
     }

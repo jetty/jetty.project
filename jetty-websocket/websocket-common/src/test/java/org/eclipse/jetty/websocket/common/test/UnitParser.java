@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common.test;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -34,7 +35,7 @@ public class UnitParser extends Parser
 
     public UnitParser(WebSocketPolicy policy)
     {
-        super(policy,new LeakTrackingBufferPool("UnitParser",new MappedByteBufferPool()));
+        super(policy,new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
     }
 
     private void parsePartial(ByteBuffer buf, int numBytes)
@@ -49,6 +50,7 @@ public class UnitParser extends Parser
      * Parse a buffer, but do so in a quiet fashion, squelching stacktraces if encountered.
      * <p>
      * Use if you know the parse will cause an exception and just don't wnat to make the test console all noisy.
+     * @param buf the buffer to parse
      */
     public void parseQuietly(ByteBuffer buf)
     {

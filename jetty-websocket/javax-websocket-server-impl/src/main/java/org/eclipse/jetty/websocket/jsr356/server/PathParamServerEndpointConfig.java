@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.util.Map;
 
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
 
 /**
@@ -32,9 +33,9 @@ public class PathParamServerEndpointConfig extends BasicServerEndpointConfig imp
 {
     private final Map<String, String> pathParamMap;
 
-    public PathParamServerEndpointConfig(ServerEndpointConfig config, WebSocketPathSpec pathSpec, String requestPath)
+    public PathParamServerEndpointConfig(WebSocketContainerScope containerScope, ServerEndpointConfig config, WebSocketPathSpec pathSpec, String requestPath)
     {
-        super(config);
+        super(containerScope, config);
 
         Map<String, String> pathMap = pathSpec.getPathParams(requestPath);
         pathParamMap = new HashMap<String, String>();

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,20 +27,15 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public class ResponseNotifier
 {
     private static final Logger LOG = Log.getLogger(ResponseNotifier.class);
-    private final HttpClient client;
 
-    public ResponseNotifier(HttpClient client)
-    {
-        this.client = client;
-    }
-
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyBegin(List<Response.ResponseListener> listeners, Response response)
     {
         // Optimized to avoid allocations of iterator instances
@@ -58,13 +53,12 @@ public class ResponseNotifier
         {
             listener.onBegin(response);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public boolean notifyHeader(List<Response.ResponseListener> listeners, Response response, HttpField field)
     {
         boolean result = true;
@@ -84,14 +78,13 @@ public class ResponseNotifier
         {
             return listener.onHeader(response, field);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
             return false;
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyHeaders(List<Response.ResponseListener> listeners, Response response)
     {
         // Optimized to avoid allocations of iterator instances
@@ -109,46 +102,33 @@ public class ResponseNotifier
         {
             listener.onHeaders(response);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer)
+    public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
     {
-        // Slice the buffer to avoid that listeners peek into data they should not look at.
-        buffer = buffer.slice();
-        if (!buffer.hasRemaining())
-            return;
-        // Optimized to avoid allocations of iterator instances
-        for (int i = 0; i < listeners.size(); ++i)
-        {
-            Response.ResponseListener listener = listeners.get(i);
-            if (listener instanceof Response.ContentListener)
-            {
-                // The buffer was sliced, so we always clear it (position=0, limit=capacity)
-                // before passing it to the listener that may consume it.
-                buffer.clear();
-                notifyContent((Response.ContentListener)listener, response, buffer);
-            }
-        }
+        // Here we use an IteratingNestedCallback not to avoid the stack overflow, but to
+        // invoke the listeners one after the other. When all of them have invoked the
+        // callback they got passed, the callback passed to this method is finally invoked.
+        ContentCallback contentCallback = new ContentCallback(listeners, response, buffer, callback);
+        contentCallback.iterate();
     }
 
-    private void notifyContent(Response.ContentListener listener, Response response, ByteBuffer buffer)
+    private void notifyContent(Response.AsyncContentListener listener, Response response, ByteBuffer buffer, Callback callback)
     {
         try
         {
-            listener.onContent(response, buffer);
+            listener.onContent(response, buffer, callback);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifySuccess(List<Response.ResponseListener> listeners, Response response)
     {
         // Optimized to avoid allocations of iterator instances
@@ -166,13 +146,12 @@ public class ResponseNotifier
         {
             listener.onSuccess(response);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
         // Optimized to avoid allocations of iterator instances
@@ -190,13 +169,12 @@ public class ResponseNotifier
         {
             listener.onFailure(response, failure);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyComplete(List<Response.ResponseListener> listeners, Result result)
     {
         // Optimized to avoid allocations of iterator instances
@@ -214,7 +192,7 @@ public class ResponseNotifier
         {
             listener.onComplete(result);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
@@ -231,7 +209,8 @@ public class ResponseNotifier
         }
         notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
-            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));
+            // TODO: handle callback
+            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()), Callback.NOOP);
         notifySuccess(listeners, response);
     }
 
@@ -252,7 +231,8 @@ public class ResponseNotifier
         }
         notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
-            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));
+            // TODO: handle callback
+            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()), Callback.NOOP);
         notifyFailure(listeners, response, failure);
     }
 
@@ -260,5 +240,52 @@ public class ResponseNotifier
     {
         forwardFailure(listeners, response, responseFailure);
         notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
+    }
+
+    private class ContentCallback extends IteratingNestedCallback
+    {
+        private final List<Response.ResponseListener> listeners;
+        private final Response response;
+        private final ByteBuffer buffer;
+        private int index;
+
+        private ContentCallback(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
+        {
+            super(callback);
+            this.listeners = listeners;
+            this.response = response;
+            // Slice the buffer to avoid that listeners peek into data they should not look at.
+            this.buffer = buffer.slice();
+        }
+
+        @Override
+        protected Action process() throws Exception
+        {
+            if (index == listeners.size())
+                return Action.SUCCEEDED;
+
+            Response.ResponseListener listener = listeners.get(index);
+            if (listener instanceof Response.AsyncContentListener)
+            {
+                // The buffer was sliced, so we always clear it
+                // (clear => position=0, limit=capacity) before
+                // passing it to the listener that may consume it.
+                buffer.clear();
+                ResponseNotifier.this.notifyContent((Response.AsyncContentListener)listener, response, buffer, this);
+                return Action.SCHEDULED;
+            }
+            else
+            {
+                succeeded();
+                return Action.SCHEDULED;
+            }
+        }
+
+        @Override
+        public void succeeded()
+        {
+            ++index;
+            super.succeeded();
+        }
     }
 }

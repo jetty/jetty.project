@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -28,60 +26,122 @@ public abstract class HttpChannel
 {
     protected static final Logger LOG = Log.getLogger(HttpChannel.class);
 
-    private final AtomicReference<HttpExchange> exchange = new AtomicReference<>();
-    private final HttpDestination destination;
+    private final HttpDestination _destination;
+    private HttpExchange _exchange;
 
     protected HttpChannel(HttpDestination destination)
     {
-        this.destination = destination;
+        this._destination = destination;
     }
 
     public HttpDestination getHttpDestination()
     {
-        return destination;
+        return _destination;
     }
 
-    public void associate(HttpExchange exchange)
+    /**
+     * <p>Associates the given {@code exchange} to this channel in order to be sent over the network.</p>
+     * <p>If the association is successful, the exchange can be sent. Otherwise, the channel must be
+     * disposed because whoever terminated the exchange did not do it - it did not have the channel yet.</p>
+     *
+     * @param exchange the exchange to associate
+     * @return true if the association was successful, false otherwise
+     */
+    public boolean associate(HttpExchange exchange)
     {
-        if (this.exchange.compareAndSet(null, exchange))
+        boolean result = false;
+        boolean abort = true;
+        synchronized (this)
         {
-            exchange.associate(this);
-            LOG.debug("{} associated to {}", exchange, this);
+            if (_exchange == null)
+            {
+                abort = false;
+                result = exchange.associate(this);
+                if (result)
+                    _exchange = exchange;
+            }
         }
-        else
-        {
+
+        if (abort)
             exchange.getRequest().abort(new UnsupportedOperationException("Pipelined requests not supported"));
-        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} associated {} to {}", exchange, result, this);
+
+        return result;
     }
 
-    public HttpExchange disassociate()
+    public boolean disassociate(HttpExchange exchange)
     {
-        HttpExchange exchange = this.exchange.getAndSet(null);
-        if (exchange != null)
-            exchange.disassociate(this);
-        LOG.debug("{} disassociated from {}", exchange, this);
-        return exchange;
+        boolean result = false;
+        synchronized (this)
+        {
+            HttpExchange existing = _exchange;
+            _exchange = null;
+            if (existing == exchange)
+            {
+                existing.disassociate(this);
+                result = true;
+            }
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} disassociated {} from {}", exchange, result, this);
+        return result;
     }
 
     public HttpExchange getHttpExchange()
     {
-        return exchange.get();
+        synchronized (this)
+        {
+            return _exchange;
+        }
     }
+
+    protected abstract HttpSender getHttpSender();
+
+    protected abstract HttpReceiver getHttpReceiver();
 
     public abstract void send();
 
-    public abstract void proceed(HttpExchange exchange, Throwable failure);
+    public abstract void release();
 
-    public abstract boolean abort(Throwable cause);
-
-    public void exchangeTerminated(Result result)
+    public void proceed(HttpExchange exchange, Throwable failure)
     {
-        disassociate();
+        getHttpSender().proceed(exchange, failure);
+    }
+
+    public boolean abort(HttpExchange exchange, Throwable requestFailure, Throwable responseFailure)
+    {
+        boolean requestAborted = false;
+        if (requestFailure != null)
+            requestAborted = getHttpSender().abort(exchange, requestFailure);
+
+        boolean responseAborted = false;
+        if (responseFailure != null)
+            responseAborted = abortResponse(exchange, responseFailure);
+
+        return requestAborted || responseAborted;
+    }
+
+    public boolean abortResponse(HttpExchange exchange, Throwable failure)
+    {
+        return getHttpReceiver().abort(exchange, failure);
+    }
+
+    public Result exchangeTerminating(HttpExchange exchange, Result result)
+    {
+        return result;
+    }
+
+    public void exchangeTerminated(HttpExchange exchange, Result result)
+    {
+        disassociate(exchange);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%h", getClass().getSimpleName(), this);
+        return String.format("%s@%x(exchange=%s)", getClass().getSimpleName(), hashCode(), getHttpExchange());
     }
 }

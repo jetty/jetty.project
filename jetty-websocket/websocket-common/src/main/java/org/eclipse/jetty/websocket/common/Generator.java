@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -63,8 +63,9 @@ public class Generator
     private final WebSocketBehavior behavior;
     private final ByteBufferPool bufferPool;
     private final boolean validating;
+    private final boolean readOnly;
 
-    /** 
+    /**
      * Are any flags in use
      * <p>
      * 
@@ -74,7 +75,7 @@ public class Generator
      *   0001_0000 (0x10) = rsv3
      * </pre>
      */
-    private byte flagsInUse=0x00;
+    private byte flagsInUse = 0x00;
 
     /**
      * Construct Generator with provided policy and bufferPool
@@ -86,7 +87,7 @@ public class Generator
      */
     public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        this(policy,bufferPool,true);
+        this(policy,bufferPool,true,false);
     }
 
     /**
@@ -101,9 +102,27 @@ public class Generator
      */
     public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean validating)
     {
+        this(policy,bufferPool,validating,false);
+    }
+
+    /**
+     * Construct Generator with provided policy and bufferPool
+     * 
+     * @param policy
+     *            the policy to use
+     * @param bufferPool
+     *            the buffer pool to use
+     * @param validating
+     *            true to enable RFC frame validation
+     * @param readOnly
+     *            true if generator is to treat frames as read-only and not modify them. Useful for debugging purposes, but not generally for runtime use.
+     */
+    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean validating, boolean readOnly)
+    {
         this.behavior = policy.getBehavior();
         this.bufferPool = bufferPool;
         this.validating = validating;
+        this.readOnly = readOnly;
     }
 
     public void assertFrameValid(Frame frame)
@@ -193,23 +212,29 @@ public class Generator
 
     public ByteBuffer generateHeaderBytes(Frame frame)
     {
+        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH,true);
+        generateHeaderBytes(frame,buffer);
+        return buffer;
+    }
+
+    public void generateHeaderBytes(Frame frame, ByteBuffer buffer)
+    {
+        int p = BufferUtil.flipToFill(buffer);
+
         // we need a framing header
         assertFrameValid(frame);
-
-        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH,true);
-        BufferUtil.clearToFill(buffer);
 
         /*
          * start the generation process
          */
         byte b = 0x00;
-        
+
         // Setup fin thru opcode
         if (frame.isFin())
         {
             b |= 0x80; // 1000_0000
         }
-        
+
         // Set the flags
         if (frame.isRsv1())
         {
@@ -223,7 +248,7 @@ public class Generator
         {
             b |= 0x10; // 0001_0000
         }
-        
+
         // NOTE: using .getOpCode() here, not .getType().getOpCode() for testing reasons
         byte opcode = frame.getOpCode();
 
@@ -263,7 +288,7 @@ public class Generator
         /*
          * if payload is greater that 126 we have a 7 + 16 bit length
          */
-        else if (payloadLength >= 0x7E )
+        else if (payloadLength >= 0x7E)
         {
             b |= 0x7E;
             buffer.put(b); // indicate 2 byte length
@@ -280,7 +305,7 @@ public class Generator
         }
 
         // masking key
-        if (frame.isMasked())
+        if (frame.isMasked() && !readOnly)
         {
             byte[] mask = frame.getMask();
             buffer.put(mask);
@@ -300,12 +325,12 @@ public class Generator
                 {
                     if (remaining >= 4)
                     {
-                        payload.putInt(start, payload.getInt(start) ^ maskInt);
+                        payload.putInt(start,payload.getInt(start) ^ maskInt);
                         start += 4;
                     }
                     else
                     {
-                        payload.put(start, (byte)(payload.get(start) ^ mask[maskOffset & 3]));
+                        payload.put(start,(byte)(payload.get(start) ^ mask[maskOffset & 3]));
                         ++start;
                         ++maskOffset;
                     }
@@ -313,24 +338,32 @@ public class Generator
             }
         }
 
-        BufferUtil.flipToFlush(buffer,0);
-        return buffer;
+        BufferUtil.flipToFlush(buffer,p);
     }
 
     /**
      * Generate the whole frame (header + payload copy) into a single ByteBuffer.
      * <p>
-     * Note: THIS IS SLOW. Only use this if you must.
+     * Note: This is slow, moves lots of memory around. Only use this if you must (such as in unit testing).
      * 
      * @param frame
      *            the frame to generate
+     * @param buf
+     *            the buffer to output the generated frame to
      */
     public void generateWholeFrame(Frame frame, ByteBuffer buf)
     {
         buf.put(generateHeaderBytes(frame));
         if (frame.hasPayload())
         {
-            buf.put(frame.getPayload());
+            if (readOnly)
+            {
+                buf.put(frame.getPayload().slice());
+            }
+            else
+            {
+                buf.put(frame.getPayload());
+            }
         }
     }
 
@@ -339,19 +372,30 @@ public class Generator
         return bufferPool;
     }
 
-
     public void setRsv1InUse(boolean rsv1InUse)
     {
+        if (readOnly)
+        {
+            throw new RuntimeException("Not allowed to modify read-only frame");
+        }
         flagsInUse = (byte)((flagsInUse & 0xBF) | (rsv1InUse?0x40:0x00));
     }
 
     public void setRsv2InUse(boolean rsv2InUse)
     {
+        if (readOnly)
+        {
+            throw new RuntimeException("Not allowed to modify read-only frame");
+        }
         flagsInUse = (byte)((flagsInUse & 0xDF) | (rsv2InUse?0x20:0x00));
     }
 
     public void setRsv3InUse(boolean rsv3InUse)
     {
+        if (readOnly)
+        {
+            throw new RuntimeException("Not allowed to modify read-only frame");
+        }
         flagsInUse = (byte)((flagsInUse & 0xEF) | (rsv3InUse?0x10:0x00));
     }
 

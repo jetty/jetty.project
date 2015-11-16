@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -40,6 +41,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
 {
     private final JettyAnnotatedMetadata events;
     private boolean hasCloseBeenCalled = false;
+    private BatchMode batchMode;
 
     public JettyAnnotatedEventDriver(WebSocketPolicy policy, Object websocket, JettyAnnotatedMetadata events)
     {
@@ -64,6 +66,13 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         {
             this.policy.setIdleTimeout(anno.maxIdleTime());
         }
+        this.batchMode = anno.batchMode();
+    }
+    
+    @Override
+    public BatchMode getBatchMode()
+    {
+        return this.batchMode;
     }
 
     @Override
@@ -79,14 +88,22 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         {
             if (events.onBinary.isStreaming())
             {
-                activeMessage = new MessageInputStream(session.getConnection());
+                activeMessage = new MessageInputStream();
                 final MessageAppender msg = activeMessage;
                 dispatch(new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        events.onBinary.call(websocket,session,msg);
+                        try
+                        {
+                            events.onBinary.call(websocket,session,msg);
+                        }
+                        catch (Throwable t)
+                        {
+                            // dispatched calls need to be reported
+                            onError(t);
+                        }
                     }
                 });
             }
@@ -181,14 +198,22 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         {
             if (events.onText.isStreaming())
             {
-                activeMessage = new MessageReader(new MessageInputStream(session.getConnection()));
+                activeMessage = new MessageReader(new MessageInputStream());
                 final MessageAppender msg = activeMessage;
                 dispatch(new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        events.onText.call(websocket,session,msg);
+                        try
+                        {
+                            events.onText.call(websocket,session,msg);
+                        }
+                        catch (Throwable t)
+                        {
+                            // dispatched calls need to be reported
+                            onError(t);
+                        }
                     }
                 });
             }

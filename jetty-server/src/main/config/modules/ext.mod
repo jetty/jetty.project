@@ -1,9 +1,9 @@
-#
-# Module to add all lib/ext/*.jar files to classpath
-#
+[description]
+Adds all jar files discovered in $JETTY_HOME/lib/ext
+and $JETTY_BASE/lib/ext to the servers classpath.
 
 [lib]
-regex:lib/ext/.*\.jar$
+lib/ext/**.jar
 
 [files]
 lib/

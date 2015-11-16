@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 
 /** 
  * A multi valued Map.
+ * @param <V> the entry type for multimap values
  */
 @SuppressWarnings("serial")
 public class MultiMap<V> extends HashMap<String,List<V>>
@@ -283,7 +284,7 @@ public class MultiMap<V> extends HashMap<String,List<V>>
      * Test for a specific single value in the map.
      * <p>
      * NOTE: This is a SLOW operation, and is actively discouraged.
-     * @param value
+     * @param value the value to search for
      * @return true if contains simple value
      */
     public boolean containsSimpleValue(V value)

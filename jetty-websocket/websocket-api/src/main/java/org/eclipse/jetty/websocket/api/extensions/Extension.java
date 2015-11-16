@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,6 +36,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      * The <code>Sec-WebSocket-Extensions</code> name for this extension.
      * <p>
      * Also known as the <a href="https://tools.ietf.org/html/rfc6455#section-9.1"><code>extension-token</code> per Section 9.1. Negotiating Extensions</a>.
+     * @return the name of the extension
      */
     public String getName();
 
@@ -81,9 +82,4 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      *            the next outgoing extension
      */
     public void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
-    
-    // TODO: Extension should indicate if it requires boundary of fragments to be preserved
-    
-    // TODO: Extension should indicate if it uses the Extension data field of frame for its own reasons.
-    
 }

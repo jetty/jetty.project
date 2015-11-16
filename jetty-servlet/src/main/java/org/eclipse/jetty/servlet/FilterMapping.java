@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import java.util.EnumSet;
 import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -46,6 +45,8 @@ public class FilterMapping implements Dumpable
 
     /* ------------------------------------------------------------ */
     /** Dispatch type from name
+     * @param type the type name
+     * @return the dispatcher type
      */
     public static DispatcherType dispatch(String type)
     {
@@ -64,22 +65,24 @@ public class FilterMapping implements Dumpable
 
     /* ------------------------------------------------------------ */
     /** Dispatch type from name
+     * @param type the dispatcher type
+     * @return the type constant ({@link #REQUEST}, {@link #ASYNC}, {@link #FORWARD}, {@link #INCLUDE}, or {@link #ERROR})
      */
     public static int dispatch(DispatcherType type)
     {
-    	switch(type)
-    	{
-    	  case REQUEST:
-    		  return REQUEST;
-    	  case ASYNC:
-    		  return ASYNC;
-    	  case FORWARD:
-    		  return FORWARD;
-    	  case INCLUDE:
-    		  return INCLUDE;
-    	  case ERROR:
-    		  return ERROR;
-    	}
+        switch(type)
+        {
+          case REQUEST:
+                  return REQUEST;
+          case ASYNC:
+                  return ASYNC;
+          case FORWARD:
+                  return FORWARD;
+          case INCLUDE:
+                  return INCLUDE;
+          case ERROR:
+                  return ERROR;
+        }
         throw new IllegalArgumentException(type.toString());
     }
 
@@ -124,8 +127,8 @@ public class FilterMapping implements Dumpable
      */
     boolean appliesTo(int type)
     {
-    	if (_dispatches==0)
-    		return type==REQUEST || type==ASYNC && _holder.isAsyncSupported();
+        if (_dispatches==0)
+                return type==REQUEST || type==ASYNC && _holder.isAsyncSupported();
         return (_dispatches&type)!=0;
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,9 +21,6 @@ package org.eclipse.jetty.security;
 import java.util.List;
 import java.util.Set;
 
-/**
- * @version $Rev: 4466 $ $Date: 2009-02-10 23:42:54 +0100 (Tue, 10 Feb 2009) $
- */
 public interface ConstraintAware
 {
     List<ConstraintMapping> getConstraintMappings();
@@ -65,6 +62,7 @@ public interface ConstraintAware
     /**
      * See Servlet Spec 31, sec 13.8.4, pg 145
      * Container must check if there are urls with uncovered http methods
+     * @return true if urls with uncovered http methods
      */
     boolean checkPathsWithUncoveredHttpMethods();
 }

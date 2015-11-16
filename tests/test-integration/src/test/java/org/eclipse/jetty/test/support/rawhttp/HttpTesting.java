@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -117,22 +117,6 @@ public class HttpTesting
 
     }
 
-
-
-    public static List<HttpTester.Response> readResponses(ByteBuffer buffer) throws IOException
-    {
-        List<HttpTester.Response> list = new ArrayList<>();
-
-        while(BufferUtil.hasContent(buffer))
-        {
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
-            if (response == null)
-                break;
-            list.add(HttpTester.parseResponse(buffer));
-        }
-        return list;
-    }
-    
     public static List<HttpTester.Response> readResponses(String string) throws IOException
     {
         List<HttpTester.Response> list = new ArrayList<>();

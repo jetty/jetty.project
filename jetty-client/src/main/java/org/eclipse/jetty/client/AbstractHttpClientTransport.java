@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,21 +19,29 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.SocketException;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+@ManagedObject
 public abstract class AbstractHttpClientTransport extends ContainerLifeCycle implements HttpClientTransport
 {
     protected static final Logger LOG = Log.getLogger(HttpClientTransport.class);
@@ -58,6 +66,12 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
         this.client = client;
     }
 
+    @ManagedAttribute(value = "The number of selectors", readonly = true)
+    public int getSelectors()
+    {
+        return selectors;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
@@ -75,7 +89,7 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
     }
 
     @Override
-    public void connect(SocketAddress address, Map<String, Object> context)
+    public void connect(InetSocketAddress address, Map<String, Object> context)
     {
         SocketChannel channel = null;
         try
@@ -87,17 +101,34 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
             if (bindAddress != null)
                 channel.bind(bindAddress);
             configure(client, channel);
-            channel.configureBlocking(false);
-            channel.connect(address);
 
             context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, destination.getHost());
             context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, destination.getPort());
-            selectorManager.connect(channel, context);
+
+            if (client.isConnectBlocking())
+            {
+                channel.socket().connect(address, (int)client.getConnectTimeout());
+                channel.configureBlocking(false);
+                selectorManager.accept(channel, context);
+            }
+            else
+            {
+                channel.configureBlocking(false);
+                if (channel.connect(address))
+                    selectorManager.accept(channel, context);
+                else
+                    selectorManager.connect(channel, context);
+            }
         }
         // Must catch all exceptions, since some like
         // UnresolvedAddressException are not IOExceptions.
         catch (Throwable x)
         {
+            // If IPv6 is not deployed, a generic SocketException "Network is unreachable"
+            // exception is being thrown, so we attempt to provide a better error message.
+            if (x.getClass() == SocketException.class)
+                x = new SocketException("Could not connect to " + address).initCause(x);
+
             try
             {
                 if (channel != null)
@@ -144,13 +175,15 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
         }
 
         @Override
-        protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key)
+        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
         {
-            return new SelectChannelEndPoint(channel, selector, key, getScheduler(), client.getIdleTimeout());
+            SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
+            endp.setIdleTimeout(client.getIdleTimeout());
+            return endp;
         }
 
         @Override
-        public org.eclipse.jetty.io.Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment) throws IOException
+        public org.eclipse.jetty.io.Connection newConnection(SelectableChannel channel, EndPoint endPoint, Object attachment) throws IOException
         {
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;
@@ -159,7 +192,7 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
         }
 
         @Override
-        protected void connectionFailed(SocketChannel channel, Throwable x, Object attachment)
+        protected void connectionFailed(SelectableChannel channel, Throwable x, Object attachment)
         {
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,8 +27,6 @@ import org.eclipse.jetty.xml.XmlParser;
 
 /**
  * IterativeDescriptorProcessor
- *
- *
  */
 public abstract class IterativeDescriptorProcessor implements DescriptorProcessor
 {
@@ -41,8 +39,8 @@ public abstract class IterativeDescriptorProcessor implements DescriptorProcesso
      * Register a method to be called back when visiting the node with the given name.
      * The method must exist on a subclass of this class, and must have the signature:
      * public void method (Descriptor descriptor, XmlParser.Node node)
-     * @param nodeName
-     * @param m
+     * @param nodeName the node name
+     * @param m the method name
      */
     public void registerVisitor(String nodeName, Method m)
     {

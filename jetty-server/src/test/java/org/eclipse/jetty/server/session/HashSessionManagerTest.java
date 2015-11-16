@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,38 +20,16 @@ package org.eclipse.jetty.server.session;
 
 import java.io.File;
 
-import junit.framework.Assert;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
-import org.junit.After;
-import org.junit.Before;
+import org.eclipse.jetty.util.IO;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class HashSessionManagerTest
 {
-    
-    @After
-    public void enableStacks()
-    {
-        enableStacks(true);
-    }
-
-    @Before
-    public void quietStacks()
-    {
-        enableStacks(false);
-    }
-    
-    protected void enableStacks(boolean enabled)
-    {
-        StdErrLog log = (StdErrLog)Log.getLogger("org.eclipse.jetty.server.session");
-        log.setHideStacks(!enabled);
-    }
-    
     @Test
     public void testDangerousSessionIdRemoval() throws Exception
     {
@@ -61,7 +39,7 @@ public class HashSessionManagerTest
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         testDir.mkdirs();
         manager.setStoreDirectory(testDir);
-        
+
         MavenTestingUtils.getTargetFile("dangerFile.session").createNewFile();
         
         Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile("dangerFile.session").exists());
@@ -79,23 +57,24 @@ public class HashSessionManagerTest
         manager.setDeleteUnrestorableSessions(true);
         manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
-        testDir.mkdirs();
-        manager.setStoreDirectory(testDir);
+        FS.ensureEmpty(testDir);
         
-        new File(testDir, "validFile.session").createNewFile();
+        manager.setStoreDirectory(testDir);
+
+        Assert.assertTrue(new File(testDir, "validFile.session").createNewFile());
         
         Assert.assertTrue("File should exist!", new File(testDir, "validFile.session").exists());
        
         manager.getSession("validFile.session");
 
         Assert.assertTrue("File shouldn't exist!", !new File(testDir,"validFile.session").exists());
-
     }
     
     @Test
     public void testHashSession() throws Exception
     {
         File testDir = MavenTestingUtils.getTargetTestingDir("saved");
+        IO.delete(testDir);
         testDir.mkdirs();
         
         Server server = new Server();
@@ -111,8 +90,9 @@ public class HashSessionManagerTest
         AbstractSessionIdManager idManager = new HashSessionIdManager();
         idManager.setWorkerName("foo");
         manager.setSessionIdManager(idManager);
+        server.setSessionIdManager(idManager);
         
-        idManager.start();
+        server.start();
         manager.start();
         
         HashedSession session = (HashedSession)manager.newHttpSession(new Request(null, null));
@@ -122,14 +102,12 @@ public class HashSessionManagerTest
         session.setAttribute("two", new Integer(2));    
         
         //stop will persist sessions
-        idManager.stop();
-        manager.setMaxInactiveInterval(30); //change max inactive interval for *new* sessions
+        manager.setMaxInactiveInterval(30); // change max inactive interval for *new* sessions
         manager.stop();
         
         Assert.assertTrue("File should exist!", new File(testDir, session.getId()).exists());
         
         //start will restore sessions
-        idManager.start();
         manager.start();
         
         HashedSession restoredSession = (HashedSession)manager.getSession(sessionId);
@@ -140,5 +118,7 @@ public class HashSessionManagerTest
         
         Assert.assertEquals(1, ((Integer)o).intValue());
         Assert.assertEquals(5, restoredSession.getMaxInactiveInterval());     
+        
+        server.stop();
     }
 }

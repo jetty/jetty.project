@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,13 +53,10 @@ public class ClassLoaderDump implements Dumpable
             Object parent = _loader.getParent();
             if (parent != null)
             {
-                if (!(parent instanceof Dumpable))
-                    parent = new ClassLoaderDump((ClassLoader)parent);
-
                 if (_loader instanceof URLClassLoader)
-                    ContainerLifeCycle.dump(out,indent,TypeUtil.asList(((URLClassLoader)_loader).getURLs()),Collections.singleton(parent));
+                    ContainerLifeCycle.dump(out,indent,TypeUtil.asList(((URLClassLoader)_loader).getURLs()),Collections.singleton(parent.toString()));
                 else
-                    ContainerLifeCycle.dump(out,indent,Collections.singleton(parent));
+                    ContainerLifeCycle.dump(out,indent,Collections.singleton(parent.toString()));
             }
         }
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,14 @@
 
 package org.eclipse.jetty.test.rfcs;
 
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
-import static org.junit.matchers.JUnitMatchers.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
@@ -42,7 +41,6 @@ import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.StringAssert;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -86,7 +84,7 @@ public abstract class RFC2616BaseTest
 
     public static void setUpServer(TestableJettyServer testableserver, Class<?> testclazz) throws Exception
     {
-    	File testWorkDir = MavenTestingUtils.getTargetTestingDir(testclazz.getName());
+        File testWorkDir = MavenTestingUtils.getTargetTestingDir(testclazz.getName());
         FS.ensureDirExists(testWorkDir);
 
         System.setProperty("java.io.tmpdir",testWorkDir.getAbsolutePath());
@@ -146,7 +144,7 @@ public abstract class RFC2616BaseTest
 
         // Test formatting
         fields.putDateField("Date",expected.getTime().getTime());
-        Assert.assertEquals("3.3.1 RFC 822 preferred","Sun, 06 Nov 1994 08:49:37 GMT",fields.getStringField("Date"));
+        Assert.assertEquals("3.3.1 RFC 822 preferred","Sun, 06 Nov 1994 08:49:37 GMT",fields.get("Date"));
     }
 
     /**
@@ -1159,12 +1157,12 @@ public abstract class RFC2616BaseTest
         req4.append("\n");
 
         HttpTester.Response response = http.request(req4);
-
+        
         String specId = "10.3 Redirection HTTP/1.1 w/content";
-        assertEquals(specId,HttpStatus.FOUND_302, response.getStatus());
-        assertEquals(specId,server.getScheme() + "://localhost/tests/R2.txt", response.get("Location"));
-        assertEquals(specId,"close", response.get("Connection"));
-        assertTrue(specId,response.get("Content-Length") == null);
+        assertThat(specId + " [status]",response.getStatus(),is(HttpStatus.FOUND_302));
+        assertThat(specId + " [location]",response.get("Location"),is(server.getScheme() + "://localhost/tests/R2.txt"));
+        assertThat(specId + " [connection]",response.get("Connection"),is("close"));
+        assertThat(specId + " [content-length]",response.get("Content-Length"), nullValue());
     }
 
     /**

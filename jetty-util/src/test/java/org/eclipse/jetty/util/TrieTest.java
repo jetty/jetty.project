@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -65,6 +65,24 @@ public class TrieTest
         trie.put("",9);
     }
 
+    @Test
+    public void testOverflow() throws Exception
+    {
+        int i=0;
+        while (true) 
+        {
+            if (++i>10000)
+                break; // must not be fixed size
+            if (!trie.put("prefix" + i, i))
+            {
+                Assert.assertTrue(trie.isFull());
+                break;
+            }
+        }
+        
+        Assert.assertTrue(!trie.isFull() || !trie.put("overflow", 0));
+    }
+    
     @Test
     public void testKeySet() throws Exception
     {

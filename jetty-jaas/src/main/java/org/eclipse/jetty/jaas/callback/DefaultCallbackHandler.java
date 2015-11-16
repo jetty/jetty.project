@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,28 +29,11 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.security.Password;
 
-
-
-/* ---------------------------------------------------- */
-/** DefaultUsernameCredentialCallbackHandler
- * <p>
- *
- * <p><h4>Notes</h4>
- * <p>
- *
- * <p><h4>Usage</h4>
- * <pre>
- */
-/*
- * </pre>
- *
- * @see
- * @version 1.0 Tue Apr 15 2003
- *
+/** 
+ * DefaultUsernameCredentialCallbackHandler
  */
 public class DefaultCallbackHandler extends AbstractCallbackHandler
 {
-
     private Request _request;
 
     public void setRequest (Request request)

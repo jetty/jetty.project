@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -71,10 +71,10 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
         boolean hasNonPublicInterface = false;
 
         // define proxy in class loader of non-public interface(s), if any
-        Class[] classObjs = new Class[interfaces.length];
+        Class<?>[] classObjs = new Class[interfaces.length];
         for (int i = 0; i < interfaces.length; i++) 
         {
-            Class cl = Class.forName(interfaces[i], false, loader);
+            Class<?> cl = Class.forName(interfaces[i], false, loader);
             if ((cl.getModifiers() & Modifier.PUBLIC) == 0) 
             {
                 if (hasNonPublicInterface) 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
-import java.io.FileWriter;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Collection;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 /**
@@ -73,9 +75,10 @@ public class ModuleGraphWriter
         return val;
     }
 
-    public void write(Modules modules, File outputFile) throws IOException
+    public void write(Modules modules, Path outputFile) throws IOException
     {
-        try (FileWriter writer = new FileWriter(outputFile,false); PrintWriter out = new PrintWriter(writer);)
+        try (BufferedWriter writer = Files.newBufferedWriter(outputFile,StandardCharsets.UTF_8,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE); 
+             PrintWriter out = new PrintWriter(writer);)
         {
             writeHeaderMessage(out,outputFile);
 
@@ -99,7 +102,7 @@ public class ModuleGraphWriter
             out.println("    ssize = \"20,40\"");
             out.println("  ];");
 
-            List<Module> enabled = modules.resolveEnabled();
+            List<Module> enabled = modules.getSelected();
 
             // Module Nodes
             writeModules(out,modules,enabled);
@@ -112,7 +115,7 @@ public class ModuleGraphWriter
         }
     }
 
-    private void writeHeaderMessage(PrintWriter out, File outputFile)
+    private void writeHeaderMessage(PrintWriter out, Path outputFile)
     {
         out.println("/*");
         out.println(" * GraphViz Graph of Jetty Modules");
@@ -121,7 +124,7 @@ public class ModuleGraphWriter
         out.println(" * GraphViz: http://graphviz.org/");
         out.println(" * ");
         out.println(" * To Generate Graph image using graphviz:");
-        String filename = outputFile.getName();
+        String filename = outputFile.getFileName().toString();
         String basename = filename.substring(0,filename.indexOf('.'));
         out.printf(" *   $ dot -Tpng -Goverlap=false -o %s.png %s%n",basename,filename);
         out.println(" */");
@@ -160,7 +163,7 @@ public class ModuleGraphWriter
     private void writeModuleNode(PrintWriter out, Module module, boolean resolved)
     {
         String color = colorModuleBg;
-        if (module.isEnabled())
+        if (module.isSelected())
         {
             // specifically enabled by config
             color = colorEnabledBg;
@@ -175,12 +178,12 @@ public class ModuleGraphWriter
         out.printf("<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"2\">%n");
         out.printf("  <TR><TD ALIGN=\"LEFT\"><B>%s</B></TD></TR>%n",module.getName());
 
-        if (module.isEnabled())
+        if (module.isSelected())
         {
             writeModuleDetailHeader(out,"ENABLED");
-            for (String source : module.getSources())
+            for (String selection : module.getSelections())
             {
-                writeModuleDetailLine(out,"via: " + source);
+                writeModuleDetailLine(out,"via: " + selection);
             }
         }
         else if (resolved)
@@ -208,9 +211,9 @@ public class ModuleGraphWriter
             }
         }
 
-        if (!module.getInitialise().isEmpty())
+        if (!module.getIniTemplate().isEmpty())
         {
-            List<String> inis = module.getInitialise();
+            List<String> inis = module.getIniTemplate();
             writeModuleDetailHeader(out,"INI Template",inis.size());
         }
 
@@ -225,32 +228,21 @@ public class ModuleGraphWriter
 
         out.println("  node [ labeljust = l ];");
 
-        for (int depth = 0; depth <= allmodules.getMaxDepth(); depth++)
+        for (Module module: allmodules)
         {
-            out.println();
-            Collection<Module> depthModules = allmodules.getModulesAtDepth(depth);
-            if (depthModules.size() > 0)
-            {
-                out.printf("  /* Level %d */%n",depth);
-                out.println("  { rank = same;");
-                for (Module module : depthModules)
-                {
-                    boolean resolved = enabled.contains(module);
-                    writeModuleNode(out,module,resolved);
-                }
-                out.println("  }");
-            }
+            boolean resolved = enabled.contains(module);
+            writeModuleNode(out,module,resolved);
         }
     }
 
-    private void writeRelationships(PrintWriter out, Modules modules, List<Module> enabled)
+    private void writeRelationships(PrintWriter out, Iterable<Module> modules, List<Module> enabled)
     {
         for (Module module : modules)
         {
-            for (Module parent : module.getParentEdges())
-            {
-                out.printf("    \"%s\" -> \"%s\";%n",module.getName(),parent.getName());
-            }
+            for (String depends : module.getDepends())
+                out.printf("    \"%s\" -> \"%s\";%n",module.getName(),depends);
+            for (String optional : module.getOptional())
+                out.printf("    \"%s\" => \"%s\";%n",module.getName(),optional);
         }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -472,6 +472,7 @@ public class QuotedStringTokenizer
     /* ------------------------------------------------------------ */
     /** Unquote a string.
      * @param s The string to unquote.
+     * @param lenient true if unquoting should be lenient to escaped content, leaving some alone, false if string unescaping
      * @return quoted string
      */
     public static String unquote(String s, boolean lenient)

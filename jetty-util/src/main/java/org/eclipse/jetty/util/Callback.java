@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,58 +16,142 @@
 //  ========================================================================
 //
 
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.eclipse.jetty.util;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * <p>A callback abstraction that handles completed/failed events of asynchronous operations.</p>
  *
- * <p>Semantically this is equivalent to an optimise Promise&lt;Void&gt;, but callback is a more meaningful 
+ * <p>Semantically this is equivalent to an optimise Promise&lt;Void&gt;, but callback is a more meaningful
  * name than EmptyPromise</p>
  */
 public interface Callback
 {
     /**
+     * Instance of Adapter that can be used when the callback methods need an empty
+     * implementation without incurring in the cost of allocating a new Adapter object.
+     */
+    Callback NOOP = new Callback(){};
+
+    /**
      * <p>Callback invoked when the operation completes.</p>
      *
      * @see #failed(Throwable)
      */
-    public abstract void succeeded();
+    default void succeeded()
+    {}
 
     /**
      * <p>Callback invoked when the operation fails.</p>
      * @param x the reason for the operation failure
      */
-    public void failed(Throwable x);
+    default void failed(Throwable x)
+    {}
 
     /**
-     * <p>Empty implementation of {@link Callback}</p>
+     * @return True if the callback is known to never block the caller
      */
-    public static class Adapter implements Callback
+    default boolean isNonBlocking()
     {
+        return false;
+    }
+
+    /**
+     * <p>Creates a non-blocking callback from the given incomplete CompletableFuture.</p>
+     * <p>When the callback completes, either succeeding or failing, the
+     * CompletableFuture is also completed, respectively via
+     * {@link CompletableFuture#complete(Object)} or
+     * {@link CompletableFuture#completeExceptionally(Throwable)}.</p>
+     *
+     * @param completable the CompletableFuture to convert into a callback
+     * @return a callback that when completed, completes the given CompletableFuture
+     */
+    static Callback from(CompletableFuture<?> completable)
+    {
+        return from(completable, false);
+    }
+
+    /**
+     * <p>Creates a callback from the given incomplete CompletableFuture,
+     * with the given {@code blocking} characteristic.</p>
+     *
+     * @param completable the CompletableFuture to convert into a callback
+     * @param blocking whether the callback is blocking
+     * @return a callback that when completed, completes the given CompletableFuture
+     */
+    static Callback from(CompletableFuture<?> completable, boolean blocking)
+    {
+        if (completable instanceof Callback)
+            return (Callback)completable;
+
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                completable.complete(null);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                completable.completeExceptionally(x);
+            }
+
+            @Override
+            public boolean isNonBlocking()
+            {
+                return !blocking;
+            }
+        };
+    }
+
+    /**
+     * Callback interface that declares itself as non-blocking
+     */
+    interface NonBlocking extends Callback
+    {
+        @Override
+        default boolean isNonBlocking()
+        {
+            return true;
+        }
+    }
+
+    /**
+     * <p>A CompletableFuture that is also a Callback.</p>
+     */
+    class Completable extends CompletableFuture<Void> implements Callback
+    {
+        private final boolean blocking;
+
+        public Completable()
+        {
+            this(false);
+        }
+
+        public Completable(boolean blocking)
+        {
+            this.blocking = blocking;
+        }
+
         @Override
         public void succeeded()
         {
+            complete(null);
         }
 
         @Override
         public void failed(Throwable x)
         {
+            completeExceptionally(x);
+        }
+
+        @Override
+        public boolean isNonBlocking()
+        {
+            return !blocking;
         }
     }
 }

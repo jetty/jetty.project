@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
+
 import javax.net.ssl.SSLHandshakeException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -34,13 +35,11 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static junit.framework.Assert.fail;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
 
 /**
  * This test class runs tests to make sure that hostname verification (http://www.ietf.org/rfc/rfc2818.txt
@@ -96,7 +95,7 @@ public class HostnameVerificationTest
      * http://www.ietf.org/rfc/rfc2818.txt section 3.1. It uses a certificate with a common name different to localhost
      * and sends a request to localhost. This should fail with a SSLHandshakeException.
      *
-     * @throws Exception
+     * @throws Exception on test failure
      */
     @Test
     public void simpleGetWithHostnameVerificationEnabledTest() throws Exception
@@ -106,7 +105,7 @@ public class HostnameVerificationTest
         try
         {
             client.GET(uri);
-            fail("sending request to client should have failed with an Exception!");
+            Assert.fail("sending request to client should have failed with an Exception!");
         }
         catch (ExecutionException x)
         {
@@ -118,10 +117,15 @@ public class HostnameVerificationTest
 
             // ExecutionException wraps an SSLHandshakeException
             Throwable cause = x.getCause();
+            if (cause==null)
+            {
+                x.printStackTrace();
+                Assert.fail("No cause?");
+            }
             if (cause instanceof SSLHandshakeException)
-                assertThat(cause.getCause().getCause(), instanceOf(CertificateException.class));
+                Assert.assertThat(cause.getCause().getCause(), Matchers.instanceOf(CertificateException.class));
             else
-                assertThat(cause.getCause(), instanceOf(ClosedChannelException.class));
+                Assert.assertThat(cause.getCause(), Matchers.instanceOf(ClosedChannelException.class));
         }
     }
 
@@ -129,7 +133,8 @@ public class HostnameVerificationTest
      * This test has hostname verification disabled and connecting, ssl handshake and sending the request should just
      * work fine.
      *
-     * @throws Exception
+     * @throws Exception on test failure
+     * 
      */
     @Test
     public void simpleGetWithHostnameVerificationDisabledTest() throws Exception
@@ -142,7 +147,7 @@ public class HostnameVerificationTest
         }
         catch (ExecutionException e)
         {
-            fail("SSLHandshake should work just fine as hostname verification is disabled! " + e.getMessage());
+            Assert.fail("SSLHandshake should work just fine as hostname verification is disabled! " + e.getMessage());
         }
     }
 
@@ -150,7 +155,7 @@ public class HostnameVerificationTest
      * This test has hostname verification disabled by setting trustAll to true and connecting,
      * ssl handshake and sending the request should just work fine.
      *
-     * @throws Exception
+     * @throws Exception on test failure
      */
     @Test
     public void trustAllDisablesHostnameVerificationTest() throws Exception
@@ -163,7 +168,7 @@ public class HostnameVerificationTest
         }
         catch (ExecutionException e)
         {
-            fail("SSLHandshake should work just fine as hostname verification is disabled! " + e.getMessage());
+            Assert.fail("SSLHandshake should work just fine as hostname verification is disabled! " + e.getMessage());
         }
     }
 }

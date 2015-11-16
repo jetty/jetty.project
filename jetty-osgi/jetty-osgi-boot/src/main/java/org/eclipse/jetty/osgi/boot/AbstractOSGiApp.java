@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.osgi.boot;
 
+import java.io.File;
+import java.net.URL;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
@@ -25,6 +27,9 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
@@ -39,6 +44,8 @@ import org.osgi.framework.ServiceRegistration;
  */
 public abstract class AbstractOSGiApp extends App
 {      
+    private static final Logger LOG = Log.getLogger(AbstractOSGiApp.class);
+    
     protected Bundle _bundle;
     protected Dictionary _properties;
     protected ServiceRegistration _registration;
@@ -118,4 +125,91 @@ public abstract class AbstractOSGiApp extends App
         _registration = null;
     }
 
+    protected Resource getFileAsResource (String dir, String file)
+    {
+        Resource r = null;
+        try
+        {
+            File asFile = new File (dir, file);
+            if (asFile.exists())
+                r = Resource.newResource(asFile);
+        }
+        catch (Exception e)
+        {
+            r = null;
+        } 
+        return r;
+    }
+    
+    protected Resource getFileAsResource (String file)
+    {
+        Resource r = null;
+        try
+        {
+            File asFile = new File (file);
+            if (asFile.exists())
+                r = Resource.newResource(asFile);
+        }
+        catch (Exception e)
+        {
+            r = null;
+        } 
+        return r;
+    }
+    
+    protected Resource findFile (String fileName, String jettyHome, String bundleOverrideLocation, Bundle containingBundle)
+    {
+        Resource res = null;
+
+        //try to find the context file in the filesystem
+        if (fileName.startsWith("/"))
+            res = getFileAsResource(fileName);
+        if (res != null)
+            return res;
+
+        //try to find it relative to jetty home
+        if (jettyHome != null)
+        {
+            if (jettyHome.startsWith("\"") || jettyHome.startsWith("'"))
+                jettyHome = jettyHome.substring(1);
+            if (jettyHome.endsWith("\"") || (jettyHome.endsWith("'")))
+                jettyHome = jettyHome.substring(0,jettyHome.length()-1);
+
+            res = getFileAsResource(jettyHome, fileName); 
+        }
+        if (res != null)
+            return res;
+       
+
+        //try to find it relative to an override location that has been specified               
+        if (bundleOverrideLocation != null)
+        { 
+            try(Resource location=Resource.newResource(bundleOverrideLocation))
+            {
+                res=location.addPath(fileName);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+        }        
+        if (res != null)
+            return res;
+        
+        //try to find it relative to the bundle in which it is being deployed
+        if (containingBundle != null)
+        {
+            if (fileName.startsWith("./"))
+                fileName = fileName.substring(1);
+
+            if (!fileName.startsWith("/"))
+                fileName = "/" + fileName;
+
+            URL entry = _bundle.getEntry(fileName);
+            if (entry != null)
+                res = Resource.newResource(entry);
+        }
+        
+        return res;
+    }
 }

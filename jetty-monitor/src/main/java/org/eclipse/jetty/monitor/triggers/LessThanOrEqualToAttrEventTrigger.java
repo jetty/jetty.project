@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,12 +21,12 @@ package org.eclipse.jetty.monitor.triggers;
 import javax.management.MalformedObjectNameException;
 
 
-/* ------------------------------------------------------------ */
 /**
  * LessThanOrEqualToAttrEventTrigger
- * 
+ * <p> 
  * Event trigger that polls a value of an MXBean attribute and
  * checks if it is less than or equal to specified max value. 
+ * @param <TYPE> event trigger type 
  */
 public class LessThanOrEqualToAttrEventTrigger<TYPE extends Comparable<TYPE>> extends AttrEventTrigger<TYPE>
 {
@@ -42,8 +42,8 @@ public class LessThanOrEqualToAttrEventTrigger<TYPE extends Comparable<TYPE>> ex
      * @param attributeName name of an MBean attribute to be polled
      * @param max maximum value of the attribute
      * 
-     * @throws MalformedObjectNameException
-     * @throws IllegalArgumentException
+     * @throws MalformedObjectNameException on bad object name
+     * @throws IllegalArgumentException on bad parameters
      */
     public LessThanOrEqualToAttrEventTrigger(String objectName, String attributeName, TYPE max)
         throws MalformedObjectNameException, IllegalArgumentException
@@ -72,7 +72,7 @@ public class LessThanOrEqualToAttrEventTrigger<TYPE extends Comparable<TYPE>> ex
     /* ------------------------------------------------------------ */
     /**
      * Returns the string representation of this event trigger
-     * in the format "name<=max". 
+     * in the format "name&lt;=max". 
      * 
      * @return string representation of the event trigger
      * 

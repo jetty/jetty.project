@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,18 +18,19 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.server.helper.CaptureSocket;
 import org.eclipse.jetty.websocket.server.helper.SessionServlet;
 import org.junit.AfterClass;
@@ -38,15 +39,13 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.is;
-
 public class WebSocketOverSSLTest
 {
     @Rule
     public TestTracker tracker = new TestTracker();
     
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private static SimpleServletServer server;
 
@@ -66,6 +65,7 @@ public class WebSocketOverSSLTest
 
     /**
      * Test the requirement of issuing socket and receiving echo response
+     * @throws Exception on test failure
      */
     @Test
     public void testEcho() throws Exception
@@ -107,6 +107,7 @@ public class WebSocketOverSSLTest
 
     /**
      * Test that server session reports as secure
+     * @throws Exception on test failure
      */
     @Test
     public void testServerSessionIsSecure() throws Exception
@@ -148,6 +149,7 @@ public class WebSocketOverSSLTest
 
     /**
      * Test that server session.upgradeRequest.requestURI reports correctly
+     * @throws Exception on test failure
      */
     @Test
     public void testServerSessionRequestURI() throws Exception

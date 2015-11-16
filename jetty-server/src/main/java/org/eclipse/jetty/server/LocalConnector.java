@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -133,12 +133,15 @@ public class LocalConnector extends AbstractConnector
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
     {
-        LOG.debug("requests {}", BufferUtil.toUTF8String(requestsBuffer));
+        if (LOG.isDebugEnabled())
+            LOG.debug("requests {}", BufferUtil.toUTF8String(requestsBuffer));
         LocalEndPoint endp = executeRequest(requestsBuffer);
         endp.waitUntilClosedOrIdleFor(idleFor,units);
         ByteBuffer responses = endp.takeOutput();
-        endp.getConnection().close();
-        LOG.debug("responses {}", BufferUtil.toUTF8String(responses));
+        if (endp.isOutputShutdown())
+            endp.close();
+        if (LOG.isDebugEnabled())
+            LOG.debug("responses {}", BufferUtil.toUTF8String(responses));
         return responses;
     }
 
@@ -155,8 +158,10 @@ public class LocalConnector extends AbstractConnector
 
     private LocalEndPoint executeRequest(ByteBuffer rawRequest)
     {
+        if (!isStarted())
+            throw new IllegalStateException("!STARTED");
         LocalEndPoint endp = new LocalEndPoint();
-        endp.setInput(rawRequest);
+        endp.addInput(rawRequest);
         _connects.add(endp);
         return endp;
     }
@@ -164,7 +169,8 @@ public class LocalConnector extends AbstractConnector
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
-        LOG.debug("accepting {}", acceptorID);
+        if (LOG.isDebugEnabled())
+            LOG.debug("accepting {}", acceptorID);
         LocalEndPoint endPoint = _connects.take();
         endPoint.onOpen();
         onEndPointOpened(endPoint);
@@ -181,41 +187,26 @@ public class LocalConnector extends AbstractConnector
 
         public LocalEndPoint()
         {
-            super(getScheduler(), LocalConnector.this.getIdleTimeout());
+            super(LocalConnector.this.getScheduler(), LocalConnector.this.getIdleTimeout());
             setGrowOutput(true);
         }
-
-        public void addInput(String s)
+        
+        protected void execute(Runnable task)
         {
-            // TODO this is a busy wait
-            while(getIn()==null || BufferUtil.hasContent(getIn()))
-                Thread.yield();
-            setInput(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
-        }
-
-        @Override
-        public void close()
-        {
-            boolean wasOpen=isOpen();
-            super.close();
-            if (wasOpen)
-            {
-//                connectionClosed(getConnection());
-                getConnection().onClose();
-                onClose();
-            }
+            getExecutor().execute(task);
         }
 
         @Override
         public void onClose()
         {
+            getConnection().onClose();
             LocalConnector.this.onEndPointClosed(this);
             super.onClose();
             _closed.countDown();
         }
 
         @Override
-        public void shutdownOutput()
+        public void doShutdownOutput()
         {
             super.shutdownOutput();
             close();
@@ -249,7 +240,8 @@ public class LocalConnector extends AbstractConnector
                     {
                         if (size==getOutput().remaining())
                         {
-                            LOG.debug("idle for {} {}",idleFor,units);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("idle for {} {}",idleFor,units);
                             return;
                         }
                         size=getOutput().remaining();

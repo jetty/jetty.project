@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,18 +32,25 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.GzipHttpContent;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.servlets.gzip.GzipHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class GzipHandlerTest
 {
     private static String __content =
@@ -72,13 +79,25 @@ public class GzipHandlerTest
 
         Handler testHandler = new AbstractHandler()
         {
+            
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                     ServletException
             {
-                PrintWriter writer = response.getWriter();
-                writer.write(__content);
-                writer.close();
-
+                String etag="W/\"foobar\"";
+                response.setHeader(HttpHeader.ETAG.asString(),etag);
+                
+                String inm = request.getHeader(HttpHeader.IF_NONE_MATCH.asString());
+                if (inm!=null && inm.contains(etag))
+                {
+                    response.setStatus(HttpStatus.NOT_MODIFIED_304);
+                }
+                else
+                {
+                    PrintWriter writer = response.getWriter();
+                    writer.write(__content);
+                    writer.close();
+                }
+                
                 baseRequest.setHandled(true);
             }
         };
@@ -97,20 +116,56 @@ public class GzipHandlerTest
         _server.join();
     }
 
+    HttpTester.Request newRequest()
+    {
+        HttpTester.Request request = HttpTester.newRequest();
+        request.setMethod("GET");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/");
+        return request;
+    }
+
+    @Test
+    public void testNoGzipHandler() throws Exception
+    {
+        // generated and parsed test
+        HttpTester.Request request = newRequest();
+        request.setHeader("accept-encoding","deflate");
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        Assert.assertNull(response.get("Content-Encoding"));
+        assertEquals(__content, response.getContent());
+    }
+    
     @Test
     public void testGzipHandler() throws Exception
     {
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
-
-        request.setMethod("GET");
-        request.setVersion("HTTP/1.0");
-        request.setHeader("Host","tester");
+        HttpTester.Request request = newRequest();
         request.setHeader("accept-encoding","gzip");
-        request.setURI("/");
 
-        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        assertTrue(response.get("Content-Encoding").equalsIgnoreCase("gzip"));
+        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+        IO.copy(testIn,testOut);
+        assertEquals(__content, testOut.toString("UTF8"));
+
+    }
+    
+    @Test
+    public void testDeflateGzipHandler() throws Exception
+    {
+        // generated and parsed test
+        HttpTester.Request request = newRequest();
+        request.setHeader("accept-encoding","deflate;q=0.1,gzip;q=0.5");
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
 
         assertTrue(response.get("Content-Encoding").equalsIgnoreCase("gzip"));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
@@ -120,6 +175,59 @@ public class GzipHandlerTest
         IO.copy(testIn,testOut);
 
         assertEquals(__content, testOut.toString("UTF8"));
+    }
+    
+    
 
+    @Test
+    public void testEtagGzipHandler() throws Exception
+    {
+        // generated and parsed test
+        HttpTester.Request request = newRequest();
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        Assert.assertNull(response.get("Content-Encoding"));
+        assertEquals(__content, response.getContent());
+        String etag = response.get(HttpHeader.ETAG.asString());
+        String etag_gzip=etag.substring(0,etag.length()-1)+GzipHttpContent.ETAG_GZIP_QUOTE;
+        
+        request = newRequest();
+        request.add(HttpHeader.IF_NONE_MATCH,"xxxx");
+        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        Assert.assertNull(response.get("Content-Encoding"));
+        assertEquals(__content, response.getContent());
+
+        request = newRequest();
+        request.add(HttpHeader.IF_NONE_MATCH,etag);
+        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_NOT_MODIFIED,response.getStatus());
+        assertEquals(etag,response.get(HttpHeader.ETAG.asString()));
+        
+        request = newRequest();
+        request.setHeader("accept-encoding","gzip");
+        request.add(HttpHeader.IF_NONE_MATCH,etag);
+        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_NOT_MODIFIED,response.getStatus());
+        assertEquals(etag,response.get(HttpHeader.ETAG.asString()));
+        
+        request = newRequest();
+        request.setHeader("accept-encoding","gzip");
+        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        assertTrue(response.get("Content-Encoding").equalsIgnoreCase("gzip"));
+        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+        IO.copy(testIn,testOut);
+        assertEquals(__content, testOut.toString("UTF8"));
+        assertEquals(etag_gzip,response.get(HttpHeader.ETAG.asString()));
+        
+        request = newRequest();
+        request.setHeader("accept-encoding","gzip");
+        request.add(HttpHeader.IF_NONE_MATCH,etag_gzip);
+        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_NOT_MODIFIED,response.getStatus());
+        assertEquals(etag,response.get(HttpHeader.ETAG.asString()));
+        
     }
 }

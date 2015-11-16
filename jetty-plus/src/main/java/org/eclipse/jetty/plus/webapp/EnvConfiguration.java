@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -47,8 +47,6 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
  * EnvConfiguration
- *
- *
  */
 public class EnvConfiguration extends AbstractConfiguration
 {
@@ -62,10 +60,6 @@ public class EnvConfiguration extends AbstractConfiguration
         this.jettyEnvXmlUrl = url;
     }
 
-    /**
-     * @see Configuration#configure(WebAppContext)
-     * @throws Exception
-     */
     @Override
     public void preConfigure (WebAppContext context) throws Exception
     {
@@ -73,9 +67,6 @@ public class EnvConfiguration extends AbstractConfiguration
         createEnvContext(context);
     }
 
-    /**
-     * @throws Exception
-     */
     @Override
     public void configure (WebAppContext context) throws Exception
     {
@@ -139,8 +130,7 @@ public class EnvConfiguration extends AbstractConfiguration
 
     /**
      * Remove jndi setup from start
-     * @see Configuration#deconfigure(WebAppContext)
-     * @throws Exception
+     * @throws Exception if unable to deconfigure
      */
     @Override
     public void deconfigure (WebAppContext context) throws Exception
@@ -180,22 +170,25 @@ public class EnvConfiguration extends AbstractConfiguration
 
     /**
      * Remove all jndi setup
-     * @see Configuration#deconfigure(WebAppContext)
-     * @throws Exception
+     * @throws Exception if unable to destroy
      */
     @Override
     public void destroy (WebAppContext context) throws Exception
     {
         try
         {
-            //unbind any NamingEntries that were configured in this webapp's name space
+            //unbind any NamingEntries that were configured in this webapp's name space           
             NamingContext scopeContext = (NamingContext)NamingEntryUtil.getContextForScope(context);
             scopeContext.getParent().destroySubcontext(scopeContext.getName());
         }
         catch (NameNotFoundException e)
         {
             LOG.ignore(e);
-            LOG.debug("No naming entries configured in environment for webapp "+context);
+            LOG.debug("No jndi entries scoped to webapp {}", context);
+        }
+        catch (NamingException e)
+        {
+            LOG.debug("Error unbinding jndi entries scoped to webapp "+context, e);
         }
     }
 
@@ -204,7 +197,8 @@ public class EnvConfiguration extends AbstractConfiguration
      * web.xml file can potentially override them.
      *
      * We first bind EnvEntries declared in Server scope, then WebAppContext scope.
-     * @throws NamingException
+     * @param context the context to use for the object scope
+     * @throws NamingException if unable to bind env entries
      */
     public void bindEnvEntries (WebAppContext context)
     throws NamingException

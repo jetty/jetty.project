@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,13 +24,13 @@ import javax.servlet.http.HttpServletRequest;
 
 /**
  * Customizes requests that lack the {@code Host} header (for example, HTTP 1.0 requests).
- * <p />
+ * <p>
  * In case of HTTP 1.0 requests that lack the {@code Host} header, the application may issue
  * a redirect, and the {@code Location} header is usually constructed from the {@code Host}
  * header; if the {@code Host} header is missing, the server may query the connector for its
  * IP address in order to construct the {@code Location} header, and thus leak to clients
  * internal IP addresses.
- * <p />
+ * <p>
  * This {@link HttpConfiguration.Customizer} is configured with a {@code serverName} and
  * optionally a {@code serverPort}.
  * If the {@code Host} header is absent, the configured {@code serverName} will be set on
@@ -64,10 +64,6 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
         if (request.getHeader("Host") == null)
-        {
-            request.setServerName(serverName);
-            if (serverPort > 0)
-                request.setServerPort(serverPort);
-        }
+            request.setAuthority(serverName,serverPort);  // TODO set the field as well?
     }
 }

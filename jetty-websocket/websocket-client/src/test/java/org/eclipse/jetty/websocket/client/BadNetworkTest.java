@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,16 +22,14 @@ import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -44,7 +42,7 @@ public class BadNetworkTest
     public TestTracker tt = new TestTracker();
 
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private BlockheadServer server;
     private WebSocketClient client;
@@ -84,7 +82,7 @@ public class BadNetworkTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection ssocket = server.accept();
+        IBlockheadServerConnection ssocket = server.accept();
         ssocket.upgrade();
 
         // Validate that we are connected
@@ -104,7 +102,6 @@ public class BadNetworkTest
         wsocket.assertCloseCode(StatusCode.NO_CLOSE);
     }
 
-    @Ignore("Idle timeout not working yet")
     @Test
     public void testAbruptServerClose() throws Exception
     {
@@ -113,7 +110,7 @@ public class BadNetworkTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection ssocket = server.accept();
+        IBlockheadServerConnection ssocket = server.accept();
         ssocket.upgrade();
 
         // Validate that we are connected

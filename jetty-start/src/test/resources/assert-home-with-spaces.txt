@@ -2,7 +2,7 @@
 # No XMLs in this home
 
 # The LIBs we expect (order is irrelevant)
-LIB|${jetty.home}/lib/example of a library with spaces.jar
+LIB|${jetty.base}/lib/example of a library with spaces.jar
 
 # The Properties we expect (order is irrelevant)
 PROP|test.message=Hello

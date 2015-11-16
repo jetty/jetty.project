@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<!-- =============================================================== -->
+<!-- The DebugHandler                                                -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Get id="oldhandler" name="handler"/>
+  <Set name="handler">
+    <New id="DebugHandler" class="org.eclipse.jetty.server.handler.DebugHandler">
+      <Set name="handler"><Ref refid="oldhandler"/></Set>
+      <Set name="outputStream">
+        <New class="org.eclipse.jetty.util.RolloverFileOutputStream">
+          <Arg type="String"><Property name="jetty.debuglog.dir" deprecated="jetty.logs" default="./logs"/>/yyyy_mm_dd.debug.log</Arg>
+          <Arg type="boolean"><Property name="jetty.debuglog.append" default="true"/></Arg>
+          <Arg type="int"><Property name="jetty.debuglog.retainDays" default="90"/></Arg>
+          <Arg>
+            <Call class="java.util.TimeZone" name="getTimeZone"><Arg><Property name="jetty.debuglog.timezone" default="GMT"/></Arg></Call>
+          </Arg>
+        </New>
+      </Set>
+    </New>
+  </Set>
+</Configure>

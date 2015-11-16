@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.net.URI;
 import java.util.List;
@@ -40,7 +40,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests of {@link Configurator}
+ * Tests of {@link javax.websocket.ClientEndpointConfig.Configurator}
  */
 public class ConfiguratorTest
 {

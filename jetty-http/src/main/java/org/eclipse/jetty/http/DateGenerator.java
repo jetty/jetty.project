@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.StringUtil;
 
 /**
  * ThreadLocal Date formatters for HTTP style dates.
- *
  */
 public class DateGenerator
 {
@@ -56,6 +55,8 @@ public class DateGenerator
     
     /**
      * Format HTTP date "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+     * @param date the date in milliseconds
+     * @return the formatted date
      */
     public static String formatDate(long date)
     {
@@ -64,6 +65,8 @@ public class DateGenerator
 
     /**
      * Format "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" for cookies
+     * @param buf the buffer to put the formatted date into
+     * @param date the date in milliseconds
      */
     public static void formatCookieDate(StringBuilder buf, long date)
     {
@@ -72,6 +75,8 @@ public class DateGenerator
 
     /**
      * Format "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" for cookies
+     * @param date the date in milliseconds 
+     * @return the formatted date
      */
     public static String formatCookieDate(long date)
     {
@@ -85,6 +90,8 @@ public class DateGenerator
 
     /**
      * Format HTTP date "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+     * @param date the date in milliseconds
+     * @return the formatted date
      */
     public String doFormatDate(long date)
     {
@@ -125,6 +132,8 @@ public class DateGenerator
 
     /**
      * Format "EEE, dd-MMM-yy HH:mm:ss 'GMT'" for cookies
+     * @param buf the buffer to format the date into
+     * @param date the date in milliseconds
      */
     public void doFormatCookieDate(StringBuilder buf, long date)
     {

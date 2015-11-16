@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,6 @@ package org.eclipse.jetty.servlets;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 
 /* ------------------------------------------------------------ */
@@ -35,7 +34,7 @@ public class CloseableDoSFilter extends DoSFilter
     @Override
     protected void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
     {
-        Request base_request=(request instanceof Request)?(Request)request:HttpChannel.getCurrentHttpChannel().getRequest();
+        Request base_request=Request.getBaseRequest(request);
         base_request.getHttpChannel().getEndPoint().close();
     }
 }

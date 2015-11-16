@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,7 +34,7 @@ import org.eclipse.jetty.client.api.Result;
  * A {@link BufferingResponseListener} that is also a {@link Future}, to allow applications
  * to block (indefinitely or for a timeout) until {@link #onComplete(Result)} is called,
  * or to {@link #cancel(boolean) abort} the request/response conversation.
- * <p />
+ * <p>
  * Typical usage is:
  * <pre>
  * Request request = httpClient.newRequest(...)...;
@@ -70,7 +70,7 @@ public class FutureResponseListener extends BufferingResponseListener implements
     @Override
     public void onComplete(Result result)
     {
-        response = new HttpContentResponse(result.getResponse(), getContent(), getEncoding());
+        response = new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding());
         failure = result.getFailure();
         latch.countDown();
     }

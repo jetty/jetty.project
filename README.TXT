@@ -1,5 +1,4 @@
-This is a source checkout of the Jetty webserver.
-
+This is a source checkout of the Eclipse Jetty webserver.
 
 To build, use:
 
@@ -19,4 +18,3 @@ for the tests to all pass successfully.
 Bypass tests by building with -Dmaven.test.skip=true but note
 that this will not produce some test jars that are leveraged
 in other places in the build.
-

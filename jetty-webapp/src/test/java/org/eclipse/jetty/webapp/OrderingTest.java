@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -31,14 +32,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.Ordering.AbsoluteOrdering;
-import org.eclipse.jetty.webapp.Ordering.RelativeOrdering;
 import org.junit.Test;
 
 /**
  * OrderingTest
- *
- *
  */
 public class OrderingTest
 {
@@ -111,9 +108,6 @@ public class OrderingTest
             return _name;
         }
         
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#getURL()
-         */
         @Override
         public URL getURL()
         {
@@ -189,7 +183,6 @@ public class OrderingTest
     throws Exception
     {
         //Example from ServletSpec p.70
-        WebAppContext wac = new WebAppContext();
         MetaData metaData = new MetaData();
         List<Resource> resources = new ArrayList<Resource>();
         metaData._ordering = new RelativeOrdering(metaData);
@@ -283,7 +276,6 @@ public class OrderingTest
     throws Exception
     {
         List<Resource> resources = new ArrayList<Resource>();
-        WebAppContext wac = new WebAppContext();
         MetaData metaData = new MetaData();
         metaData._ordering = new RelativeOrdering(metaData);
 
@@ -368,7 +360,7 @@ public class OrderingTest
                              "BEFplainDC",
                              "EBFplainCD",
                              "EBFplainDC",
-                             "EBFDplain"};
+                             "EBFDplainC"};
 
         String orderedNames = "";
         for (Resource r:orderedList)
@@ -383,7 +375,6 @@ public class OrderingTest
     throws Exception
     {
         List<Resource> resources = new ArrayList<Resource>();
-        WebAppContext wac = new WebAppContext();
         MetaData metaData = new MetaData();
         metaData._ordering = new RelativeOrdering(metaData);
 
@@ -458,7 +449,6 @@ public class OrderingTest
     throws Exception
     {
         List<Resource> resources = new ArrayList<Resource>();
-        WebAppContext wac = new WebAppContext();
         MetaData metaData = new MetaData();
         metaData._ordering = new RelativeOrdering(metaData);
 
@@ -510,6 +500,22 @@ public class OrderingTest
     }
 
     @Test
+    public void testOrderFragments() throws Exception 
+    {
+        final MetaData metadata = new MetaData();
+        final Resource jarResource = new TestResource("A");
+
+        metadata.setOrdering(new RelativeOrdering(metadata));
+        metadata.addWebInfJar(jarResource);
+        metadata.orderFragments();
+        assertEquals(1, metadata.getOrderedWebInfJars().size());
+        metadata.orderFragments();
+        assertEquals(1, metadata.getOrderedWebInfJars().size());
+    }
+
+
+
+    @Test
     public void testCircular1 ()
     throws Exception
     {
@@ -517,7 +523,6 @@ public class OrderingTest
         //A: after B
         //B: after A
         List<Resource> resources = new ArrayList<Resource>();
-        WebAppContext wac = new WebAppContext();
         MetaData metaData = new MetaData();
         metaData._ordering = new RelativeOrdering(metaData);
 
@@ -547,7 +552,7 @@ public class OrderingTest
 
         try
         {
-            List<Resource> orderedList = metaData._ordering.order(resources);
+            metaData._ordering.order(resources);
             fail("No circularity detected");
         }
         catch (Exception e)
@@ -563,7 +568,6 @@ public class OrderingTest
     throws Exception
     {
         List<Resource> resources = new ArrayList<Resource>();
-        WebAppContext wac = new WebAppContext();
         MetaData metaData = new MetaData();
         metaData._ordering = new RelativeOrdering(metaData);
 
@@ -625,7 +629,6 @@ public class OrderingTest
         // A,B,C,others
         //
         List<Resource> resources = new ArrayList<Resource>();
-        WebAppContext wac = new WebAppContext();
         MetaData metaData = new MetaData();
         metaData._ordering = new AbsoluteOrdering(metaData);
         ((AbsoluteOrdering)metaData._ordering).add("A");
@@ -699,7 +702,6 @@ public class OrderingTest
         // C,B,A
         List<Resource> resources = new ArrayList<Resource>();
 
-        WebAppContext wac = new WebAppContext();
         MetaData metaData = new MetaData();
         metaData._ordering = new AbsoluteOrdering(metaData);
         ((AbsoluteOrdering)metaData._ordering).add("C");
@@ -771,7 +773,6 @@ public class OrderingTest
     {
         //empty <absolute-ordering>
 
-        WebAppContext wac = new WebAppContext();
         MetaData metaData = new MetaData();
         metaData._ordering = new AbsoluteOrdering(metaData);
         List<Resource> resources = new ArrayList<Resource>();
@@ -789,7 +790,6 @@ public class OrderingTest
     {
         //B,A,C other jars with no fragments
         List<Resource> resources = new ArrayList<Resource>();
-        WebAppContext wac = new WebAppContext();
         MetaData metaData = new MetaData();
         metaData._ordering = new RelativeOrdering(metaData);
 
@@ -855,7 +855,6 @@ public class OrderingTest
     {
         //web.xml has no ordering, jar A has fragment after others, jar B is plain, jar C is plain
         List<Resource> resources = new ArrayList<Resource>();
-        WebAppContext wac = new WebAppContext();
         MetaData metaData = new MetaData();
         metaData._ordering = new RelativeOrdering(metaData);
         
@@ -895,7 +894,6 @@ public class OrderingTest
         // A,B,C,others
         //
         List<Resource> resources = new ArrayList<Resource>();
-        WebAppContext wac = new WebAppContext();
         MetaData metaData = new MetaData();
         metaData._ordering = new AbsoluteOrdering(metaData);
         ((AbsoluteOrdering)metaData._ordering).add("A");
@@ -968,8 +966,6 @@ public class OrderingTest
         if (!checkResult(result, outcomes))
             fail("No outcome matched "+result);
     }
-
-
 
     public boolean checkResult (String result, String[] outcomes)
     {

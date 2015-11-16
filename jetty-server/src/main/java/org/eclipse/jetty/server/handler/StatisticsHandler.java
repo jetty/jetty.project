@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,7 +32,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AsyncContextEvent;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -40,12 +43,15 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 @ManagedObject("Request Statistics Gathering")
 public class StatisticsHandler extends HandlerWrapper implements Graceful
 {
+    private static final Logger LOG = Log.getLogger(StatisticsHandler.class);
     private final AtomicLong _statsStartedAt = new AtomicLong();
 
     private final CounterStatistic _requestStats = new CounterStatistic();
@@ -65,6 +71,8 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final AtomicLong _responsesTotalBytes = new AtomicLong();
 
     private final AtomicReference<FutureCallback> _shutdown=new AtomicReference<>();
+    
+    private final AtomicBoolean _wrapWarning = new AtomicBoolean();
     
     private final AsyncListener _onCompletion = new AsyncListener()
     {
@@ -135,17 +143,17 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     }
 
     @Override
-    public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+    public void handle(String path, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         _dispatchedStats.increment();
 
         final long start;
-        HttpChannelState state = request.getHttpChannelState();
+        HttpChannelState state = baseRequest.getHttpChannelState();
         if (state.isInitial())
         {
             // new request
             _requestStats.increment();
-            start = request.getTimeStamp();
+            start = baseRequest.getTimeStamp();
         }
         else
         {
@@ -156,7 +164,19 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
 
         try
         {
-            super.handle(path, request, httpRequest, httpResponse);
+            Handler handler = getHandler();
+            if (handler!=null && _shutdown.get()==null && isStarted())
+                handler.handle(path, baseRequest, request, response);
+            else if (baseRequest.isHandled())
+            {
+                if (_wrapWarning.compareAndSet(false,true))
+                    LOG.warn("Bad statistics configuration. Latencies will be incorrect in {}",this);
+            }
+            else
+            {
+                baseRequest.setHandled(true);
+                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+            }
         }
         finally
         {
@@ -178,13 +198,13 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             {
                 long d=_requestStats.decrement();
                 _requestTimeStats.set(dispatched);
-                updateResponse(request);
+                updateResponse(baseRequest);
                 
                 // If we have no more dispatches, should we signal shutdown?
                 FutureCallback shutdown = _shutdown.get();
                 if (shutdown!=null)
                 {
-                    httpResponse.flushBuffer();
+                    response.flushBuffer();
                     if (d==0)
                         shutdown.succeeded();
                 }   
@@ -193,35 +213,35 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         }
     }
 
-    private void updateResponse(Request request)
+    protected void updateResponse(Request request)
     {
         Response response = request.getResponse();
-        switch (response.getStatus() / 100)
+        if (request.isHandled())
         {
-            case 0:
-                if (request.isHandled())
+            switch (response.getStatus() / 100)
+            {
+                case 1:
+                    _responses1xx.incrementAndGet();
+                    break;
+                case 2:
                     _responses2xx.incrementAndGet();
-                else
+                    break;
+                case 3:
+                    _responses3xx.incrementAndGet();
+                    break;
+                case 4:
                     _responses4xx.incrementAndGet();
-                break;
-            case 1:
-                _responses1xx.incrementAndGet();
-                break;
-            case 2:
-                _responses2xx.incrementAndGet();
-                break;
-            case 3:
-                _responses3xx.incrementAndGet();
-                break;
-            case 4:
-                _responses4xx.incrementAndGet();
-                break;
-            case 5:
-                _responses5xx.incrementAndGet();
-                break;
-            default:
-                break;
+                    break;
+                case 5:
+                    _responses5xx.incrementAndGet();
+                    break;
+                default:
+                    break;
+            }
         }
+        else
+            // will fall through to not found handler
+            _responses4xx.incrementAndGet();
         _responsesTotalBytes.addAndGet(response.getContentCount());
     }
 

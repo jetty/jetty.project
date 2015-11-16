@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.server.ssl;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -28,17 +27,24 @@ import java.net.SocketException;
 import java.net.URI;
 import java.security.KeyStore;
 import java.util.Arrays;
+import java.util.concurrent.Executor;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.server.AbstractConnectionFactory;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -63,9 +69,9 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @Override
     public void testFullMethod() throws Exception
     {
-    	// Don't run on Windows (buggy JVM)
-    	Assume.assumeTrue(!OS.IS_WINDOWS);
-    	
+        // Don't run on Windows (buggy JVM)
+        Assume.assumeTrue(!OS.IS_WINDOWS);
+        
         try
         {
             super.testFullMethod();
@@ -79,8 +85,8 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @Override
     public void testFullURI() throws Exception
     {
-    	// Don't run on Windows (buggy JVM)
-    	Assume.assumeTrue(!OS.IS_WINDOWS);
+        // Don't run on Windows (buggy JVM)
+        Assume.assumeTrue(!OS.IS_WINDOWS);
         try
         {
             super.testFullURI();
@@ -114,12 +120,14 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         sslContextFactory.setKeyManagerPassword("keypwd");
         sslContextFactory.setTrustStorePath(keystorePath);
         sslContextFactory.setTrustStorePassword("storepwd");
-        ServerConnector connector = new ServerConnector(_server, 1, 1, sslContextFactory);
+        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
+        ServerConnector connector = new ServerConnector(_server,(Executor)null,(Scheduler)null,pool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
 
+        
         startServer(connector);
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = new FileInputStream(sslContextFactory.getKeyStorePath()))
+        try (InputStream stream = sslContextFactory.getKeyStoreResource().getInputStream())
         {
             keystore.load(stream, "storepwd".toCharArray());
         }

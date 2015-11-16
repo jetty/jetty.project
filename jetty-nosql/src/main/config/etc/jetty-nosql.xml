@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- ===================================================================== -->
+  <!-- Configure a MongoSessionIdManager                                     -->
+  <!-- ===================================================================== -->
+  <Set name="sessionIdManager">
+    <New id="sessionIdMgr" class="org.eclipse.jetty.nosql.mongodb.MongoSessionIdManager">
+      <Arg>
+        <Ref refid="Server"/>
+      </Arg>
+      <Set name="workerName"><Property name="jetty.nosqlSession.workerName" default="node1"/></Set>
+      <Set name="scavengePeriod"><Property name="jetty.nosqlSession.scavenge" default="1800"/></Set>
+    </New>
+  </Set>
+
+</Configure>

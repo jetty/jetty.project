@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -33,6 +34,8 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
@@ -126,7 +129,9 @@ public class ExtensionTool
     public ExtensionTool(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         this.policy = policy;
-        this.factory = new WebSocketExtensionFactory(policy,bufferPool);
+        WebSocketContainerScope container = new SimpleContainerScope(policy, bufferPool);
+        WebSocketExtensionFactory extFactory = new WebSocketExtensionFactory(container);
+        this.factory = extFactory;
     }
 
     public Tester newTester(String parameterizedExtension)

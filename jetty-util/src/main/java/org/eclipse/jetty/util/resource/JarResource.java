@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.JarURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
@@ -92,7 +93,7 @@ public class JarResource extends URLResource
     
     /* ------------------------------------------------------------ */
     /**
-     * Returns true if the respresenetd resource exists.
+     * Returns true if the represented resource exists.
      */
     @Override
     public boolean exists()
@@ -118,7 +119,7 @@ public class JarResource extends URLResource
     {     
         checkConnection();
         if (!_urlString.endsWith("!/"))
-            return new FilterInputStream(super.getInputStream()) 
+            return new FilterInputStream(getInputStream(false)) 
             {
                 @Override
                 public void close() throws IOException {this.in=IO.getClosedStream();}
@@ -128,6 +129,9 @@ public class JarResource extends URLResource
         InputStream is = url.openStream();
         return is;
     }
+    
+ 
+    
     
     /* ------------------------------------------------------------ */
     @Override
@@ -153,9 +157,10 @@ public class JarResource extends URLResource
       
         if (LOG.isDebugEnabled()) 
             LOG.debug("Extracting entry = "+subEntryName+" from jar "+jarFileURL);
-        
-        try (InputStream is = jarFileURL.openConnection().getInputStream();
-                JarInputStream jin = new JarInputStream(is))
+        URLConnection c = jarFileURL.openConnection();
+        c.setUseCaches(false);
+        try (InputStream is = c.getInputStream();
+             JarInputStream jin = new JarInputStream(is))
         {
             JarEntry entry;
             boolean shouldExtract;

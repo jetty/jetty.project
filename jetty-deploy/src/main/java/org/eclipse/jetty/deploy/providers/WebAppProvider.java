@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,8 +34,8 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-/* ------------------------------------------------------------ */
-/** The webapps directory scanning provider.
+/** 
+ * The webapps directory scanning provider.
  * <p>
  * This provider scans one or more directories (typically "webapps") for contexts to
  * deploy, which may be:<ul>
@@ -112,12 +112,7 @@ public class WebAppProvider extends ScanningAppProvider
             // else is it a war file
             if (lowername.endsWith(".war"))
             {
-                String base=name.substring(0,name.length()-4);
-                // ignore if it is a war for an existing xml file?
-                if (exists(base+".xml")||exists(base+".XML"))
-                    return false;
-
-                // OK to deploy it then
+                //defer deployment decision to fileChanged()
                 return true;
             }
 
@@ -219,9 +214,6 @@ public class WebAppProvider extends ScanningAppProvider
     }  
     
     /* ------------------------------------------------------------ */
-    /**
-     *
-     */
     @ManagedAttribute("configuration classes for webapps to be processed through")
     public String[] getConfigurationClasses()
     {
@@ -239,7 +231,8 @@ public class WebAppProvider extends ScanningAppProvider
     {
         _tempDirectory = directory;
     }
-
+    
+    /* ------------------------------------------------------------ */
     /**
      * Get the user supplied Work Directory.
      *
@@ -264,7 +257,7 @@ public class WebAppProvider extends ScanningAppProvider
 
         if (resource.exists() && FileID.isXmlFile(file))
         {
-            XmlConfiguration xmlc = new XmlConfiguration(resource.getURL())
+            XmlConfiguration xmlc = new XmlConfiguration(resource.getURI().toURL())
             {
                 @Override
                 public void initializeDefaults(Object context)
@@ -280,7 +273,7 @@ public class WebAppProvider extends ScanningAppProvider
                     }
                 }
             };
-
+            
             xmlc.getIdMap().put("Server", getDeploymentManager().getServer());
             xmlc.getProperties().put("jetty.home",System.getProperty("jetty.home","."));
             xmlc.getProperties().put("jetty.base",System.getProperty("jetty.base","."));
@@ -360,6 +353,151 @@ public class WebAppProvider extends ScanningAppProvider
             webAppContext.setAttribute(WebAppContext.BASETEMPDIR, _tempDirectory);
         }
         return webAppContext;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void fileChanged(String filename) throws Exception
+    {        
+        File file = new File(filename);
+        if (!file.exists())
+            return;
+        
+        File parent = file.getParentFile();
+        
+        //is the file that changed a directory? 
+        if (file.isDirectory())
+        {
+            //is there a .xml file of the same name?
+            if (exists(file.getName()+".xml")||exists(file.getName()+".XML"))
+                return; //ignore it
+
+            //is there .war file of the same name?
+            if (exists(file.getName()+".war")||exists(file.getName()+".WAR"))
+                return; //ignore it
+
+             super.fileChanged(filename);
+             return;
+        }
+        
+      
+        String lowname = file.getName().toLowerCase(Locale.ENGLISH);
+        //is the file that changed a .war file?
+        if (lowname.endsWith(".war"))
+        {
+            String name = file.getName();
+            String base=name.substring(0,name.length()-4);
+            String xmlname = base+".xml";
+            if (exists(xmlname))
+            {
+                //if a .xml file exists for it, then redeploy that instead
+                File xml = new File (parent, xmlname);
+                super.fileChanged(xml.getCanonicalPath());
+                return;
+            }
+            
+            xmlname = base+".XML";
+            if (exists(xmlname))
+            {
+                //if a .XML file exists for it, then redeploy that instead
+                File xml = new File(parent, xmlname);
+                super.fileChanged(xml.getCanonicalPath());
+                return;
+            }
+            
+            //redeploy the changed war
+            super.fileChanged(filename);
+            return;
+        }
+
+        //is the file that changed a .xml file?
+        if (lowname.endsWith(".xml"))
+            super.fileChanged(filename);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void fileAdded(String filename) throws Exception
+    {
+        File file = new File(filename);
+        if (!file.exists())
+            return;
+
+        //is the file that was added a directory? 
+        if (file.isDirectory())
+        {
+            //is there a .xml file of the same name?
+            if (exists(file.getName()+".xml")||exists(file.getName()+".XML"))
+                return; //assume we will get added events for the xml file
+
+            //is there .war file of the same name?
+            if (exists(file.getName()+".war")||exists(file.getName()+".WAR"))
+                return; //assume we will get added events for the war file
+
+            super.fileAdded(filename);
+            return;
+        }
+
+
+        //is the file that was added a .war file?
+        String lowname = file.getName().toLowerCase(Locale.ENGLISH);
+        if (lowname.endsWith(".war"))
+        {
+            String name = file.getName();
+            String base=name.substring(0,name.length()-4);
+            //is there a .xml file of the same name?
+            if (exists(base+".xml")||exists(base+".XML")) 
+                return; //ignore it as we should get addition of the xml file
+
+            super.fileAdded(filename);
+            return;
+        }
+
+        //is the file that was added an .xml file?
+        if (lowname.endsWith(".xml"))
+            super.fileAdded(filename);
+    }
+
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void fileRemoved(String filename) throws Exception
+    { 
+        File file = new File(filename);
+
+        //is the file that was removed a directory? 
+        if (file.isDirectory())
+        {
+            //is there a .xml file of the same name?
+            if (exists(file.getName()+".xml")||exists(file.getName()+".XML"))
+                return; //assume we will get removed events for the xml file
+
+            //is there .war file of the same name?
+            if (exists(file.getName()+".war")||exists(file.getName()+".WAR"))
+                return; //assume we will get removed events for the war file
+
+            super.fileRemoved(filename);
+            return;
+        }
+  
+        //is the file that was removed a .war file?
+        String lowname = file.getName().toLowerCase(Locale.ENGLISH);
+        if (lowname.endsWith(".war"))
+        {
+            //is there a .xml file of the same name?
+            String name = file.getName();
+            String base=name.substring(0,name.length()-4);
+            if (exists(base+".xml")||exists(base+".XML"))
+                return; //ignore it as we should get removal of the xml file
+
+            super.fileRemoved(filename);
+            return;
+        }
+
+        //is the file that was removed an .xml file?
+        if (lowname.endsWith(".xml"))
+            super.fileRemoved(filename);
     }
 
 }

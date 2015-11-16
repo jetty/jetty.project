@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.net.URI;
@@ -29,7 +30,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.log.Log;
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.IdleTimeoutContextListener;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.OnOpenIdleTimeoutEndpoint;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.OnOpenIdleTimeoutSocket;
@@ -54,7 +54,7 @@ public class IdleTimeoutTest
     public TestingDir testdir = new TestingDir();
 
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private static WSServer server;
 
@@ -90,15 +90,19 @@ public class IdleTimeoutTest
         {
             client.start();
             JettyEchoSocket clientEcho = new JettyEchoSocket();
-            LOG.debug("Client Attempting to connnect");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Client Attempting to connnect");
             Future<Session> future = client.connect(clientEcho,uri);
             // wait for connect
             future.get(1,TimeUnit.SECONDS);
-            LOG.debug("Client Connected");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Client Connected");
             // wait 1 second
-            LOG.debug("Waiting 1 second");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Waiting 1 second");
             TimeUnit.SECONDS.sleep(1);
-            LOG.debug("Waited 1 second");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Waited 1 second");
             if (clientEcho.getClosed() == false)
             {
                 // Try to write

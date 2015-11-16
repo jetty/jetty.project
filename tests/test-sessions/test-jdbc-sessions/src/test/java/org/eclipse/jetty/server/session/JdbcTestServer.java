@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,13 +36,34 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 public class JdbcTestServer extends AbstractTestServer
 {
     public static final String DRIVER_CLASS = "org.apache.derby.jdbc.EmbeddedDriver";
-    public static final String DEFAULT_CONNECTION_URL = "jdbc:derby:sessions;create=true";
+    public static final String DEFAULT_CONNECTION_URL = "jdbc:derby:memory:sessions;create=true";
+    public static final String DEFAULT_SHUTDOWN_URL = "jdbc:derby:memory:sessions;drop=true";
     public static final int SAVE_INTERVAL = 1;
     
     
     static 
     {
         System.setProperty("derby.system.home", MavenTestingUtils.getTargetFile("test-derby").getAbsolutePath());
+    }
+    
+    
+    public static void shutdown (String connectionUrl)
+    throws Exception
+    {
+        if (connectionUrl == null)
+            connectionUrl = DEFAULT_SHUTDOWN_URL;
+        
+        try
+        {
+            DriverManager.getConnection(connectionUrl);
+        }
+        catch( SQLException expected )
+        {
+            if (!"08006".equals(expected.getSQLState()))
+            {
+               throw expected;
+            }
+        }
     }
 
     
@@ -76,14 +98,14 @@ public class JdbcTestServer extends AbstractTestServer
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionIdManager(String)
      */
     @Override
-    public  SessionIdManager newSessionIdManager(String config)
+    public  SessionIdManager newSessionIdManager(Object config)
     {
         synchronized(JdbcTestServer.class)
         {
             JDBCSessionIdManager idManager = new JDBCSessionIdManager(_server);
             idManager.setScavengeInterval(_scavengePeriod);
             idManager.setWorkerName("w"+(__workers++));
-            idManager.setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:config));
+            idManager.setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:(String)config));
             JDBCSessionIdManager.SessionIdTableSchema idTableSchema = new JDBCSessionIdManager.SessionIdTableSchema();
             idTableSchema.setTableName("mysessionids");
             idTableSchema.setIdColumn("myid");

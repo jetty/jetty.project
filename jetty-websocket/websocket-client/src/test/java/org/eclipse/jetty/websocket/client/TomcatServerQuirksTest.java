@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -66,7 +66,7 @@ public class TomcatServerQuirksTest
      * <li><a href="https://issues.apache.org/bugzilla/show_bug.cgi?id=54067">Apache Tomcat Bug #54067</a></li>
      * </ul>
      * 
-     * @throws IOException
+     * @throws Exception on test failure
      */
     @Test
     public void testTomcat7_0_32_WithTransferEncoding() throws Exception
@@ -91,7 +91,7 @@ public class TomcatServerQuirksTest
             client.connect(websocket,wsURI);
 
             // Accept incoming connection
-            ServerConnection socket = server.accept();
+            IBlockheadServerConnection socket = server.accept();
             socket.setSoTimeout(2000); // timeout
 
             // Issue upgrade
@@ -113,8 +113,7 @@ public class TomcatServerQuirksTest
             serverFrame.put((byte)(payload.length & 0xFF)); // second length byte
             serverFrame.put(payload);
             BufferUtil.flipToFlush(serverFrame,0);
-            byte buf[] = BufferUtil.toArray(serverFrame);
-            socket.write(buf,0,buf.length);
+            socket.write(serverFrame);
             socket.flush();
 
             Assert.assertTrue(websocket.dataLatch.await(1000,TimeUnit.SECONDS));

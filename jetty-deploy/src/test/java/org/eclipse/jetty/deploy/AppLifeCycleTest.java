@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,10 +36,10 @@ import org.junit.Test;
  */
 public class AppLifeCycleTest
 {
-	@Rule
-	public TestingDir testdir = new TestingDir();
+    @Rule
+    public TestingDir testdir = new TestingDir();
 
-	private void assertNoPath(String from, String to)
+    private void assertNoPath(String from, String to)
     {
         assertPath(from,to,new ArrayList<String>());
     }
@@ -168,7 +168,7 @@ public class AppLifeCycleTest
      * Request multiple lifecycle paths with a single lifecycle instance. Just to ensure that there is no state
      * maintained between {@link AppLifeCycle#getPath(Node, Node)} requests.
      * 
-     * @throws IOException
+     * @throws IOException on test failure
      */
     @Test
     public void testFindPathMultiple() throws IOException

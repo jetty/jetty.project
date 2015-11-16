@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -525,7 +525,7 @@ public class JettyDistro
         // Do a dry run first to get the exact command line for Jetty process
         commands.add("-jar");
         commands.add("start.jar");
-        commands.add("jetty.port=0");
+        commands.add("jetty.http.port=0");
         if (_debug)
         {
             commands.add("-D.DEBUG=true");

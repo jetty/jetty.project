@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,7 +17,6 @@
 //
 
 package org.eclipse.jetty.jndi;
-
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,13 +47,13 @@ import javax.naming.spi.NamingManager;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Logger;
 
-
-/*------------------------------------------------*/
-/** NamingContext
- * <p>Implementation of Context interface.
- *
- * <p><h4>Notes</h4>
- * <p>All Names are expected to be Compound, not Composite.
+/** 
+ * NamingContext
+ * <p>
+ * Implementation of Context interface.
+ * <p>
+ * <b>Notes:</b>
+ * All Names are expected to be Compound, not Composite.
  */
 @SuppressWarnings("unchecked")
 public class NamingContext implements Context, Cloneable, Dumpable
@@ -178,11 +177,6 @@ public class NamingContext implements Context, Cloneable, Dumpable
     }
 
     /*------------------------------------------------*/
-    /**
-     * Setter for _parser
-     *
-     *
-     */
     public void setNameParser (NameParser parser)
     {
         _parser = parser;
@@ -1261,6 +1255,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      *
      * @param name a <code>Name</code> value
      * @param obj an <code>Object</code> value
+     * @throws NameAlreadyBoundException if name already bound
      */
     public void addBinding (Name name, Object obj) throws NameAlreadyBoundException
     {
@@ -1337,7 +1332,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
     /*------------------------------------------------*/
     /**
      * Remove leading or trailing empty components from
-     * name. Eg "/comp/env/" -> "comp/env"
+     * name. Eg "/comp/env/" -&gt; "comp/env"
      *
      * @param name the name to normalize
      * @return normalized name

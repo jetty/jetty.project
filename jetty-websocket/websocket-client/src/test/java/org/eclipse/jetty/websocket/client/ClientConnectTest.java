@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,8 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -33,19 +31,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -58,7 +54,7 @@ public class ClientConnectTest
     public TestTracker tt = new TestTracker();
 
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private final int timeout = 500;
     private BlockheadServer server;
@@ -71,8 +67,8 @@ public class ClientConnectTest
         Throwable cause = e.getCause();
         if(!errorClass.isInstance(cause)) 
         {
-        	cause.printStackTrace(System.err);
-        	Assert.assertThat("ExecutionException.cause",cause,instanceOf(errorClass));
+                cause.printStackTrace(System.err);
+                Assert.assertThat("ExecutionException.cause",cause,instanceOf(errorClass));
         }
 
         // Validate websocket captured cause
@@ -116,6 +112,25 @@ public class ClientConnectTest
     }
 
     @Test
+    public void testUpgradeRequest() throws Exception
+    {
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
+
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri);
+
+        IBlockheadServerConnection connection = server.accept();
+        connection.upgrade();
+
+        Session sess = future.get(500,TimeUnit.MILLISECONDS);
+        
+        sess.close();
+        
+        assertThat("Connect.UpgradeRequest", wsocket.connectUpgradeRequest, notNullValue());
+        assertThat("Connect.UpgradeResponse", wsocket.connectUpgradeResponse, notNullValue());
+    }
+
+    @Test
     public void testBadHandshake() throws Exception
     {
         JettyTrackingSocket wsocket = new JettyTrackingSocket();
@@ -123,7 +138,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection connection = server.accept();
+        IBlockheadServerConnection connection = server.accept();
         connection.readRequest();
         // no upgrade, just fail with a 404 error
         connection.respond("HTTP/1.1 404 NOT FOUND\r\n\r\n");
@@ -152,7 +167,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection connection = server.accept();
+        IBlockheadServerConnection connection = server.accept();
         connection.readRequest();
         // Send OK to GET but not upgrade
         connection.respond("HTTP/1.1 200 OK\r\n\r\n");
@@ -181,7 +196,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection connection = server.accept();
+        IBlockheadServerConnection connection = server.accept();
         List<String> requestLines = connection.readRequestLines();
         String key = connection.parseWebSocketKey(requestLines);
 
@@ -217,7 +232,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection connection = server.accept();
+        IBlockheadServerConnection connection = server.accept();
         List<String> requestLines = connection.readRequestLines();
         String key = connection.parseWebSocketKey(requestLines);
 
@@ -253,7 +268,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection connection = server.accept();
+        IBlockheadServerConnection connection = server.accept();
         List<String> requestLines = connection.readRequestLines();
         String key = connection.parseWebSocketKey(requestLines);
 
@@ -289,7 +304,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection connection = server.accept();
+        IBlockheadServerConnection connection = server.accept();
         connection.readRequest();
         // Upgrade badly
         connection.respond("HTTP/1.1 101 Upgrade\r\n" + "Sec-WebSocket-Accept: rubbish\r\n" + "\r\n");
@@ -311,7 +326,6 @@ public class ClientConnectTest
     }
 
     @Test
-    @Ignore("Opened bug 399525")
     public void testConnectionNotAccepted() throws Exception
     {
         JettyTrackingSocket wsocket = new JettyTrackingSocket();
@@ -329,7 +343,6 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
-            // FIXME: Connect Timeout Error?
             assertExpectedError(e,wsocket,UpgradeException.class);
             // Possible Passing Path (active session wait timeout)
             wsocket.assertNotOpened();
@@ -365,15 +378,15 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
-        	if(OS.IS_WINDOWS) 
-        	{
-        		// On windows, this is a SocketTimeoutException
-        		assertExpectedError(e, wsocket, SocketTimeoutException.class);
-        	} else
-        	{
-	            // Expected path - java.net.ConnectException
-	            assertExpectedError(e,wsocket,ConnectException.class);
-        	}
+                if(OS.IS_WINDOWS) 
+                {
+                        // On windows, this is a SocketTimeoutException
+                        assertExpectedError(e, wsocket, SocketTimeoutException.class);
+                } else
+                {
+                    // Expected path - java.net.ConnectException
+                    assertExpectedError(e,wsocket,ConnectException.class);
+                }
         }
     }
 
@@ -385,7 +398,7 @@ public class ClientConnectTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection ssocket = server.accept();
+        IBlockheadServerConnection ssocket = server.accept();
         Assert.assertNotNull(ssocket);
         // Intentionally don't upgrade
         // ssocket.upgrade();

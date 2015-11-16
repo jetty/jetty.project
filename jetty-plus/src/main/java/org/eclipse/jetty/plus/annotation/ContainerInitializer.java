@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.plus.annotation;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -56,26 +55,26 @@ public class ContainerInitializer
     
     public ContainerInitializer (ClassLoader loader, String toString)
     {
-    	Matcher m = Pattern.compile("ContainerInitializer\\{(.*),interested=(.*),applicable=(.*),annotated=(.*)\\}").matcher(toString);
-    	if (!m.matches())
-    		throw new IllegalArgumentException(toString);
-    	
-    	try
-    	{
-    		_target = (ServletContainerInitializer)loader.loadClass(m.group(1)).newInstance();
-    		String[] interested = StringUtil.arrayFromString(m.group(2));
-    		_interestedTypes = new Class<?>[interested.length];
-    		for (int i=0;i<interested.length;i++)
-    			_interestedTypes[i]=loader.loadClass(interested[i]);
-    		for (String s:StringUtil.arrayFromString(m.group(3)))
-    			_applicableTypeNames.add(s);
-    		for (String s:StringUtil.arrayFromString(m.group(4)))
-    			_annotatedTypeNames.add(s);
-    	}
-    	catch(Exception e)
-    	{
-    		throw new IllegalArgumentException(toString, e);
-    	}
+        Matcher m = Pattern.compile("ContainerInitializer\\{(.*),interested=(.*),applicable=(.*),annotated=(.*)\\}").matcher(toString);
+        if (!m.matches())
+            throw new IllegalArgumentException(toString);
+
+        try
+        {
+            _target = (ServletContainerInitializer)loader.loadClass(m.group(1)).newInstance();
+            String[] interested = StringUtil.arrayFromString(m.group(2));
+            _interestedTypes = new Class<?>[interested.length];
+            for (int i=0;i<interested.length;i++)
+                _interestedTypes[i]=loader.loadClass(interested[i]);
+            for (String s:StringUtil.arrayFromString(m.group(3)))
+                _applicableTypeNames.add(s);
+            for (String s:StringUtil.arrayFromString(m.group(4)))
+                _annotatedTypeNames.add(s);
+        }
+        catch(Exception e)
+        {
+            throw new IllegalArgumentException(toString, e);
+        }
     }
     
     public ServletContainerInitializer getTarget ()
@@ -92,7 +91,7 @@ public class ContainerInitializer
     /**
      * A class has been found that has an annotation of interest
      * to this initializer.
-     * @param className
+     * @param className the class name to add
      */
     public void addAnnotatedTypeName (String className)
     {
@@ -147,13 +146,18 @@ public class ContainerInitializer
             }
         }
     }
-    
+
     public String toString()
     {
-    	List<String> interested = new ArrayList<>(_interestedTypes.length);
-    	for (Class<?> c : _interestedTypes)
-    		interested.add(c.getName());
-    	return String.format("ContainerInitializer{%s,interested=%s,applicable=%s,annotated=%s}",_target.getClass().getName(),interested,_applicableTypeNames,_annotatedTypeNames);
+        List<String> interested = Collections.emptyList();
+        if (_interestedTypes != null)
+        {
+            interested = new ArrayList<>(_interestedTypes.length);
+            for (Class<?> c : _interestedTypes)
+                interested.add(c.getName());
+        }
+
+        return String.format("ContainerInitializer{%s,interested=%s,applicable=%s,annotated=%s}",_target.getClass().getName(),interested,_applicableTypeNames,_annotatedTypeNames);
     }
 
     public void resolveClasses(WebAppContext context, Map<String, Set<String>> classMap) 

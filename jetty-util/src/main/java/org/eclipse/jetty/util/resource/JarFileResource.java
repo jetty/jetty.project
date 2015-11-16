@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -55,13 +55,13 @@ class JarFileResource extends JarResource
     protected JarFileResource(URL url, boolean useCaches)
     {
         super(url, useCaches);
-    }
-   
+    }   
 
     /* ------------------------------------------------------------ */
     @Override
     public synchronized void close()
     {
+        _exists=false;
         _list=null;
         _entry=null;
         _file=null;
@@ -73,7 +73,8 @@ class JarFileResource extends JarResource
             {
                 try
                 {
-                    LOG.debug("Closing JarFile "+_jarFile.getName());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Closing JarFile "+_jarFile.getName());
                     _jarFile.close();
                 }
                 catch ( IOException ioe )
@@ -135,6 +136,7 @@ class JarFileResource extends JarResource
      * Returns true if the represented resource exists.
      */
     @Override
+
     public boolean exists()
     {
         if (_exists)
@@ -142,7 +144,6 @@ class JarFileResource extends JarResource
 
         if (_urlString.endsWith("!/"))
         {
-            
             String file_url=_urlString.substring(4,_urlString.length()-2);
             try{return newResource(file_url).exists();}
             catch(Exception e) {LOG.ignore(e); return false;}
@@ -160,10 +161,11 @@ class JarFileResource extends JarResource
         else 
         {
             // Can we find a file for it?
-            JarFile jarFile=null;
+            boolean close_jar_file= false;
+            JarFile jar_file=null;
             if (check)
                 // Yes
-                jarFile=_jarFile;
+                jar_file=_jarFile;
             else
             {
                 // No - so lets look if the root entry exists.
@@ -171,61 +173,60 @@ class JarFileResource extends JarResource
                 {
                     JarURLConnection c=(JarURLConnection)((new URL(_jarUrl)).openConnection());
                     c.setUseCaches(getUseCaches());
-                    jarFile=c.getJarFile();
+                    jar_file=c.getJarFile();
+                    close_jar_file = !getUseCaches();
                 }
                 catch(Exception e)
                 {
-                       LOG.ignore(e);
+                    LOG.ignore(e);
                 }
             }
 
             // Do we need to look more closely?
-            if (jarFile!=null && _entry==null && !_directory)
+            if (jar_file!=null && _entry==null && !_directory)
             {
-                // OK - we have a JarFile, lets look at the entries for our path
-                Enumeration<JarEntry> e=jarFile.entries();
-                while(e.hasMoreElements())
+                // OK - we have a JarFile, lets look for the entry
+                JarEntry entry = jar_file.getJarEntry(_path);
+                if (entry == null) 
                 {
-                    JarEntry entry = e.nextElement();
-                    String name=entry.getName().replace('\\','/');
-                    
-                    // Do we have a match
-                    if (name.equals(_path))
-                    {
-                        _entry=entry;
-                        // Is the match a directory
-                        _directory=_path.endsWith("/");
-                        break;
-                    }
-                    else if (_path.endsWith("/"))
-                    {
-                        if (name.startsWith(_path))
-                        {
-                            _directory=true;
-                            break;
-                        }
-                    }
-                    else if (name.startsWith(_path) && name.length()>_path.length() && name.charAt(_path.length())=='/')
-                    {
-                        _directory=true;
-                        break;
-                    }
-                }
-
-                if (_directory && !_urlString.endsWith("/"))
+                    // the entry does not exist
+                    _exists = false;
+                } 
+                else if (entry.isDirectory()) 
                 {
-                    _urlString+="/";
-                    try
+                    _directory = true;
+                    _entry = entry;
+                } 
+                else 
+                {
+                    // Let's confirm is a file
+                    JarEntry directory = jar_file.getJarEntry(_path + '/');
+                    if (directory != null) 
                     {
-                        _url=new URL(_urlString);
-                    }
-                    catch(MalformedURLException ex)
+                        _directory = true;
+                        _entry = directory;
+                    } 
+                    else 
                     {
-                        LOG.warn(ex);
+                        // OK is a file
+                      _directory = false;
+                      _entry = entry;
                     }
                 }
             }
-        }    
+
+            if(close_jar_file && jar_file!=null) 
+            {
+                try 
+                {
+                    jar_file.close();
+                } 
+                catch (IOException ioe) 
+                {
+                    LOG.ignore(ioe);
+                }
+            }
+        }
         
         _exists= ( _directory || _entry!=null);
         return _exists;
@@ -281,7 +282,7 @@ class JarFileResource extends JarResource
                 //So, do one retry to drop a connection and get a fresh JarFile
                 LOG.warn("Retrying list:"+e);
                 LOG.debug(e);
-                release();
+                close();
                 list = listEntries();
             }
 
@@ -379,7 +380,7 @@ class JarFileResource extends JarResource
     /**
      * Take a Resource that possibly might use URLConnection caching
      * and turn it into one that doesn't.
-     * @param resource
+     * @param resource the JarFileResource to obtain without URLConnection caching. 
      * @return the non-caching resource
      */
     public static Resource getNonCachingResource (Resource resource)
@@ -397,9 +398,9 @@ class JarFileResource extends JarResource
     /**
      * Check if this jar:file: resource is contained in the
      * named resource. Eg <code>jar:file:///a/b/c/foo.jar!/x.html</code> isContainedIn <code>file:///a/b/c/foo.jar</code>
-     * @param resource
+     * @param resource the resource to test for
      * @return true if resource is contained in the named resource
-     * @throws MalformedURLException
+     * @throws MalformedURLException if unable to process is contained due to invalid URL format
      */
     @Override
     public boolean isContainedIn (Resource resource) 
@@ -415,11 +416,3 @@ class JarFileResource extends JarResource
         return url.sameFile(resource.getURL());     
     }
 }
-
-
-
-
-
-
-
-

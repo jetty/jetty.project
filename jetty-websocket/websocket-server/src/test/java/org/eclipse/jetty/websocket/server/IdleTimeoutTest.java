@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,23 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.EventQueue;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -59,13 +68,14 @@ public class IdleTimeoutTest
 
     /**
      * Test IdleTimeout on server.
+     * @throws Exception on test failure
      */
     @Test
     public void testIdleTimeout() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.setProtocols("onConnect");
-        client.setTimeout(TimeUnit.MILLISECONDS,2500);
+        client.setTimeout(2500,TimeUnit.MILLISECONDS);
         try
         {
             client.connect();
@@ -83,8 +93,13 @@ public class IdleTimeoutTest
             // The server could not read this frame, if it is in this half closed state
             client.write(new TextFrame().setPayload("Hello"));
 
-            // Expect server to be disconnected at this point
-            client.expectServerDisconnect();
+            // Expect server to have closed due to its own timeout
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            WebSocketFrame frame = frames.poll();
+            Assert.assertThat("frame opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            CloseInfo close = new CloseInfo(frame);
+            Assert.assertThat("close code",close.getStatusCode(),is(StatusCode.SHUTDOWN));
+            Assert.assertThat("close reason",close.getReason(),containsString("Timeout"));
         }
         finally
         {

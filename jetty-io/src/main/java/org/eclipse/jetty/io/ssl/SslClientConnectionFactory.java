@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SslClientConnectionFactory implements ClientConnectionFactory
 {
+    public static final String SSL_CONTEXT_FACTORY_CONTEXT_KEY = "ssl.context.factory";
     public static final String SSL_PEER_HOST_CONTEXT_KEY = "ssl.peer.host";
     public static final String SSL_PEER_PORT_CONTEXT_KEY = "ssl.peer.port";
     public static final String SSL_ENGINE_CONTEXT_KEY = "ssl.engine";

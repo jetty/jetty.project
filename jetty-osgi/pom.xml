@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.1.3-SNAPSHOT</version>
+    <version>9.4.0-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.osgi</groupId>
   <artifactId>jetty-osgi-project</artifactId>
@@ -22,10 +22,10 @@
     <module>jetty-osgi-boot</module>
     <module>jetty-osgi-boot-jsp</module>
     <module>jetty-osgi-boot-warurl</module>
-    <module>jetty-osgi-npn</module>
     <module>jetty-osgi-httpservice</module>
     <module>test-jetty-osgi-webapp</module>
     <module>test-jetty-osgi-context</module>
+    <module>jetty-osgi-alpn</module>
     <module>test-jetty-osgi</module>
   </modules>
   <build>

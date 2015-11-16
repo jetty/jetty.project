@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -133,7 +133,7 @@ public class JsrBrowserSocket
                 }
                 case "many":
                 {
-                    String parts[] = val.split(",");
+                    String parts[] = StringUtil.csvSplit(val);
                     int size = Integer.parseInt(parts[0]);
                     int count = Integer.parseInt(parts[1]);
 
@@ -142,7 +142,7 @@ public class JsrBrowserSocket
                 }
                 case "manythreads":
                 {
-                    String parts[] = val.split(",");
+                    String parts[] = StringUtil.csvSplit(val);
                     int threadCount = Integer.parseInt(parts[0]);
                     int size = Integer.parseInt(parts[1]);
                     int count = Integer.parseInt(parts[2]);
@@ -206,13 +206,15 @@ public class JsrBrowserSocket
     {
         if (this.session == null)
         {
-            LOG.debug("Not connected");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not connected");
             return;
         }
 
         if (session.isOpen() == false)
         {
-            LOG.debug("Not open");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not open");
             return;
         }
 

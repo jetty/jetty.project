@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,6 +36,7 @@ public class TestABCase1 extends AbstractABCase
 {
     /**
      * Echo 0 byte TEXT message
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_1_1() throws Exception
@@ -48,23 +49,18 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 125 byte TEXT message (uses small 7-bit payload length)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_1_2() throws Exception
@@ -81,23 +77,18 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 126 byte TEXT message (uses medium 2 byte payload length)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_1_3() throws Exception
@@ -114,23 +105,18 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 127 byte TEXT message (uses medium 2 byte payload length)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_1_4() throws Exception
@@ -147,23 +133,18 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 128 byte TEXT message (uses medium 2 byte payload length)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_1_5() throws Exception
@@ -180,23 +161,18 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 65535 byte TEXT message (uses medium 2 byte payload length)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_1_6() throws Exception
@@ -213,23 +189,18 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 65536 byte TEXT message (uses large 8 byte payload length)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_1_7() throws Exception
@@ -246,18 +217,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -267,6 +232,7 @@ public class TestABCase1 extends AbstractABCase
      * Only send 1 TEXT frame from client, but in small segments (flushed after each).
      * <p>
      * This is done to test the parsing together of the frame on the server side.
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_1_8() throws Exception
@@ -284,24 +250,19 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.SLOW);
             fuzzer.setSlowSendSegmentSize(segmentSize);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 0 byte BINARY message
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_2_1() throws Exception
@@ -314,23 +275,18 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 125 byte BINARY message (uses small 7-bit payload length)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_2_2() throws Exception
@@ -347,23 +303,18 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 126 byte BINARY message (uses medium 2 byte payload length)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_2_3() throws Exception
@@ -380,23 +331,18 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 127 byte BINARY message (uses medium 2 byte payload length)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_2_4() throws Exception
@@ -413,23 +359,18 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 128 byte BINARY message (uses medium 2 byte payload length)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_2_5() throws Exception
@@ -446,23 +387,18 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 65535 byte BINARY message (uses medium 2 byte payload length)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_2_6() throws Exception
@@ -479,23 +415,18 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
     /**
      * Echo 65536 byte BINARY message (uses large 8 byte payload length)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_2_7() throws Exception
@@ -512,18 +443,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -533,6 +458,7 @@ public class TestABCase1 extends AbstractABCase
      * Only send 1 BINARY frame from client, but in small segments (flushed after each).
      * <p>
      * This is done to test the parsing together of the frame on the server side.
+     * @throws Exception on test failure
      */
     @Test
     public void testCase1_2_8() throws Exception
@@ -550,19 +476,13 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.SLOW);
             fuzzer.setSlowSendSegmentSize(segmentSize);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 }

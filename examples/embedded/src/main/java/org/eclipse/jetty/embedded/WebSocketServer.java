@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,7 +41,7 @@ public class WebSocketServer
     public static class EchoSocket
     {
         @OnWebSocketMessage
-        public void onMessage(Session session, String message)
+        public void onMessage( Session session, String message )
         {
             session.getRemote().sendStringByFuture(message);
         }
@@ -54,23 +54,24 @@ public class WebSocketServer
     public static class EchoServlet extends WebSocketServlet
     {
         @Override
-        public void configure(WebSocketServletFactory factory)
+        public void configure( WebSocketServletFactory factory )
         {
             // Register the echo websocket with the basic WebSocketCreator
             factory.register(EchoSocket.class);
         }
     }
 
-    public static void main(String[] args) throws Exception
+    public static void main( String[] args ) throws Exception
     {
         Server server = new Server(8080);
 
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(
+                ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 
         // Add the echo socket servlet to the /echo path map
-        context.addServlet(new ServletHolder(EchoServlet.class),"/echo");
+        context.addServlet(new ServletHolder(EchoServlet.class), "/echo");
 
         server.start();
         context.dumpStdErr();

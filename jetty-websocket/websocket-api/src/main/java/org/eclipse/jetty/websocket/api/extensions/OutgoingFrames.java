@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,10 +28,10 @@ public interface OutgoingFrames
 {
     /**
      * A frame, and optional callback, intended for the network layer.
-     * <p/>
+     * <p>
      * Note: the frame can undergo many transformations in the various
      * layers and extensions present in the implementation.
-     * <p/>
+     * <p>
      * If you are implementing a mutation, you are obliged to handle
      * the incoming WriteCallback appropriately.
      *

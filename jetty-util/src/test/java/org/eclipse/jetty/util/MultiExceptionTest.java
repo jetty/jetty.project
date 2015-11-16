@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -147,5 +147,18 @@ public class MultiExceptionTest
         {
             assertTrue(e.getCause()==me);
         }
+    }
+    
+    @Test
+    public void testCause() throws Exception
+    {
+        MultiException me = new MultiException();
+        IOException io = new IOException("one");
+        RuntimeException run = new RuntimeException("two");
+        me.add(io);
+        me.add(run);
+
+        assertEquals(2,me.size());
+        assertEquals(io,me.getCause());        
     }
 }

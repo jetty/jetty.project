@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import javax.servlet.ServletRequest;
+
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
@@ -38,8 +40,7 @@ import org.eclipse.jetty.util.security.Credential;
 
 /* ------------------------------------------------------------ */
 /**
- * HashMapped User Realm with JDBC as data source. JDBCLoginService extends
- * HashULoginService and adds a method to fetch user information from database.
+ * HashMapped User Realm with JDBC as data source. 
  * The login() method checks the inherited Map for the user. If the user is not
  * found, it will fetch details from the database and populate the inherited
  * Map. It then calls the superclass login() method to perform the actual
@@ -210,7 +211,7 @@ public class JDBCLoginService extends MappedLoginService
 
     /* ------------------------------------------------------------ */
     @Override
-    public UserIdentity login(String username, Object credentials)
+    public UserIdentity login(String username, Object credentials, ServletRequest request)
     {
         long now = System.currentTimeMillis();
         if (now - _lastHashPurge > _cacheTime || _cacheTime == 0)
@@ -220,7 +221,7 @@ public class JDBCLoginService extends MappedLoginService
             closeConnection();
         }
         
-        return super.login(username,credentials);
+        return super.login(username,credentials, request);
     }
 
     /* ------------------------------------------------------------ */

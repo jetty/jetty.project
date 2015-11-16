@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,28 +18,38 @@
 
 package org.eclipse.jetty.websocket.api;
 
+import java.nio.charset.StandardCharsets;
+
 public class CloseStatus
 {
     private static final int MAX_CONTROL_PAYLOAD = 125;
-    private static final int MAX_REASON_PHRASE = MAX_CONTROL_PAYLOAD - 2;
+    public static final int MAX_REASON_PHRASE = MAX_CONTROL_PAYLOAD - 2;
 
     /**
-     * Convenience method for trimming a long reason phrase at the maximum reason phrase length.
+     * Convenience method for trimming a long reason phrase at the maximum reason phrase length of 123 UTF-8 bytes (per WebSocket spec).
      * 
      * @param reason
      *            the proposed reason phrase
      * @return the reason phrase (trimmed if needed)
+     * @deprecated use of this method is strongly discouraged, as it creates too many new objects that are just thrown away to accomplish its goals.
      */
+    @Deprecated
     public static String trimMaxReasonLength(String reason)
     {
-        if (reason.length() > MAX_REASON_PHRASE)
+        if (reason == null)
         {
-            return reason.substring(0,MAX_REASON_PHRASE);
+            return null;
         }
-        else
+
+        byte[] reasonBytes = reason.getBytes(StandardCharsets.UTF_8);
+        if (reasonBytes.length > MAX_REASON_PHRASE)
         {
-            return reason;
+            byte[] trimmed = new byte[MAX_REASON_PHRASE];
+            System.arraycopy(reasonBytes,0,trimmed,0,MAX_REASON_PHRASE);
+            return new String(trimmed,StandardCharsets.UTF_8);
         }
+        
+        return reason;
     }
 
     private int code;

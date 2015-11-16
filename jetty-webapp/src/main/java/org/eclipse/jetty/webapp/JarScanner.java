@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,7 +48,6 @@ public abstract class JarScanner extends org.eclipse.jetty.util.PatternMatcher
 {
     private static final Logger LOG = Log.getLogger(JarScanner.class);
 
-
     public abstract void processEntry (URI jarUri, JarEntry entry);
     
     /**
@@ -73,10 +72,10 @@ public abstract class JarScanner extends org.eclipse.jetty.util.PatternMatcher
      * Will iterate over the jar names, matching
      * all those starting with "aaa-" first, then "bbb-".
      *
-     * @param pattern
-     * @param uris
+     * @param pattern the pattern to use for jar matching
+     * @param uris the uris of the jars to scan
      * @param isNullInclusive if true, an empty pattern means all names match, if false, none match
-     * @throws Exception
+     * @throws Exception if unable to scan
      */
     public void scan (Pattern pattern, URI[] uris, boolean isNullInclusive)
     throws Exception
@@ -110,11 +109,11 @@ public abstract class JarScanner extends org.eclipse.jetty.util.PatternMatcher
      * parent loader hierarchy. If false, it is only applied to the
      * classloader passed in.
      * 
-     * @param pattern
-     * @param loader
-     * @param isNullInclusive
-     * @param visitParent
-     * @throws Exception
+     * @param pattern the pattern to use for jar matching
+     * @param loader the class loader to look for jars in
+     * @param isNullInclusive if true, an empty pattern means all names match, if false, none match
+     * @param visitParent if true, visit parent classloaders too
+     * @throws Exception if unable to scan
      */
     public void scan (Pattern pattern, ClassLoader loader, boolean isNullInclusive, boolean visitParent)
     throws Exception

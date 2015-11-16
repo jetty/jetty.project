@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -96,8 +96,9 @@ public class Parser
 
     private void assertSanePayloadLength(long len)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Payload Length: {} - {}",len,this);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{} Payload Length: {} - {}",policy.getBehavior(),len,this);
+        }
 
         // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
         if (len > Integer.MAX_VALUE)
@@ -239,7 +240,7 @@ public class Parser
         incomingFramesHandler.incomingError(e);
     }
 
-    public synchronized void parse(ByteBuffer buffer)
+    public void parse(ByteBuffer buffer) throws WebSocketException
     {
         if (buffer.remaining() <= 0)
         {
@@ -247,8 +248,6 @@ public class Parser
         }
         try
         {
-            // TODO: create DebugBuffer
-
             // parse through all the frames in the buffer
             while (parseFrame(buffer))
             {
@@ -266,13 +265,20 @@ public class Parser
         {
             buffer.position(buffer.limit()); // consume remaining
             reset();
+            // let session know
             notifyWebSocketException(e);
+            // need to throw for proper close behavior in connection
+            throw e;
         }
         catch (Throwable t)
         {
             buffer.position(buffer.limit()); // consume remaining
             reset();
-            notifyWebSocketException(new WebSocketException(t));
+            // let session know
+            WebSocketException e = new WebSocketException(t);
+            notifyWebSocketException(e);
+            // need to throw for proper close behavior in connection
+            throw e;
         }
     }
 
@@ -299,7 +305,9 @@ public class Parser
     private boolean parseFrame(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
+        {
             LOG.debug("{} Parsing {} bytes",policy.getBehavior(),buffer.remaining());
+        }
         while (buffer.hasRemaining())
         {
             switch (state)
@@ -318,12 +326,13 @@ public class Parser
                     }
                     
                     if (LOG.isDebugEnabled())
-                        LOG.debug("OpCode {}, fin={} rsv={}{}{}",
+                        LOG.debug("{} OpCode {}, fin={} rsv={}{}{}",
+                                policy.getBehavior(),
                                 OpCode.name(opcode),
                                 fin,
-                                (isRsv1InUse()?'1':'.'),
-                                (isRsv2InUse()?'1':'.'),
-                                (isRsv3InUse()?'1':'.'));
+                                (((b & 0x40) != 0)?'1':'.'),
+                                (((b & 0x20) != 0)?'1':'.'),
+                                (((b & 0x10) != 0)?'1':'.'));
 
                     // base framing flags
                     switch(opcode)
@@ -411,11 +420,6 @@ public class Parser
                             else
                                 throw new ProtocolException("RSV3 not allowed to be set");   
                         }
-                    }
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("OpCode {}, fin={} rsv=000",OpCode.name(opcode),fin);
                     }
                     
                     state = State.PAYLOAD_LEN;
@@ -591,8 +595,9 @@ public class Parser
             buffer.limit(limit);
             buffer.position(buffer.position() + window.remaining());
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("Window: {}",BufferUtil.toDetailString(window));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{} Window: {}",policy.getBehavior(),BufferUtil.toDetailString(window));
+            }
 
             maskProcessor.process(window);
 
@@ -646,7 +651,7 @@ public class Parser
         builder.append(",c=").append(cursor);
         builder.append(",len=").append(payloadLength);
         builder.append(",f=").append(frame);
-        builder.append(",p=").append(policy);
+        // builder.append(",p=").append(policy);
         builder.append("]");
         return builder.toString();
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
+import static org.hamcrest.Matchers.is;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -25,7 +27,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -39,18 +40,16 @@ import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.is;
-
 public class FragmentExtensionTest
 {
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test", new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     /**
      * Verify that incoming frames are passed thru without modification
@@ -141,6 +140,7 @@ public class FragmentExtensionTest
 
     /**
      * Verify that outgoing text frames are fragmented by the maxLength configuration.
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingFramesByMaxLength() throws IOException
@@ -213,6 +213,7 @@ public class FragmentExtensionTest
 
     /**
      * Verify that outgoing text frames are fragmented by default configuration
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingFramesDefaultConfig() throws IOException
@@ -277,6 +278,7 @@ public class FragmentExtensionTest
 
     /**
      * Outgoing PING (Control Frame) should pass through extension unmodified
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingPing() throws IOException

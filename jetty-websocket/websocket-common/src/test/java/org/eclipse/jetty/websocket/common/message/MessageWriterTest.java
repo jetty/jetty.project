@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.Arrays;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -32,7 +31,9 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -51,7 +52,7 @@ public class MessageWriterTest
     public TestName testname = new TestName();
 
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private WebSocketPolicy policy;
     private TrackingSocket socket;
@@ -73,6 +74,9 @@ public class MessageWriterTest
         // Event Driver factory
         EventDriverFactory factory = new EventDriverFactory(policy);
 
+        // Container
+        WebSocketContainerScope containerScope = new SimpleContainerScope(policy,bufferPool);
+
         // local socket
         EventDriver driver = factory.wrap(new TrackingSocket("local"));
 
@@ -80,7 +84,7 @@ public class MessageWriterTest
         socket = new TrackingSocket("remote");
         OutgoingFrames socketPipe = FramePipes.to(factory.wrap(socket));
 
-        session = new LocalWebSocketSession(testname,driver,bufferPool);
+        session = new LocalWebSocketSession(containerScope,testname,driver);
 
         session.setPolicy(policy);
         // talk to our remote socket
@@ -122,7 +126,8 @@ public class MessageWriterTest
     {
         int bufsize = (int)(policy.getMaxTextMessageBufferSize() * 2.5);
         char buf[] = new char[bufsize];
-        LOG.debug("Buffer size: {}",bufsize);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Buffer size: {}",bufsize);
         Arrays.fill(buf,'x');
         buf[bufsize - 1] = 'o'; // mark last entry for debugging
 

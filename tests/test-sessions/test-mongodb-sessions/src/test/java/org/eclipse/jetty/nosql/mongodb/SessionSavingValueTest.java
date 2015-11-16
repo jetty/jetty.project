@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,6 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
-import java.util.concurrent.Future;
 
 import javax.management.remote.JMXServiceURL;
 import javax.servlet.ServletException;
@@ -117,7 +116,7 @@ public class SessionSavingValueTest extends AbstractSessionValueSavingTest
 
                 sessionTestValue = sessionTestResponse;
 
-                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+                String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=","$1\\$Path=");
@@ -144,7 +143,7 @@ public class SessionSavingValueTest extends AbstractSessionValueSavingTest
 
                     sessionTestValue = sessionTestResponse;
 
-                    String setCookie = response2.getHeaders().getStringField("Set-Cookie");
+                    String setCookie = response2.getHeaders().get("Set-Cookie");
                     if (setCookie != null)
                         sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=","$1\\$Path=");
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -76,7 +76,8 @@ public class TrackingInputStreamSocket
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        LOG.debug("{} onClose({},{})",id,statusCode,reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onClose({},{})",id,statusCode,reason);
         closeCode = statusCode;
         closeMessage.append(reason);
         closeLatch.countDown();
@@ -91,7 +92,8 @@ public class TrackingInputStreamSocket
     @OnWebSocketMessage
     public void onInputStream(InputStream stream)
     {
-        LOG.debug("{} onInputStream({})",id,stream);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onInputStream({})",id,stream);
         try
         {
             String msg = IO.toString(stream);

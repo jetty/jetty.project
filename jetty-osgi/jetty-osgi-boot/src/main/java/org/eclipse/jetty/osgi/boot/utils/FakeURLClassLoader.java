@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,29 +22,21 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 /**
- * 
  * FakeURLClassLoader
- * 
+ * <p>
  * A URLClassloader that overrides the getURLs() method to return the list
  * of urls passed in to the constructor, but otherwise acts as if it has no
  * urls, which would cause it to delegate to the parent classloader (in this
  * case an OSGi classloader).
- * 
+ * <p>
  * The main use of this class is with jars containing tlds. Jasper expects a
  * URL classloader to inspect for jars with tlds.
- * 
  */
 public class FakeURLClassLoader extends URLClassLoader
 {
-
     private URL[] _jars;
     
-    
     /* ------------------------------------------------------------ */
-    /**
-     * @param osgiClassLoader
-     * @param jars
-     */
     public FakeURLClassLoader(ClassLoader osgiClassLoader, URL[] jars)
     {
         super(new URL[] {},osgiClassLoader);

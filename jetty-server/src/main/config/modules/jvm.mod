@@ -1,3 +1,6 @@
+[description]
+A noop module that creates an ini template useful for
+setting JVM arguments (eg -Xmx )
 [ini-template]
 ## JVM Configuration
 ## If JVM args are include in an ini file then --exec is needed

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,9 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
+@ManagedObject("The HTTP/1.1 client transport")
 public class HttpClientTransportOverHTTP extends AbstractHttpClientTransport
 {
     public HttpClientTransportOverHTTP()
@@ -49,12 +51,17 @@ public class HttpClientTransportOverHTTP extends AbstractHttpClientTransport
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination);
         @SuppressWarnings("unchecked")
         Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        promise.succeeded(connection);
+        HttpConnectionOverHTTP connection = newHttpConnection(endPoint, destination, promise);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Created {}", connection);
         return connection;
+    }
+
+    protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+    {
+        return new HttpConnectionOverHTTP(endPoint, destination, promise);
     }
 }

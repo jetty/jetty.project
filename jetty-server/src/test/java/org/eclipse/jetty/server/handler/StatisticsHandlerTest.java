@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -171,42 +171,68 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getAsyncDispatches());
         assertEquals(0, _statsHandler.getExpires());
         assertEquals(2, _statsHandler.getResponses2xx());
+    }
 
+
+    @Test
+    public void testTwoRequests() throws Exception
+    {
+        final CyclicBarrier barrier[] = {new CyclicBarrier(3), new CyclicBarrier(3)};
         _latchHandler.reset(2);
-        barrier[0] = new CyclicBarrier(3);
-        barrier[1] = new CyclicBarrier(3);
+        _statsHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            {
+                request.setHandled(true);
+                try
+                {
+                    barrier[0].await();
+                    barrier[1].await();
+                }
+                catch (Exception x)
+                {
+                    Thread.currentThread().interrupt();
+                    throw (IOException)new IOException().initCause(x);
+                }
+            }
+        });
+        _server.start();
 
+        String request = "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n";
+    
         _connector.executeRequest(request);
         _connector.executeRequest(request);
 
         barrier[0].await();
 
-        assertEquals(4, _statistics.getConnectionsOpen());
+        assertEquals(2, _statistics.getConnectionsOpen());
 
-        assertEquals(4, _statsHandler.getRequests());
+        assertEquals(2, _statsHandler.getRequests());
         assertEquals(2, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
 
-        assertEquals(4, _statsHandler.getDispatched());
+        assertEquals(2, _statsHandler.getDispatched());
         assertEquals(2, _statsHandler.getDispatchedActive());
         assertEquals(2, _statsHandler.getDispatchedActiveMax());
-
 
         barrier[1].await();
         assertTrue(_latchHandler.await());
 
-        assertEquals(4, _statsHandler.getRequests());
+        assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
 
-        assertEquals(4, _statsHandler.getDispatched());
+        assertEquals(2, _statsHandler.getDispatched());
         assertEquals(0, _statsHandler.getDispatchedActive());
         assertEquals(2, _statsHandler.getDispatchedActiveMax());
 
         assertEquals(0, _statsHandler.getAsyncRequests());
         assertEquals(0, _statsHandler.getAsyncDispatches());
         assertEquals(0, _statsHandler.getExpires());
-        assertEquals(4, _statsHandler.getResponses2xx());
+        assertEquals(2, _statsHandler.getResponses2xx());
     }
 
     @Test

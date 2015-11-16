@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -110,6 +110,7 @@ public class WSServer
         WebAppContext context = new WebAppContext();
         context.setContextPath(this.contextPath);
         context.setBaseResource(Resource.newResource(this.contextDir));
+        context.setAttribute("org.eclipse.jetty.websocket.jsr356",Boolean.TRUE);
 
         // @formatter:off
         context.setConfigurations(new Configuration[] {
@@ -133,6 +134,7 @@ public class WSServer
     public void deployWebapp(WebAppContext webapp) throws Exception
     {
         contexts.addHandler(webapp);
+        contexts.manage(webapp);
         webapp.start();
         if (LOG.isDebugEnabled())
         {
@@ -176,8 +178,8 @@ public class WSServer
         }
         int port = connector.getLocalPort();
         serverUri = new URI(String.format("ws://%s:%d%s/",host,port,contextPath));
-        LOG.debug("Server started on {}",serverUri);
-
+        if (LOG.isDebugEnabled())
+            LOG.debug("Server started on {}",serverUri);
     }
 
     public void stop()

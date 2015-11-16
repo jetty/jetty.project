@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,37 +29,27 @@ import org.eclipse.jetty.util.resource.Resource;
 public class CertificateUtils
 {
     /* ------------------------------------------------------------ */
-    public static KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
+    public static KeyStore getKeyStore(Resource store, String storeType, String storeProvider, String storePassword) throws Exception
     {
         KeyStore keystore = null;
 
-        if (storeStream != null || storePath != null)
+        if (store != null)
         {
-            InputStream inStream = storeStream;
-            try
+            if (storeProvider != null)
             {
-                if (inStream == null)
-                {
-                    inStream = Resource.newResource(storePath).getInputStream();
-                }
-                
-                if (storeProvider != null)
-                {
-                    keystore = KeyStore.getInstance(storeType, storeProvider);
-                }
-                else
-                {
-                    keystore = KeyStore.getInstance(storeType);
-                }
-    
-                keystore.load(inStream, storePassword == null ? null : storePassword.toCharArray());
+                keystore = KeyStore.getInstance(storeType, storeProvider);
             }
-            finally
+            else
             {
-                if (inStream != null)
-                {
-                    inStream.close();
-                }
+                keystore = KeyStore.getInstance(storeType);
+            }
+            
+            if (!store.exists())
+                throw new IllegalStateException("no valid keystore");
+            
+            try (InputStream inStream = store.getInputStream())
+            {
+                keystore.load(inStream, storePassword == null ? null : storePassword.toCharArray());
             }
         }
         

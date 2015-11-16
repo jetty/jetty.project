@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -97,6 +97,8 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
                 Resource resource = Resource.newResource(app.getOriginId());
                 File file = resource.getFile();
                 jettyXmlConfig.getIdMap().put("Server",app.getDeploymentManager().getServer());
+                jettyXmlConfig.getProperties().put("jetty.home",System.getProperty("jetty.home","."));
+                jettyXmlConfig.getProperties().put("jetty.base",System.getProperty("jetty.base","."));
                 jettyXmlConfig.getProperties().put("jetty.webapp",file.getCanonicalPath());
                 jettyXmlConfig.getProperties().put("jetty.webapps",file.getParentFile().getCanonicalPath());
                 

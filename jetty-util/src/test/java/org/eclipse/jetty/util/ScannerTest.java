@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -50,8 +50,12 @@ public class ScannerTest
     @BeforeClass
     public static void setUpBeforeClass() throws Exception
     {
-        _directory = MavenTestingUtils.getTargetTestingDir(ScannerTest.class.getSimpleName());
-        FS.ensureEmpty(_directory);
+        File testDir = MavenTestingUtils.getTargetTestingDir(ScannerTest.class.getSimpleName());
+        FS.ensureEmpty(testDir);
+        
+        // Use full path, pointing to a real directory (for FileSystems that are case-insensitive, like Windows and OSX to use)
+        // This is only needed for the various comparisons below to make sense.
+        _directory = testDir.toPath().toRealPath().toFile();
 
         _scanner = new Scanner();
         _scanner.addScanDir(_directory);

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -38,6 +39,11 @@ import org.junit.Test;
  */
 public class StdErrLogTest
 {
+    static
+    {
+        StdErrLog.setTagPad(0);
+    }
+    
     @Before
     public void before()
     {
@@ -155,6 +161,7 @@ public class StdErrLogTest
 
     /**
      * Test to make sure that using a Null parameter on parameterized messages does not result in a NPE
+     * @throws NullPointerException failed test
      */
     @Test
     public void testParameterizedMessage_NullValues() throws NullPointerException
@@ -301,6 +308,7 @@ public class StdErrLogTest
      * Tests StdErrLog.warn() methods with level filtering.
      * <p>
      * Should always see WARN level messages, regardless of set level.
+     * @throws UnsupportedEncodingException failed test
      */
     @Test
     public void testWarnFiltering() throws UnsupportedEncodingException
@@ -340,6 +348,7 @@ public class StdErrLogTest
      * Tests StdErrLog.info() methods with level filtering.
      * <p>
      * Should only see INFO level messages when level is set to {@link StdErrLog#LEVEL_INFO} and below.
+     * @throws UnsupportedEncodingException failed test
      */
     @Test
     public void testInfoFiltering() throws UnsupportedEncodingException
@@ -385,6 +394,7 @@ public class StdErrLogTest
 
     /**
      * Tests {@link StdErrLog#LEVEL_OFF} filtering.
+     * @throws UnsupportedEncodingException failed test
      */
     @Test
     public void testOffFiltering() throws UnsupportedEncodingException
@@ -412,6 +422,7 @@ public class StdErrLogTest
      * Tests StdErrLog.debug() methods with level filtering.
      * <p>
      * Should only see DEBUG level messages when level is set to {@link StdErrLog#LEVEL_DEBUG} and below.
+     * @throws UnsupportedEncodingException failed test
      */
     @Test
     public void testDebugFiltering() throws UnsupportedEncodingException
@@ -460,6 +471,7 @@ public class StdErrLogTest
      * Tests StdErrLog with {@link Logger#ignore(Throwable)} use.
      * <p>
      * Should only see IGNORED level messages when level is set to {@link StdErrLog#LEVEL_ALL}.
+     * @throws UnsupportedEncodingException failed test
      */
     @Test
     public void testIgnores() throws UnsupportedEncodingException
@@ -604,7 +616,7 @@ public class StdErrLogTest
     @Test
     public void testGetChildLogger_NullParent()
     {
-        StdErrLog log = new StdErrLog(null,new Properties());
+        AbstractLogger log = new StdErrLog(null,new Properties());
 
         Assert.assertThat("Logger.name", log.getName(), is(""));
 
@@ -683,6 +695,25 @@ public class StdErrLogTest
         assertLevel(log,StdErrLog.LEVEL_WARN); // as configured
     }
 
+    @Test
+    public void testSuppressed()
+    {
+        StdErrLog log = new StdErrLog("xxx",new Properties());
+        StdErrCapture output = new StdErrCapture(log);
+
+        Exception inner = new Exception("inner");
+        inner.addSuppressed( new IllegalStateException(){{addSuppressed(new Exception("branch0"));}});
+        IOException outer = new IOException("outer",inner);
+        
+        outer.addSuppressed( new IllegalStateException(){{addSuppressed(new Exception("branch1"));}});
+        outer.addSuppressed( new IllegalArgumentException(){{addSuppressed(new Exception("branch2"));}});
+        
+        log.warn("problem",outer);
+
+        output.assertContains("\t|\t|java.lang.Exception: branch2");
+        output.assertContains("\t|\t|java.lang.Exception: branch1");
+        output.assertContains("\t|\t|java.lang.Exception: branch0");
+    }
     
     private void assertLevel(StdErrLog log, int expectedLevel)
     {
