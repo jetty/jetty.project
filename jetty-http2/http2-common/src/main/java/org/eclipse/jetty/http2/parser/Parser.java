@@ -132,13 +132,13 @@ public class Parser
         if (!headerParser.parse(buffer))
             return false;
 
-        int frameType = getFrameType();
+        FrameType frameType = FrameType.from(getFrameType());
         if (LOG.isDebugEnabled())
-            LOG.debug("Parsed {} frame header", FrameType.from(frameType));
+            LOG.debug("Parsed {} frame header from {}", frameType, buffer);
 
         if (continuation)
         {
-            if (frameType != FrameType.CONTINUATION.getType())
+            if (frameType != FrameType.CONTINUATION)
             {
                 // SPEC: CONTINUATION frames must be consecutive.
                 BufferUtil.clear(buffer);
@@ -152,7 +152,7 @@ public class Parser
         }
         else
         {
-            if (frameType == FrameType.HEADERS.getType() &&
+            if (frameType == FrameType.HEADERS &&
                     !headerParser.hasFlag(Flags.END_HEADERS))
             {
                 continuation = true;
@@ -172,10 +172,6 @@ public class Parser
             return false;
         }
 
-        FrameType frameType = FrameType.from(type);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Parsing {} frame", frameType);
-
         BodyParser bodyParser = bodyParsers[type];
         if (headerParser.getLength() == 0)
         {
@@ -187,7 +183,7 @@ public class Parser
                 return false;
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Parsed {} frame", frameType);
+            LOG.debug("Parsed {} frame body from {}", FrameType.from(type), buffer);
         reset();
         return true;
     }
