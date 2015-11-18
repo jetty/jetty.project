@@ -69,7 +69,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
                     return true;
                 }
             }
-            
+
             // No, so let's check each element ourselves
             boolean linked=true;
             Path target=path;
@@ -86,13 +86,14 @@ public class AllowSymLinkAliasChecker implements AliasCheck
                 Path d = target.getRoot();
                 for (Path e:target)
                 {
-                    d=d.resolve(e);
+                    Path r=d.resolve(e);
+                    d=r;
 
                     while (Files.exists(d) && Files.isSymbolicLink(d))
                     {
-                        Path link=Files.readSymbolicLink(d);                    
+                        Path link=Files.readSymbolicLink(d);    
                         if (!link.isAbsolute())
-                            link=d.resolve(link);
+                            link=d.getParent().resolve(link);
                         d=link;
                         linked=true;
                     }
