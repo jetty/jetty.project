@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
+import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.util.BufferUtil;
@@ -174,6 +175,8 @@ public class HeadersBodyParser extends BodyParser
                         MetaData metaData = headerBlockParser.parse(buffer, length);
                         if (metaData != null)
                         {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Parsed {} frame hpack from {}", FrameType.HEADERS, buffer);
                             state = State.PADDING;
                             loop = paddingLength == 0;
                             onHeaders(parentStreamId, weight, exclusive, metaData);
