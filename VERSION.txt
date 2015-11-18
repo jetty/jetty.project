@@ -1,4 +1,35 @@
-jetty-9.3.6-SNAPSHOT
+jetty-9.3.7-SNAPSHOT
+
+jetty-9.3.6.v20151106 - 06 November 2015
+ + 419966 Add ContentProvider that submits multipart/form-data.
+ + 472675 No main manifest attribute, in jetty-runner regression
+ + 476641 Proxy rewriteTarget() null return does not call error handler.
+ + 478757 DebugHandler thread name is mangled
+ + 479179 Fixed NPE from debug
+ + 479378 Incorrect REQUEST_URI.
+ + 479712 Documented --approve-all-licenses
+ + 479832 Use system properties for gcloud config for GCloudDatastore session
+   manager
+ + 479839 Regression when starting application with excessive scan times
+ + 479865 IllegalStateException: Multiple servlets map to path: *.jsp: jsp,jsp
+ + 480061 HTTP/2 server doesn't send GOAWAY frame when shutting down.
+ + 480162 Continuations behavior differences due to HttpURI behavior
+ + 480260 HPack decode error for buffers with offset.
+ + 480272 Update to newer jdt ecj version
+ + 480452 Large downloads via FastCGI proxy keep HttpClient connections active.
+ + 480764 Error parsing empty multipart.
+ + 481006 SSL requests intermittently fail with EOFException when SSL
+   renegotiation is disallowed.
+ + 481203 Add ability to set configurations to apply to WebAppContext for
+   jetty-maven-plugin
+ + 481225 Secondary resources with query parameters are not properly pushed.
+ + 481236 Make ShutdownMonitor java security manager friendly
+ + 481355 Nested Symlinks
+ + 481373 Corner cases where session may remain in JDBCSessionManager memory
+ + 481385 Incorrect parsing of END_REQUEST frames.
+ + 481418 ResourceHandler sets last modified
+ + 481437 Port ConnectHandler connect and context functionality from Jetty 8.
+ + 481554 DispatcherType reset race
 
 jetty-9.3.5.v20151012 - 12 October 2015
  + 479343 calls to MetaData#orderFragments() with relative ordering adds
