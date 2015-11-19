@@ -33,7 +33,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
      */
     @Override
-    public SessionData load(SessionKey key) throws Exception
+    public SessionData load(String id) throws Exception
     {
         return null;
     }
@@ -43,16 +43,16 @@ public class NullSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(org.eclipse.jetty.server.session.SessionKey, long, long, long, long)
      */
     @Override
-    public SessionData newSessionData(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        return new SessionData(key.getId(), key.getCanonicalContextPath(), key.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
+        return new SessionData(id, _contextId.getCanonicalContextPath(), _contextId.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
 
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
      */
     @Override
-    public boolean delete(SessionKey key) throws Exception
+    public boolean delete(String id) throws Exception
     {
        return true;
     }
@@ -61,7 +61,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore()
      */
     @Override
-    public void doStore(SessionKey key, SessionData data, boolean isNew) throws Exception
+    public void doStore(String id, SessionData data, boolean isNew) throws Exception
     {
         //noop
     }
@@ -70,7 +70,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired()
      */
     @Override
-    public Set<SessionKey> getExpired(Set<SessionKey> candidates)
+    public Set<String> getExpired(Set<String> candidates)
     {
        return candidates; //whatever is suggested we accept
     }

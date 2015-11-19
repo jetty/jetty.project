@@ -26,17 +26,24 @@ package org.eclipse.jetty.server.session;
  */
 public class UnwriteableSessionDataException extends Exception
 {
-    private SessionKey _key;
+    private String _id;
+    private ContextId _contextId;
     
     
-    public UnwriteableSessionDataException (SessionKey key, Throwable t)
+    
+    public UnwriteableSessionDataException (String id, ContextId contextId, Throwable t)
     {
-        super ("Unwriteable session "+key, t);
-        _key = key;
+        super ("Unwriteable session "+id+" for "+contextId, t);
+       _id = id;
     }
     
-    public SessionKey getKey()
+    public String getId()
     {
-        return _key;
+        return _id;
+    }
+    
+    public ContextId getContextId()
+    {
+        return _contextId;
     }
 }

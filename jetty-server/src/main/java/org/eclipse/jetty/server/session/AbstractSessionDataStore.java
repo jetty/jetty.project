@@ -19,7 +19,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.server.handler.ContextHandler.Context;
+
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /**
@@ -29,48 +29,33 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  */
 public abstract class AbstractSessionDataStore extends AbstractLifeCycle implements SessionDataStore
 {
-    protected Context _context; //context associated with this session data store
-    protected String _node; //the unique id of the node on which this context is deployed
-    
-    public String getNode()
-    {
-        return _node;
-    }
+    protected ContextId _contextId; //context associated with this session data store
 
 
-    public void setNode(String node)
-    {
-        _node = node;
-    }
+    public abstract void doStore(String id, SessionData data, boolean isNew) throws Exception;
 
-
-    public abstract void doStore(SessionKey key, SessionData data, boolean isNew) throws Exception;
+   
 
     
-    public Context getContext()
+    public void initialize (ContextId id)
     {
-        return _context;
+        if (isStarted())
+            throw new IllegalStateException("Context set after SessionDataStore started");
+        _contextId = id;
     }
-
-
-    public void setContext(Context context)
-    {
-        _context = context;
-    }
-
 
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#store(java.lang.String, org.eclipse.jetty.server.session.SessionData)
      */
     @Override
-    public void store(SessionKey key, SessionData data) throws Exception
+    public void store(String id, SessionData data) throws Exception
     {
         long lastSave = data.getLastSaved();
         
         data.setLastSaved(System.currentTimeMillis());
         try
         {
-            doStore(key, data, (lastSave<=0));
+            doStore(id, data, (lastSave<=0));
         }
         catch (Exception e)
         {
@@ -88,9 +73,9 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
      * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(org.eclipse.jetty.server.session.SessionKey, long, long, long, long)
      */
     @Override
-    public SessionData newSessionData(SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        return new SessionData(key.getId(), key.getCanonicalContextPath(), key.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
+        return new SessionData(id, _contextId.getCanonicalContextPath(), _contextId.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
  
     protected void checkStarted () throws IllegalStateException
@@ -98,5 +83,19 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
         if (isStarted())
             throw new IllegalStateException("Already started");
     }
+
+
+
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (_contextId == null)
+            throw new IllegalStateException ("No ContextId");
+        
+        super.doStart();
+    }
+    
+    
     
 }

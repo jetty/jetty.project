@@ -210,14 +210,14 @@ public class SessionScavenger extends AbstractLifeCycle
                 if (manager != null)
                 {
                     //call scavenge on each manager to find keys for sessions that have expired
-                    Set<SessionKey> expiredKeys = manager.scavenge();
+                    Set<String> expiredKeys = manager.scavenge();
                     
                     //for each expired session, tell the session id manager to invalidate its key on all contexts
-                    for (SessionKey key:expiredKeys)
+                    for (String key:expiredKeys)
                     {
                         try
                         {
-                            ((AbstractSessionIdManager)_sessionIdManager).expireAll(key.getId());
+                            ((AbstractSessionIdManager)_sessionIdManager).expireAll(key);
                         }
                         catch (Exception e)
                         {

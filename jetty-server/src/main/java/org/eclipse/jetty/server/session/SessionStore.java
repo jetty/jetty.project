@@ -36,11 +36,12 @@ import org.eclipse.jetty.util.component.LifeCycle;
  */
 public interface SessionStore extends LifeCycle
 {
-    Session newSession (HttpServletRequest request, SessionKey key,  long time, long maxInactiveMs);
-    Session get(SessionKey key, boolean staleCheck) throws Exception;
-    void put(SessionKey key, Session session) throws Exception;
-    boolean exists (SessionKey key) throws Exception;
-    boolean delete (SessionKey key) throws Exception;
+    void initialize(ContextId contextId);
+    Session newSession (HttpServletRequest request, String id,  long time, long maxInactiveMs);
+    Session get(String id, boolean staleCheck) throws Exception;
+    void put(String id, Session session) throws Exception;
+    boolean exists (String id) throws Exception;
+    boolean delete (String id) throws Exception;
     void shutdown ();
-    Set<SessionKey> getExpired ();
+    Set<String> getExpired ();
 }

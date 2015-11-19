@@ -41,6 +41,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     protected SessionDataStore _sessionDataStore;
     protected StalenessStrategy _staleStrategy;
     protected SessionManager _manager;
+    protected ContextId _contextId;
 
 
     
@@ -56,39 +57,39 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     
     /**
      * Get the session matching the key
-     * @param key
+     * @param id session id
      * @return
      */
-    public abstract Session doGet(SessionKey key);
+    public abstract Session doGet(String id);
     
     
     
     /**
      * Put the session into the map if it wasn't already there
      * 
-     * @param key the identity of the session
+     * @param id the identity of the session
      * @param session the session object
      * @return null if the session wasn't already in the map, or the existing entry otherwise
      */
-    public abstract Session doPutIfAbsent (SessionKey key, Session session);
+    public abstract Session doPutIfAbsent (String id, Session session);
     
     
     
     /**
      * Check to see if the session exists in the store
-     * @param key
+     * @param id
      * @return
      */
-    public abstract boolean doExists (SessionKey key);
+    public abstract boolean doExists (String id);
     
     
     
     /**
      * Remove the session with this identity from the store
-     * @param key
+     * @param id
      * @return true if removed false otherwise
      */
-    public abstract boolean doDelete (SessionKey key);
+    public abstract boolean doDelete (String id);
     
     
     
@@ -97,7 +98,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * Get a list of keys for sessions that the store thinks has expired
      * @return
      */
-    public abstract Set<SessionKey> doGetExpiredCandidates();
+    public abstract Set<String> doGetExpiredCandidates();
     
     
     
@@ -121,6 +122,14 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     }
     
     
+
+    public void initialize (ContextId contextId)
+    {
+        if (isStarted())
+            throw new IllegalStateException("Context set after session store started");
+        _contextId = contextId;
+    }
+    
     @Override
     protected void doStart() throws Exception
     {
@@ -129,14 +138,11 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         
         if (_manager == null)
             throw new IllegalStateException ("No session manager");
-
-
-        if (_sessionDataStore instanceof AbstractSessionDataStore)
-        {
-            ((AbstractSessionDataStore)_sessionDataStore).setContext(_manager.getContext());
-            ((AbstractSessionDataStore)_sessionDataStore).setNode(_manager.getSessionIdManager().getWorkerName());
-        }
         
+        if (_contextId == null)
+            throw new IllegalStateException ("No ContextId");
+        
+        _sessionDataStore.initialize(_contextId);
         _sessionDataStore.start();
         
         super.doStart();
@@ -179,16 +185,16 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * @see org.eclipse.jetty.server.session.SessionStore#get(java.lang.String)
      */
     @Override
-    public Session get(SessionKey key, boolean staleCheck) throws Exception
+    public Session get(String id, boolean staleCheck) throws Exception
     {
         //look locally
-        Session session = doGet(key);
+        Session session = doGet(id);
         
         
         if (staleCheck && isStale(session))
         {
             //delete from store so should reload
-            doDelete(key);
+            doDelete(id);
             session = null;
         }
 
@@ -196,12 +202,12 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         //not in session store, load the data for the session if possible
         if (session == null && _sessionDataStore != null)
         {
-            SessionData data = _sessionDataStore.load(key);
+            SessionData data = _sessionDataStore.load(id);
             if (data != null)
             {
                 session = newSession(data);
                 session.setSessionManager(_manager);
-                Session existing = doPutIfAbsent(key, session);
+                Session existing = doPutIfAbsent(id, session);
                 if (existing != null)
                 {
                     //some other thread has got in first and added the session
@@ -221,10 +227,10 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * @see org.eclipse.jetty.server.session.SessionStore#put(java.lang.String, org.eclipse.jetty.server.session.Session)
      */
     @Override
-    public void put(SessionKey key, Session session) throws Exception
+    public void put(String id, Session session) throws Exception
     {
-        if (key == null || session == null)
-            throw new IllegalArgumentException ("Put key="+key+" session="+(session==null?"null":session.getId()));
+        if (id == null || session == null)
+            throw new IllegalArgumentException ("Put key="+id+" session="+(session==null?"null":session.getId()));
         
         session.setSessionManager(_manager);
  
@@ -232,24 +238,22 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         if ((session.isNew() || session.getSessionData().isDirty() || isStale(session)) && _sessionDataStore != null)
         {
             session.willPassivate();
-            _sessionDataStore.store(key, session.getSessionData());
+            _sessionDataStore.store(id, session.getSessionData());
             session.didActivate();
         }
 
-        doPutIfAbsent(key,session);
+        doPutIfAbsent(id,session);
     }
 
     /** 
-     * Check to see if the session object exists.
-     * 
-     * TODO should this check through to the backing store?
+     * Check to see if the session object exists in this store.
      * 
      * @see org.eclipse.jetty.server.session.SessionStore#exists(java.lang.String)
      */
     @Override
-    public boolean exists(SessionKey key)
+    public boolean exists(String id)
     {
-        return doExists(key);
+        return doExists(id);
     }
 
 
@@ -259,14 +263,14 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * @see org.eclipse.jetty.server.session.SessionStore#delete(java.lang.String)
      */
     @Override
-    public boolean delete(SessionKey key) throws Exception
+    public boolean delete(String id) throws Exception
     {
         if (_sessionDataStore != null)
         {
-            boolean dsdel = _sessionDataStore.delete(key);
-            if (LOG.isDebugEnabled()) LOG.debug("Session {} deleted in db {}",key, dsdel);                   
+            boolean dsdel = _sessionDataStore.delete(id);
+            if (LOG.isDebugEnabled()) LOG.debug("Session {} deleted in db {}",id, dsdel);                   
         }
-        return doDelete(key);
+        return doDelete(id);
     }
 
     public boolean isStale (Session session)
@@ -282,11 +286,11 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * @see org.eclipse.jetty.server.session.SessionStore#getExpired()
      */
     @Override
-    public Set<SessionKey> getExpired()
+    public Set<String> getExpired()
     {
        if (!isStarted())
            return Collections.emptySet();
-       Set<SessionKey> candidates = doGetExpiredCandidates();
+       Set<String> candidates = doGetExpiredCandidates();
        return _sessionDataStore.getExpired(candidates);
     }
 
@@ -295,7 +299,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
 
     @Override
-    public Session newSession(HttpServletRequest request, SessionKey key, long time, long maxInactiveMs)
+    public Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs)
     {
         return null;
     }

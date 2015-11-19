@@ -91,12 +91,12 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#delete(org.eclipse.jetty.server.session.SessionKey)
      */
     @Override
-    public boolean delete(SessionKey key) throws Exception
+    public boolean delete(String id) throws Exception
     {   
         File file = null;
         if (_storeDir != null)
         {
-            file = new File(_storeDir, key.toString());
+            file = new File(_storeDir, _contextId.toString()+"_"+id);
             if (file.exists() && file.getParentFile().equals(_storeDir))
             {
                 file.delete();
@@ -111,7 +111,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired()
      */
     @Override
-    public Set<SessionKey> getExpired(Set<SessionKey> candidates)
+    public Set<String> getExpired(Set<String> candidates)
     {
         //we don't want to open up each file and check, so just leave it up to the SessionStore
         return candidates;
@@ -122,9 +122,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#load(org.eclipse.jetty.server.session.SessionKey)
      */
     @Override
-    public SessionData load(SessionKey key) throws Exception
+    public SessionData load(String id) throws Exception
     {  
-        File file = new File(_storeDir,key.toString());
+        File file = new File(_storeDir, _contextId.toString()+"_"+id);
 
         if (!file.exists())
         {
@@ -135,7 +135,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         
         try (FileInputStream in = new FileInputStream(file))
         {
-            SessionData data = load(key, in);
+            SessionData data = load(in);
             //delete restored file
             file.delete();
             return data;
@@ -145,7 +145,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             if (isDeleteUnrestorableFiles() && file.exists() && file.getParentFile().equals(_storeDir));
             {
                 file.delete();
-                LOG.warn("Deleted unrestorable file for session {}", key);
+                LOG.warn("Deleted unrestorable file for session {}", id);
             }
            throw e;
         }
@@ -153,15 +153,17 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     
         
         
-    private SessionData load (SessionKey key, InputStream is)
+    private SessionData load (InputStream is)
     throws Exception
     {
+        String id = null;
+        
         try
         {
             SessionData data = null;
             DataInputStream di = new DataInputStream(is);
 
-            String id = di.readUTF();  
+            id = di.readUTF();
             String contextPath = di.readUTF();
             String vhost = di.readUTF();
             String lastNode = di.readUTF();
@@ -172,9 +174,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             long expiry = di.readLong();
             long maxIdle = di.readLong();
 
-            data = newSessionData(key, created, accessed, lastAccessed, maxIdle); 
-            data.setContextPath(contextPath); //TODO should be same as key
-            data.setVhost(vhost);//TODO should be same as key
+            data = newSessionData(id, created, accessed, lastAccessed, maxIdle); 
+            data.setContextPath(contextPath);
+            data.setVhost(vhost);
             data.setLastNode(lastNode);
             data.setCookieSet(cookieSet);
             data.setExpiry(expiry);
@@ -187,7 +189,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
         catch (Exception e)
         {
-            throw new UnreadableSessionDataException(key, e);
+            throw new UnreadableSessionDataException(id, _contextId, e);
         }
     }
 
@@ -214,24 +216,24 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData)
      */
     @Override
-    public void doStore(SessionKey key, SessionData data, boolean isNew) throws Exception
+    public void doStore(String id, SessionData data, boolean isNew) throws Exception
     {
         File file = null;
         if (_storeDir != null)
         {
-            file = new File(_storeDir, key.toString());
+            file = new File(_storeDir, id);
             if (file.exists())
                 file.delete();
 
             try(FileOutputStream fos = new FileOutputStream(file,false))
             {
-                save(fos, key, data);
+                save(fos, id, data);
             }
             catch (Exception e)
             { 
                 if (file != null) 
                     file.delete(); // No point keeping the file if we didn't save the whole session
-                throw new UnwriteableSessionDataException(key,e);             
+                throw new UnwriteableSessionDataException(id, _contextId,e);             
             }
         }
     }
@@ -239,12 +241,12 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
     
     /* ------------------------------------------------------------ */
-    private void save(OutputStream os, SessionKey key, SessionData data)  throws IOException
+    private void save(OutputStream os, String id, SessionData data)  throws IOException
     {    
         DataOutputStream out = new DataOutputStream(os);
-        out.writeUTF(key.getId());
-        out.writeUTF(key.getCanonicalContextPath());
-        out.writeUTF(key.getVhost());
+        out.writeUTF(id);
+        out.writeUTF(_contextId.getCanonicalContextPath());
+        out.writeUTF(_contextId.getVhost());
         out.writeUTF(data.getLastNode());
         out.writeLong(data.getCreated());
         out.writeLong(data.getAccessed());

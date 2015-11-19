@@ -37,10 +37,11 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
 
     public interface SessionDataCache
     {
-        public SessionData get (SessionKey key); //get mapped value
-        public boolean putIfAbsent (SessionKey key, SessionData data); //only insert if no mapping for key already
-        public boolean remove (SessionKey key); //remove the mapping for key, returns false if no mapping
-        public void put (SessionKey key, SessionData data); //overwrite or add the mapping
+        public SessionData get (String id); //get mapped value
+        public boolean putIfAbsent (String id, SessionData data); //only insert if no mapping for key already
+        public boolean remove (String id); //remove the mapping for key, returns false if no mapping
+        public void put (String id, SessionData data); //overwrite or add the mapping
+        public void initialize(ContextId contextId);
     }
     
     
@@ -76,21 +77,21 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#load(org.eclipse.jetty.server.session.SessionKey)
      */
     @Override
-    public SessionData load(SessionKey key) throws Exception
+    public SessionData load(String id) throws Exception
     {
         //check to see if the session data is already in our cache
-        SessionData d = _cache.get(key);
+        SessionData d = _cache.get(id);
         if (d == null)
         {
             //not in the cache, go get it from the store
-           d =  _delegateDataStore.load(key);
+           d =  _delegateDataStore.load(id);
            
            //put it into the cache, unless another thread/node has put it into the cache
-          boolean inserted = _cache.putIfAbsent(key, d);
+          boolean inserted = _cache.putIfAbsent(id, d);
           if (!inserted)
           {
               //some other thread/node put this data into the cache, so get it from there
-              SessionData d2 = _cache.get(key);
+              SessionData d2 = _cache.get(id);
               
               if (d2 != null)
                   d = d2;
@@ -104,11 +105,11 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#delete(org.eclipse.jetty.server.session.SessionKey)
      */
     @Override
-    public boolean delete(SessionKey key) throws Exception
+    public boolean delete(String id) throws Exception
     {
         //delete from the store and from the cache
-        _delegateDataStore.delete(key);
-        _cache.remove(key);
+        _delegateDataStore.delete(id);
+        _cache.remove(id);
         //TODO need to check removal at each level?
         return false;
     }
@@ -117,7 +118,7 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
      */
     @Override
-    public Set<SessionKey> getExpired(Set<SessionKey> candidates)
+    public Set<String> getExpired(Set<String> candidates)
     {
         // TODO Auto-generated method stub
         return null;
@@ -127,17 +128,34 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData, boolean)
      */
     @Override
-    public void doStore(SessionKey key, SessionData data, boolean isNew) throws Exception
+    public void doStore(String id, SessionData data, boolean isNew) throws Exception
     {
         //write to the SessionDataStore first
         if (_delegateDataStore instanceof AbstractSessionDataStore)
-            ((AbstractSessionDataStore)_delegateDataStore).doStore(key, data, isNew);
+            ((AbstractSessionDataStore)_delegateDataStore).doStore(id, data, isNew);
 
         //else??????
         
         //then update the cache with written data
-        _cache.put(key,data);
+        _cache.put(id,data);
 
     }
 
+    @Override
+    protected void doStart() throws Exception
+    {
+        _cache.initialize(_contextId);
+        _delegateDataStore.initialize(_contextId);
+        super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        // TODO Auto-generated method stub
+        super.doStop();
+    }
+
+    
+    
 }

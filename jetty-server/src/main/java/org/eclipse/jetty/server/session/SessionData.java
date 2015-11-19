@@ -120,9 +120,16 @@ public class SessionData implements Serializable
         if (value == null && old == null)
             return old; //if same as remove attribute but attribute was already removed, no change
         
-       _dirty = true;
+        setDirty (name);
        return old;
     }
+    
+    
+    public void setDirty (String name)
+    {
+        setDirty (true);
+    }
+    
     
     
     public void putAllAttributes (Map<String,Object> attributes)

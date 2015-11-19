@@ -110,9 +110,12 @@ public class MemorySessionStore extends AbstractSessionStore
      * @see org.eclipse.jetty.server.session.AbstractSessionStore#doGet(java.lang.String)
      */
     @Override
-    public Session doGet(SessionKey key)
+    public Session doGet(String id)
     {
-        Session session = _sessions.get(key.getId());
+        if (id == null)
+            return null;
+        
+        Session session = _sessions.get(id);
        
         return session;
     }
@@ -122,9 +125,9 @@ public class MemorySessionStore extends AbstractSessionStore
      * @see org.eclipse.jetty.server.session.AbstractSessionStore#doPutIfAbsent(java.lang.String, org.eclipse.jetty.server.session.Session)
      */
     @Override
-    public Session doPutIfAbsent(SessionKey key, Session session)
+    public Session doPutIfAbsent(String id, Session session)
     {
-        Session s = _sessions.putIfAbsent(key.getId(), session);
+        Session s = _sessions.putIfAbsent(id, session);
         if (s == null)
             _stats.increment();
        return s;
@@ -134,18 +137,18 @@ public class MemorySessionStore extends AbstractSessionStore
      * @see org.eclipse.jetty.server.session.AbstractSessionStore#doExists(java.lang.String)
      */
     @Override
-    public boolean doExists(SessionKey key)
+    public boolean doExists(String id)
     {
-       return _sessions.containsKey(key.getId());
+       return _sessions.containsKey(id);
     }
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(java.lang.String)
      */
     @Override
-    public boolean doDelete(SessionKey key)
+    public boolean doDelete(String id)
     {
-        Session s = _sessions.remove(key.getId());
+        Session s = _sessions.remove(id);
         if (s != null)
             _stats.decrement();
         return  (s != null);
@@ -155,16 +158,16 @@ public class MemorySessionStore extends AbstractSessionStore
 
 
     @Override
-    public Set<SessionKey> doGetExpiredCandidates()
+    public Set<String> doGetExpiredCandidates()
     {
-        Set<SessionKey> candidates = new HashSet<SessionKey>();
+        Set<String> candidates = new HashSet<String>();
         long now = System.currentTimeMillis();
         
         for (Session s:_sessions.values())
         {
             if (s.isExpiredAt(now))
             {
-                candidates.add(SessionKey.getKey(s.getId(), s.getContextPath(), s.getVHost()));
+                candidates.add(s.getId());
             }
         }
         return candidates;
@@ -193,14 +196,14 @@ public class MemorySessionStore extends AbstractSessionStore
                         session.willPassivate();
                         try
                         {
-                            _sessionDataStore.store(SessionKey.getKey(session.getSessionData()), session.getSessionData());
+                            _sessionDataStore.store(session.getId(), session.getSessionData());
                         }
                         catch (Exception e)
                         {
                             LOG.warn(e);
                         }
                     }
-                    doDelete (SessionKey.getKey(session.getSessionData())); //remove from memory
+                    doDelete (session.getId()); //remove from memory
                 }
                 else
                 {
@@ -223,9 +226,9 @@ public class MemorySessionStore extends AbstractSessionStore
      * @see org.eclipse.jetty.server.session.SessionStore#newSession(java.lang.String)
      */
     @Override
-    public Session newSession(HttpServletRequest request, SessionKey key, long time, long maxInactiveMs)
+    public Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs)
     {
-        MemorySession s =  new MemorySession(request, _sessionDataStore.newSessionData(key, time, time, time, maxInactiveMs));
+        MemorySession s =  new MemorySession(request, _sessionDataStore.newSessionData(id, time, time, time, maxInactiveMs));
         return s;
     }
 

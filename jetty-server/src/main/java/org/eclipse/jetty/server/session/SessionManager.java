@@ -107,6 +107,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     protected ClassLoader _loader;
     protected ContextHandler.Context _context;
+    protected ContextId _contextId;
     protected String _sessionCookie=__DefaultSessionCookie;
     protected String _sessionIdPathParameterName = __DefaultSessionIdPathParameterName;
     protected String _sessionIdPathParameterNamePrefix =";"+ _sessionIdPathParameterName +"=";
@@ -217,7 +218,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         try
         {
             if (s.isValid())
-                _sessionStore.put(SessionKey.getKey(s.getId(), _context), s);
+                _sessionStore.put(s.getId(), s);
         }
         catch (Exception e)
         {
@@ -301,12 +302,16 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             tmp=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__CheckRemoteSessionEncoding);
             if (tmp!=null)
                 _checkingRemoteSessionIdEncoding=Boolean.parseBoolean(tmp);
+            
+            _contextId = ContextId.getContextId(_sessionIdManager.getWorkerName(), _context);
         }
        
 
        if (_sessionStore instanceof AbstractSessionStore)
            ((AbstractSessionStore)_sessionStore).setSessionManager(this);
        
+       
+       _sessionStore.initialize(_contextId);
        _sessionStore.start();
        
         super.doStart();
@@ -563,9 +568,8 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     public HttpSession newHttpSession(HttpServletRequest request)
     {
         long created=System.currentTimeMillis();
-        String id =_sessionIdManager.newSessionId(request,created);
-        SessionKey key = SessionKey.getKey(id, _context);       
-        Session session = _sessionStore.newSession(request, key, created,  (_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000L:-1));
+        String id =_sessionIdManager.newSessionId(request,created);      
+        Session session = _sessionStore.newSession(request, id, created,  (_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000L:-1));
         session.setExtendedId(_sessionIdManager.getExtendedId(id,request));
         session.setSessionManager(this);
         session.setLastNode(_sessionIdManager.getWorkerName());
@@ -576,7 +580,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
         try
         {
-            _sessionStore.put(key, session);
+            _sessionStore.put(id, session);
             
             _sessionsCreatedStats.increment();
             
@@ -703,8 +707,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     {
         try
         {
-            SessionKey key = SessionKey.getKey(id, _context);
-            Session session =  _sessionStore.get(key, true);
+            Session session =  _sessionStore.get(id, true);
             if (session != null)
             {
                 //If the session we got back has expired
@@ -788,7 +791,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         try
         {
             //Remove the Session object from the session store and any backing data store
-            boolean removed = _sessionStore.delete(SessionKey.getKey(session.getId(), _context));
+            boolean removed = _sessionStore.delete(session.getId());
             if (removed)
             {
                 if (invalidate)
@@ -930,10 +933,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     {
         try
         {
-            SessionKey oldKey = SessionKey.getKey(oldId, _context);
-            SessionKey newKey = SessionKey.getKey(newId, _context);
-            
-            Session session = _sessionStore.get(oldKey, true);
+            Session session = _sessionStore.get(oldId, true);
             if (session == null)
             {
                 LOG.warn("Unable to renew id to "+newId+" for non-existant session "+oldId);
@@ -944,13 +944,13 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             session.getSessionData().setId(newId);
             session.setExtendedId(newExtendedId);
             session.getSessionData().setLastSaved(0); //forces an insert
-            _sessionStore.put(newKey, session);
+            _sessionStore.put(newId, session);
             
             //tell session id manager the id is in use
             _sessionIdManager.useId(session);
             
             //remove session with old id
-            _sessionStore.delete(oldKey);
+            _sessionStore.delete(oldId);
 
             //inform the listeners
             if (!_sessionIdListeners.isEmpty())
@@ -978,7 +978,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
         try
         {
-            Session session = _sessionStore.get(SessionKey.getKey(id, _context), false);
+            Session session = _sessionStore.get(id, false);
             if (session == null)
             {
                 return;  // couldn't get/load a session for this context with that id
@@ -995,7 +995,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     
     
     
-    public Set<SessionKey> scavenge ()
+    public Set<String> scavenge ()
     {
         //don't attempt to scavenge if we are shutting down
         if (isStopping() || isStopped())

@@ -47,7 +47,7 @@ public class SessionCookieTest
          * @see org.eclipse.jetty.server.session.SessionStore#newSession(org.eclipse.jetty.server.session.SessionKey, long, long, long, long)
          */
         @Override
-        public Session newSession(HttpServletRequest request, SessionKey key, long time, long maxInactiveMs)
+        public Session newSession(HttpServletRequest request, String key, long time, long maxInactiveMs)
         {
             // TODO Auto-generated method stub
             return null;
@@ -77,7 +77,7 @@ public class SessionCookieTest
          * @see org.eclipse.jetty.server.session.AbstractSessionStore#doGet(org.eclipse.jetty.server.session.SessionKey)
          */
         @Override
-        public Session doGet(SessionKey key)
+        public Session doGet(String key)
         {
             // TODO Auto-generated method stub
             return null;
@@ -87,7 +87,7 @@ public class SessionCookieTest
          * @see org.eclipse.jetty.server.session.AbstractSessionStore#doPutIfAbsent(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.Session)
          */
         @Override
-        public Session doPutIfAbsent(SessionKey key, Session session)
+        public Session doPutIfAbsent(String key, Session session)
         {
             return null;
         }
@@ -96,7 +96,7 @@ public class SessionCookieTest
          * @see org.eclipse.jetty.server.session.AbstractSessionStore#doExists(org.eclipse.jetty.server.session.SessionKey)
          */
         @Override
-        public boolean doExists(SessionKey key)
+        public boolean doExists(String key)
         {
             // TODO Auto-generated method stub
             return false;
@@ -106,7 +106,7 @@ public class SessionCookieTest
          * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(org.eclipse.jetty.server.session.SessionKey)
          */
         @Override
-        public boolean doDelete(SessionKey key)
+        public boolean doDelete(String key)
         {
             return false;
         }
@@ -115,7 +115,7 @@ public class SessionCookieTest
          * @see org.eclipse.jetty.server.session.AbstractSessionStore#doGetExpiredCandidates()
          */
         @Override
-        public Set<SessionKey> doGetExpiredCandidates()
+        public Set<String> doGetExpiredCandidates()
         {
             // TODO Auto-generated method stub
             return null;

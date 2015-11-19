@@ -31,6 +31,15 @@ import org.eclipse.jetty.util.component.LifeCycle;
  */
 public interface SessionDataStore extends LifeCycle
 {
+    /**
+     * Initialize this session data store for the
+     * given context. A SessionDataStore can only 
+     * be used by one context.
+     * 
+     * @param contextId
+     */
+    void initialize(ContextId contextId);
+    
     
     /**
      * Read in session data from storage
@@ -38,14 +47,14 @@ public interface SessionDataStore extends LifeCycle
      * @return
      * @throws Exception
      */
-    public SessionData load (SessionKey key) throws Exception;
+    public SessionData load (String id) throws Exception;
     
     
     /**
      * Create a new SessionData 
      * @return
      */
-    public SessionData newSessionData (SessionKey key, long created, long accessed, long lastAccessed, long maxInactiveMs);
+    public SessionData newSessionData (String id, long created, long accessed, long lastAccessed, long maxInactiveMs);
     
     
     
@@ -56,7 +65,7 @@ public interface SessionDataStore extends LifeCycle
      * @param data
      * @throws Exception
      */
-    public void store (SessionKey key, SessionData data) throws Exception;
+    public void store (String id, SessionData data) throws Exception;
     
     
     
@@ -66,7 +75,7 @@ public interface SessionDataStore extends LifeCycle
      * @return
      * @throws Exception
      */
-    public boolean delete (SessionKey key) throws Exception;
+    public boolean delete (String id) throws Exception;
     
     
     
@@ -80,7 +89,7 @@ public interface SessionDataStore extends LifeCycle
      * SessionDataStore
      * @return
      */
-    public Set<SessionKey> getExpired (Set<SessionKey> candidates);
+    public Set<String> getExpired (Set<String> candidates);
     
     
 }

@@ -22,58 +22,38 @@ package org.eclipse.jetty.server.session;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 
 /**
- * SessionKey
+ * ContextId
  *
  *
  */
-public class SessionKey
+public class ContextId
 {
     public final static String NULL_VHOST = "0.0.0.0";
-    private String _id;
+
+    private String _node;
     private String _canonicalContextPath;
     private String _vhost;
     
 
-    public static SessionKey getKey (String id, Context context)
+    public static ContextId getContextId (String node, Context context)
     {
-        String cpath = getContextPath(context);
-        String vhosts = getVirtualHost(context);
-        return new SessionKey (id, cpath, vhosts);
+        return new ContextId(node, getContextPath(context),  getVirtualHost(context));
     }
     
-    public static SessionKey getKey (SessionData data)
-    {
-        String cpath = canonicalize(data.getContextPath());
-        String vhost = data.getVhost();
-        if (vhost == null)
-            vhost = NULL_VHOST;
-        String id = data.getId();
-        return new SessionKey(id, cpath, vhost);
-    }
     
-    public static SessionKey getKey (String id, String path, String virtualHost)
+    private ContextId (String node, String path, String vhost)
     {
-        String cpath = canonicalize(path);
-        String vhost = NULL_VHOST;
-        if (virtualHost != null && !("".equals(virtualHost)))
-            vhost = virtualHost;
-            
-        return new SessionKey(id, cpath, vhost);
-    }
-        
-    
-    private SessionKey (String id, String path, String vhost)
-    {
-        if (id == null || path == null || vhost == null)
-            throw new IllegalArgumentException ("Bad values for key");
-        _id = id;
+        if (node == null || path == null || vhost == null)
+            throw new IllegalArgumentException ("Bad values for ContextId ["+node+","+path+","+vhost+"]");
+
+        _node = node;
         _canonicalContextPath = path;
         _vhost = vhost;
     }
     
-    public String getId()
+    public String getNode()
     {
-        return _id;
+        return _node;
     }
     
     public String getCanonicalContextPath()
@@ -88,7 +68,7 @@ public class SessionKey
     
     public String toString ()
     {
-        return _canonicalContextPath +"_"+_vhost+"_"+_id;
+        return _node+"_"+_canonicalContextPath +"_"+_vhost;
     }
     
     @Override
@@ -97,8 +77,8 @@ public class SessionKey
         if (o == null)
             return false;
         
-        SessionKey k = ((SessionKey)o);
-        if (k.getId().equals(getId()) && k.getCanonicalContextPath().equals(getCanonicalContextPath()) && k.getVhost().equals(getVhost()))
+        ContextId id = (ContextId)o;
+        if (id.getNode().equals(getNode()) && id.getCanonicalContextPath().equals(getCanonicalContextPath()) && id.getVhost().equals(getVhost()))
                 return true;
         return false;
     }
@@ -106,7 +86,7 @@ public class SessionKey
     @Override
     public int hashCode()
     {
-        return java.util.Objects.hash(getId(), getCanonicalContextPath(), getVhost());
+        return java.util.Objects.hash(getNode(), getCanonicalContextPath(), getVhost());
     }
 
     public static String getContextPath (Context context)
@@ -150,5 +130,6 @@ public class SessionKey
             return "";
 
         return path.replace('/', '_').replace('.','_').replace('\\','_');
-    }                            
+    }   
+    
 }

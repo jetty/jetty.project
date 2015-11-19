@@ -34,8 +34,8 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.nosql.NoSqlSession;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.Session;
 import org.junit.Test;
 
 /**
@@ -129,14 +129,14 @@ public class AttributeNameTest
             String action = request.getParameter("action");
             if ("init".equals(action))
             {
-                NoSqlSession session = (NoSqlSession)request.getSession(true);
+                Session session = (Session)request.getSession(true);
                 session.setAttribute("a.b.c",System.currentTimeMillis());               
                 sendResult(session,httpServletResponse.getWriter());
-                
+
             }
             else
             {
-                NoSqlSession session = (NoSqlSession)request.getSession(false);
+                Session session = (Session)request.getSession(false);
                 assertNotNull(session);     
                 assertNotNull(session.getAttribute("a.b.c"));
                 sendResult(session,httpServletResponse.getWriter());
@@ -144,7 +144,7 @@ public class AttributeNameTest
 
         }
 
-        private void sendResult(NoSqlSession session, PrintWriter writer)
+        private void sendResult(Session session, PrintWriter writer)
         {
             if (session != null)
             {

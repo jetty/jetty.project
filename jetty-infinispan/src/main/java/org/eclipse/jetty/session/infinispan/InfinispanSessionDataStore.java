@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
+import org.eclipse.jetty.server.session.ContextId;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionKey;
 import org.eclipse.jetty.util.log.Log;
@@ -86,36 +87,36 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#load(org.eclipse.jetty.server.session.SessionKey)
      */
     @Override
-    public SessionData load(SessionKey key) throws Exception
+    public SessionData load(String id) throws Exception
     {
-       return (SessionData)_cache.get(key.toString());
+       return (SessionData)_cache.get(getCacheKey(id, _contextId));
     }
 
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#delete(org.eclipse.jetty.server.session.SessionKey)
      */
     @Override
-    public boolean delete(SessionKey key) throws Exception
+    public boolean delete(String id) throws Exception
     {
-        return (_cache.remove(key.toString()) != null);
+        return (_cache.remove(getCacheKey(id, _contextId)) != null);
     }
 
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
      */
     @Override
-    public Set<SessionKey> getExpired(Set<SessionKey> candidates)
+    public Set<String> getExpired(Set<String> candidates)
     {
        if (candidates == null  || candidates.isEmpty())
            return candidates;
        
        long now = System.currentTimeMillis();
        
-       Set<SessionKey> expired = new HashSet<SessionKey>();
+       Set<String> expired = new HashSet<String>();
        if (LOG.isDebugEnabled())
            LOG.debug("Getting expired sessions " + now);
        
-       for (SessionKey candidate:candidates)
+       for (String candidate:candidates)
        {
            try
            {
@@ -137,21 +138,27 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData, boolean)
      */
     @Override
-    public void doStore(SessionKey key, SessionData data, boolean isNew) throws Exception
+    public void doStore(String id, SessionData data, boolean isNew) throws Exception
     {
         //Put an idle timeout on the cache entry if the session is not immortal - 
         //if no requests arrive at any node before this timeout occurs, or no node 
         //scavenges the session before this timeout occurs, the session will be removed.
         //NOTE: that no session listeners can be called for this.
         if (data.getMaxInactiveMs() > 0)
-            _cache.put(key.toString(), data, -1, TimeUnit.MILLISECONDS, (data.getMaxInactiveMs() * _idleExpiryMultiple), TimeUnit.MILLISECONDS);
+            _cache.put(getCacheKey(id, _contextId), data, -1, TimeUnit.MILLISECONDS, (data.getMaxInactiveMs() * _idleExpiryMultiple), TimeUnit.MILLISECONDS);
         else
-            _cache.put(key.toString(), data);
+            _cache.put(getCacheKey(id, _contextId), data);
         
         //tickle the session id manager to keep the sessionid entry for this session up-to-date
         if (_idMgr != null && _idMgr instanceof InfinispanSessionIdManager)
         {
-            ((InfinispanSessionIdManager)_idMgr).touch(key.getId());
+            ((InfinispanSessionIdManager)_idMgr).touch(id);
         }
+    }
+    
+    
+    public static String getCacheKey (String id, ContextId contextId)
+    {
+        return contextId.toString()+"_"+id;
     }
 }

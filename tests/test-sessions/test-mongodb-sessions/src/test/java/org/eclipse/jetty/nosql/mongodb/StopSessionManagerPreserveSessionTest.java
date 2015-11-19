@@ -81,7 +81,7 @@ public class StopSessionManagerPreserveSessionTest extends AbstractStopSessionMa
     @Override
     public void configureSessionManagement(ServletContextHandler context)
     {
-        ((MongoSessionManager)context.getSessionHandler().getSessionManager()).setPreserveOnStop(true);
+        
     }
 
     /**
