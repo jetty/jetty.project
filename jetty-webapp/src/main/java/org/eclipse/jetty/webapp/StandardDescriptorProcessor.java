@@ -273,7 +273,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             try
             {
-                Loader.loadClass(this.getClass(), servlet_class);
+                Loader.loadClass(servlet_class);
             }
             catch (ClassNotFoundException e)
             {

@@ -164,7 +164,7 @@ public class JDBCLoginService extends MappedLoginService
                    + " = u."
                    + _userRoleTableRoleKey;
         
-        Loader.loadClass(this.getClass(), _jdbcDriver).newInstance();
+        Loader.loadClass(_jdbcDriver).newInstance();
         super.doStart();
     }
 

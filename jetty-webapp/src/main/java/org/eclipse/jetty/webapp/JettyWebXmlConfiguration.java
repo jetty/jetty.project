@@ -90,7 +90,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
                     if (jetty_config==null)
                     {
-                        jetty_config=new XmlConfiguration(jetty.getURL());
+                        jetty_config=new XmlConfiguration(jetty.getURI().toURL());
                     }
                     else
                     {
@@ -99,7 +99,8 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                     setupXmlConfiguration(jetty_config, web_inf);
                     try
                     {
-                        jetty_config.configure(context);
+                        XmlConfiguration config=jetty_config;
+                        WebAppClassLoader.runWithServerClassAccess(()->{config.configure(context);return null;});
                     }
                     catch (ClassNotFoundException e)
                     {
@@ -125,6 +126,6 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     {
         Map<String,String> props = jetty_config.getProperties();
         // TODO - should this be an id rather than a property?
-        props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURL()));
+        props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURI()));
     }
 }
