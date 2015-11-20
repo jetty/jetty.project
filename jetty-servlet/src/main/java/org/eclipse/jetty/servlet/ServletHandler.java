@@ -611,7 +611,7 @@ public class ServletHandler extends ScopedHandler
         if (_filterChainsCached)
         {
             if (filters.size() > 0)
-                chain= new CachedChain(filters, servletHolder);
+                chain = newCachedChain(filters, servletHolder);
 
             final Map<String,FilterChain> cache=_chainCache[dispatch];
             final Queue<String> lru=_chainLRU[dispatch];
@@ -805,6 +805,15 @@ public class ServletHandler extends ScopedHandler
         return new ListenerHolder(source);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Create a new CachedChain 
+     */
+    public CachedChain newCachedChain(List<FilterHolder> filters, ServletHolder servletHolder)
+    {
+        return new CachedChain(filters, servletHolder);
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Add a new servlet holder
@@ -1470,7 +1479,7 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private class CachedChain implements FilterChain
+    protected class CachedChain implements FilterChain
     {
         FilterHolder _filterHolder;
         CachedChain _next;
@@ -1481,7 +1490,7 @@ public class ServletHandler extends ScopedHandler
          * @param filters list of {@link FilterHolder} objects
          * @param servletHolder
          */
-        CachedChain(List<FilterHolder> filters, ServletHolder servletHolder)
+        protected CachedChain(List<FilterHolder> filters, ServletHolder servletHolder)
         {
             if (filters.size()>0)
             {
