@@ -226,7 +226,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
                       key = null;
                       value=null;
                       if (maxKeys>0 && map.size()>maxKeys)
-                          throw new IllegalStateException(String.format("Form too many keys [%d > %d] ",map.size(),maxKeys));
+                          throw new IllegalStateException(String.format("Form with too many keys [%d > %d]",map.size(),maxKeys));
                       break;
                   case '=':
                       if (key!=null)
@@ -414,7 +414,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
                         key = null;
                         value=null;
                         if (maxKeys>0 && map.size()>maxKeys)
-                            throw new IllegalStateException(String.format("Form too many keys [%d > %d] ",map.size(),maxKeys));
+                            throw new IllegalStateException(String.format("Form with too many keys [%d > %d]",map.size(),maxKeys));
                         break;
                         
                     case '=':
@@ -515,7 +515,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
                             key = null;
                             value=null;
                             if (maxKeys>0 && map.size()>maxKeys)
-                                throw new IllegalStateException(String.format("Form too many keys [%d > %d] ",map.size(),maxKeys));
+                                throw new IllegalStateException(String.format("Form with too many keys [%d > %d]",map.size(),maxKeys));
                             break;
 
                         case '=':
@@ -656,7 +656,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
                         key = null;
                         value=null;
                         if (maxKeys>0 && map.size()>maxKeys)
-                            throw new IllegalStateException(String.format("Form too many keys [%d > %d] ",map.size(),maxKeys));
+                            throw new IllegalStateException(String.format("Form with too many keys [%d > %d]",map.size(),maxKeys));
                         break;
                     case '=':
                         if (key!=null)
