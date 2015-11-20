@@ -558,7 +558,7 @@ public class ServletHandler extends ScopedHandler
             }
             else
             {
-                LOG.warn(String.format("Error Processing URI: %s - (%s) %s",request.getRequestURI(),th.getClass().getName(),th.getMessage()));
+                LOG.warn("Error Processing URI: {} - ({}) {}",request.getRequestURI(),th.getClass().getName(),th.getMessage());
                 if (LOG_UNHANDLED.isDebugEnabled())
                 {
                     LOG_UNHANDLED.debug(request.getRequestURI(),th);
@@ -1443,14 +1443,14 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private class CachedChain implements FilterChain
+    protected class CachedChain implements FilterChain
     {
         FilterHolder _filterHolder;
         CachedChain _next;
         ServletHolder _servletHolder;
 
         /* ------------------------------------------------------------ */
-        CachedChain(Object filters, ServletHolder servletHolder)
+        protected CachedChain(Object filters, ServletHolder servletHolder)
         {
             if (LazyList.size(filters)>0)
             {
