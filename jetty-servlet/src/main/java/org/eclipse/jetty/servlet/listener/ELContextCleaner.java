@@ -106,7 +106,7 @@ public class ELContextCleaner implements ServletContextListener
         if (!properties.isAccessible())
             properties.setAccessible(true);
 
-        Map map = (ConcurrentHashMap) properties.get(null);
+        Map map = (Map) properties.get(null);
         if (map == null)
             return;
         
