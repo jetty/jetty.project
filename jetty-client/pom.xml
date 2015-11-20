@@ -48,6 +48,44 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>hybrid</shadedClassifierName>
+              <artifactSet>
+                <includes>
+                  <include>org.eclipse.jetty:jetty-http</include>
+                  <include>org.eclipse.jetty:jetty-io</include>
+                  <include>org.eclipse.jetty:jetty-util</include>
+                </includes>
+              </artifactSet>
+              <relocations>
+                <relocation>
+                  <pattern>org.eclipse.jetty.http</pattern>
+                  <shadedPattern>org.eclipse.jetty.client.shaded.http</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.eclipse.jetty.io</pattern>
+                  <shadedPattern>org.eclipse.jetty.client.shaded.io</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.eclipse.jetty.util</pattern>
+                  <shadedPattern>org.eclipse.jetty.client.shaded.util</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
