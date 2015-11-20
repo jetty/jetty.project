@@ -100,15 +100,15 @@
                             <relocations>
                                 <relocation>
                                     <pattern>org.eclipse.jetty.http</pattern>
-                                    <shadedPattern>org.eclipse.jetty.client.http</shadedPattern>
+                                    <shadedPattern>org.eclipse.jetty.client.shaded.http</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.eclipse.jetty.io</pattern>
-                                    <shadedPattern>org.eclipse.jetty.client.io</shadedPattern>
+                                    <shadedPattern>org.eclipse.jetty.client.shaded.io</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.eclipse.jetty.util</pattern>
-                                    <shadedPattern>org.eclipse.jetty.client.util</shadedPattern>
+                                    <shadedPattern>org.eclipse.jetty.client.shaded.util</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
