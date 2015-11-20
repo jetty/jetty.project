@@ -1374,7 +1374,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    public void notFound(HttpServletRequest request,
+    protected void notFound(HttpServletRequest request,
                   HttpServletResponse response)
         throws IOException
     {
