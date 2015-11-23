@@ -135,7 +135,14 @@ public class MultiPartInputStreamParser
         protected void createFile ()
         throws IOException
         {
+            /* Some statics just to make the code below easier to understand
+             * This get optimized away during the compile anyway */
+            final boolean USER = true;
+            final boolean WORLD = false;
+            
             _file = File.createTempFile("MultiPart", "", MultiPartInputStreamParser.this._tmpDir);
+            _file.setReadable(false,WORLD); // (reset) disable it for everyone first
+            _file.setReadable(true,USER); // enable for user only
 
             if (_deleteOnExit)
                 _file.deleteOnExit();
