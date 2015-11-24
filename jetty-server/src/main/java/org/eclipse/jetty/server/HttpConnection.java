@@ -67,8 +67,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     /* ------------------------------------------------------------ */
     /** Get the current connection that this thread is dispatched to.
-     * Note that a thread may be processing a request asynchronously and 
-     * thus not be dispatched to the connection.  
+     * Note that a thread may be processing a request asynchronously and
+     * thus not be dispatched to the connection.
      * @see Request#getAttribute(String) for a more general way to access the HttpConnection
      * @return the current HttpConnection or null
      */
@@ -110,17 +110,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         return new HttpGenerator(_config.getSendServerVersion(),_config.getSendXPoweredBy());
     }
-    
+
     protected HttpInput<ByteBuffer> newHttpInput()
     {
         return new HttpInputOverHTTP(this);
     }
-    
+
     protected HttpChannelOverHttp newHttpChannel(HttpInput<ByteBuffer> httpInput)
     {
         return new HttpChannelOverHttp(_connector, _config, getEndPoint(), this, httpInput);
     }
-    
+
     protected HttpParser newHttpParser()
     {
         return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize());
@@ -184,7 +184,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _bufferPool.release(buffer);
         }
     }
-    
+
     public ByteBuffer getRequestBuffer()
     {
         if (_requestBuffer == null)
@@ -217,10 +217,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // Do we need some data to parse
                 if (BufferUtil.isEmpty(_requestBuffer))
                 {
-                    // If the previous iteration filled 0 bytes or saw a close, then break here 
+                    // If the previous iteration filled 0 bytes or saw a close, then break here
                     if (filled<=0)
                         break;
-                        
+
                     // Can we fill?
                     if(getEndPoint().isInputShutdown())
                     {
@@ -239,13 +239,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         filled = getEndPoint().fill(_requestBuffer);
                         if (filled==0) // Do a retry on fill 0 (optimization for SSL connections)
                             filled = getEndPoint().fill(_requestBuffer);
-                        
+
                         // tell parser
                         if (filled < 0)
                             _parser.atEOF();
                     }
                 }
-                
+
                 // Parse the buffer
                 if (_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer))
                 {
@@ -278,7 +278,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             close();
         }
         finally
-        {                        
+        {
             setCurrentConnection(last);
             if (!suspended && getEndPoint().isOpen() && getEndPoint().getConnection()==this)
             {
@@ -295,7 +295,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         // Not in a race here for the request buffer with #onFillable because an async consumer of
         // content would only be started after onFillable has given up control.
-        // In a little bit of a race with #completed, but then not sure if it is legal to be doing 
+        // In a little bit of a race with #completed, but then not sure if it is legal to be doing
         // async calls to IO and have a completed call at the same time.
         ByteBuffer requestBuffer = getRequestBuffer();
 
@@ -315,7 +315,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
             if (parsed)
                 break;
-            
+
             // OK lets read some data
             int filled=getEndPoint().fill(requestBuffer);
             if (LOG.isDebugEnabled()) // Avoid boxing of variable 'filled'
@@ -331,7 +331,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
         }
     }
-    
+
     @Override
     public void completed()
     {
@@ -350,7 +350,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 return;
             }
         }
-        
+
         // Finish consuming the request
         // If we are still expecting
         if (_channel.isExpecting100Continue())
@@ -383,7 +383,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _parser.reset();
         else
             _parser.close();
-        
+
         // Not in a race here with onFillable, because it has given up control before calling handle.
         // in a slight race with #completed, but not sure what to do with that anyway.
         releaseRequestBuffer();
@@ -426,7 +426,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     getEndPoint().close();
                 }
             }
-            // else the parser must be closed, so seek the EOF if we are still open 
+            // else the parser must be closed, so seek the EOF if we are still open
             else if (getEndPoint().isOpen())
                 fillInterested();
         }
@@ -466,7 +466,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         if (info!=null && _channel.isExpecting100Continue())
             // then we can't be persistent
             _generator.setPersistent(false);
-        
+
         if(_sendCallback.reset(info,content,lastContent,callback))
             _sendCallback.iterate();
     }
@@ -479,14 +479,32 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         else if (_sendCallback.reset(null,content,lastContent,callback))
             _sendCallback.iterate();
     }
-    
+
+    @Override
+    public void abort()
+    {
+        // Do a direct close of the output, as this may indicate to a client that the
+        // response is bad either with RST or by abnormal completion of chunked response.
+        getEndPoint().close();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[p=%s,g=%s,c=%s]",
+                super.toString(),
+                _parser,
+                _generator,
+                _channel);
+    }
+
     protected class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
-    {        
+    {
         public HttpChannelOverHttp(Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
         {
             super(connector,config,endPoint,transport,input);
         }
-        
+
         @Override
         public void earlyEOF()
         {
@@ -559,7 +577,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
             if (!super.headerComplete())
                 return false;
-            
+
             // Should we delay dispatch until we have some content?
             // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
             if (getHttpConfiguration().isDelayDispatchUntilContent() && _parser.getContentLength() > 0 &&
@@ -617,7 +635,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 _shutdownOut = false;
                 return true;
             }
-            
+
             if (isClosed())
                 callback.failed(new EofException());
             else
@@ -630,7 +648,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             if (_callback==null)
                 throw new IllegalStateException();
-            
+
             ByteBuffer chunk = _chunk;
             while (true)
             {
@@ -648,7 +666,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 {
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);    
+                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);
                         continue;
                     }
                     case NEED_CHUNK:
@@ -723,7 +741,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (h!=null)
                 _bufferPool.release(h);
         }
-        
+
         @Override
         protected void onCompleteSuccess()
         {
@@ -741,21 +759,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (_shutdownOut)
                 getEndPoint().shutdownOutput();
         }
-        
+
         @Override
         public String toString()
         {
             return String.format("%s[i=%s,cb=%s]",super.toString(),_info,_callback);
         }
     }
-
-
-    @Override
-    public void abort()
-    {
-        // Do a direct close of the output, as this may indicate to a client that the 
-        // response is bad either with RST or by abnormal completion of chunked response.
-        getEndPoint().close();
-    }
-
 }

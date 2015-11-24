@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -207,6 +208,12 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     public void onPing(ByteBuffer buffer)
     {
         /* TODO: provide annotation in future */
+    }
+    
+    @Override
+    public BatchMode getBatchMode()
+    {
+        return null;
     }
 
     @Override

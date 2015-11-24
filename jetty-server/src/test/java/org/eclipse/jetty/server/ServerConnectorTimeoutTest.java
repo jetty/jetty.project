@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.IO;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
+public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
 {
     @Before
     public void init() throws Exception

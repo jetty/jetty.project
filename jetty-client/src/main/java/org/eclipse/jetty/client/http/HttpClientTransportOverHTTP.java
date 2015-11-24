@@ -49,17 +49,26 @@ public class HttpClientTransportOverHTTP extends AbstractHttpClientTransport
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        HttpConnectionOverHTTP connection = newHttpConnection(endPoint, destination);
         @SuppressWarnings("unchecked")
         Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        promise.succeeded(connection);
+        HttpConnectionOverHTTP connection = newHttpConnection(endPoint, destination, promise);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Created {}", connection);
         return connection;
     }
 
+    protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+    {
+        return new HttpConnectionOverHTTP(endPoint, destination, promise);
+    }
+
+    /**
+     * @deprecated use {@link #newHttpConnection(EndPoint, HttpDestination, Promise)} instead
+     */
+    @Deprecated
     protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination)
     {
-        return new HttpConnectionOverHTTP(endPoint, destination);
+        throw new UnsupportedOperationException("Deprecated, override newHttpConnection(EndPoint, HttpDestination, Promise<Connection>) instead");
     }
 }

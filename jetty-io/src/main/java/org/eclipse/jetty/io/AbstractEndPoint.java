@@ -45,7 +45,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             return AbstractEndPoint.this.needsFill();
         }
     };
-    
+
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
@@ -79,7 +79,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     {
         return _remote;
     }
-    
+
     @Override
     public Connection getConnection()
     {
@@ -109,7 +109,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         _writeFlusher.onClose();
         _fillInterest.onClose();
     }
-    
+
     @Override
     public void close()
     {
@@ -150,17 +150,17 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         boolean input_shutdown=isInputShutdown();
         boolean fillFailed = _fillInterest.onFail(timeout);
         boolean writeFailed = _writeFlusher.onFail(timeout);
-        
+
         // If the endpoint is half closed and there was no fill/write handling, then close here.
-        // This handles the situation where the connection has completed its close handling 
+        // This handles the situation where the connection has completed its close handling
         // and the endpoint is half closed, but the other party does not complete the close.
         // This perhaps should not check for half closed, however the servlet spec case allows
-        // for a dispatched servlet or suspended request to extend beyond the connections idle 
-        // time.  So if this test would always close an idle endpoint that is not handled, then 
+        // for a dispatched servlet or suspended request to extend beyond the connections idle
+        // time.  So if this test would always close an idle endpoint that is not handled, then
         // we would need a mode to ignore timeouts for some HTTP states
         if (isOpen() && (output_shutdown || input_shutdown) && !(fillFailed || writeFailed))
             close();
-        else 
+        else
             LOG.debug("Ignored idle endpoint {}",this);
     }
 
@@ -170,13 +170,13 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         Connection old_connection = getConnection();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} upgradeing from {} to {}", this, old_connection, newConnection);
-        
+            LOG.debug("{} upgrading from {} to {}", this, old_connection, newConnection);
+
         ByteBuffer prefilled = (old_connection instanceof Connection.UpgradeFrom)
                 ?((Connection.UpgradeFrom)old_connection).onUpgradeFrom():null;
         old_connection.onClose();
         old_connection.getEndPoint().setConnection(newConnection);
-        
+
         if (newConnection instanceof Connection.UpgradeTo)
             ((Connection.UpgradeTo)newConnection).onUpgradeTo(prefilled);
         else if (BufferUtil.hasContent(prefilled))
@@ -184,7 +184,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
         newConnection.onOpen();
     }
-    
+
     @Override
     public String toString()
     {

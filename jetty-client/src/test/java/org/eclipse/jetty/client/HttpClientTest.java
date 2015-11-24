@@ -42,6 +42,7 @@ import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,6 +59,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
@@ -70,12 +72,14 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -83,7 +87,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import static java.nio.file.StandardOpenOption.CREATE;
-import static org.junit.Assert.assertTrue;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
@@ -813,7 +816,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     });
         }
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
     @Test
@@ -1430,6 +1433,62 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         // Now the complete event is emitted.
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testRequestSentOnlyAfterConnectionOpen() throws Exception
+    {
+        startServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+            }
+        });
+
+        final AtomicBoolean open = new AtomicBoolean();
+        client = new HttpClient(new HttpClientTransportOverHTTP()
+        {
+            @Override
+            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+            {
+                return new HttpConnectionOverHTTP(endPoint, destination, promise)
+                {
+                    @Override
+                    public void onOpen()
+                    {
+                        open.set(true);
+                        super.onOpen();
+                    }
+                };
+            }
+        }, sslContextFactory);
+        client.start();
+
+        final CountDownLatch latch = new CountDownLatch(2);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .onRequestBegin(new Request.BeginListener()
+                {
+                    @Override
+                    public void onBegin(Request request)
+                    {
+                        Assert.assertTrue(open.get());
+                        latch.countDown();
+                    }
+                })
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isSucceeded())
+                            latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     private void consume(InputStream input) throws IOException

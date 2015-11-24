@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.thread.NonBlockingThread;
 public abstract class AbstractConnection implements Connection
 {
     private static final Logger LOG = Log.getLogger(AbstractConnection.class);
-    
+
     public static final boolean EXECUTE_ONFILLABLE=true;
 
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
@@ -56,7 +56,7 @@ public abstract class AbstractConnection implements Connection
     {
         this(endp,executor,EXECUTE_ONFILLABLE);
     }
-    
+
     protected AbstractConnection(EndPoint endp, Executor executor, final boolean executeOnfillable)
     {
         if (executor == null)
@@ -88,7 +88,7 @@ public abstract class AbstractConnection implements Connection
     {
         return _executor;
     }
-    
+
     protected void failedCallback(final Callback callback, final Throwable x)
     {
         if (NonBlockingThread.isNonBlockingThread())
@@ -115,7 +115,7 @@ public abstract class AbstractConnection implements Connection
             callback.failed(x);
         }
     }
-    
+
     /**
      * <p>Utility method to be called to register read interest.</p>
      * <p>After a call to this method, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
@@ -126,7 +126,7 @@ public abstract class AbstractConnection implements Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("fillInterested {}",this);
-        
+
         while(true)
         {
             State state=_state.get();
@@ -134,7 +134,7 @@ public abstract class AbstractConnection implements Connection
                 break;
         }
     }
-    
+
     public void fillInterested(Callback callback)
     {
         if (LOG.isDebugEnabled())
@@ -151,7 +151,7 @@ public abstract class AbstractConnection implements Connection
                 break;
         }
     }
-    
+
     /**
      * <p>Callback method invoked when the endpoint is ready to be read.</p>
      * @see #fillInterested()
@@ -181,7 +181,7 @@ public abstract class AbstractConnection implements Connection
         }
 
         if (_endPoint.isOpen())
-            fillInterested();        
+            fillInterested();
     }
 
     /**
@@ -258,9 +258,13 @@ public abstract class AbstractConnection implements Connection
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _state.get());
+        return String.format("%s@%x[%s,%s]",
+                getClass().getSimpleName(),
+                hashCode(),
+                _state.get(),
+                _endPoint);
     }
-    
+
     public boolean next(State state, State next)
     {
         if (next==null)
@@ -275,7 +279,7 @@ public abstract class AbstractConnection implements Connection
         }
         return false;
     }
-    
+
     private static final class IdleState extends State
     {
         private IdleState()
@@ -408,11 +412,11 @@ public abstract class AbstractConnection implements Connection
         {
             return _name;
         }
-        
+
         void onEnter(AbstractConnection connection)
         {
         }
-        
+
         State fillInterested()
         {
             throw new IllegalStateException(this.toString());
@@ -427,28 +431,28 @@ public abstract class AbstractConnection implements Connection
         {
             throw new IllegalStateException(this.toString());
         }
-        
+
         State onFailed()
         {
             throw new IllegalStateException(this.toString());
         }
     }
-    
+
 
     public static final State IDLE=new IdleState();
-    
+
     public static final State FILL_INTERESTED=new FillInterestedState();
-    
+
     public static final State FILLING=new FillingState();
-    
+
     public static final State REFILLING=new RefillingState();
 
     public static final State FILLING_FILL_INTERESTED=new FillingFillInterestedState("FILLING_FILL_INTERESTED");
-    
+
     public class NestedState extends State
     {
         private final State _nested;
-        
+
         NestedState(State nested)
         {
             super("NESTED("+nested+")");
@@ -471,19 +475,19 @@ public abstract class AbstractConnection implements Connection
         {
             return new NestedState(_nested.onFillable());
         }
-        
+
         @Override
         State onFilled()
         {
             return new NestedState(_nested.onFilled());
         }
     }
-    
-    
+
+
     public class FillingInterestedCallback extends NestedState
     {
         private final Callback _callback;
-        
+
         FillingInterestedCallback(Callback callback,State nested)
         {
             super("FILLING_INTERESTED_CALLBACK",nested==FILLING?REFILLING:nested);
@@ -523,13 +527,13 @@ public abstract class AbstractConnection implements Connection
                             break;
                     }
                     _callback.failed(x);
-                }  
+                }
             };
-            
+
             connection.getEndPoint().fillInterested(callback);
         }
     }
-    
+
     private final Runnable _runOnFillable = new Runnable()
     {
         @Override
@@ -550,10 +554,10 @@ public abstract class AbstractConnection implements Connection
             }
         }
     };
-    
-    
+
+
     private class ReadCallback implements Callback
-    {   
+    {
         @Override
         public void succeeded()
         {
@@ -583,7 +587,7 @@ public abstract class AbstractConnection implements Connection
                 }
             });
         }
-        
+
         @Override
         public String toString()
         {

@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.Objects;
+
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
@@ -256,7 +257,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             return _contentState==EARLY_EOF;
         }
     }
-    
+
     /**
      * This method should be called to signal that all the expected
      * content arrived.
@@ -312,7 +313,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             return _contentState==ASYNC;
         }
     }
-    
+
     /**
      * @return whether an EOF has been detected, even though there may be content to consume.
      */
@@ -332,7 +333,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             return _contentState.isEOF();
         }
     }
-    
+
 
     @Override
     public boolean isReady()
@@ -376,9 +377,9 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
                 _contentState = ASYNC;
                 _listener = readListener;
                 _notReady = true;
-                
+
                 content = getNextContent()!=null || isEOF();
-                
+
             }
             if (content)
                 _channelState.onReadPossible();
@@ -449,6 +450,18 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             LOG.debug(e);
             listener.onError(e);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[r=%d,s=%s,e=%s,f=%s]",
+                getClass().getSimpleName(),
+                hashCode(),
+                _contentRead,
+                _contentState,
+                _eofState,
+                _onError);
     }
 
     protected static abstract class State

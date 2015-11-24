@@ -29,6 +29,7 @@ import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 
 /* ------------------------------------------------------------ */
@@ -240,10 +241,12 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
 
             if (_encoding!=null)
             {
-                setHeader("Content-Encoding", _encoding);
+                String prefix=Response.getResponse(_response).isIncluding()?Response.SET_INCLUDE_HEADER_PREFIX:"";
+                
+                setHeader(prefix+"Content-Encoding", _encoding);
                 if (_response.containsHeader("Content-Encoding"))
                 {
-                    addHeader("Vary",_vary);
+                    addHeader(prefix+"Vary",_vary);
                     _out=_compressedOutputStream=createStream();
                     if (_out!=null)
                     {
@@ -258,9 +261,9 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
                         {
                             int end = etag.length()-1;
                             if (etag.charAt(end)=='"')
-                                setHeader("ETag",etag.substring(0,end)+"--"+_encoding+'"');
+                                setHeader(prefix+"ETag",etag.substring(0,end)+"--"+_encoding+'"');
                             else
-                                setHeader("ETag",etag+"--"+_encoding);
+                                setHeader(prefix+"ETag",etag+"--"+_encoding);
                         }
                         return;
                     }

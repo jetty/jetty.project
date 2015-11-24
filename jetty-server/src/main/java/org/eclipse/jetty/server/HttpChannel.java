@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
@@ -117,7 +118,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         input.init(_state);
         _request = new Request(this, input);
         _response = new Response(this, new HttpOutput(this));
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",this,_endPoint,_endPoint.getConnection(),_state);
     }
@@ -161,14 +162,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
 
     /**
      * Set the idle timeout.
-     * <p>This is implemented as a call to {@link EndPoint#setIdleTimeout(long), but may be
+     * <p>This is implemented as a call to {@link EndPoint#setIdleTimeout(long)}, but may be
      * overridden by channels that have timeouts different from their connections.
      */
     public void setIdleTimeout(long timeoutMs)
     {
         _endPoint.setIdleTimeout(timeoutMs);
     }
-    
+
     public ByteBufferPool getByteBufferPool()
     {
         return _connector.getByteBufferPool();
@@ -335,8 +336,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
 
                             _response.setStatusWithReason(500,reason);
 
-                            
-                            ErrorHandler eh = ErrorHandler.getErrorHandler(getServer(),_state.getContextHandler());                                
+
+                            ErrorHandler eh = ErrorHandler.getErrorHandler(getServer(),_state.getContextHandler());
                             if (eh instanceof ErrorHandler.ErrorPageMapper)
                             {
                                 String error_page=((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_state.getAsyncContextEvent().getSuppliedRequest());
@@ -366,7 +367,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                             else
                                 _response.getHttpOutput().run();
                             break;
-                        }   
+                        }
 
                         default:
                             break loop;
@@ -512,8 +513,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                 _requests,
                 _committed.get(),
                 _state.getState(),
-                _state.getState()==HttpChannelState.State.IDLE?"-":_request.getRequestURI()
-            );
+                _uri);
     }
 
     @Override
@@ -524,7 +524,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         _request.setServerPort(dPort);
         _request.setRemoteAddr(InetSocketAddress.createUnresolved(sAddr,sPort));
     }
-    
+
     @Override
     public boolean startRequest(HttpMethod httpMethod, String method, ByteBuffer uri, HttpVersion version)
     {
@@ -552,7 +552,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
             LOG.ignore(e);
             path = _uri.getDecodedPath(StandardCharsets.ISO_8859_1);
         }
-        
+
         String info = URIUtil.canonicalPath(path);
 
         if (info == null)
@@ -741,7 +741,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         {
             if (_state.unhandle()==Action.COMPLETE)
                 _state.completed();
-            else 
+            else
                 throw new IllegalStateException();
         }
     }

@@ -23,7 +23,7 @@ import org.junit.Before;
 /**
  * HttpServer Tester.
  */
-public class SelectChannelServerTest extends HttpServerTestBase
+public class ServerConnectorHttpServerTest extends HttpServerTestBase
 {
     @Before
     public void init() throws Exception

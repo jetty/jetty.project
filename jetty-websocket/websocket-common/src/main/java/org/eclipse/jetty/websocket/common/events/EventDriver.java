@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -34,6 +35,8 @@ public interface EventDriver extends IncomingFrames
     public WebSocketPolicy getPolicy();
 
     public WebSocketSession getSession();
+    
+    public BatchMode getBatchMode();
 
     public void onBinaryFrame(ByteBuffer buffer, boolean fin) throws IOException;
 

@@ -31,6 +31,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
@@ -41,13 +42,25 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
 
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicInteger sweeps = new AtomicInteger();
+    private final Promise<Connection> promise;
     private final Delegate delegate;
     private final HttpChannelOverHTTP channel;
     private long idleTimeout;
 
+    /**
+     * @deprecated use {@link #HttpConnectionOverHTTP(EndPoint, HttpDestination, Promise)} instead
+     */
+    @Deprecated
     public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination)
     {
+        this(endPoint, destination, new Promise.Adapter<Connection>());
+        throw new UnsupportedOperationException("Deprecated, use HttpConnectionOverHTTP(EndPoint, HttpDestination, Promise<Connection>) instead");
+    }
+
+    public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+    {
         super(endPoint, destination.getHttpClient().getExecutor(), destination.getHttpClient().isDispatchIO());
+        this.promise = promise;
         this.delegate = new Delegate(destination);
         this.channel = newHttpChannel();
     }
@@ -83,6 +96,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     {
         super.onOpen();
         fillInterested();
+        promise.succeeded(this);
     }
 
     public boolean isClosed()

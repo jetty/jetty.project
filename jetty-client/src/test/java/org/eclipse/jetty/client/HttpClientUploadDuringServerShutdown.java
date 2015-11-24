@@ -25,10 +25,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
@@ -41,6 +43,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
 import org.junit.Test;
@@ -165,9 +168,9 @@ public class HttpClientUploadDuringServerShutdown
         HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1)
         {
             @Override
-            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination)
+            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
             {
-                return new HttpConnectionOverHTTP(endPoint, destination)
+                return new HttpConnectionOverHTTP(endPoint, destination, promise)
                 {
                     @Override
                     protected HttpChannelOverHTTP newHttpChannel()

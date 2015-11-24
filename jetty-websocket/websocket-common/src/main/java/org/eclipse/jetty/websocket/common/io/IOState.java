@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
@@ -458,7 +457,6 @@ public class IOState
                 }
             }
 
-            reason = CloseStatus.trimMaxReasonLength(reason);
             CloseInfo close = new CloseInfo(StatusCode.ABNORMAL,reason);
 
             finalClose.compareAndSet(null,close);
@@ -509,7 +507,6 @@ public class IOState
                 }
             }
 
-            reason = CloseStatus.trimMaxReasonLength(reason);
             CloseInfo close = new CloseInfo(StatusCode.ABNORMAL,reason);
 
             finalClose.compareAndSet(null,close);

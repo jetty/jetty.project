@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.embedded;
+package org.eclipse.jetty.servlets.gzip;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -29,6 +29,7 @@ import java.io.PrintWriter;
 import java.util.zip.GZIPInputStream;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -38,6 +39,9 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlets.gzip.GzipHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
@@ -60,6 +64,8 @@ public class GzipHandlerTest
         "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse "+
         "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
 
+    private static String __icontent = "BEFORE"+__content+"AFTER";
+            
     private Server _server;
     private LocalConnector _connector;
 
@@ -70,24 +76,50 @@ public class GzipHandlerTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
-        Handler testHandler = new AbstractHandler()
-        {
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                    ServletException
-            {
-                PrintWriter writer = response.getWriter();
-                writer.write(__content);
-                writer.close();
-
-                baseRequest.setHandled(true);
-            }
-        };
-
         GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.setHandler(testHandler);
 
+        ServletContextHandler context = new ServletContextHandler(gzipHandler,"/ctx");
+        ServletHandler servlets = context.getServletHandler();
+        
         _server.setHandler(gzipHandler);
+        gzipHandler.setHandler(context);
+        context.setHandler(servlets);
+        servlets.addServletWithMapping(TestServlet.class,"/content");
+        servlets.addServletWithMapping(ForwardServlet.class,"/forward");
+        servlets.addServletWithMapping(IncludeServlet.class,"/include");
+        
         _server.start();
+    }
+    
+    public static class TestServlet extends HttpServlet
+    {
+
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            PrintWriter writer = response.getWriter();
+            writer.write(__content);
+        }
+    }
+
+    public static class ForwardServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            getServletContext().getRequestDispatcher("/content").forward(request,response);
+        }
+    }
+
+    public static class IncludeServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.getWriter().write("BEFORE");
+            getServletContext().getRequestDispatcher("/content").include(request,response);
+            response.getWriter().write("AFTER");
+        }
     }
 
     @After
@@ -108,7 +140,7 @@ public class GzipHandlerTest
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setHeader("accept-encoding","gzip");
-        request.setURI("/");
+        request.setURI("/ctx/content");
 
         response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
 
@@ -121,5 +153,55 @@ public class GzipHandlerTest
 
         assertEquals(__content, testOut.toString("UTF8"));
 
+    }
+    
+    @Test
+    public void testForwardGzipHandler() throws Exception
+    {
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("accept-encoding","gzip");
+        request.setURI("/ctx/forward");
+
+        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+
+        assertTrue(response.get("Content-Encoding").equalsIgnoreCase("gzip"));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+
+        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+        IO.copy(testIn,testOut);
+
+        assertEquals(__content, testOut.toString("UTF8"));
+    }
+    
+    @Test
+    public void testIncludeGzipHandler() throws Exception
+    {
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("accept-encoding","gzip");
+        request.setURI("/ctx/include");
+
+        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        
+        assertTrue(response.get("Content-Encoding").equalsIgnoreCase("gzip"));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+
+        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+        IO.copy(testIn,testOut);
+
+        assertEquals(__icontent, testOut.toString("UTF8"));
     }
 }
