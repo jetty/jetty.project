@@ -73,7 +73,7 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
     private final ByteBuffer onlyBoundary;
     private final ByteBuffer lastBoundary;
     private Listener listener;
-    private long length;
+    private long length=-1;
 
     public MultiPartContentProvider()
     {
@@ -151,6 +151,7 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
     private void addPart(Part part)
     {
         parts.add(part);
+        length=-1;
         if (LOG.isDebugEnabled())
             LOG.debug("Added {}", part);
     }
@@ -159,7 +160,11 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
     public void setListener(Listener listener)
     {
         this.listener = listener;
-
+        calculateLength();
+    }
+    
+    private void calculateLength()
+    {
         // Compute the length, if possible.
         if (parts.isEmpty())
         {
@@ -187,6 +192,8 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
     @Override
     public long getLength()
     {
+        if (length<=0)
+            calculateLength();
         return length;
     }
 

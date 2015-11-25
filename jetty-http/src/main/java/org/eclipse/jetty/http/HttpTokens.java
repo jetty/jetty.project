@@ -32,7 +32,7 @@ public interface HttpTokens
     static final byte[] CRLF = {CARRIAGE_RETURN,LINE_FEED};
     static final byte SEMI_COLON= (byte)';';
 
-    public enum EndOfContent { UNKNOWN_CONTENT,NO_CONTENT,EOF_CONTENT,CONTENT_LENGTH,CHUNKED_CONTENT,SELF_DEFINING_CONTENT }
+    public enum EndOfContent { UNKNOWN_CONTENT,NO_CONTENT,EOF_CONTENT,CONTENT_LENGTH,CHUNKED_CONTENT }
 
 }
 

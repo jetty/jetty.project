@@ -59,14 +59,6 @@ public class HttpGeneratorServerHTTPTest
 
         String response = run.result.build(run.httpVersion, gen, "OK\r\nTest", run.connection.val, null, run.chunks);
 
-        if (run.httpVersion == 9)
-        {
-            assertFalse(t, gen.isPersistent());
-            if (run.result._body != null)
-                assertEquals(t, run.result._body, response);
-            return;
-        }
-
         HttpParser parser = new HttpParser(handler);
         parser.setHeadResponse(run.result._head);
 
@@ -80,8 +72,7 @@ public class HttpGeneratorServerHTTPTest
         else
             assertTrue(t, gen.isPersistent() || EnumSet.of(ConnectionType.CLOSE, ConnectionType.TE_CLOSE).contains(run.connection));
 
-        if (run.httpVersion > 9)
-            assertEquals("OK??Test", _reason);
+        assertEquals("OK??Test", _reason);
 
         if (_content == null)
             assertTrue(t, run.result._body == null);
@@ -346,7 +337,7 @@ public class HttpGeneratorServerHTTPTest
         for (Result result : results)
         {
             // Loop over HTTP versions
-            for (int v = 9; v <= 11; v++)
+            for (int v = 10; v <= 11; v++)
             {
                 // Loop over chunks
                 for (int chunks = 1; chunks <= 6; chunks++)
