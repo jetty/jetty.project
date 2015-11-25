@@ -68,17 +68,17 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
     }
 
     @Override
-    public void onStreamCreated(IStream stream, boolean local)
+    public void onStreamCreated(IStream stream)
     {
-        super.onStreamCreated(stream, local);
+        super.onStreamCreated(stream);
         streamLevels.put(stream, new AtomicInteger());
     }
 
     @Override
-    public void onStreamDestroyed(IStream stream, boolean local)
+    public void onStreamDestroyed(IStream stream)
     {
         streamLevels.remove(stream);
-        super.onStreamDestroyed(stream, local);
+        super.onStreamDestroyed(stream);
     }
 
     @Override

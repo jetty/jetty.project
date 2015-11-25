@@ -41,9 +41,8 @@ public interface ISession extends Session
      * <p>Removes the given {@code stream}.</p>
      *
      * @param stream the stream to remove
-     * @param local  whether the stream is local or remote
      */
-    public void removeStream(IStream stream, boolean local);
+    public void removeStream(IStream stream);
 
     /**
      * <p>Enqueues the given frames to be written to the connection.</p>

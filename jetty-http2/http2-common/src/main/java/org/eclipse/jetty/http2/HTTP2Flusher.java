@@ -366,7 +366,7 @@ public class HTTP2Flusher extends IteratingCallback
             if (stream != null)
             {
                 stream.close();
-                stream.getSession().removeStream(stream, true);
+                stream.getSession().removeStream(stream);
             }
             callback.failed(x);
         }
