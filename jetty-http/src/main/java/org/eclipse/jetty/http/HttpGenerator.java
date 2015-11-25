@@ -23,6 +23,8 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
@@ -70,8 +72,8 @@ public class HttpGenerator
     private final int _send;
     private final static int SEND_SERVER = 0x01;
     private final static int SEND_XPOWEREDBY = 0x02;
-
-
+    private final static Set<String> __assumedContentMethods = new HashSet<>(Arrays.asList(new String[]{HttpMethod.POST.asString(),HttpMethod.PUT.asString()}));
+  
     /* ------------------------------------------------------------------------------- */
     public static void setJettyVersion(String serverVersion)
     {
@@ -745,11 +747,16 @@ public class HttpGenerator
                     long content_length = _contentPrepared+BufferUtil.length(content);
 
                     // Do we need to tell the headers about it
-                    if ((response!=null || content_length>0 || content_type ) && !_noContent)
+                    if (content_length>0)
                     {
                         header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
                         BufferUtil.putDecLong(header, content_length);
                         header.put(HttpTokens.CRLF);
+                    }
+                    else if (!_noContent)
+                    {
+                        if (content_type || response!=null || (request!=null && __assumedContentMethods.contains(request.getMethod())))
+                            header.put(CONTENT_LENGTH_0);
                     }
                 }
                 else
@@ -767,19 +774,21 @@ public class HttpGenerator
 
             case CONTENT_LENGTH:
                 long content_length = _info.getContentLength();
-                if ((response!=null || content_length>0 || content_type ) && !_noContent)
+                if (content_length>0)
                 {
-                    // known length but not actually set.
                     header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
                     BufferUtil.putDecLong(header, content_length);
                     header.put(HttpTokens.CRLF);
                 }
+                else if (!_noContent)
+                {
+                    if (content_type || response!=null || (request!=null && __assumedContentMethods.contains(request.getMethod())))
+                        header.put(CONTENT_LENGTH_0);
+                }
                 break;
 
             case NO_CONTENT:
-                if (response!=null && status >= 200 && status != 204 && status != 304)
-                    header.put(CONTENT_LENGTH_0);
-                break;
+                throw new IllegalStateException();
 
             case EOF_CONTENT:
                 _persistent = request!=null;
