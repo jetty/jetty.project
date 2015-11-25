@@ -91,8 +91,8 @@ public class HttpGeneratorClientTest
         Assert.assertEquals(HttpGenerator.State.START, gen.getState());
 
         Info info = new Info("POST","/index.html");
-        info.getHttpFields().add("Host","something");
-        info.getHttpFields().add("User-Agent","test");
+        info.getFields().add("Host","something");
+        info.getFields().add("User-Agent","test");
         Assert.assertTrue(!gen.isChunking());
 
         result=gen.generateRequest(info,null,null,null, true);
