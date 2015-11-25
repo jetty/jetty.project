@@ -54,6 +54,12 @@ public abstract class AbstractLoginModule implements LoginModule
     private JAASUserInfo currentUser;
     private Subject subject;
 
+    /**
+     * JAASUserInfo
+     *
+     * This class unites the UserInfo data with jaas concepts
+     * such as Subject and Principals
+     */
     public class JAASUserInfo
     {
         private UserInfo user;
@@ -62,7 +68,8 @@ public abstract class AbstractLoginModule implements LoginModule
 
         public JAASUserInfo (UserInfo u)
         {
-            setUserInfo(u);
+            this.user = u;
+            this.principal = new JAASPrincipal(u.getUserName());
         }
 
         public String getUserName ()
@@ -75,19 +82,7 @@ public abstract class AbstractLoginModule implements LoginModule
             return this.principal;
         }
 
-        public void setUserInfo (UserInfo u)
-        {
-            this.user = u;
-            this.principal = new JAASPrincipal(u.getUserName());
-            this.roles = new ArrayList<JAASRole>();
-            if (u.getRoleNames() != null)
-            {
-                Iterator<String> itor = u.getRoleNames().iterator();
-                while (itor.hasNext())
-                    this.roles.add(new JAASRole((String)itor.next()));
-            }
-        }
-
+ 
         public void setJAASInfo (Subject subject)
         {
             subject.getPrincipals().add(this.principal);
@@ -105,6 +100,18 @@ public abstract class AbstractLoginModule implements LoginModule
         public boolean checkCredential (Object suppliedCredential)
         {
             return this.user.checkCredential(suppliedCredential);
+        }
+        
+        public void fetchRoles() throws Exception
+        {
+            this.user.fetchRoles();
+            this.roles = new ArrayList<JAASRole>();
+            if (this.user.getRoleNames() != null)
+            {
+                Iterator<String> itor = this.user.getRoleNames().iterator();
+                while (itor.hasNext())
+                    this.roles.add(new JAASRole((String)itor.next()));
+            }
         }
     }
 
@@ -174,7 +181,6 @@ public abstract class AbstractLoginModule implements LoginModule
      */
     public boolean commit() throws LoginException
     {
-
         if (!isAuthenticated())
         {
             currentUser = null;
@@ -252,7 +258,10 @@ public abstract class AbstractLoginModule implements LoginModule
             setAuthenticated(currentUser.checkCredential(webCredential));
           
             if (isAuthenticated())
+            {
+                currentUser.fetchRoles();
                 return true;
+            }
             else
                 throw new FailedLoginException();
         }

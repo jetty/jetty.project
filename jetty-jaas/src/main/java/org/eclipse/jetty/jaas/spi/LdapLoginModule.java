@@ -176,6 +176,28 @@ public class LdapLoginModule extends AbstractLoginModule
 
     private DirContext _rootContext;
 
+    
+    public class LDAPUserInfo extends UserInfo
+    {
+
+        /**
+         * @param userName
+         * @param credential
+         */
+        public LDAPUserInfo(String userName, Credential credential)
+        {
+            super(userName, credential);
+        }
+
+        @Override
+        public List<String> doFetchRoles() throws Exception
+        {
+            return getUserRoles(_rootContext, getUserName());
+        }
+        
+    }
+    
+    
     /**
      * get the available information about the user
      * <p>
@@ -199,9 +221,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
         pwdCredential = convertCredentialLdapToJetty(pwdCredential);
         Credential credential = Credential.getCredential(pwdCredential);
-        List<String> roles = getUserRoles(_rootContext, username);
-
-        return new UserInfo(username, credential, roles);
+        return new LDAPUserInfo(username, credential);
     }
 
     protected String doRFC2254Encoding(String inputString)
@@ -411,12 +431,17 @@ public class LdapLoginModule extends AbstractLoginModule
 
             setCurrentUser(new JAASUserInfo(userInfo));
 
+            boolean authed = false;            
             if (webCredential instanceof String)
-            {
-                return credentialLogin(Credential.getCredential((String) webCredential));
-            }
-
-            return credentialLogin(webCredential);
+                authed = credentialLogin(Credential.getCredential((String) webCredential));
+            else
+                authed = credentialLogin(webCredential);
+            
+            //only fetch roles if authenticated
+            if (authed)
+                getCurrentUser().fetchRoles();
+            
+            return authed;
         }
         catch (UnsupportedCallbackException e)
         {
@@ -496,16 +521,18 @@ public class LdapLoginModule extends AbstractLoginModule
 
         String filter = "(&(objectClass={0})({1}={2}))";
 
-        LOG.info("Searching for users with filter: \'" + filter + "\'" + " from base dn: " + _userBaseDn);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Searching for users with filter: \'" + filter + "\'" + " from base dn: " + _userBaseDn);
 
         Object[] filterArguments = new Object[]{
-            _userObjectClass,
-            _userIdAttribute,
-            username
+                                                _userObjectClass,
+                                                _userIdAttribute,
+                                                username
         };
         NamingEnumeration<SearchResult> results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
 
-        LOG.info("Found user?: " + results.hasMoreElements());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Found user?: " + results.hasMoreElements());
 
         if (!results.hasMoreElements())
         {

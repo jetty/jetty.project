@@ -19,7 +19,11 @@
 package org.eclipse.jetty.security;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
+import org.eclipse.jetty.security.MappedLoginService.KnownUser;
 import org.eclipse.jetty.security.PropertyUserStore.UserListener;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Scanner;
@@ -54,6 +58,36 @@ public class HashLoginService extends MappedLoginService implements UserListener
     private Resource _configResource;
     private Scanner _scanner;
     private boolean hotReload = false; // default is not to reload
+    
+    
+    
+    public class HashKnownUser extends KnownUser
+    {
+        String[] _roles;
+        
+        /**
+         * @param name
+         * @param credential
+         */
+        public HashKnownUser(String name, Credential credential)
+        {
+            super(name, credential);
+        }
+        
+     
+        
+        public void setRoles (String[] roles)
+        {
+            _roles = roles;
+        }
+        
+        public String[] getRoles()
+        {
+            return _roles;
+        }
+    }
+    
+    
 
     /* ------------------------------------------------------------ */
     public HashLoginService()
@@ -163,6 +197,41 @@ public class HashLoginService extends MappedLoginService implements UserListener
         // TODO: Consider refactoring MappedLoginService to not have to override with unused methods
     }
 
+
+
+    @Override
+    protected String[] loadRoleInfo(KnownUser user)
+    {
+        UserIdentity id = _propertyUserStore.getUserIdentity(user.getName());
+        if (id == null)
+            return null;
+
+
+        Set<RolePrincipal> roles = id.getSubject().getPrincipals(RolePrincipal.class);
+        if (roles == null)
+            return null;
+
+        List<String> list = new ArrayList<>();
+        for (RolePrincipal r:roles)
+            list.add(r.getName());
+
+        return list.toArray(new String[roles.size()]);
+    }
+
+    @Override
+    protected KnownUser loadUserInfo(String userName)
+    {
+        UserIdentity id = _propertyUserStore.getUserIdentity(userName);
+        if (id != null)
+        {
+            return (KnownUser)id.getUserPrincipal();
+        }
+        
+        return null;
+    }
+    
+    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
@@ -204,9 +273,11 @@ public class HashLoginService extends MappedLoginService implements UserListener
     {
         if (LOG.isDebugEnabled())
             LOG.debug("update: " + userName + " Roles: " + roleArray.length);
-        putUser(userName,credential,roleArray);
+       //TODO need to remove and replace the authenticated user?
     }
 
+    
+    
     /* ------------------------------------------------------------ */
     @Override
     public void remove(String userName)
