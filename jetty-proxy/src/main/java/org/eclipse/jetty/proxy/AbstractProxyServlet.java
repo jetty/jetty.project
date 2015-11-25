@@ -635,11 +635,9 @@ public abstract class AbstractProxyServlet extends HttpServlet
         else
         {
             proxyResponse.resetBuffer();
-            failure.printStackTrace();
             int status = failure instanceof TimeoutException ?
                     HttpStatus.GATEWAY_TIMEOUT_504 :
                     HttpStatus.BAD_GATEWAY_502;
-            System.err.println("STATUS="+status);
             sendProxyResponseError(clientRequest, proxyResponse, status);
         }
     }
