@@ -139,6 +139,8 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
     public void logout(UserIdentity identity)
     {
         LOG.debug("logout {}",identity);
+        
+        //TODO should remove the user?????
     }
 
     /* ------------------------------------------------------------ */
@@ -200,6 +202,24 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
         _users.put(userName,identity);
         return identity;
     }
+    
+    
+
+    
+    public synchronized UserIdentity putUser (KnownUser userPrincipal, String[] roles)
+    {
+        Subject subject = new Subject();
+        subject.getPrincipals().add(userPrincipal);
+        subject.getPrivateCredentials().add(userPrincipal._credential);
+        if (roles!=null)
+            for (String role : roles)
+                subject.getPrincipals().add(new RolePrincipal(role));
+        subject.setReadOnly();
+        UserIdentity identity=_identityService.newUserIdentity(subject,userPrincipal,roles);
+        _users.put(userPrincipal._name,identity);
+        return identity;
+    }
+    
 
     /* ------------------------------------------------------------ */
     public void removeUser(String username)
@@ -219,9 +239,17 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
         UserIdentity user = _users.get(username);
 
         if (user==null)
-            user = loadUser(username);
-
-        if (user!=null)
+        {
+            KnownUser userPrincipal = loadUserInfo(username);
+            if (userPrincipal.authenticate(credentials))
+            {
+                //safe to load the roles
+                String[] roles = loadRoleInfo(userPrincipal);
+                user = putUser(userPrincipal, roles);
+                return user;
+            }
+        }
+        else
         {
             UserPrincipal principal = (UserPrincipal)user.getUserPrincipal();
             if (principal.authenticate(credentials))
@@ -241,7 +269,10 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
 
         return false;
     }
-
+    /* ------------------------------------------------------------ */
+    protected abstract String[] loadRoleInfo (KnownUser user);
+    /* ------------------------------------------------------------ */
+    protected abstract KnownUser loadUserInfo (String username);
     /* ------------------------------------------------------------ */
     protected abstract UserIdentity loadUser(String username);
 

@@ -77,6 +77,32 @@ public class JDBCLoginService extends MappedLoginService
     protected String _userSql;
     protected String _roleSql;
 
+    
+    /**
+     * JDBCKnownUser
+     *
+     *
+     */
+    public class JDBCKnownUser extends KnownUser
+    {
+        int _userKey;
+        
+        /**
+         * @param name
+         * @param credential
+         */
+        public JDBCKnownUser(String name, Credential credential, int key)
+        {
+            super(name, credential);
+            _userKey = key;
+        }
+        
+        
+        public int getUserKey ()
+        {
+            return _userKey;
+        }
+    }
 
     /* ------------------------------------------------------------ */
     public JDBCLoginService()
@@ -231,7 +257,7 @@ public class JDBCLoginService extends MappedLoginService
     }
     
     /* ------------------------------------------------------------ */
-    @Override
+    @Deprecated
     protected UserIdentity loadUser(String username)
     {
         try
@@ -251,6 +277,8 @@ public class JDBCLoginService extends MappedLoginService
                     {
                         int key = rs1.getInt(_userTableKey);
                         String credentials = rs1.getString(_userTablePasswordField);
+
+
                         List<String> roles = new ArrayList<String>();
 
                         try (PreparedStatement stat2 = _con.prepareStatement(_roleSql))
@@ -262,7 +290,7 @@ public class JDBCLoginService extends MappedLoginService
                                     roles.add(rs2.getString(_roleTableRoleField));
                             }
                         }
-                        return putUser(username, credentials, roles.toArray(new String[roles.size()]));
+                        return putUser(username, Credential.getCredential(credentials), roles.toArray(new String[roles.size()]));
                     }
                 }
             }
@@ -274,12 +302,88 @@ public class JDBCLoginService extends MappedLoginService
         }
         return null;
     }
-    
-    /* ------------------------------------------------------------ */
-    protected UserIdentity putUser (String username, String credentials, String[] roles)
+
+
+    /** 
+     * @see org.eclipse.jetty.security.MappedLoginService#loadUserInfo(java.lang.String)
+     * @Override
+     */
+    public KnownUser loadUserInfo (String username)
     {
-        return putUser(username, Credential.getCredential(credentials),roles);
+        try
+        {
+            if (null == _con) 
+                connectDatabase();
+
+            if (null == _con) 
+                throw new SQLException("Can't connect to database");
+
+            try (PreparedStatement stat1 = _con.prepareStatement(_userSql))
+            {
+                stat1.setObject(1, username);
+                try (ResultSet rs1 = stat1.executeQuery())
+                {
+                    if (rs1.next())
+                    {
+                        int key = rs1.getInt(_userTableKey);
+                        String credentials = rs1.getString(_userTablePasswordField);
+
+                        return new JDBCKnownUser (username, Credential.getCredential(credentials), key);
+                    }
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            LOG.warn("UserRealm " + getName() + " could not load user information from database", e);
+            closeConnection();
+        }
+        
+        return null;
     }
+
+    
+    
+    /** 
+     * @see org.eclipse.jetty.security.MappedLoginService#loadRoleInfo(org.eclipse.jetty.security.MappedLoginService.KnownUser)
+     * @Override
+     */
+    public String[] loadRoleInfo (KnownUser user)
+    {
+        JDBCKnownUser jdbcUser = (JDBCKnownUser)user;
+        
+        try
+        {
+            if (null == _con) 
+                connectDatabase();
+
+            if (null == _con) 
+                throw new SQLException("Can't connect to database");
+            
+            
+            List<String> roles = new ArrayList<String>();
+
+            try (PreparedStatement stat2 = _con.prepareStatement(_roleSql))
+            {
+                stat2.setInt(1, jdbcUser.getUserKey());
+                try (ResultSet rs2 = stat2.executeQuery())
+                {
+                    while (rs2.next())
+                        roles.add(rs2.getString(_roleTableRoleField));
+                    return roles.toArray(new String[roles.size()]);
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            LOG.warn("UserRealm " + getName() + " could not load user information from database", e);
+            closeConnection();
+        }
+        
+        return null;
+    }
+    
+   
     
 
     /**

@@ -101,7 +101,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
     }
 
     /**
-     * Don't implement this as we want to pre-fetch all of the users.
+     * 
      *
      * @param userName the user name
      * @throws Exception if unable to get the user information
@@ -117,6 +117,8 @@ public class PropertyFileLoginModule extends AbstractLoginModule
         if (userIdentity==null)
             return null;
 
+        //TODO in future versions change the impl of PropertyUserStore so its not
+        //storing Subjects etc, just UserInfo
         Set<Principal> principals = userIdentity.getSubject().getPrincipals();
 
         List<String> roles = new ArrayList<String>();

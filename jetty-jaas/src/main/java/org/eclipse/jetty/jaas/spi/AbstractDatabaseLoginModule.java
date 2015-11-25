@@ -21,7 +21,6 @@ package org.eclipse.jetty.jaas.spi;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +58,24 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
      * @throws Exception if unable to get the connection
      */
     public abstract Connection getConnection () throws Exception;
+    
+    
+    public class JDBCUserInfo extends UserInfo
+    {
+        public JDBCUserInfo (String userName, Credential credential)
+        {
+            super(userName, credential);
+        }
+        
+        
+        
+        @Override
+        public List<String> doFetchRoles ()
+        throws Exception
+        {
+           return getRoles(getUserName());
+        }
+    }
 
 
 
@@ -92,8 +109,22 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
                 return null;
             }
 
+          
+
+            return new JDBCUserInfo (userName, Credential.getCredential(dbCredential));
+        }
+    }
+    
+    
+    public List<String>  getRoles (String userName)
+    throws Exception
+    {
+        List<String> roles = new ArrayList<String>();
+        
+        try (Connection connection = getConnection())
+        {
             //query for role names
-            List<String> roles = new ArrayList<String>();
+
             try (PreparedStatement statement = connection.prepareStatement (rolesQuery))
             {
                 statement.setString (1, userName);
@@ -106,10 +137,13 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
                     }
                 }
             }
-
-            return new UserInfo (userName, Credential.getCredential(dbCredential), roles);
+          
         }
+
+        return roles;
     }
+    
+    
 
 
     public void initialize(Subject subject,
