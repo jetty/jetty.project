@@ -35,10 +35,13 @@ public class HttpFieldTest
     @Test
     public void testContainsSimple() throws Exception
     {
-        HttpField field = new HttpField("name","somevalue");
+        HttpField field = new HttpField("name","SomeValue");
         assertTrue(field.contains("somevalue"));
+        assertTrue(field.contains("sOmEvAlUe"));
+        assertTrue(field.contains("SomeValue"));
         assertFalse(field.contains("other"));
         assertFalse(field.contains("some"));
+        assertFalse(field.contains("Some"));
         assertFalse(field.contains("value"));
         assertFalse(field.contains("v"));
         assertFalse(field.contains(""));
@@ -66,10 +69,16 @@ public class HttpFieldTest
     @Test
     public void testContainsList() throws Exception
     {
-        HttpField field = new HttpField("name",",aaa,bbb,ccc, ddd , e e, \"\\\"f,f\\\"\", ");
+        HttpField field = new HttpField("name",",aaa,Bbb,CCC, ddd , e e, \"\\\"f,f\\\"\", ");
         assertTrue(field.contains("aaa"));
         assertTrue(field.contains("bbb"));
         assertTrue(field.contains("ccc"));
+        assertTrue(field.contains("Aaa"));
+        assertTrue(field.contains("Bbb"));
+        assertTrue(field.contains("Ccc"));
+        assertTrue(field.contains("AAA"));
+        assertTrue(field.contains("BBB"));
+        assertTrue(field.contains("CCC"));
         assertTrue(field.contains("ddd"));
         assertTrue(field.contains("e e"));
         assertTrue(field.contains("\"f,f\""));
@@ -123,6 +132,10 @@ public class HttpFieldTest
         assertFalse(field.contains("no"));
         
         field = new HttpField("name","no;q=0.0000,yes;q=0.0001,no; q = 0.00000");
+        assertTrue(field.contains("yes"));
+        assertFalse(field.contains("no"));
+        
+        field = new HttpField("name","no;q=0.0000,Yes;Q=0.0001,no; Q = 0.00000");
         assertTrue(field.contains("yes"));
         assertFalse(field.contains("no"));
        

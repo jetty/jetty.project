@@ -370,7 +370,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade {} {}",this,_upgrade);
 
-        if (_upgrade!=PREAMBLE_UPGRADE_H2C && (_connection==null || !_connection.getValue().contains("Upgrade")))
+        if (_upgrade!=PREAMBLE_UPGRADE_H2C && (_connection==null || !_connection.contains("upgrade")))
             throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
 
         // Find the upgrade factory
