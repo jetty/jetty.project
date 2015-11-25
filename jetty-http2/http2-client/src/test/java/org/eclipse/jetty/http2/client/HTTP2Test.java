@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -43,8 +45,10 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
@@ -290,6 +294,131 @@ public class HTTP2Test extends AbstractTest
     }
 
     @Test
+    public void testMaxConcurrentStreams() throws Exception
+    {
+        int maxStreams = 2;
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Map<Integer, Integer> onPreface(Session session)
+            {
+                Map<Integer, Integer> settings = new HashMap<>(1);
+                settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxStreams);
+                return settings;
+            }
+
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields(), 0);
+                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                return null;
+            }
+        });
+
+        CountDownLatch settingsLatch = new CountDownLatch(1);
+        Session session = newClient(new Session.Listener.Adapter()
+        {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+        });
+        Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+
+        MetaData.Request request1 = newRequest("GET", new HttpFields());
+        FuturePromise<Stream> promise1 = new FuturePromise<>();
+        CountDownLatch exchangeLatch1 = new CountDownLatch(2);
+        session.newStream(new HeadersFrame(request1, null, false), promise1, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                if (frame.isEndStream())
+                    exchangeLatch1.countDown();
+            }
+        });
+        Stream stream1 = promise1.get(5, TimeUnit.SECONDS);
+
+        MetaData.Request request2 = newRequest("GET", new HttpFields());
+        FuturePromise<Stream> promise2 = new FuturePromise<>();
+        CountDownLatch exchangeLatch2 = new CountDownLatch(2);
+        session.newStream(new HeadersFrame(request2, null, false), promise2, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                if (frame.isEndStream())
+                    exchangeLatch2.countDown();
+            }
+        });
+        Stream stream2 = promise2.get(5, TimeUnit.SECONDS);
+
+        // The third stream must not be created.
+        MetaData.Request request3 = newRequest("GET", new HttpFields());
+        CountDownLatch maxStreamsLatch = new CountDownLatch(1);
+        session.newStream(new HeadersFrame(request3, null, false), new Promise.Adapter<Stream>()
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                if (x instanceof IllegalStateException)
+                    maxStreamsLatch.countDown();
+            }
+        }, new Stream.Listener.Adapter());
+
+        Assert.assertTrue(maxStreamsLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(2, session.getStreams().size());
+
+        // End the second stream.
+        stream2.data(new DataFrame(stream2.getId(), BufferUtil.EMPTY_BUFFER, true), new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                exchangeLatch2.countDown();
+            }
+        });
+        Assert.assertTrue(exchangeLatch2.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(1, session.getStreams().size());
+
+        // Create a fourth stream.
+        MetaData.Request request4 = newRequest("GET", new HttpFields());
+        CountDownLatch exchangeLatch4 = new CountDownLatch(2);
+        session.newStream(new HeadersFrame(request4, null, true), new Promise.Adapter<Stream>()
+        {
+            @Override
+            public void succeeded(Stream result)
+            {
+                exchangeLatch4.countDown();
+            }
+        }, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                if (frame.isEndStream())
+                    exchangeLatch4.countDown();
+            }
+        });
+        Assert.assertTrue(exchangeLatch4.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(1, session.getStreams().size());
+
+        // End the first stream.
+        stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                exchangeLatch1.countDown();
+            }
+        });
+        Assert.assertTrue(exchangeLatch2.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(0, session.getStreams().size());
+    }
+
+    @Test
     public void testInvalidAPIUsageOnClient() throws Exception
     {
         start(new ServerSessionListener.Adapter()
@@ -383,19 +512,6 @@ public class HTTP2Test extends AbstractTest
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private static void sleep(long time)
-    {
-        try
-        {
-            Thread.sleep(time);
-        }
-        catch (InterruptedException x)
-        {
-            throw new RuntimeException();
-        }
-    }
-}
-/*
     @Test
     public void testInvalidAPIUsageOnServer() throws Exception
     {
@@ -469,4 +585,15 @@ public class HTTP2Test extends AbstractTest
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
     }
 
- */
+    private static void sleep(long time)
+    {
+        try
+        {
+            Thread.sleep(time);
+        }
+        catch (InterruptedException x)
+        {
+            throw new RuntimeException();
+        }
+    }
+}

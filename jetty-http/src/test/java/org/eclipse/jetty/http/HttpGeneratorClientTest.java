@@ -43,7 +43,7 @@ public class HttpGeneratorClientTest
     }
 
     @Test
-    public void testRequestNoContent() throws Exception
+    public void testGETRequestNoContent() throws Exception
     {
         ByteBuffer header=BufferUtil.allocate(2048);
         HttpGenerator gen = new HttpGenerator();
@@ -77,7 +77,43 @@ public class HttpGeneratorClientTest
         Assert.assertEquals(0, gen.getContentPrepared());
         Assert.assertThat(out, Matchers.containsString("GET /index.html HTTP/1.1"));
         Assert.assertThat(out, Matchers.not(Matchers.containsString("Content-Length")));
+    }
 
+    @Test
+    public void testPOSTRequestNoContent() throws Exception
+    {
+        ByteBuffer header=BufferUtil.allocate(2048);
+        HttpGenerator gen = new HttpGenerator();
+
+        HttpGenerator.Result
+        result=gen.generateRequest(null,null,null,null, true);
+        Assert.assertEquals(HttpGenerator.Result.NEED_INFO, result);
+        Assert.assertEquals(HttpGenerator.State.START, gen.getState());
+
+        Info info = new Info("POST","/index.html");
+        info.getFields().add("Host","something");
+        info.getFields().add("User-Agent","test");
+        Assert.assertTrue(!gen.isChunking());
+
+        result=gen.generateRequest(info,null,null,null, true);
+        Assert.assertEquals(HttpGenerator.Result.NEED_HEADER, result);
+        Assert.assertEquals(HttpGenerator.State.START, gen.getState());
+
+        result=gen.generateRequest(info,header,null,null, true);
+        Assert.assertEquals(HttpGenerator.Result.FLUSH, result);
+        Assert.assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
+        Assert.assertTrue(!gen.isChunking());
+        String out = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+
+        result=gen.generateResponse(null,null,null,null, false);
+        Assert.assertEquals(HttpGenerator.Result.DONE, result);
+        Assert.assertEquals(HttpGenerator.State.END, gen.getState());
+        Assert.assertTrue(!gen.isChunking());
+
+        Assert.assertEquals(0, gen.getContentPrepared());
+        Assert.assertThat(out, Matchers.containsString("POST /index.html HTTP/1.1"));
+        Assert.assertThat(out, Matchers.containsString("Content-Length: 0"));
     }
 
     @Test
