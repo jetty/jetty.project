@@ -77,6 +77,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         });
 
         MultiPartContentProvider multiPart = new MultiPartContentProvider();
+        multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .method(HttpMethod.POST)
@@ -106,6 +107,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
 
         MultiPartContentProvider multiPart = new MultiPartContentProvider();
         multiPart.addFieldPart(name, new StringContentProvider(value), null);
+        multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .method(HttpMethod.POST)
@@ -144,6 +146,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         fields.put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + encoding.name());
         BytesContentProvider content = new BytesContentProvider(value.getBytes(encoding));
         multiPart.addFieldPart(name, content, fields);
+        multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .method(HttpMethod.POST)
@@ -175,6 +178,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         MultiPartContentProvider multiPart = new MultiPartContentProvider();
         DeferredContentProvider content = new DeferredContentProvider();
         multiPart.addFieldPart(name, content, null);
+        multiPart.close();
         CountDownLatch responseLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
@@ -237,6 +241,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         HttpFields fields = new HttpFields();
         fields.put(HttpHeader.CONTENT_TYPE, contentType);
         multiPart.addFilePart(name, fileName, content, fields);
+        multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .method(HttpMethod.POST)
@@ -281,6 +286,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         MultiPartContentProvider multiPart = new MultiPartContentProvider();
         ContentProvider content = new PathContentProvider(contentType, tmpPath);
         multiPart.addFilePart(name, tmpPath.getFileName().toString(), content, null);
+        multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .method(HttpMethod.POST)
@@ -346,6 +352,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         fields.put(headerName, headerValue);
         multiPart.addFieldPart(field, new StringContentProvider(value, encoding), fields);
         multiPart.addFilePart(fileField, tmpPath.getFileName().toString(), new PathContentProvider(tmpPath), null);
+        multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .method(HttpMethod.POST)
@@ -419,6 +426,8 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
 
         fieldContent.offer(encoding.encode(value));
         fieldContent.close();
+
+        multiPart.close();
 
         Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
