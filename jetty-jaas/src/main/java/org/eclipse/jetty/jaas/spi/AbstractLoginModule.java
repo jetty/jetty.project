@@ -289,6 +289,7 @@ public abstract class AbstractLoginModule implements LoginModule
     public boolean logout() throws LoginException
     {
         this.currentUser.unsetJAASInfo(this.subject);
+        this.currentUser = null;
         return true;
     }
 

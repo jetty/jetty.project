@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jetty.security.MappedLoginService.KnownUser;
 import org.eclipse.jetty.security.PropertyUserStore.UserListener;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Scanner;
@@ -49,43 +48,15 @@ import org.eclipse.jetty.util.security.Credential;
  * <p>
  * If DIGEST Authentication is used, the password must be in a recoverable format, either plain text or OBF:.
  */
-public class HashLoginService extends MappedLoginService implements UserListener
+public class HashLoginService extends AbstractLoginService
 {
     private static final Logger LOG = Log.getLogger(HashLoginService.class);
 
-    private PropertyUserStore _propertyUserStore;
-    private String _config;
-    private Resource _configResource;
-    private Scanner _scanner;
-    private boolean hotReload = false; // default is not to reload
+    protected PropertyUserStore _propertyUserStore;
+    protected String _config;
+    protected Resource _configResource;
+    protected boolean hotReload = false; // default is not to reload
     
-    
-    
-    public class HashKnownUser extends KnownUser
-    {
-        String[] _roles;
-        
-        /**
-         * @param name
-         * @param credential
-         */
-        public HashKnownUser(String name, Credential credential)
-        {
-            super(name, credential);
-        }
-        
-     
-        
-        public void setRoles (String[] roles)
-        {
-            _roles = roles;
-        }
-        
-        public String[] getRoles()
-        {
-            return _roles;
-        }
-    }
     
     
 
@@ -161,46 +132,11 @@ public class HashLoginService extends MappedLoginService implements UserListener
         this.hotReload = enable;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * sets the refresh interval (in seconds)
-     * @param sec the refresh interval
-     * @deprecated use {@link #setHotReload(boolean)} instead
-     */
-    @Deprecated
-    public void setRefreshInterval(int sec)
-    {
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return refresh interval in seconds for how often the properties file should be checked for changes
-     * @deprecated use {@link #isHotReload()} instead
-     */
-    @Deprecated
-    public int getRefreshInterval()
-    {
-        return (hotReload)?1:0;
-    }
+  
 
     /* ------------------------------------------------------------ */
     @Override
-    protected UserIdentity loadUser(String username)
-    {
-        return null;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void loadUsers() throws IOException
-    {
-        // TODO: Consider refactoring MappedLoginService to not have to override with unused methods
-    }
-
-
-
-    @Override
-    protected String[] loadRoleInfo(KnownUser user)
+    protected String[] loadRoleInfo(UserPrincipal user)
     {
         UserIdentity id = _propertyUserStore.getUserIdentity(user.getName());
         if (id == null)
@@ -218,13 +154,17 @@ public class HashLoginService extends MappedLoginService implements UserListener
         return list.toArray(new String[roles.size()]);
     }
 
+    
+    
+    
+    /* ------------------------------------------------------------ */
     @Override
-    protected KnownUser loadUserInfo(String userName)
+    protected UserPrincipal loadUserInfo(String userName)
     {
         UserIdentity id = _propertyUserStore.getUserIdentity(userName);
         if (id != null)
         {
-            return (KnownUser)id.getUserPrincipal();
+            return (UserPrincipal)id.getUserPrincipal();
         }
         
         return null;
@@ -249,7 +189,6 @@ public class HashLoginService extends MappedLoginService implements UserListener
             _propertyUserStore = new PropertyUserStore();
             _propertyUserStore.setHotReload(hotReload);
             _propertyUserStore.setConfigPath(_config);
-            _propertyUserStore.registerUserListener(this);
             _propertyUserStore.start();
         }
     }
@@ -262,28 +201,5 @@ public class HashLoginService extends MappedLoginService implements UserListener
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (_scanner != null)
-            _scanner.stop();
-        _scanner = null;
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public void update(String userName, Credential credential, String[] roleArray)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("update: " + userName + " Roles: " + roleArray.length);
-       //TODO need to remove and replace the authenticated user?
-    }
-
-    
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public void remove(String userName)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("remove: " + userName);
-        removeUser(userName);
     }
 }
