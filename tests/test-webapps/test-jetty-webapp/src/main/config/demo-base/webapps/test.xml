@@ -42,11 +42,13 @@ detected.
   </Set>
   
   <!-- Set Caching Classloader that improves performance on resource searching webapps -->
+  <!--
   <Set name="classLoader">
     <New class="org.eclipse.jetty.webapp.CachingWebAppClassLoader">
       <Arg><Ref refid="testWebapp"/></Arg>
     </New>
   </Set>
+  -->
 
   <!-- Enable symlinks 
   <Call name="addAliasCheck">

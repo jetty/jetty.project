@@ -452,13 +452,6 @@ public class WebAppClassLoader extends URLClassLoader
 
     /* ------------------------------------------------------------ */
     @Override
-    public Class<?> loadClass(String name) throws ClassNotFoundException
-    {
-        return loadClass(name, false);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
     {
         synchronized (getClassLoadingLock(name))
@@ -526,7 +519,11 @@ public class WebAppClassLoader extends URLClassLoader
                 LOG.debug("loadedClass({})=={} from={} tried_parent={}",name,c,source,tried_parent);
             
             if (resolve)
+            {
                 resolveClass(c);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("resolved({})=={} from={} tried_parent={}",name,c,source,tried_parent);
+            }
 
             return c;
         }

@@ -18,14 +18,10 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.File;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-
-import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
 /** ClassLoader Helper.
@@ -86,48 +82,12 @@ public class Loader
         return loadClass(name);
     }
     
-    
     /* ------------------------------------------------------------ */
     public static ResourceBundle getResourceBundle(String name,boolean checkParents,Locale locale)
         throws MissingResourceException
     {
         ClassLoader loader=Thread.currentThread().getContextClassLoader();
         return loader==null ? ResourceBundle.getBundle(name, locale) : ResourceBundle.getBundle(name, locale, loader);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Generate the classpath (as a string) of all classloaders
-     * above the given classloader.
-     * 
-     * This is primarily used for jasper.
-     * @param loader the classloader to use
-     * @return the system class path
-     * @throws Exception if unable to generate the classpath from the resource references
-     */
-    public static String getClassPath(ClassLoader loader) throws Exception
-    {
-        StringBuilder classpath=new StringBuilder();
-        while (loader != null && (loader instanceof URLClassLoader))
-        {
-            URL[] urls = ((URLClassLoader)loader).getURLs();
-            if (urls != null)
-            {     
-                for (int i=0;i<urls.length;i++)
-                {
-                    Resource resource = Resource.newResource(urls[i]);
-                    File file=resource.getFile();
-                    if (file!=null && file.exists())
-                    {
-                        if (classpath.length()>0)
-                            classpath.append(File.pathSeparatorChar);
-                        classpath.append(file.getAbsolutePath());
-                    }
-                }
-            }
-            loader = loader.getParent();
-        }
-        return classpath.toString();
     }
 }
 
