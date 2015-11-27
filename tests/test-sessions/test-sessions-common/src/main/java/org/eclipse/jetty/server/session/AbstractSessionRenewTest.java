@@ -78,6 +78,7 @@ public abstract class AbstractSessionRenewTest
             Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=renew");
             request.header("Cookie", sessionCookie);
             ContentResponse renewResponse = request.send();
+
             assertEquals(HttpServletResponse.SC_OK,renewResponse.getStatus());
             String renewSessionCookie = renewResponse.getHeaders().get("Set-Cookie");
             assertNotNull(renewSessionCookie);
@@ -129,7 +130,6 @@ public abstract class AbstractSessionRenewTest
                 HttpSession beforeSession = request.getSession(false);
                 assertTrue(beforeSession != null);
                 String beforeSessionId = beforeSession.getId();
-
 
                 ((Session)beforeSession).renewId(request);
 

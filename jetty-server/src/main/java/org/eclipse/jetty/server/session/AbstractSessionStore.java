@@ -197,7 +197,6 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
             doDelete(id);
             session = null;
         }
-
         
         //not in session store, load the data for the session if possible
         if (session == null && _sessionDataStore != null)

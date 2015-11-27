@@ -716,9 +716,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                     //Tell the id manager that this session id should not be used in case other threads
                     //try to use the same session id in other contexts
                     _sessionIdManager.removeId(id);    
-                    
                     //The scavenger thread will pick up this expired session
-             
                     return null;
                 }
                 
@@ -754,7 +752,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
 
     
-    protected SessionStore getSessionStore ()
+    public SessionStore getSessionStore ()
     {
         return _sessionStore;
     }
@@ -944,7 +942,10 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             session.getSessionData().setId(newId);
             session.setExtendedId(newExtendedId);
             session.getSessionData().setLastSaved(0); //forces an insert
+            session.getSessionData().setDirty(true);
             _sessionStore.put(newId, session);
+            
+            Session x = _sessionStore.get(newId, false);
             
             //tell session id manager the id is in use
             _sessionIdManager.useId(session);

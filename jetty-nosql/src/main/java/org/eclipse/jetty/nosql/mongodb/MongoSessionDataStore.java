@@ -40,6 +40,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.WriteConcern;
+import com.mongodb.WriteResult;
 
 /**
  * MongoSessionDataStore
@@ -159,16 +160,25 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
     
     
+    /**
+     * @return
+     */
     public DBCollection getDBCollection ()
     {
         return _dbSessions;
     }
     
+    /**
+     * @return
+     */
     public int getGracePeriodSec ()
     {
         return (int)(_gracePeriodMs == 0L? 0 : _gracePeriodMs/1000L);
     }
     
+    /**
+     * @param sec
+     */
     public void setGracePeriodSec (int sec)
     {
         if (sec < 0)
@@ -187,6 +197,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
         if (LOG.isDebugEnabled())
             LOG.debug("id={} loaded={}", id, sessionDocument);
+        
         if (sessionDocument == null)
             return null;
 
@@ -199,7 +210,8 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         
         try
         {
-            Object version = sessionDocument.get(getContextSubfield( __VERSION));
+            Object version = getNestedValue(sessionDocument, getContextSubfield(__VERSION));
+            
             Long created = (Long)sessionDocument.get(__CREATED);
             Long accessed = (Long)sessionDocument.get(__ACCESSED);
             Long maxInactive = (Long)sessionDocument.get(__MAX_IDLE);
@@ -216,7 +228,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Session {} present for context {}", id, _contextId);
-                
+
                 //only load a session if it exists for this context
                 data = (NoSqlSessionData)newSessionData(id, created, accessed, accessed, maxInactive);
                 data.setVersion(version);
@@ -229,11 +241,9 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                 {
                     //skip special metadata attribute which is not one of the actual session attributes
                     if ( __METADATA.equals(name) )
-                        continue;
-                    
+                        continue;         
                     String attr = decodeName(name);
                     Object value = decodeValue(sessionSubDocumentForContext.get(name));
-
                     attributes.put(attr,value);
                 }
                 
@@ -274,12 +284,36 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
         if (sessionDocument != null)
         {
+            DBObject c = (DBObject)getNestedValue(sessionDocument, __CONTEXT);
+            if (c == null)
+            {
+                //delete whole doc
+                _dbSessions.remove(mongoKey);
+                return false;
+            }
+
+            Set<String> contexts = c.keySet();
+            if (contexts.isEmpty())
+            {
+                //delete whole doc
+                _dbSessions.remove(mongoKey);
+                return false;
+            }
+
+            if (contexts.size() == 1 && contexts.iterator().next().equals(getCanonicalContextId()))
+            {
+                //delete whole doc
+                 _dbSessions.remove(mongoKey);
+                return true;
+            }
+            
+            //just remove entry for my context
             BasicDBObject remove = new BasicDBObject();
             BasicDBObject unsets = new BasicDBObject();
             unsets.put(getContextField(),1);
             remove.put("$unset",unsets);
             _dbSessions.update(mongoKey,remove,false,false,WriteConcern.SAFE);
-
+            
             return true;
         }
         else
@@ -353,7 +387,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     @Override
     public void doStore(String id, SessionData data, boolean isNew) throws Exception
     {
-        // TODO
         NoSqlSessionData nsqd = (NoSqlSessionData)data;
         
         // Form query for upsert
@@ -378,10 +411,12 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             sets.put(getContextSubfield(__VERSION),version);
             sets.put(__MAX_IDLE, nsqd.getMaxInactiveMs());
             sets.put(__EXPIRY, nsqd.getExpiry());
+            nsqd.setVersion(version);
         }
         else
         {
             version = new Long(((Number)version).longValue() + 1);
+            nsqd.setVersion(version);
             update.put("$inc",_version_1); 
             //if max idle time and/or expiry is smaller for this context, then choose that for the whole session doc
             BasicDBObject fields = new BasicDBObject();
@@ -390,7 +425,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             DBObject o = _dbSessions.findOne(new BasicDBObject("id", id), fields);
             if (o != null)
             {
-                Integer currentMaxIdle = (Integer)o.get(__MAX_IDLE);
+                Long currentMaxIdle = (Long)o.get(__MAX_IDLE);
                 Long currentExpiry = (Long)o.get(__EXPIRY);
                 if (currentMaxIdle != null && nsqd.getMaxInactiveMs() > 0 && nsqd.getMaxInactiveMs() < currentMaxIdle)
                     sets.put(__MAX_IDLE, nsqd.getMaxInactiveMs());
@@ -400,23 +435,27 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             else
                 LOG.warn("Session {} not found, can't update", id);
         }
-        
+
         sets.put(__ACCESSED, nsqd.getAccessed());
-        
+
         Set<String> names = nsqd.takeDirtyAttributes();
+
         if (isNew)
+        {
             names.addAll(nsqd.getAllAttributeNames()); // note dirty may include removed names
-        
-            
+        }
+
+
         for (String name : names)
         {
+
             Object value = data.getAttribute(name);
             if (value == null)
                 unsets.put(getContextField() + "." + encodeName(name),1);
             else
                 sets.put(getContextField() + "." + encodeName(name),encodeName(value));
         }
-        
+
         // Do the upsert
         if (!sets.isEmpty())
             update.put("$set",sets);
@@ -425,11 +464,12 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
         _dbSessions.update(key,update,upsert,false,WriteConcern.SAFE);
 
+
         if (LOG.isDebugEnabled())
-            LOG.debug("Save:db.sessions.update( {}, {} )", key, update);
+            LOG.debug("Save:db.sessions.update( {}, {} )", key, update); 
     }
-    
-    
+
+
     
     
     @Override
@@ -453,10 +493,14 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     /*------------------------------------------------------------ */
     private String getContextField ()
     {
-        return __CONTEXT + "." + canonicalizeVHost(_contextId.getVhost()) + ":" + _contextId.getCanonicalContextPath();
+        return __CONTEXT + "." + getCanonicalContextId();
     }
     
    
+    private String getCanonicalContextId ()
+    {
+        return canonicalizeVHost(_contextId.getVhost()) + ":" + _contextId.getCanonicalContextPath();
+    }
     
     private String canonicalizeVHost (String vhost)
     {

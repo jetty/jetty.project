@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionKey;
 
 
 /**

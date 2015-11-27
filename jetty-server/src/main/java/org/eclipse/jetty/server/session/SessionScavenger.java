@@ -111,7 +111,6 @@ public class SessionScavenger extends AbstractLifeCycle
         else if (!_scheduler.isStarted())
             throw new IllegalStateException("Shared scheduler not started");
 
-
         setScavengeIntervalSec(getScavengeIntervalSec());
         
         super.doStart();

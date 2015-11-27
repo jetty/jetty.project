@@ -50,6 +50,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     final static DBObject __version_1 = new BasicDBObject(MongoSessionDataStore.__VERSION,1);
     final static DBObject __valid_false = new BasicDBObject(MongoSessionDataStore.__VALID,false);
     final static DBObject __valid_true = new BasicDBObject(MongoSessionDataStore.__VALID,true);
+    final static DBObject __expiry = new BasicDBObject(MongoSessionDataStore.__EXPIRY, 1);
 
     
     final DBCollection _sessions;
@@ -108,21 +109,15 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     @Override
     protected void doStart() throws Exception
     {
-        LOG.debug("MongoSessionIdManager:starting");
-
-
-        synchronized (this)
-        {
-          
-          
-        }
+        if (LOG.isDebugEnabled()) LOG.debug("MongoSessionIdManager:starting");
+        super.doStart();
     }
 
     /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
     {
-
+        if (LOG.isDebugEnabled()) LOG.debug("MongoSessionIdManager:stopping");
         super.doStop();
     }
 
@@ -134,17 +129,23 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     public boolean isIdInUse(String sessionId)
     {        
         /*
-         * optimize this query to only return the valid variable
+         * optimize this query to only return the valid and expiry
          */
-        DBObject o = _sessions.findOne(new BasicDBObject("id",sessionId), __valid_true);
+        DBObject fields = new BasicDBObject();
+        fields.put(MongoSessionDataStore.__VALID, new Long(1));
+        fields.put(MongoSessionDataStore.__EXPIRY, new Long(1));
+        
+        DBObject o = _sessions.findOne(new BasicDBObject(MongoSessionDataStore.__ID,sessionId), fields);
         
         if ( o != null )
         {                    
             Boolean valid = (Boolean)o.get(MongoSessionDataStore.__VALID);
             if ( valid == null )
-            {
+                return false;            
+            
+            Long expiry = (Long)o.get(MongoSessionDataStore.__EXPIRY);
+            if (expiry < System.currentTimeMillis())
                 return false;
-            }            
             
             return valid;
         }
@@ -157,17 +158,13 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     public void useId(Session session)
     {
         if (session == null)
-        {
             return;
-        }
         
         /*
          * already a part of the index in mongo...
          */
         
         LOG.debug("MongoSessionIdManager:addSession {}", session.getId());
-        
-        _sessionsIds.add(session.getId());
     }
  
 
@@ -175,40 +172,9 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     @Override
     public void removeId(String id)
     {
-        if (id == null)
-        {
-            return;
-        }
-        
-        _sessionsIds.remove(id);
+       //The corresponding session document will be marked as expired or invalid?
     }
-
-    /* ------------------------------------------------------------ */
-    /** Remove the session id from the list of in-use sessions.
-     * Inform all other known contexts that sessions with the same id should be
-     * invalidated.
-     * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
-     */
-    @Override
-    public void expireAll(String sessionId)
-    {
-       synchronized(_sessionsIds)
-       {
-           super.expireAll(sessionId);
-       }
-    }      
- 
 
   
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public void renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)
-    {
-        synchronized (_sessionsIds)
-        {
-            super.renewSessionId(oldClusterId, oldNodeId, request);
-        }
-    }
-    
+
 }

@@ -175,7 +175,7 @@ public abstract class AbstractSessionExpiryTest
             
             port1 = server1.getPort();
             url = "http://localhost:" + port1 + contextPath + servletMapping;
-
+            
             //make another request, the session should have expired
             Request request = client.newRequest(url + "?action=test");
             request.getHeaders().add("Cookie", sessionCookie);

@@ -18,33 +18,20 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.UnknownHostException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.session.AbstractSessionStore;
 import org.eclipse.jetty.server.session.MemorySessionStore;
+import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionManager;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.MongoException;
-import com.mongodb.WriteConcern;
 
 
 /**
@@ -124,6 +111,7 @@ public class MongoSessionManager extends SessionManager
     public void doStart() throws Exception
     {    
         ((AbstractSessionStore)_sessionStore).setSessionDataStore(_sessionDataStore);
+        _sessionDataStore.setDBCollection(_dbSessions);
         super.doStart();
     }
 
@@ -140,6 +128,11 @@ public class MongoSessionManager extends SessionManager
         
     }
 
+    
+    public MongoSessionDataStore getSessionDataStore()
+    {
+        return _sessionDataStore;
+    }
   
 
     /*------------------------------------------------------------ */

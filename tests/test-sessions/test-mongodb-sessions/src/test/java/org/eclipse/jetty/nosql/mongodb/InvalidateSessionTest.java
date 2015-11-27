@@ -37,11 +37,10 @@ public class InvalidateSessionTest extends AbstractInvalidationSessionTest
     {
         try
         {
-            Thread.currentThread().sleep(2000);
+            Thread.sleep(2 * MongoTestServer.STALE_INTERVAL * 1000);
         }
-        catch (Exception e)
+        catch (InterruptedException e)
         {
-            e.printStackTrace();
         }
     }
     

@@ -368,13 +368,11 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
      */
     @Override
     public void renewSessionId (String oldClusterId, String oldNodeId, HttpServletRequest request)
-    {
+    { 
         //generate a new id
         String newClusterId = newSessionId(request.hashCode());
-
-        removeId(oldClusterId);//remove the old one from the list (and database)
+        removeId(oldClusterId);//remove the old one from the list
         
-
         //tell all contexts to update the id 
         Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
         for (int i=0; contexts!=null && i<contexts.length; i++)
