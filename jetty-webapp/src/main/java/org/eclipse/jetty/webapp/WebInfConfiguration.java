@@ -65,13 +65,6 @@ public class WebInfConfiguration extends AbstractConfiguration
         super();
     }
 
-    public WebInfConfiguration(List<String> after, List<String> before)
-    {
-        super(after,before);
-        // TODO Auto-generated constructor stub
-    }
-
-
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {

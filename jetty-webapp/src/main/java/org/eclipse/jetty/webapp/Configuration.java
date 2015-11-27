@@ -60,6 +60,20 @@ public interface Configuration
      * after this configuration.
      */
     public default List<String> getAfterThis(){ return Collections.emptyList(); }
+
+    /* ------------------------------------------------------------------------------- */
+    /** Get the system classes associated with this Configuration.
+     * @return A list of class/package names.  Exclusions are prepended to the system classes and 
+     * inclusions are appended.
+     */
+    public default List<String> getSystemClasses() { return Collections.emptyList();  }
+
+    /* ------------------------------------------------------------------------------- */
+    /** Get the system classes associated with this Configuration.
+     * @return A list of class/package names.  Exclusions are prepended to the system classes and 
+     * inclusions are appended.
+     */
+    public default List<String> getServerClasses() { return Collections.emptyList();  }
     
     /* ------------------------------------------------------------------------------- */
     /** Set up for configuration.

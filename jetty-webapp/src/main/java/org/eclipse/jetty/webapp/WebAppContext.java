@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.management.RuntimeErrorException;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration.Dynamic;
 import javax.servlet.ServletSecurityElement;
@@ -98,7 +97,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private String[] __dftProtectedTargets = {"/web-inf", "/meta-inf"};
 
-    /* default configurations.
+    /* 
+     * default configurations.
      * Order is determined by Topological sort in preconfigure
      */
     public static final String[] DEFAULT_CONFIGURATION_CLASSES =
@@ -122,9 +122,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.xml.",                         // needed by javax.xml
         "org.w3c.",                         // needed by javax.xml
         "org.eclipse.jetty.jmx.",           // webapp cannot change jmx classes
-        "org.eclipse.jetty.util.annotation.",  // webapp cannot change jmx annotations
         "org.eclipse.jetty.continuation.",  // webapp cannot change continuation classes
-        "org.eclipse.jetty.jndi.",          // webapp cannot change naming classes
         "org.eclipse.jetty.jaas.",          // webapp cannot change jaas classes
         "org.eclipse.jetty.websocket.",     // webapp cannot change / replace websocket classes
         "org.eclipse.jetty.util.log.",      // webapp should use server log
@@ -143,9 +141,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public final static String[] __dftServerClasses =
     {
         "-org.eclipse.jetty.jmx.",          // don't hide jmx classes
-        "-org.eclipse.jetty.util.annotation.", // don't hide jmx annotation
         "-org.eclipse.jetty.continuation.", // don't hide continuation classes
-        "-org.eclipse.jetty.jndi.",         // don't hide naming classes
         "-org.eclipse.jetty.jaas.",         // don't hide jaas classes
         "-org.eclipse.jetty.servlets.",     // don't hide jetty servlets
         "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
@@ -455,7 +451,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         Map<String,Configuration> map = new HashMap<>();
         TopologicalSort<Configuration> sort = new TopologicalSort<>();
         for (Configuration c:_configurations)
-            map.put(c.getName(),c);
+        {
+            Configuration duplicate = map.put(c.getName(),c);
+            if (duplicate!=null)
+                LOG.warn("Duplicate configuration in {} for {} and {}",this,duplicate,c);
+        }
         for (Configuration c:_configurations)
         {
             for (String b:c.getBeforeThis())
@@ -481,6 +481,26 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // Setup server classes
         loadServerClasses();
 
+        // Setup Configuration classes
+        for (Configuration configuration:_configurations)
+        {
+            configuration.getSystemClasses().forEach(c->
+            {
+                if (c.startsWith("-"))
+                    prependSystemClass(c);
+                else
+                    addSystemClass(c);
+            });
+            configuration.getServerClasses().forEach(c->
+            {
+                if (c.startsWith("-"))
+                    prependServerClass(c);
+                else
+                    addServerClass(c);
+            });
+        }
+        
+        
         // Configure classloader
         _ownClassLoader=false;
         if (getClassLoader()==null)
@@ -1029,7 +1049,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             _configurations.addAll(Arrays.asList(configurations));
     }
 
-
     /* ------------------------------------------------------------ */
     public void addConfiguration(Configuration... configuration)
     {
@@ -1039,7 +1058,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         for (Configuration c:configuration)
             _configurations.add(c);
     }
-
     
     /* ------------------------------------------------------------ */
     /**

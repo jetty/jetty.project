@@ -27,24 +27,30 @@ public class AbstractConfiguration implements Configuration
 {
     private final List<String> _after;
     private final List<String> _before;
+    private final List<String> _system;
+    private final List<String> _server;
     
     protected AbstractConfiguration()
     {
         _after=Collections.emptyList();
         _before=Collections.emptyList();
+        _system=Collections.emptyList();
+        _server=Collections.emptyList();
     }
 
     protected AbstractConfiguration(String[] before,String[] after)
     {
-        _after=Collections.unmodifiableList(after==null?Collections.emptyList():Arrays.asList(after));
-        _before=Collections.unmodifiableList(before==null?Collections.emptyList():Arrays.asList(before));
+        this(before,after,null,null);
     }
     
-    protected AbstractConfiguration(List<String> after,List<String> before)
+    protected AbstractConfiguration(String[] before,String[] after,String[] systemClasses,String[] serverClasses)
     {
-        _after=Collections.unmodifiableList(after==null?Collections.emptyList():new ArrayList<>(after));
-        _before=Collections.unmodifiableList(before==null?Collections.emptyList():new ArrayList<>(before));
+        _after=Collections.unmodifiableList(after==null?Collections.emptyList():Arrays.asList(after));
+        _before=Collections.unmodifiableList(before==null?Collections.emptyList():Arrays.asList(before));
+        _system=Collections.unmodifiableList(systemClasses==null?Collections.emptyList():Arrays.asList(systemClasses));
+        _server=Collections.unmodifiableList(serverClasses==null?Collections.emptyList():Arrays.asList(serverClasses));
     }
+    
     
     @Override
     public String getName()
@@ -64,6 +70,18 @@ public class AbstractConfiguration implements Configuration
         return _before;
     }
 
+    @Override
+    public List<String> getSystemClasses()
+    {
+        return _system;
+    }
+    
+    @Override
+    public List<String> getServerClasses()
+    {
+        return _server;
+    }
+    
     public void preConfigure(WebAppContext context) throws Exception
     {
     }
