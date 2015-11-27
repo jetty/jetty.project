@@ -70,6 +70,12 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public static final String METAINF_FRAGMENTS = FragmentConfiguration.FRAGMENT_RESOURCES;
     public static final String METAINF_RESOURCES = WebInfConfiguration.RESOURCE_DIRS;
 
+    /* ------------------------------------------------------------------------------- */
+    public MetaInfConfiguration()
+    {
+        super(new String[]{WebXmlConfiguration.class.getName()},null);
+    }
+
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {        

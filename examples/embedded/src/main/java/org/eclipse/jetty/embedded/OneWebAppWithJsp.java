@@ -21,10 +21,10 @@ package org.eclipse.jetty.embedded;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class OneWebAppWithJsp
@@ -64,14 +64,11 @@ public class OneWebAppWithJsp
         webapp.setWar( warFile.getAbsolutePath() );
         webapp.setExtractWAR(true);
 
+        
         // This webapp will use jsps and jstl. We need to enable the
         // AnnotationConfiguration in order to correctly
         // set up the jsp container
-        Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault( server );
-        classlist.addBefore(
-                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                "org.eclipse.jetty.annotations.AnnotationConfiguration" );
+        webapp.addConfiguration(new AnnotationConfiguration());
 
         // Set the ContainerIncludeJarPattern so that jetty examines these
         // container-path jars for tlds, web-fragments etc.

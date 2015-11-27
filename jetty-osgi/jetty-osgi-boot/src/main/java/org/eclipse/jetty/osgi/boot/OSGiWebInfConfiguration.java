@@ -65,6 +65,11 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
     public static final String FRAGMENT_AND_REQUIRED_BUNDLES = "org.eclipse.jetty.osgi.fragmentAndRequiredBundles";
     public static final String FRAGMENT_AND_REQUIRED_RESOURCES = "org.eclipse.jetty.osgi.fragmentAndRequiredResources";
     
+    @Override
+    public String getName()
+    {
+        return WebInfConfiguration.class.getName();
+    }
     
     /* ------------------------------------------------------------ */
     /** 

@@ -20,12 +20,14 @@ package org.eclipse.jetty.embedded;
 
 import java.io.File;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.Resource;
 import org.eclipse.jetty.plus.jndi.Transaction;
+import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -38,18 +40,13 @@ public class ServerWithAnnotations
         // Create the server
         Server server = new Server(8080);
 
-        // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
-        Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault(server);
-        classlist.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
-        classlist.addBefore(
-                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                "org.eclipse.jetty.annotations.AnnotationConfiguration");
 
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
+        
+        // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
+        webapp.addConfiguration(new EnvConfiguration(),new PlusConfiguration(),new AnnotationConfiguration());
+        
         webapp.setContextPath("/");
         File warFile = new File(
                 "../../jetty-distribution/target/distribution/demo-base/webapps/test.war");

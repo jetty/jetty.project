@@ -50,6 +50,12 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     protected static int COUNTER = 0; 
     protected Resource _originalResourceBase;
     protected List<Resource>  _unpackedOverlayResources;
+
+    @Override
+    public String getName()
+    {
+        return WebInfConfiguration.class.getName();
+    }
     
     /** 
      * @see org.eclipse.jetty.webapp.WebInfConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)

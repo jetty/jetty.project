@@ -37,6 +37,12 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
 public class AntWebInfConfiguration extends WebInfConfiguration
 {
 
+    @Override
+    public String getName()
+    {
+        return WebInfConfiguration.class.getName();
+    }
+    
     
     @Override
     public void preConfigure(final WebAppContext context) throws Exception

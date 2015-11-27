@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.management.RuntimeErrorException;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration.Dynamic;
 import javax.servlet.ServletSecurityElement;
@@ -61,6 +62,7 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -96,13 +98,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private String[] __dftProtectedTargets = {"/web-inf", "/meta-inf"};
 
+    /* default configurations.
+     * Order is determined by Topological sort in preconfigure
+     */
     public static final String[] DEFAULT_CONFIGURATION_CLASSES =
     {
         "org.eclipse.jetty.webapp.WebInfConfiguration",
         "org.eclipse.jetty.webapp.WebXmlConfiguration",
         "org.eclipse.jetty.webapp.MetaInfConfiguration",
         "org.eclipse.jetty.webapp.FragmentConfiguration",
-        "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
+        "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
     } ;
 
     // System classes are classes that cannot be replaced by
@@ -289,7 +294,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _unavailableException;
     }
 
-
     /* ------------------------------------------------------------ */
     /** 
      * Set Resource Alias.
@@ -447,6 +451,30 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // Setup configurations
         loadConfigurations();
 
+        // Sort the configurations
+        Map<String,Configuration> map = new HashMap<>();
+        TopologicalSort<Configuration> sort = new TopologicalSort<>();
+        for (Configuration c:_configurations)
+            map.put(c.getName(),c);
+        for (Configuration c:_configurations)
+        {
+            for (String b:c.getBeforeThis())
+            {
+                Configuration before=map.get(b);
+                if (before!=null)
+                    sort.addBeforeAfter(before,c);
+            }
+            for (String a:c.getAfterThis())
+            {
+                Configuration after=map.get(a);
+                if (after!=null)
+                    sort.addBeforeAfter(c,after);
+            }
+        }
+        sort.sort(_configurations);
+        if (LOG.isDebugEnabled())
+            LOG.debug("sorted {}",_configurations);
+        
         // Setup system classes
         loadSystemClasses();
 
@@ -790,7 +818,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
-    private void loadServerClasses()
+    protected void loadServerClasses()
     {
         if (_serverClasses != null)
         {
@@ -916,16 +944,27 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     protected void loadConfigurations()
-        throws Exception
     {
         //if the configuration instances have been set explicitly, use them
         if (_configurations.size()>0)
             return;
         
         if (_configurationClasses.size()==0)
-            _configurationClasses.addAll(Configuration.ClassList.serverDefault(getServer()));
-        for (String configClass : _configurationClasses)
-            _configurations.add((Configuration)Loader.loadClass(configClass).newInstance());
+        {
+            _configurations.addAll(Configuration.ClassList.serverDefault(getServer()).getConfigurations());
+        }
+        else
+        {
+            try
+            {
+                for (String configClass : _configurationClasses)
+                    _configurations.add((Configuration)Loader.loadClass(configClass).newInstance());
+            }
+            catch (InstantiationException | IllegalAccessException | ClassNotFoundException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -990,6 +1029,18 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             _configurations.addAll(Arrays.asList(configurations));
     }
 
+
+    /* ------------------------------------------------------------ */
+    public void addConfiguration(Configuration... configuration)
+    {
+        if (isStarted())
+            throw new IllegalStateException();
+        loadConfigurations();
+        for (Configuration c:configuration)
+            _configurations.add(c);
+    }
+
+    
     /* ------------------------------------------------------------ */
     /**
      * The default descriptor is a web.xml format file that is applied to the context before the standard WEB-INF/web.xml
@@ -1541,4 +1592,5 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         return _metadata;
     }
+
 }

@@ -60,6 +60,16 @@ public class WebInfConfiguration extends AbstractConfiguration
 
     protected Resource _preUnpackBaseResource;
     
+    public WebInfConfiguration()
+    {
+        super();
+    }
+
+    public WebInfConfiguration(List<String> after, List<String> before)
+    {
+        super(after,before);
+        // TODO Auto-generated constructor stub
+    }
 
 
     @Override

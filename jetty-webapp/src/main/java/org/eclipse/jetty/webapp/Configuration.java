@@ -20,12 +20,17 @@ package org.eclipse.jetty.webapp;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.annotation.Name;
-
 
 /* ------------------------------------------------------------------------------- */
 /** Base Class for WebApplicationContext Configuration.
@@ -35,6 +40,26 @@ import org.eclipse.jetty.util.annotation.Name;
 public interface Configuration 
 {
     public final static String ATTR="org.eclipse.jetty.webapp.configuration";
+
+    /* ------------------------------------------------------------------------------- */
+    /** Get the name of the configuration used for a {@link TopologicalSort}
+     * @return The name of the Configuration (defaults to classname)
+     */
+    public default String getName() { return this.getClass().getName(); } 
+
+    /* ------------------------------------------------------------------------------- */
+    /** Get known Configuration Dependencies.
+     * @return The names of Configurations that {@link TopologicalSort} must order 
+     * before this configuration.
+     */
+    public default List<String> getBeforeThis() { return Collections.emptyList(); }
+
+    /* ------------------------------------------------------------------------------- */
+    /** Get known Configuration Dependents.
+     * @return The names of Configurations that {@link TopologicalSort} must order 
+     * after this configuration.
+     */
+    public default List<String> getAfterThis(){ return Collections.emptyList(); }
     
     /* ------------------------------------------------------------------------------- */
     /** Set up for configuration.
@@ -94,9 +119,10 @@ public interface Configuration
      */
     public void cloneConfigure (WebAppContext template, WebAppContext context) throws Exception;
     
-    
-    public class ClassList extends ArrayList<String>
+    public class ClassList 
     {        
+        List<Configuration> _instances = new ArrayList<>();
+        
         /* ------------------------------------------------------------ */
         /** Get/Set/Create the server default Configuration ClassList.
          * <p>Get the class list from: a Server bean; or the attribute (which can
@@ -107,14 +133,14 @@ public interface Configuration
          * @param server The server the default is for
          * @return the server default ClassList instance of the configuration classes for this server. Changes to this list will change the server default instance.
          */
-        public static ClassList setServerDefault(Server server)
+        public static ClassList setServerDefault(Server server) throws ClassNotFoundException, InstantiationException, IllegalAccessException
         {
             ClassList cl=server.getBean(ClassList.class);
             if (cl!=null)
                 return cl;
             cl=serverDefault(server);
             server.addBean(cl);
-            server.setAttribute(ATTR,null);
+            server.setAttribute(Configuration.ATTR,null);
             return cl;
         }
 
@@ -134,7 +160,7 @@ public interface Configuration
                 cl= server.getBean(ClassList.class);
                 if (cl!=null)
                     return new ClassList(cl);
-                Object attr = server.getAttribute(ATTR);
+                Object attr = server.getAttribute(Configuration.ATTR);
                 if (attr instanceof ClassList)
                     return new ClassList((ClassList)attr);
                 if (attr instanceof String[])
@@ -148,28 +174,78 @@ public interface Configuration
             this(WebAppContext.DEFAULT_CONFIGURATION_CLASSES);
         }
         
+        private Configuration newConfiguration(String classname)
+        {
+            try
+            {
+                Class<Configuration> clazz = Loader.loadClass(classname);
+                return clazz.newInstance();
+            }
+            catch (ClassNotFoundException | InstantiationException | IllegalAccessException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+        
         public ClassList(String[] classes)
         {
-            addAll(Arrays.asList(classes));
+            for (String c:classes)
+                _instances.add(newConfiguration(c));
         }
 
         public ClassList(List<String> classes)
         {
-            addAll(classes);
+            for (String c:classes)
+                _instances.add(newConfiguration(c));
+        }
+
+        public ClassList(Configuration.ClassList classlist)
+        {
+            _instances.addAll(classlist._instances);
+        }
+
+        public void add(@Name("configClass")String... configClass)
+        {
+            loop: for (String c : configClass)
+            {
+                Configuration configuration = newConfiguration(c);
+                ListIterator<Configuration> i = _instances.listIterator();
+                while(i.hasNext())
+                {
+                    Configuration next = i.next();
+                    if (next.getName().equals(configuration.getName()))
+                    {
+                        i.set(configuration);
+                        continue loop;
+                    }
+                }
+                _instances.add(configuration);
+            }
+        }
+        
+        public void addIfAbsent(@Name("configClass")String... configClass)
+        {
+            for (String c : configClass)
+            {
+                Configuration configuration = newConfiguration(c);
+                
+                if (!_instances.stream().map(i->{return i.getName();}).anyMatch(n->{return configuration.getName().equals(n);}))
+                    _instances.add(configuration);
+            }
         }
         
         public void addAfter(@Name("afterClass") String afterClass,@Name("configClass")String... configClass)
         {
             if (configClass!=null && afterClass!=null)
             {
-                ListIterator<String> iter = listIterator();
+                ListIterator<Configuration> iter = _instances.listIterator();
                 while (iter.hasNext())
                 {
-                    String cc=iter.next();
-                    if (afterClass.equals(cc))
+                    Configuration c=iter.next();
+                    if (afterClass.equals(c.getClass().getName()) || afterClass.equals(c.getName()))
                     {
-                        for (int i=0;i<configClass.length;i++)
-                            iter.add(configClass[i]);
+                        for (String cc: configClass)
+                            iter.add(newConfiguration(cc));
                         return;
                     }
                 }
@@ -181,21 +257,42 @@ public interface Configuration
         {
             if (configClass!=null && beforeClass!=null)
             {
-                ListIterator<String> iter = listIterator();
+                ListIterator<Configuration> iter = _instances.listIterator();
                 while (iter.hasNext())
                 {
-                    String cc=iter.next();
-                    if (beforeClass.equals(cc))
+                    Configuration c=iter.next();
+                    if (beforeClass.equals(c.getClass().getName()) || beforeClass.equals(c.getName()))
                     {
                         iter.previous();
-                        for (int i=0;i<configClass.length;i++)
-                            iter.add(configClass[i]);
+                        for (String cc: configClass)
+                            iter.add(newConfiguration(cc));
                         return;
                     }
                 }
             }
+            
             throw new IllegalArgumentException("beforeClass '"+beforeClass+"' not found in "+this);
         }
-        
+
+        public int size()
+        {
+            return _instances.size();
+        }
+
+        public String[] toArray(String[] asArray)
+        {
+            return _instances.stream().map(i->{return i.getClass().getName();}).toArray(n->{return new String[n];});
+        }
+
+        public List<Configuration> getConfigurations()
+        {
+            return _instances.stream().map(i->{return newConfiguration(i.getClass().getName());}).collect(Collectors.toList());
+        }
+     
+        @Override
+        public String toString()
+        {
+            return getConfigurations().toString();
+        }
     }
 }

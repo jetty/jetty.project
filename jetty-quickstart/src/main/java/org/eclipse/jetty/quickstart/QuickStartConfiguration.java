@@ -39,6 +39,12 @@ public class QuickStartConfiguration extends WebInfConfiguration
 {
     private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
 
+    @Override
+    public String getName()
+    {
+        return WebInfConfiguration.class.getName();
+    }
+    
     /**
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#preConfigure(org.eclipse.jetty.webapp.WebAppContext)
      */

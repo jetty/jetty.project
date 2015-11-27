@@ -42,7 +42,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
     
     private Resource _quickStartWebXml;
 
-
+    
     public void setQuickStartWebXml (Resource r)
     {
         _quickStartWebXml = r;

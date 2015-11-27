@@ -7,8 +7,7 @@
   <!-- =========================================================== -->
   <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="setServerDefault">
     <Arg><Ref refid="Server" /></Arg>
-    <Call name="addBefore">
-      <Arg name="beforeClass">org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Arg>
+    <Call name="addIfAbsent">
       <Arg>
         <Array type="String">
           <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>

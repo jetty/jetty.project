@@ -176,10 +176,7 @@ public class LikeJettyXml
         server.addBean(deployer);
         
         // === setup jetty plus ==
-        Configuration.ClassList.setServerDefault(server).addAfter(
-                "org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+        Configuration.ClassList.setServerDefault(server).addIfAbsent("org.eclipse.jetty.plus.webapp.EnvConfiguration","org.eclipse.jetty.plus.webapp.PlusConfiguration");
 
         // === jetty-stats.xml ===
         StatisticsHandler stats = new StatisticsHandler();

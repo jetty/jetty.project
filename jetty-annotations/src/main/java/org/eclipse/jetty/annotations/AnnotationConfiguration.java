@@ -45,6 +45,7 @@ import javax.servlet.annotation.HandlesTypes;
 
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
@@ -53,10 +54,14 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
+import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
+import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.webapp.MetaDataComplete;
+import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
+import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
 /**
  * Configuration for Annotations
@@ -89,6 +94,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
     protected CounterStatistic _webInfClassesStats;
     protected Pattern _sciExcludePattern;
     protected ServiceLoader<ServletContainerInitializer> _loadedInitializers = null;
+    
+
+    public AnnotationConfiguration()
+    {
+        super(new String[]{WebXmlConfiguration.class.getName(),MetaInfConfiguration.class.getName(),FragmentConfiguration.class.getName(),PlusConfiguration.class.getName()},
+              new String[]{JettyWebXmlConfiguration.class.getName()});
+    }
+    
     /**
      * TimeStatistic
      *

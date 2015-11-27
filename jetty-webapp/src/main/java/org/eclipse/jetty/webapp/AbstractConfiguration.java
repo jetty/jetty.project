@@ -18,8 +18,52 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 public class AbstractConfiguration implements Configuration
 {
+    private final List<String> _after;
+    private final List<String> _before;
+    
+    protected AbstractConfiguration()
+    {
+        _after=Collections.emptyList();
+        _before=Collections.emptyList();
+    }
+
+    protected AbstractConfiguration(String[] before,String[] after)
+    {
+        _after=Collections.unmodifiableList(after==null?Collections.emptyList():Arrays.asList(after));
+        _before=Collections.unmodifiableList(before==null?Collections.emptyList():Arrays.asList(before));
+    }
+    
+    protected AbstractConfiguration(List<String> after,List<String> before)
+    {
+        _after=Collections.unmodifiableList(after==null?Collections.emptyList():new ArrayList<>(after));
+        _before=Collections.unmodifiableList(before==null?Collections.emptyList():new ArrayList<>(before));
+    }
+    
+    @Override
+    public String getName()
+    {
+        return this.getClass().getName();
+    }
+
+    @Override
+    public List<String> getAfterThis()
+    {
+        return _after;
+    }
+
+    @Override
+    public List<String> getBeforeThis()
+    {
+        return _before;
+    }
+
     public void preConfigure(WebAppContext context) throws Exception
     {
     }

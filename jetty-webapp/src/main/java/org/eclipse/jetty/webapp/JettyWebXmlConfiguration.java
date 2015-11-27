@@ -48,6 +48,13 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
 
+
+    public JettyWebXmlConfiguration()
+    {
+        super(new String[]{WebXmlConfiguration.class.getName(),FragmentConfiguration.class.getName(),MetaInfConfiguration.class.getName()},null);
+    }
+    
+    
     /**
      * Configure
      * Apply web-jetty.xml configuration

@@ -35,7 +35,13 @@ public class WebXmlConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(WebXmlConfiguration.class);
 
-    
+
+    /* ------------------------------------------------------------------------------- */
+    public WebXmlConfiguration()
+    {
+        super(new String[]{WebInfConfiguration.class.getName()},null);
+    }
+
     /* ------------------------------------------------------------------------------- */
     /**
      * 

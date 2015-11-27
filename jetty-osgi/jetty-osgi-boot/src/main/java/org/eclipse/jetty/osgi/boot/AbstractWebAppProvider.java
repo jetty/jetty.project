@@ -24,12 +24,15 @@ import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.internal.webapp.OSGiWebappClassLoader;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -584,14 +587,13 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
         //add before JettyWebXmlConfiguration
         if (annotationsAvailable())
-            defaults.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration", 
-                               "org.eclipse.jetty.osgi.annotations.AnnotationConfiguration");
+            defaults.addIfAbsent(AnnotationConfiguration.class.getName());
 
         //add in EnvConfiguration and PlusConfiguration just after FragmentConfiguration
         if (jndiAvailable())
-            defaults.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration",
-                              "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                              "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+            defaults.addIfAbsent(
+                    EnvConfiguration.class.getName(),
+                    PlusConfiguration.class.getName());
        String[] asArray = new String[defaults.size()];
        return defaults.toArray(asArray);
     }
