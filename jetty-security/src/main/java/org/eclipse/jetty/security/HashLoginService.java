@@ -57,8 +57,6 @@ public class HashLoginService extends AbstractLoginService
     protected Resource _configResource;
     protected boolean hotReload = false; // default is not to reload
     
-    
-    
 
     /* ------------------------------------------------------------ */
     public HashLoginService()

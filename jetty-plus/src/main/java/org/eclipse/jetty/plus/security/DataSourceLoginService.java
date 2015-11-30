@@ -73,17 +73,11 @@ public class DataSourceLoginService extends AbstractLoginService
     
     /**
      * DBUser
-     *
-     *
      */
     public class DBUserPrincipal extends UserPrincipal
     {
         private int _key;
         
-        /**
-         * @param name
-         * @param credential
-         */
         public DBUserPrincipal(String name, Credential credential, int key)
         {
             super(name, credential);
@@ -293,7 +287,6 @@ public class DataSourceLoginService extends AbstractLoginService
     /* ------------------------------------------------------------ */
     /** 
      * @see org.eclipse.jetty.security.MappedLoginService#loadUserInfo(java.lang.String)
-     * @Override
      */
     public UserPrincipal loadUserInfo (String username)
     {
@@ -330,7 +323,6 @@ public class DataSourceLoginService extends AbstractLoginService
     /* ------------------------------------------------------------ */
     /** 
      * @see org.eclipse.jetty.security.MappedLoginService#loadRoleInfo(org.eclipse.jetty.security.UserPrincipal.KnownUser)
-     * @Override
      */
     public String[] loadRoleInfo (UserPrincipal user)
     {
@@ -366,10 +358,6 @@ public class DataSourceLoginService extends AbstractLoginService
         }
         return null;
     }
-    
-    
-    
-    
     
  
 
@@ -425,8 +413,6 @@ public class DataSourceLoginService extends AbstractLoginService
 
         prepareTables();
     }
-
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -533,7 +519,6 @@ public class DataSourceLoginService extends AbstractLoginService
         }
     }
 
-
     /* ------------------------------------------------------------ */
     /**
      * @return
@@ -546,5 +531,4 @@ public class DataSourceLoginService extends AbstractLoginService
         initDb();
         return _datasource.getConnection();
     }
-
 }
