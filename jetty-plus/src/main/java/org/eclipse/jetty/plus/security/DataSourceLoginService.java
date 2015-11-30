@@ -285,9 +285,6 @@ public class DataSourceLoginService extends AbstractLoginService
   
     
     /* ------------------------------------------------------------ */
-    /** 
-     * @see org.eclipse.jetty.security.MappedLoginService#loadUserInfo(java.lang.String)
-     */
     public UserPrincipal loadUserInfo (String username)
     {
         try
@@ -321,9 +318,6 @@ public class DataSourceLoginService extends AbstractLoginService
     
     
     /* ------------------------------------------------------------ */
-    /** 
-     * @see org.eclipse.jetty.security.MappedLoginService#loadRoleInfo(org.eclipse.jetty.security.UserPrincipal.KnownUser)
-     */
     public String[] loadRoleInfo (UserPrincipal user)
     {
         DBUserPrincipal dbuser = (DBUserPrincipal)user;

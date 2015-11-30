@@ -121,9 +121,6 @@ public class JDBCLoginService extends AbstractLoginService
 
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.security.MappedLoginService#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -222,9 +219,6 @@ public class JDBCLoginService extends AbstractLoginService
     
 
     /* ------------------------------------------------------------ */
-    /** 
-     * @see org.eclipse.jetty.security.MappedLoginService#loadUserInfo(java.lang.String)
-     */
     public UserPrincipal loadUserInfo (String username)
     {
         try
@@ -261,9 +255,6 @@ public class JDBCLoginService extends AbstractLoginService
 
     
     /* ------------------------------------------------------------ */
-    /** 
-     * @see org.eclipse.jetty.security.MappedLoginService#loadRoleInfo(org.eclipse.jetty.security.UserPrincipal.KnownUser)
-     */
     public String[] loadRoleInfo (UserPrincipal user)
     {
         JDBCUserPrincipal jdbcUser = (JDBCUserPrincipal)user;
