@@ -77,17 +77,11 @@ public class DataSourceLoginService extends MappedLoginService
     
     /**
      * DBUser
-     *
-     *
      */
     public class DBUser extends KnownUser
     {
         private int _key;
         
-        /**
-         * @param name
-         * @param credential
-         */
         public DBUser(String name, Credential credential, int key)
         {
             super(name, credential);
@@ -364,7 +358,6 @@ public class DataSourceLoginService extends MappedLoginService
     
     /** 
      * @see org.eclipse.jetty.security.MappedLoginService#loadUserInfo(java.lang.String)
-     * @Override
      */
     public KnownUser loadUserInfo (String username)
     {
@@ -399,7 +392,6 @@ public class DataSourceLoginService extends MappedLoginService
     
     /** 
      * @see org.eclipse.jetty.security.MappedLoginService#loadRoleInfo(org.eclipse.jetty.security.MappedLoginService.KnownUser)
-     * @Override
      */
     public String[] loadRoleInfo (KnownUser user)
     {
@@ -435,10 +427,6 @@ public class DataSourceLoginService extends MappedLoginService
         }
         return null;
     }
-    
-    
-    
-    
     
     /* ------------------------------------------------------------ */
     @Override
@@ -506,8 +494,6 @@ public class DataSourceLoginService extends MappedLoginService
 
         prepareTables();
     }
-
-
 
     private void prepareTables()
     throws NamingException, SQLException
@@ -609,12 +595,10 @@ public class DataSourceLoginService extends MappedLoginService
         }
     }
 
-
     private Connection getConnection ()
     throws NamingException, SQLException
     {
         initDb();
         return _datasource.getConnection();
     }
-
 }

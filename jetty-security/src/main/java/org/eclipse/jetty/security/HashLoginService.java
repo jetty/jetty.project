@@ -65,16 +65,10 @@ public class HashLoginService extends MappedLoginService implements UserListener
     {
         String[] _roles;
         
-        /**
-         * @param name
-         * @param credential
-         */
         public HashKnownUser(String name, Credential credential)
         {
             super(name, credential);
         }
-        
-     
         
         public void setRoles (String[] roles)
         {
@@ -86,8 +80,6 @@ public class HashLoginService extends MappedLoginService implements UserListener
             return _roles;
         }
     }
-    
-    
 
     /* ------------------------------------------------------------ */
     public HashLoginService()

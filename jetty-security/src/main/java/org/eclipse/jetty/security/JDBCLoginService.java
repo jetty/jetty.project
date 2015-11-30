@@ -41,24 +41,17 @@ import org.eclipse.jetty.util.security.Credential;
 /* ------------------------------------------------------------ */
 /**
  * HashMapped User Realm with JDBC as data source. 
- * The login() method checks the inherited Map for the user. If the user is not
+ * The {@link #login(String, Object, ServletRequest)} method checks the inherited Map for the user. If the user is not
  * found, it will fetch details from the database and populate the inherited
- * Map. It then calls the superclass login() method to perform the actual
+ * Map. It then calls the superclass {@link #login(String, Object, ServletRequest)} method to perform the actual
  * authentication. Periodically (controlled by configuration parameter),
  * internal hashes are cleared. Caching can be disabled by setting cache refresh
  * interval to zero. Uses one database connection that is initialized at
- * startup. Reconnect on failures. authenticate() is 'synchronized'.
- * 
+ * startup. Reconnect on failures.
+ * <p> 
  * An example properties file for configuration is in
- * $JETTY_HOME/etc/jdbcRealm.properties
- * 
- * @version $Id: JDBCLoginService.java 4792 2009-03-18 21:55:52Z gregw $
- * 
- * 
- * 
- * 
+ * <code>${jetty.home}/etc/jdbcRealm.properties</code>
  */
-
 public class JDBCLoginService extends MappedLoginService
 {
     private static final Logger LOG = Log.getLogger(JDBCLoginService.class);
@@ -80,17 +73,11 @@ public class JDBCLoginService extends MappedLoginService
     
     /**
      * JDBCKnownUser
-     *
-     *
      */
     public class JDBCKnownUser extends KnownUser
     {
         int _userKey;
         
-        /**
-         * @param name
-         * @param credential
-         */
         public JDBCKnownUser(String name, Credential credential, int key)
         {
             super(name, credential);
@@ -306,7 +293,6 @@ public class JDBCLoginService extends MappedLoginService
 
     /** 
      * @see org.eclipse.jetty.security.MappedLoginService#loadUserInfo(java.lang.String)
-     * @Override
      */
     public KnownUser loadUserInfo (String username)
     {
@@ -346,7 +332,6 @@ public class JDBCLoginService extends MappedLoginService
     
     /** 
      * @see org.eclipse.jetty.security.MappedLoginService#loadRoleInfo(org.eclipse.jetty.security.MappedLoginService.KnownUser)
-     * @Override
      */
     public String[] loadRoleInfo (KnownUser user)
     {
@@ -383,8 +368,6 @@ public class JDBCLoginService extends MappedLoginService
         return null;
     }
     
-   
-    
 
     /**
      * Close an existing connection
@@ -398,5 +381,4 @@ public class JDBCLoginService extends MappedLoginService
         }
         _con = null;
     }
-
 }
