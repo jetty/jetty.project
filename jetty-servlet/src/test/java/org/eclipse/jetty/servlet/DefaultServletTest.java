@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -409,13 +410,18 @@ public class DefaultServletTest
     }
 
     @Test
-    public void testResourceBase() throws Exception
+    public void testSymLinks() throws Exception
     {
         testdir.ensureEmpty();
         File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
-        File foobar = new File(resBase, "foobar.txt");
-        File link = new File(resBase, "link.txt");
+        File dir = new File(resBase,"dir");
+        File dirLink = new File(resBase,"dirlink");
+        File dirRLink = new File(resBase,"dirrlink");
+        FS.ensureDirExists(dir);
+        File foobar = new File(dir, "foobar.txt");
+        File link = new File(dir, "link.txt");
+        File rLink = new File(dir,"rlink.txt");
         createFile(foobar, "Foo Bar");
 
         String resBasePath = resBase.getAbsolutePath();
@@ -426,20 +432,43 @@ public class DefaultServletTest
 
         String response;
 
-        response = connector.getResponses("GET /context/foobar.txt HTTP/1.0\r\n\r\n");
+        response = connector.getResponses("GET /context/dir/foobar.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Foo Bar", response);
 
         if (!OS.IS_WINDOWS)
         {
             context.clearAliasChecks();
             
+            Files.createSymbolicLink(dirLink.toPath(),dir.toPath());
+            Files.createSymbolicLink(dirRLink.toPath(),new File("dir").toPath());
             Files.createSymbolicLink(link.toPath(),foobar.toPath());
-            response = connector.getResponses("GET /context/link.txt HTTP/1.0\r\n\r\n");
+            Files.createSymbolicLink(rLink.toPath(),new File("foobar.txt").toPath());
+            response = connector.getResponses("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("404", response);
+            response = connector.getResponses("GET /context/dir/rlink.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("404", response);
+            response = connector.getResponses("GET /context/dirlink/foobar.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("404", response);
+            response = connector.getResponses("GET /context/dirrlink/foobar.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("404", response);
+            response = connector.getResponses("GET /context/dirlink/link.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("404", response);
+            response = connector.getResponses("GET /context/dirrlink/rlink.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("404", response);
             
             context.addAliasCheck(new AllowSymLinkAliasChecker());
             
-            response = connector.getResponses("GET /context/link.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponses("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("Foo Bar", response);
+            response = connector.getResponses("GET /context/dir/rlink.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("Foo Bar", response);
+            response = connector.getResponses("GET /context/dirlink/foobar.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("Foo Bar", response);
+            response = connector.getResponses("GET /context/dirrlink/foobar.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("Foo Bar", response);
+            response = connector.getResponses("GET /context/dirlink/link.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("Foo Bar", response);
+            response = connector.getResponses("GET /context/dirrlink/link.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("Foo Bar", response);
         }
     }

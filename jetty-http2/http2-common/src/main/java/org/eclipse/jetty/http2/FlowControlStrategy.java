@@ -24,9 +24,9 @@ public interface FlowControlStrategy
 {
     public static int DEFAULT_WINDOW_SIZE = 65535;
 
-    public void onStreamCreated(IStream stream, boolean local);
+    public void onStreamCreated(IStream stream);
 
-    public void onStreamDestroyed(IStream stream, boolean local);
+    public void onStreamDestroyed(IStream stream);
 
     public void updateInitialStreamWindow(ISession session, int initialStreamWindow, boolean local);
 

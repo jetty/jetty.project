@@ -1673,7 +1673,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return null;
 
         if (_classLoader == null)
-            return Loader.loadClass(this.getClass(),className);
+            return Loader.loadClass(className);
 
         return _classLoader.loadClass(className);
     }
@@ -2317,7 +2317,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             try
             {
                 @SuppressWarnings({ "unchecked", "rawtypes" })
-                Class<? extends EventListener> clazz = _classLoader==null?Loader.loadClass(ContextHandler.class,className):(Class)_classLoader.loadClass(className);
+                Class<? extends EventListener> clazz = _classLoader==null?Loader.loadClass(className):(Class)_classLoader.loadClass(className);
                 addListener(clazz);
             }
             catch (ClassNotFoundException e)
@@ -2410,7 +2410,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 //classloader, or a parent of it
                 try
                 {
-                    Class<?> reflect = Loader.loadClass(getClass(), "sun.reflect.Reflection");
+                    Class<?> reflect = Loader.loadClass("sun.reflect.Reflection");
                     Method getCallerClass = reflect.getMethod("getCallerClass", Integer.TYPE);
                     Class<?> caller = (Class<?>)getCallerClass.invoke(null, 2);
 

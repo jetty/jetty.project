@@ -51,21 +51,29 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
     private final AtomicInteger recvWindow = new AtomicInteger();
     private final ISession session;
     private final int streamId;
+    private final boolean local;
     private volatile Listener listener;
     private volatile boolean localReset;
     private volatile boolean remoteReset;
 
-    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId)
+    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, boolean local)
     {
         super(scheduler);
         this.session = session;
         this.streamId = streamId;
+        this.local = local;
     }
 
     @Override
     public int getId()
     {
         return streamId;
+    }
+
+    @Override
+    public boolean isLocal()
+    {
+        return local;
     }
 
     @Override
@@ -242,7 +250,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
     private void onHeaders(HeadersFrame frame, Callback callback)
     {
         if (updateClose(frame.isEndStream(), false))
-            session.removeStream(this, false);
+            session.removeStream(this);
         callback.succeeded();
     }
 
@@ -273,7 +281,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
         }
 
         if (updateClose(frame.isEndStream(), false))
-            session.removeStream(this, false);
+            session.removeStream(this);
         notifyData(this, frame, callback);
     }
 
@@ -281,7 +289,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
     {
         remoteReset = true;
         close();
-        session.removeStream(this, false);
+        session.removeStream(this);
         callback.succeeded();
         notifyReset(this, frame);
     }

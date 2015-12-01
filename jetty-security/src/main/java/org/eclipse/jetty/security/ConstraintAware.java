@@ -29,15 +29,15 @@ public interface ConstraintAware
     /* ------------------------------------------------------------ */
     /** Set Constraint Mappings and roles.
      * Can only be called during initialization.
-     * @param constraintMappings
-     * @param roles
+     * @param constraintMappings the mappings
+     * @param roles the roles
      */
     void setConstraintMappings(List<ConstraintMapping> constraintMappings, Set<String> roles);
     
     /* ------------------------------------------------------------ */
     /** Add a Constraint Mapping.
      * May be called for running webapplication as an annotated servlet is instantiated.
-     * @param mapping
+     * @param mapping the mapping
      */
     void addConstraintMapping(ConstraintMapping mapping);
     
@@ -45,7 +45,7 @@ public interface ConstraintAware
     /* ------------------------------------------------------------ */
     /** Add a Role definition.
      * May be called on running webapplication as an annotated servlet is instantiated.
-     * @param role
+     * @param role the role
      */
     void addRole(String role);
     
@@ -53,7 +53,7 @@ public interface ConstraintAware
      * See Servlet Spec 31, sec 13.8.4, pg 145
      * When true, requests with http methods not explicitly covered either by inclusion or omissions
      * in constraints, will have access denied.
-     * @param deny
+     * @param deny true for denied method access
      */
     void setDenyUncoveredHttpMethods(boolean deny);
     

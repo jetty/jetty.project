@@ -187,7 +187,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param channel    the channel to register
      * @param attachment the attachment object
-     * @see #accept(SocketChannel, Object)
+     * @see #accept(SelectableChannel, Object)
      */
     public void connect(SelectableChannel channel, Object attachment)
     {
@@ -197,7 +197,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     /**
      * @param channel the channel to accept
-     * @see #accept(SocketChannel, Object)
+     * @see #accept(SelectableChannel, Object)
      */
     public void accept(SelectableChannel channel)
     {
@@ -223,7 +223,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     /**
      * <p>Registers a server channel for accept operations.
      * When a {@link SocketChannel} is accepted from the given {@link ServerSocketChannel}
-     * then the {@link #accepted(SocketChannel)} method is called, which must be
+     * then the {@link #accepted(SelectableChannel)} method is called, which must be
      * overridden by a derivation of this class to handle the accepted channel
      *
      * @param server the server channel to register
@@ -236,7 +236,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     /**
      * Callback method when a channel is accepted from the {@link ServerSocketChannel}
-     * passed to {@link #acceptor(ServerSocketChannel)}.
+     * passed to {@link #acceptor(SelectableChannel)}.
      * The default impl throws an {@link UnsupportedOperationException}, so it must
      * be overridden by subclasses if a server channel is provided.
      *
@@ -373,15 +373,15 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     
     /**
      * <p>Factory method to create {@link EndPoint}.</p>
-     * <p>This method is invoked as a result of the registration of a channel via {@link #connect(SocketChannel, Object)}
-     * or {@link #accept(SocketChannel)}.</p>
+     * <p>This method is invoked as a result of the registration of a channel via {@link #connect(SelectableChannel, Object)}
+     * or {@link #accept(SelectableChannel)}.</p>
      *
      * @param channel      the channel associated to the endpoint
      * @param selector     the selector the channel is registered to
      * @param selectionKey the selection key
      * @return a new endpoint
      * @throws IOException if the endPoint cannot be created
-     * @see #newConnection(SocketChannel, EndPoint, Object)
+     * @see #newConnection(SelectableChannel, EndPoint, Object)
      */
     protected abstract EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException;
 
@@ -393,7 +393,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param attachment the attachment
      * @return a new connection
      * @throws IOException if unable to create new connection
-     * @see #newEndPoint(SocketChannel, ManagedSelector, SelectionKey)
      */
     public abstract Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException;
 

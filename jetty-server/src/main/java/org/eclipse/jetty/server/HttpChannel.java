@@ -583,7 +583,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 if (handler!=null)
                     content=handler.badMessageError(status,reason,fields);
 
-                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1,status,reason,fields,0),content ,true);
+                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1,status,reason,fields,BufferUtil.length(content)),content ,true);
             }
         }
         catch (IOException e)

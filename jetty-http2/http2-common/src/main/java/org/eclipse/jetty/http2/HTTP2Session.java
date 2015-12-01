@@ -618,11 +618,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 break;
         }
 
-        IStream stream = newStream(streamId);
+        IStream stream = newStream(streamId, true);
         if (streams.putIfAbsent(streamId, stream) == null)
         {
             stream.setIdleTimeout(getStreamIdleTimeout());
-            flowControl.onStreamCreated(stream, true);
+            flowControl.onStreamCreated(stream);
             if (LOG.isDebugEnabled())
                 LOG.debug("Created local {}", stream);
             return stream;
@@ -650,14 +650,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 break;
         }
 
-        IStream stream = newStream(streamId);
+        IStream stream = newStream(streamId, false);
 
         // SPEC: duplicate stream is treated as connection error.
         if (streams.putIfAbsent(streamId, stream) == null)
         {
             updateLastStreamId(streamId);
             stream.setIdleTimeout(getStreamIdleTimeout());
-            flowControl.onStreamCreated(stream, false);
+            flowControl.onStreamCreated(stream);
             if (LOG.isDebugEnabled())
                 LOG.debug("Created remote {}", stream);
             return stream;
@@ -669,28 +669,29 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
     }
 
-    protected IStream newStream(int streamId)
+    protected IStream newStream(int streamId, boolean local)
     {
-        return new HTTP2Stream(scheduler, this, streamId);
+        return new HTTP2Stream(scheduler, this, streamId, local);
     }
 
     @Override
-    public void removeStream(IStream stream, boolean local)
+    public void removeStream(IStream stream)
     {
         IStream removed = streams.remove(stream.getId());
         if (removed != null)
         {
             assert removed == stream;
 
+            boolean local = stream.isLocal();
             if (local)
                 localStreamCount.decrementAndGet();
             else
                 remoteStreamCount.decrementAndGet();
 
-            flowControl.onStreamDestroyed(stream, local);
+            flowControl.onStreamDestroyed(stream);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Removed {}", stream);
+                LOG.debug("Removed {} {}", local ? "local" : "remote", stream);
         }
     }
 
@@ -1058,7 +1059,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 {
                     HeadersFrame headersFrame = (HeadersFrame)frame;
                     if (stream.updateClose(headersFrame.isEndStream(), true))
-                        removeStream(stream, true);
+                        removeStream(stream);
                     break;
                 }
                 case RST_STREAM:
@@ -1066,7 +1067,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     if (stream != null)
                     {
                         stream.close();
-                        removeStream(stream, true);
+                        removeStream(stream);
                     }
                     break;
                 }
@@ -1174,7 +1175,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 // Only now we can update the close state
                 // and eventually remove the stream.
                 if (stream.updateClose(dataFrame.isEndStream(), true))
-                    removeStream(stream, true);
+                    removeStream(stream);
                 callback.succeeded();
             }
         }

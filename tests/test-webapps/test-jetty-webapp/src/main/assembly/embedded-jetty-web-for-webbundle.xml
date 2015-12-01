@@ -54,9 +54,8 @@ detected.
 	    <Set name="name">Test Realm</Set>
 	    <Set name="config"><Property name="this.web-inf.url"/>realm.properties</Set>
             <!-- To enable reload of realm when properties change, uncomment the following lines -->
-            <!-- changing refreshInterval (in seconds) as desired                                -->
             <!--
-            <Set name="refreshInterval">5</Set>
+            <Set name="hotReload">false</Set>
             <Call name="start"></Call>
             -->
       </New>

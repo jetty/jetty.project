@@ -31,8 +31,8 @@
           <systemProperties>
               <!-- This is for convenience so that the src/etc/login.conf file can stay unmodified when copied to $jetty.home/etc directory -->
             <systemProperty>
-              <name>jetty.home</name>
-              <value>${basedir}/src/main/config</value>
+              <name>jetty.base</name>
+              <value>${basedir}/src/main/config/demo-base</value>
             </systemProperty>
               <!-- Mandatory. This system property tells JAAS where to find the login module configuration file -->
             <systemProperty>
@@ -50,6 +50,13 @@
             </securityHandler>
           </webAppConfig>
         </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.19</version>
+          </dependency>
+        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

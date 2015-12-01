@@ -42,11 +42,13 @@ detected.
   </Set>
   
   <!-- Set Caching Classloader that improves performance on resource searching webapps -->
+  <!--
   <Set name="classLoader">
     <New class="org.eclipse.jetty.webapp.CachingWebAppClassLoader">
       <Arg><Ref refid="testWebapp"/></Arg>
     </New>
   </Set>
+  -->
 
   <!-- Enable symlinks 
   <Call name="addAliasCheck">
@@ -81,9 +83,8 @@ detected.
         <Set name="name">Test Realm</Set>
         <Set name="config"><SystemProperty name="jetty.base" default="."/>/etc/realm.properties</Set>
             <!-- To enable reload of realm when properties change, uncomment the following lines -->
-            <!-- changing refreshInterval (in seconds) as desired                                -->
             <!--
-            <Set name="refreshInterval">5</Set>
+            <Set name="hotReload">true</Set>
             <Call name="start"></Call>
             -->
       </New>

@@ -324,14 +324,14 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
 
             case HTTP_2:
             {
-                // Allow direct "upgrade" to HTTP_2_0 only if the connector supports h2, but not protocol negotiation
+                // Allow direct "upgrade" to HTTP_2_0 only if the connector supports h2c.
                 _upgrade=PREAMBLE_UPGRADE_H2C;
 
                 if (HttpMethod.PRI.is(_metadata.getMethod()) &&
                     "*".equals(_metadata.getURI().toString()) &&
                     _fields.size()==0 &&
                     upgrade())
-                    return false;
+                    return true;
 
                 badMessage(HttpStatus.UPGRADE_REQUIRED_426,null);
                 return false;
@@ -370,7 +370,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade {} {}",this,_upgrade);
 
-        if (_upgrade!=PREAMBLE_UPGRADE_H2C && (_connection==null || !_connection.getValue().contains("Upgrade")))
+        if (_upgrade!=PREAMBLE_UPGRADE_H2C && (_connection==null || !_connection.contains("upgrade")))
             throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
 
         // Find the upgrade factory

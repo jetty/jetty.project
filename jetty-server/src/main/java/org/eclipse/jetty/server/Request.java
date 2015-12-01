@@ -1274,6 +1274,8 @@ public class Request implements HttpServletRequest
     @Override
     public RequestDispatcher getRequestDispatcher(String path)
     {
+        path = URIUtil.compactPath(path);
+
         if (path == null || _context == null)
             return null;
 

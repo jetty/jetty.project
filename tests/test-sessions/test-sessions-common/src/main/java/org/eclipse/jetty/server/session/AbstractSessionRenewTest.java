@@ -52,6 +52,7 @@ public abstract class AbstractSessionRenewTest
         int scavengePeriod = 3;
         AbstractTestServer server = createServer(0, 1, scavengePeriod);
         WebAppContext context = server.addWebAppContext(".", contextPath);
+        context.setParentLoaderPriority(true);
         context.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionIdListener testListener = new TestHttpSessionIdListener();
         context.addEventListener(testListener);

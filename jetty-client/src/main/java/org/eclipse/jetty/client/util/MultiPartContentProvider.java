@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.AsyncContentProvider;
 import org.eclipse.jetty.client.Synchronizable;
@@ -48,6 +49,7 @@ import org.eclipse.jetty.util.log.Logger;
  * MultiPartContentProvider multiPart = new MultiPartContentProvider();
  * multiPart.addFieldPart("field", new StringContentProvider("foo"), null);
  * multiPart.addFilePart("icon", "img.png", new PathContentProvider(Paths.get("/tmp/img.png")), null);
+ * multiPart.close();
  * ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
  *         .method(HttpMethod.POST)
  *         .content(multiPart)
@@ -61,7 +63,7 @@ import org.eclipse.jetty.util.log.Logger;
  * &lt;/form&gt;
  * </pre>
  */
-public class MultiPartContentProvider extends AbstractTypedContentProvider implements AsyncContentProvider
+public class MultiPartContentProvider extends AbstractTypedContentProvider implements AsyncContentProvider, Closeable
 {
     private static final Logger LOG = Log.getLogger(MultiPartContentProvider.class);
     private static final byte[] COLON_SPACE_BYTES = new byte[]{':', ' '};
@@ -72,8 +74,9 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
     private final ByteBuffer middleBoundary;
     private final ByteBuffer onlyBoundary;
     private final ByteBuffer lastBoundary;
+    private final AtomicBoolean closed = new AtomicBoolean();
     private Listener listener;
-    private long length;
+    private long length = -1;
 
     public MultiPartContentProvider()
     {
@@ -159,28 +162,35 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
     public void setListener(Listener listener)
     {
         this.listener = listener;
+        if (closed.get())
+            this.length = calculateLength();
+    }
 
+    private long calculateLength()
+    {
         // Compute the length, if possible.
         if (parts.isEmpty())
         {
-            length = onlyBoundary.remaining();
+            return onlyBoundary.remaining();
         }
         else
         {
+            long result = 0;
             for (int i = 0; i < parts.size(); ++i)
             {
-                length += (i == 0) ? firstBoundary.remaining() : middleBoundary.remaining();
+                result += (i == 0) ? firstBoundary.remaining() : middleBoundary.remaining();
                 Part part = parts.get(i);
                 long partLength = part.length;
-                length += partLength;
+                result += partLength;
                 if (partLength < 0)
                 {
-                    length = -1;
+                    result = -1;
                     break;
                 }
             }
-            if (length > 0)
-                length += lastBoundary.remaining();
+            if (result > 0)
+                result += lastBoundary.remaining();
+            return result;
         }
     }
 
@@ -194,6 +204,12 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
     public Iterator<ByteBuffer> iterator()
     {
         return new MultiPartIterator();
+    }
+
+    @Override
+    public void close()
+    {
+        closed.compareAndSet(false, true);
     }
 
     private static class Part

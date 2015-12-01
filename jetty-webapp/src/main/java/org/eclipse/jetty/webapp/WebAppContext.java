@@ -144,6 +144,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.jaas.",         // don't hide jaas classes
         "-org.eclipse.jetty.servlets.",     // don't hide jetty servlets
         "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
+        "-org.eclipse.jetty.servlet.NoJspServlet", // don't hide noJspServlet servlet
         "-org.eclipse.jetty.jsp.",          //don't hide jsp servlet
         "-org.eclipse.jetty.servlet.listener.", // don't hide useful listeners
         "-org.eclipse.jetty.websocket.",    // don't hide websocket classes from webapps (allow webapp to use ones from system classloader)
@@ -924,7 +925,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_configurationClasses.size()==0)
             _configurationClasses.addAll(Configuration.ClassList.serverDefault(getServer()));
         for (String configClass : _configurationClasses)
-            _configurations.add((Configuration)Loader.loadClass(this.getClass(), configClass).newInstance());
+            _configurations.add((Configuration)Loader.loadClass(configClass).newInstance());
     }
 
     /* ------------------------------------------------------------ */

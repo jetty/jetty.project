@@ -27,6 +27,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.IO;
@@ -71,12 +73,14 @@ public class WebAppClassLoader extends URLClassLoader
     }
 
     private static final Logger LOG = Log.getLogger(WebAppClassLoader.class);
-
+    private static final ThreadLocal<Boolean> __loadServerClasses = new ThreadLocal<>();
+    
     private final Context _context;
     private final ClassLoader _parent;
     private final Set<String> _extensions=new HashSet<String>();
     private String _name=String.valueOf(hashCode());
     private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
+    
     
     /* ------------------------------------------------------------ */
     /** The Context in which the classloader operates.
@@ -132,6 +136,31 @@ public class WebAppClassLoader extends URLClassLoader
         /* ------------------------------------------------------------ */
         String getExtraClasspath();
         
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Run an action with access to ServerClasses
+     * <p>Run the passed {@link PrivilegedExceptionAction} with the classloader
+     * configured so as to allow server classes to be visible</p>
+     * @param action The action to run
+     * @return The return from the action
+     * @throws Exception
+     */
+    public static <T> T runWithServerClassAccess(PrivilegedExceptionAction<T> action) throws Exception
+    {
+        Boolean lsc=__loadServerClasses.get();
+        try
+        {
+            __loadServerClasses.set(true);
+            return action.run();
+        }
+        finally
+        {
+            if (lsc==null)
+                __loadServerClasses.remove();
+            else
+                __loadServerClasses.set(lsc);
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -333,7 +362,7 @@ public class WebAppClassLoader extends URLClassLoader
     public Enumeration<URL> getResources(String name) throws IOException
     {
         boolean system_class=_context.isSystemClass(name);
-        boolean server_class=_context.isServerClass(name);
+        boolean server_class=_context.isServerClass(name) && !Boolean.TRUE.equals(__loadServerClasses.get());
         
         List<URL> from_parent = toList(server_class?null:_parent.getResources(name));
         List<URL> from_webapp = toList((system_class&&!from_parent.isEmpty())?null:this.findResources(name));
@@ -376,7 +405,7 @@ public class WebAppClassLoader extends URLClassLoader
             tmp = tmp.substring(0, tmp.length()-6);
         
         boolean system_class=_context.isSystemClass(tmp);
-        boolean server_class=_context.isServerClass(tmp);
+        boolean server_class=_context.isServerClass(tmp) && !Boolean.TRUE.equals(__loadServerClasses.get());
         
         if (LOG.isDebugEnabled())
             LOG.debug("getResource({}) system={} server={} cl={}",name,system_class,server_class,this);
@@ -423,13 +452,6 @@ public class WebAppClassLoader extends URLClassLoader
 
     /* ------------------------------------------------------------ */
     @Override
-    public Class<?> loadClass(String name) throws ClassNotFoundException
-    {
-        return loadClass(name, false);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
     {
         synchronized (getClassLoadingLock(name))
@@ -439,7 +461,7 @@ public class WebAppClassLoader extends URLClassLoader
             boolean tried_parent= false;
 
             boolean system_class=_context.isSystemClass(name);
-            boolean server_class=_context.isServerClass(name);
+            boolean server_class=_context.isServerClass(name) && !Boolean.TRUE.equals(__loadServerClasses.get());
 
             if (LOG.isDebugEnabled())
                 LOG.debug("loadClass({}) system={} server={} cl={}",name,system_class,server_class,this);
@@ -497,7 +519,11 @@ public class WebAppClassLoader extends URLClassLoader
                 LOG.debug("loadedClass({})=={} from={} tried_parent={}",name,c,source,tried_parent);
             
             if (resolve)
+            {
                 resolveClass(c);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("resolved({})=={} from={} tried_parent={}",name,c,source,tried_parent);
+            }
 
             return c;
         }

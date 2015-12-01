@@ -43,7 +43,8 @@ public interface Authenticator
     /* ------------------------------------------------------------ */
     /**
      * Configure the Authenticator
-     * @param configuration
+     * 
+     * @param configuration the configuration
      */
     void setConfiguration(AuthConfiguration configuration);
 
@@ -64,13 +65,16 @@ public interface Authenticator
      * where the http method of the original request causing authentication
      * is not the same as the http method resulting from the redirect
      * after authentication.
-     * @param request
+     * 
+     * @param request the request to manipulate
      */
     void prepareRequest(ServletRequest request);
     
 
     /* ------------------------------------------------------------ */
-    /** Validate a request
+    /** 
+     * Validate a request
+     * 
      * @param request The request
      * @param response The response
      * @param mandatory True if authentication is mandatory.
@@ -79,18 +83,20 @@ public interface Authenticator
      * implement {@link org.eclipse.jetty.server.Authentication.ResponseSent}.  If Authentication is not manditory, then a
      * {@link org.eclipse.jetty.server.Authentication.Deferred} may be returned.
      *
-     * @throws ServerAuthException
+     * @throws ServerAuthException if unable to validate request
      */
     Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException;
 
     /* ------------------------------------------------------------ */
     /**
-     * @param request
-     * @param response
-     * @param mandatory
-     * @param validatedUser
+     * is response secure
+     * 
+     * @param request the request 
+     * @param response the response
+     * @param mandatory if security is mandator
+     * @param validatedUser the user that was validated
      * @return true if response is secure
-     * @throws ServerAuthException
+     * @throws ServerAuthException if unable to test response
      */
     boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser) throws ServerAuthException;
 
@@ -106,7 +112,8 @@ public interface Authenticator
         String getAuthMethod();
         String getRealmName();
 
-        /** Get a SecurityHandler init parameter
+        /** 
+         * Get a SecurityHandler init parameter
          * @see SecurityHandler#getInitParameter(String)
          * @param param parameter name
          * @return Parameter value or null

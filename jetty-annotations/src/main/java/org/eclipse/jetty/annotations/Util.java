@@ -201,7 +201,7 @@ public class Util
             }
             case Type.OBJECT:
             {
-                return (Loader.loadClass(null, t.getClassName()));
+                return (Loader.loadClass(t.getClassName()));
             }
             case Type.SHORT:
             {

@@ -302,10 +302,6 @@ public class HttpURI
                             break;
                             
                         case '@':
-                            _user=uri.substring(mark,i);
-                            mark=i+1;
-                            break;
-                            
                         case ';':
                         case '?':
                         case '#':
