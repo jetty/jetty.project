@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -50,8 +51,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.matchers.JUnitMatchers;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
@@ -1384,6 +1387,72 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
+
+    @Test
+    public void testWriteBodyAfterNoBodyREsponse() throws Exception
+    {
+        configureServer(new WriteBodyAfterNoBodyResponseHandler());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        final OutputStream out=client.getOutputStream();
+
+        out.write("GET / HTTP/1.1\r\nHost: test\r\n\r\n".getBytes());
+        out.write("GET / HTTP/1.1\r\nHost: test\r\nConnection: close\r\n\r\n".getBytes());
+        out.flush();
+        
+        
+        BufferedReader in =new BufferedReader(new InputStreamReader(client.getInputStream()));
+
+        String line=in.readLine();
+        assertThat(line, containsString(" 304 "));
+        while (true)
+        {
+        	line=in.readLine();
+        	if (line==null)
+        		throw new EOFException();
+        	if (line.length()==0)
+        		break;
+        	
+            assertThat(line, not(containsString("Content-Length")));
+            assertThat(line, not(containsString("Content-Type")));
+            assertThat(line, not(containsString("Transfer-Encoding")));
+        }
+
+        line=in.readLine();
+        assertThat(line, containsString(" 304 "));
+        while (true)
+        {
+        	line=in.readLine();
+        	if (line==null)
+        		throw new EOFException();
+        	if (line.length()==0)
+        		break;
+        	
+            assertThat(line, not(containsString("Content-Length")));
+            assertThat(line, not(containsString("Content-Type")));
+            assertThat(line, not(containsString("Transfer-Encoding")));
+        }
+
+        do 
+        {
+        	line=in.readLine();
+        }
+        while (line!=null);
+        
+    }
+
+    private class WriteBodyAfterNoBodyResponseHandler extends AbstractHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setStatus(304);
+            response.getOutputStream().print("yuck");
+            response.flushBuffer();
+        }
+    }
+    
+    
     public class NoopHandler extends AbstractHandler
     {
         public void handle(String target, Request baseRequest,
