@@ -658,16 +658,23 @@ public class AsyncServletIOTest
             assertTrue(chunked);
 
             // Get body slowly
-            String last;
-            while (true)
+            String last=null;
+            try
             {
-                last=line;
-                //Thread.sleep(1000);
-                line = in.readLine();
-                LOG.debug("body: "+line);
-                if (line==null)
-                    break;
-                list.add(line);
+                while (true)
+                {
+                    last=line;
+                    //Thread.sleep(1000);
+                    line = in.readLine();
+                    LOG.debug("body: "+line);
+                    if (line==null)
+                        break;
+                    list.add(line);
+                }
+            }
+            catch(IOException e)
+            {
+
             }
 
             LOG.debug("last: "+last);
