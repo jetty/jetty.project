@@ -136,6 +136,7 @@ public class DecoratorsTest
             protected void configureServletContextHandler(ServletContextHandler context)
             {
                 // Add decorator in the new util way
+                context.getObjectFactory().clear();
                 context.getObjectFactory().addDecorator(new DummyUtilDecorator());
             }
         };
