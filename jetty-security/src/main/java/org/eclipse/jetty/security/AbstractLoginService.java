@@ -34,8 +34,6 @@ import org.eclipse.jetty.util.security.Credential;
 
 /**
  * AbstractLoginService
- *
- *
  */
 public abstract class AbstractLoginService extends AbstractLifeCycle implements LoginService
 {
@@ -46,14 +44,9 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
     protected boolean _fullValidate = false;
     
     
-    
-
-    
     /* ------------------------------------------------------------ */
     /**
      * RolePrincipal
-     *
-     *
      */
     public static class RolePrincipal implements Principal,Serializable
     {
@@ -73,8 +66,6 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
     /* ------------------------------------------------------------ */
     /**
      * UserPrincipal
-     *
-     *
      */
     public static class UserPrincipal implements Principal,Serializable
     {
@@ -118,18 +109,11 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
         }
     }
     
-    
-    
-    
     /* ------------------------------------------------------------ */
     protected abstract String[] loadRoleInfo (UserPrincipal user);
     
-    
     /* ------------------------------------------------------------ */
     protected abstract UserPrincipal loadUserInfo (String username);
-    
-    
-    
     
     /* ------------------------------------------------------------ */
     /** 
@@ -250,18 +234,12 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
     public boolean isFullValidate()
     {
         return _fullValidate;
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param fullValidate
-     */
     public void setFullValidate(boolean fullValidate)
     {
         _fullValidate = fullValidate;
