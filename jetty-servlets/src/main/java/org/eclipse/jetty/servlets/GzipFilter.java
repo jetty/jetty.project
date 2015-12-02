@@ -27,6 +27,9 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /* ------------------------------------------------------------ */
 /** 
  */
@@ -34,9 +37,12 @@ import javax.servlet.ServletResponse;
 @Deprecated
 public class GzipFilter implements Filter
 {
+    private static final Logger LOG = Log.getLogger(GzipFilter.class);
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException
     {        
+        LOG.warn("GzipFilter is deprecated. Use GzipHandler");
     }
 
     @Override
