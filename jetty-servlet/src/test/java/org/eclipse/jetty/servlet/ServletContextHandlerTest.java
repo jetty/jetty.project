@@ -387,7 +387,7 @@ public class ServletContextHandlerTest
         String expected = String.format("Attribute[%s] = %s", DecoratedObjectFactory.ATTR, DecoratedObjectFactory.class.getName());
         assertThat("Has context attribute", response, containsString(expected));
         
-        assertThat("Decorators size", response, containsString("Decorators.size = [1]"));
+        assertThat("Decorators size", response, containsString("Decorators.size = [2]"));
         
         expected = String.format("decorator[] = %s", DummyLegacyDecorator.class.getName());
         assertThat("Specific Legacy Decorator", response, containsString(expected));
@@ -414,7 +414,7 @@ public class ServletContextHandlerTest
         String expected = String.format("Attribute[%s] = %s", DecoratedObjectFactory.ATTR, DecoratedObjectFactory.class.getName());
         assertThat("Has context attribute", response, containsString(expected));
         
-        assertThat("Decorators size", response, containsString("Decorators.size = [1]"));
+        assertThat("Decorators size", response, containsString("Decorators.size = [2]"));
         
         expected = String.format("decorator[] = %s", DummyUtilDecorator.class.getName());
         assertThat("Specific Legacy Decorator", response, containsString(expected));
