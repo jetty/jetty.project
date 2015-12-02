@@ -138,18 +138,24 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             LOG.debug("doClose {}", this);
         try
         {
-            try
-            {
-                _channel.close();
-            }
-            catch (IOException e)
-            {
-                LOG.debug(e);
-            }
-            finally
-            {
-                super.doClose();
-            }
+            _channel.close();
+        }
+        catch (IOException e)
+        {
+            LOG.debug(e);
+        }
+        finally
+        {
+            super.doClose();
+        }
+    }
+    
+    @Override
+    public void onClose()
+    {
+        try
+        {
+            super.onClose();
         }
         finally
         {
@@ -157,6 +163,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
                 _selector.onClose(this);
         }
     }
+    
 
     @Override
     public int fill(ByteBuffer buffer) throws IOException

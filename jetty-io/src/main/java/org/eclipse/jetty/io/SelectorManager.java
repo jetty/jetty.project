@@ -297,7 +297,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     protected void endPointClosed(EndPoint endpoint)
     {
-        endpoint.onClose();
     }
 
     /**

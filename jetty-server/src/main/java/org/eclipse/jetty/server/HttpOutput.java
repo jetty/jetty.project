@@ -82,7 +82,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     setWriteListener() READY->owp ise        ise        ise           ise           ise
     write()            OPEN       ise        PENDING    wpe           wpe           eof
     flush()            OPEN       ise        PENDING    wpe           wpe           eof
-    close()            CLOSED     CLOSED     CLOSED     CLOSED        wpe           CLOSED
+    close()            CLOSED     CLOSED     CLOSED     CLOSED        CLOSED        CLOSED
     isReady()          OPEN:true  READY:true READY:true UNREADY:false UNREADY:false CLOSED:true
     write completed    -          -          -          ASYNC         READY->owp    -
     */
@@ -196,10 +196,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     return;
                 }
                 case UNREADY:
+                case PENDING:
                 {
-                    if (_state.compareAndSet(state,OutputState.ERROR))
-                        _writeListener.onError(_onError==null?new EofException("Async close"):_onError);
-                    break;
+                    if (!_state.compareAndSet(state,OutputState.CLOSED))
+                        break;
+                    IOException ex = new IOException("Closed while Pending/Unready");
+                    LOG.warn(ex.toString());
+                    LOG.debug(ex);
+                    _channel.abort(ex);
                 }
                 default:
                 {
@@ -321,6 +325,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     return;
 
                 case PENDING:
+                    return;
+                    
                 case UNREADY:
                     throw new WritePendingException();
 
