@@ -62,6 +62,7 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -90,7 +91,7 @@ public class ServletContextHandler extends ContextHandler
     
     public interface ServletContainerInitializerCaller extends LifeCycle {};
 
-    protected final DecoratedObjectFactory _objFactory = new DecoratedObjectFactory();
+    protected final DecoratedObjectFactory _objFactory;
     protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass=org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
@@ -150,6 +151,9 @@ public class ServletContextHandler extends ContextHandler
         _sessionHandler = sessionHandler;
         _securityHandler = securityHandler;
         _servletHandler = servletHandler;
+        
+        _objFactory = new DecoratedObjectFactory();
+        _objFactory.addDecorator(new DeprecationWarning());
 
         if (contextPath!=null)
             setContextPath(contextPath);
