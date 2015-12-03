@@ -76,7 +76,7 @@ public abstract class AbstractImmortalSessionTest
 
                 // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                 Thread.sleep(scavengePeriod * 2500L);
-
+                
                 // Be sure the session is still there
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=get");
                 request.header("Cookie", sessionCookie);
@@ -114,7 +114,7 @@ public abstract class AbstractImmortalSessionTest
             }
             else if ("get".equals(action))
             {
-                HttpSession session = request.getSession(false);
+                HttpSession session = request.getSession(false);               
                 if (session!=null)
                     result = (String)session.getAttribute("value");
             }

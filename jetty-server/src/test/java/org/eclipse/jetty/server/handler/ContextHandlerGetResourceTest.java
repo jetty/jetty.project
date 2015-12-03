@@ -85,6 +85,18 @@ public class ContextHandlerGetResourceTest
             
             Files.createSymbolicLink(new File(docroot,"other").toPath(),new File("../transit").toPath());
             Files.createSymbolicLink(transit.toPath(),otherroot.toPath());
+            
+            // /web/logs -> /var/logs -> /media/internal/logs
+            // where /media/internal -> /media/internal-physical/
+            new File(docroot,"media/internal-physical/logs").mkdirs();
+            Files.createSymbolicLink(new File(docroot,"media/internal").toPath(),new File(docroot,"media/internal-physical").toPath());
+            new File(docroot,"var").mkdir();
+            Files.createSymbolicLink(new File(docroot,"var/logs").toPath(),new File(docroot,"media/internal/logs").toPath());
+            new File(docroot,"web").mkdir();
+            Files.createSymbolicLink(new File(docroot,"web/logs").toPath(),new File(docroot,"var/logs").toPath()); 
+            new File(docroot,"media/internal-physical/logs/file.log").createNewFile();
+            
+            System.err.println("docroot="+docroot);
         }
         
         OS_ALIAS_SUPPORTED = new File(sub, "TEXTFI~1.TXT").exists(); 
@@ -376,6 +388,29 @@ public class ContextHandlerGetResourceTest
 
             URL url=context.getServletContext().getResource(path);
             assertEquals(docroot,new File(url.toURI()).getParentFile().getParentFile());
+        }
+        finally
+        {
+            allowSymlinks.set(false);
+        } 
+        
+    }
+    
+    @Test
+    public void testSymlinkNested() throws Exception
+    {
+        Assume.assumeTrue(OS.IS_UNIX);
+        
+        try
+        {
+            allowSymlinks.set(true);
+
+            final String path="/web/logs/file.log";
+
+            Resource resource=context.getResource(path);
+            assertNotNull(resource);
+            assertEquals("file.log",resource.getFile().getName());
+            assertTrue(resource.exists());
         }
         finally
         {

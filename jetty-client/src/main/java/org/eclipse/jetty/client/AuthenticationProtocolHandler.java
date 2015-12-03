@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
-    public static final int DEFAULT_MAX_CONTENT_LENGTH = 4096;
+    public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
     private static final Pattern AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+realm=\"([^\"]+)\"(.*)", Pattern.CASE_INSENSITIVE);
     private static final String AUTHENTICATION_ATTRIBUTE = AuthenticationProtocolHandler.class.getName() + ".authentication";

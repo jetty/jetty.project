@@ -131,6 +131,8 @@ public abstract class FillInterest
     public void onClose()
     {
         Callback callback = _interested.get();
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onClose {}",this,callback);
         if (callback != null && _interested.compareAndSet(callback, null))
             callback.failed(new ClosedChannelException());
     }
@@ -138,7 +140,13 @@ public abstract class FillInterest
     @Override
     public String toString()
     {
-        return String.format("FillInterest@%x{%b,%s}", hashCode(), _interested.get(), _interested.get());
+        return String.format("FillInterest@%x{%b,%s}", hashCode(), _interested.get()!=null, _interested.get());
+    }
+
+    
+    public String toStateString()
+    {
+        return _interested.get()==null?"-":"FI";
     }
 
     /**

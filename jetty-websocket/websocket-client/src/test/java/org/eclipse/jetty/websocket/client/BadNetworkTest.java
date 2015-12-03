@@ -26,7 +26,7 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.After;
 import org.junit.Before;
@@ -82,7 +82,7 @@ public class BadNetworkTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection ssocket = server.accept();
+        IBlockheadServerConnection ssocket = server.accept();
         ssocket.upgrade();
 
         // Validate that we are connected
@@ -110,7 +110,7 @@ public class BadNetworkTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        ServerConnection ssocket = server.accept();
+        IBlockheadServerConnection ssocket = server.accept();
         ssocket.upgrade();
 
         // Validate that we are connected

@@ -315,9 +315,10 @@ public class UpgradeConnection extends AbstractConnection implements Connection.
         SessionFactory sessionFactory = connectPromise.getClient().getSessionFactory();
         WebSocketSession session = sessionFactory.createSession(request.getRequestURI(),websocket,connection);
         session.setPolicy(policy);
+        session.setUpgradeRequest(request);
         session.setUpgradeResponse(response);
-
-        connection.setSession(session);
+        connection.addListener(session);
+        connectPromise.setSession(session);
 
         // Initialize / Negotiate Extensions
         ExtensionStack extensionStack = new ExtensionStack(connectPromise.getClient().getExtensionFactory());
@@ -334,7 +335,7 @@ public class UpgradeConnection extends AbstractConnection implements Connection.
         session.setOutgoingHandler(extensionStack);
         extensionStack.setNextOutgoing(connection);
 
-        session.addBean(extensionStack);
+        session.addManaged(extensionStack);
         connectPromise.getClient().addManaged(session);
 
         // Now swap out the connection

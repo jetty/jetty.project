@@ -21,9 +21,6 @@ package org.eclipse.jetty.server.session;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.After;
 import org.junit.Test;
@@ -31,17 +28,12 @@ import org.junit.Test;
 public class StopSessionManagerPreserveSessionTest extends AbstractStopSessionManagerPreserveSessionTest
 {
     JdbcTestServer _server;
-    
+
+
     @After
     public void tearDown() throws Exception 
     {
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
+        JdbcTestServer.shutdown(null);
     }
     
     @Override

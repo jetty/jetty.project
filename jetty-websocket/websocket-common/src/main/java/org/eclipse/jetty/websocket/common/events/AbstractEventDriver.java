@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -40,11 +41,11 @@ import org.eclipse.jetty.websocket.common.message.MessageAppender;
 /**
  * EventDriver is the main interface between the User's WebSocket POJO and the internal jetty implementation of WebSocket.
  */
-public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
+public abstract class AbstractEventDriver extends AbstractLifeCycle implements IncomingFrames, EventDriver
 {
     private static final Logger LOG = Log.getLogger(AbstractEventDriver.class);
     protected final Logger TARGET_LOG;
-    protected final WebSocketPolicy policy;
+    protected WebSocketPolicy policy;
     protected final Object websocket;
     protected WebSocketSession session;
     protected MessageAppender activeMessage;
@@ -232,6 +233,12 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
             unhandled(t);
             throw t;
         }
+    }
+    
+    @Override
+    protected void doStop() throws Exception
+    {
+        session = null;
     }
 
     protected void terminateConnection(int statusCode, String rawreason)

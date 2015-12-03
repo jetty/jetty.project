@@ -38,26 +38,31 @@ public class PriorityGenerator extends FrameGenerator
     public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         PriorityFrame priorityFrame = (PriorityFrame)frame;
-        generatePriority(lease, priorityFrame.getStreamId(), priorityFrame.getDependentStreamId(), priorityFrame.getWeight(), priorityFrame.isExclusive());
+        generatePriority(lease, priorityFrame.getStreamId(), priorityFrame.getParentStreamId(), priorityFrame.getWeight(), priorityFrame.isExclusive());
     }
 
-    public void generatePriority(ByteBufferPool.Lease lease, int streamId, int dependentStreamId, int weight, boolean exclusive)
+    public void generatePriority(ByteBufferPool.Lease lease, int streamId, int parentStreamId, int weight, boolean exclusive)
+    {
+        ByteBuffer header = generateHeader(lease, FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
+        generatePriorityBody(header, streamId, parentStreamId, weight, exclusive);
+        BufferUtil.flipToFlush(header, 0);
+        lease.append(header, true);
+    }
+
+    public void generatePriorityBody(ByteBuffer header, int streamId, int parentStreamId, int weight, boolean exclusive)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
-        if (dependentStreamId < 0)
-            throw new IllegalArgumentException("Invalid dependent stream id: " + dependentStreamId);
-
-        ByteBuffer header = generateHeader(lease, FrameType.PRIORITY, 5, Flags.NONE, dependentStreamId);
+        if (parentStreamId < 0)
+            throw new IllegalArgumentException("Invalid parent stream id: " + parentStreamId);
+        if (parentStreamId == streamId)
+            throw new IllegalArgumentException("Stream " + streamId + " cannot depend on stream " + parentStreamId);
+        if (weight < 1 || weight > 256)
+            throw new IllegalArgumentException("Invalid weight: " + weight);
 
         if (exclusive)
-            streamId |= 0x80_00_00_00;
-
-        header.putInt(streamId);
-
-        header.put((byte)weight);
-
-        BufferUtil.flipToFlush(header, 0);
-        lease.append(header, true);
+            parentStreamId |= 0x80_00_00_00;
+        header.putInt(parentStreamId);
+        header.put((byte)(weight - 1));
     }
 }

@@ -93,6 +93,7 @@ public class ProxyServlet extends AbstractProxyServlet
         return new ProxyInputStreamContentProvider(request, response, proxyRequest, request.getInputStream());
     }
 
+    @Override
     protected Response.Listener newProxyResponseListener(HttpServletRequest request, HttpServletResponse response)
     {
         return new ProxyResponseListener(request, response);

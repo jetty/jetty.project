@@ -25,17 +25,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 
 public class ServerWriteThread extends Thread
 {
     private static final Logger LOG = Log.getLogger(ServerWriteThread.class);
-    private final ServerConnection conn;
+    private final IBlockheadServerConnection conn;
     private int slowness = -1;
     private int messageCount = 100;
     private String message = "Hello";
 
-    public ServerWriteThread(ServerConnection conn)
+    public ServerWriteThread(IBlockheadServerConnection conn)
     {
         this.conn = conn;
     }

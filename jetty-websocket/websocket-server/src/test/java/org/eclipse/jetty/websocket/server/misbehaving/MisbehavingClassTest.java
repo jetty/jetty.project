@@ -18,9 +18,8 @@
 
 package org.eclipse.jetty.websocket.server.misbehaving;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.util.concurrent.TimeUnit;
 
@@ -32,6 +31,7 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -63,7 +63,7 @@ public class MisbehavingClassTest
     @Test
     public void testListenerRuntimeOnConnect() throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("listener-runtime-connect");
             client.setTimeout(1,TimeUnit.SECONDS);
@@ -99,7 +99,7 @@ public class MisbehavingClassTest
     @Test
     public void testAnnotatedRuntimeOnConnect() throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("annotated-runtime-connect");
             client.setTimeout(1,TimeUnit.SECONDS);

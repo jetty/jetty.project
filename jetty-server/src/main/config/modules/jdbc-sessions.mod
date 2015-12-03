@@ -1,6 +1,5 @@
-#
-# Jetty JDBC Session module
-#
+[description]
+Enables JDBC Session management.
 
 [depend]
 annotations
@@ -8,7 +7,6 @@ webapp
 
 [xml]
 etc/jetty-jdbc-sessions.xml
-
 
 [ini-template]
 ## JDBC Session config

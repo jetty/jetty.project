@@ -52,7 +52,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
         final Request request = exchange.getRequest();
         HttpURI uri = new HttpURI(request.getScheme(), request.getHost(), request.getPort(), request.getPath(), null, request.getQuery(), null);
         MetaData.Request metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders());
-        HeadersFrame headersFrame = new HeadersFrame(0, metaData, null, !content.hasContent());
+        HeadersFrame headersFrame = new HeadersFrame(metaData, null, !content.hasContent());
         HttpChannelOverHTTP2 channel = getHttpChannel();
         Promise<Stream> promise = new Promise<Stream>()
         {
@@ -64,9 +64,11 @@ public class HttpSenderOverHTTP2 extends HttpSender
 
                 if (content.hasContent() && !expects100Continue(request))
                 {
-                    if (content.advance())
+                    boolean advanced = content.advance();
+                    boolean lastContent = content.isLast();
+                    if (advanced || lastContent)
                     {
-                        DataFrame dataFrame = new DataFrame(stream.getId(), content.getByteBuffer(), content.isLast());
+                        DataFrame dataFrame = new DataFrame(stream.getId(), content.getByteBuffer(), lastContent);
                         stream.data(dataFrame, callback);
                         return;
                     }
@@ -80,6 +82,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
                 callback.failed(failure);
             }
         };
+        // TODO optimize the send of HEADERS and DATA frames.
         channel.getSession().newStream(headersFrame, promise, channel.getStreamListener());
     }
 

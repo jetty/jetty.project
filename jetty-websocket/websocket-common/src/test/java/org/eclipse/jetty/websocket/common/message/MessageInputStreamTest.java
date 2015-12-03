@@ -49,7 +49,6 @@ public class MessageInputStreamTest
         {
             // Append a single message (simple, short)
             ByteBuffer payload = BufferUtil.toBuffer("Hello World",StandardCharsets.UTF_8);
-            System.out.printf("payload = %s%n",BufferUtil.toDetailString(payload));
             boolean fin = true;
             stream.appendFrame(payload,fin);
 

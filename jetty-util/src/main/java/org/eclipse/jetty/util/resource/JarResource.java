@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.JarURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
@@ -156,9 +157,10 @@ public class JarResource extends URLResource
       
         if (LOG.isDebugEnabled()) 
             LOG.debug("Extracting entry = "+subEntryName+" from jar "+jarFileURL);
-        
-        try (InputStream is = jarFileURL.openConnection().getInputStream();
-                JarInputStream jin = new JarInputStream(is))
+        URLConnection c = jarFileURL.openConnection();
+        c.setUseCaches(false);
+        try (InputStream is = c.getInputStream();
+             JarInputStream jin = new JarInputStream(is))
         {
             JarEntry entry;
             boolean shouldExtract;

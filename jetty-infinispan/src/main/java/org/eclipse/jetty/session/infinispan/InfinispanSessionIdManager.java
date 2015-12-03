@@ -77,19 +77,12 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     
     
     
-    /**
-     * @param server
-     */
     public InfinispanSessionIdManager(Server server)
     {
         super();
         _server = server;
     }
 
-    /**
-     * @param server
-     * @param random
-     */
     public InfinispanSessionIdManager(Server server, Random random)
     {
        super(random);
@@ -174,7 +167,7 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
 
     /**
      * Get the cache.
-     * @return
+     * @return the cache
      */
     public BasicCache<String,Object> getCache() 
     {
@@ -183,7 +176,7 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
 
     /**
      * Set the cache.
-     * @param cache
+     * @param cache the cache
      */
     public void setCache(BasicCache<String,Object> cache) 
     {
@@ -195,7 +188,7 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     /**
      * Do any operation to the session id in the cache to
      * ensure its idle expiry time moves forward
-     * @param id
+     * @param id the session id
      */
     public void touch (String id)
     {
@@ -207,8 +200,8 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     /**
      * Ask the cluster if a particular id exists.
      * 
-     * @param id
-     * @return
+     * @param id the session id
+     * @return true if exists
      */
     protected boolean exists (String id)
     {
@@ -222,7 +215,7 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     /**
      * Put a session id into the cluster.
      * 
-     * @param id
+     * @param id the session id
      */
     protected void insert (String id)
     {        
@@ -236,7 +229,8 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     /**
      * Put a session id into the cluster with an idle expiry.
      * 
-     * @param id
+     * @param id the session id
+     * @param idleTimeOutSec idle timeout in seconds
      */
     protected void insert (String id, long idleTimeOutSec)
     {
@@ -250,7 +244,7 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     /**
      * Remove a session id from the cluster.
      * 
-     * @param id
+     * @param id the session id
      */
     protected void delete (String id)
     {
@@ -265,8 +259,8 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     /**
      * Generate a unique cache key from the session id.
      * 
-     * @param id
-     * @return
+     * @param id the session id
+     * @return unique cache id
      */
     protected String makeKey (String id)
     {

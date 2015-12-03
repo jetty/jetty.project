@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
+import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -32,6 +34,14 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * <p>The parser for STDOUT type frame bodies.</p>
+ * <p>STDOUT frame bodies contain both the HTTP headers (but not the response line)
+ * and the HTTP content (either Content-Length delimited or chunked).</p>
+ * <p>For this reason, a special HTTP parser is used to parse the frames body.
+ * This special HTTP parser is configured to skip the response line, and to
+ * parse HTTP headers and HTTP content.</p>
+ */
 public class ResponseContentParser extends StreamContentParser
 {
     private static final Logger LOG = Log.getLogger(ResponseContentParser.class);
@@ -89,12 +99,12 @@ public class ResponseContentParser extends StreamContentParser
 
         public boolean parse(ByteBuffer buffer)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Response {} {} content {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
-
             int remaining = buffer.remaining();
             while (remaining > 0)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Response {} {}, state {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
+
                 switch (state)
                 {
                     case HEADERS:
@@ -245,12 +255,12 @@ public class ResponseContentParser extends StreamContentParser
         {
             if (!seenResponseCode)
             {
-                // No Status header but we have other headers, assume 200 OK
+                // No Status header but we have other headers, assume 200 OK.
                 notifyBegin(200, "OK");
                 notifyHeaders(fields);
             }
             notifyHeaders();
-            // Return from parsing so that we can parse the content
+            // Return from HTTP parsing so that we can parse the content.
             return true;
         }
 
@@ -277,21 +287,34 @@ public class ResponseContentParser extends StreamContentParser
         @Override
         public boolean messageComplete()
         {
-            // Return from parsing so that we can parse the next headers or the raw content.
-            // No need to notify the listener because it will be done by FCGI_END_REQUEST.
-            return true;
+            // No need to notify the end of the response to the
+            // listener because it will be done by FCGI_END_REQUEST.
+            return false;
         }
 
         @Override
         public void earlyEOF()
         {
-            // TODO
+            fail(new EOFException());
         }
 
         @Override
         public void badMessage(int status, String reason)
         {
-            // TODO
+            fail(new BadMessageException(status, reason));
+        }
+
+        protected void fail(Throwable failure)
+        {
+            try
+            {
+                listener.onFailure(request, failure);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while invoking listener " + listener, x);
+            }
         }
     }
 

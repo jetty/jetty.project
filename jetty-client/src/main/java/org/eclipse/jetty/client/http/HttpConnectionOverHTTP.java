@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,13 +37,13 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
-public class HttpConnectionOverHTTP extends AbstractConnection implements Connection, Sweeper.Sweepable
+public class HttpConnectionOverHTTP extends AbstractConnection implements Connection, org.eclipse.jetty.io.Connection.UpgradeFrom, Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(HttpConnectionOverHTTP.class);
 
     private final AtomicBoolean closed = new AtomicBoolean();
-    private final Promise<Connection> promise;
     private final AtomicInteger sweeps = new AtomicInteger();
+    private final Promise<Connection> promise;
     private final Delegate delegate;
     private final HttpChannelOverHTTP channel;
     private long idleTimeout;
@@ -119,6 +120,13 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         }
     }
 
+    @Override
+    public ByteBuffer onUpgradeFrom()
+    {
+        HttpReceiverOverHTTP receiver = channel.getHttpReceiver();
+        return receiver.onUpgradeFrom();
+    }
+
     public void release()
     {
         // Restore idle timeout
@@ -169,6 +177,11 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         if (sweeps.incrementAndGet() < 4)
             return false;
         return true;
+    }
+
+    public void remove()
+    {
+        getHttpDestination().remove(this);
     }
 
     @Override

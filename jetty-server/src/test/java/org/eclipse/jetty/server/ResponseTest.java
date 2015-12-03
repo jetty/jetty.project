@@ -403,7 +403,7 @@ public class ResponseTest
 
         response.sendError(404);
         assertEquals(404, response.getStatus());
-        assertEquals(null, response.getReason());
+        assertEquals("Not Found", response.getReason());
 
         response = newResponse();
 
@@ -534,6 +534,7 @@ public class ResponseTest
                     Response response = newResponse();
                     Request request = response.getHttpChannel().getRequest();
 
+                    request.setScheme("http");
                     request.setAuthority(host,port);
                     request.setURIPathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
                     request.setContextPath("/path");

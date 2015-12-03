@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -264,15 +265,18 @@ public class ProxyServletFailureTest
                 @Override
                 protected ContentProvider proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
                 {
-                    return new DeferredContentProvider()
+                    DeferredContentProvider provider = new DeferredContentProvider()
                     {
                         @Override
                         public boolean offer(ByteBuffer buffer, Callback callback)
                         {
-                            // Ignore all content to trigger the test condition.
-                            return true;
+                            // Send less content to trigger the test condition.
+                            buffer.limit(buffer.limit() - 1);
+                            return super.offer(buffer.slice(), callback);
                         }
                     };
+                    request.getInputStream().setReadListener(newReadListener(request, response, proxyRequest, provider));
+                    return provider;
                 }
             };
         }

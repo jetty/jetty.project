@@ -1393,7 +1393,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
     public Resource getTrustStoreResource()
     {
-        return _keyStoreResource;
+        return _trustStoreResource;
     }
 
     /**

@@ -39,6 +39,11 @@ public interface IStream extends Stream, Closeable
      */
     public static final String CHANNEL_ATTRIBUTE = IStream.class.getName() + ".channel";
 
+    /**
+     * @return whether this stream is local or remote
+     */
+    public boolean isLocal();
+
     @Override
     public ISession getSession();
 

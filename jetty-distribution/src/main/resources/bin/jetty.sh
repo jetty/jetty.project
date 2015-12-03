@@ -166,7 +166,7 @@ then
   ETC=$HOME/etc
 fi
 
-for CONFIG in $ETC/default/${NAME}{,9} $HOME/.${NAME}rc; do
+for CONFIG in {/etc,~/etc}/default/${NAME}{,9} $HOME/.${NAME}rc; do
   if [ -f "$CONFIG" ] ; then 
     readConfig "$CONFIG"
   fi
@@ -445,7 +445,7 @@ case "$ACTION" in
         exit 1
       fi
 
-      if [ -n "$JETTY_USER" ] 
+      if [ -n "$JETTY_USER" ] && [ `whoami` != "$JETTY_USER" ]
       then
         unset SU_SHELL
         if [ "$JETTY_SHELL" ]
@@ -457,11 +457,11 @@ case "$ACTION" in
         chown "$JETTY_USER" "$JETTY_PID"
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" $SU_SHELL -c "
-          exec ${RUN_CMD[*]} start-log-file="$JETTY_LOGS/start.log" &
+          exec ${RUN_CMD[*]} start-log-file="$JETTY_LOGS/start.log" > /dev/null &
           disown \$!
           echo \$! > '$JETTY_PID'"
       else
-        "${RUN_CMD[@]}" &
+        "${RUN_CMD[@]}" > /dev/null &
         disown $!
         echo $! > "$JETTY_PID"
       fi

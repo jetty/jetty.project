@@ -20,6 +20,7 @@
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -55,4 +56,11 @@ public class ProxySerializationTest extends AbstractProxySerializationTest
         super.testProxySerialization();
     }
 
+ 
+    
+    @After
+    public void tearDown() throws Exception 
+    {
+        JdbcTestServer.shutdown(null);
+    }
 }

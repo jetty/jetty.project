@@ -1,6 +1,5 @@
-#
-# [EXPERIMENTAL] CDI / Weld Jetty module
-#
+[description]
+Experimental CDI/Weld integration
 
 [depend]
 deploy

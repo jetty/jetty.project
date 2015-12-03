@@ -47,6 +47,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.log.AbstractLogger;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -764,7 +765,7 @@ public class HttpConnectionTest
 
         try
         {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).info("Excpect IOException: Response header too large...");
+            ((AbstractLogger)Log.getLogger(HttpChannel.class)).info("Excpect IOException: Response header too large...");
             ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
             int offset = 0;
 

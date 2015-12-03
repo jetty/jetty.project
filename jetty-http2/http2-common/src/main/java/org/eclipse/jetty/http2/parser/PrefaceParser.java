@@ -67,7 +67,7 @@ public class PrefaceParser
             {
                 cursor = 0;
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Parsed preface bytes");
+                    LOG.debug("Parsed preface bytes from {}", buffer);
                 return true;
             }
         }

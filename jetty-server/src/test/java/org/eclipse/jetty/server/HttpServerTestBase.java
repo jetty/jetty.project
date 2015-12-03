@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.AbstractLogger;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
@@ -187,7 +188,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             client.setSoTimeout(10000);
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
-            ((StdErrLog) Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
+            ((AbstractLogger) Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -218,7 +219,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect URI is too large, then ISE extra data ...");
+            ((AbstractLogger)Log.getLogger(HttpConnection.class)).info("expect URI is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -244,7 +245,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    public void testExceptionThrownInHandler() throws Exception
+    public void testExceptionThrownInHandlerLoop() throws Exception
     {
         configureServer(new AbstractHandler()
         {
@@ -269,7 +270,41 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.flush();
 
             String response = readResponse(client);
-            assertThat("response code is 500", response.contains("500"), is(true));
+            assertThat(response,Matchers.containsString(" 500 "));
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+        }
+    }
+    
+    @Test
+    public void testExceptionThrownInHandler() throws Exception
+    {
+        configureServer(new AbstractHandler()
+        {
+            @Override
+            public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                throw new QuietServletException("TEST handler exception");
+            }
+        });
+
+        StringBuffer request = new StringBuffer("GET / HTTP/1.0\r\n");
+        request.append("Host: localhost\r\n\r\n");
+
+        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
+        OutputStream os = client.getOutputStream();
+
+        try
+        { 
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+            Log.getLogger(HttpChannel.class).info("Expecting ServletException: TEST handler exception...");
+            os.write(request.toString().getBytes());
+            os.flush();
+
+            String response = readResponse(client);
+            assertThat(response,Matchers.containsString(" 500 "));
         }
         finally
         {
@@ -285,7 +320,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 int contentLength = request.getContentLength();
@@ -299,7 +334,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     catch (EofException e)
                     {
                         earlyEOFException.set(true);
-                        throw e;
+                        throw new QuietServletException(e);
                     }
                     if (i == 3)
                         fourBytesRead.set(true);
@@ -338,7 +373,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect header is too large, then ISE extra data ...");
+            ((AbstractLogger)Log.getLogger(HttpConnection.class)).info("expect header is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -1180,7 +1215,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         try
         {
             ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).info("Expecting exception after commit then could not send 500....");
+            ((AbstractLogger)Log.getLogger(HttpChannel.class)).info("Expecting exception after commit then could not send 500....");
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 

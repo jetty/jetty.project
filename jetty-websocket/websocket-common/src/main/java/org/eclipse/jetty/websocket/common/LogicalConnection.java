@@ -116,13 +116,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     InetSocketAddress getRemoteAddress();
 
     /**
-     * Get the Session for this connection
-     * 
-     * @return the Session for this connection
-     */
-    WebSocketSession getSession();
-
-    /**
      * Test if logical connection is still open
      * 
      *  @return true if connection is open
@@ -156,14 +149,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      *            the incoming frames handler
      */
     void setNextIncomingFrames(IncomingFrames incoming);
-
-    /**
-     * Set the session associated with this connection
-     * 
-     * @param session
-     *            the session
-     */
-    void setSession(WebSocketSession session);
 
     /**
      * Suspend a the incoming read events on the connection.

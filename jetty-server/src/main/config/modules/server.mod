@@ -1,6 +1,5 @@
-#
-# Base Server Module
-#
+[description]
+Enables the core Jetty server on the classpath.
 
 [optional]
 jvm
@@ -64,6 +63,9 @@ etc/jetty.xml
 ## Maximum number of error dispatches to prevent looping
 # jetty.httpConfig.maxErrorDispatches=10
 
+## Maximum time to block in total for a blocking IO operation (default -1 is to use idleTimeout on progress)
+# jetty.httpConfig.blockingTimeout=-1
+
 ### Server configuration
 ## Whether ctrl+c on the console gracefully stops the Jetty server
 # jetty.server.stopAtShutdown=true
@@ -73,3 +75,4 @@ etc/jetty.xml
 
 ## Dump the state of the Jetty server, components, and webapps before shutdown
 # jetty.server.dumpBeforeStop=false
+

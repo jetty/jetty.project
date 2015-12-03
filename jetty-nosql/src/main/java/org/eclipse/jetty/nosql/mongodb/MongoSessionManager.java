@@ -128,6 +128,8 @@ public class MongoSessionManager extends SessionManager
         
     }
 
+                        {
+                        }
     
     public MongoSessionDataStore getSessionDataStore()
     {

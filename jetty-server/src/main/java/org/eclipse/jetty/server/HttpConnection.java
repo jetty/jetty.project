@@ -212,7 +212,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillable enter {}", this, _channel.getState());
+            LOG.debug("{} onFillable enter {} {}", this, _channel.getState(),BufferUtil.toDetailString(_requestBuffer));
 
         HttpConnection last=setCurrentConnection(this);
         try
@@ -259,7 +259,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             setCurrentConnection(last);
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onFillable exit {}", this, _channel.getState());
+                LOG.debug("{} onFillable exit {} {}", this, _channel.getState(),BufferUtil.toDetailString(_requestBuffer));
         }
     }
 
@@ -272,8 +272,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         boolean handled=false;
         while (_parser.inContentState())
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} parseContent",this);
             int filled = fillRequestBuffer();
             boolean handle = parseRequestBuffer();
             handled|=handle;
@@ -300,7 +298,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // No pretend we read -1
                 _parser.atEOF();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} filled -1",this);
+                    LOG.debug("{} filled -1 {}",this,BufferUtil.toDetailString(_requestBuffer));
                 return -1;
             }
 
@@ -321,7 +319,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     _parser.atEOF();
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} filled {}",this,filled);
+                    LOG.debug("{} filled {} {}",this,filled,BufferUtil.toDetailString(_requestBuffer));
 
                 return filled;
             }
@@ -517,6 +515,51 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return new Content(c);
     }
 
+    @Override
+    public void abort(Throwable failure)
+    {
+        // Do a direct close of the output, as this may indicate to a client that the
+        // response is bad either with RST or by abnormal completion of chunked response.
+        getEndPoint().close();
+    }
+
+    @Override
+    public boolean isPushSupported()
+    {
+        return false;
+    }
+
+    @Override
+    public void push(org.eclipse.jetty.http.MetaData.Request request)
+    {
+        LOG.debug("ignore push in {}",this);
+    }
+
+    public void asyncReadFillInterested()
+    {
+        getEndPoint().fillInterested(_asyncReadCallback);
+    }
+
+    public void blockingReadFillInterested()
+    {
+        getEndPoint().fillInterested(_blockingReadCallback);
+    }
+
+    public void blockingReadException(Throwable e)
+    {
+        _blockingReadCallback.failed(e);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[p=%s,g=%s,c=%s]",
+                super.toString(),
+                _parser,
+                _generator,
+                _channel);
+    }
+
     private class Content extends HttpInput.Content
     {
         public Content(ByteBuffer content)
@@ -646,24 +689,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 {
                     case NEED_HEADER:
                     {
-                        // Look for optimisation to avoid allocating a _header buffer
-                        /*
-                         Cannot use this optimisation unless we work out how not to overwrite data in user passed arrays.
-                        if (_lastContent && _content!=null && !_content.isReadOnly() && _content.hasArray() && BufferUtil.space(_content)>_config.getResponseHeaderSize() )
-                        {
-                            // use spare space in content buffer for header buffer
-                            int p=_content.position();
-                            int l=_content.limit();
-                            _content.position(l);
-                            _content.limit(l+_config.getResponseHeaderSize());
-                            _header=_content.slice();
-                            _header.limit(0);
-                            _content.position(p);
-                            _content.limit(l);
-                        }
-                        else
-                        */
-                            _header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);
+                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);
 
                         continue;
                     }
@@ -763,49 +789,5 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             return String.format("%s[i=%s,cb=%s]",super.toString(),_info,_callback);
         }
-    }
-
-    @Override
-    public void abort(Throwable failure)
-    {
-        // Do a direct close of the output, as this may indicate to a client that the
-        // response is bad either with RST or by abnormal completion of chunked response.
-        getEndPoint().close();
-    }
-
-    @Override
-    public boolean isPushSupported()
-    {
-        return false;
-    }
-
-    /**
-     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
-     */
-    @Override
-    public void push(org.eclipse.jetty.http.MetaData.Request request)
-    {
-        LOG.debug("ignore push in {}",this);
-    }
-
-    public void asyncReadFillInterested()
-    {
-        getEndPoint().fillInterested(_asyncReadCallback);
-    }
-
-    public void blockingReadFillInterested()
-    {
-        getEndPoint().fillInterested(_blockingReadCallback);
-    }
-
-    public void blockingReadException(Throwable e)
-    {
-        _blockingReadCallback.failed(e);
-    }
-
-    @Override
-    public String toString()
-    {
-        return super.toString()+"<--"+BufferUtil.toDetailString(_requestBuffer);
     }
 }

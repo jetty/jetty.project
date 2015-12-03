@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -99,7 +100,7 @@ public class DefaultServletTest
         testdir.ensureEmpty();
 
         /* create some content in the docroot */
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         assertTrue(resBase.mkdirs());
         assertTrue(new File(resBase, "one").mkdir());
         assertTrue(new File(resBase, "two").mkdir());
@@ -131,7 +132,7 @@ public class DefaultServletTest
         testdir.ensureEmpty();
 
         /* create some content in the docroot */
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
         assertTrue(new File(resBase, "one").mkdir());
         assertTrue(new File(resBase, "two").mkdir());
@@ -168,7 +169,7 @@ public class DefaultServletTest
         testdir.ensureEmpty();
 
         /* create some content in the docroot */
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         assertTrue(resBase.mkdirs());
         File wackyDir = new File(resBase, "dir;"); // this should not be double-encoded.
         assertTrue(wackyDir.mkdirs());
@@ -220,7 +221,7 @@ public class DefaultServletTest
         testdir.ensureEmpty();
 
         /* create some content in the docroot */
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         assertTrue(resBase.mkdirs());
 
         File index = new File(resBase, "index.html");
@@ -320,7 +321,7 @@ public class DefaultServletTest
     public void testWelcome() throws Exception
     {
         testdir.ensureEmpty();
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
         File inde = new File(resBase, "index.htm");
         File index = new File(resBase, "index.html");
@@ -364,7 +365,7 @@ public class DefaultServletTest
     public void testWelcomeServlet() throws Exception
     {
         testdir.ensureEmpty();
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
         File inde = new File(resBase, "index.htm");
         File index = new File(resBase, "index.html");
@@ -409,13 +410,18 @@ public class DefaultServletTest
     }
 
     @Test
-    public void testResourceBase() throws Exception
+    public void testSymLinks() throws Exception
     {
         testdir.ensureEmpty();
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
-        File foobar = new File(resBase, "foobar.txt");
-        File link = new File(resBase, "link.txt");
+        File dir = new File(resBase,"dir");
+        File dirLink = new File(resBase,"dirlink");
+        File dirRLink = new File(resBase,"dirrlink");
+        FS.ensureDirExists(dir);
+        File foobar = new File(dir, "foobar.txt");
+        File link = new File(dir, "link.txt");
+        File rLink = new File(dir,"rlink.txt");
         createFile(foobar, "Foo Bar");
 
         String resBasePath = resBase.getAbsolutePath();
@@ -426,20 +432,43 @@ public class DefaultServletTest
 
         String response;
 
-        response = connector.getResponses("GET /context/foobar.txt HTTP/1.0\r\n\r\n");
+        response = connector.getResponses("GET /context/dir/foobar.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Foo Bar", response);
 
         if (!OS.IS_WINDOWS)
         {
             context.clearAliasChecks();
             
+            Files.createSymbolicLink(dirLink.toPath(),dir.toPath());
+            Files.createSymbolicLink(dirRLink.toPath(),new File("dir").toPath());
             Files.createSymbolicLink(link.toPath(),foobar.toPath());
-            response = connector.getResponses("GET /context/link.txt HTTP/1.0\r\n\r\n");
+            Files.createSymbolicLink(rLink.toPath(),new File("foobar.txt").toPath());
+            response = connector.getResponses("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("404", response);
+            response = connector.getResponses("GET /context/dir/rlink.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("404", response);
+            response = connector.getResponses("GET /context/dirlink/foobar.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("404", response);
+            response = connector.getResponses("GET /context/dirrlink/foobar.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("404", response);
+            response = connector.getResponses("GET /context/dirlink/link.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("404", response);
+            response = connector.getResponses("GET /context/dirrlink/rlink.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("404", response);
             
             context.addAliasCheck(new AllowSymLinkAliasChecker());
             
-            response = connector.getResponses("GET /context/link.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponses("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("Foo Bar", response);
+            response = connector.getResponses("GET /context/dir/rlink.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("Foo Bar", response);
+            response = connector.getResponses("GET /context/dirlink/foobar.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("Foo Bar", response);
+            response = connector.getResponses("GET /context/dirrlink/foobar.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("Foo Bar", response);
+            response = connector.getResponses("GET /context/dirlink/link.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("Foo Bar", response);
+            response = connector.getResponses("GET /context/dirrlink/link.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("Foo Bar", response);
         }
     }
@@ -448,7 +477,7 @@ public class DefaultServletTest
     public void testWelcomeExactServlet() throws Exception
     {
         testdir.ensureEmpty();
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
         File inde = new File(resBase, "index.htm");
         File index = new File(resBase, "index.html");
@@ -496,7 +525,7 @@ public class DefaultServletTest
     public void testRangeRequests() throws Exception
     {
         testdir.ensureEmpty();
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
         File data = new File(resBase, "data.txt");
         createFile(data, "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
@@ -643,7 +672,7 @@ public class DefaultServletTest
     public void testFiltered() throws Exception
     {
         testdir.ensureEmpty();
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
         File file0 = new File(resBase, "data0.txt");
         createFile(file0, "Hello Text 0");
@@ -687,7 +716,7 @@ public class DefaultServletTest
     public void testGzip() throws Exception
     {
         testdir.ensureEmpty();
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
         File file0 = new File(resBase, "data0.txt");
         createFile(file0, "Hello Text 0");
@@ -701,6 +730,7 @@ public class DefaultServletTest
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("welcomeServlets", "false");
         defholder.setInitParameter("gzip", "true");
+        defholder.setInitParameter("etags", "true");
         defholder.setInitParameter("resourceBase", resBasePath);
 
         String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
@@ -708,7 +738,11 @@ public class DefaultServletTest
         assertResponseContains("Content-Type: text/plain",response);
         assertResponseContains("Hello Text 0",response);
         assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseContains("ETag: ",response);
         assertResponseNotContains("Content-Encoding: gzip",response);
+        int e=response.indexOf("ETag: ");
+        String etag = response.substring(e+6,response.indexOf('"',e+11)+1);
+        String etag_gzip = etag.substring(0,etag.length()-1)+"--gzip\"";
         
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
@@ -716,10 +750,112 @@ public class DefaultServletTest
         assertResponseContains("Content-Type: text/plain",response);
         assertResponseContains("Vary: Accept-Encoding",response);
         assertResponseContains("Content-Encoding: gzip",response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+        
+        response = connector.getResponses("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        assertResponseContains("Content-Length: 9", response);
+        assertResponseContains("fake gzip",response);
+        assertResponseContains("Content-Type: application/gzip",response);
+        assertResponseNotContains("Vary: Accept-Encoding",response);
+        assertResponseNotContains("Content-Encoding: gzip",response);
+        assertResponseNotContains("ETag: "+etag_gzip,response);
+        assertResponseContains("ETag: ",response);   
+        
+        response = connector.getResponses("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"wobble\"\r\n\r\n");
+        assertResponseContains("Content-Length: 9", response);
+        assertResponseContains("fake gzip",response);
+        assertResponseContains("Content-Type: application/gzip",response);
+        assertResponseNotContains("Vary: Accept-Encoding",response);
+        assertResponseNotContains("Content-Encoding: gzip",response);
+        assertResponseNotContains("ETag: "+etag_gzip,response);
+        assertResponseContains("ETag: ",response);   
+        
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag,response);
+        
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag,response);
         
     }
 
+    @Test
+    public void testCachedGzip() throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getPathFile("docroot").toFile();                
+        FS.ensureDirExists(resBase);
+        File file0 = new File(resBase, "data0.txt");
+        createFile(file0, "Hello Text 0");
+        File file0gz = new File(resBase, "data0.txt.gz");
+        createFile(file0gz, "fake gzip");
 
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "true");
+        defholder.setInitParameter("etags", "true");
+        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("maxCachedFiles", "1024");
+        defholder.setInitParameter("maxCachedFileSize", "200000000");
+        defholder.setInitParameter("maxCacheSize", "256000000"); 
+
+        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
+        assertResponseContains("Content-Length: 12", response);
+        assertResponseContains("Content-Type: text/plain",response);
+        assertResponseContains("Hello Text 0",response);
+        assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseContains("ETag: ",response);
+        assertResponseNotContains("Content-Encoding: gzip",response);
+        int e=response.indexOf("ETag: ");
+        String etag = response.substring(e+6,response.indexOf('"',e+11)+1);
+        String etag_gzip = etag.substring(0,etag.length()-1)+"--gzip\"";
+        
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        assertResponseContains("Content-Length: 9", response);
+        assertResponseContains("fake gzip",response);
+        assertResponseContains("Content-Type: text/plain",response);
+        assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseContains("Content-Encoding: gzip",response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+        
+        response = connector.getResponses("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        assertResponseContains("Content-Length: 9", response);
+        assertResponseContains("fake gzip",response);
+        assertResponseContains("Content-Type: application/gzip",response);
+        assertResponseNotContains("Vary: Accept-Encoding",response);
+        assertResponseNotContains("Content-Encoding: gzip",response);
+        assertResponseNotContains("ETag: "+etag_gzip,response);
+        assertResponseContains("ETag: ",response);
+        
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag,response);
+        
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag,response);
+    }
 
     @Test
     public void testIfModifiedSmall() throws Exception
@@ -736,7 +872,7 @@ public class DefaultServletTest
     public void testIfModified(String content) throws Exception
     {
         testdir.ensureEmpty();
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
         File file = new File(resBase, "file.txt");
 
@@ -789,7 +925,7 @@ public class DefaultServletTest
     public void testIfETag(String content) throws Exception
     {
         testdir.ensureEmpty();
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
         File file = new File(resBase, "file.txt");
 

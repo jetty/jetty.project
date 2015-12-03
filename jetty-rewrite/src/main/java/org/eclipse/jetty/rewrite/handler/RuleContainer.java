@@ -35,11 +35,13 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class RuleContainer extends Rule
 {
+    public static final String ORIGINAL_QUERYSTRING_ATTRIBUTE_SUFFIX = ".QUERYSTRING";
     private static final Logger LOG = Log.getLogger(RuleContainer.class);
 
     protected Rule[] _rules;
     
     protected String _originalPathAttribute;
+    protected String _originalQueryStringAttribute;
     protected boolean _rewriteRequestURI=true;
     protected boolean _rewritePathInfo=true;
      
@@ -132,6 +134,7 @@ public class RuleContainer extends Rule
     public void setOriginalPathAttribute(String originalPathAttribte)
     {
         _originalPathAttribute=originalPathAttribte;
+        _originalQueryStringAttribute = originalPathAttribte + ORIGINAL_QUERYSTRING_ATTRIBUTE_SUFFIX;
     }
     
     /**
@@ -157,18 +160,26 @@ public class RuleContainer extends Rule
     protected String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         boolean original_set=_originalPathAttribute==null;
+        
+        target = URIUtil.compactPath(target);
                 
         for (Rule rule : _rules)
         {
             String applied=rule.matchAndApply(target,request, response);
             if (applied!=null)
-            {       
+            {
+                applied = URIUtil.compactPath(applied);
+                
                 LOG.debug("applied {}",rule);
                 LOG.debug("rewrote {} to {}",target,applied);
                 if (!original_set)
                 {
                     original_set=true;
                     request.setAttribute(_originalPathAttribute, target);
+                    
+                    String query = request.getQueryString();
+                    if (query != null)
+                        request.setAttribute(_originalQueryStringAttribute,query);
                 }     
 
                 if (_rewriteRequestURI)

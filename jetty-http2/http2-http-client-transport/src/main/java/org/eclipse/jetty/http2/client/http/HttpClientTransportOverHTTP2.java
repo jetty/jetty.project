@@ -22,19 +22,24 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
+import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.HTTP2ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 @ManagedObject("The HTTP/2 client transport")
 public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements HttpClientTransport
@@ -57,9 +62,18 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     @Override
     protected void doStart() throws Exception
     {
+        if (!client.isStarted())
+        {
+            client.setExecutor(httpClient.getExecutor());
+            client.setScheduler(httpClient.getScheduler());
+            client.setByteBufferPool(httpClient.getByteBufferPool());
+            client.setConnectTimeout(httpClient.getConnectTimeout());
+            client.setIdleTimeout(httpClient.getIdleTimeout());
+        }
         addBean(client);
         super.doStart();
-        this.connectionFactory = client.getClientConnectionFactory();
+
+        this.connectionFactory = new HTTP2ClientConnectionFactory();
         client.setClientConnectionFactory((endPoint, context) ->
         {
             HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
@@ -119,13 +133,21 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
             }
         };
 
-        client.connect(httpClient.getSslContextFactory(), address, listener, promise, context);
+        SslContextFactory sslContextFactory = null;
+        if (HttpScheme.HTTPS.is(destination.getScheme()))
+            sslContextFactory = httpClient.getSslContextFactory();
+
+        client.connect(sslContextFactory, address, listener, promise, context);
     }
 
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        return connectionFactory.newConnection(endPoint, context);
+        ClientConnectionFactory factory = connectionFactory;
+        SslContextFactory sslContextFactory = (SslContextFactory)context.get(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
+        if (sslContextFactory != null)
+            factory = new ALPNClientConnectionFactory(client.getExecutor(), factory, client.getProtocols());
+        return factory.newConnection(endPoint, context);
     }
 
     protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)

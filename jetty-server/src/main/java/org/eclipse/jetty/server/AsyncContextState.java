@@ -33,11 +33,18 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 
 public class AsyncContextState implements AsyncContext
 {
+    private final HttpChannel _channel;
     volatile HttpChannelState _state;
 
     public AsyncContextState(HttpChannelState state)
     {
         _state=state;
+        _channel=_state.getHttpChannel();
+    }
+    
+    public HttpChannel getHttpChannel()
+    {
+        return _channel;
     }
     
     HttpChannelState state()

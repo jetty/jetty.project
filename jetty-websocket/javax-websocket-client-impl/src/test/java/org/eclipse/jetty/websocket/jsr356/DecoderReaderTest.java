@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -50,7 +50,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -155,7 +155,7 @@ public class DecoderReaderTest
     private static class QuoteServer implements Runnable
     {
         private BlockheadServer server;
-        private ServerConnection sconnection;
+        private IBlockheadServerConnection sconnection;
         private CountDownLatch connectLatch = new CountDownLatch(1);
 
         public QuoteServer(BlockheadServer server)

@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.DebugListener;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.DateCache;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
  * Details of the request and response are written to an output stream
  * and the current thread name is updated with information that will link
  * to the details in that output.
+ * @deprecated Use {@link DebugListener}
  */
 public class DebugHandler extends HandlerWrapper implements Connection.Listener
 {
@@ -64,8 +66,8 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         boolean suspend=false;
         boolean retry=false;
         String name=(String)request.getAttribute("org.eclipse.jetty.thread.name");
-        if (name==null)
-            name=old_name+":"+baseRequest.getScheme()+"://"+baseRequest.getLocalAddr()+":"+baseRequest.getLocalPort()+baseRequest.getHttpURI();
+        if (name == null)
+            name = old_name + ":" + baseRequest.getHttpURI();
         else
             retry=true;
 

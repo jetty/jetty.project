@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.net.CookieManager;
 import java.net.HttpCookie;
@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -119,7 +119,7 @@ public class CookieTest
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
         // Server accepts connect
-        ServerConnection serverConn = server.accept();
+        IBlockheadServerConnection serverConn = server.accept();
 
         // client confirms upgrade and receipt of frame
         String serverCookies = confirmClientUpgradeAndCookies(clientSocket,clientConnectFuture,serverConn);
@@ -144,7 +144,7 @@ public class CookieTest
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri(),request);
 
         // Server accepts connect
-        ServerConnection serverConn = server.accept();
+        IBlockheadServerConnection serverConn = server.accept();
 
         // client confirms upgrade and receipt of frame
         String serverCookies = confirmClientUpgradeAndCookies(clientSocket,clientConnectFuture,serverConn);
@@ -152,7 +152,7 @@ public class CookieTest
         Assert.assertThat("Cookies seen at server side",serverCookies,containsString("hello=\"world\""));
     }
 
-    private String confirmClientUpgradeAndCookies(CookieTrackingSocket clientSocket, Future<Session> clientConnectFuture, ServerConnection serverConn)
+    private String confirmClientUpgradeAndCookies(CookieTrackingSocket clientSocket, Future<Session> clientConnectFuture, IBlockheadServerConnection serverConn)
             throws Exception
     {
         // Server upgrades

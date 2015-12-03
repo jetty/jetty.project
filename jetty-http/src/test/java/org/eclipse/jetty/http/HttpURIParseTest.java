@@ -98,6 +98,13 @@ public class HttpURIParseTest
         
         // Path with query alt syntax
         {"/path/info?a=;query",null,null,null,"/path/info",null,"a=;query",null},
+
+        // URI with host character
+        {"/@path/info",null,null,null,"/@path/info",null,null,null},
+        {"/user@path/info",null,null,null,"/user@path/info",null,null,null},
+        {"//user@host/info",null,"host",null,"/info",null,null,null},
+        {"//@host/info",null,"host",null,"/info",null,null,null},
+        {"@host/info",null,null,null,"@host/info",null,null,null},
         
         // Scheme-less, with host and port (overlapping with path)
         {"//host:8080//",null,"host","8080","//",null,null,null},

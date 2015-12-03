@@ -87,7 +87,7 @@ public class AsyncIOServletTest
         context.addEventListener(new ContextHandler.ContextScopeListener()
         {
             @Override
-            public void enterScope(Context context, Request request)
+            public void enterScope(Context context, Request request, Object reason)
             {
                 if (scope.get()!=null)
                     throw new IllegalStateException();

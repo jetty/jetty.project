@@ -27,6 +27,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.IO;
@@ -71,12 +73,14 @@ public class WebAppClassLoader extends URLClassLoader
     }
 
     private static final Logger LOG = Log.getLogger(WebAppClassLoader.class);
-
+    private static final ThreadLocal<Boolean> __loadServerClasses = new ThreadLocal<>();
+    
     private final Context _context;
     private final ClassLoader _parent;
     private final Set<String> _extensions=new HashSet<String>();
     private String _name=String.valueOf(hashCode());
     private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
+    
     
     /* ------------------------------------------------------------ */
     /** The Context in which the classloader operates.
@@ -132,6 +136,31 @@ public class WebAppClassLoader extends URLClassLoader
         /* ------------------------------------------------------------ */
         String getExtraClasspath();
         
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Run an action with access to ServerClasses
+     * <p>Run the passed {@link PrivilegedExceptionAction} with the classloader
+     * configured so as to allow server classes to be visible</p>
+     * @param action The action to run
+     * @return The return from the action
+     * @throws Exception
+     */
+    public static <T> T runWithServerClassAccess(PrivilegedExceptionAction<T> action) throws Exception
+    {
+        Boolean lsc=__loadServerClasses.get();
+        try
+        {
+            __loadServerClasses.set(true);
+            return action.run();
+        }
+        finally
+        {
+            if (lsc==null)
+                __loadServerClasses.remove();
+            else
+                __loadServerClasses.set(lsc);
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -333,7 +362,7 @@ public class WebAppClassLoader extends URLClassLoader
     public Enumeration<URL> getResources(String name) throws IOException
     {
         boolean system_class=_context.isSystemClass(name);
-        boolean server_class=_context.isServerClass(name);
+        boolean server_class=_context.isServerClass(name) && !Boolean.TRUE.equals(__loadServerClasses.get());
         
         List<URL> from_parent = toList(server_class?null:_parent.getResources(name));
         List<URL> from_webapp = toList((system_class&&!from_parent.isEmpty())?null:this.findResources(name));
@@ -374,51 +403,51 @@ public class WebAppClassLoader extends URLClassLoader
         String tmp = name;
         if (tmp != null && tmp.endsWith(".class"))
             tmp = tmp.substring(0, tmp.length()-6);
-      
+        
         boolean system_class=_context.isSystemClass(tmp);
-        boolean server_class=_context.isServerClass(tmp);
+        boolean server_class=_context.isServerClass(tmp) && !Boolean.TRUE.equals(__loadServerClasses.get());
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("getResource({}) system={} server={} cl={}",name,system_class,server_class,this);
         
         if (system_class && server_class)
             return null;
+        
+        ClassLoader source=null;
         
         if (_parent!=null &&(_context.isParentLoaderPriority() || system_class ) && !server_class)
         {
             tried_parent= true;
             
             if (_parent!=null)
-                url= _parent.getResource(name);
+            {
+                source=_parent;
+                url=_parent.getResource(name);
+            }
         }
 
         if (url == null)
         {
             url= this.findResource(name);
-
+            source=this;
             if (url == null && name.startsWith("/"))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("HACK leading / off " + name);
                 url= this.findResource(name.substring(1));
-            }
         }
 
         if (url == null && !tried_parent && !server_class )
         {
             if (_parent!=null)
+            {
+                tried_parent=true;
+                source=_parent;
                 url= _parent.getResource(name);
+            }
         }
 
-        if (url != null)
-            if (LOG.isDebugEnabled())
-                LOG.debug("getResource("+name+")=" + url);
+        if (LOG.isDebugEnabled())
+            LOG.debug("gotResource({})=={} from={} tried_parent={}",name,url,source,tried_parent);
 
         return url;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Class<?> loadClass(String name) throws ClassNotFoundException
-    {
-        return loadClass(name, false);
     }
 
     /* ------------------------------------------------------------ */
@@ -432,8 +461,13 @@ public class WebAppClassLoader extends URLClassLoader
             boolean tried_parent= false;
 
             boolean system_class=_context.isSystemClass(name);
-            boolean server_class=_context.isServerClass(name);
+            boolean server_class=_context.isServerClass(name) && !Boolean.TRUE.equals(__loadServerClasses.get());
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("loadClass({}) system={} server={} cl={}",name,system_class,server_class,this);
+            
+            ClassLoader source=null;
+            
             if (system_class && server_class)
             {
                 return null;
@@ -442,6 +476,7 @@ public class WebAppClassLoader extends URLClassLoader
             if (c == null && _parent!=null && (_context.isParentLoaderPriority() || system_class) && !server_class)
             {
                 tried_parent= true;
+                source=_parent;
                 try
                 {
                     c= _parent.loadClass(name);
@@ -458,6 +493,7 @@ public class WebAppClassLoader extends URLClassLoader
             {
                 try
                 {
+                    source=this;
                     c= this.findClass(name);
                 }
                 catch (ClassNotFoundException e)
@@ -467,19 +503,27 @@ public class WebAppClassLoader extends URLClassLoader
             }
 
             if (c == null && _parent!=null && !tried_parent && !server_class )
+            {
+                tried_parent=true;
+                source=_parent;
                 c= _parent.loadClass(name);
+            }
 
             if (c == null && ex!=null)
             {
-                LOG.debug("not found {} from {}",name,this,ex);
+                LOG.debug("!loadedClass({}) from={} tried_parent={}",name,this,tried_parent);
                 throw ex;
             }
 
-            if (resolve)
-                resolveClass(c);
-
             if (LOG.isDebugEnabled())
-                LOG.debug("loaded {} from {}",c,c==null?null:c.getClassLoader());
+                LOG.debug("loadedClass({})=={} from={} tried_parent={}",name,c,source,tried_parent);
+            
+            if (resolve)
+            {
+                resolveClass(c);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("resolved({})=={} from={} tried_parent={}",name,c,source,tried_parent);
+            }
 
             return c;
         }
@@ -541,7 +585,10 @@ public class WebAppClassLoader extends URLClassLoader
             {
                 content = url.openStream();
                 byte[] bytes = IO.readBytes(content);
-                    
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("foundClass({}) url={} cl={}",name,url,this);
+                
                 for (ClassFileTransformer transformer : _transformers)
                 {
                     byte[] tmp = transformer.transform(this,name,null,null,bytes);
@@ -578,6 +625,13 @@ public class WebAppClassLoader extends URLClassLoader
         return clazz;
     }
     
+    
+    @Override
+    public void close() throws IOException
+    {
+        super.close();
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

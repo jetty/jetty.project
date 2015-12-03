@@ -197,27 +197,16 @@ public class LocalConnector extends AbstractConnector
         }
 
         @Override
-        public void close()
-        {
-            boolean wasOpen=isOpen();
-            super.close();
-            if (wasOpen)
-            {
-                getConnection().onClose();
-                onClose();
-            }
-        }
-
-        @Override
         public void onClose()
         {
+            getConnection().onClose();
             LocalConnector.this.onEndPointClosed(this);
             super.onClose();
             _closed.countDown();
         }
 
         @Override
-        public void shutdownOutput()
+        public void doShutdownOutput()
         {
             super.shutdownOutput();
             close();

@@ -558,11 +558,14 @@ public class AnnotationParser
             if (!isParsed(className) || resolver.shouldOverride(className))
             {
                 className = className.replace('.', '/')+".class";
-                URL resource = Loader.getResource(this.getClass(), className);
+                URL resource = Loader.getResource(className);
                 if (resource!= null)
                 {
                     Resource r = Resource.newResource(resource);
-                    scanClass(handlers, null, r.getInputStream());
+                    try (InputStream is = r.getInputStream())
+                    {
+                        scanClass(handlers, null, is);
+                    }
                 }
             }
         }
@@ -590,11 +593,14 @@ public class AnnotationParser
                 if (!isParsed(cz.getName()) || resolver.shouldOverride(cz.getName()))
                 {
                     String nameAsResource = cz.getName().replace('.', '/')+".class";
-                    URL resource = Loader.getResource(this.getClass(), nameAsResource);
+                    URL resource = Loader.getResource(nameAsResource);
                     if (resource!= null)
                     {
                         Resource r = Resource.newResource(resource);
-                        scanClass(handlers, null, r.getInputStream());
+                        try (InputStream is =  r.getInputStream())
+                        {
+                            scanClass(handlers, null, is);
+                        }
                     }
                 }
             }
@@ -646,11 +652,14 @@ public class AnnotationParser
                 if ((resolver == null) || (!resolver.isExcluded(s) &&  (!isParsed(s) || resolver.shouldOverride(s))))
                 {
                     s = s.replace('.', '/')+".class";
-                    URL resource = Loader.getResource(this.getClass(), s);
+                    URL resource = Loader.getResource(s);
                     if (resource!= null)
                     {
                         Resource r = Resource.newResource(resource);
-                        scanClass(handlers, null, r.getInputStream());
+                        try (InputStream is = r.getInputStream())
+                        {
+                            scanClass(handlers, null, is);
+                        }
                     }
                 }
             }
@@ -845,8 +854,11 @@ public class AnnotationParser
 
         if (fullname.endsWith(".class"))
         {
-            scanClass(handlers, null, r.getInputStream());
-            return;
+            try (InputStream is=r.getInputStream())
+            {
+                scanClass(handlers, null, is);
+                return;
+            }
         }
         
         if (LOG.isDebugEnabled()) LOG.warn("Resource not scannable for classes: {}", r);
@@ -963,11 +975,14 @@ public class AnnotationParser
 
             if ((resolver == null)
                     ||
-                (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
+               (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
             {
                 Resource clazz = Resource.newResource("jar:"+jar.getURI()+"!/"+name);
                 if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
-                scanClass(handlers, jar, clazz.getInputStream());
+                try (InputStream is = clazz.getInputStream())
+                {
+                    scanClass(handlers, jar, is);
+                }
             }
         }
     }

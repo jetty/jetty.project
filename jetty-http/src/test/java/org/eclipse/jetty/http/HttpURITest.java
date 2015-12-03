@@ -92,7 +92,13 @@ public class HttpURITest
             assertEquals(value,parameters.getString("value"));
         }
     }
-    
+
+    @Test
+    public void testAt() throws Exception
+    {
+        HttpURI uri = new HttpURI("/@foo/bar");
+        assertEquals("/@foo/bar",uri.getPath());
+    }
 
     @Test
     public void testParams() throws Exception
@@ -166,5 +172,25 @@ public class HttpURITest
         assertEquals("/f00/bar",uri.getDecodedPath());
         assertEquals("p2",uri.getParam());
         assertEquals("other=123456",uri.getQuery());
+    }
+
+    @Test
+    public void testSchemeAndOrAuthority() throws Exception
+    {
+        HttpURI uri = new HttpURI("/path/info");
+        assertEquals("/path/info",uri.toString());
+        
+        uri.setAuthority("host",0);
+        assertEquals("//host/path/info",uri.toString());
+        
+        uri.setAuthority("host",8888);
+        assertEquals("//host:8888/path/info",uri.toString());
+        
+        uri.setScheme("http");
+        assertEquals("http://host:8888/path/info",uri.toString());
+        
+        uri.setAuthority(null,0);
+        assertEquals("http:/path/info",uri.toString());
+        
     }
 }

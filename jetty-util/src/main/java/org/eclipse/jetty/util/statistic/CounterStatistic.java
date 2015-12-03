@@ -40,15 +40,24 @@ public class CounterStatistic
     /* ------------------------------------------------------------ */
     public void reset()
     {
-        reset(0);
+        _total.set(0);
+        _max.set(0);
+        long current=_curr.get();
+        _total.addAndGet(current);
+        Atomics.updateMax(_max,current);
     }
 
     /* ------------------------------------------------------------ */
     public void reset(final long value)
     {
-        _max.set(value);
+        _total.set(0);
+        _max.set(0);
         _curr.set(value);
-        _total.set(0); // total always set to 0 to properly calculate cumulative total
+        if (value>0)
+        {
+            _total.addAndGet(value);
+            Atomics.updateMax(_max,value);
+        }
     }
 
     /* ------------------------------------------------------------ */

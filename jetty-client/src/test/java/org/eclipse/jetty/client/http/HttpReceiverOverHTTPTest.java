@@ -61,8 +61,10 @@ public class HttpReceiverOverHTTPTest
         client = new HttpClient();
         client.start();
         destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
+        destination.start();
         endPoint = new ByteArrayEndPoint();
-        connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<>());
+        endPoint.setConnection(connection);
     }
 
     @After
@@ -207,7 +209,7 @@ public class HttpReceiverOverHTTPTest
     @Test
     public void test_FillInterested_RacingWith_BufferRelease() throws Exception
     {
-        connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>())
+        connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<>())
         {
             @Override
             protected HttpChannelOverHTTP newHttpChannel()
@@ -234,6 +236,7 @@ public class HttpReceiverOverHTTPTest
                 };
             }
         };
+        endPoint.setConnection(connection);
         
         // Partial response to trigger the call to fillInterested().
         endPoint.addInput("" +

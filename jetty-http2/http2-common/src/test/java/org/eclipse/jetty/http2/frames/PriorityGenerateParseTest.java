@@ -50,15 +50,15 @@ public class PriorityGenerateParseTest
         }, 4096, 8192);
 
         int streamId = 13;
-        int dependentStreamId = 17;
-        int weight = 3;
+        int parentStreamId = 17;
+        int weight = 256;
         boolean exclusive = true;
 
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generatePriority(lease, streamId, dependentStreamId, weight, exclusive);
+            generator.generatePriority(lease, streamId, parentStreamId, weight, exclusive);
 
             frames.clear();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -73,7 +73,7 @@ public class PriorityGenerateParseTest
         Assert.assertEquals(1, frames.size());
         PriorityFrame frame = frames.get(0);
         Assert.assertEquals(streamId, frame.getStreamId());
-        Assert.assertEquals(dependentStreamId, frame.getDependentStreamId());
+        Assert.assertEquals(parentStreamId, frame.getParentStreamId());
         Assert.assertEquals(weight, frame.getWeight());
         Assert.assertEquals(exclusive, frame.isExclusive());
     }
@@ -94,12 +94,12 @@ public class PriorityGenerateParseTest
         }, 4096, 8192);
 
         int streamId = 13;
-        int dependentStreamId = 17;
+        int parentStreamId = 17;
         int weight = 3;
         boolean exclusive = true;
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generatePriority(lease, streamId, dependentStreamId, weight, exclusive);
+        generator.generatePriority(lease, streamId, parentStreamId, weight, exclusive);
 
         for (ByteBuffer buffer : lease.getByteBuffers())
         {
@@ -112,7 +112,7 @@ public class PriorityGenerateParseTest
         Assert.assertEquals(1, frames.size());
         PriorityFrame frame = frames.get(0);
         Assert.assertEquals(streamId, frame.getStreamId());
-        Assert.assertEquals(dependentStreamId, frame.getDependentStreamId());
+        Assert.assertEquals(parentStreamId, frame.getParentStreamId());
         Assert.assertEquals(weight, frame.getWeight());
         Assert.assertEquals(exclusive, frame.isExclusive());
     }

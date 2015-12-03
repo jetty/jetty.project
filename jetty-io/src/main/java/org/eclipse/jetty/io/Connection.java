@@ -63,7 +63,7 @@ public interface Connection extends Closeable
     public long getBytesOut();
     public long getCreatedTimeStamp();
     
-    public interface UpgradeFrom extends Connection
+    public interface UpgradeFrom
     {
         /* ------------------------------------------------------------ */
         /** Take the input buffer from the connection on upgrade.
@@ -75,7 +75,7 @@ public interface Connection extends Closeable
         ByteBuffer onUpgradeFrom();
     }
     
-    public interface UpgradeTo extends Connection
+    public interface UpgradeTo
     {
         /**
          * <p>Callback method invoked when this {@link Connection} is upgraded.</p>

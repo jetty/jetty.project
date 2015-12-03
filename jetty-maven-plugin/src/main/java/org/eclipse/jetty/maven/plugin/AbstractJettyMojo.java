@@ -443,6 +443,9 @@ public abstract class AbstractJettyMojo extends AbstractMojo
 
             //set up a RequestLog if one is provided and the handle structure
             ServerSupport.configureHandlers(server, this.requestLog);
+            
+            //Set up list of default Configurations to apply to a webapp
+            ServerSupport.configureDefaultConfigurationClasses(server);
             configureWebApplication();
             ServerSupport.addWebApplication(server, webApp);
 
@@ -564,7 +567,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * Run a scanner thread on the given list of files and directories, calling
      * stop/start on the given list of LifeCycle objects if any of the watched
      * files change.
-     *
+     * @throws Exception if unable to start scanner 
      */
     public void startScanner() throws Exception
     {

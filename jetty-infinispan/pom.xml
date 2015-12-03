@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.4-SNAPSHOT</version>
+    <version>9.4.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-infinispan</artifactId>
@@ -30,23 +30,6 @@
               </descriptorRefs>
             </configuration>
           </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <configuration>
-          <instructions>
-            <Import-Package>javax.servlet.*;version="[2.6.0,4)",org.eclipse.jetty.server.session.jmx;version="9.3";resolution:=optional,,org.eclipse.jetty.*;version="9.3",*</Import-Package>
-          </instructions>
-        </configuration>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-           </execution>
         </executions>
       </plugin>
       <plugin>

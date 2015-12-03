@@ -1,6 +1,6 @@
-#
-# Debug module
-#
+[description]
+Deprecated Debug Log using the DebugHandle.
+Replaced with the debug module.
 
 [depend]
 server

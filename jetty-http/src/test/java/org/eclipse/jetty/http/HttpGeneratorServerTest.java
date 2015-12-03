@@ -395,7 +395,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 59);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), BufferUtil.length(content0)+BufferUtil.length(content1));
         info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
         result = gen.generateResponse(info, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);

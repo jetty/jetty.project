@@ -11,7 +11,7 @@ directory, additional configuration may be specified and hot deployments
 detected.
 ===================================================================== -->
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id="testWebapp" class="org.eclipse.jetty.webapp.WebAppContext">
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Required minimal context configuration :                        -->
@@ -41,6 +41,15 @@ detected.
     </New>
   </Set>
   
+  <!-- Set Caching Classloader that improves performance on resource searching webapps -->
+  <!--
+  <Set name="classLoader">
+    <New class="org.eclipse.jetty.webapp.CachingWebAppClassLoader">
+      <Arg><Ref refid="testWebapp"/></Arg>
+    </New>
+  </Set>
+  -->
+
   <!-- Enable symlinks 
   <Call name="addAliasCheck">
     <Arg><New class="org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker"/></Arg>
@@ -74,9 +83,8 @@ detected.
         <Set name="name">Test Realm</Set>
         <Set name="config"><SystemProperty name="jetty.base" default="."/>/etc/realm.properties</Set>
             <!-- To enable reload of realm when properties change, uncomment the following lines -->
-            <!-- changing refreshInterval (in seconds) as desired                                -->
             <!--
-            <Set name="refreshInterval">5</Set>
+            <Set name="hotReload">true</Set>
             <Call name="start"></Call>
             -->
       </New>

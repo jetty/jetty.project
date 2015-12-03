@@ -89,7 +89,7 @@ public class StreamCountTest extends AbstractTest
 
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = newRequest("GET", fields);
-        HeadersFrame frame1 = new HeadersFrame(1, metaData, null, false);
+        HeadersFrame frame1 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
         final CountDownLatch responseLatch = new CountDownLatch(1);
         session.newStream(frame1, streamPromise1, new Stream.Listener.Adapter()
@@ -103,7 +103,7 @@ public class StreamCountTest extends AbstractTest
         });
         Stream stream1 = streamPromise1.get(5, TimeUnit.SECONDS);
 
-        HeadersFrame frame2 = new HeadersFrame(3, metaData, null, false);
+        HeadersFrame frame2 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise2 = new FuturePromise<>();
         session.newStream(frame2, streamPromise2, new Stream.Listener.Adapter());
 
@@ -117,7 +117,7 @@ public class StreamCountTest extends AbstractTest
             // Expected
         }
 
-        stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), new Callback.Adapter());
+        stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
         Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -153,7 +153,7 @@ public class StreamCountTest extends AbstractTest
 
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = newRequest("GET", fields);
-        HeadersFrame frame1 = new HeadersFrame(1, metaData, null, false);
+        HeadersFrame frame1 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
         final CountDownLatch responseLatch = new CountDownLatch(1);
         session.newStream(frame1, streamPromise1, new Stream.Listener.Adapter()
@@ -168,7 +168,7 @@ public class StreamCountTest extends AbstractTest
 
         Stream stream1 = streamPromise1.get(5, TimeUnit.SECONDS);
 
-        HeadersFrame frame2 = new HeadersFrame(3, metaData, null, false);
+        HeadersFrame frame2 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise2 = new FuturePromise<>();
         session.newStream(frame2, streamPromise2, new Stream.Listener.Adapter()
         {
@@ -182,7 +182,7 @@ public class StreamCountTest extends AbstractTest
         streamPromise2.get(5, TimeUnit.SECONDS);
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
 
-        stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), new Callback.Adapter());
+        stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
         Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 }

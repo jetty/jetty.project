@@ -19,11 +19,9 @@
 package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -32,7 +30,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -40,7 +37,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -51,9 +48,9 @@ import org.junit.runners.Parameterized;
 public class FastCGIProxyServletTest
 {
     @Parameterized.Parameters
-    public static Collection<Object[]> parameters()
+    public static Object[] parameters()
     {
-        return Arrays.asList(new Object[]{true}, new Object[]{false});
+        return new Object[]{true, false};
     }
 
     private final boolean sendStatus200;
@@ -69,7 +66,9 @@ public class FastCGIProxyServletTest
 
     public void prepare(HttpServlet servlet) throws Exception
     {
-        server = new Server();
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
         httpConnector = new ServerConnector(server);
         server.addConnector(httpConnector);
 
@@ -89,14 +88,18 @@ public class FastCGIProxyServletTest
             }
         };
         ServletHolder fcgiServletHolder = new ServletHolder(fcgiServlet);
-        context.addServlet(fcgiServletHolder, "*.php");
+        fcgiServletHolder.setName("fcgi");
         fcgiServletHolder.setInitParameter(FastCGIProxyServlet.SCRIPT_ROOT_INIT_PARAM, "/scriptRoot");
         fcgiServletHolder.setInitParameter("proxyTo", "http://localhost");
         fcgiServletHolder.setInitParameter(FastCGIProxyServlet.SCRIPT_PATTERN_INIT_PARAM, "(.+?\\.php)");
+        context.addServlet(fcgiServletHolder, "*.php");
 
         context.addServlet(new ServletHolder(servlet), servletPath + "/*");
 
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
         client = new HttpClient();
+        client.setExecutor(clientThreads);
         server.addBean(client);
 
         server.start();
@@ -144,21 +147,17 @@ public class FastCGIProxyServletTest
         });
 
         Request request = client.newRequest("localhost", httpConnector.getLocalPort())
-                .onResponseContentAsync(new Response.AsyncContentListener()
+                .onResponseContentAsync((response, content, callback) ->
                 {
-                    @Override
-                    public void onContent(Response response, ByteBuffer content, Callback callback)
+                    try
                     {
-                        try
-                        {
-                            if (delay > 0)
-                                TimeUnit.MILLISECONDS.sleep(delay);
-                            callback.succeeded();
-                        }
-                        catch (InterruptedException x)
-                        {
-                            callback.failed(x);
-                        }
+                        if (delay > 0)
+                            TimeUnit.MILLISECONDS.sleep(delay);
+                        callback.succeeded();
+                    }
+                    catch (InterruptedException x)
+                    {
+                        callback.failed(x);
                     }
                 })
                 .path(path);

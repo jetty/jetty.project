@@ -88,11 +88,7 @@
       <Set name="headerCacheSize"><Property name="jetty.httpConfig.headerCacheSize" default="512" /></Set>
       <Set name="delayDispatchUntilContent"><Property name="jetty.httpConfig.delayDispatchUntilContent" deprecated="jetty.delayDispatchUntilContent" default="true"/></Set>
       <Set name="maxErrorDispatches"><Property name="jetty.httpConfig.maxErrorDispatches" default="10"/></Set>
-      <!-- Uncomment to enable handling of X-Forwarded- style headers
-      <Call name="addCustomizer">
-        <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
-      </Call>
-      -->
+      <Set name="blockingTimeout"><Property name="jetty.httpConfig.blockingTimeout" default="-1"/></Set>
     </New>
 
     <!-- =========================================================== -->

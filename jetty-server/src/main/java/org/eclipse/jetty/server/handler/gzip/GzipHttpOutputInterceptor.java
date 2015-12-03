@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
+import org.eclipse.jetty.http.GzipHttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -41,7 +42,6 @@ import org.eclipse.jetty.util.log.Logger;
 public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 {
     public static Logger LOG = Log.getLogger(GzipHttpOutputInterceptor.class);
-    private final static PreEncodedHttpField CONTENT_ENCODING_GZIP=new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING,"gzip");
     private final static byte[] GZIP_HEADER = new byte[] { (byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0 };
 
     public final static HttpField VARY_ACCEPT_ENCODING_USER_AGENT=new PreEncodedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING+", "+HttpHeader.USER_AGENT);
@@ -202,7 +202,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                 return;
             }
 
-            fields.put(CONTENT_ENCODING_GZIP);
+            fields.put(GzipHttpContent.CONTENT_ENCODING_GZIP);
             _crc.reset();
             _buffer=_channel.getByteBufferPool().acquire(_bufferSize,false);
             BufferUtil.fill(_buffer,GZIP_HEADER,0,GZIP_HEADER.length);
@@ -213,7 +213,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             if (etag!=null)
             {
                 int end = etag.length()-1;
-                etag=(etag.charAt(end)=='"')?etag.substring(0,end)+GzipHandler.ETAG_GZIP+'"':etag+GzipHandler.ETAG_GZIP;
+                etag=(etag.charAt(end)=='"')?etag.substring(0,end)+GzipHttpContent.ETAG_GZIP+'"':etag+GzipHttpContent.ETAG_GZIP;
                 fields.put(HttpHeader.ETAG,etag);
             }
             

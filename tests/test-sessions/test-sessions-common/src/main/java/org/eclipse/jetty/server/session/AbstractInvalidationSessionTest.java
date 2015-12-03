@@ -70,6 +70,7 @@ public abstract class AbstractInvalidationSessionTest
                 QueuedThreadPool executor = new QueuedThreadPool();
                 client.setExecutor(executor);
                 client.start();
+                
                 try
                 {
                     String[] urls = new String[2];

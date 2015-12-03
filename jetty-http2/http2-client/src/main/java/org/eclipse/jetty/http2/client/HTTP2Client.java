@@ -20,19 +20,16 @@ package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
-import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -40,10 +37,9 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -78,7 +74,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * // Prepare the HTTP request object.
  * MetaData.Request request = new MetaData.Request("PUT", new HttpURI("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
  * // Create the HTTP/2 HEADERS frame representing the HTTP request.
- * HeadersFrame headersFrame = new HeadersFrame(0, request, null, false);
+ * HeadersFrame headersFrame = new HeadersFrame(request, null, false);
  *
  * // Prepare the listener to receive the HTTP response frames.
  * Stream.Listener responseListener = new new Stream.Listener.Adapter()
@@ -117,7 +113,6 @@ public class HTTP2Client extends ContainerLifeCycle
     private Scheduler scheduler;
     private ByteBufferPool bufferPool;
     private ClientConnectionFactory connectionFactory;
-    private Queue<ISession> sessions;
     private SelectorManager selector;
     private int selectors = 1;
     private long idleTimeout = 30000;
@@ -137,12 +132,17 @@ public class HTTP2Client extends ContainerLifeCycle
             setByteBufferPool(new MappedByteBufferPool());
 
         if (connectionFactory == null)
-            setClientConnectionFactory(new HTTP2ClientConnectionFactory());
-
-        if (sessions == null)
         {
-            sessions = new ConcurrentLinkedQueue<>();
-            addBean(sessions);
+            HTTP2ClientConnectionFactory h2 = new HTTP2ClientConnectionFactory();
+            ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), h2, getProtocols());
+            setClientConnectionFactory((endPoint, context) ->
+            {
+                ClientConnectionFactory factory = h2;
+                SslContextFactory sslContextFactory = (SslContextFactory)context.get(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
+                if (sslContextFactory != null)
+                    factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), alpn);
+                return factory.newConnection(endPoint, context);
+            });
         }
 
         if (selector == null)
@@ -158,13 +158,6 @@ public class HTTP2Client extends ContainerLifeCycle
     protected SelectorManager newSelectorManager()
     {
         return new ClientSelectorManager(getExecutor(), getScheduler(), getSelectors());
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        closeConnections();
-        super.doStop();
     }
 
     public Executor getExecutor()
@@ -318,23 +311,6 @@ public class HTTP2Client extends ContainerLifeCycle
         channel.socket().setTcpNoDelay(true);
     }
 
-    private void closeConnections()
-    {
-        for (ISession session : sessions)
-            session.close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
-        sessions.clear();
-    }
-
-    public boolean addSession(ISession session)
-    {
-        return sessions.offer(session);
-    }
-
-    public boolean removeSession(ISession session)
-    {
-        return sessions.remove(session);
-    }
-
     private class ClientSelectorManager extends SelectorManager
     {
         private ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
@@ -343,34 +319,26 @@ public class HTTP2Client extends ContainerLifeCycle
         }
 
         @Override
-        protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
+        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
         {
-            return new SelectChannelEndPoint(channel, selector, selectionKey, getScheduler(), getIdleTimeout());
+            SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
+            endp.setIdleTimeout(getIdleTimeout());
+            return endp;
         }
 
         @Override
-        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;
             context.put(HTTP2ClientConnectionFactory.BYTE_BUFFER_POOL_CONTEXT_KEY, getByteBufferPool());
             context.put(HTTP2ClientConnectionFactory.EXECUTOR_CONTEXT_KEY, getExecutor());
             context.put(HTTP2ClientConnectionFactory.SCHEDULER_CONTEXT_KEY, getScheduler());
-
-            ClientConnectionFactory factory = getClientConnectionFactory();
-
-            SslContextFactory sslContextFactory = (SslContextFactory)context.get(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
-            if (sslContextFactory != null)
-            {
-                ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), factory, getProtocols());
-                factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), alpn);
-            }
-
-            return factory.newConnection(endpoint, context);
+            return getClientConnectionFactory().newConnection(endpoint, context);
         }
 
         @Override
-        protected void connectionFailed(SocketChannel channel, Throwable failure, Object attachment)
+        protected void connectionFailed(SelectableChannel channel, Throwable failure, Object attachment)
         {
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;

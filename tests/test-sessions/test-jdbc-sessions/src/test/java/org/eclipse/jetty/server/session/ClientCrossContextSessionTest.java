@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
 import org.junit.After;
 import org.junit.Test;
 
@@ -46,12 +43,8 @@ public class ClientCrossContextSessionTest extends AbstractClientCrossContextSes
     @After
     public void tearDown() throws Exception 
     {
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
+        JdbcTestServer.shutdown(null);
     }
+    
+   
 }

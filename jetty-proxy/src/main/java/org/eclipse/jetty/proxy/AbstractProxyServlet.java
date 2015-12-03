@@ -413,11 +413,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
      * like {@link HttpServletResponse#sendError(int)}.</p>
      *
      * @param clientRequest the client request
-     * @param clientResponse the client response
+     * @param proxyResponse the client response
      */
-    protected void onProxyRewriteFailed(HttpServletRequest clientRequest, HttpServletResponse clientResponse)
+    protected void onProxyRewriteFailed(HttpServletRequest clientRequest, HttpServletResponse proxyResponse)
     {
-        clientResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        sendProxyResponseError(clientRequest, proxyResponse, HttpStatus.FORBIDDEN_403);
     }
 
     protected boolean hasContent(HttpServletRequest clientRequest)
@@ -549,8 +549,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
             int status = failure instanceof TimeoutException ?
                     HttpStatus.REQUEST_TIMEOUT_408 :
                     HttpStatus.INTERNAL_SERVER_ERROR_500;
-            proxyResponse.setStatus(status);
-            clientRequest.getAsyncContext().complete();
+            sendProxyResponseError(clientRequest, proxyResponse, status);
         }
     }
 
@@ -636,19 +635,24 @@ public abstract class AbstractProxyServlet extends HttpServlet
         else
         {
             proxyResponse.resetBuffer();
-            if (failure instanceof TimeoutException)
-                proxyResponse.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
-            else
-                proxyResponse.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
-            proxyResponse.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
-            AsyncContext asyncContext = clientRequest.getAsyncContext();
-            asyncContext.complete();
+            int status = failure instanceof TimeoutException ?
+                    HttpStatus.GATEWAY_TIMEOUT_504 :
+                    HttpStatus.BAD_GATEWAY_502;
+            sendProxyResponseError(clientRequest, proxyResponse, status);
         }
     }
 
     protected int getRequestId(HttpServletRequest clientRequest)
     {
         return System.identityHashCode(clientRequest);
+    }
+
+    protected void sendProxyResponseError(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, int status)
+    {
+        proxyResponse.setStatus(status);
+        proxyResponse.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+        if (clientRequest.isAsyncStarted())
+            clientRequest.getAsyncContext().complete();
     }
 
     /**

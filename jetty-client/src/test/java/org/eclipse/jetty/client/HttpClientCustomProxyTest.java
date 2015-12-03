@@ -146,7 +146,7 @@ public class HttpClientCustomProxyTest
         }
     }
 
-    private class CAFEBABEConnection extends AbstractConnection
+    private class CAFEBABEConnection extends AbstractConnection implements Callback
     {
         private final ClientConnectionFactory connectionFactory;
         private final Map<String, Object> context;
@@ -162,8 +162,19 @@ public class HttpClientCustomProxyTest
         public void onOpen()
         {
             super.onOpen();
+            getEndPoint().write(this, ByteBuffer.wrap(CAFE_BABE));
+        }
+
+        @Override
+        public void succeeded()
+        {
             fillInterested();
-            getEndPoint().write(new Callback.Adapter(), ByteBuffer.wrap(CAFE_BABE));
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            close();
         }
 
         @Override
@@ -177,7 +188,7 @@ public class HttpClientCustomProxyTest
                 Assert.assertArrayEquals(CAFE_BABE, buffer.array());
 
                 // We are good, upgrade the connection
-                ClientConnectionFactory.Helper.replaceConnection(this, connectionFactory.newConnection(getEndPoint(), context));
+                getEndPoint().upgrade(connectionFactory.newConnection(getEndPoint(), context));
             }
             catch (Throwable x)
             {
@@ -206,7 +217,7 @@ public class HttpClientCustomProxyTest
         }
     }
 
-    private class CAFEBABEServerConnection extends AbstractConnection
+    private class CAFEBABEServerConnection extends AbstractConnection implements Callback
     {
         private final org.eclipse.jetty.server.ConnectionFactory connectionFactory;
 
@@ -232,15 +243,25 @@ public class HttpClientCustomProxyTest
                 int filled = getEndPoint().fill(buffer);
                 Assert.assertEquals(4, filled);
                 Assert.assertArrayEquals(CAFE_BABE, buffer.array());
-                getEndPoint().write(new Callback.Adapter(), buffer);
-
-                // We are good, upgrade the connection
-                ClientConnectionFactory.Helper.replaceConnection(this, connectionFactory.newConnection(connector, getEndPoint()));
+                getEndPoint().write(this, buffer);
             }
             catch (Throwable x)
             {
                 close();
             }
+        }
+
+        @Override
+        public void succeeded()
+        {
+            // We are good, upgrade the connection
+            getEndPoint().upgrade(connectionFactory.newConnection(connector, getEndPoint()));
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            close();
         }
     }
 }

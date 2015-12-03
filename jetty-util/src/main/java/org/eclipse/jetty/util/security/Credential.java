@@ -104,7 +104,20 @@ public abstract class Credential implements Serializable
             String passwd = credentials.toString();
             return _cooked.equals(UnixCrypt.crypt(passwd, _cooked));
         }
-
+        
+        
+        @Override
+        public boolean equals (Object credential)
+        {
+            if (!(credential instanceof Crypt))
+                return false;
+            
+            Crypt c = (Crypt)credential;
+            
+            return _cooked.equals(c._cooked);
+        }
+        
+        
         public static String crypt(String user, String pw)
         {
             return "CRYPT:" + UnixCrypt.crypt(pw, user);
@@ -167,12 +180,7 @@ public abstract class Credential implements Serializable
                 }
                 else if (credentials instanceof MD5)
                 {
-                    MD5 md5 = (MD5) credentials;
-                    if (_digest.length != md5._digest.length) return false;
-                    boolean digestMismatch = false;
-                    for (int i = 0; i < _digest.length; i++)
-                        digestMismatch |= (_digest[i] != md5._digest[i]);
-                    return !digestMismatch;
+                    return equals((MD5)credentials);
                 }
                 else if (credentials instanceof Credential)
                 {
@@ -191,6 +199,24 @@ public abstract class Credential implements Serializable
                 LOG.warn(e);
                 return false;
             }
+        }
+        
+        
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (obj instanceof MD5)
+            {
+                MD5 md5 = (MD5) obj;
+                if (_digest.length != md5._digest.length) return false;
+                boolean digestMismatch = false;
+                for (int i = 0; i < _digest.length; i++)
+                    digestMismatch |= (_digest[i] != md5._digest[i]);
+                return !digestMismatch;
+            }
+            
+            return false;
         }
 
         /* ------------------------------------------------------------ */

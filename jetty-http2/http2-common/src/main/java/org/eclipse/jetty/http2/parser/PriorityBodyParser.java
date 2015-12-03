@@ -28,7 +28,7 @@ public class PriorityBodyParser extends BodyParser
     private State state = State.PREPARE;
     private int cursor;
     private boolean exclusive;
-    private int streamId;
+    private int parentStreamId;
 
     public PriorityBodyParser(HeaderParser headerParser, Parser.Listener listener)
     {
@@ -40,7 +40,7 @@ public class PriorityBodyParser extends BodyParser
         state = State.PREPARE;
         cursor = 0;
         exclusive = false;
-        streamId = 0;
+        parentStreamId = 0;
     }
 
     @Override
@@ -67,40 +67,44 @@ public class PriorityBodyParser extends BodyParser
                     // because the 31 least significant bits represent the stream id.
                     int currByte = buffer.get(buffer.position());
                     exclusive = (currByte & 0x80) == 0x80;
-                    state = State.STREAM_ID;
+                    state = State.PARENT_STREAM_ID;
                     break;
                 }
-                case STREAM_ID:
+                case PARENT_STREAM_ID:
                 {
                     if (buffer.remaining() >= 4)
                     {
-                        streamId = buffer.getInt();
-                        streamId &= 0x7F_FF_FF_FF;
+                        parentStreamId = buffer.getInt();
+                        parentStreamId &= 0x7F_FF_FF_FF;
                         state = State.WEIGHT;
                     }
                     else
                     {
-                        state = State.STREAM_ID_BYTES;
+                        state = State.PARENT_STREAM_ID_BYTES;
                         cursor = 4;
                     }
                     break;
                 }
-                case STREAM_ID_BYTES:
+                case PARENT_STREAM_ID_BYTES:
                 {
                     int currByte = buffer.get() & 0xFF;
                     --cursor;
-                    streamId += currByte << (8 * cursor);
+                    parentStreamId += currByte << (8 * cursor);
                     if (cursor == 0)
                     {
-                        streamId &= 0x7F_FF_FF_FF;
+                        parentStreamId &= 0x7F_FF_FF_FF;
                         state = State.WEIGHT;
                     }
                     break;
                 }
                 case WEIGHT:
                 {
-                    int weight = buffer.get() & 0xFF;
-                    return onPriority(streamId, weight, exclusive);
+                    // SPEC: stream cannot depend on itself.
+                    if (getStreamId() == parentStreamId)
+                        return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_priority_frame");
+
+                    int weight = (buffer.get() & 0xFF) + 1;
+                    return onPriority(parentStreamId, weight, exclusive);
                 }
                 default:
                 {
@@ -111,9 +115,9 @@ public class PriorityBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onPriority(int streamId, int weight, boolean exclusive)
+    private boolean onPriority(int parentStreamId, int weight, boolean exclusive)
     {
-        PriorityFrame frame = new PriorityFrame(streamId, getStreamId(), weight, exclusive);
+        PriorityFrame frame = new PriorityFrame(getStreamId(), parentStreamId, weight, exclusive);
         reset();
         notifyPriority(frame);
         return true;
@@ -121,6 +125,6 @@ public class PriorityBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, EXCLUSIVE, STREAM_ID, STREAM_ID_BYTES, WEIGHT
+        PREPARE, EXCLUSIVE, PARENT_STREAM_ID, PARENT_STREAM_ID_BYTES, WEIGHT
     }
 }

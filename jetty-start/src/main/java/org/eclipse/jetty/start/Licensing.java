@@ -57,6 +57,8 @@ public class Licensing
 
     public boolean acknowledgeLicenses() throws IOException
     {
+        StartLog.debug("Requesting License Acknowledgement");
+        
         if (!hasLicenses())
         {
             return true;

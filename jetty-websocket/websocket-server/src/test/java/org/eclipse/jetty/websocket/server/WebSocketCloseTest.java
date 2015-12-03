@@ -22,8 +22,8 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -41,6 +41,7 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -50,7 +51,6 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
 
 /**
  * Tests various close scenarios
@@ -139,7 +139,7 @@ public class WebSocketCloseTest
             LOG.debug("onWebSocketText({})",message);
             if (message.equalsIgnoreCase("openSessions"))
             {
-                Set<WebSocketSession> sessions = container.getOpenSessions();
+                Collection<WebSocketSession> sessions = container.getOpenSessions();
 
                 StringBuilder ret = new StringBuilder();
                 ret.append("openSessions.size=").append(sessions.size()).append('\n');
@@ -218,10 +218,9 @@ public class WebSocketCloseTest
      *             on test failure
      */
     @Test
-    @Ignore("RELEASE")
     public void testFastClose() throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastclose");
             client.setTimeout(1,TimeUnit.SECONDS);
@@ -252,10 +251,9 @@ public class WebSocketCloseTest
      *             on test failure
      */
     @Test
-    @Ignore("RELEASE")
     public void testFastFail() throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastfail");
             client.setTimeout(1,TimeUnit.SECONDS);
@@ -294,7 +292,7 @@ public class WebSocketCloseTest
         fastClose();
         dropConnection();
 
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("container");
             client.setTimeout(1,TimeUnit.SECONDS);
@@ -328,7 +326,7 @@ public class WebSocketCloseTest
 
     private void fastClose() throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastclose");
             client.setTimeout(1,TimeUnit.SECONDS);
@@ -355,7 +353,7 @@ public class WebSocketCloseTest
 
     private void fastFail() throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastfail");
             client.setTimeout(1,TimeUnit.SECONDS);
@@ -380,7 +378,7 @@ public class WebSocketCloseTest
     
     private void dropConnection() throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("container");
             client.setTimeout(1,TimeUnit.SECONDS);

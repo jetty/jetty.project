@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -34,6 +35,7 @@ public class ServerParser extends Parser
     private final Listener listener;
     private final PrefaceParser prefaceParser;
     private State state = State.PREFACE;
+    private boolean notifyPreface = true;
 
     public ServerParser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
     {
@@ -61,6 +63,16 @@ public class ServerParser extends Parser
         prefaceParser.directUpgrade();
     }
 
+    /**
+     * <p>The standard HTTP/1.1 upgrade path.</p>
+     */
+    public void standardUpgrade()
+    {
+        if (state != State.PREFACE)
+            throw new IllegalStateException();
+        notifyPreface = false;
+    }
+
     @Override
     public void parse(ByteBuffer buffer)
     {
@@ -77,6 +89,8 @@ public class ServerParser extends Parser
                     {
                         if (!prefaceParser.parse(buffer))
                             return;
+                        if (notifyPreface)
+                            onPreface();
                         state = State.SETTINGS;
                         break;
                     }
@@ -84,7 +98,7 @@ public class ServerParser extends Parser
                     {
                         if (!parseHeader(buffer))
                             return;
-                        if (getFrameType() != FrameType.SETTINGS.getType())
+                        if (getFrameType() != FrameType.SETTINGS.getType() || hasFlag(Flags.ACK))
                         {
                             BufferUtil.clear(buffer);
                             notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_preface");
@@ -92,7 +106,6 @@ public class ServerParser extends Parser
                         }
                         if (!parseBody(buffer))
                             return;
-                        onPreface();
                         state = State.FRAMES;
                         break;
                     }

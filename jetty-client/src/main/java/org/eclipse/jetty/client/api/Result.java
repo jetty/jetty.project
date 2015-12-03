@@ -52,6 +52,14 @@ public class Result
         this.responseFailure = responseFailure;
     }
 
+    public Result(Result result, Throwable responseFailure)
+    {
+        this.request = result.request;
+        this.requestFailure = result.requestFailure;
+        this.response = result.response;
+        this.responseFailure = responseFailure;
+    }
+
     /**
      * @return the request object
      */

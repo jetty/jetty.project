@@ -83,7 +83,7 @@ public interface ExecutionStrategy
             {
                 try
                 {
-                    Class<? extends ExecutionStrategy> c = Loader.loadClass(producer.getClass(),strategy);
+                    Class<? extends ExecutionStrategy> c = Loader.loadClass(strategy);
                     Constructor<? extends ExecutionStrategy> m = c.getConstructor(Producer.class,Executor.class);
                     LOG.info("Use {} for {}",c.getSimpleName(),producer.getClass().getName());
                     return  m.newInstance(producer,executor);

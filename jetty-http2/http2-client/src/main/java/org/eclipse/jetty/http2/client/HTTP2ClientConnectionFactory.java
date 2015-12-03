@@ -102,7 +102,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         @Override
         public void onOpen()
         {
-            super.onOpen();
             Map<Integer, Integer> settings = listener.onPreface(getSession());
             if (settings == null)
                 settings = Collections.emptyMap();
@@ -120,19 +119,15 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             {
                 session.frames(null, this, prefaceFrame, settingsFrame);
             }
-        }
-
-        @Override
-        public void onClose()
-        {
-            super.onClose();
-            client.removeSession(getSession());
+            // Only start reading from server after we have sent the client preface,
+            // otherwise we risk to read the server preface (a SETTINGS frame) and
+            // reply to that before we have the chance to send the client preface.
+            super.onOpen();
         }
 
         @Override
         public void succeeded()
         {
-            client.addSession(getSession());
             promise.succeeded(getSession());
         }
 

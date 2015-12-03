@@ -30,6 +30,8 @@ import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.junit.Assert;
 
@@ -42,6 +44,8 @@ public class JettyTrackingSocket extends WebSocketAdapter
 
     public int closeCode = -1;
     public Exchanger<String> messageExchanger;
+    public UpgradeRequest connectUpgradeRequest;
+    public UpgradeResponse connectUpgradeResponse;
     public StringBuilder closeMessage = new StringBuilder();
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
@@ -124,6 +128,8 @@ public class JettyTrackingSocket extends WebSocketAdapter
     public void onWebSocketConnect(Session session)
     {
         super.onWebSocketConnect(session);
+        connectUpgradeRequest = session.getUpgradeRequest();
+        connectUpgradeResponse = session.getUpgradeResponse();
         openLatch.countDown();
     }
 

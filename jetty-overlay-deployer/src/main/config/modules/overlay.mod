@@ -1,6 +1,6 @@
-#
-# Jetty Overlay module
-#
+[description]
+Enable the jetty overlay deployer that allows
+webapplications to be dynamically composed of layers.
 
 [depend]
 deploy

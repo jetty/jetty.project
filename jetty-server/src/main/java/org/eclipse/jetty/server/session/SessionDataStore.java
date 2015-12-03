@@ -34,11 +34,12 @@ public interface SessionDataStore extends LifeCycle
     /**
      * Initialize this session data store for the
      * given context. A SessionDataStore can only 
-     * be used by one context.
+     * be used by one context(/session manager).
      * 
      * @param contextId
      */
     void initialize(ContextId contextId);
+    
     
     
     /**

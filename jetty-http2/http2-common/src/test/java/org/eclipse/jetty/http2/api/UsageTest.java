@@ -33,7 +33,7 @@ public class UsageTest
 //            @Override
 //            public void succeeded(Session session)
 //            {
-//                session.newStream(new HeadersFrame(0, info, null, true), new Stream.Listener.Adapter()
+//                session.newStream(new HeadersFrame(info, null, true), new Stream.Listener.Adapter()
 //                {
 //                    @Override
 //                    public void onData(Stream stream, DataFrame frame)

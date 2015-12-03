@@ -84,29 +84,42 @@ public abstract class AbstractConnection implements Connection
 
     protected void failedCallback(final Callback callback, final Throwable x)
     {
-        // TODO always dispatch failure ?
-        try
+        if (callback.isNonBlocking())
         {
-            getExecutor().execute(new Runnable()
+            try
             {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        callback.failed(x);
-                    }
-                    catch(Exception e)
-                    {
-                        LOG.warn(e);
-                    }
-                }
-            });
+                callback.failed(x);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
         }
-        catch(RejectedExecutionException e)
+        else
         {
-            LOG.debug(e);
-            callback.failed(x);
+            try
+            {
+                getExecutor().execute(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            callback.failed(x);
+                        }
+                        catch (Exception e)
+                        {
+                            LOG.warn(e);
+                        }
+                    }
+                });
+            }
+            catch(RejectedExecutionException e)
+            {
+                LOG.debug(e);
+                callback.failed(x);
+            }
         }
     }
 
@@ -234,7 +247,10 @@ public abstract class AbstractConnection implements Connection
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x[%s]",
+                getClass().getSimpleName(),
+                hashCode(),
+                _endPoint);
     }
 
     private class ReadCallback implements Callback
@@ -256,5 +272,5 @@ public abstract class AbstractConnection implements Connection
         {
             return String.format("AC.ReadCB@%x{%s}", AbstractConnection.this.hashCode(),AbstractConnection.this);
         }
-    };
+    }
 }

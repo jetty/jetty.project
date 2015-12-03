@@ -27,40 +27,37 @@ import java.nio.file.Path;
 import java.text.CollationKey;
 import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.eclipse.jetty.start.graph.Node;
+import java.util.stream.Collectors;
 
 /**
  * Represents a Module metadata, as defined in Jetty.
  */
-public class Module extends Node<Module>
+public class Module
 {
     private static final String VERSION_UNSPECIFIED = "9.2";
 
-    public static class NameComparator implements Comparator<Module>
-    {
-        private Collator collator = Collator.getInstance();
-
-        @Override
-        public int compare(Module o1, Module o2)
-        {
-            // by name (not really needed, but makes for predictable test cases)
-            CollationKey k1 = collator.getCollationKey(o1.fileRef);
-            CollationKey k2 = collator.getCollationKey(o2.fileRef);
-            return k1.compareTo(k2);
-        }
-    }
-
-    /** The file of the module */
-    private Path file;
-    
     /** The name of this Module (as a filesystem reference) */
     private String fileRef;
+    
+    /** The file of the module */
+    private final Path file;
+
+    /** The name of the module */
+    private String name;
+    
+    /** The module description */
+    private List<String> description;
     
     /** The version of Jetty the module supports */
     private Version version;
@@ -70,17 +67,22 @@ public class Module extends Node<Module>
     
     /** List of ini template lines */
     private List<String> iniTemplate;
-    private boolean hasIniTemplate = false;
     
     /** List of default config */
     private List<String> defaultConfig;
-    private boolean hasDefaultConfig = false;
     
     /** List of library options for this Module */
     private List<String> libs;
     
     /** List of files for this Module */
     private List<String> files;
+    
+    /** List of selections for this Module */
+    private Set<String> selections;
+    
+    /** Boolean true if directly enabled, false if selections are transitive */
+    private boolean enabled;
+    
     /** Skip File Validation (default: false) */
     private boolean skipFilesValidation = false;
     
@@ -89,6 +91,12 @@ public class Module extends Node<Module>
     
     /** License lines */
     private List<String> license;
+    
+    /** Dependencies */
+    private Set<String> depends;
+    
+    /** Optional */
+    private  Set<String> optional;
 
     public Module(BaseHome basehome, Path file) throws FileNotFoundException, IOException
     {
@@ -97,12 +105,17 @@ public class Module extends Node<Module>
 
         // Strip .mod
         this.fileRef = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(file.getFileName().toString()).replaceFirst("");
-        this.setName(fileRef);
+        name=fileRef;
 
         init(basehome);
         process(basehome);
     }
 
+    public String getName()
+    {
+        return name;
+    }
+    
     @Override
     public boolean equals(Object obj)
     {
@@ -135,13 +148,9 @@ public class Module extends Node<Module>
 
     public void expandProperties(Props props)
     {
-        // Expand Parents
-        List<String> parents = new ArrayList<>();
-        for (String parent : getParentNames())
-        {
-            parents.add(props.expand(parent));
-        }
-        setParentNames(parents);
+        Function<String,String> expander = d->{return props.expand(d);};
+        depends=depends.stream().map(expander).collect(Collectors.toSet());
+        optional=optional.stream().map(expander).collect(Collectors.toSet());
     }
 
     public List<String> getDefaultConfig()
@@ -196,12 +205,12 @@ public class Module extends Node<Module>
 
     public boolean hasDefaultConfig()
     {
-        return hasDefaultConfig;
+        return !defaultConfig.isEmpty();
     }
     
     public boolean hasIniTemplate()
     {
-        return hasIniTemplate;
+        return !iniTemplate.isEmpty();
     }
 
     @Override
@@ -220,6 +229,7 @@ public class Module extends Node<Module>
 
     private void init(BaseHome basehome)
     {
+        description = new ArrayList<>();
         xmls = new ArrayList<>();
         defaultConfig = new ArrayList<>();
         iniTemplate = new ArrayList<>();
@@ -227,6 +237,9 @@ public class Module extends Node<Module>
         files = new ArrayList<>();
         jvmArgs = new ArrayList<>();
         license = new ArrayList<>();
+        depends = new HashSet<>();
+        optional = new HashSet<>();
+        selections = new HashSet<>();
 
         String name = basehome.toShortForm(file);
 
@@ -238,7 +251,7 @@ public class Module extends Node<Module>
             throw new RuntimeException("Invalid Module location (must be located under /modules/ directory): " + name);
         }
         this.fileRef = mat.group(1).replace('\\','/');
-        setName(this.fileRef);
+        this.name=this.fileRef;
     }
 
     /**
@@ -248,7 +261,7 @@ public class Module extends Node<Module>
      */
     public boolean isDynamic()
     {
-        return !getName().equals(fileRef);
+        return !name.equals(fileRef);
     }
 
     public boolean hasFiles(BaseHome baseHome, Props props)
@@ -299,7 +312,6 @@ public class Module extends Node<Module>
                         if ("INI-TEMPLATE".equals(sectionType))
                         {
                             iniTemplate.add(line);
-                            hasIniTemplate = true;
                         }
                     }
                     else
@@ -309,8 +321,11 @@ public class Module extends Node<Module>
                             case "":
                                 // ignore (this would be entries before first section)
                                 break;
+                            case "DESCRIPTION":
+                                description.add(line);
+                                break;
                             case "DEPEND":
-                                addParentName(line);
+                                depends.add(line);
                                 break;
                             case "FILES":
                                 files.add(line);
@@ -318,11 +333,9 @@ public class Module extends Node<Module>
                             case "DEFAULTS": // old name introduced in 9.2.x
                             case "INI": // new name for 9.3+
                                 defaultConfig.add(line);
-                                hasDefaultConfig = true;
                                 break;
                             case "INI-TEMPLATE":
                                 iniTemplate.add(line);
-                                hasIniTemplate = true;
                                 break;
                             case "LIB":
                                 libs.add(line);
@@ -332,10 +345,10 @@ public class Module extends Node<Module>
                                 license.add(line);
                                 break;
                             case "NAME":
-                                setName(line);
+                                name=line;
                                 break;
                             case "OPTIONAL":
-                                addOptionalParentName(line);
+                                optional.add(line);
                                 break;
                             case "EXEC":
                                 jvmArgs.add(line);
@@ -387,7 +400,62 @@ public class Module extends Node<Module>
         {
             str.append(",selected");
         }
+        if (isTransitive())
+        {
+            str.append(",transitive");
+        }
         str.append(']');
         return str.toString();
+    }
+
+    public Set<String> getDepends()
+    {
+        return Collections.unmodifiableSet(depends);
+    }
+
+    public Set<String> getOptional()
+    {
+        return Collections.unmodifiableSet(optional);
+    }
+    
+    public List<String> getDescription()
+    {
+        return description;
+    }
+    
+    public boolean isSelected()
+    {
+        return !selections.isEmpty();
+    }
+    
+    public Set<String> getSelections()
+    {
+        return Collections.unmodifiableSet(selections);
+    }
+
+    public boolean addSelection(String enabledFrom,boolean transitive)
+    {
+        boolean updated=selections.isEmpty();
+        if (transitive)
+        {
+            if (!enabled)
+                selections.add(enabledFrom);
+        }
+        else
+        {
+            if (!enabled)
+            {
+                updated=true;
+                selections.clear(); // clear any transitive enabling
+            }
+            enabled=true;
+            selections.add(enabledFrom);
+        }
+        return updated;
+    }
+
+    public boolean isTransitive()
+    {
+        return isSelected() && !enabled;
     }
 }

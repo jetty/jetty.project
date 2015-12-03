@@ -616,7 +616,7 @@ public class StdErrLogTest
     @Test
     public void testGetChildLogger_NullParent()
     {
-        StdErrLog log = new StdErrLog(null,new Properties());
+        AbstractLogger log = new StdErrLog(null,new Properties());
 
         Assert.assertThat("Logger.name", log.getName(), is(""));
 

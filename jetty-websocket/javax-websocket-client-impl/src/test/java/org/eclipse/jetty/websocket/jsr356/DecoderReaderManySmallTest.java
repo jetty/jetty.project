@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -113,7 +113,7 @@ public class DecoderReaderManySmallTest
     private static class EventIdServer implements Runnable
     {
         private BlockheadServer server;
-        private ServerConnection sconnection;
+        private IBlockheadServerConnection sconnection;
         private CountDownLatch connectLatch = new CountDownLatch(1);
 
         public EventIdServer(BlockheadServer server)

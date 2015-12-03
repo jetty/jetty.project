@@ -43,10 +43,10 @@ public class PingGenerator extends FrameGenerator
 
     public void generatePing(ByteBufferPool.Lease lease, byte[] payload, boolean reply)
     {
-        if (payload.length != 8)
+        if (payload.length != PingFrame.PING_LENGTH)
             throw new IllegalArgumentException("Invalid payload length: " + payload.length);
 
-        ByteBuffer header = generateHeader(lease, FrameType.PING, 8, reply ? Flags.ACK : Flags.NONE, 0);
+        ByteBuffer header = generateHeader(lease, FrameType.PING, PingFrame.PING_LENGTH, reply ? Flags.ACK : Flags.NONE, 0);
 
         header.put(payload);
 

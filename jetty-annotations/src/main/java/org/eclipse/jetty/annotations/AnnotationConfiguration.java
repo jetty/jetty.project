@@ -88,7 +88,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     protected CounterStatistic _webInfLibStats;
     protected CounterStatistic _webInfClassesStats;
     protected Pattern _sciExcludePattern;
-  
+    protected ServiceLoader<ServletContainerInitializer> _loadedInitializers = null;
     /**
      * TimeStatistic
      *
@@ -413,6 +413,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
             context.removeBean(starter);
             context.removeAttribute(CONTAINER_INITIALIZER_STARTER);
         }
+        
+        if (_loadedInitializers != null)
+            _loadedInitializers.reload();
     }
     
     /** 
@@ -823,22 +826,28 @@ public class AnnotationConfiguration extends AbstractConfiguration
         return sci.getClass().getClassLoader()==context.getClassLoader().getParent();
     }
 
+    /**
+     * Get SCIs that are not excluded from consideration
+     * @param context the web app context 
+     * @return the list of non-excluded servlet container initializers
+     * @throws Exception if unable to get list 
+     */
     public List<ServletContainerInitializer> getNonExcludedInitializers (WebAppContext context)
     throws Exception
     {
         ArrayList<ServletContainerInitializer> nonExcludedInitializers = new ArrayList<ServletContainerInitializer>();
-
+      
         //We use the ServiceLoader mechanism to find the ServletContainerInitializer classes to inspect
         long start = 0;
 
         ClassLoader old = Thread.currentThread().getContextClassLoader();
-        ServiceLoader<ServletContainerInitializer> loadedInitializers = null;
+       
         try
         {        
             if (LOG.isDebugEnabled())
                 start = System.nanoTime();
             Thread.currentThread().setContextClassLoader(context.getClassLoader());
-            loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class);
+            _loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class);
         }
         finally
         {
@@ -847,21 +856,22 @@ public class AnnotationConfiguration extends AbstractConfiguration
         
         if (LOG.isDebugEnabled())
             LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime()-start), TimeUnit.NANOSECONDS)));
-        
+     
         
         Map<ServletContainerInitializer,Resource> sciResourceMap = new HashMap<ServletContainerInitializer,Resource>();
         ServletContainerInitializerOrdering initializerOrdering = getInitializerOrdering(context);
 
         //Get initial set of SCIs that aren't from excluded jars or excluded by the containerExclusionPattern, or excluded
         //because containerInitializerOrdering omits it
-        for (ServletContainerInitializer sci:loadedInitializers)
-        {       
+        for (ServletContainerInitializer sci:_loadedInitializers)
+        { 
+            
             if (matchesExclusionPattern(sci)) 
             {
                 if (LOG.isDebugEnabled()) LOG.debug("{} excluded by pattern", sci);
                 continue;
             }
-            
+
             Resource sciResource = getJarFor(sci);
             if (isFromExcludedJar(context, sci, sciResource)) 
             { 
@@ -921,7 +931,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 {
                     for (Map.Entry<ServletContainerInitializer, Resource> entry:sciResourceMap.entrySet())
                     {
-                        if (webInfJar.equals(entry.getValue()))
+                      if (webInfJar.equals(entry.getValue()))
                             nonExcludedInitializers.add(entry.getKey());
                     }
                 }
@@ -933,7 +943,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
             int i=0;
             for (ServletContainerInitializer sci:nonExcludedInitializers)
                 LOG.debug("ServletContainerInitializer: {} {} from {}",(++i), sci.getClass().getName(), sciResourceMap.get(sci));
-        }
+        }    
+        
         return nonExcludedInitializers;
     }
 

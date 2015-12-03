@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -45,7 +44,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.PushBuilder;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -157,6 +156,9 @@ public class PushCacheFilter implements Filter
             LOG.debug("{} {} referrer={} conditional={}", request.getMethod(), request.getRequestURI(), referrer, conditional);
 
         String path = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
+        String query = request.getQueryString();
+        if (query != null)
+            path += "?" + query;
         if (referrer != null)
         {
             HttpURI referrerURI = new HttpURI(referrer);
@@ -186,14 +188,13 @@ public class PushCacheFilter implements Filter
                                 long primaryTimestamp = primaryResource._timestamp.get();
                                 if (primaryTimestamp != 0)
                                 {
-                                    RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher(path);
                                     if (now - primaryTimestamp < TimeUnit.MILLISECONDS.toNanos(_associatePeriod))
                                     {
-                                        ConcurrentMap<String, RequestDispatcher> associated = primaryResource._associated;
+                                        ConcurrentMap<String, String> associated = primaryResource._associated;
                                         // Not strictly concurrent-safe, just best effort to limit associations.
                                         if (associated.size() <= _maxAssociations)
                                         {
-                                            if (associated.putIfAbsent(path, dispatcher) == null)
+                                            if (associated.putIfAbsent(path, path) == null)
                                             {
                                                 if (LOG.isDebugEnabled())
                                                     LOG.debug("Associated {} to {}", path, referrerPathNoContext);
@@ -253,11 +254,14 @@ public class PushCacheFilter implements Filter
         // Push associated for non conditional
         if (!conditional && !primaryResource._associated.isEmpty())
         {
-            for (RequestDispatcher dispatcher : primaryResource._associated.values())
+            PushBuilder builder = Request.getBaseRequest(request).getPushBuilder();
+
+            for (String associated : primaryResource._associated.values())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Pushing {} for {}", dispatcher, path);
-                ((Dispatcher)dispatcher).push(request);
+                    LOG.debug("Pushing {} for {}", associated, path);
+
+                builder.path(associated).push();
             }
         }
 
@@ -297,7 +301,7 @@ public class PushCacheFilter implements Filter
 
     private static class PrimaryResource
     {
-        private final ConcurrentMap<String, RequestDispatcher> _associated = new ConcurrentHashMap<>();
+        private final ConcurrentMap<String, String> _associated = new ConcurrentHashMap<>();
         private final AtomicLong _timestamp = new AtomicLong();
     }
 }

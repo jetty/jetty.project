@@ -24,6 +24,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.channels.Channel;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -32,6 +33,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
@@ -229,7 +231,6 @@ public class ServerConnector extends AbstractNetworkConnector
         _manager = newSelectorManager(getExecutor(), getScheduler(),
             selectors>0?selectors:Math.max(1,Math.min(4,Runtime.getRuntime().availableProcessors()/2)));
         addBean(_manager, true);
-        setSelectorPriorityDelta(-1);
         setAcceptorPriorityDelta(-2);
     }
 
@@ -426,7 +427,7 @@ public class ServerConnector extends AbstractNetworkConnector
         return _localPort;
     }
 
-    protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+    protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
     {
         return new SelectChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout());
     }
@@ -493,19 +494,19 @@ public class ServerConnector extends AbstractNetworkConnector
         }
 
         @Override
-        protected void accepted(SocketChannel channel) throws IOException
+        protected void accepted(SelectableChannel channel) throws IOException
         {
-            ServerConnector.this.accepted(channel);
+            ServerConnector.this.accepted((SocketChannel)channel);
         }
 
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+        protected ChannelEndPoint newEndPoint(SelectableChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
         {
-            return ServerConnector.this.newEndPoint(channel, selectSet, selectionKey);
+            return ServerConnector.this.newEndPoint((SocketChannel)channel, selectSet, selectionKey);
         }
 
         @Override
-        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
             return getDefaultConnectionFactory().newConnection(ServerConnector.this, endpoint);
         }

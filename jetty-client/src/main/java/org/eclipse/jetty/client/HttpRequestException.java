@@ -20,7 +20,7 @@ package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.Request;
 
-public class HttpRequestException extends Throwable
+public class HttpRequestException extends RuntimeException
 {
     private final Request request;
 

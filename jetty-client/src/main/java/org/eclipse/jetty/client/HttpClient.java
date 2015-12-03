@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.CookieStore;
@@ -498,24 +497,18 @@ public class HttpClient extends ContainerLifeCycle
         if (destination == null)
         {
             destination = transport.newHttpDestination(origin);
-            if (isRunning())
+            addManaged(destination);
+            HttpDestination existing = destinations.putIfAbsent(origin, destination);
+            if (existing != null)
             {
-                HttpDestination existing = destinations.putIfAbsent(origin, destination);
-                if (existing != null)
-                {
-                    destination = existing;
-                }
-                else
-                {
-                    addManaged(destination);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Created {}", destination);
-                }
-
-                if (!isRunning())
-                    removeDestination(destination);
+                removeBean(destination);
+                destination = existing;
             }
-
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Created {}", destination);
+            }
         }
         return destination;
     }
@@ -531,15 +524,12 @@ public class HttpClient extends ContainerLifeCycle
      */
     public List<Destination> getDestinations()
     {
-        return new ArrayList<Destination>(destinations.values());
+        return new ArrayList<>(destinations.values());
     }
 
     protected void send(final HttpRequest request, List<Response.ResponseListener> listeners)
     {
         String scheme = request.getScheme().toLowerCase(Locale.ENGLISH);
-        if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme))
-            throw new IllegalArgumentException("Invalid protocol " + scheme);
-
         String host = request.getHost().toLowerCase(Locale.ENGLISH);
         HttpDestination destination = destinationFor(scheme, host, request.getPort());
         destination.send(request, listeners);
@@ -994,7 +984,7 @@ public class HttpClient extends ContainerLifeCycle
      * anymore and leave space for new destinations.
      *
      * @param removeIdleDestinations whether destinations that have no connections should be removed
-     * @see org.eclipse.jetty.client.ConnectionPool
+     * @see org.eclipse.jetty.client.DuplexConnectionPool
      */
     public void setRemoveIdleDestinations(boolean removeIdleDestinations)
     {
@@ -1047,19 +1037,25 @@ public class HttpClient extends ContainerLifeCycle
 
     protected int normalizePort(String scheme, int port)
     {
-        return port > 0 ? port : HttpScheme.HTTPS.is(scheme) ? 443 : 80;
+        if (port > 0)
+            return port;
+        else if (isSchemeSecure(scheme))
+            return 443;
+        else
+            return 80;
     }
 
     public boolean isDefaultPort(String scheme, int port)
     {
-        return HttpScheme.HTTPS.is(scheme) ? port == 443 : port == 80;
+        if (isSchemeSecure(scheme))
+            return port == 443;
+        else
+            return port == 80;
     }
 
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
+    public boolean isSchemeSecure(String scheme)
     {
-        dumpThis(out);
-        dump(out, indent, getBeans(), destinations.values());
+        return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
     }
 
     private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>

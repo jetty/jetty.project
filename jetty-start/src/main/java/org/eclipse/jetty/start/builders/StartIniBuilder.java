@@ -35,7 +35,6 @@ import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.Module;
 import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.StartLog;
-import org.eclipse.jetty.start.graph.OnlyTransitivePredicate;
 
 /**
  * Management of the <code>${jetty.base}/start.ini</code> based configuration.
@@ -107,13 +106,12 @@ public class StartIniBuilder implements BaseBuilder.Config
         }
 
         String mode = "";
-        boolean isTransitive = module.matches(OnlyTransitivePredicate.INSTANCE);
-        if (isTransitive)
+        if (module.isTransitive())
         {
             mode = "(transitively) ";
         }
 
-        if (module.hasIniTemplate() || !isTransitive)
+        if (module.hasIniTemplate() || !module.isTransitive())
         {
             StartLog.info("%-15s initialised %sin %s",module.getName(),mode,baseHome.toShortForm(startIni));
 

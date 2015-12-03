@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.nio.channels.WritePendingException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
@@ -39,31 +40,40 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public class HTTP2Stream extends IdleTimeout implements IStream
+public class HTTP2Stream extends IdleTimeout implements IStream, Callback
 {
     private static final Logger LOG = Log.getLogger(HTTP2Stream.class);
 
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
+    private final AtomicReference<Callback> writing = new AtomicReference<>();
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
     private final ISession session;
     private final int streamId;
+    private final boolean local;
     private volatile Listener listener;
     private volatile boolean localReset;
     private volatile boolean remoteReset;
 
-    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId)
+    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, boolean local)
     {
         super(scheduler);
         this.session = session;
         this.streamId = streamId;
+        this.local = local;
     }
 
     @Override
     public int getId()
     {
         return streamId;
+    }
+
+    @Override
+    public boolean isLocal()
+    {
+        return local;
     }
 
     @Override
@@ -75,8 +85,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     @Override
     public void headers(HeadersFrame frame, Callback callback)
     {
+        if (!checkWrite(callback))
+            return;
         notIdle();
-        session.frames(this, callback, frame, Frame.EMPTY_ARRAY);
+        session.frames(this, this, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override
@@ -89,8 +101,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     @Override
     public void data(DataFrame frame, Callback callback)
     {
+        if (!checkWrite(callback))
+            return;
         notIdle();
-        session.data(this, callback, frame);
+        session.data(this, this, frame);
     }
 
     @Override
@@ -101,6 +115,14 @@ public class HTTP2Stream extends IdleTimeout implements IStream
         notIdle();
         localReset = true;
         session.frames(this, callback, frame, Frame.EMPTY_ARRAY);
+    }
+
+    private boolean checkWrite(Callback callback)
+    {
+        if (writing.compareAndSet(null, callback))
+            return true;
+        callback.failed(new WritePendingException());
+        return false;
     }
 
     @Override
@@ -228,7 +250,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     private void onHeaders(HeadersFrame frame, Callback callback)
     {
         if (updateClose(frame.isEndStream(), false))
-            session.removeStream(this, false);
+            session.removeStream(this);
         callback.succeeded();
     }
 
@@ -259,7 +281,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
         }
 
         if (updateClose(frame.isEndStream(), false))
-            session.removeStream(this, false);
+            session.removeStream(this);
         notifyData(this, frame, callback);
     }
 
@@ -267,7 +289,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     {
         remoteReset = true;
         close();
-        session.removeStream(this, false);
+        session.removeStream(this);
         callback.succeeded();
         notifyReset(this, frame);
     }
@@ -350,6 +372,20 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     {
         closeState.set(CloseState.CLOSED);
         onClose();
+    }
+
+    @Override
+    public void succeeded()
+    {
+        Callback callback = writing.getAndSet(null);
+        callback.succeeded();
+    }
+
+    @Override
+    public void failed(Throwable x)
+    {
+        Callback callback = writing.getAndSet(null);
+        callback.failed(x);
     }
 
     private void notifyData(Stream stream, DataFrame frame, Callback callback)

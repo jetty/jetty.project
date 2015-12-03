@@ -84,7 +84,7 @@ public class PushCacheFilterTest extends AbstractTest
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -96,7 +96,7 @@ public class PushCacheFilterTest extends AbstractTest
                     HttpFields secondaryFields = new HttpFields();
                     secondaryFields.put(HttpHeader.REFERER, referrerURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
-                    session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+                    session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
                     {
                         @Override
                         public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -113,7 +113,7 @@ public class PushCacheFilterTest extends AbstractTest
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch primaryResponseLatch = new CountDownLatch(1);
         final CountDownLatch pushLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
@@ -171,7 +171,7 @@ public class PushCacheFilterTest extends AbstractTest
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -183,7 +183,7 @@ public class PushCacheFilterTest extends AbstractTest
                     HttpFields secondaryFields = new HttpFields();
                     secondaryFields.put(HttpHeader.REFERER, referrerURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
-                    session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+                    session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
                     {
                         @Override
                         public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -200,7 +200,7 @@ public class PushCacheFilterTest extends AbstractTest
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch primaryResponseLatch = new CountDownLatch(1);
         final CountDownLatch pushLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
@@ -256,7 +256,7 @@ public class PushCacheFilterTest extends AbstractTest
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -268,7 +268,7 @@ public class PushCacheFilterTest extends AbstractTest
                     HttpFields secondaryFields = new HttpFields();
                     secondaryFields.put(HttpHeader.REFERER, primaryURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
-                    session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+                    session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
                     {
                         @Override
                         public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -285,7 +285,7 @@ public class PushCacheFilterTest extends AbstractTest
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch primaryResponseLatch = new CountDownLatch(1);
         final CountDownLatch pushLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
@@ -320,7 +320,7 @@ public class PushCacheFilterTest extends AbstractTest
         secondaryFields.put(HttpHeader.REFERER, primaryURI);
         MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
         final CountDownLatch secondaryResponseLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -356,7 +356,7 @@ public class PushCacheFilterTest extends AbstractTest
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -367,7 +367,7 @@ public class PushCacheFilterTest extends AbstractTest
                     HttpFields secondaryFields = new HttpFields();
                     secondaryFields.put(HttpHeader.REFERER, primaryURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
-                    session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+                    session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
                     {
                         @Override
                         public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -386,7 +386,7 @@ public class PushCacheFilterTest extends AbstractTest
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch primaryResponseLatch = new CountDownLatch(1);
         final CountDownLatch pushLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -443,7 +443,7 @@ public class PushCacheFilterTest extends AbstractTest
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -456,7 +456,7 @@ public class PushCacheFilterTest extends AbstractTest
                     HttpFields secondaryFields = new HttpFields();
                     secondaryFields.put(HttpHeader.REFERER, primaryURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
-                    session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+                    session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
                     {
                         @Override
                         public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -468,7 +468,7 @@ public class PushCacheFilterTest extends AbstractTest
                                 HttpFields tertiaryFields = new HttpFields();
                                 tertiaryFields.put(HttpHeader.REFERER, secondaryURI);
                                 MetaData.Request tertiaryRequest = newRequest("GET", tertiaryResource, tertiaryFields);
-                                session.newStream(new HeadersFrame(0, tertiaryRequest, null, true), new Promise.Adapter<>(), new Adapter()
+                                session.newStream(new HeadersFrame(tertiaryRequest, null, true), new Promise.Adapter<>(), new Adapter()
                                 {
                                     @Override
                                     public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -491,7 +491,7 @@ public class PushCacheFilterTest extends AbstractTest
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch primaryResponseLatch = new CountDownLatch(1);
         final CountDownLatch pushLatch = new CountDownLatch(2);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -568,7 +568,7 @@ public class PushCacheFilterTest extends AbstractTest
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource + "?credentials=wrong", primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -583,7 +583,7 @@ public class PushCacheFilterTest extends AbstractTest
                         HttpFields redirectFields = new HttpFields();
                         redirectFields.put(HttpHeader.REFERER, primaryURI);
                         MetaData.Request redirectRequest = newRequest("GET", location, redirectFields);
-                        session.newStream(new HeadersFrame(0, redirectRequest, null, true), new Promise.Adapter<>(), new Adapter()
+                        session.newStream(new HeadersFrame(redirectRequest, null, true), new Promise.Adapter<>(), new Adapter()
                         {
                             @Override
                             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -604,7 +604,7 @@ public class PushCacheFilterTest extends AbstractTest
         primaryRequest = newRequest("GET", primaryResource + "?credentials=secret", primaryFields);
         final CountDownLatch primaryResponseLatch = new CountDownLatch(1);
         final CountDownLatch pushLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -659,7 +659,7 @@ public class PushCacheFilterTest extends AbstractTest
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -670,7 +670,7 @@ public class PushCacheFilterTest extends AbstractTest
                     HttpFields secondaryFields = new HttpFields();
                     secondaryFields.put(HttpHeader.REFERER, primaryURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
-                    session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+                    session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
                     {
                         @Override
                         public void onHeaders(Stream stream, HeadersFrame frame)
@@ -690,11 +690,15 @@ public class PushCacheFilterTest extends AbstractTest
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch primaryResponseLatch = new CountDownLatch(1);
         final CountDownLatch pushLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
             {
+                MetaData metaData = frame.getMetaData();
+                Assert.assertTrue(metaData instanceof MetaData.Request);
+                MetaData.Request pushedRequest = (MetaData.Request)metaData;
+                Assert.assertEquals(servletPath + secondaryResource, pushedRequest.getURI().getPathQuery());
                 return new Adapter()
                 {
                     @Override

@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -139,4 +140,11 @@ public class ReloadedSessionMissingClassTest
             server1.stop();
         }
     }
+    
+    @After
+    public void tearDown() throws Exception 
+    {
+        JdbcTestServer.shutdown(null);
+    }
+    
 }

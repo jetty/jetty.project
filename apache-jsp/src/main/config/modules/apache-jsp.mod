@@ -1,6 +1,5 @@
-#
-# Apache JSP Module
-#
+[description]
+Enables use of the apache implementation of JSP
 
 [name]
 apache-jsp

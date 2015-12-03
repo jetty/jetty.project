@@ -27,8 +27,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Assert;
@@ -61,14 +59,10 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         client.start();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest("localhost", connector.getLocalPort()).send(new Response.CompleteListener()
+        client.newRequest(newURI()).send(result ->
         {
-            @Override
-            public void onComplete(Result result)
-            {
-                if (result.isFailed())
-                    latch.countDown();
-            }
+            if (result.isFailed())
+                latch.countDown();
         });
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -89,16 +83,12 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         });
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isFailed())
-                            latch.countDown();
-                    }
+                    if (result.isFailed())
+                        latch.countDown();
                 });
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));

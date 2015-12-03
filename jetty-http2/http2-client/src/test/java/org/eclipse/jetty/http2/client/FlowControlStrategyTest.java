@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
@@ -64,6 +65,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -195,7 +197,7 @@ public abstract class FlowControlStrategyTest
 
         MetaData.Request request1 = newRequest("GET", new HttpFields());
         FuturePromise<Stream> promise1 = new FuturePromise<>();
-        clientSession.newStream(new HeadersFrame(0, request1, null, true), promise1, new Stream.Listener.Adapter());
+        clientSession.newStream(new HeadersFrame(request1, null, true), promise1, new Stream.Listener.Adapter());
         HTTP2Stream clientStream1 = (HTTP2Stream)promise1.get(5, TimeUnit.SECONDS);
 
         Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, clientStream1.getSendWindow());
@@ -219,7 +221,7 @@ public abstract class FlowControlStrategyTest
         // Now create a new stream, it must pick up the new value.
         MetaData.Request request2 = newRequest("POST", new HttpFields());
         FuturePromise<Stream> promise2 = new FuturePromise<>();
-        clientSession.newStream(new HeadersFrame(0, request2, null, true), promise2, new Stream.Listener.Adapter());
+        clientSession.newStream(new HeadersFrame(request2, null, true), promise2, new Stream.Listener.Adapter());
         HTTP2Stream clientStream2 = (HTTP2Stream)promise2.get(5, TimeUnit.SECONDS);
 
         Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, clientStream2.getSendWindow());
@@ -289,15 +291,20 @@ public abstract class FlowControlStrategyTest
 
         MetaData.Request request = newRequest("POST", new HttpFields());
         FuturePromise<Stream> promise = new FuturePromise<>();
-        session.newStream(new HeadersFrame(0, request, null, false), promise, new Stream.Listener.Adapter());
+        session.newStream(new HeadersFrame(request, null, false), promise, new Stream.Listener.Adapter());
         Stream stream = promise.get(5, TimeUnit.SECONDS);
 
         // Send first chunk that exceeds the window.
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), false), Callback.NOOP);
+        Callback.Completable completable = new Callback.Completable();
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), false), completable);
         settingsLatch.await(5, TimeUnit.SECONDS);
 
-        // Send the second chunk of data, must not arrive since we're flow control stalled on the client.
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), true), Callback.NOOP);
+        completable.thenRun(() ->
+        {
+            // Send the second chunk of data, must not arrive since we're flow control stalled on the client.
+            stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), true), Callback.NOOP);
+        });
+
         Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
 
         // Consume the data arrived to server, this will resume flow control on the client.
@@ -325,10 +332,13 @@ public abstract class FlowControlStrategyTest
             {
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
-                stream.headers(responseFrame, Callback.NOOP);
-
-                DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(length), true);
-                stream.data(dataFrame, Callback.NOOP);
+                CompletableFuture<Void> completable = new CompletableFuture<>();
+                stream.headers(responseFrame, Callback.from(completable));
+                completable.thenRun(() ->
+                {
+                    DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(length), true);
+                    stream.data(dataFrame, Callback.NOOP);
+                });
                 return null;
             }
         });
@@ -344,8 +354,8 @@ public abstract class FlowControlStrategyTest
         final CountDownLatch dataLatch = new CountDownLatch(1);
         final Exchanger<Callback> exchanger = new Exchanger<>();
         MetaData.Request metaData = newRequest("GET", new HttpFields());
-        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
+        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             private AtomicInteger dataFrames = new AtomicInteger();
 
@@ -416,7 +426,7 @@ public abstract class FlowControlStrategyTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
-                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
+                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
                 return new Stream.Listener.Adapter()
                 {
@@ -467,7 +477,7 @@ public abstract class FlowControlStrategyTest
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         MetaData.Request metaData = newRequest("GET", new HttpFields());
-        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, false);
+        HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         session.newStream(requestFrame, streamPromise, null);
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
@@ -527,9 +537,13 @@ public abstract class FlowControlStrategyTest
                     // For every stream, send down half the window size of data.
                     MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                     HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
-                    stream.headers(responseFrame, Callback.NOOP);
-                    DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(windowSize / 2), true);
-                    stream.data(dataFrame, Callback.NOOP);
+                    Callback.Completable completable = new Callback.Completable();
+                    stream.headers(responseFrame, completable);
+                    completable.thenRun(() ->
+                    {
+                        DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(windowSize / 2), true);
+                        stream.data(dataFrame, Callback.NOOP);
+                    });
                     return null;
                 }
             }
@@ -541,7 +555,7 @@ public abstract class FlowControlStrategyTest
         final List<Callback> callbacks1 = new ArrayList<>();
         final CountDownLatch prepareLatch = new CountDownLatch(1);
         MetaData.Request request1 = newRequest("POST", new HttpFields());
-        session.newStream(new HeadersFrame(0, request1, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(request1, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -556,7 +570,7 @@ public abstract class FlowControlStrategyTest
 
         // Second request will consume half of the remaining the session window.
         MetaData.Request request2 = newRequest("GET", new HttpFields());
-        session.newStream(new HeadersFrame(0, request2, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(request2, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -568,7 +582,7 @@ public abstract class FlowControlStrategyTest
         // Third request will consume the whole session window, which is now stalled.
         // A fourth request will not be able to receive data.
         MetaData.Request request3 = newRequest("GET", new HttpFields());
-        session.newStream(new HeadersFrame(0, request3, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(request3, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -580,7 +594,7 @@ public abstract class FlowControlStrategyTest
         // Fourth request is now stalled.
         final CountDownLatch latch = new CountDownLatch(1);
         MetaData.Request request4 = newRequest("GET", new HttpFields());
-        session.newStream(new HeadersFrame(0, request4, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(request4, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -615,19 +629,23 @@ public abstract class FlowControlStrategyTest
             {
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
-                stream.headers(responseFrame, Callback.NOOP);
-                DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.wrap(data), true);
-                stream.data(dataFrame, Callback.NOOP);
+                Callback.Completable completable = new Callback.Completable();
+                stream.headers(responseFrame, completable);
+                completable.thenRun(() ->
+                {
+                    DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.wrap(data), true);
+                    stream.data(dataFrame, Callback.NOOP);
+                });
                 return null;
             }
         });
 
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", new HttpFields());
-        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
+        HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
         final byte[] bytes = new byte[data.length];
         final CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             private int received;
 
@@ -647,6 +665,11 @@ public abstract class FlowControlStrategyTest
         Assert.assertArrayEquals(data, bytes);
     }
 
+    // TODO
+    // Since we changed the API to disallow consecutive data() calls without waiting
+    // for the callback, it is now not possible to have DATA1, DATA2 in the queue for
+    // the same stream. Perhaps this test should just be deleted.
+    @Ignore
     @Test
     public void testServerTwoDataFramesWithStalledStream() throws Exception
     {
@@ -691,9 +714,9 @@ public abstract class FlowControlStrategyTest
         byte[] content = new byte[chunk1.length + chunk2.length];
         final ByteBuffer buffer = ByteBuffer.wrap(content);
         MetaData.Request metaData = newRequest("GET", new HttpFields());
-        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
+        HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
         final CountDownLatch responseLatch = new CountDownLatch(1);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -734,7 +757,8 @@ public abstract class FlowControlStrategyTest
             {
                 MetaData metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
-                stream.headers(responseFrame, Callback.NOOP);
+                Callback.Completable completable = new Callback.Completable();
+                stream.headers(responseFrame, completable);
                 return new Stream.Listener.Adapter()
                 {
                     @Override
@@ -745,7 +769,8 @@ public abstract class FlowControlStrategyTest
                         ByteBuffer data = frame.getData();
                         ByteBuffer copy = ByteBuffer.allocateDirect(data.remaining());
                         copy.put(data).flip();
-                        stream.data(new DataFrame(stream.getId(), copy, frame.isEndStream()), callback);
+                        completable.thenRun(() ->
+                                stream.data(new DataFrame(stream.getId(), copy, frame.isEndStream()), callback));
                     }
                 };
             }
@@ -769,10 +794,10 @@ public abstract class FlowControlStrategyTest
         byte[] responseData = new byte[requestData.length];
         final ByteBuffer responseContent = ByteBuffer.wrap(responseData);
         MetaData.Request metaData = newRequest("GET", new HttpFields());
-        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, false);
-        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
+        Promise.Completable<Stream> completable = new Promise.Completable<>();
         final CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter()
+        session.newStream(requestFrame, completable, new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -783,11 +808,12 @@ public abstract class FlowControlStrategyTest
                     latch.countDown();
             }
         });
-        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
-
-        ByteBuffer requestContent = ByteBuffer.wrap(requestData);
-        DataFrame dataFrame = new DataFrame(stream.getId(), requestContent, true);
-        stream.data(dataFrame, Callback.NOOP);
+        completable.thenAccept(stream ->
+        {
+            ByteBuffer requestContent = ByteBuffer.wrap(requestData);
+            DataFrame dataFrame = new DataFrame(stream.getId(), requestContent, true);
+            stream.data(dataFrame, Callback.NOOP);
+        });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -814,10 +840,10 @@ public abstract class FlowControlStrategyTest
 
         // Consume the whole session and stream window.
         MetaData.Request metaData = newRequest("POST", new HttpFields());
-        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, false);
-        FuturePromise<Stream> streamPromise = new FuturePromise<>();
-        session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter());
-        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+        HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
+        CompletableFuture<Stream> completable = new CompletableFuture<>();
+        session.newStream(requestFrame, Promise.from(completable), new Stream.Listener.Adapter());
+        Stream stream = completable.get(5, TimeUnit.SECONDS);
         ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         stream.data(new DataFrame(stream.getId(), data, false), new Callback.NonBlocking()
@@ -879,7 +905,7 @@ public abstract class FlowControlStrategyTest
 
         // Consume the whole stream window.
         MetaData.Request metaData = newRequest("POST", new HttpFields());
-        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, false);
+        HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter());
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
@@ -944,7 +970,7 @@ public abstract class FlowControlStrategyTest
 
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("POST", new HttpFields());
-        HeadersFrame frame = new HeadersFrame(0, metaData, null, false);
+        HeadersFrame frame = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         final CountDownLatch resetLatch = new CountDownLatch(1);
         session.newStream(frame, streamPromise, new Stream.Listener.Adapter()

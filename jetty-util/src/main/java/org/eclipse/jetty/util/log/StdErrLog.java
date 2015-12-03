@@ -21,6 +21,7 @@ package org.eclipse.jetty.util.log;
 import java.io.PrintStream;
 import java.security.AccessControlException;
 import java.util.Properties;
+import java.util.logging.Level;
 
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -96,19 +97,14 @@ public class StdErrLog extends AbstractLogger
     // Do not change output format lightly, people rely on this output format now.
     private static int __tagpad = Integer.parseInt(Log.__props.getProperty("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD","0"));
     private static DateCache _dateCache;
-    private static final Properties __props = new Properties();
 
     private final static boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
             Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
     private final static boolean __long = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.LONG","false"));
     private final static boolean __escape = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.ESCAPE","true"));
     
-    
-    
     static
     {
-        __props.putAll(Log.__props);
-
         String deprecatedProperties[] =
         { "DEBUG", "org.eclipse.jetty.util.log.DEBUG", "org.eclipse.jetty.util.log.stderr.DEBUG" };
 
@@ -136,11 +132,6 @@ public class StdErrLog extends AbstractLogger
         __tagpad=pad;
     }
     
-    public static final int LEVEL_ALL = 0;
-    public static final int LEVEL_DEBUG = 1;
-    public static final int LEVEL_INFO = 2;
-    public static final int LEVEL_WARN = 3;
-    public static final int LEVEL_OFF = 10;
 
     private int _level = LEVEL_INFO;
     // Level that this Logger was configured as (remembered in special case of .setDebugEnabled())
@@ -155,6 +146,20 @@ public class StdErrLog extends AbstractLogger
     private final String _abbrevname;
     private boolean _hideStacks = false;
 
+    
+    public static int getLoggingLevel(Properties props,String name)
+    {
+        int level = lookupLoggingLevel(props,name);
+        if (level==LEVEL_DEFAULT)
+        {
+            level = lookupLoggingLevel(props,"log");
+            if (level==LEVEL_DEFAULT)
+                level=LEVEL_INFO;
+        }
+        return level;
+    }
+    
+    
     /**
      * Obtain a StdErrLog reference for the specified class, a convenience method used most often during testing to allow for control over a specific logger.
      * <p>
@@ -194,7 +199,7 @@ public class StdErrLog extends AbstractLogger
      */
     public StdErrLog(String name)
     {
-        this(name,__props);
+        this(name,null);
     }
 
     /**
@@ -207,16 +212,16 @@ public class StdErrLog extends AbstractLogger
      */
     public StdErrLog(String name, Properties props)
     {
-        if (props!=null && props!=__props)
-            __props.putAll(props);
-        this._name = name == null?"":name;
-        this._abbrevname = condensePackageString(this._name);
-        this._level = getLoggingLevel(props,this._name);
-        this._configuredLevel = this._level;
+        if (props!=null && props!=Log.__props)
+            Log.__props.putAll(props);
+        _name = name == null?"":name;
+        _abbrevname = condensePackageString(this._name);
+        _level = getLoggingLevel(Log.__props,this._name);
+        _configuredLevel = _level;
 
         try
         {
-            String source = getLoggingProperty(props,_name,"SOURCE");
+            String source = getLoggingProperty(Log.__props,_name,"SOURCE");
             _source = source==null?__source:Boolean.parseBoolean(source);
         }
         catch (AccessControlException ace)
@@ -227,143 +232,13 @@ public class StdErrLog extends AbstractLogger
         try
         {
             // allow stacktrace display to be controlled by properties as well
-            String stacks = getLoggingProperty(props,_name,"STACKS");
+            String stacks = getLoggingProperty(Log.__props,_name,"STACKS");
             _hideStacks = stacks==null?false:!Boolean.parseBoolean(stacks);
         }
         catch (AccessControlException ignore)
         {
             /* ignore */
         }        
-    }
-
-    /**
-     * Get the Logging Level for the provided log name. Using the FQCN first, then each package segment from longest to
-     * shortest.
-     *
-     * @param props
-     *            the properties to check
-     * @param name
-     *            the name to get log for
-     * @return the logging level
-     */
-    public static int getLoggingLevel(Properties props, final String name)
-    {
-        if ((props == null) || (props.isEmpty()))
-        {
-            // Default Logging Level
-            return getLevelId("log.LEVEL","INFO");
-        }
-        
-        // Calculate the level this named logger should operate under.
-        // Checking with FQCN first, then each package segment from longest to shortest.
-        String nameSegment = name;
-
-        while ((nameSegment != null) && (nameSegment.length() > 0))
-        {
-            String levelStr = props.getProperty(nameSegment + ".LEVEL");
-            // System.err.printf("[StdErrLog.CONFIG] Checking for property [%s.LEVEL] = %s%n",nameSegment,levelStr);
-            int level = getLevelId(nameSegment + ".LEVEL",levelStr);
-            if (level != (-1))
-            {
-                return level;
-            }
-
-            // Trim and try again.
-            int idx = nameSegment.lastIndexOf('.');
-            if (idx >= 0)
-            {
-                nameSegment = nameSegment.substring(0,idx);
-            }
-            else
-            {
-                nameSegment = null;
-            }
-        }
-
-        // Default Logging Level
-        return getLevelId("log.LEVEL",props.getProperty("log.LEVEL","INFO"));
-    }
-    
-    public static String getLoggingProperty(Properties props, String name, String property)
-    {
-        // Calculate the level this named logger should operate under.
-        // Checking with FQCN first, then each package segment from longest to shortest.
-        String nameSegment = name;
-
-        while ((nameSegment != null) && (nameSegment.length() > 0))
-        {
-            String s = props.getProperty(nameSegment+"."+property);
-            if (s!=null)
-                return s;
-
-            // Trim and try again.
-            int idx = nameSegment.lastIndexOf('.');
-            nameSegment = (idx >= 0)?nameSegment.substring(0,idx):null;
-        }
-
-        return null;
-    }
-
-    protected static int getLevelId(String levelSegment, String levelName)
-    {
-        if (levelName == null)
-        {
-            return -1;
-        }
-        String levelStr = levelName.trim();
-        if ("ALL".equalsIgnoreCase(levelStr))
-        {
-            return LEVEL_ALL;
-        }
-        else if ("DEBUG".equalsIgnoreCase(levelStr))
-        {
-            return LEVEL_DEBUG;
-        }
-        else if ("INFO".equalsIgnoreCase(levelStr))
-        {
-            return LEVEL_INFO;
-        }
-        else if ("WARN".equalsIgnoreCase(levelStr))
-        {
-            return LEVEL_WARN;
-        }
-        else if ("OFF".equalsIgnoreCase(levelStr))
-        {
-            return LEVEL_OFF;
-        }
-
-        System.err.println("Unknown StdErrLog level [" + levelSegment + "]=[" + levelStr + "], expecting only [ALL, DEBUG, INFO, WARN, OFF] as values.");
-        return -1;
-    }
-
-    /**
-     * Condenses a classname by stripping down the package name to just the first character of each package name
-     * segment.Configured
-     *
-     * <pre>
-     * Examples:
-     * "org.eclipse.jetty.test.FooTest"           = "oejt.FooTest"
-     * "org.eclipse.jetty.server.logging.LogTest" = "orjsl.LogTest"
-     * </pre>
-     *
-     * @param classname
-     *            the fully qualified class name
-     * @return the condensed name
-     */
-    protected static String condensePackageString(String classname)
-    {
-        String parts[] = classname.split("\\.");
-        StringBuilder dense = new StringBuilder();
-        for (int i = 0; i < (parts.length - 1); i++)
-        {
-            dense.append(parts[i].charAt(0));
-        }
-        if (dense.length() > 0)
-        {
-            dense.append('.');
-        }
-        dense.append(parts[parts.length - 1]);
-        return dense.toString();
     }
 
     public String getName()
@@ -796,12 +671,6 @@ public class StdErrLog extends AbstractLogger
                 break;
         }
         return s.toString();
-    }
-
-    public static void setProperties(Properties props)
-    {
-        __props.clear();
-        __props.putAll(props);
     }
 
     public void ignore(Throwable ignored)

@@ -57,7 +57,7 @@ public class SettingsBodyParser extends BodyParser
     @Override
     protected void emptyBody(ByteBuffer buffer)
     {
-        onSettings(new HashMap<Integer, Integer>());
+        onSettings(new HashMap<>());
     }
 
     @Override

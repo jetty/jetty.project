@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -26,6 +29,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,9 +44,6 @@ import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public abstract class AbstractHttpTest
 {
@@ -80,22 +81,24 @@ public abstract class AbstractHttpTest
 
     protected SimpleHttpResponse executeRequest() throws URISyntaxException, IOException
     {
-        Socket socket = new Socket("localhost", connector.getLocalPort());
-        socket.setSoTimeout((int)connector.getIdleTimeout());
-        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-        PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+        try(Socket socket = new Socket("localhost", connector.getLocalPort());)
+        {
+            socket.setSoTimeout((int)connector.getIdleTimeout());
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+            PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-        writer.write("GET / " + httpVersion + "\r\n");
-        writer.write("Host: localhost\r\n");
-        writer.write("\r\n");
-        writer.flush();
+            writer.write("GET / " + httpVersion + "\r\n");
+            writer.write("Host: localhost\r\n");
+            writer.write("\r\n");
+            writer.flush();
 
-        SimpleHttpResponse response = httpParser.readResponse(reader);
-        if ("HTTP/1.1".equals(httpVersion) && response.getHeaders().get("content-length") == null && response
-                .getHeaders().get("transfer-encoding") == null)
-            assertThat("If HTTP/1.1 response doesn't contain transfer-encoding or content-length headers, " +
-                    "it should contain connection:close", response.getHeaders().get("connection"), is("close"));
-        return response;
+            SimpleHttpResponse response = httpParser.readResponse(reader);
+            if ("HTTP/1.1".equals(httpVersion) && response.getHeaders().get("content-length") == null && response
+                    .getHeaders().get("transfer-encoding") == null)
+                assertThat("If HTTP/1.1 response doesn't contain transfer-encoding or content-length headers, " +
+                        "it should contain connection:close", response.getHeaders().get("connection"), is("close"));
+            return response;
+        }
     }
 
     protected void assertResponseBody(SimpleHttpResponse response, String expectedResponseBody)
@@ -126,8 +129,14 @@ public abstract class AbstractHttpTest
             this.throwException = throwException;
         }
 
-        @Override
+        @Override final 
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            super.handle(target,baseRequest,request,response);
+        }
+
+        @Override
+        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (throwException)
                 throw new TestCommitException();

@@ -25,6 +25,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -33,6 +34,7 @@ public class HeadersGenerator extends FrameGenerator
 {
     private final HpackEncoder encoder;
     private final int maxHeaderBlockFragment;
+    private final PriorityGenerator priorityGenerator;
 
     public HeadersGenerator(HeaderGenerator headerGenerator, HpackEncoder encoder)
     {
@@ -44,22 +46,27 @@ public class HeadersGenerator extends FrameGenerator
         super(headerGenerator);
         this.encoder = encoder;
         this.maxHeaderBlockFragment = maxHeaderBlockFragment;
+        this.priorityGenerator = new PriorityGenerator(headerGenerator);
     }
 
     @Override
     public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
-        generateHeaders(lease, headersFrame.getStreamId(), headersFrame.getMetaData(), !headersFrame.isEndStream());
+        generateHeaders(lease, headersFrame.getStreamId(), headersFrame.getMetaData(), headersFrame.getPriority(), headersFrame.isEndStream());
     }
 
-    public void generateHeaders(ByteBufferPool.Lease lease, int streamId, MetaData metaData, boolean contentFollows)
+    public void generateHeaders(ByteBufferPool.Lease lease, int streamId, MetaData metaData, PriorityFrame priority, boolean endStream)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
-        int maxFrameSize = getMaxFrameSize();
+        int flags = Flags.NONE;
 
+        if (priority != null)
+            flags = Flags.PRIORITY;
+
+        int maxFrameSize = getMaxFrameSize();
         ByteBuffer hpacked = lease.acquire(maxFrameSize, false);
         BufferUtil.clearToFill(hpacked);
         encoder.encode(hpacked, metaData);
@@ -69,10 +76,18 @@ public class HeadersGenerator extends FrameGenerator
         // Split into CONTINUATION frames if necessary.
         if (maxHeaderBlockFragment > 0 && hpackedLength > maxHeaderBlockFragment)
         {
-            int flags = contentFollows ? Flags.NONE : Flags.END_STREAM;
-            ByteBuffer header = generateHeader(lease, FrameType.HEADERS, maxHeaderBlockFragment, flags, streamId);
+            if (endStream)
+                flags |= Flags.END_STREAM;
+
+            int length = maxHeaderBlockFragment;
+            if (priority != null)
+                length += PriorityFrame.PRIORITY_LENGTH;
+
+            ByteBuffer header = generateHeader(lease, FrameType.HEADERS, length, flags, streamId);
+            generatePriority(header, priority);
             BufferUtil.flipToFlush(header, 0);
             lease.append(header, true);
+
             hpacked.limit(maxHeaderBlockFragment);
             lease.append(hpacked.slice(), false);
 
@@ -97,13 +112,28 @@ public class HeadersGenerator extends FrameGenerator
         }
         else
         {
-            int flags = Flags.END_HEADERS;
-            if (!contentFollows)
+            flags |= Flags.END_HEADERS;
+            if (endStream)
                 flags |= Flags.END_STREAM;
-            ByteBuffer header = generateHeader(lease, FrameType.HEADERS, hpackedLength, flags, streamId);
+
+            int length = hpackedLength;
+            if (priority != null)
+                length += PriorityFrame.PRIORITY_LENGTH;
+
+            ByteBuffer header = generateHeader(lease, FrameType.HEADERS, length, flags, streamId);
+            generatePriority(header, priority);
             BufferUtil.flipToFlush(header, 0);
             lease.append(header, true);
             lease.append(hpacked, true);
+        }
+    }
+
+    private void generatePriority(ByteBuffer header, PriorityFrame priority)
+    {
+        if (priority != null)
+        {
+            priorityGenerator.generatePriorityBody(header, priority.getStreamId(),
+                    priority.getParentStreamId(), priority.getWeight(), priority.isExclusive());
         }
     }
 }

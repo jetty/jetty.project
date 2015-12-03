@@ -19,6 +19,7 @@
 package org.eclipse.jetty.jaas.spi;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.util.security.Credential;
@@ -29,24 +30,70 @@ import org.eclipse.jetty.util.security.Credential;
  * This is the information read from the external source
  * about a user.
  * 
- * Can be cached by a UserInfoCache implementation
+ * Can be cached.
  */
 public class UserInfo
 {
     
     private String _userName;
     private Credential _credential;
-    private List<String> _roleNames;
+    protected List<String> _roleNames = new ArrayList<>();
+    protected boolean _rolesLoaded = false;
     
     
+    /**
+     * @param userName
+     * @param credential
+     * @param roleNames
+     */
     public UserInfo (String userName, Credential credential, List<String> roleNames)
     {
         _userName = userName;
         _credential = credential;
-        _roleNames = new ArrayList<String>();
         if (roleNames != null)
         {
-            _roleNames.addAll(roleNames);
+            synchronized (_roleNames)
+            {
+                _roleNames.addAll(roleNames);
+                _rolesLoaded = true;
+            }
+        }
+    }
+    
+    
+    /**
+     * @param userName
+     * @param credential
+     */
+    public UserInfo (String userName, Credential credential)
+    {
+        this (userName, credential, null);
+    }
+    
+    
+    
+    /**
+     * Should be overridden by subclasses to obtain
+     * role info
+     * 
+     * @return
+     * @throws Exception
+     */
+    public List<String> doFetchRoles ()
+    throws Exception
+    {
+        return Collections.emptyList();
+    }
+    
+    public void fetchRoles () throws Exception
+    {
+        synchronized (_roleNames)
+        {
+            if (!_rolesLoaded)
+            {
+                _roleNames.addAll(doFetchRoles());
+                _rolesLoaded = true;
+            }
         }
     }
     
@@ -56,8 +103,8 @@ public class UserInfo
     }
     
     public List<String> getRoleNames ()
-    {
-        return new ArrayList<String>(_roleNames);
+    {   
+        return Collections.unmodifiableList(_roleNames);
     }
     
     public boolean checkCredential (Object suppliedCredential)

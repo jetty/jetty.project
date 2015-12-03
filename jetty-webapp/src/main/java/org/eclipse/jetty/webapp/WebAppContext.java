@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration.Dynamic;
 import javax.servlet.ServletSecurityElement;
@@ -108,6 +108,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     // System classes are classes that cannot be replaced by
     // the web application, and they are *always* loaded via
     // system classloader.
+    // TODO This centrally managed list of features that are exposed/hidden needs to be replaced
+    // with a more automatic distributed mechanism
     public final static String[] __dftSystemClasses =
     {
         "java.",                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
@@ -123,13 +125,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.util.log.",      // webapp should use server log
         "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
         "org.eclipse.jetty.jsp.JettyJspServlet", //webapp cannot change jetty jsp servlet
-        "org.eclipse.jetty.servlets.PushCacheFilter" //must be loaded by container classpath
+        "org.eclipse.jetty.servlets.PushCacheFilter", //must be loaded by container classpath
+        "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath
     } ;
 
     // Server classes are classes that are hidden from being
     // loaded by the web application using system classloader,
     // so if web application needs to load any of such classes,
     // it has to include them in its distribution.
+    // TODO This centrally managed list of features that are exposed/hidden needs to be replaced
+    // with a more automatic distributed mechanism
     public final static String[] __dftServerClasses =
     {
         "-org.eclipse.jetty.jmx.",          // don't hide jmx classes
@@ -139,11 +144,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.jaas.",         // don't hide jaas classes
         "-org.eclipse.jetty.servlets.",     // don't hide jetty servlets
         "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
+        "-org.eclipse.jetty.servlet.NoJspServlet", // don't hide noJspServlet servlet
         "-org.eclipse.jetty.jsp.",          //don't hide jsp servlet
         "-org.eclipse.jetty.servlet.listener.", // don't hide useful listeners
         "-org.eclipse.jetty.websocket.",    // don't hide websocket classes from webapps (allow webapp to use ones from system classloader)
         "-org.eclipse.jetty.apache.",       // don't hide jetty apache impls
         "-org.eclipse.jetty.util.log.",     // don't hide server log 
+        "-org.eclipse.jetty.alpn.",         // don't hide ALPN
         "org.objectweb.asm.",               // hide asm used by jetty
         "org.eclipse.jdt.",                 // hide jdt used by jetty
         "org.eclipse.jetty."                // hide other jetty classes
@@ -918,7 +925,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_configurationClasses.size()==0)
             _configurationClasses.addAll(Configuration.ClassList.serverDefault(getServer()));
         for (String configClass : _configurationClasses)
-            _configurations.add((Configuration)Loader.loadClass(this.getClass(), configClass).newInstance());
+            _configurations.add((Configuration)Loader.loadClass(configClass).newInstance());
     }
 
     /* ------------------------------------------------------------ */
@@ -1354,7 +1361,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         finally
         {
             if (_ownClassLoader)
+            {
+                ClassLoader loader = getClassLoader();
+                if (loader != null && loader instanceof URLClassLoader)
+                    ((URLClassLoader)loader).close(); 
                 setClassLoader(null);
+            }
 
             setAvailable(true);
             _unavailableException=null;

@@ -142,7 +142,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             buf.append("] \"");
             append(buf,request.getMethod());
             buf.append(' ');
-            append(buf,request.getHttpURI().toString());
+            append(buf,request.getOriginalURI());
             buf.append(' ');
             append(buf,request.getProtocol());
             buf.append("\" ");
