@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 
 import javax.servlet.ServletContext;
@@ -99,16 +100,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* 
      * default configurations.
-     * Order is determined by Topological sort in preconfigure
      */
-    public static final String[] DEFAULT_CONFIGURATION_CLASSES =
-    {
-        "org.eclipse.jetty.webapp.WebInfConfiguration",
-        "org.eclipse.jetty.webapp.WebXmlConfiguration",
-        "org.eclipse.jetty.webapp.MetaInfConfiguration",
-        "org.eclipse.jetty.webapp.FragmentConfiguration",
-        "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-    } ;
+    public static final String[] DEFAULT_CONFIGURATION_CLASSES = 
+            Configurations.getKnown().stream()
+            .filter(c->{return c.isEnabledByDefault();})
+            .map(c->{return c.getClass().getName();})
+            .toArray(String[]::new);
 
     // System classes are classes that cannot be replaced by
     // the web application, and they are *always* loaded via
@@ -121,6 +118,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
         "org.xml.",                         // needed by javax.xml
         "org.w3c.",                         // needed by javax.xml
+        
+        
         "org.eclipse.jetty.jmx.",           // webapp cannot change jmx classes
         "org.eclipse.jetty.continuation.",  // webapp cannot change continuation classes
         "org.eclipse.jetty.jaas.",          // webapp cannot change jaas classes
@@ -152,8 +151,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.apache.",       // don't hide jetty apache impls
         "-org.eclipse.jetty.util.log.",     // don't hide server log 
         "-org.eclipse.jetty.alpn.",         // don't hide ALPN
-        "org.objectweb.asm.",               // hide asm used by jetty
         "org.eclipse.jdt.",                 // hide jdt used by jetty
+        
+        
         "org.eclipse.jetty."                // hide other jetty classes
     } ;
 
@@ -444,62 +444,32 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void preConfigure() throws Exception
     {
-        // Setup configurations
-        loadConfigurations();
-
-        // Sort the configurations
-        Map<String,Configuration> map = new HashMap<>();
-        TopologicalSort<Configuration> sort = new TopologicalSort<>();
-        for (Configuration c:_configurations)
-        {
-            Configuration duplicate = map.put(c.getName(),c);
-            if (duplicate!=null)
-                LOG.warn("Duplicate configuration in {} for {} and {}",this,duplicate,c);
-        }
-        for (Configuration c:_configurations)
-        {
-            for (String b:c.getBeforeThis())
-            {
-                Configuration before=map.get(b);
-                if (before!=null)
-                    sort.addBeforeAfter(before,c);
-            }
-            for (String a:c.getAfterThis())
-            {
-                Configuration after=map.get(a);
-                if (after!=null)
-                    sort.addBeforeAfter(c,after);
-            }
-        }
-        sort.sort(_configurations);
-        if (LOG.isDebugEnabled())
-            LOG.debug("sorted {}",_configurations);
-        
-        // Setup system classes
+        // Setup default system classes
         loadSystemClasses();
 
-        // Setup server classes
+        // Setup default server classes
         loadServerClasses();
-
-        // Setup Configuration classes
-        for (Configuration configuration:_configurations)
+        
+        // Add the known server class inclusions for all configurations
+        for (Configuration configuration : Configurations.getKnown())
         {
-            configuration.getSystemClasses().forEach(c->
+            for (String pattern: configuration.getServerClasses())
             {
-                if (c.startsWith("-"))
-                    prependSystemClass(c);
-                else
-                    addSystemClass(c);
-            });
-            configuration.getServerClasses().forEach(c->
-            {
-                if (c.startsWith("-"))
-                    prependServerClass(c);
-                else
-                    addServerClass(c);
-            });
+                if (!pattern.startsWith("-"))
+                    addServerClass(pattern);
+            }
         }
         
+        // Setup Configuration classes for this webapp!
+        loadConfigurations();
+        for (Configuration configuration:_configurations)
+        {
+            for (String pattern: configuration.getSystemClasses())
+                addSystemClass(pattern);
+            for (String pattern: configuration.getServerClasses())
+                if (pattern.startsWith("-"))
+                    addServerClass(pattern);
+        }
         
         // Configure classloader
         _ownClassLoader=false;
@@ -704,27 +674,22 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @ManagedAttribute(value="classes and packages hidden by the context classloader", readonly=true)
     public String[] getServerClasses()
     {
-        if (_serverClasses == null)
-            loadServerClasses();
-
-        return _serverClasses.getPatterns();
+        loadServerClasses();
+        return _serverClasses.toArray();
     }
 
     /* ------------------------------------------------------------ */
     /** Add to the list of Server classes.
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
-     * or package has '-' it is excluded from the server classes and order is thus
-     * important when added system class patterns. This argument may also be a comma 
-     * separated list of classOrPackage patterns.
+     * or package has '-' it is excluded from the server classes. This argument 
+     * may also be a comma separated list of classOrPackage patterns.
      * @see #setServerClasses(String[])
      * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
      */
     public void addServerClass(String classOrPackage)
     {
-        if (_serverClasses == null)
-            loadServerClasses();
-
+        loadServerClasses();
         _serverClasses.add(classOrPackage);
     }
 
@@ -732,18 +697,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /** Prepend to the list of Server classes.
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
-     * or package has '-' it is excluded from the server classes and order is thus
-     * important when added system class patterns. This argument may also be a comma 
+     * or package has '-' it is excluded from the server classes. This argument may also be a comma 
      * separated list of classOrPackage patterns.
+     * @deprecated Order is no longer significant so use {@link #addServerClass(String)} instead.
      * @see #setServerClasses(String[])
      * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
      */
     public void prependServerClass(String classOrPackage)
     {
-        if (_serverClasses == null)
-            loadServerClasses();
-
-        _serverClasses.prependPattern(classOrPackage);
+        addServerClass(classOrPackage);
     }
 
     /* ------------------------------------------------------------ */
@@ -754,56 +716,48 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @ManagedAttribute(value="classes and packages given priority by context classloader", readonly=true)
     public String[] getSystemClasses()
     {
-        if (_systemClasses == null)
-            loadSystemClasses();
-
-        return _systemClasses.getPatterns();
+        loadSystemClasses();
+        return _systemClasses.toArray();
     }
 
     /* ------------------------------------------------------------ */
     /** Add to the list of System classes.
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
-     * or package has '-' it is excluded from the system classes and order is thus
-     * important when added system class patterns.  This argument may also be a comma 
+     * or package has '-' it is excluded from the system classes.  
+     * This argument may also be a comma 
      * separated list of classOrPackage patterns.
      * @see #setSystemClasses(String[])
      * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
      */
     public void addSystemClass(String classOrPackage)
     {
-        if (_systemClasses == null)
-            loadSystemClasses();
-
+        loadSystemClasses();
         _systemClasses.add(classOrPackage);
     }
-
 
     /* ------------------------------------------------------------ */
     /** Prepend to the list of System classes.
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
-     * or package has '-' it is excluded from the system classes and order is thus
-     * important when added system class patterns.This argument may also be a comma 
-     * separated list of classOrPackage patterns.
+     * or package has '-' it is excluded from the system classes.
+     * This argument may also be a comma 
+     * separated list of classOrPackage patterns.  
+     * @deprecated Order is no longer significant so use {@link #addSystemClass(String)} instead. 
      * @see #setSystemClasses(String[])
      * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
      */
     public void prependSystemClass(String classOrPackage)
     {
-        if (_systemClasses == null)
-            loadSystemClasses();
-
-        _systemClasses.prependPattern(classOrPackage);
+        loadSystemClasses();
+        _systemClasses.add(classOrPackage);
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public boolean isServerClass(String name)
     {
-        if (_serverClasses == null)
-            loadServerClasses();
-
+        loadServerClasses();
         return _serverClasses.match(name);
     }
 
@@ -811,9 +765,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public boolean isSystemClass(String name)
     {
-        if (_systemClasses == null)
-            loadSystemClasses();
-
+        loadSystemClasses();
         return _systemClasses.match(name);
     }
 
@@ -971,7 +923,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         
         if (_configurationClasses.size()==0)
         {
-            _configurations.addAll(Configuration.ClassList.serverDefault(getServer()).getConfigurations());
+            _configurations.addAll(Configurations.serverDefault(getServer()).getConfigurations());
         }
         else
         {
@@ -1007,8 +959,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         dumpBeans(out,indent,
             Collections.singletonList(new ClassLoaderDump(getClassLoader())),
-            Collections.singletonList(new DumpableCollection("Systemclasses "+this,_systemClasses)),
-            Collections.singletonList(new DumpableCollection("Serverclasses "+this,_serverClasses)),
+            Collections.singletonList(new DumpableCollection("Systemclasses "+this,_systemClasses.getPatterns())),
+            Collections.singletonList(new DumpableCollection("Serverclasses "+this,_serverClasses.getPatterns())),
             Collections.singletonList(new DumpableCollection("Configurations "+this,_configurations)),
             Collections.singletonList(new DumpableCollection("Handler attributes "+this,((AttributesMap)getAttributes()).getAttributeEntrySet())),
             Collections.singletonList(new DumpableCollection("Context attributes "+this,((Context)getServletContext()).getAttributeEntrySet())),

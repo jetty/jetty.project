@@ -51,13 +51,6 @@ public class AbstractConfiguration implements Configuration
         _server=Collections.unmodifiableList(serverClasses==null?Collections.emptyList():Arrays.asList(serverClasses));
     }
     
-    
-    @Override
-    public String getName()
-    {
-        return this.getClass().getName();
-    }
-
     @Override
     public List<String> getAfterThis()
     {

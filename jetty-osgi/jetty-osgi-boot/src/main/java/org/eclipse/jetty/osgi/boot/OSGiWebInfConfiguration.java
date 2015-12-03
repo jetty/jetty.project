@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.osgi.framework.Bundle;
@@ -66,9 +67,9 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
     public static final String FRAGMENT_AND_REQUIRED_RESOURCES = "org.eclipse.jetty.osgi.fragmentAndRequiredResources";
     
     @Override
-    public String getName()
+    public Class<? extends Configuration> replaces()
     {
-        return WebInfConfiguration.class.getName();
+        return WebInfConfiguration.class;
     }
     
     /* ------------------------------------------------------------ */

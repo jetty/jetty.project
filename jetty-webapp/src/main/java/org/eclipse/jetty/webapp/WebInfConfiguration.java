@@ -66,6 +66,12 @@ public class WebInfConfiguration extends AbstractConfiguration
     }
 
     @Override
+    public boolean isEnabledByDefault()
+    {
+        return true;
+    }
+    
+    @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
         //Make a temp directory for the webapp if one is not already set

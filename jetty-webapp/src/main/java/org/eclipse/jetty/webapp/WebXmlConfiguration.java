@@ -43,6 +43,13 @@ public class WebXmlConfiguration extends AbstractConfiguration
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
+    public boolean isEnabledByDefault()
+    {
+        return true;
+    }
+
+    /* ------------------------------------------------------------------------------- */
     /**
      * 
      */

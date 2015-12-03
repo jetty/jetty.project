@@ -76,6 +76,14 @@ public class MetaInfConfiguration extends AbstractConfiguration
         super(new String[]{WebXmlConfiguration.class.getName()},null);
     }
 
+    /* ------------------------------------------------------------------------------- */
+    @Override
+    public boolean isEnabledByDefault()
+    {
+        return true;
+    }
+
+    /* ------------------------------------------------------------------------------- */
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {        

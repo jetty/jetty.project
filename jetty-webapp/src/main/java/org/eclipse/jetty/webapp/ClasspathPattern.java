@@ -19,13 +19,9 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.ListIterator;
-
-import org.eclipse.jetty.util.StringUtil;
+import java.util.stream.Collectors;
 
 /* ------------------------------------------------------------ */
 /**
@@ -45,14 +41,14 @@ import org.eclipse.jetty.util.StringUtil;
  * in this string should be separated by ':' (semicolon) or ',' (comma).
  */
 
-public class ClasspathPattern extends AbstractList<String>
+public class ClasspathPattern
 {
     private static class Entry
     {
-        public final String _pattern;
-        public final String _name;
-        public final boolean _inclusive;
-        public final boolean _package;     
+        final String _pattern;
+        final String _name;
+        final boolean _inclusive;
+        final boolean _package;     
         
         Entry(String pattern)
         {
@@ -60,6 +56,11 @@ public class ClasspathPattern extends AbstractList<String>
             _inclusive = !pattern.startsWith("-");
             _package = pattern.endsWith(".");
             _name = _inclusive ? pattern : pattern.substring(1).trim();
+        }
+        
+        boolean isInclusive()
+        {
+            return _inclusive;
         }
         
         @Override
@@ -77,9 +78,9 @@ public class ClasspathPattern extends AbstractList<String>
     }
     
     /* ------------------------------------------------------------ */
-    public ClasspathPattern(String[] patterns)
+    public ClasspathPattern(String... patterns)
     {
-        setAll(patterns);
+        add(patterns);
     }
     
     /* ------------------------------------------------------------ */
@@ -89,41 +90,21 @@ public class ClasspathPattern extends AbstractList<String>
     }
     
     /* ------------------------------------------------------------ */
-    @Override
-    public String get(int index)
+    public void add(String... patterns)
     {
-        return _entries.get(index)._pattern;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public String set(int index, String element)
-    {
-        Entry e = _entries.set(index,new Entry(element));
-        return e==null?null:e._pattern;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void add(int index, String element)
-    {
-        _entries.add(index,new Entry(element));
-    }
-
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public void addPattern(String element)
-    {
-        add(element);
+        for (String p :patterns)
+        {
+            if (_entries.stream().anyMatch(e->{return p.equals(e.toString());}))
+                continue;
+                
+            Entry e = new Entry(p);
+            if (e.isInclusive())
+                _entries.add(e);
+            else
+                _entries.add(0,e);
+        }        
     }
     
-    /* ------------------------------------------------------------ */
-    @Override
-    public String remove(int index)
-    {
-        Entry e = _entries.remove(index);
-        return e==null?null:e._pattern;
-    }
     
     /* ------------------------------------------------------------ */
     public boolean remove(String pattern)
@@ -138,66 +119,24 @@ public class ClasspathPattern extends AbstractList<String>
         }
         return false;
     }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public int size()
-    {
-        return _entries.size();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Initialize the matcher by parsing each classpath pattern in an array
-     * 
-     * @param classes array of classpath patterns
-     */
-    private void setAll(String[] classes)
-    {
-        _entries.clear();
-        addAll(classes);
-    }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * @param classes array of classpath patterns
-     */
-    private void addAll(String[] classes)
-    {
-        if (classes!=null)
-            addAll(Arrays.asList(classes));
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param classes array of classpath patterns
-     */
-    public void prepend(String[] classes)
-    {
-        if (classes != null)
-        {
-            int i=0;
-            for (String c : classes)
-            {
-                add(i,c);
-                i++;
-            }
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public void prependPattern(String pattern)
-    {
-        add(0,pattern);
-    }
     
     /* ------------------------------------------------------------ */
     /**
      * @return array of classpath patterns
      */
-    public String[] getPatterns()
+    public String[] toArray()
     {
-        return toArray(new String[_entries.size()]);
+        return _entries.stream().map(e->{return e.toString();}).toArray(String[]::new);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return array of classpath patterns
+     */
+    public List<String> getPatterns()
+    {
+        return _entries.stream().map(e->{return e.toString();}).collect(Collectors.toList());
     }
 
     /* ------------------------------------------------------------ */
@@ -247,42 +186,4 @@ public class ClasspathPattern extends AbstractList<String>
         return false;
     }
 
-    public void addAfter(String afterPattern,String... patterns)
-    {
-        if (patterns!=null && afterPattern!=null)
-        {
-            ListIterator<String> iter = listIterator();
-            while (iter.hasNext())
-            {
-                String cc=iter.next();
-                if (afterPattern.equals(cc))
-                {
-                    for (int i=0;i<patterns.length;i++)
-                        iter.add(patterns[i]);
-                    return;
-                }
-            }
-        }
-        throw new IllegalArgumentException("after '"+afterPattern+"' not found in "+this);
-    }
-
-    public void addBefore(String beforePattern,String... patterns)
-    {
-        if (patterns!=null && beforePattern!=null)
-        {
-            ListIterator<String> iter = listIterator();
-            while (iter.hasNext())
-            {
-                String cc=iter.next();
-                if (beforePattern.equals(cc))
-                {
-                    iter.previous();
-                    for (int i=0;i<patterns.length;i++)
-                        iter.add(patterns[i]);
-                    return;
-                }
-            }
-        }
-        throw new IllegalArgumentException("before '"+beforePattern+"' not found in "+this);
-    }
 }

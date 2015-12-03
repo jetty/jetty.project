@@ -101,7 +101,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         super(new String[]{WebXmlConfiguration.class.getName(),MetaInfConfiguration.class.getName(),FragmentConfiguration.class.getName(),PlusConfiguration.class.getName()},
               new String[]{JettyWebXmlConfiguration.class.getName()},
               new String[]{"org.eclipse.jetty.util.annotation."},
-              new String[]{"-org.eclipse.jetty.util.annotation."});
+              new String[]{"-org.eclipse.jetty.util.annotation.","org.objectweb.asm."});
     }
     
     /**

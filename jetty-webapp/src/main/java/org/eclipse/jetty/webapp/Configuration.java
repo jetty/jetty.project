@@ -18,17 +18,10 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.annotation.Name;
 
@@ -42,10 +35,10 @@ public interface Configuration
     public final static String ATTR="org.eclipse.jetty.webapp.configuration";
 
     /* ------------------------------------------------------------------------------- */
-    /** Get the name of the configuration used for a {@link TopologicalSort}
-     * @return The name of the Configuration (defaults to classname)
+    /** Get a class that this class replaces/extends
+     * @return The class this Configuration replaces/extends or null if it replaces no other configuration
      */
-    public default String getName() { return this.getClass().getName(); } 
+    public default Class<? extends Configuration> replaces() { return null; } 
 
     /* ------------------------------------------------------------------------------- */
     /** Get known Configuration Dependencies.
@@ -74,6 +67,11 @@ public interface Configuration
      * inclusions are appended.
      */
     public default List<String> getServerClasses() { return Collections.emptyList();  }
+    
+    /**
+     * @return true if the Configuration should be enabled by default by being on server classpath
+     */
+    public default boolean isEnabledByDefault() { return false; }
     
     /* ------------------------------------------------------------------------------- */
     /** Set up for configuration.
@@ -133,133 +131,25 @@ public interface Configuration
      */
     public void cloneConfigure (WebAppContext template, WebAppContext context) throws Exception;
     
-    public class ClassList 
-    {        
-        List<Configuration> _instances = new ArrayList<>();
-        
-        /* ------------------------------------------------------------ */
-        /** Get/Set/Create the server default Configuration ClassList.
-         * <p>Get the class list from: a Server bean; or the attribute (which can
-         * either be a ClassList instance or an String[] of class names); or a new instance
-         * with default configuration classes.</p>
-         * <p>This method also adds the obtained ClassList instance as a dependent bean
-         * on the server and clears the attribute</p>
-         * @param server The server the default is for
-         * @return the server default ClassList instance of the configuration classes for this server. Changes to this list will change the server default instance.
-         */
-        public static ClassList setServerDefault(Server server) throws ClassNotFoundException, InstantiationException, IllegalAccessException
-        {
-            ClassList cl=server.getBean(ClassList.class);
-            if (cl!=null)
-                return cl;
-            cl=serverDefault(server);
-            server.addBean(cl);
-            server.setAttribute(Configuration.ATTR,null);
-            return cl;
-        }
-
-        /* ------------------------------------------------------------ */
-        /** Get/Create the server default Configuration ClassList.
-         * <p>Get the class list from: a Server bean; or the attribute (which can
-         * either be a ClassList instance or an String[] of class names); or a new instance
-         * with default configuration classes.
-         * @param server The server the default is for
-         * @return A copy of the server default ClassList instance of the configuration classes for this server. Changes to the returned list will not change the server default.
-         */
-        public static ClassList serverDefault(Server server)
-        {
-            ClassList cl=null;
-            if (server!=null)
-            {
-                cl= server.getBean(ClassList.class);
-                if (cl!=null)
-                    return new ClassList(cl);
-                Object attr = server.getAttribute(Configuration.ATTR);
-                if (attr instanceof ClassList)
-                    return new ClassList((ClassList)attr);
-                if (attr instanceof String[])
-                    return new ClassList((String[])attr);
-            }
-            return new ClassList();
-        }
-        
-        public ClassList()
-        {
-            this(WebAppContext.DEFAULT_CONFIGURATION_CLASSES);
-        }
-        
-        private Configuration newConfiguration(String classname)
-        {
-            try
-            {
-                Class<Configuration> clazz = Loader.loadClass(classname);
-                return clazz.newInstance();
-            }
-            catch (ClassNotFoundException | InstantiationException | IllegalAccessException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-        
-        public ClassList(String[] classes)
-        {
-            for (String c:classes)
-                _instances.add(newConfiguration(c));
-        }
-
-        public ClassList(List<String> classes)
-        {
-            for (String c:classes)
-                _instances.add(newConfiguration(c));
-        }
-
-        public ClassList(Configuration.ClassList classlist)
-        {
-            _instances.addAll(classlist._instances);
-        }
-
-        public void add(@Name("configClass")String... configClass)
-        {
-            loop: for (String c : configClass)
-            {
-                Configuration configuration = newConfiguration(c);
-                ListIterator<Configuration> i = _instances.listIterator();
-                while(i.hasNext())
-                {
-                    Configuration next = i.next();
-                    if (next.getName().equals(configuration.getName()))
-                    {
-                        i.set(configuration);
-                        continue loop;
-                    }
-                }
-                _instances.add(configuration);
-            }
-        }
-        
-        public void addIfAbsent(@Name("configClass")String... configClass)
-        {
-            for (String c : configClass)
-            {
-                Configuration configuration = newConfiguration(c);
-                
-                if (!_instances.stream().map(i->{return i.getName();}).anyMatch(n->{return configuration.getName().equals(n);}))
-                    _instances.add(configuration);
-            }
-        }
-        
+    /**
+     * @deprecated Use {@link Configurations}
+     */
+    public class ClassList extends Configurations
+    {
+        @Deprecated
         public void addAfter(@Name("afterClass") String afterClass,@Name("configClass")String... configClass)
         {
             if (configClass!=null && afterClass!=null)
             {
-                ListIterator<Configuration> iter = _instances.listIterator();
+                ListIterator<String> iter = _configurations.listIterator();
                 while (iter.hasNext())
                 {
-                    Configuration c=iter.next();
-                    if (afterClass.equals(c.getClass().getName()) || afterClass.equals(c.getName()))
+                    Configuration c=getConfiguration(iter.next());
+                    
+                    if (afterClass.equals(c.getClass().getName()) || afterClass.equals(c.replaces().getName()))
                     {
                         for (String cc: configClass)
-                            iter.add(newConfiguration(cc));
+                            iter.add(cc);
                         return;
                     }
                 }
@@ -267,46 +157,27 @@ public interface Configuration
             throw new IllegalArgumentException("afterClass '"+afterClass+"' not found in "+this);
         }
 
+        @Deprecated
         public void addBefore(@Name("beforeClass") String beforeClass,@Name("configClass")String... configClass)
         {
             if (configClass!=null && beforeClass!=null)
             {
-                ListIterator<Configuration> iter = _instances.listIterator();
+                ListIterator<String> iter = _configurations.listIterator();
                 while (iter.hasNext())
                 {
-                    Configuration c=iter.next();
-                    if (beforeClass.equals(c.getClass().getName()) || beforeClass.equals(c.getName()))
+                    Configuration c=getConfiguration(iter.next());
+                    
+                    if (beforeClass.equals(c.getClass().getName()) || beforeClass.equals(c.replaces().getName()))
                     {
                         iter.previous();
                         for (String cc: configClass)
-                            iter.add(newConfiguration(cc));
+                            iter.add(cc);
                         return;
                     }
                 }
             }
             
             throw new IllegalArgumentException("beforeClass '"+beforeClass+"' not found in "+this);
-        }
-
-        public int size()
-        {
-            return _instances.size();
-        }
-
-        public String[] toArray(String[] asArray)
-        {
-            return _instances.stream().map(i->{return i.getClass().getName();}).toArray(n->{return new String[n];});
-        }
-
-        public List<Configuration> getConfigurations()
-        {
-            return _instances.stream().map(i->{return newConfiguration(i.getClass().getName());}).collect(Collectors.toList());
-        }
-     
-        @Override
-        public String toString()
-        {
-            return getConfigurations().toString();
         }
     }
 }

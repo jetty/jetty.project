@@ -54,6 +54,11 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
         super(new String[]{WebXmlConfiguration.class.getName(),FragmentConfiguration.class.getName(),MetaInfConfiguration.class.getName()},null);
     }
     
+    @Override
+    public boolean isEnabledByDefault()
+    {
+        return true;
+    }
     
     /**
      * Configure

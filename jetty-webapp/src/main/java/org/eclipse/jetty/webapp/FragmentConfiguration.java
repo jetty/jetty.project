@@ -36,6 +36,12 @@ public class FragmentConfiguration extends AbstractConfiguration
     {
         super(new String[]{MetaInfConfiguration.class.getName()},null);
     }
+
+    @Override
+    public boolean isEnabledByDefault()
+    {
+        return true;
+    }
     
     @Override
     public void preConfigure(WebAppContext context) throws Exception

@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
@@ -583,15 +583,15 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         if (_configurationClasses != null)
             return _configurationClasses;
 
-        Configuration.ClassList defaults = Configuration.ClassList.serverDefault(_serverWrapper.getServer());
+        Configurations defaults = Configurations.serverDefault(_serverWrapper.getServer());
 
         //add before JettyWebXmlConfiguration
         if (annotationsAvailable())
-            defaults.addIfAbsent(AnnotationConfiguration.class.getName());
+            defaults.add(AnnotationConfiguration.class.getName());
 
         //add in EnvConfiguration and PlusConfiguration just after FragmentConfiguration
         if (jndiAvailable())
-            defaults.addIfAbsent(
+            defaults.add(
                     EnvConfiguration.class.getName(),
                     PlusConfiguration.class.getName());
        String[] asArray = new String[defaults.size()];

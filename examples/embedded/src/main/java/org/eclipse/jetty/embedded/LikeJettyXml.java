@@ -47,7 +47,7 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.Configurations;
 
 /**
  * Starts the Jetty Distribution's demo-base directory using entirely
@@ -176,7 +176,7 @@ public class LikeJettyXml
         server.addBean(deployer);
         
         // === setup jetty plus ==
-        Configuration.ClassList.setServerDefault(server).addIfAbsent("org.eclipse.jetty.plus.webapp.EnvConfiguration","org.eclipse.jetty.plus.webapp.PlusConfiguration");
+        Configurations.setServerDefault(server).add("org.eclipse.jetty.plus.webapp.EnvConfiguration","org.eclipse.jetty.plus.webapp.PlusConfiguration");
 
         // === jetty-stats.xml ===
         StatisticsHandler stats = new StatisticsHandler();

@@ -1,0 +1,3 @@
+org.eclipse.jetty.ant.AntWebInfConfiguration
+org.eclipse.jetty.ant.AntWebXmlConfiguration
+org.eclipse.jetty.ant.types.FileMatchingConfiguration

@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
@@ -52,9 +53,9 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     protected List<Resource>  _unpackedOverlayResources;
 
     @Override
-    public String getName()
+    public Class<? extends Configuration> replaces()
     {
-        return WebInfConfiguration.class.getName();
+        return WebInfConfiguration.class;
     }
     
     /** 

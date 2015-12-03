@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
@@ -50,9 +51,9 @@ public class AntWebXmlConfiguration extends WebXmlConfiguration
     }
 
     @Override
-    public String getName()
+    public Class<? extends Configuration> replaces()
     {
-        return WebXmlConfiguration.class.getName();
+        return WebXmlConfiguration.class;
     }
     
     public void setClassPathFiles(List classPathFiles)
