@@ -131,6 +131,8 @@ public abstract class FillInterest
     public void onClose()
     {
         Callback callback = _interested.get();
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onClose {}",this,callback);
         if (callback != null && _interested.compareAndSet(callback, null))
             callback.failed(new ClosedChannelException());
     }

@@ -109,6 +109,7 @@ public class DecoratorsLegacyTest
         }
     }
     
+    @SuppressWarnings("deprecation")
     private static class DummyLegacyDecorator implements org.eclipse.jetty.servlet.ServletContextHandler.Decorator
     {
         @Override
@@ -136,6 +137,7 @@ public class DecoratorsLegacyTest
             @Override
             protected void configureServletContextHandler(ServletContextHandler context)
             {
+                context.getObjectFactory().clear();
                 // Add decorator in the legacy way
                 context.addDecorator(new DummyLegacyDecorator());
             }

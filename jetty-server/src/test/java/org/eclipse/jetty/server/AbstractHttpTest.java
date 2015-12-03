@@ -29,6 +29,9 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -47,6 +50,8 @@ import org.junit.Rule;
 
 public abstract class AbstractHttpTest
 {
+    private final static Set<String> __noBodyCodes = new HashSet<>(Arrays.asList(new String[]{"100","101","102","204","304"}));
+    
     @Rule
     public TestTracker tracker = new TestTracker();
 
@@ -93,8 +98,10 @@ public abstract class AbstractHttpTest
             writer.flush();
 
             SimpleHttpResponse response = httpParser.readResponse(reader);
-            if ("HTTP/1.1".equals(httpVersion) && response.getHeaders().get("content-length") == null && response
-                    .getHeaders().get("transfer-encoding") == null)
+        if ("HTTP/1.1".equals(httpVersion) 
+            && response.getHeaders().get("content-length") == null 
+            && response.getHeaders().get("transfer-encoding") == null
+            && !__noBodyCodes.contains(response.getCode()))
                 assertThat("If HTTP/1.1 response doesn't contain transfer-encoding or content-length headers, " +
                         "it should contain connection:close", response.getHeaders().get("connection"), is("close"));
             return response;
