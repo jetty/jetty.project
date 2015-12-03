@@ -195,6 +195,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 {
                     return;
                 }
+                
+                case ASYNC:
                 case UNREADY:
                 case PENDING:
                 {
