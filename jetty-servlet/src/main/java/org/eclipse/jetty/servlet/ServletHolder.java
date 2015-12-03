@@ -660,8 +660,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         /* Set the webapp's classpath for Jasper */
         ch.setAttribute("org.apache.catalina.jsp_classpath", ch.getClassPath());
 
-        System.err.println("JSP ("+ch+","+getName()+") CP="+ch.getClassPath());
-        
         /* Set up other classpath attribute */
         if ("?".equals(getInitParameter("classpath")))
         {
