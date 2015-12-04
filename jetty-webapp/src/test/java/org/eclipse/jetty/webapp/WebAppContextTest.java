@@ -18,14 +18,17 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletContext;
@@ -37,9 +40,9 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -51,7 +54,7 @@ public class WebAppContextTest
         Server server = new Server();
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        assertEquals(0,wac.getConfigurations().length);
+        assertThat(Arrays.asList(wac.getConfigurations()).stream().map(c->{return c.getClass().getName();}).collect(Collectors.toList()),Matchers.containsInAnyOrder(WebAppContext.DEFAULT_CONFIGURATION_CLASSES));
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 
@@ -60,6 +63,19 @@ public class WebAppContextTest
         assertTrue(Arrays.equals(classNames, wac.getConfigurationClasses()));
     }
 
+    @Test
+    public void testConfigurationOrder ()
+    {
+        WebAppContext wac = new WebAppContext();
+        wac.setServer(new Server());
+        Assert.assertThat(Arrays.asList(wac.getConfigurations()).stream().map(Configuration::getClassName).collect(Collectors.toList()),
+                Matchers.contains( 
+                        "org.eclipse.jetty.webapp.WebInfConfiguration",
+                        "org.eclipse.jetty.webapp.WebXmlConfiguration",
+                        "org.eclipse.jetty.webapp.MetaInfConfiguration",
+                        "org.eclipse.jetty.webapp.FragmentConfiguration",
+                        "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"));
+    }
 
     @Test
     public void testConfigurationInstances ()
@@ -181,7 +197,7 @@ public class WebAppContextTest
         try
         {
             String response = connector.getResponses("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
-            Assert.assertTrue(response.indexOf("200 OK")>=0);
+            assertThat(response,containsString("200 OK"));
         }
         finally
         {

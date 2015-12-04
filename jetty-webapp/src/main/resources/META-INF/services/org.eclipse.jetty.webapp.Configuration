@@ -1,4 +1,3 @@
-org.eclipse.jetty.webapp.CloneConfiguration
 org.eclipse.jetty.webapp.FragmentConfiguration
 org.eclipse.jetty.webapp.JettyWebXmlConfiguration
 org.eclipse.jetty.webapp.MetaInfConfiguration

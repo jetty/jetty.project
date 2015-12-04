@@ -106,7 +106,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             .filter(c->{return c.isEnabledByDefault();})
             .map(c->{return c.getClass().getName();})
             .toArray(String[]::new);
-
+    
     // System classes are classes that cannot be replaced by
     // the web application, and they are *always* loaded via
     // system classloader.
@@ -153,15 +153,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.alpn.",         // don't hide ALPN
         "org.eclipse.jdt.",                 // hide jdt used by jetty
         
-        
         "org.eclipse.jetty."                // hide other jetty classes
     } ;
 
-    private final List<String> _configurationClasses = new ArrayList<>();
+    private final Configurations _configurations = new Configurations();
     private ClasspathPattern _systemClasses = null;
     private ClasspathPattern _serverClasses = null;
 
-    private final List<Configuration> _configurations = new ArrayList<>();
     private String _defaultsDescriptor=WEB_DEFAULTS_XML;
     private String _descriptor=null;
     private final List<String> _overrideDescriptors = new ArrayList<>();
@@ -462,6 +460,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         
         // Setup Configuration classes for this webapp!
         loadConfigurations();
+        _configurations.sort();
         for (Configuration configuration:_configurations)
         {
             for (String pattern: configuration.getSystemClasses())
@@ -566,19 +565,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         // Prepare for configuration
         MultiException mx=new MultiException();
-        if (_configurations!=null)
+        for (Configuration configuration : _configurations)
         {
-            for (int i=_configurations.size();i-->0;)
+            try
             {
-                try
-                {
-                    _configurations.get(i).destroy(this);
-                }
-                catch(Exception e)
-                {
-                    mx.add(e);
-                }
+                configuration.destroy(this);
             }
+            catch(Exception e)
+            {
+                mx.add(e);
+            }   
         }
         _configurations.clear();
         super.destroy();
@@ -610,7 +606,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @ManagedAttribute(value="configuration classes used to configure webapp", readonly=true)
     public String[] getConfigurationClasses()
     {
-        return _configurationClasses.toArray(new String[_configurationClasses.size()]);
+        loadConfigurations();
+        return _configurations.toArray();
     }
 
     /* ------------------------------------------------------------ */
@@ -619,7 +616,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public Configuration[] getConfigurations()
     {
-        return _configurations.toArray(new Configuration[_configurations.size()]);
+        loadConfigurations();
+        return _configurations.getConfigurations().toArray(new Configuration[_configurations.size()]);
     }
 
     /* ------------------------------------------------------------ */
@@ -921,22 +919,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_configurations.size()>0)
             return;
         
-        if (_configurationClasses.size()==0)
-        {
-            _configurations.addAll(Configurations.serverDefault(getServer()).getConfigurations());
-        }
-        else
-        {
-            try
-            {
-                for (String configClass : _configurationClasses)
-                    _configurations.add((Configuration)Loader.loadClass(configClass).newInstance());
-            }
-            catch (InstantiationException | IllegalAccessException | ClassNotFoundException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
+        _configurations.add(Configurations.serverDefault(getServer()).toArray());
+        _configurations.sort();
     }
 
     /* ------------------------------------------------------------ */
@@ -961,7 +945,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             Collections.singletonList(new ClassLoaderDump(getClassLoader())),
             Collections.singletonList(new DumpableCollection("Systemclasses "+this,_systemClasses.getPatterns())),
             Collections.singletonList(new DumpableCollection("Serverclasses "+this,_serverClasses.getPatterns())),
-            Collections.singletonList(new DumpableCollection("Configurations "+this,_configurations)),
+            Collections.singletonList(new DumpableCollection("Configurations "+this,_configurations.getConfigurations())),
             Collections.singletonList(new DumpableCollection("Handler attributes "+this,((AttributesMap)getAttributes()).getAttributeEntrySet())),
             Collections.singletonList(new DumpableCollection("Context attributes "+this,((Context)getServletContext()).getAttributeEntrySet())),
             Collections.singletonList(new DumpableCollection("Initparams "+this,getInitParams().entrySet()))
@@ -977,10 +961,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         if (isStarted())
             throw new IllegalStateException();
-        _configurationClasses.clear();
-        if (configurations!=null)
-            _configurationClasses.addAll(Arrays.asList(configurations));
-        _configurations.clear();
+        _configurations.set(configurations);
     }
 
     public void setConfigurationClasses(List<String> configurations)
@@ -996,9 +977,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         if (isStarted())
             throw new IllegalStateException();
-        _configurations.clear();
-        if (configurations!=null)
-            _configurations.addAll(Arrays.asList(configurations));
+        _configurations.set(configurations);
     }
 
     /* ------------------------------------------------------------ */
@@ -1007,8 +986,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (isStarted())
             throw new IllegalStateException();
         loadConfigurations();
-        for (Configuration c:configuration)
-            _configurations.add(c);
+        _configurations.add(configuration);
     }
     
     /* ------------------------------------------------------------ */
@@ -1370,7 +1348,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         stopWebapp();
         try
-        {
+        {                
             for (int i=_configurations.size();i-->0;)
                 _configurations.get(i).deconfigure(this);
 

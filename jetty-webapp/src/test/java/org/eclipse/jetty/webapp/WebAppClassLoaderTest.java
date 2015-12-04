@@ -56,8 +56,6 @@ public class WebAppClassLoaderTest
         this.testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         Resource webapp = new PathResource(testWebappDir);
         
-        System.err.printf("testWebappDir = %s%n", testWebappDir);
-
         _context = new WebAppContext();
         _context.setBaseResource(webapp);
         _context.setContextPath("/test");

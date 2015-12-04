@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -35,7 +38,7 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class Configurations 
+public class Configurations extends AbstractList<Configuration>
 {        
     private static final Logger LOG = Log.getLogger(Configurations.class);
     
@@ -44,15 +47,14 @@ public class Configurations
     {
         ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
         for (Configuration configuration : configs)
-            __known.put(configuration.getClass().getName(),configuration);
+            __known.put(configuration.getClassName(),configuration);
+        LOG.debug("Known Configurations {}",__known.keySet());
     }
 
     public static Collection<Configuration> getKnown()
     {
         return Collections.unmodifiableCollection(__known.values());
     }
-    
-    protected List<String> _configurations = new ArrayList<>();
     
     /* ------------------------------------------------------------ */
     /** Get/Set/Create the server default Configuration ClassList.
@@ -66,13 +68,13 @@ public class Configurations
      */
     public static Configurations setServerDefault(Server server) throws ClassNotFoundException, InstantiationException, IllegalAccessException
     {
-        Configurations cl=server.getBean(Configurations.class);
-        if (cl!=null)
-            return cl;
-        cl=serverDefault(server);
-        server.addBean(cl);
+        Configurations configurations=server.getBean(Configurations.class);
+        if (configurations!=null)
+            return configurations;
+        configurations=serverDefault(server);
+        server.addBean(configurations);
         server.setAttribute(Configuration.ATTR,null);
-        return cl;
+        return configurations;
     }
 
     /* ------------------------------------------------------------ */
@@ -85,24 +87,42 @@ public class Configurations
      */
     public static Configurations serverDefault(Server server)
     {
-        Configurations cl=null;
-        if (server!=null)
+        Configurations configurations;
+        if (server==null)
+            configurations=new Configurations(WebAppContext.DEFAULT_CONFIGURATION_CLASSES);
+        else
         {
-            cl= server.getBean(Configurations.class);
-            if (cl!=null)
-                return new Configurations(cl);
-            Object attr = server.getAttribute(Configuration.ATTR);
-            if (attr instanceof Configurations)
-                return new Configurations((Configurations)attr);
-            if (attr instanceof String[])
-                return new Configurations((String[])attr);
+            configurations= server.getBean(Configurations.class);
+            if (configurations!=null)
+                configurations= new Configurations(configurations);
+            else 
+            {
+                Object attr = server.getAttribute(Configuration.ATTR);
+                LOG.debug("{} attr({})= {}",server,Configuration.ATTR,attr);
+                if (attr instanceof Configurations)
+                    configurations = new Configurations((Configurations)attr);
+                else if (attr instanceof String[])
+                    configurations = new Configurations((String[])attr);
+                else 
+                    configurations=new Configurations(WebAppContext.DEFAULT_CONFIGURATION_CLASSES);
+            }
         }
-        return new Configurations();
+            
+        if (LOG.isDebugEnabled())
+            LOG.debug("default configurations for {}: {}",server,configurations);
+        
+        return configurations;
     }
+    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+ 
+    protected List<Configuration> _configurations = new ArrayList<>();
     
     public Configurations()
     {
-        this(WebAppContext.DEFAULT_CONFIGURATION_CLASSES);
     }
 
     protected static Configuration getConfiguration(String classname)
@@ -122,7 +142,6 @@ public class Configurations
             }
             
             LOG.info("Unknown configuration {}",classname);
-            __known.put(configuration.getClass().getName(),configuration);
         }
         return configuration;
     }
@@ -141,53 +160,79 @@ public class Configurations
     {
         _configurations.addAll(classlist._configurations);
     }
+
+    public void add(Configuration... configurations)
+    {   
+        for (Configuration configuration : configurations)
+            add(configuration.getClassName(),configuration);
+    }
     
     public void add(@Name("configClass")String... configClass)
     {   
-        loop: for (String c : configClass)
-        {
-            Configuration configuration = getConfiguration(c);
-            
-            // Do we need to replace any existing configuration?
-            Class<? extends Configuration> replaces = configuration.replaces();
-            if (replaces!=null)
-            {
-                for (ListIterator<String> i=_configurations.listIterator();i.hasNext();)
-                {
-                    if (i.next().equals(replaces.getName()))
-                    {
-                        i.set(c);
-                        continue loop;
-                    }
-                }
-            }
-
-            if (!_configurations.contains(c))
-                _configurations.add(c);
-        }
+        for (String name : configClass)
+            add(name,getConfiguration(name));
     }
     
+    public void clear()
+    {
+        _configurations.clear();
+    }
+
+    public void set(Configuration... configurations)
+    {   
+        clear();
+        for (Configuration configuration : configurations)
+            add(configuration.getClassName(),configuration);
+    }
+    
+    public void set(@Name("configClass")String... configClass)
+    {   
+        clear();
+        for (String name : configClass)
+            add(name,getConfiguration(name));
+    }
+
+    public void remove(Configuration... configurations)
+    {
+        List<String> names = Arrays.asList(configurations).stream().map(Configuration::getClassName).collect(Collectors.toList());
+        for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
+        {
+            Configuration configuration=i.next();
+            if (names.contains(configuration.getClassName()))
+                i.remove();
+        }
+    }
+
+    public void remove(@Name("configClass")String... configClass)
+    {
+        List<String> names = Arrays.asList(configClass);
+        for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
+        {
+            Configuration configuration=i.next();
+            if (names.contains(configuration.getClassName()))
+                i.remove();
+        }
+    }
     
     public int size()
     {
         return _configurations.size();
     }
 
-    public String[] toArray(String[] asArray)
+    public String[] toArray()
     {
-        return _configurations.toArray(new String[_configurations.size()]);
+        return _configurations.stream().map(Configuration::getClassName).toArray(String[]::new);
     }
 
-    public List<Configuration> getConfigurations()
+    public void sort()
     {
-        // instantiate configurations list
-        List<Configuration> configurations = _configurations.stream().map(n->{return __known.get(n);}).collect(Collectors.toList());
-        
         // Sort the configurations
         Map<String,Configuration> map = new HashMap<>();
         TopologicalSort<Configuration> sort = new TopologicalSort<>();
-        
-        for (Configuration c:configurations)
+
+        for (Configuration c:_configurations)
+            map.put(c.getClassName(),c);
+        for (Configuration c:_configurations)
         {
             for (String b:c.getBeforeThis())
             {
@@ -202,10 +247,54 @@ public class Configurations
                     sort.addBeforeAfter(c,after);
             }
         }
-        sort.sort(configurations);
+        
+        sort.sort(_configurations);
         if (LOG.isDebugEnabled())
-            LOG.debug("{} configurations {}",configurations);
-        return configurations;
+            LOG.debug("sorted {}",_configurations);
+    }
+    
+    public List<Configuration> getConfigurations()
+    {
+        return Collections.unmodifiableList(_configurations);
+    }
+
+    @Override
+    public Configuration get(int index)
+    {
+        return _configurations.get(index);
+    }
+    
+    @Override
+    public Iterator<Configuration> iterator()
+    {
+        return getConfigurations().iterator();
+    }
+
+    private void add(String name,Configuration configuration)
+    {
+        // Is this configuration known?
+        if (!__known.containsKey(name))
+            LOG.info("Unknown configuration {}",name);            
+
+        // Do we need to replace any existing configuration?
+        Class<? extends Configuration> replaces = configuration.replaces();
+        if (replaces!=null)
+        {
+            for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
+            {
+                if (i.next().getClassName().equals(replaces.getName()))
+                {
+                    i.set(configuration);
+                    return;
+                }
+            }
+
+            _configurations.add(configuration);
+            return;
+        }
+
+        if (!_configurations.stream().map(Configuration::getClassName).anyMatch(n->{return name.equals(n);}))
+            _configurations.add(configuration);
     }
 
     @Override

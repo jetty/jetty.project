@@ -34,6 +34,8 @@ public interface Configuration
 {
     public final static String ATTR="org.eclipse.jetty.webapp.configuration";
 
+    public default String getClassName() { return getClass().getName(); }
+    
     /* ------------------------------------------------------------------------------- */
     /** Get a class that this class replaces/extends
      * @return The class this Configuration replaces/extends or null if it replaces no other configuration
@@ -141,15 +143,15 @@ public interface Configuration
         {
             if (configClass!=null && afterClass!=null)
             {
-                ListIterator<String> iter = _configurations.listIterator();
+                ListIterator<Configuration> iter = _configurations.listIterator();
                 while (iter.hasNext())
                 {
-                    Configuration c=getConfiguration(iter.next());
+                    Configuration c=iter.next();
                     
                     if (afterClass.equals(c.getClass().getName()) || afterClass.equals(c.replaces().getName()))
                     {
                         for (String cc: configClass)
-                            iter.add(cc);
+                            iter.add(getConfiguration(cc));
                         return;
                     }
                 }
@@ -162,16 +164,16 @@ public interface Configuration
         {
             if (configClass!=null && beforeClass!=null)
             {
-                ListIterator<String> iter = _configurations.listIterator();
+                ListIterator<Configuration> iter = _configurations.listIterator();
                 while (iter.hasNext())
                 {
-                    Configuration c=getConfiguration(iter.next());
+                    Configuration c=iter.next();
                     
                     if (beforeClass.equals(c.getClass().getName()) || beforeClass.equals(c.replaces().getName()))
                     {
                         iter.previous();
                         for (String cc: configClass)
-                            iter.add(cc);
+                            iter.add(getConfiguration(cc));
                         return;
                     }
                 }
