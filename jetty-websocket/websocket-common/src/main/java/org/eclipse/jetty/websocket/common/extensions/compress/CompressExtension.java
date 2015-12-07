@@ -154,30 +154,33 @@ public abstract class CompressExtension extends AbstractExtension
             return;
         }
         byte[] output = new byte[DECOMPRESS_BUF_SIZE];
-
-        if (inflater.needsInput() && !supplyInput(inflater,buf))
+        
+        while(buf.hasRemaining() && inflater.needsInput())
         {
-            LOG.debug("Needed input, but no buffer could supply input");
-            return;
-        }
-
-        int read = 0;
-        while ((read = inflater.inflate(output)) >= 0)
-        {
-            if (read == 0)
+            if (!supplyInput(inflater,buf))
             {
-                LOG.debug("Decompress: read 0 {}",toDetail(inflater));
-                break;
+                LOG.debug("Needed input, but no buffer could supply input");
+                return;
             }
-            else
+    
+            int read = 0;
+            while ((read = inflater.inflate(output)) >= 0)
             {
-                // do something with output
-                if (LOG.isDebugEnabled())
+                if (read == 0)
                 {
-                    LOG.debug("Decompressed {} bytes: {}",read,toDetail(inflater));
+                    LOG.debug("Decompress: read 0 {}",toDetail(inflater));
+                    break;
                 }
-
-                accumulator.copyChunk(output,0,read);
+                else
+                {
+                    // do something with output
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Decompressed {} bytes: {}",read,toDetail(inflater));
+                    }
+    
+                    accumulator.copyChunk(output,0,read);
+                }
             }
         }
 
