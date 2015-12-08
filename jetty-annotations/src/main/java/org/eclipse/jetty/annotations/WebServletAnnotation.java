@@ -19,6 +19,8 @@
 package org.eclipse.jetty.annotations;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import javax.servlet.Servlet;
 import javax.servlet.annotation.WebInitParam;
@@ -28,6 +30,7 @@ import javax.servlet.http.HttpServlet;
 import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -50,13 +53,13 @@ public class WebServletAnnotation extends DiscoveredAnnotation
     {
         super(context, className);
     }
-    
-    
+
+
     public WebServletAnnotation (WebAppContext context, String className, Resource resource)
     {
         super(context, className, resource);
     }
-    
+
     /**
      * @see DiscoveredAnnotation#apply()
      */
@@ -104,10 +107,11 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         String servletName = (annotation.name().equals("")?clazz.getName():annotation.name());
 
         MetaData metaData = _context.getMetaData();
+        ServletMapping mapping = null; //the new mapping
 
         //Find out if a <servlet> already exists with this name
         ServletHolder[] holders = _context.getServletHandler().getServlets();
-        boolean isNew = true;
+
         ServletHolder holder = null;
         if (holders != null)
         {
@@ -116,13 +120,13 @@ public class WebServletAnnotation extends DiscoveredAnnotation
                 if (h.getName() != null && servletName.equals(h.getName()))
                 {
                     holder = h;
-                    isNew = false;
                     break;
                 }
             }
         }
 
-        if (isNew)
+        //handle creation/completion of a servlet
+        if (holder == null)
         {
             //No servlet of this name has already been defined, either by a descriptor
             //or another annotation (which would be impossible).
@@ -147,11 +151,11 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             }
 
             _context.getServletHandler().addServlet(holder);
-            ServletMapping mapping = new ServletMapping();
+
+
+            mapping = new ServletMapping();
             mapping.setServletName(holder.getName());
             mapping.setPathSpecs( LazyList.toStringArray(urlPatternList));
-            _context.getServletHandler().addServletMapping(mapping);
-            metaData.setOrigin(servletName+".servlet.mappings",annotation,clazz);
         }
         else
         {
@@ -175,54 +179,102 @@ public class WebServletAnnotation extends DiscoveredAnnotation
                 }
             }
 
+
             //check the url-patterns
             //ServletSpec 3.0 p81 If a servlet already has url mappings from a
-            //webxml or fragment descriptor the annotation is ignored. However, we want to be able to
-            //replace mappings that were given in webdefault.xml
-            boolean mappingsExist = false;
-            boolean anyNonDefaults = false;
-            ServletMapping[] allMappings = _context.getServletHandler().getServletMappings();
-            if (allMappings != null)
-            {
-                for (ServletMapping m:allMappings)
-                {
-                    if (m.getServletName() != null && servletName.equals(m.getServletName()))
-                    {
-                        mappingsExist = true;
-                        if (!m.isDefault())
-                        {
-                            anyNonDefaults = true;
-                            break;
-                        }
-                    }
-                }
-            }
+            //webxml or fragment descriptor the annotation is ignored.
+            //However, we want to be able to replace mappings that were given in webdefault.xml
+            List<ServletMapping> existingMappings = getServletMappingsForServlet(servletName);
 
-            if (anyNonDefaults)
-                return;  //if any mappings already set by a descriptor that is not webdefault.xml, we're done
-
-            boolean clash = false;
-            if (mappingsExist)
+            //if any mappings for this servlet already set by a descriptor that is not webdefault.xml forget
+            //about processing these url mappings
+            if (existingMappings.isEmpty() || !containsNonDefaultMappings(existingMappings))
             {
-                for (String p:urlPatternList)
-                {
-                    ServletMapping m = _context.getServletHandler().getServletMapping(p);
-                    if (m != null && !m.isDefault())
-                    {
-                        //trying to override a servlet-mapping that was added not by webdefault.xml
-                        clash = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!mappingsExist || !clash)
-            {
-                ServletMapping m = new ServletMapping();
-                m.setServletName(servletName);
-                m.setPathSpecs(LazyList.toStringArray(urlPatternList));
-                _context.getServletHandler().addServletMapping(m);
+                mapping = new ServletMapping();
+                mapping.setServletName(servletName);
+                mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
             }
         }
+
+
+        //We also want to be able to replace mappings that were defined in webdefault.xml
+        //that were for a different servlet eg a mapping in webdefault.xml for / to the jetty
+        //default servlet should be able to be replaced by an annotation for / to a different
+        //servlet
+        if (mapping != null)
+        {
+            //url mapping was permitted by annotation processing rules
+
+            //take a copy of the existing servlet mappings that we can iterate over and remove from. This is
+            //because the ServletHandler interface does not support removal of individual mappings.
+            List<ServletMapping> allMappings = ArrayUtil.asMutableList(_context.getServletHandler().getServletMappings());
+
+            //for each of the urls in the annotation, check if a mapping to same/different servlet exists
+            //  if mapping exists and is from a default descriptor, it can be replaced. NOTE: we do not
+            //  guard against duplicate path mapping here: that is the job of the ServletHandler
+            for (String p:urlPatternList)
+            {
+                ServletMapping existingMapping = _context.getServletHandler().getServletMapping(p);
+                if (existingMapping != null && existingMapping.isDefault())
+                {
+                    String[] updatedPaths = ArrayUtil.removeFromArray(existingMapping.getPathSpecs(), p);
+                    //if we removed the last path from a servletmapping, delete the servletmapping
+                    if (updatedPaths == null || updatedPaths.length == 0)
+                    {
+                        boolean success = allMappings.remove(existingMapping);
+                        if (LOG.isDebugEnabled()) LOG.debug("Removed empty mapping {} from defaults descriptor success:{}",existingMapping, success);
+                    }
+                    else
+                    {
+                        existingMapping.setPathSpecs(updatedPaths);
+                        if (LOG.isDebugEnabled()) LOG.debug("Removed path {} from mapping {} from defaults descriptor ", p,existingMapping);
+                    }
+                }
+                _context.getMetaData().setOrigin(servletName+".servlet.mapping."+p, annotation, clazz);
+            }
+            allMappings.add(mapping);
+            _context.getServletHandler().setServletMappings(allMappings.toArray(new ServletMapping[allMappings.size()]));
+        }
+    }
+
+
+
+
+    /**
+     * @param name
+     * @return
+     */
+    private List<ServletMapping>  getServletMappingsForServlet (String name)
+    {
+        ServletMapping[] allMappings = _context.getServletHandler().getServletMappings();
+        if (allMappings == null)
+            return Collections.emptyList();
+
+        List<ServletMapping> mappings = new ArrayList<ServletMapping>();
+        for (ServletMapping m:allMappings)
+        {
+            if (m.getServletName() != null && name.equals(m.getServletName()))
+            {
+                mappings.add(m);
+            }
+        }
+        return mappings;
+    }
+
+
+    /**
+     * @param mappings
+     * @return
+     */
+    private boolean containsNonDefaultMappings (List<ServletMapping> mappings)
+    {
+        if (mappings == null)
+            return false;
+        for (ServletMapping m:mappings)
+        {
+            if (!m.isDefault())
+                return true;
+        }
+        return false;
     }
 }

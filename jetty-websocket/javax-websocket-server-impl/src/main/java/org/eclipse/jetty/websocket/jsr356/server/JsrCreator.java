@@ -20,7 +20,9 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
@@ -45,6 +47,7 @@ public class JsrCreator implements WebSocketCreator
 {
     public static final String PROP_REMOTE_ADDRESS = "javax.websocket.endpoint.remoteAddress";
     public static final String PROP_LOCAL_ADDRESS = "javax.websocket.endpoint.localAddress";
+    public static final String PROP_LOCALES = "javax.websocket.upgrade.locales";
     private static final Logger LOG = Log.getLogger(JsrCreator.class);
     private final WebSocketContainerScope containerScope;
     private final ServerEndpointMetadata metadata;
@@ -74,8 +77,10 @@ public class JsrCreator implements WebSocketCreator
         // This is being implemented as an optional set of userProperties so that
         // it is not JSR api breaking.  A few users on #jetty and a few from cometd
         // have asked for access to this information.
-        config.getUserProperties().put(PROP_LOCAL_ADDRESS,req.getLocalSocketAddress());
-        config.getUserProperties().put(PROP_REMOTE_ADDRESS,req.getRemoteSocketAddress());
+        Map<String, Object> userProperties = config.getUserProperties();
+        userProperties.put(PROP_LOCAL_ADDRESS,req.getLocalSocketAddress());
+        userProperties.put(PROP_REMOTE_ADDRESS,req.getRemoteSocketAddress());
+        userProperties.put(PROP_LOCALES,Collections.list(req.getLocales()));
 
         // Get Configurator from config object (not guaranteed to be unique per endpoint upgrade)
         ServerEndpointConfig.Configurator configurator = config.getConfigurator();
