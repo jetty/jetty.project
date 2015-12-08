@@ -31,6 +31,26 @@ jetty-9.3.6.v20151106 - 06 November 2015
  + 481437 Port ConnectHandler connect and context functionality from Jetty 8.
  + 481554 DispatcherType reset race
 
+jetty-9.2.14.v20151106 - 06 November 2015
+ + 428474 Expose batch mode in the Jetty WebSocket API
+ + 471055 Restore legacy/experimental WebSocket extensions (deflate-frame)
+ + 472082 isOpen returns true on CLOSING Connection
+ + 474068 Update WebSocket Extension for permessage-deflate draft-22
+ + 474319 Reintroduce blocking connect().
+ + 474321 Allow synchronous address resolution.
+ + 474453 Tiny buffers (under 7 bytes) fail to compress in permessage-deflate
+ + 474454 Backport permessage-deflate from Jetty 9.3.x to 9.2.x
+ + 474936 WebSocketSessions are not always cleaned out from openSessions
+ + 476023 Incorrect trimming of WebSocket close reason
+ + 476049 When using WebSocket Session.close() there should be no status code
+   or reason sent
+ + 477385 Problem in MANIFEST.MF with version 9.2.10 / 9.2.13.
+ + 477817 Fixed memory leak in QueuedThreadPool
+ + 481006 SSL requests intermittently fail with EOFException when SSL
+   renegotiation is disallowed.
+ + 481236 Make ShutdownMonitor java security manager friendly
+ + 481437 Port ConnectHandler connect and context functionality from Jetty 8.
+
 jetty-9.3.5.v20151012 - 12 October 2015
  + 479343 calls to MetaData#orderFragments() with relative ordering adds
    duplicate jars
