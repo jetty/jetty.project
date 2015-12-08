@@ -23,22 +23,26 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.HashSet;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.IncludeExclude;
+import org.eclipse.jetty.util.RegexSet;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -63,12 +67,17 @@ public class GzipHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
 
-    final protected Set<String> _mimeTypes=new HashSet<>();
-    protected boolean _excludeMimeTypes=false;
-    protected Set<String> _excludedUA;
+    // final protected Set<String> _mimeTypes=new HashSet<>();
+    // protected boolean _excludeMimeTypes=false;
+    // protected Set<String> _excludedUA;
     protected int _bufferSize = 8192;
     protected int _minGzipSize = 256;
     protected String _vary = "Accept-Encoding, User-Agent";
+    
+    private final IncludeExclude<String> _agentPatterns=new IncludeExclude<>(RegexSet.class);
+    private final IncludeExclude<String> _methods = new IncludeExclude<>();
+    private final IncludeExclude<String> _paths = new IncludeExclude<>(PathMap.PathSet.class);
+    private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
 
     /* ------------------------------------------------------------ */
     /**
@@ -76,6 +85,174 @@ public class GzipHandler extends HandlerWrapper
      */
     public GzipHandler()
     {
+        _methods.include(HttpMethod.GET.asString());
+        for (String type:MimeTypes.getKnownMimeTypes())
+        {
+            if ("image/svg+xml".equals(type))
+                _paths.exclude("*.svgz");
+            else if (type.startsWith("image/")||
+                type.startsWith("audio/")||
+                type.startsWith("video/"))
+                _mimeTypes.exclude(type);
+        }
+        _mimeTypes.exclude("application/compress");
+        _mimeTypes.exclude("application/zip");
+        _mimeTypes.exclude("application/gzip");
+        _mimeTypes.exclude("application/bzip2");
+        _mimeTypes.exclude("application/x-rar-compressed");
+        LOG.debug("{} mime types {}",this,_mimeTypes);
+        
+        _agentPatterns.exclude(".*MSIE 6.0.*");
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param patterns Regular expressions matching user agents to exclude
+     */
+    public void addExcludedAgentPatterns(String... patterns)
+    {
+        _agentPatterns.exclude(patterns);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param methods The methods to exclude in compression
+     */
+    public void addExcludedMethods(String... methods)
+    {
+        for (String m : methods)
+            _methods.exclude(m);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the mime types.
+     * @param types The mime types to exclude (without charset or other parameters).
+     * For backward compatibility the mimetypes may be comma separated strings, but this
+     * will not be supported in future versions.
+     */
+    public void addExcludedMimeTypes(String... types)
+    {
+        for (String t : types)
+            _mimeTypes.exclude(StringUtil.csvSplit(t));
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param pathspecs Path specs (as per servlet spec) to exclude. If a 
+     * ServletContext is available, the paths are relative to the context path,
+     * otherwise they are absolute.
+     * For backward compatibility the pathspecs may be comma separated strings, but this
+     * will not be supported in future versions.
+     */
+    public void addExcludedPaths(String... pathspecs)
+    {
+        for (String p : pathspecs)
+            _paths.exclude(StringUtil.csvSplit(p));
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param patterns Regular expressions matching user agents to exclude
+     */
+    public void addIncludedAgentPatterns(String... patterns)
+    {
+        _agentPatterns.include(patterns);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param methods The methods to include in compression
+     */
+    public void addIncludedMethods(String... methods)
+    {
+        for (String m : methods)
+            _methods.include(m);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Add included mime types. Inclusion takes precedence over
+     * exclusion.
+     * @param types The mime types to include (without charset or other parameters)
+     * For backward compatibility the mimetypes may be comma separated strings, but this
+     * will not be supported in future versions.
+     */
+    public void addIncludedMimeTypes(String... types)
+    {
+        for (String t : types)
+            _mimeTypes.include(StringUtil.csvSplit(t));
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Add path specs to include. Inclusion takes precedence over exclusion.
+     * @param pathspecs Path specs (as per servlet spec) to include. If a 
+     * ServletContext is available, the paths are relative to the context path,
+     * otherwise they are absolute
+     * For backward compatibility the pathspecs may be comma separated strings, but this
+     * will not be supported in future versions.
+     */
+    public void addIncludedPaths(String... pathspecs)
+    {
+        for (String p : pathspecs)
+            _paths.include(StringUtil.csvSplit(p));
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String[] getExcludedAgentPatterns()
+    {
+        Set<String> excluded=_agentPatterns.getExcluded();
+        return excluded.toArray(new String[excluded.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    public String[] getExcludedMethods()
+    {
+        Set<String> excluded=_methods.getExcluded();
+        return excluded.toArray(new String[excluded.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    public String[] getExcludedMimeTypes()
+    {
+        Set<String> excluded=_mimeTypes.getExcluded();
+        return excluded.toArray(new String[excluded.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    public String[] getExcludedPaths()
+    {
+        Set<String> excluded=_paths.getExcluded();
+        return excluded.toArray(new String[excluded.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    public String[] getIncludedAgentPatterns()
+    {
+        Set<String> includes=_agentPatterns.getIncluded();
+        return includes.toArray(new String[includes.size()]);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String[] getIncludedMethods()
+    {
+        Set<String> includes=_methods.getIncluded();
+        return includes.toArray(new String[includes.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    public String[] getIncludedMimeTypes()
+    {
+        Set<String> includes=_mimeTypes.getIncluded();
+        return includes.toArray(new String[includes.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    public String[] getIncludedPaths()
+    {
+        Set<String> includes=_paths.getIncluded();
+        return includes.toArray(new String[includes.size()]);
     }
 
     /* ------------------------------------------------------------ */
@@ -84,9 +261,10 @@ public class GzipHandler extends HandlerWrapper
      *
      * @return mime types to set
      */
+    @Deprecated
     public Set<String> getMimeTypes()
     {
-        return _mimeTypes;
+        throw new UnsupportedOperationException("Use getIncludedMimeTypes or getExcludedMimeTypes instead");
     }
 
     /* ------------------------------------------------------------ */
@@ -96,11 +274,10 @@ public class GzipHandler extends HandlerWrapper
      * @param mimeTypes
      *            the mime types to set
      */
+    @Deprecated
     public void setMimeTypes(Set<String> mimeTypes)
     {
-        _excludeMimeTypes=false;
-        _mimeTypes.clear();
-        _mimeTypes.addAll(mimeTypes);
+        throw new UnsupportedOperationException("Use setIncludedMimeTypes or setExcludedMimeTypes instead");
     }
 
     /* ------------------------------------------------------------ */
@@ -110,18 +287,10 @@ public class GzipHandler extends HandlerWrapper
      * @param mimeTypes
      *            the mime types to set
      */
+    @Deprecated
     public void setMimeTypes(String mimeTypes)
     {
-        if (mimeTypes != null)
-        {
-            _excludeMimeTypes=false;
-            _mimeTypes.clear();
-            StringTokenizer tok = new StringTokenizer(mimeTypes,",",false);
-            while (tok.hasMoreTokens())
-            {
-                _mimeTypes.add(tok.nextToken());
-            }
-        }
+        throw new UnsupportedOperationException("Use setIncludedMimeTypes or setExcludedMimeTypes instead");
     }
 
     /* ------------------------------------------------------------ */
@@ -130,7 +299,7 @@ public class GzipHandler extends HandlerWrapper
      */
     public void setExcludeMimeTypes(boolean exclude)
     {
-        _excludeMimeTypes=exclude;
+        throw new UnsupportedOperationException("Use setExcludedMimeTypes instead");
     }
 
     /* ------------------------------------------------------------ */
@@ -141,7 +310,7 @@ public class GzipHandler extends HandlerWrapper
      */
     public Set<String> getExcluded()
     {
-        return _excludedUA;
+        return _agentPatterns.getExcluded();
     }
 
     /* ------------------------------------------------------------ */
@@ -153,7 +322,8 @@ public class GzipHandler extends HandlerWrapper
      */
     public void setExcluded(Set<String> excluded)
     {
-        _excludedUA = excluded;
+        _agentPatterns.getExcluded().clear();
+        _agentPatterns.getExcluded().addAll(excluded);
     }
 
     /* ------------------------------------------------------------ */
@@ -165,12 +335,11 @@ public class GzipHandler extends HandlerWrapper
      */
     public void setExcluded(String excluded)
     {
+        _agentPatterns.getExcluded().clear();
+
         if (excluded != null)
         {
-            _excludedUA = new HashSet<String>();
-            StringTokenizer tok = new StringTokenizer(excluded,",",false);
-            while (tok.hasMoreTokens())
-                _excludedUA.add(tok.nextToken());
+            _agentPatterns.exclude(StringUtil.csvSplit(excluded));
         }
     }
 
@@ -249,22 +418,6 @@ public class GzipHandler extends HandlerWrapper
     @Override
     protected void doStart() throws Exception
     {
-        if (_mimeTypes.size()==0 && _excludeMimeTypes)
-        {
-            _excludeMimeTypes = true;
-            for (String type:MimeTypes.getKnownMimeTypes())
-            {
-                if (type.equals("image/svg+xml")) //always compressable (unless .svgz file)
-                    continue;
-                if (type.startsWith("image/")||
-                    type.startsWith("audio/")||
-                    type.startsWith("video/"))
-                    _mimeTypes.add(type);
-            }
-            _mimeTypes.add("application/compress");
-            _mimeTypes.add("application/zip");
-            _mimeTypes.add("application/gzip");
-        }
         super.doStart();
     }
 
@@ -275,80 +428,127 @@ public class GzipHandler extends HandlerWrapper
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (_handler!=null && isStarted())
+        if(_handler == null || !isStarted())
         {
-            String ae = request.getHeader("accept-encoding");
-            if (ae != null && ae.indexOf("gzip")>=0 && !response.containsHeader("Content-Encoding")
-                    && !HttpMethod.HEAD.is(request.getMethod()))
+            // do nothing
+            return;
+        }
+        
+        if(isGzippable(baseRequest, request, response))
+        {
+            final CompressedResponseWrapper wrappedResponse = newGzipResponseWrapper(request,response);
+
+            boolean exceptional=true;
+            try
             {
-                if (_excludedUA!=null)
-                {
-                    String ua = request.getHeader("User-Agent");
-                    if (_excludedUA.contains(ua))
-                    {
-                        _handler.handle(target,baseRequest, request, response);
-                        return;
-                    }
-                }
-
-                final CompressedResponseWrapper wrappedResponse = newGzipResponseWrapper(request,response);
-
-                boolean exceptional=true;
-                try
-                {
-                    _handler.handle(target, baseRequest, request, wrappedResponse);
-                    exceptional=false;
-                }
-                finally
-                {
-                    if (request.isAsyncStarted())
-                    {
-                        request.getAsyncContext().addListener(new AsyncListener()
-                        {
-                            
-                            @Override
-                            public void onTimeout(AsyncEvent event) throws IOException
-                            {
-                            }
-                            
-                            @Override
-                            public void onStartAsync(AsyncEvent event) throws IOException
-                            {
-                            }
-                            
-                            @Override
-                            public void onError(AsyncEvent event) throws IOException
-                            {
-                            }
-                            
-                            @Override
-                            public void onComplete(AsyncEvent event) throws IOException
-                            {
-                                try
-                                {
-                                    wrappedResponse.finish();
-                                }
-                                catch(IOException e)
-                                {
-                                    LOG.warn(e);
-                                }
-                            }
-                        });
-                    }
-                    else if (exceptional && !response.isCommitted())
-                    {
-                        wrappedResponse.resetBuffer();
-                        wrappedResponse.noCompression();
-                    }
-                    else
-                        wrappedResponse.finish();
-                }
+                _handler.handle(target, baseRequest, request, wrappedResponse);
+                exceptional=false;
             }
-            else
+            finally
             {
-                _handler.handle(target,baseRequest, request, response);
+                if (request.isAsyncStarted())
+                {
+                    request.getAsyncContext().addListener(new AsyncListener()
+                    {
+                        
+                        @Override
+                        public void onTimeout(AsyncEvent event) throws IOException
+                        {
+                        }
+                        
+                        @Override
+                        public void onStartAsync(AsyncEvent event) throws IOException
+                        {
+                        }
+                        
+                        @Override
+                        public void onError(AsyncEvent event) throws IOException
+                        {
+                        }
+                        
+                        @Override
+                        public void onComplete(AsyncEvent event) throws IOException
+                        {
+                            try
+                            {
+                                wrappedResponse.finish();
+                            }
+                            catch(IOException e)
+                            {
+                                LOG.warn(e);
+                            }
+                        }
+                    });
+                }
+                else if (exceptional && !response.isCommitted())
+                {
+                    wrappedResponse.resetBuffer();
+                    wrappedResponse.noCompression();
+                }
+                else
+                    wrappedResponse.finish();
             }
         }
+        else
+        {
+            _handler.handle(target,baseRequest, request, response);
+        }
+    }
+
+    private boolean isGzippable(Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    {
+        String ae = request.getHeader("accept-encoding");
+        if (ae == null || !ae.contains("gzip"))
+        {
+            // Request not indicated for Gzip
+            return false;
+        }
+        
+        if(response.containsHeader("Content-Encoding"))
+        {
+            // Response is already declared, can't gzip
+            LOG.debug("{} excluded as Content-Encoding already declared {}",this,request);
+            return false;
+        }
+        
+        if(HttpMethod.HEAD.is(request.getMethod()))
+        {
+            // HEAD is never Gzip'd
+            LOG.debug("{} excluded by method {}",this,request);
+            return false;
+        }
+        
+        // Exclude based on Request Method
+        if (!_methods.matches(baseRequest.getMethod()))
+        {
+            LOG.debug("{} excluded by method {}",this,request);
+            return false;
+        }
+        
+        // Exclude based on Request Path
+        ServletContext context = baseRequest.getServletContext();
+        String path = context==null?baseRequest.getRequestURI():URIUtil.addPaths(baseRequest.getServletPath(),baseRequest.getPathInfo());
+
+        if(path != null && !_paths.matches(path))
+        {
+            LOG.debug("{} excluded by path {}",this,request);
+            return false;
+        }
+        
+        
+        // Exclude non compressible mime-types known from URI extension. - no Vary because no matter what client, this URI is always excluded
+        String mimeType = context==null?null:context.getMimeType(path);
+        if (mimeType!=null)
+        {
+            mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
+            if (!_mimeTypes.matches(mimeType))
+            {
+                LOG.debug("{} excluded by path suffix mime type {}",this,request);
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     /**
@@ -363,7 +563,7 @@ public class GzipHandler extends HandlerWrapper
         return new CompressedResponseWrapper(request,response)
         {
             {
-                super.setMimeTypes(GzipHandler.this._mimeTypes,GzipHandler.this._excludeMimeTypes);
+                super.setMimeTypes(GzipHandler.this._mimeTypes);
                 super.setBufferSize(GzipHandler.this._bufferSize);
                 super.setMinCompressSize(GzipHandler.this._minGzipSize);
             }

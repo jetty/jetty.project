@@ -45,6 +45,7 @@ import org.eclipse.jetty.servlets.gzip.AbstractCompressedStream;
 import org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.servlets.gzip.DeflatedOutputStream;
 import org.eclipse.jetty.servlets.gzip.GzipOutputStream;
+import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -539,7 +540,13 @@ public class GzipFilter extends UserAgentFilter
 
     protected void configureWrappedResponse(CompressedResponseWrapper wrappedResponse)
     {
-        wrappedResponse.setMimeTypes(_mimeTypes,_excludeMimeTypes);
+        IncludeExclude<String> mimeTypeExclusions = new IncludeExclude<>();
+        if(_excludeMimeTypes) 
+            mimeTypeExclusions.getExcluded().addAll(_mimeTypes);
+        else
+            mimeTypeExclusions.getIncluded().addAll(_mimeTypes);
+        
+        wrappedResponse.setMimeTypes(mimeTypeExclusions);
         wrappedResponse.setBufferSize(_bufferSize);
         wrappedResponse.setMinCompressSize(_minGzipSize);
     }
