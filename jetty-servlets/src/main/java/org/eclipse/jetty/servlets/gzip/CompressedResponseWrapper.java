@@ -23,13 +23,13 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.Set;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
+import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
 
 /*------------------------------------------------------------ */
@@ -41,8 +41,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     public static final int DEFAULT_BUFFER_SIZE = 8192;
     public static final int DEFAULT_MIN_COMPRESS_SIZE = 256;
 
-    private Set<String> _mimeTypes;
-    private boolean _excludeMimeTypes;
+    private IncludeExclude<String> _mimeTypes;
     private int _bufferSize=DEFAULT_BUFFER_SIZE;
     private int _minCompressSize=DEFAULT_MIN_COMPRESS_SIZE;
     protected HttpServletRequest _request;
@@ -95,9 +94,8 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     /* ------------------------------------------------------------ */
     /**
      */
-    public void setMimeTypes(Set<String> mimeTypes,boolean excludeMimeTypes)
+    public void setMimeTypes(IncludeExclude<String> mimeTypes)
     {
-        _excludeMimeTypes=excludeMimeTypes;
         _mimeTypes = mimeTypes;
     }
 
@@ -138,7 +136,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
                 if (colon>0)
                     ct=ct.substring(0,colon);
 
-                if (_mimeTypes.contains(StringUtil.asciiToLowerCase(ct))==_excludeMimeTypes)
+                if (!_mimeTypes.matches(StringUtil.asciiToLowerCase(ct)))
                     noCompression();
             }
         }
