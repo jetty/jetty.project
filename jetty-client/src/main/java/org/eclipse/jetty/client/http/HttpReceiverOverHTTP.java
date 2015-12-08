@@ -205,8 +205,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         parser.setHeadResponse(HttpMethod.HEAD.is(method) || HttpMethod.CONNECT.is(method));
         exchange.getResponse().version(version).status(status).reason(reason);
 
-        responseBegin(exchange);
-        return false;
+        return !responseBegin(exchange);
     }
 
     @Override
@@ -216,8 +215,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
-        responseHeader(exchange, field);
-        return false;
+        return !responseHeader(exchange, field);
     }
 
     @Override
@@ -227,8 +225,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
-        responseHeaders(exchange);
-        return false;
+        return !responseHeaders(exchange);
     }
 
     @Override
@@ -253,17 +250,20 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 failAndClose(x);
             }
         };
-        responseContent(exchange, buffer, callback);
-        return callback.tryComplete();
+        // Do not short circuit these calls.
+        boolean proceed = responseContent(exchange, buffer, callback);
+        boolean async = callback.tryComplete();
+        return !proceed || async;
     }
 
     @Override
     public boolean messageComplete()
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange != null)
-            responseSuccess(exchange);
-        return false;
+        if (exchange == null)
+            return false;
+
+        return !responseSuccess(exchange);
     }
 
     @Override

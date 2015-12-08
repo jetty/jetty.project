@@ -24,6 +24,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
@@ -42,6 +43,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
 {
     private final String _encoding;
     protected final String _vary;
+    private final HttpServletRequest _request;
     protected final CompressedResponseWrapper _wrapper;
     protected final HttpServletResponse _response;
     protected OutputStream _out;
@@ -58,10 +60,11 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
             throws IOException
     {
         _encoding=encoding;
+        _request = request;
         _wrapper = wrapper;
         _response = (HttpServletResponse)wrapper.getResponse();
         _vary=vary;
-        
+
         if (_wrapper.getMinCompressSize()==0)
             doCompress();
     }
@@ -90,7 +93,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
             _bOut=b;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setContentLength()
     {
@@ -241,9 +244,11 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
 
             if (_encoding!=null)
             {
-                String prefix=Response.getResponse(_response).isIncluding()?Response.SET_INCLUDE_HEADER_PREFIX:"";
-                
+                String prefix = "";
+                if (_request.getDispatcherType() == DispatcherType.INCLUDE)
+                    prefix = Response.SET_INCLUDE_HEADER_PREFIX;
                 setHeader(prefix+"Content-Encoding", _encoding);
+
                 if (_response.containsHeader("Content-Encoding"))
                 {
                     addHeader(prefix+"Vary",_vary);
@@ -269,7 +274,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
                     }
                 }
             }
-            
+
             doNotCompress(true); // Send vary as it could have been compressed if encoding was present
         }
     }
@@ -290,7 +295,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
                 addHeader("Vary",_vary);
             if (_wrapper.getETag()!=null)
                 setHeader("ETag",_wrapper.getETag());
-                
+
             _doNotCompress = true;
 
             _out = _response.getOutputStream();
@@ -316,7 +321,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
             throw new IOException("CLOSED");
 
         if (_out == null)
-        {            
+        {
             // If this first write is larger than buffer size, then we are committing now
             if (lengthToWrite>_wrapper.getBufferSize())
             {
@@ -336,7 +341,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
         // else are we aggregating writes?
         else if (_bOut !=null)
         {
-            // We are aggregating into the buffered output stream.  
+            // We are aggregating into the buffered output stream.
 
             // If this write fills the buffer, then we are committing
             if (lengthToWrite>=(_bOut.getBuf().length - _bOut.getCount()))
@@ -384,7 +389,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
     {
         throw new UnsupportedOperationException("Use AsyncGzipFilter");
     }
-    
+
 
     @Override
     public boolean isReady()
