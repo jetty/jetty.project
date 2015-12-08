@@ -22,14 +22,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -193,6 +197,37 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(200, response.getStatus());
         Assert.assertArrayEquals(data, response.getContent());
+    }
+
+    @Test
+    public void testGZIPContentCorrupted() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setHeader("Content-Encoding", "gzip");
+                // Not gzipped, will cause the client to blow up.
+                response.getOutputStream().print("0123456789");
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isFailed())
+                            latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     private static void sleep(long ms) throws IOException
