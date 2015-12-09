@@ -92,20 +92,25 @@ public class ResetGenerateParseTest
         int streamId = 13;
         int error = 17;
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateReset(lease, streamId, error);
-
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        // Iterate a few times to be sure generator and parser are properly reset.
+        for (int i = 0; i < 2; ++i)
         {
-            while (buffer.hasRemaining())
-            {
-                parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
-            }
-        }
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.generateReset(lease, streamId, error);
 
-        Assert.assertEquals(1, frames.size());
-        ResetFrame frame = frames.get(0);
-        Assert.assertEquals(streamId, frame.getStreamId());
-        Assert.assertEquals(error, frame.getError());
+            frames.clear();
+            for (ByteBuffer buffer : lease.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+                }
+            }
+
+            Assert.assertEquals(1, frames.size());
+            ResetFrame frame = frames.get(0);
+            Assert.assertEquals(streamId, frame.getStreamId());
+            Assert.assertEquals(error, frame.getError());
+        }
     }
 }

@@ -93,21 +93,26 @@ public class PingGenerateParseTest
         byte[] payload = new byte[8];
         new Random().nextBytes(payload);
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generatePing(lease, payload, true);
-
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        // Iterate a few times to be sure generator and parser are properly reset.
+        for (int i = 0; i < 2; ++i)
         {
-            while (buffer.hasRemaining())
-            {
-                parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
-            }
-        }
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.generatePing(lease, payload, true);
 
-        Assert.assertEquals(1, frames.size());
-        PingFrame frame = frames.get(0);
-        Assert.assertArrayEquals(payload, frame.getPayload());
-        Assert.assertTrue(frame.isReply());
+            frames.clear();
+            for (ByteBuffer buffer : lease.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+                }
+            }
+
+            Assert.assertEquals(1, frames.size());
+            PingFrame frame = frames.get(0);
+            Assert.assertArrayEquals(payload, frame.getPayload());
+            Assert.assertTrue(frame.isReply());
+        }
     }
 
     @Test
