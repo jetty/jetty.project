@@ -324,27 +324,34 @@ public abstract class HttpReceiver
         }
         else
         {
-            List<ByteBuffer> decodeds = new ArrayList<>(2);
-            while (buffer.hasRemaining())
+            try
             {
-                ByteBuffer decoded = decoder.decode(buffer);
-                if (!decoded.hasRemaining())
-                    continue;
-                decodeds.add(decoded);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(decoded));
-            }
+                List<ByteBuffer> decodeds = new ArrayList<>(2);
+                while (buffer.hasRemaining())
+                {
+                    ByteBuffer decoded = decoder.decode(buffer);
+                    if (!decoded.hasRemaining())
+                        continue;
+                    decodeds.add(decoded);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(decoded));
+                }
 
-            if (decodeds.isEmpty())
-            {
-                callback.succeeded();
+                if (decodeds.isEmpty())
+                {
+                    callback.succeeded();
+                }
+                else
+                {
+                    int size = decodeds.size();
+                    CountingCallback counter = new CountingCallback(callback, size);
+                    for (int i = 0; i < size; ++i)
+                        notifier.notifyContent(listeners, response, decodeds.get(i), counter);
+                }
             }
-            else
+            catch (Throwable x)
             {
-                int size = decodeds.size();
-                CountingCallback counter = new CountingCallback(callback, size);
-                for (int i = 0; i < size; ++i)
-                    notifier.notifyContent(listeners, response, decodeds.get(i), counter);
+                callback.failed(x);
             }
         }
 

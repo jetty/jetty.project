@@ -96,21 +96,26 @@ public class GoAwayGenerateParseTest
         byte[] payload = new byte[16];
         new Random().nextBytes(payload);
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateGoAway(lease, lastStreamId, error, payload);
-
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        // Iterate a few times to be sure generator and parser are properly reset.
+        for (int i = 0; i < 2; ++i)
         {
-            while (buffer.hasRemaining())
-            {
-                parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
-            }
-        }
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.generateGoAway(lease, lastStreamId, error, payload);
 
-        Assert.assertEquals(1, frames.size());
-        GoAwayFrame frame = frames.get(0);
-        Assert.assertEquals(lastStreamId, frame.getLastStreamId());
-        Assert.assertEquals(error, frame.getError());
-        Assert.assertArrayEquals(payload, frame.getPayload());
+            frames.clear();
+            for (ByteBuffer buffer : lease.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+                }
+            }
+
+            Assert.assertEquals(1, frames.size());
+            GoAwayFrame frame = frames.get(0);
+            Assert.assertEquals(lastStreamId, frame.getLastStreamId());
+            Assert.assertEquals(error, frame.getError());
+            Assert.assertArrayEquals(payload, frame.getPayload());
+        }
     }
 }

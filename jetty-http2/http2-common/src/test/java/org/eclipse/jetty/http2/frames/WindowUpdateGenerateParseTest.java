@@ -92,20 +92,25 @@ public class WindowUpdateGenerateParseTest
         int streamId = 13;
         int windowUpdate = 17;
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateWindowUpdate(lease, streamId, windowUpdate);
-
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        // Iterate a few times to be sure generator and parser are properly reset.
+        for (int i = 0; i < 2; ++i)
         {
-            while (buffer.hasRemaining())
-            {
-                parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
-            }
-        }
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.generateWindowUpdate(lease, streamId, windowUpdate);
 
-        Assert.assertEquals(1, frames.size());
-        WindowUpdateFrame frame = frames.get(0);
-        Assert.assertEquals(streamId, frame.getStreamId());
-        Assert.assertEquals(windowUpdate, frame.getWindowDelta());
+            frames.clear();
+            for (ByteBuffer buffer : lease.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+                }
+            }
+
+            Assert.assertEquals(1, frames.size());
+            WindowUpdateFrame frame = frames.get(0);
+            Assert.assertEquals(streamId, frame.getStreamId());
+            Assert.assertEquals(windowUpdate, frame.getWindowDelta());
+        }
     }
 }
