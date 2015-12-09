@@ -75,7 +75,12 @@ public class HeaderBlockParser
             MetaData result = hpackDecoder.decode(toDecode);
 
             buffer.limit(limit);
-            byteBufferPool.release(blockBuffer);
+
+            if (blockBuffer != null)
+            {
+                byteBufferPool.release(blockBuffer);
+                blockBuffer = null;
+            }
 
             return result;
         }
