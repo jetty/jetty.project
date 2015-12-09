@@ -29,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -154,7 +155,20 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         assertThat("Connection Leaks", connectionLeaks.get(), Matchers.is(0L));
     }
 
-    private void run(Random random, int iterations) throws InterruptedException
+    @Test
+    public void testConcurrent() throws Exception
+    {
+        start(new LoadHandler());
+
+        Random random = new Random();
+        int runs = 1;
+        int iterations = 256;
+        IntStream.range(0, 16).parallel().forEach(i ->
+                IntStream.range(0, runs).forEach(j ->
+                        run(random, iterations)));
+    }
+
+    private void run(Random random, int iterations)
     {
         CountDownLatch latch = new CountDownLatch(iterations);
         List<String> failures = new ArrayList<>();
@@ -190,7 +204,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
             test(random, latch, failures);
 //            test("http", "localhost", "GET", false, false, 64 * 1024, false, latch, failures);
         }
-        Assert.assertTrue(latch.await(iterations, TimeUnit.SECONDS));
+        Assert.assertTrue(await(latch, iterations, TimeUnit.SECONDS));
         long end = System.nanoTime();
         task.cancel();
         long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
@@ -202,7 +216,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         Assert.assertTrue(failures.toString(), failures.isEmpty());
     }
 
-    private void test(Random random, final CountDownLatch latch, final List<String> failures) throws InterruptedException
+    private void test(Random random, final CountDownLatch latch, final List<String> failures)
     {
         // Choose a random destination
         String host = random.nextBoolean() ? "localhost" : "127.0.0.1";
@@ -225,7 +239,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         test(scheme, host, method.asString(), clientClose, serverClose, contentLength, true, latch, failures);
     }
 
-    private void test(String scheme, String host, String method, boolean clientClose, boolean serverClose, int contentLength, final boolean checkContentLength, final CountDownLatch latch, final List<String> failures) throws InterruptedException
+    private void test(String scheme, String host, String method, boolean clientClose, boolean serverClose, int contentLength, final boolean checkContentLength, final CountDownLatch latch, final List<String> failures)
     {
         Request request = client.newRequest(host, connector.getLocalPort())
                 .scheme(scheme)
@@ -286,7 +300,19 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                 latch.countDown();
             }
         });
-        requestLatch.await(5, TimeUnit.SECONDS);
+        await(requestLatch, 5, TimeUnit.SECONDS);
+    }
+
+    private boolean await(CountDownLatch latch, long time, TimeUnit unit)
+    {
+        try
+        {
+            return latch.await(time, unit);
+        }
+        catch (InterruptedException x)
+        {
+            throw new RuntimeException(x);
+        }
     }
 
     private class LoadHandler extends AbstractHandler
