@@ -130,18 +130,23 @@ public class DataGenerateParseTest
             }
         }, 4096, 8192);
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        ByteBuffer data = ByteBuffer.wrap(largeContent);
-        generator.generateData(lease, 13, data.slice(), true, data.remaining());
-
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        // Iterate a few times to be sure generator and parser are properly reset.
+        for (int i = 0; i < 2; ++i)
         {
-            while (buffer.hasRemaining())
-            {
-                parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
-            }
-        }
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            ByteBuffer data = ByteBuffer.wrap(largeContent);
+            generator.generateData(lease, 13, data.slice(), true, data.remaining());
 
-        Assert.assertEquals(largeContent.length, frames.size());
+            frames.clear();
+            for (ByteBuffer buffer : lease.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+                }
+            }
+
+            Assert.assertEquals(largeContent.length, frames.size());
+        }
     }
 }
