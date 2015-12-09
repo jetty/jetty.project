@@ -67,9 +67,6 @@ public class GzipHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
 
-    // final protected Set<String> _mimeTypes=new HashSet<>();
-    // protected boolean _excludeMimeTypes=false;
-    // protected Set<String> _excludedUA;
     protected int _bufferSize = 8192;
     protected int _minGzipSize = 256;
     protected String _vary = "Accept-Encoding, User-Agent";
@@ -260,6 +257,7 @@ public class GzipHandler extends HandlerWrapper
      * Get the mime types.
      *
      * @return mime types to set
+     * @deprecated use {@link #getExcludedMimeTypes()} or {@link #getIncludedMimeTypes()} instead
      */
     @Deprecated
     public Set<String> getMimeTypes()
@@ -273,6 +271,7 @@ public class GzipHandler extends HandlerWrapper
      *
      * @param mimeTypes
      *            the mime types to set
+     * @deprecated use {@link #setExcludedMimeTypes()} or {@link #setIncludedMimeTypes()} instead
      */
     @Deprecated
     public void setMimeTypes(Set<String> mimeTypes)
@@ -286,6 +285,7 @@ public class GzipHandler extends HandlerWrapper
      *
      * @param mimeTypes
      *            the mime types to set
+     * @deprecated use {@link #setExcludedMimeTypes()} or {@link #setIncludedMimeTypes()} instead
      */
     @Deprecated
     public void setMimeTypes(String mimeTypes)
@@ -296,7 +296,9 @@ public class GzipHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Set the mime types.
+     * @deprecated use {@link #setExcludedMimeTypes()} instead
      */
+    @Deprecated
     public void setExcludeMimeTypes(boolean exclude)
     {
         throw new UnsupportedOperationException("Use setExcludedMimeTypes instead");
@@ -546,6 +548,14 @@ public class GzipHandler extends HandlerWrapper
                 LOG.debug("{} excluded by path suffix mime type {}",this,request);
                 return false;
             }
+        }
+        
+        // Exclude on User Agent
+        String ua = request.getHeader("User-Agent");
+        if(ua != null && !_agentPatterns.matches(ua))
+        {
+            LOG.debug("{} excluded by user-agent {}",this,request);
+            return false;
         }
         
         return true;
