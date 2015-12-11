@@ -121,7 +121,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
            try
            {
                SessionData sd = load(candidate);
-               if (sd.isExpiredAt(now))
+               if (sd == null || sd.isExpiredAt(now))
                    expired.add(candidate);
                    
            }
@@ -159,6 +159,17 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     
     public static String getCacheKey (String id, ContextId contextId)
     {
-        return contextId.toString()+"_"+id;
+        return contextId.getCanonicalContextPath()+"_"+contextId.getVhost()+"_"+id;
+    }
+
+
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
+     */
+    @Override
+    public boolean isPassivating()
+    {
+        return true;
     }
 }

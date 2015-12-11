@@ -144,14 +144,12 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
    
     public JDBCSessionIdManager(Server server)
     {
-        super();
-        _server=server;
+        super(server);
     }
 
     public JDBCSessionIdManager(Server server, Random random)
     {
-       super(random);
-       _server=server;
+       super(server,random);
     }
 
     public SessionIdTableSchema getSessionIdTableSchema()

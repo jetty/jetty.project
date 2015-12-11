@@ -345,7 +345,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             for ( DBObject session : verifiedExpiredSessions )  
             {
                 String id = (String)session.get(__ID);
-                if (LOG.isDebugEnabled()) LOG.debug("Mongo confirmed expired session {}", id);
+                if (LOG.isDebugEnabled()) LOG.debug("{} Mongo confirmed expired session {}", _contextId,id);
                 expiredSessions.add(id);
             }            
         }
@@ -368,7 +368,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             for (DBObject session : oldExpiredSessions)
             {
                 String id = (String)session.get(__ID);
-                if (LOG.isDebugEnabled()) LOG.debug("Mongo found old expired session {}", id);
+                if (LOG.isDebugEnabled()) LOG.debug("{} Mongo found old expired session {}", _contextId, id);
                 expiredSessions.add(id);
             }
 
@@ -613,6 +613,16 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         }
 
         return temp.get(keyChain[keyChain.length - 1]);
+    }
+
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
+     */
+    @Override
+    public boolean isPassivating()
+    {
+        return true;
     }
 
 }

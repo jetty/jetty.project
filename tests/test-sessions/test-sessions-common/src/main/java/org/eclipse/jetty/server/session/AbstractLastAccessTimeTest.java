@@ -24,6 +24,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -51,7 +53,10 @@ import org.junit.Test;
  */
 public abstract class AbstractLastAccessTimeTest
 {
+    
     public abstract AbstractTestServer createServer(int port, int max, int scavenge);
+ 
+   
 
     @Test
     public void testLastAccessTime() throws Exception
@@ -120,12 +125,13 @@ public abstract class AbstractLastAccessTimeTest
                         Thread.sleep(requestInterval);
                         assertSessionCounts(1,1,1, m2);
                     }
+                    
                     // At this point, session1 should be eligible for expiration.
                     // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                     Thread.sleep(scavengePeriod * 2500L);
 
                     //check that the session was not scavenged over on server1 by ensuring that the SessionListener destroy method wasn't called
-                    assertFalse(listener1.destroyed);
+                    assertFalse(listener1._destroys.contains(AbstractTestServer.extractSessionId(sessionCookie)));
                     assertAfterScavenge(m1);
                 }
                 finally
@@ -163,19 +169,19 @@ public abstract class AbstractLastAccessTimeTest
 
     public static class TestSessionListener implements HttpSessionListener
     {
-        public boolean destroyed = false;
-        public boolean created = false;
+        public Set<String> _creates = new HashSet<String>();
+        public Set<String> _destroys = new HashSet<String>();
 
         @Override
         public void sessionDestroyed(HttpSessionEvent se)
         {
-           destroyed = true;
+           _destroys.add(se.getSession().getId());
         }
 
         @Override
         public void sessionCreated(HttpSessionEvent se)
         {
-            created = true;
+            _creates.add(se.getSession().getId());
         }
     }
 
@@ -183,7 +189,10 @@ public abstract class AbstractLastAccessTimeTest
 
     public static class TestServlet extends HttpServlet
     {
-
+        /**
+         * 
+         */
+        private static final long serialVersionUID = 1L;
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
@@ -212,14 +221,14 @@ public abstract class AbstractLastAccessTimeTest
 
         private void sendResult(HttpSession session, PrintWriter writer)
         {
-                if (session != null)
-                {
-                        writer.print(session.getAttribute("test"));
-                }
-                else
-                {
-                        writer.print("null");
-                }
+            if (session != null)
+            {
+                writer.print(session.getAttribute("test"));
+            }
+            else
+            {
+                writer.print("null");
+            }
         }
     }
 }

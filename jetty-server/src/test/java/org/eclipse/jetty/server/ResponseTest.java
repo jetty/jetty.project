@@ -466,9 +466,11 @@ public class ResponseTest
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
         HashSessionManager manager = new HashSessionManager();
-        manager.setSessionIdManager(new HashSessionIdManager());
+        manager.setSessionIdManager(new HashSessionIdManager(_server));
         request.setSessionManager(manager);
-        request.setSession(new TestSession(manager, "12345"));
+        TestSession tsession = new TestSession(manager, "12345");
+        tsession.setExtendedId(manager.getSessionIdManager().getExtendedId("12345", null));
+        request.setSession(tsession);
 
         manager.setCheckingRemoteSessionIdEncoding(false);
 
@@ -541,7 +543,7 @@ public class ResponseTest
                     request.setRequestedSessionId("12345");
                     request.setRequestedSessionIdFromCookie(i>2);
                     HashSessionManager manager = new HashSessionManager();
-                    manager.setSessionIdManager(new HashSessionIdManager());
+                    manager.setSessionIdManager(new HashSessionIdManager(_server));
                     request.setSessionManager(manager);
                     request.setSession(new TestSession(manager, "12345"));
                     manager.setCheckingRemoteSessionIdEncoding(false);

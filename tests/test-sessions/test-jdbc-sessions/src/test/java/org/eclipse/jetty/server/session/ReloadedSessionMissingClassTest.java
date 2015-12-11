@@ -53,7 +53,7 @@ public class ReloadedSessionMissingClassTest
     @Test
     public void testSessionReloadWithMissingClass() throws Exception
     {
-        ((StdErrLog)Log.getLogger(org.eclipse.jetty.server.session.JDBCSessionManager.class)).setHideStacks(true);
+        ((StdErrLog)Log.getLogger("org.eclipse.jetty.server.session")).setHideStacks(true);
         Resource.setDefaultUseCaches(false);
         String contextPath = "/foo";
 

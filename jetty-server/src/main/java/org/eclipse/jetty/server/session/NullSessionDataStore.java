@@ -75,4 +75,14 @@ public class NullSessionDataStore extends AbstractSessionDataStore
        return candidates; //whatever is suggested we accept
     }
 
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
+     */
+    @Override
+    public boolean isPassivating()
+    {
+        return false;
+    }
+
 }

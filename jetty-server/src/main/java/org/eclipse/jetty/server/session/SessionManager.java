@@ -233,8 +233,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         if (_sessionStore == null)
             throw new IllegalStateException("No session store configured");
         
-        if (_sessionIdManager == null)
-            throw new IllegalStateException("No session id manager");
         
         _context=ContextHandler.getCurrentContext();
         _loader=Thread.currentThread().getContextClassLoader();
@@ -255,7 +253,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                     try
                     {
                         Thread.currentThread().setContextClassLoader(serverLoader);
-                        _sessionIdManager=new HashSessionIdManager();
+                        _sessionIdManager=new HashSessionIdManager(server);
                         server.setSessionIdManager(_sessionIdManager);
                         server.manage(_sessionIdManager);
                         _sessionIdManager.start();
@@ -302,10 +300,9 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             tmp=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__CheckRemoteSessionEncoding);
             if (tmp!=null)
                 _checkingRemoteSessionIdEncoding=Boolean.parseBoolean(tmp);
-            
-            _contextId = ContextId.getContextId(_sessionIdManager.getWorkerName(), _context);
         }
        
+        _contextId = ContextId.getContextId(_sessionIdManager.getWorkerName(), _context);
 
        if (_sessionStore instanceof AbstractSessionStore)
            ((AbstractSessionStore)_sessionStore).setSessionManager(this);
@@ -985,7 +982,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                 return;  // couldn't get/load a session for this context with that id
             }
             
-            _sessionTimeStats.set(round((System.currentTimeMillis() - session.getCreationTime())/1000.0));
+            _sessionTimeStats.set(round((System.currentTimeMillis() - session.getSessionData().getCreated())/1000.0));
             session.invalidateAndRemove();           
         }
         catch (Exception e)

@@ -70,7 +70,6 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     public final static String ID_KEY = "__o.e.j.s.infinispanIdMgr__";
     public static final int DEFAULT_IDLE_EXPIRY_MULTIPLE = 2;
     protected BasicCache<String,Object> _cache;
-    private Server _server;
     private int _idleExpiryMultiple = DEFAULT_IDLE_EXPIRY_MULTIPLE;
 
     
@@ -79,14 +78,12 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     
     public InfinispanSessionIdManager(Server server)
     {
-        super();
-        _server = server;
+        super(server);
     }
 
     public InfinispanSessionIdManager(Server server, Random random)
     {
-       super(random);
-       _server = server;
+       super(server, random);
     }
 
     

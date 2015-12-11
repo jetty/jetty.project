@@ -46,13 +46,15 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     protected SessionScavenger _scavenger;
 
     /* ------------------------------------------------------------ */
-    public AbstractSessionIdManager()
+    public AbstractSessionIdManager(Server server)
     {
+        _server = server;
     }
 
     /* ------------------------------------------------------------ */
-    public AbstractSessionIdManager(Random random)
+    public AbstractSessionIdManager(Server server, Random random)
     {
+        this(server);
         _random=random;
     }
 

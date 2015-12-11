@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.Server;
 import org.junit.Test;
 
 /**
@@ -128,6 +129,14 @@ public class SessionCookieTest
     {
 
         /**
+         * @param server
+         */
+        public MockSessionIdManager(Server server)
+        {
+            super(server);
+        }
+
+        /**
          * @see org.eclipse.jetty.server.SessionIdManager#isIdInUse(java.lang.String)
          */
         @Override
@@ -187,7 +196,8 @@ public class SessionCookieTest
     @Test
     public void testSecureSessionCookie () throws Exception
     {
-        MockSessionIdManager idMgr = new MockSessionIdManager();
+        Server server = new Server();
+        MockSessionIdManager idMgr = new MockSessionIdManager(server);
         idMgr.setWorkerName("node1");
         MockSessionManager mgr = new MockSessionManager();
         mgr.setSessionIdManager(idMgr);

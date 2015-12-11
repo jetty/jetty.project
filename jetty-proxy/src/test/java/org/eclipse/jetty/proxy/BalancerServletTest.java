@@ -99,7 +99,7 @@ public class BalancerServletTest
 
         if (nodeName != null)
         {
-            AbstractSessionIdManager sessionIdManager = new HashSessionIdManager();
+            AbstractSessionIdManager sessionIdManager = new HashSessionIdManager(server);
             sessionIdManager.setWorkerName(nodeName);
             server.setSessionIdManager(sessionIdManager);
         }

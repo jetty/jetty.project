@@ -93,4 +93,11 @@ public interface SessionDataStore extends LifeCycle
     public Set<String> getExpired (Set<String> candidates);
     
     
+    
+    /**
+     * True if this type of datastore will passivate session objects
+     * @return
+     */
+    public boolean isPassivating ();
+    
 }

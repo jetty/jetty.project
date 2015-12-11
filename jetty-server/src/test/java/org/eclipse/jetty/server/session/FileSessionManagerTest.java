@@ -60,7 +60,7 @@ public class FileSessionManagerTest
         Server server = new Server();
         SessionHandler handler = new SessionHandler();
         handler.setServer(server);
-        final HashSessionIdManager idmgr = new HashSessionIdManager();
+        final HashSessionIdManager idmgr = new HashSessionIdManager(server);
         idmgr.setServer(server);
         server.setSessionIdManager(idmgr);
         
@@ -92,7 +92,7 @@ public class FileSessionManagerTest
         Server server = new Server();
         SessionHandler handler = new SessionHandler();
         handler.setServer(server);
-        final HashSessionIdManager idmgr = new HashSessionIdManager();
+        final HashSessionIdManager idmgr = new HashSessionIdManager(server);
         idmgr.setServer(server);
         server.setSessionIdManager(idmgr);
         final FileSessionManager manager = new FileSessionManager();
@@ -106,7 +106,7 @@ public class FileSessionManagerTest
         manager.start();
 
         //See SessionKey.getKey()
-        String expectedFilename = "_0.0.0.0_validFile123";
+        String expectedFilename = "__0.0.0.0_validFile123";
         
         Assert.assertTrue(new File(testDir, expectedFilename).createNewFile());
 
@@ -134,7 +134,7 @@ public class FileSessionManagerTest
         Assert.assertTrue(testDir.canWrite());
         handler.setSessionManager(manager);
         
-        AbstractSessionIdManager idManager = new HashSessionIdManager();
+        AbstractSessionIdManager idManager = new HashSessionIdManager(server);
         idManager.setServer(server);
         idManager.setWorkerName("foo");
         manager.setSessionIdManager(idManager);
@@ -153,10 +153,7 @@ public class FileSessionManagerTest
         manager.setMaxInactiveInterval(30); // change max inactive interval for *new* sessions
         manager.stop();
         
-        for (String f: testDir.list())
-            System.err.println(f);
-        
-        String expectedFilename = "_0.0.0.0_"+session.getId();
+        String expectedFilename = "foo__0.0.0.0_"+session.getId();
         Assert.assertTrue("File should exist!", new File(testDir, expectedFilename).exists());
         
         

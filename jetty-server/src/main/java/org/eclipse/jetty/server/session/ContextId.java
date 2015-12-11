@@ -37,7 +37,7 @@ public class ContextId
 
     public static ContextId getContextId (String node, Context context)
     {
-        return new ContextId(node, getContextPath(context),  getVirtualHost(context));
+        return new ContextId((node==null?"":node), getContextPath(context),  getVirtualHost(context));
     }
     
     

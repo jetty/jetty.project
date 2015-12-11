@@ -64,7 +64,7 @@ public class FileTestServer extends AbstractTestServer
 
     public SessionIdManager newSessionIdManager(Object config)
     {
-        HashSessionIdManager mgr = new HashSessionIdManager();
+        HashSessionIdManager mgr = new HashSessionIdManager(_server);
         mgr.setWorkerName("worker"+(__workers++));
         return mgr;
     }

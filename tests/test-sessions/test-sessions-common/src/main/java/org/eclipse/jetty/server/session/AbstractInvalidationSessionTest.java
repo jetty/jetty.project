@@ -85,7 +85,7 @@ public abstract class AbstractInvalidationSessionTest
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                    
+
                     // Be sure the session is also present in node2
                     Request request2 = client.newRequest(urls[1] + "?action=increment");
                     request2.header("Cookie", sessionCookie);

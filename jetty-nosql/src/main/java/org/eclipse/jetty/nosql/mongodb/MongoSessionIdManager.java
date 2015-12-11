@@ -54,7 +54,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
 
     
     final DBCollection _sessions;
-    protected Server _server;
 
     
     /**
@@ -75,9 +74,8 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     /* ------------------------------------------------------------ */
     public MongoSessionIdManager(Server server, DBCollection sessions)
     {
-        super(new Random());
+        super(server, new Random());
         
-        _server = server;
         _sessions = sessions;
 
         _sessions.ensureIndex(
@@ -94,7 +92,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
                 BasicDBObjectBuilder.start().add(MongoSessionDataStore.__VALID, 1).add(MongoSessionDataStore.__ACCESSED, 1).get(),
                 BasicDBObjectBuilder.start().add("sparse", false).add("background", true).get());
     }
- 
  
     
     

@@ -1020,6 +1020,19 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
    {
        _unloadables.clear();
    }
+
+
+
+
+
+   /** 
+    * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
+    */
+   @Override
+   public boolean isPassivating()
+   {
+       return true;
+   }
 }
 
 

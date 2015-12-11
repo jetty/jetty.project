@@ -21,11 +21,27 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractInvalidationSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class InvalidateSessionTest extends AbstractInvalidationSessionTest
 {
 
+    
+    @BeforeClass
+    public static void beforeClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+        MongoTestServer.createCollection();
+    }
+
+    @AfterClass
+    public static void afterClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+    }
+    
     @Override
     public AbstractTestServer createServer(int port)
     {

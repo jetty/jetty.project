@@ -36,6 +36,8 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.Session;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -48,7 +50,19 @@ import org.junit.Test;
 public class AttributeNameTest 
 {
 
+    
+    @BeforeClass
+    public static void beforeClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+        MongoTestServer.createCollection();
+    }
 
+    @AfterClass
+    public static void afterClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+    }
 
     public AbstractTestServer createServer(int port, int max, int scavenge)
     throws Exception

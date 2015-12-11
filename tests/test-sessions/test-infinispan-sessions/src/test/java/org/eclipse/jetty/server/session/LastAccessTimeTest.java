@@ -52,14 +52,5 @@ public class LastAccessTimeTest extends AbstractLastAccessTimeTest
     {
         super.testLastAccessTime();
     }
-
-    @Override
-    public void assertAfterScavenge(SessionManager manager)
-    {
-        //The infinispan session manager will remove a session from its local memory that was a candidate to be scavenged if
-        //it checks with the cluster and discovers that another node is managing it, so the count is 0
-        assertSessionCounts(0, 1, 1, manager);
-    }
-
     
 }

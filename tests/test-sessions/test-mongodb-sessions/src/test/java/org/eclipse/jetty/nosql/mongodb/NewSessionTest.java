@@ -20,6 +20,8 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractNewSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -27,6 +29,20 @@ import org.junit.Test;
  */
 public class NewSessionTest extends AbstractNewSessionTest
 {
+    
+    @BeforeClass
+    public static void beforeClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+        MongoTestServer.createCollection();
+    }
+
+    @AfterClass
+    public static void afterClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+    }
+    
 
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {

@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 
 import java.util.Set;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 
 /**
@@ -30,6 +31,14 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
  */
 public class HashSessionIdManager extends AbstractSessionIdManager
 {
+    /**
+     * @param server
+     */
+    public HashSessionIdManager(Server server)
+    {
+        super(server);
+    }
+
     private final Set<String> _ids = new ConcurrentHashSet<String>();
     
     

@@ -21,6 +21,8 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractForwardedSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -30,7 +32,21 @@ import org.junit.Test;
  */
 public class ForwardedSessionTest extends AbstractForwardedSessionTest
 {
+    
+    @BeforeClass
+    public static void beforeClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+        MongoTestServer.createCollection();
+    }
 
+    @AfterClass
+    public static void afterClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+    }
+    
+    
     /** 
      * @see org.eclipse.jetty.server.session.AbstractForwardedSessionTest#createServer(int)
      */

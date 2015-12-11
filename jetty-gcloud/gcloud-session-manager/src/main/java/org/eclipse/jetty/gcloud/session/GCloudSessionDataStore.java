@@ -384,6 +384,15 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         
         return reference.get();
     }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
+     */
+    @Override
+    public boolean isPassivating()
+    {
+       return true;
+    }
     
     
 }

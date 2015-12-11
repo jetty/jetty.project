@@ -45,7 +45,6 @@ public class GCloudSessionIdManager extends AbstractSessionIdManager
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     public static final int DEFAULT_IDLE_EXPIRY_MULTIPLE = 2;
     public static final String KIND = "GCloudSessionId";
-    private Server _server;
     private Datastore _datastore;
     private KeyFactory _keyFactory;
     private GCloudConfiguration _config;
@@ -58,8 +57,7 @@ public class GCloudSessionIdManager extends AbstractSessionIdManager
      */
     public GCloudSessionIdManager(Server server)
     {
-        super();
-        _server = server;
+        super(server);
     }
 
     /**
@@ -68,8 +66,7 @@ public class GCloudSessionIdManager extends AbstractSessionIdManager
      */
     public GCloudSessionIdManager(Server server, Random random)
     {
-       super(random);
-       _server = server;
+       super(server,random);
     }
 
 

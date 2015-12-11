@@ -36,7 +36,6 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Ignore;
-import org.junit.Test;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -127,7 +126,7 @@ public class PurgeInvalidSessionTest
     }
 
 
-    @Test
+    @Ignore
     public void testPurgeInvalidSessionsWithLimit() throws Exception
     {
         String contextPath = "";

@@ -221,7 +221,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         File file = null;
         if (_storeDir != null)
         {
-            file = new File(_storeDir, id);
+            file = new File(_storeDir, _contextId.toString()+"_"+id);
             if (file.exists())
                 file.delete();
 
@@ -273,6 +273,15 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
         if (!_storeDir.exists())
             _storeDir.mkdirs();
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
+     */
+    @Override
+    public boolean isPassivating()
+    {
+        return true;
     }
     
 
