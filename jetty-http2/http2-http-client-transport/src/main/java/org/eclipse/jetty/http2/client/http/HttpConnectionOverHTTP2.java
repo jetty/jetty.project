@@ -69,7 +69,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
         abort(new AsynchronousCloseException());
     }
 
-    private void abort(Throwable failure)
+    protected void abort(Throwable failure)
     {
         for (HttpChannel channel : channels)
         {
