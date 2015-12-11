@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Connection;
@@ -27,11 +28,23 @@ import org.eclipse.jetty.util.Promise;
 public abstract class MultiplexHttpDestination<C extends Connection> extends HttpDestination implements Promise<Connection>
 {
     private final AtomicReference<ConnectState> connect = new AtomicReference<>(ConnectState.DISCONNECTED);
+    private final AtomicInteger requestsPerConnection = new AtomicInteger();
+    private int maxRequestsPerConnection = 1024;
     private C connection;
 
     protected MultiplexHttpDestination(HttpClient client, Origin origin)
     {
         super(client, origin);
+    }
+
+    public int getMaxRequestsPerConnection()
+    {
+        return maxRequestsPerConnection;
+    }
+
+    public void setMaxRequestsPerConnection(int maxRequestsPerConnection)
+    {
+        this.maxRequestsPerConnection = maxRequestsPerConnection;
     }
 
     @Override
@@ -56,8 +69,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
                 }
                 case CONNECTED:
                 {
-                    if (process(connection))
-                        break;
+                    process(connection);
                     return;
                 }
                 default:
@@ -92,36 +104,51 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
         abort(x);
     }
 
-    protected boolean process(final C connection)
+    protected void process(final C connection)
     {
-        HttpClient client = getHttpClient();
-        final HttpExchange exchange = getHttpExchanges().poll();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Processing {} on {}", exchange, connection);
-        if (exchange == null)
-            return false;
+        while (true)
+        {
+            int max = getMaxRequestsPerConnection();
+            int count = requestsPerConnection.get();
+            int next = count + 1;
+            if (next > max)
+                return;
 
-        final Request request = exchange.getRequest();
-        Throwable cause = request.getAbortCause();
-        if (cause != null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Aborted before processing {}: {}", exchange, cause);
-            // It may happen that the request is aborted before the exchange
-            // is created. Aborting the exchange a second time will result in
-            // a no-operation, so we just abort here to cover that edge case.
-            exchange.abort(cause);
+            if (requestsPerConnection.compareAndSet(count, next))
+            {
+                HttpExchange exchange = getHttpExchanges().poll();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Processing {}/{} {} on {}", next, max, exchange, connection);
+                if (exchange == null)
+                {
+                    requestsPerConnection.decrementAndGet();
+                    return;
+                }
+
+                final Request request = exchange.getRequest();
+                Throwable cause = request.getAbortCause();
+                if (cause != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Aborted before processing {}: {}", exchange, cause);
+                    // It may happen that the request is aborted before the exchange
+                    // is created. Aborting the exchange a second time will result in
+                    // a no-operation, so we just abort here to cover that edge case.
+                    exchange.abort(cause);
+                    requestsPerConnection.decrementAndGet();
+                }
+                else
+                {
+                    send(connection, exchange);
+                }
+            }
         }
-        else
-        {
-            send(connection, exchange);
-        }
-        return true;
     }
 
     @Override
     public void release(Connection connection)
     {
+        requestsPerConnection.decrementAndGet();
         send();
     }
 

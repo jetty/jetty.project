@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.HTTP2ClientConnectionFactory;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
@@ -106,9 +107,9 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     {
         client.setConnectTimeout(httpClient.getConnectTimeout());
 
-        final HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        HttpDestinationOverHTTP2 destination = (HttpDestinationOverHTTP2)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
-        final Promise<Connection> connectionPromise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        Promise<Connection> connectionPromise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
 
         SessionListenerPromise listenerPromise = new SessionListenerPromise(destination, connectionPromise);
 
@@ -136,11 +137,11 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
 
     private class SessionListenerPromise extends Session.Listener.Adapter implements Promise<Session>
     {
-        private final HttpDestination destination;
+        private final HttpDestinationOverHTTP2 destination;
         private final Promise<Connection> promise;
         private HttpConnectionOverHTTP2 connection;
 
-        public SessionListenerPromise(HttpDestination destination, Promise<Connection> promise)
+        public SessionListenerPromise(HttpDestinationOverHTTP2 destination, Promise<Connection> promise)
         {
             this.destination = destination;
             this.promise = promise;
@@ -157,6 +158,14 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         public void failed(Throwable failure)
         {
             promise.failed(failure);
+        }
+
+        @Override
+        public void onSettings(Session session, SettingsFrame frame)
+        {
+            Map<Integer, Integer> settings = frame.getSettings();
+            if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
+                destination.setMaxRequestsPerConnection(settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS));
         }
 
         @Override
