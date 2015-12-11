@@ -62,14 +62,19 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
     @Override
     public void close()
     {
+        close(new AsynchronousCloseException());
+    }
+
+    protected void close(Throwable failure)
+    {
         // First close then abort, to be sure that the connection cannot be reused
         // from an onFailure() handler or by blocking code waiting for completion.
         getHttpDestination().close(this);
         session.close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
-        abort(new AsynchronousCloseException());
+        abort(failure);
     }
 
-    protected void abort(Throwable failure)
+    private void abort(Throwable failure)
     {
         for (HttpChannel channel : channels)
         {
