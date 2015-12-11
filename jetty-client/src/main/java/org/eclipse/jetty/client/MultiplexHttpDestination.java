@@ -120,6 +120,12 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
     }
 
     @Override
+    public void release(Connection connection)
+    {
+        send();
+    }
+
+    @Override
     public void close()
     {
         super.close();

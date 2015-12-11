@@ -57,6 +57,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
     protected void release(HttpChannel channel)
     {
         channels.remove(channel);
+        getHttpDestination().release(this);
     }
 
     @Override
