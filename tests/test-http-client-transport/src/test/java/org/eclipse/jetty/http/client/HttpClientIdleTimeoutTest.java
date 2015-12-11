@@ -27,6 +27,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Assert;
@@ -92,5 +94,29 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
                 });
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testServerIdleTimeout() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+            }
+        });
+        connector.setIdleTimeout(idleTimeout);
+
+        ContentResponse response1 = client.newRequest(newURI()).send();
+        Assert.assertEquals(HttpStatus.OK_200, response1.getStatus());
+
+        // Let the server idle timeout.
+        Thread.sleep(2 * idleTimeout);
+
+        // Make sure we can make another request successfully.
+        ContentResponse response2 = client.newRequest(newURI()).send();
+        Assert.assertEquals(HttpStatus.OK_200, response2.getStatus());
     }
 }
