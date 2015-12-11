@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
@@ -96,7 +97,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         File file = null;
         if (_storeDir != null)
         {
-            file = new File(_storeDir, _contextId.toString()+"_"+id);
+            file = new File(_storeDir, getFileName(id));
             if (file.exists() && file.getParentFile().equals(_storeDir))
             {
                 file.delete();
@@ -124,40 +125,135 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     @Override
     public SessionData load(String id) throws Exception
     {  
-        File file = new File(_storeDir, _contextId.toString()+"_"+id);
-
-        if (!file.exists())
+        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
+        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        Runnable r = new Runnable()
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("No file: {}",file);
-            return null;
-        }
-        
-        try (FileInputStream in = new FileInputStream(file))
-        {
-            SessionData data = load(in);
-            //delete restored file
-            file.delete();
-            return data;
-        }
-        catch (UnreadableSessionDataException e)
-        {
-            if (isDeleteUnrestorableFiles() && file.exists() && file.getParentFile().equals(_storeDir));
+            public void run ()
             {
-                file.delete();
-                LOG.warn("Deleted unrestorable file for session {}", id);
+                File file = new File(_storeDir,getFileName(id));
+
+                if (!file.exists())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("No file: {}",file);
+                    return;
+                }
+
+                try (FileInputStream in = new FileInputStream(file))
+                {
+                    SessionData data = load(in);
+                    //delete restored file
+                    file.delete();
+                    reference.set(data);
+                }
+                catch (UnreadableSessionDataException e)
+                {
+                    if (isDeleteUnrestorableFiles() && file.exists() && file.getParentFile().equals(_storeDir));
+                    {
+                        file.delete();
+                        LOG.warn("Deleted unrestorable file for session {}", id);
+                    }
+                    exception.set(e);
+                }
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
             }
-           throw e;
-        }
+        };
+        //ensure this runs with the context classloader set
+        _context.run(r);
+        
+        if (exception.get() != null)
+            throw exception.get();
+        
+        return reference.get();
     }
     
         
+
+    
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData)
+     */
+    @Override
+    public void doStore(String id, SessionData data, boolean isNew) throws Exception
+    {
+        File file = null;
+        if (_storeDir != null)
+        {
+            file = new File(_storeDir, getFileName(id));
+            if (file.exists())
+                file.delete();
+
+            try(FileOutputStream fos = new FileOutputStream(file,false))
+            {
+                save(fos, id, data);
+            }
+            catch (Exception e)
+            { 
+                if (file != null) 
+                    file.delete(); // No point keeping the file if we didn't save the whole session
+                throw new UnwriteableSessionDataException(id, _context,e);             
+            }
+        }
+    }
+    
+    public void initializeStore ()
+    {
+        if (_storeDir == null)
+            throw new IllegalStateException("No file store specified");
+
+        if (!_storeDir.exists())
+            _storeDir.mkdirs();
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
+     */
+    @Override
+    public boolean isPassivating()
+    {
+        return true;
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void save(OutputStream os, String id, SessionData data)  throws IOException
+    {    
+        DataOutputStream out = new DataOutputStream(os);
+        out.writeUTF(id);
+        out.writeUTF(_context.getCanonicalContextPath());
+        out.writeUTF(_context.getVhost());
+        out.writeUTF(data.getLastNode());
+        out.writeLong(data.getCreated());
+        out.writeLong(data.getAccessed());
+        out.writeLong(data.getLastAccessed());
+        out.writeLong(data.getCookieSet());
+        out.writeLong(data.getExpiry());
+        out.writeLong(data.getMaxInactiveMs());
         
+        List<String> keys = new ArrayList<String>(data.getKeys());
+        out.writeInt(keys.size());
+        ObjectOutputStream oos = new ObjectOutputStream(out);
+        for (String name:keys)
+        {
+            oos.writeUTF(name);
+            oos.writeObject(data.getAttribute(name));
+        }
+    }
+
+    private String getFileName (String id)
+    {
+        return _context.getCanonicalContextPath()+"_"+_context.getVhost()+"_"+id;
+    }
+
+
     private SessionData load (InputStream is)
-    throws Exception
+            throws Exception
     {
         String id = null;
-        
+
         try
         {
             SessionData data = null;
@@ -189,12 +285,12 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
         catch (Exception e)
         {
-            throw new UnreadableSessionDataException(id, _contextId, e);
+            throw new UnreadableSessionDataException(id, _context, e);
         }
     }
 
     private void restoreAttributes (InputStream is, int size, SessionData data)
-    throws Exception
+            throws Exception
     {
         if (size>0)
         {
@@ -211,78 +307,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
     }
 
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData)
-     */
-    @Override
-    public void doStore(String id, SessionData data, boolean isNew) throws Exception
-    {
-        File file = null;
-        if (_storeDir != null)
-        {
-            file = new File(_storeDir, _contextId.toString()+"_"+id);
-            if (file.exists())
-                file.delete();
 
-            try(FileOutputStream fos = new FileOutputStream(file,false))
-            {
-                save(fos, id, data);
-            }
-            catch (Exception e)
-            { 
-                if (file != null) 
-                    file.delete(); // No point keeping the file if we didn't save the whole session
-                throw new UnwriteableSessionDataException(id, _contextId,e);             
-            }
-        }
-    }
-    
-
-    
-    /* ------------------------------------------------------------ */
-    private void save(OutputStream os, String id, SessionData data)  throws IOException
-    {    
-        DataOutputStream out = new DataOutputStream(os);
-        out.writeUTF(id);
-        out.writeUTF(_contextId.getCanonicalContextPath());
-        out.writeUTF(_contextId.getVhost());
-        out.writeUTF(data.getLastNode());
-        out.writeLong(data.getCreated());
-        out.writeLong(data.getAccessed());
-        out.writeLong(data.getLastAccessed());
-        out.writeLong(data.getCookieSet());
-        out.writeLong(data.getExpiry());
-        out.writeLong(data.getMaxInactiveMs());
-        
-        List<String> keys = new ArrayList<String>(data.getKeys());
-        out.writeInt(keys.size());
-        ObjectOutputStream oos = new ObjectOutputStream(out);
-        for (String name:keys)
-        {
-            oos.writeUTF(name);
-            oos.writeObject(data.getAttribute(name));
-        }
-    }
-
-
-    public void initializeStore ()
-    {
-        if (_storeDir == null)
-            throw new IllegalStateException("No file store specified");
-
-        if (!_storeDir.exists())
-            _storeDir.mkdirs();
-    }
-
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-     */
-    @Override
-    public boolean isPassivating()
-    {
-        return true;
-    }
-    
 
 }

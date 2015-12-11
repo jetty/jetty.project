@@ -107,7 +107,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     protected ClassLoader _loader;
     protected ContextHandler.Context _context;
-    protected ContextId _contextId;
+    protected SessionContext _sessionContext;
     protected String _sessionCookie=__DefaultSessionCookie;
     protected String _sessionIdPathParameterName = __DefaultSessionIdPathParameterName;
     protected String _sessionIdPathParameterNamePrefix =";"+ _sessionIdPathParameterName +"=";
@@ -302,13 +302,13 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                 _checkingRemoteSessionIdEncoding=Boolean.parseBoolean(tmp);
         }
        
-        _contextId = ContextId.getContextId(_sessionIdManager.getWorkerName(), _context);
+        _sessionContext = new SessionContext(_sessionIdManager.getWorkerName(), _context);
 
        if (_sessionStore instanceof AbstractSessionStore)
            ((AbstractSessionStore)_sessionStore).setSessionManager(this);
        
        
-       _sessionStore.initialize(_contextId);
+       _sessionStore.initialize(_sessionContext);
        _sessionStore.start();
        
         super.doStart();

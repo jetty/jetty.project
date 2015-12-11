@@ -41,7 +41,7 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
         public boolean putIfAbsent (String id, SessionData data); //only insert if no mapping for key already
         public boolean remove (String id); //remove the mapping for key, returns false if no mapping
         public void put (String id, SessionData data); //overwrite or add the mapping
-        public void initialize(ContextId contextId);
+        public void initialize(SessionContext context);
     }
     
     
@@ -144,8 +144,8 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
     @Override
     protected void doStart() throws Exception
     {
-        _cache.initialize(_contextId);
-        _delegateDataStore.initialize(_contextId);
+        _cache.initialize(_context);
+        _delegateDataStore.initialize(_context);
         super.doStart();
     }
 

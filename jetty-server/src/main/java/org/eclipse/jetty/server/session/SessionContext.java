@@ -19,41 +19,44 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 
 /**
- * ContextId
+ * SessionContext
  *
- *
+ * The worker name which identifies this server instance, and the particular
+ * Context.
+ * 
+ * A SessionManager is 1:1 with a SessionContext.
  */
-public class ContextId
+public class SessionContext
 {
     public final static String NULL_VHOST = "0.0.0.0";
-
-    private String _node;
+    private ContextHandler.Context _context;
+    private String _workerName;
     private String _canonicalContextPath;
     private String _vhost;
     
-
-    public static ContextId getContextId (String node, Context context)
+    
+    public String getWorkerName()
     {
-        return new ContextId((node==null?"":node), getContextPath(context),  getVirtualHost(context));
+        return _workerName;
+    }
+
+
+    public SessionContext (String workerName, ContextHandler.Context context)
+    {
+        _workerName = workerName;
+        _context = context;
+        _canonicalContextPath = canonicalizeContextPath(_context);
+        _vhost = canonicalizeVHost(_context);
     }
     
     
-    private ContextId (String node, String path, String vhost)
+    public Context getContext ()
     {
-        if (node == null || path == null || vhost == null)
-            throw new IllegalArgumentException ("Bad values for ContextId ["+node+","+path+","+vhost+"]");
-
-        _node = node;
-        _canonicalContextPath = path;
-        _vhost = vhost;
-    }
-    
-    public String getNode()
-    {
-        return _node;
+        return _context;
     }
     
     public String getCanonicalContextPath()
@@ -68,28 +71,24 @@ public class ContextId
     
     public String toString ()
     {
-        return _node+"_"+_canonicalContextPath +"_"+_vhost;
+        return _workerName+"_"+_canonicalContextPath +"_"+_vhost;
     }
     
-    @Override
-    public boolean equals (Object o)
+    
+    /**
+     * Run a runnable in the context (with context classloader set) if
+     * there is one, otherwise just run it.
+     * @param r
+     */
+    public void run (Runnable r)
     {
-        if (o == null)
-            return false;
-        
-        ContextId id = (ContextId)o;
-        if (id.getNode().equals(getNode()) && id.getCanonicalContextPath().equals(getCanonicalContextPath()) && id.getVhost().equals(getVhost()))
-                return true;
-        return false;
+        if (_context != null)
+            _context.getContextHandler().handle(r);
+        else
+            r.run();
     }
     
-    @Override
-    public int hashCode()
-    {
-        return java.util.Objects.hash(getNode(), getCanonicalContextPath(), getVhost());
-    }
-
-    public static String getContextPath (Context context)
+    private String canonicalizeContextPath (Context context)
     {
         if (context == null)
             return "";
@@ -104,7 +103,7 @@ public class ContextId
      *
      * @return 0.0.0.0 if no virtual host is defined
      */
-    public static String getVirtualHost (Context context)
+    private String canonicalizeVHost (Context context)
     {
         String vhost = NULL_VHOST;
 
@@ -124,12 +123,12 @@ public class ContextId
      * @param path
      * @return
      */
-    private static String canonicalize (String path)
+    private String canonicalize (String path)
     {
         if (path==null)
             return "";
 
         return path.replace('/', '_').replace('.','_').replace('\\','_');
-    }   
+    }
     
 }

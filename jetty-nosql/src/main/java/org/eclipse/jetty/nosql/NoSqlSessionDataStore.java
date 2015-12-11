@@ -90,7 +90,7 @@ public abstract class NoSqlSessionDataStore extends AbstractSessionDataStore
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        return new NoSqlSessionData(id, _contextId.getCanonicalContextPath(), _contextId.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
+        return new NoSqlSessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
     
     

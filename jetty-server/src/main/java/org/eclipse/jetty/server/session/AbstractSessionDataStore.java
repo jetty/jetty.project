@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  */
 public abstract class AbstractSessionDataStore extends AbstractLifeCycle implements SessionDataStore
 {
-    protected ContextId _contextId; //context associated with this session data store
+    protected SessionContext _context; //context associated with this session data store
 
 
     public abstract void doStore(String id, SessionData data, boolean isNew) throws Exception;
@@ -37,11 +37,11 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
    
 
     
-    public void initialize (ContextId id)
+    public void initialize (SessionContext context)
     {
         if (isStarted())
             throw new IllegalStateException("Context set after SessionDataStore started");
-        _contextId = id;
+        _context = context;
     }
 
     /** 
@@ -75,7 +75,7 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        return new SessionData(id, _contextId.getCanonicalContextPath(), _contextId.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
+        return new SessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
  
     protected void checkStarted () throws IllegalStateException
@@ -90,8 +90,8 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
     @Override
     protected void doStart() throws Exception
     {
-        if (_contextId == null)
-            throw new IllegalStateException ("No ContextId");
+        if (_context == null)
+            throw new IllegalStateException ("No SessionContext");
         
         super.doStart();
     }

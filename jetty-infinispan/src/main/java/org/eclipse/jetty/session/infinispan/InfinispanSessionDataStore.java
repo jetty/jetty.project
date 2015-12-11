@@ -22,12 +22,12 @@ package org.eclipse.jetty.session.infinispan;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
-import org.eclipse.jetty.server.session.ContextId;
+import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionKey;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.infinispan.commons.api.BasicCache;
@@ -88,8 +88,34 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
      */
     @Override
     public SessionData load(String id) throws Exception
-    {
-       return (SessionData)_cache.get(getCacheKey(id, _contextId));
+    {  
+        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
+        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        
+        Runnable load = new Runnable()
+        {
+            public void run ()
+            {
+                try
+                {
+
+                    SessionData sd = (SessionData)_cache.get(getCacheKey(id, _context));
+                    reference.set(sd);
+                }
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
+            }
+        };
+        
+        //ensure the load runs in the context classloader scope
+        _context.run(load);
+        
+        if (exception.get() != null)
+            throw exception.get();
+        
+        return reference.get();
     }
 
     /** 
@@ -98,7 +124,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public boolean delete(String id) throws Exception
     {
-        return (_cache.remove(getCacheKey(id, _contextId)) != null);
+        return (_cache.remove(getCacheKey(id, _context)) != null);
     }
 
     /** 
@@ -145,9 +171,9 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         //scavenges the session before this timeout occurs, the session will be removed.
         //NOTE: that no session listeners can be called for this.
         if (data.getMaxInactiveMs() > 0)
-            _cache.put(getCacheKey(id, _contextId), data, -1, TimeUnit.MILLISECONDS, (data.getMaxInactiveMs() * _idleExpiryMultiple), TimeUnit.MILLISECONDS);
+            _cache.put(getCacheKey(id, _context), data, -1, TimeUnit.MILLISECONDS, (data.getMaxInactiveMs() * _idleExpiryMultiple), TimeUnit.MILLISECONDS);
         else
-            _cache.put(getCacheKey(id, _contextId), data);
+            _cache.put(getCacheKey(id, _context), data);
         
         //tickle the session id manager to keep the sessionid entry for this session up-to-date
         if (_idMgr != null && _idMgr instanceof InfinispanSessionIdManager)
@@ -157,9 +183,9 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     }
     
     
-    public static String getCacheKey (String id, ContextId contextId)
+    public static String getCacheKey (String id, SessionContext context)
     {
-        return contextId.getCanonicalContextPath()+"_"+contextId.getVhost()+"_"+id;
+        return context.getCanonicalContextPath()+"_"+context.getVhost()+"_"+id;
     }
 
 

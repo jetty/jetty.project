@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
@@ -359,7 +360,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             return statement;
         }
 
-        public void fillCheckSessionExistsStatement (PreparedStatement statement, String id, ContextId contextId)
+        public void fillCheckSessionExistsStatement (PreparedStatement statement, String id, SessionContext contextId)
         throws SQLException
         {
             statement.clearParameters();
@@ -378,7 +379,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         }
         
         
-        public PreparedStatement getLoadStatement (Connection connection, String id, ContextId contextId)
+        public PreparedStatement getLoadStatement (Connection connection, String id, SessionContext contextId)
         throws SQLException
         { 
             if (_dbAdaptor == null)
@@ -412,7 +413,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
         
         
-        public PreparedStatement getUpdateStatement (Connection connection, String id, ContextId contextId)
+        public PreparedStatement getUpdateStatement (Connection connection, String id, SessionContext contextId)
         throws SQLException
         {
             if (_dbAdaptor == null)
@@ -447,7 +448,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         
 
 
-        public PreparedStatement getDeleteStatement (Connection connection, String id, ContextId contextId)
+        public PreparedStatement getDeleteStatement (Connection connection, String id, SessionContext contextId)
         throws Exception
         { 
             if (_dbAdaptor == null)
@@ -635,70 +636,92 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     public SessionData load(String id) throws Exception
     {
         if (getLoadAttempts() > 0 && loadAttemptsExhausted(id))
-            throw new UnreadableSessionDataException(id, _contextId, true);
+            throw new UnreadableSessionDataException(id, _context, true);
             
-        try (Connection connection = _dbAdaptor.getConnection();
-                PreparedStatement statement = _sessionTableSchema.getLoadStatement(connection, id, _contextId);
-                ResultSet result = statement.executeQuery())
+        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
+        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        
+        Runnable r = new Runnable()
         {
-            SessionData data = null;
-            if (result.next())
-            {                    
-                data = newSessionData(id,
-                                      result.getLong(_sessionTableSchema.getCreateTimeColumn()), 
-                                      result.getLong(_sessionTableSchema.getAccessTimeColumn()), 
-                                      result.getLong(_sessionTableSchema.getLastAccessTimeColumn()), 
-                                      result.getLong(_sessionTableSchema.getMaxIntervalColumn()));
-                data.setCookieSet(result.getLong(_sessionTableSchema.getCookieTimeColumn()));
-                data.setLastNode(result.getString(_sessionTableSchema.getLastNodeColumn()));
-                data.setLastSaved(result.getLong(_sessionTableSchema.getLastSavedTimeColumn()));
-                data.setExpiry(result.getLong(_sessionTableSchema.getExpiryTimeColumn()));
-                data.setContextPath(result.getString(_sessionTableSchema.getContextPathColumn())); //TODO needed? this is part of the key now
-                data.setVhost(result.getString(_sessionTableSchema.getVirtualHostColumn())); //TODO needed??? this is part of the key now
-
-                try (InputStream is = _dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn());
-                        ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
+            public void run ()
+            {
+                try (Connection connection = _dbAdaptor.getConnection();
+                     PreparedStatement statement = _sessionTableSchema.getLoadStatement(connection, id, _context);
+                     ResultSet result = statement.executeQuery())
                 {
-                    Object o = ois.readObject();
-                    data.putAllAttributes((Map<String,Object>)o);
+                    SessionData data = null;
+                    if (result.next())
+                    {                    
+                        data = newSessionData(id,
+                                              result.getLong(_sessionTableSchema.getCreateTimeColumn()), 
+                                              result.getLong(_sessionTableSchema.getAccessTimeColumn()), 
+                                              result.getLong(_sessionTableSchema.getLastAccessTimeColumn()), 
+                                              result.getLong(_sessionTableSchema.getMaxIntervalColumn()));
+                        data.setCookieSet(result.getLong(_sessionTableSchema.getCookieTimeColumn()));
+                        data.setLastNode(result.getString(_sessionTableSchema.getLastNodeColumn()));
+                        data.setLastSaved(result.getLong(_sessionTableSchema.getLastSavedTimeColumn()));
+                        data.setExpiry(result.getLong(_sessionTableSchema.getExpiryTimeColumn()));
+                        data.setContextPath(result.getString(_sessionTableSchema.getContextPathColumn())); //TODO needed? this is part of the key now
+                        data.setVhost(result.getString(_sessionTableSchema.getVirtualHostColumn())); //TODO needed??? this is part of the key now
+
+                        try (InputStream is = _dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn());
+                                ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
+                        {
+                            Object o = ois.readObject();
+                            data.putAllAttributes((Map<String,Object>)o);
+                        }
+                        catch (Exception e)
+                        {
+                            if (getLoadAttempts() > 0)
+                            {
+                                incLoadAttempt (id);
+                            }
+                            throw new UnreadableSessionDataException (id, _context, e);
+                        }
+                        
+                        //if the session successfully loaded, remove failed attempts
+                        _unloadables.remove(id);
+                        
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("LOADED session {}", data);
+                    }
+                    else
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("No session {}", id);
+                    
+                    reference.set(data);
+                }
+                catch (UnreadableSessionDataException e)
+                {
+                    if (getLoadAttempts() > 0 && loadAttemptsExhausted(id) && isDeleteUnloadableSessions())
+                    {
+                        try
+                        {
+                            delete (id);
+                            _unloadables.remove(id);
+                        }
+                        catch (Exception x)
+                        {
+                            LOG.warn("Problem deleting unloadable session {}", id);
+                        }
+
+                    }
+                    exception.set(e);
                 }
                 catch (Exception e)
                 {
-                    if (getLoadAttempts() > 0)
-                    {
-                        incLoadAttempt (id);
-                    }
-                    throw new UnreadableSessionDataException (id, _contextId, e);
+                    exception.set(e);
                 }
-                
-                //if the session successfully loaded, remove failed attempts
-                _unloadables.remove(id);
-                
-                if (LOG.isDebugEnabled())
-                    LOG.debug("LOADED session {}", data);
             }
-            else
-                if (LOG.isDebugEnabled())
-                    LOG.debug("No session {}", id);
-            return data;
-        }
-        catch (UnreadableSessionDataException e)
-        {
-            if (getLoadAttempts() > 0 && loadAttemptsExhausted(id) && isDeleteUnloadableSessions())
-            {
-                try
-                {
-                    delete (id);
-                    _unloadables.remove(id);
-                }
-                catch (Exception x)
-                {
-                    LOG.warn("Problem deleting unloadable session {}", id);
-                }
+        };
 
-            }
-            throw e;
-        }
+        //ensure this runs with context classloader set
+        _context.run(r);
+
+        if (exception.get() != null)
+            throw exception.get();
+
+        return reference.get();
     }
 
 
@@ -710,7 +733,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     public boolean delete(String id) throws Exception
     {
         try (Connection connection = _dbAdaptor.getConnection();
-             PreparedStatement statement = _sessionTableSchema.getDeleteStatement(connection, id, _contextId))
+             PreparedStatement statement = _sessionTableSchema.getDeleteStatement(connection, id, _context))
         {
             connection.setAutoCommit(true);
             int rows = statement.executeUpdate();
@@ -756,8 +779,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             try  (PreparedStatement statement = connection.prepareStatement(s))
             {
                 statement.setString(1, id); //session id
-                statement.setString(2, _contextId.getCanonicalContextPath()); //context path
-                statement.setString(3, _contextId.getVhost()); //first vhost
+                statement.setString(2, _context.getCanonicalContextPath()); //context path
+                statement.setString(3, _context.getVhost()); //first vhost
                 statement.setString(4, data.getLastNode());//my node id
                 statement.setLong(5, data.getAccessed());//accessTime
                 statement.setLong(6, data.getLastAccessed()); //lastAccessTime
@@ -788,7 +811,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         try (Connection connection = _dbAdaptor.getConnection())        
         {
             connection.setAutoCommit(true);
-            try (PreparedStatement statement = _sessionTableSchema.getUpdateSessionStatement(connection, _contextId.getCanonicalContextPath()))
+            try (PreparedStatement statement = _sessionTableSchema.getUpdateSessionStatement(connection, _context.getCanonicalContextPath()))
             {
                 statement.setString(1, data.getLastNode());//should be my node id
                 statement.setLong(2, data.getAccessed());//accessTime
@@ -805,16 +828,16 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
                 statement.setBinaryStream(7, bais, bytes.length);//attribute map as blob
 
-                if ((_contextId.getCanonicalContextPath() == null || "".equals(_contextId.getCanonicalContextPath())) && _dbAdaptor.isEmptyStringNull())
+                if ((_context.getCanonicalContextPath() == null || "".equals(_context.getCanonicalContextPath())) && _dbAdaptor.isEmptyStringNull())
                 {
                     statement.setString(8, id);
-                    statement.setString(9, _contextId.getVhost()); 
+                    statement.setString(9, _context.getVhost()); 
                 }
                 else
                 {
                     statement.setString(8, id);
-                    statement.setString(9, _contextId.getCanonicalContextPath());
-                    statement.setString(10, _contextId.getVhost());
+                    statement.setString(9, _context.getCanonicalContextPath());
+                    statement.setString(10, _context.getVhost());
                 }
 
                 statement.executeUpdate();
@@ -848,9 +871,9 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
              */
             long upperBound = now;
             if (LOG.isDebugEnabled())
-                LOG.debug ("{}- Pass 1: Searching for sessions for node {} and context {} expired before {}", _contextId.getNode(), _contextId.getCanonicalContextPath(), upperBound);
+                LOG.debug ("{}- Pass 1: Searching for sessions for node {} and context {} expired before {}", _context.getWorkerName(), _context.getCanonicalContextPath(), upperBound);
 
-            try (PreparedStatement statement = _sessionTableSchema.getMyExpiredSessionsStatement(connection, _contextId.getCanonicalContextPath(), _contextId.getVhost(), upperBound))
+            try (PreparedStatement statement = _sessionTableSchema.getMyExpiredSessionsStatement(connection, _context.getCanonicalContextPath(), _context.getVhost(), upperBound))
             {
                 try (ResultSet result = statement.executeQuery())
                 {
@@ -859,7 +882,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         String sessionId = result.getString(_sessionTableSchema.getIdColumn());
                         long exp = result.getLong(_sessionTableSchema.getExpiryTimeColumn());
                         expiredSessionKeys.add(sessionId);
-                        if (LOG.isDebugEnabled()) LOG.debug (_contextId.getCanonicalContextPath()+"- Found expired sessionId="+sessionId);
+                        if (LOG.isDebugEnabled()) LOG.debug (_context.getCanonicalContextPath()+"- Found expired sessionId="+sessionId);
                     }
                 }
             }
@@ -872,7 +895,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 upperBound = now - (3 * _gracePeriodMs);
                 if (upperBound > 0)
                 {
-                    if (LOG.isDebugEnabled()) LOG.debug("{}- Pass 2: Searching for sessions expired before {}",_contextId.getNode(), upperBound);
+                    if (LOG.isDebugEnabled()) LOG.debug("{}- Pass 2: Searching for sessions expired before {}",_context.getWorkerName(), upperBound);
 
                     selectExpiredSessions.setLong(1, upperBound);
                     try (ResultSet result = selectExpiredSessions.executeQuery())
@@ -883,7 +906,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                             String ctxtpth = result.getString(_sessionTableSchema.getContextPathColumn());
                             String vh = result.getString(_sessionTableSchema.getVirtualHostColumn());
                             expiredSessionKeys.add(sessionId);
-                            if (LOG.isDebugEnabled()) LOG.debug ("{}- Found expired sessionId=",_contextId.getNode(), sessionId);
+                            if (LOG.isDebugEnabled()) LOG.debug ("{}- Found expired sessionId=",_context.getWorkerName(), sessionId);
                         }
                     }
                 }
@@ -904,11 +927,11 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             if (!notExpiredInDB.isEmpty())
             {
                 //we have some sessions to check
-                try (PreparedStatement checkSessionExists = _sessionTableSchema.getCheckSessionExistsStatement(connection, _contextId.getCanonicalContextPath()))
+                try (PreparedStatement checkSessionExists = _sessionTableSchema.getCheckSessionExistsStatement(connection, _context.getCanonicalContextPath()))
                 {
                     for (String k: notExpiredInDB)
                     {
-                        _sessionTableSchema.fillCheckSessionExistsStatement (checkSessionExists, k, _contextId);
+                        _sessionTableSchema.fillCheckSessionExistsStatement (checkSessionExists, k, _context);
                         try (ResultSet result = checkSessionExists.executeQuery())
                         {        
                             if (!result.next())

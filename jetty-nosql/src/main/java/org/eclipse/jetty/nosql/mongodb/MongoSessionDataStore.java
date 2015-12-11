@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
 import org.eclipse.jetty.server.session.SessionData;
@@ -193,76 +194,90 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     @Override
     public SessionData load(String id) throws Exception
     {
-        DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("id={} loaded={}", id, sessionDocument);
-        
-        if (sessionDocument == null)
-            return null;
-
-        Boolean valid = (Boolean)sessionDocument.get(__VALID);   
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("id={} valid={}", id, valid);
-        if (valid == null || !valid)
-            return null;
-        
-        try
+        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
+        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        Runnable r = new Runnable()
         {
-            Object version = getNestedValue(sessionDocument, getContextSubfield(__VERSION));
-            
-            Long created = (Long)sessionDocument.get(__CREATED);
-            Long accessed = (Long)sessionDocument.get(__ACCESSED);
-            Long maxInactive = (Long)sessionDocument.get(__MAX_IDLE);
-            Long expiry = (Long)sessionDocument.get(__EXPIRY);
-          
-            NoSqlSessionData data = null;
-
-            // get the session for the context
-            DBObject sessionSubDocumentForContext = (DBObject)getNestedValue(sessionDocument,getContextField());
-
-            if (LOG.isDebugEnabled()) LOG.debug("attrs {}", sessionSubDocumentForContext);
-            
-            if (sessionSubDocumentForContext != null)
+            public void run ()
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Session {} present for context {}", id, _contextId);
-
-                //only load a session if it exists for this context
-                data = (NoSqlSessionData)newSessionData(id, created, accessed, accessed, maxInactive);
-                data.setVersion(version);
-                data.setExpiry(expiry);
-                data.setContextPath(_contextId.getCanonicalContextPath());
-                data.setVhost(_contextId.getVhost());
-                
-                HashMap<String, Object> attributes = new HashMap<>();
-                for (String name : sessionSubDocumentForContext.keySet())
+                try
                 {
-                    //skip special metadata attribute which is not one of the actual session attributes
-                    if ( __METADATA.equals(name) )
-                        continue;         
-                    String attr = decodeName(name);
-                    Object value = decodeValue(sessionSubDocumentForContext.get(name));
-                    attributes.put(attr,value);
-                }
-                
-                data.putAllAttributes(attributes);
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Session  {} not present for context {}", id, _contextId);        
-            }
+                    DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
 
-            return data;
-        }
-        catch (Exception e)
-        {
-            LOG.warn(e);
-        }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("id={} loaded={}", id, sessionDocument);
+                    
+                    if (sessionDocument == null)
+                        return;
+
+                    Boolean valid = (Boolean)sessionDocument.get(__VALID);   
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("id={} valid={}", id, valid);
+                    if (valid == null || !valid)
+                        return;
+
+
+                    Object version = getNestedValue(sessionDocument, getContextSubfield(__VERSION));
+
+                    Long created = (Long)sessionDocument.get(__CREATED);
+                    Long accessed = (Long)sessionDocument.get(__ACCESSED);
+                    Long maxInactive = (Long)sessionDocument.get(__MAX_IDLE);
+                    Long expiry = (Long)sessionDocument.get(__EXPIRY);
+
+                    NoSqlSessionData data = null;
+
+                    // get the session for the context
+                    DBObject sessionSubDocumentForContext = (DBObject)getNestedValue(sessionDocument,getContextField());
+
+                    if (LOG.isDebugEnabled()) LOG.debug("attrs {}", sessionSubDocumentForContext);
+
+                    if (sessionSubDocumentForContext != null)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Session {} present for context {}", id, _context);
+
+                        //only load a session if it exists for this context
+                        data = (NoSqlSessionData)newSessionData(id, created, accessed, accessed, maxInactive);
+                        data.setVersion(version);
+                        data.setExpiry(expiry);
+                        data.setContextPath(_context.getCanonicalContextPath());
+                        data.setVhost(_context.getVhost());
+
+                        HashMap<String, Object> attributes = new HashMap<>();
+                        for (String name : sessionSubDocumentForContext.keySet())
+                        {
+                            //skip special metadata attribute which is not one of the actual session attributes
+                            if ( __METADATA.equals(name) )
+                                continue;         
+                            String attr = decodeName(name);
+                            Object value = decodeValue(sessionSubDocumentForContext.get(name));
+                            attributes.put(attr,value);
+                        }
+
+                        data.putAllAttributes(attributes);
+                    }
+                    else
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Session  {} not present for context {}", id, _context);        
+                    }
+
+                    reference.set(data);
+                }
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
+            }
+        };
         
-        return null;
+        _context.run(r);
+        
+        if (exception.get() != null)
+            throw exception.get();
+        
+        return reference.get();
     }
 
     /** 
@@ -272,7 +287,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     public boolean delete(String id) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Remove:session {} for context ",id, _contextId);
+            LOG.debug("Remove:session {} for context ",id, _context);
 
         /*
          * Check if the session exists and if it does remove the context
@@ -345,7 +360,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             for ( DBObject session : verifiedExpiredSessions )  
             {
                 String id = (String)session.get(__ID);
-                if (LOG.isDebugEnabled()) LOG.debug("{} Mongo confirmed expired session {}", _contextId,id);
+                if (LOG.isDebugEnabled()) LOG.debug("{} Mongo confirmed expired session {}", _context,id);
                 expiredSessions.add(id);
             }            
         }
@@ -368,7 +383,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             for (DBObject session : oldExpiredSessions)
             {
                 String id = (String)session.get(__ID);
-                if (LOG.isDebugEnabled()) LOG.debug("{} Mongo found old expired session {}", _contextId, id);
+                if (LOG.isDebugEnabled()) LOG.debug("{} Mongo found old expired session {}", _context, id);
                 expiredSessions.add(id);
             }
 
@@ -499,7 +514,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
    
     private String getCanonicalContextId ()
     {
-        return canonicalizeVHost(_contextId.getVhost()) + ":" + _contextId.getCanonicalContextPath();
+        return canonicalizeVHost(_context.getVhost()) + ":" + _context.getCanonicalContextPath();
     }
     
     private String canonicalizeVHost (String vhost)

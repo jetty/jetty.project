@@ -41,7 +41,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     protected SessionDataStore _sessionDataStore;
     protected StalenessStrategy _staleStrategy;
     protected SessionManager _manager;
-    protected ContextId _contextId;
+    protected SessionContext _context;
 
 
     
@@ -123,11 +123,11 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     
     
 
-    public void initialize (ContextId contextId)
+    public void initialize (SessionContext context)
     {
         if (isStarted())
             throw new IllegalStateException("Context set after session store started");
-        _contextId = contextId;
+        _context = context;
     }
     
     @Override
@@ -139,10 +139,10 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         if (_manager == null)
             throw new IllegalStateException ("No session manager");
         
-        if (_contextId == null)
+        if (_context == null)
             throw new IllegalStateException ("No ContextId");
         
-        _sessionDataStore.initialize(_contextId);
+        _sessionDataStore.initialize(_context);
         _sessionDataStore.start();
         
         super.doStart();

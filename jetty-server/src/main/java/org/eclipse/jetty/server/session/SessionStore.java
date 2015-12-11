@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
  */
 public interface SessionStore extends LifeCycle
 {
-    void initialize(ContextId contextId);
+    void initialize(SessionContext context);
     Session newSession (HttpServletRequest request, String id,  long time, long maxInactiveMs);
     Session get(String id, boolean staleCheck) throws Exception;
     void put(String id, Session session) throws Exception;

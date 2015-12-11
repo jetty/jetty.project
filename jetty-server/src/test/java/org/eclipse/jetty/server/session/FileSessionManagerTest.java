@@ -105,8 +105,7 @@ public class FileSessionManagerTest
         manager.getSessionDataStore().setStoreDir(testDir);
         manager.start();
 
-        //See SessionKey.getKey()
-        String expectedFilename = "__0.0.0.0_validFile123";
+        String expectedFilename = "_0.0.0.0_validFile123";
         
         Assert.assertTrue(new File(testDir, expectedFilename).createNewFile());
 
@@ -153,7 +152,7 @@ public class FileSessionManagerTest
         manager.setMaxInactiveInterval(30); // change max inactive interval for *new* sessions
         manager.stop();
         
-        String expectedFilename = "foo__0.0.0.0_"+session.getId();
+        String expectedFilename = "_0.0.0.0_"+session.getId();
         Assert.assertTrue("File should exist!", new File(testDir, expectedFilename).exists());
         
         

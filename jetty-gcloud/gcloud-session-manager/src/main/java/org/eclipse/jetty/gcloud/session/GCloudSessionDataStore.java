@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
-import org.eclipse.jetty.server.session.ContextId;
+import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
@@ -161,7 +161,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     {
         if (LOG.isDebugEnabled()) LOG.debug("Loading session {} from DataStore", id);
 
-        Entity entity = _datastore.get(makeKey(id, _contextId));
+        Entity entity = _datastore.get(makeKey(id, _context));
         if (entity == null)
         {
             if (LOG.isDebugEnabled()) LOG.debug("No session {} in DataStore ", id);
@@ -181,7 +181,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     public boolean delete(String id) throws Exception
     {
         if (LOG.isDebugEnabled()) LOG.debug("Removing session {} from DataStore", id);
-        _datastore.delete(makeKey(id, _contextId));
+        _datastore.delete(makeKey(id, _context));
         return true;
     }
 
@@ -252,7 +252,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     {
         if (LOG.isDebugEnabled()) LOG.debug("Writing session {} to DataStore", data.getId());
     
-        Entity entity = entityFromSession(data, makeKey(id, _contextId));
+        Entity entity = entityFromSession(data, makeKey(id, _context));
         _datastore.put(entity);
     }
 
@@ -270,7 +270,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      * @param session
      * @return
      */
-    private Key makeKey (String id, ContextId context)
+    private Key makeKey (String id, SessionContext context)
     {
         String key = context.getCanonicalContextPath()+"_"+context.getVhost()+"_"+id;
         return _keyFactory.newKey(key);
@@ -345,8 +345,6 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     long expiry = entity.getLong(EXPIRY);
                     long maxInactive = entity.getLong(MAXINACTIVE);
                     Blob blob = (Blob) entity.getBlob(ATTRIBUTES);
-                    
-                    System.err.println("Session "+id+" from Entity, expiry="+expiry);
 
                     SessionData session = newSessionData (id, createTime, accessed, lastAccessed, maxInactive);
                     session.setLastNode(lastNode);
@@ -369,18 +367,11 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             }
         };
         
-        load.run();
-        
-    /*    if (_context==null)
-            load.run();
-        else
-            _context.getContextHandler().handle(null,load);*/
-
-       
+        //ensure this runs in the context classloader
+       _context.run(load);
+    
         if (exception.get() != null)
-        {
             throw exception.get();
-        }
         
         return reference.get();
     }

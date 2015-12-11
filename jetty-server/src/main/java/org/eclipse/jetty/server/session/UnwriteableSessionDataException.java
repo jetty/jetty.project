@@ -27,11 +27,11 @@ package org.eclipse.jetty.server.session;
 public class UnwriteableSessionDataException extends Exception
 {
     private String _id;
-    private ContextId _contextId;
+    private SessionContext _sessionContext;
     
     
     
-    public UnwriteableSessionDataException (String id, ContextId contextId, Throwable t)
+    public UnwriteableSessionDataException (String id, SessionContext contextId, Throwable t)
     {
         super ("Unwriteable session "+id+" for "+contextId, t);
        _id = id;
@@ -42,8 +42,8 @@ public class UnwriteableSessionDataException extends Exception
         return _id;
     }
     
-    public ContextId getContextId()
+    public SessionContext getSessionContext()
     {
-        return _contextId;
+        return _sessionContext;
     }
 }
