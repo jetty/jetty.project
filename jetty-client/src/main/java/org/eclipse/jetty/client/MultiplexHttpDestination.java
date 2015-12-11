@@ -30,4 +30,19 @@ public abstract class MultiplexHttpDestination extends HttpDestination
         return new MultiplexConnectionPool(this, client.getMaxConnectionsPerDestination(), this,
                 client.getMaxRequestsQueuedPerDestination());
     }
+
+    public int getMaxRequestsPerConnection()
+    {
+        ConnectionPool connectionPool = getConnectionPool();
+        if (connectionPool instanceof MultiplexConnectionPool)
+            return ((MultiplexConnectionPool)connectionPool).getMaxMultiplex();
+        return 1;
+    }
+
+    public void setMaxRequestsPerConnection(int maxRequestsPerConnection)
+    {
+        ConnectionPool connectionPool = getConnectionPool();
+        if (connectionPool instanceof MultiplexConnectionPool)
+            ((MultiplexConnectionPool)connectionPool).setMaxMultiplex(maxRequestsPerConnection);
+    }
 }

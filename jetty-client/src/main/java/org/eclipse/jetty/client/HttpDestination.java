@@ -276,12 +276,18 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     private void process()
     {
-        Connection connection = connectionPool.acquire();
-        if (connection != null)
-            process(connection);
+        while (true)
+        {
+            Connection connection = connectionPool.acquire();
+            if (connection == null)
+                break;
+            boolean proceed = process(connection);
+            if (!proceed)
+                break;
+        }
     }
 
-    public void process(final Connection connection)
+    public boolean process(final Connection connection)
     {
         HttpClient client = getHttpClient();
         final HttpExchange exchange = getHttpExchanges().poll();
@@ -291,13 +297,13 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         {
             if (!connectionPool.release(connection))
                 connection.close();
-
             if (!client.isRunning())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} is stopping", client);
                 connection.close();
             }
+            return false;
         }
         else
         {
@@ -316,6 +322,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             {
                 send(connection, exchange);
             }
+            return getHttpExchanges().peek() != null;
         }
     }
 
