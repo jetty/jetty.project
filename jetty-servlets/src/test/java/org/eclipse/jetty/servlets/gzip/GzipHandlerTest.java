@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.servlets.gzip;
 
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -26,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 
 import javax.servlet.ServletException;
@@ -203,5 +207,17 @@ public class GzipHandlerTest
         IO.copy(testIn,testOut);
 
         assertEquals(__icontent, testOut.toString("UTF8"));
+    }
+    
+    @Test
+    public void testAddGetPaths()
+    {
+        GzipHandler gzip = new GzipHandler();
+        gzip.addIncludedPaths("/foo");
+        gzip.addIncludedPaths("^/bar.*$");
+        
+        String[] includedPaths = gzip.getIncludedPaths();
+        assertThat("Included Paths.size", includedPaths.length, is(2));
+        assertThat("Included Paths", Arrays.asList(includedPaths), contains("/foo","^/bar.*$"));
     }
 }

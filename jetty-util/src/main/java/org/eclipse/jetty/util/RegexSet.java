@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  * <p>
  * Provides the efficient {@link #matches(String)} method to check for a match against all the combined Regex's
  */
-public class RegexSet extends AbstractSet<String> implements IncludeExclude.MatchSet<String>
+public class RegexSet extends AbstractSet<String> implements Predicate<String>
 {
     private final Set<String> _patterns=new HashSet<String>();
     private final Set<String> _unmodifiable=Collections.unmodifiableSet(_patterns);
@@ -94,6 +94,12 @@ public class RegexSet extends AbstractSet<String> implements IncludeExclude.Matc
         }
         builder.append(")$");
         _pattern = Pattern.compile(builder.toString());   
+    }
+    
+    @Override
+    public boolean test(String s)
+    {
+        return _pattern!=null && _pattern.matcher(s).matches();
     }
 
     public boolean matches(String s)

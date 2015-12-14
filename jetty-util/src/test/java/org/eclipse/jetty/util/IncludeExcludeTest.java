@@ -20,7 +20,9 @@ package org.eclipse.jetty.util;
 
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class IncludeExcludeTest
 {
@@ -29,8 +31,8 @@ public class IncludeExcludeTest
     {
         IncludeExclude<String> ie = new IncludeExclude<>();
         
-        assertEquals(0,ie.size());
-        assertEquals(true,ie.matches("foo"));
+        assertThat("Empty IncludeExclude", ie.size(), is(0));
+        assertThat("Matches 'foo'",ie.matches("foo"),is(true));
     }
     
     @Test
@@ -40,7 +42,7 @@ public class IncludeExcludeTest
         ie.include("foo");
         ie.include("bar");
         
-        assertEquals(2,ie.size());
+        assertThat("IncludeExclude.size", ie.size(), is(2));
         assertEquals(false,ie.matches(""));
         assertEquals(true,ie.matches("foo"));
         assertEquals(true,ie.matches("bar"));
@@ -146,8 +148,5 @@ public class IncludeExcludeTest
 
         assertEquals(true,ie.matches("foobar"));
         assertEquals(true,ie.matches("Ant"));
-        
     }
-    
-    
 }
