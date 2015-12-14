@@ -245,7 +245,7 @@ public class ServletPathSpec extends PathSpec
             case EXACT:
                 return pathSpec.equals(path);
             case PREFIX_GLOB:
-                return (!"/".equals(path) && isWildcardMatch(path));
+                return isWildcardMatch(path);
             case SUFFIX_GLOB:
                 return path.regionMatches((path.length() - specLength) + 1,pathSpec,1,specLength - 1);
             case ROOT:
