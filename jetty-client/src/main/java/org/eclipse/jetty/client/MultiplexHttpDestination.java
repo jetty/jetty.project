@@ -93,7 +93,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
         else
         {
             connection.close();
-            failed(new IllegalStateException());
+            failed(new IllegalStateException("Invalid connection state " + connect));
         }
     }
 
