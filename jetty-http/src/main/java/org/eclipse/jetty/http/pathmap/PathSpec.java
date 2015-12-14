@@ -119,7 +119,7 @@ public abstract class PathSpec implements Comparable<PathSpec>
      * 
      * @return the as-provided path spec
      */
-    public String getPathSpec()
+    public String getDeclaration()
     {
         return pathSpec;
     }

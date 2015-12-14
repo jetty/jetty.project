@@ -28,13 +28,13 @@ public class RegexPathSpecTest
 {
     public static void assertMatches(PathSpec spec, String path)
     {
-        String msg = String.format("Spec(\"%s\").matches(\"%s\")",spec.getPathSpec(),path);
+        String msg = String.format("Spec(\"%s\").matches(\"%s\")",spec.getDeclaration(),path);
         assertThat(msg,spec.matches(path),is(true));
     }
 
     public static void assertNotMatches(PathSpec spec, String path)
     {
-        String msg = String.format("!Spec(\"%s\").matches(\"%s\")",spec.getPathSpec(),path);
+        String msg = String.format("!Spec(\"%s\").matches(\"%s\")",spec.getDeclaration(),path);
         assertThat(msg,spec.matches(path),is(false));
     }
 
@@ -42,7 +42,7 @@ public class RegexPathSpecTest
     public void testExactSpec()
     {
         RegexPathSpec spec = new RegexPathSpec("^/a$");
-        assertEquals("Spec.pathSpec","^/a$",spec.getPathSpec());
+        assertEquals("Spec.pathSpec","^/a$",spec.getDeclaration());
         assertEquals("Spec.pattern","^/a$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",1,spec.getPathDepth());
         assertEquals("Spec.group",PathSpecGroup.EXACT,spec.group);
@@ -57,7 +57,7 @@ public class RegexPathSpecTest
     public void testMiddleSpec()
     {
         RegexPathSpec spec = new RegexPathSpec("^/rest/([^/]*)/list$");
-        assertEquals("Spec.pathSpec","^/rest/([^/]*)/list$",spec.getPathSpec());
+        assertEquals("Spec.pathSpec","^/rest/([^/]*)/list$",spec.getDeclaration());
         assertEquals("Spec.pattern","^/rest/([^/]*)/list$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",3,spec.getPathDepth());
         assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.group);
@@ -78,7 +78,7 @@ public class RegexPathSpecTest
     public void testMiddleSpecNoGrouping()
     {
         RegexPathSpec spec = new RegexPathSpec("^/rest/[^/]+/list$");
-        assertEquals("Spec.pathSpec","^/rest/[^/]+/list$",spec.getPathSpec());
+        assertEquals("Spec.pathSpec","^/rest/[^/]+/list$",spec.getDeclaration());
         assertEquals("Spec.pattern","^/rest/[^/]+/list$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",3,spec.getPathDepth());
         assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.group);
@@ -99,7 +99,7 @@ public class RegexPathSpecTest
     public void testPrefixSpec()
     {
         RegexPathSpec spec = new RegexPathSpec("^/a/(.*)$");
-        assertEquals("Spec.pathSpec","^/a/(.*)$",spec.getPathSpec());
+        assertEquals("Spec.pathSpec","^/a/(.*)$",spec.getDeclaration());
         assertEquals("Spec.pattern","^/a/(.*)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",2,spec.getPathDepth());
         assertEquals("Spec.group",PathSpecGroup.PREFIX_GLOB,spec.group);
@@ -117,7 +117,7 @@ public class RegexPathSpecTest
     public void testSuffixSpec()
     {
         RegexPathSpec spec = new RegexPathSpec("^(.*).do$");
-        assertEquals("Spec.pathSpec","^(.*).do$",spec.getPathSpec());
+        assertEquals("Spec.pathSpec","^(.*).do$",spec.getDeclaration());
         assertEquals("Spec.pattern","^(.*).do$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",0,spec.getPathDepth());
         assertEquals("Spec.group",PathSpecGroup.SUFFIX_GLOB,spec.group);
