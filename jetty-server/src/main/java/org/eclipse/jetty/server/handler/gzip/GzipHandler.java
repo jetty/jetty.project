@@ -36,7 +36,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -72,9 +72,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     // non-static, as other GzipHandler instances may have different configurations
     private final ThreadLocal<Deflater> _deflater = new ThreadLocal<Deflater>();
 
-    private final IncludeExclude<String> _agentPatterns=new IncludeExclude<>(RegexSet.class,RegexSet.MATCHER);
+    private final IncludeExclude<String> _agentPatterns=new IncludeExclude<>(RegexSet.class);
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
-    private final IncludeExclude<String> _paths = new IncludeExclude<>(PathMap.PathSet.class,PathMap.PathSet.MATCHER);
+    private final IncludeExclude<String> _paths = new IncludeExclude<String>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
     
     private HttpField _vary;
@@ -144,9 +144,27 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     /* ------------------------------------------------------------ */
     /**
+     * Add path to excluded paths list.
+     * <p>
+     * There are 2 syntaxes supported, Servlet <code>url-pattern</code> based, and
+     * Regex based.  This means that the initial characters on the path spec
+     * line are very strict, and determine the behavior of the path matching.
+     * <ul>
+     *  <li>If the spec starts with <code>'^'</code> the spec is assumed to be
+     *      a regex based path spec and will match with normal Java regex rules.</li>
+     *  <li>If the spec starts with <code>'/'</code> then spec is assumed to be
+     *      a Servlet url-pattern rules path spec for either an exact match
+     *      or prefix based match.</li>
+     *  <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
+     *      a Servlet url-pattern rules path spec for a suffix based match.</li>
+     *  <li>All other syntaxes are unsupported</li> 
+     * </ul>
+     * <p>
+     * Note: inclusion takes precedence over exclude.
+     * 
      * @param pathspecs Path specs (as per servlet spec) to exclude. If a 
      * ServletContext is available, the paths are relative to the context path,
-     * otherwise they are absolute.
+     * otherwise they are absolute.<br>
      * For backward compatibility the pathspecs may be comma separated strings, but this
      * will not be supported in future versions.
      */
@@ -191,12 +209,27 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     /* ------------------------------------------------------------ */
     /**
-     * Add path specs to include. Inclusion takes precedence over exclusion.
+     * Add path specs to include.
+     * <p>
+     * There are 2 syntaxes supported, Servlet <code>url-pattern</code> based, and
+     * Regex based.  This means that the initial characters on the path spec
+     * line are very strict, and determine the behavior of the path matching.
+     * <ul>
+     *  <li>If the spec starts with <code>'^'</code> the spec is assumed to be
+     *      a regex based path spec and will match with normal Java regex rules.</li>
+     *  <li>If the spec starts with <code>'/'</code> then spec is assumed to be
+     *      a Servlet url-pattern rules path spec for either an exact match
+     *      or prefix based match.</li>
+     *  <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
+     *      a Servlet url-pattern rules path spec for a suffix based match.</li>
+     *  <li>All other syntaxes are unsupported</li> 
+     * </ul>
+     * <p>
+     * Note: inclusion takes precedence over exclude.
+     * 
      * @param pathspecs Path specs (as per servlet spec) to include. If a 
      * ServletContext is available, the paths are relative to the context path,
      * otherwise they are absolute
-     * For backward compatibility the pathspecs may be comma separated strings, but this
-     * will not be supported in future versions.
      */
     public void addIncludedPaths(String... pathspecs)
     {
@@ -334,9 +367,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     /* ------------------------------------------------------------ */
     /**
-     * Get the minimum reponse size.
+     * Get the minimum response size.
      *
-     * @return minimum reponse size
+     * @return minimum response size
      */
     public int getMinGzipSize()
     {
