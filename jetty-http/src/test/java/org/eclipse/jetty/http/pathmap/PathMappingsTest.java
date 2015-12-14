@@ -77,61 +77,22 @@ public class PathMappingsTest
         assertMatch(p,"/animal/fish/trout/cam","animalCam");
         assertMatch(p,"/entrance/cam","entranceCam");
     }
-
+    
     /**
-     * Test the match order rules imposed by the Servlet API.
-     * <p>
-     * <ul>
-     * <li>Exact match</li>
-     * <li>Longest prefix match</li>
-     * <li>Longest suffix match</li>
-     * <li>default</li>
-     * </ul>
+     * Test the match order rules imposed by the Servlet API (default vs any)
      */
     @Test
-    public void testServletMatchOrder()
+    public void testServletMatchDefault()
     {
         PathMappings<String> p = new PathMappings<>();
 
-        p.put(new ServletPathSpec("/abs/path"),"abspath"); // 1
-        p.put(new ServletPathSpec("/abs/path/longer"),"longpath"); // 2 
-        p.put(new ServletPathSpec("/animal/bird/*"),"birds"); // 3
-        p.put(new ServletPathSpec("/animal/fish/*"),"fishes"); // 4
-        p.put(new ServletPathSpec("/animal/*"),"animals"); // 5
-        p.put(new ServletPathSpec("*.tar.gz"),"tarball"); // 6
-        p.put(new ServletPathSpec("*.gz"),"gzipped"); // 7
-        p.put(new ServletPathSpec("/"),"default"); // 8
-        // 9 was the old Jetty ":" spec delimited case (no longer valid)
-        p.put(new ServletPathSpec(""),"root"); // 10
-        p.put(new ServletPathSpec("/\u20ACuro/*"),"money"); // 11
+        p.put(new ServletPathSpec("/"),"default");
+        p.put(new ServletPathSpec("/*"),"any"); 
 
-        // dumpMappings(p);
-
-        // From old PathMapTest
-        assertMatch(p,"/abs/path","abspath");
-        assertMatch(p,"/abs/path/xxx","default");
-        assertMatch(p,"/abs/pith","default");
-        assertMatch(p,"/abs/path/longer","longpath");
-        assertMatch(p,"/abs/path/","default");
-        assertMatch(p,"/abs/path/foo","default");
-        assertMatch(p,"/animal/bird/eagle/bald","birds");
-        assertMatch(p,"/animal/fish/shark/hammerhead","fishes");
-        assertMatch(p,"/animal/insect/ladybug","animals");
-        assertMatch(p,"/animal","animals");
-        assertMatch(p,"/animal/","animals");
-        assertMatch(p,"/animal/other","animals");
-        assertMatch(p,"/animal/*","animals");
-        assertMatch(p,"/downloads/distribution.tar.gz","tarball");
-        assertMatch(p,"/downloads/script.gz","gzipped");
-        assertMatch(p,"/animal/arhive.gz","animals");
-        assertMatch(p,"/Other/path","default");
-        assertMatch(p,"/\u20ACuro/path","money");
-        assertMatch(p,"/","root");
-        
-        // Extra tests
-        assertMatch(p,"/downloads/readme.txt","default");
-        assertMatch(p,"/downloads/logs.tgz","default");
-        assertMatch(p,"/main.css","default");
+        assertMatch(p,"/abs/path","any");
+        assertMatch(p,"/abs/path/xxx","any");
+        assertMatch(p,"/animal/bird/eagle/bald","any");
+        assertMatch(p,"/","any");
     }
     
     /**
