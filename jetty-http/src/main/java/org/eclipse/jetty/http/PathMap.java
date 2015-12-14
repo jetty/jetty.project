@@ -29,6 +29,7 @@ import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.IncludeExclude;
+import org.eclipse.jetty.util.Predicate;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -573,7 +574,7 @@ public class PathMap<O> extends HashMap<String,O>
         }
     }
     
-    public static class PathSet extends AbstractSet<String> implements IncludeExclude.MatchSet<String>
+    public static class PathSet extends AbstractSet<String> implements Predicate<String>
     {
         private final PathMap<Boolean> _map = new PathMap<>();
         
@@ -607,13 +608,16 @@ public class PathMap<O> extends HashMap<String,O>
             return _map.containsKey(o); 
         }
         
+        @Override
+        public boolean test(String s)
+        {
+            return _map.containsMatch(s);
+        }
         
         public boolean containsMatch(String s) 
         { 
             return _map.containsMatch(s); 
         }
-
-        @Override
         public boolean matches(String item)
         {
             return _map.containsMatch(item);
