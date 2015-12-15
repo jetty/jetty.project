@@ -85,4 +85,13 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
         }
         channels.clear();
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%h[%s]",
+                getClass().getSimpleName(),
+                this,
+                session);
+    }
 }
