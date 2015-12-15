@@ -40,18 +40,18 @@ public class MultiplexConnectionPool extends AbstractConnectionPool
     private static final Logger LOG = Log.getLogger(MultiplexConnectionPool.class);
 
     private final ReentrantLock lock = new ReentrantLock();
-    private final int maxMultiplexed;
     private final Deque<Holder> idleConnections;
     private final Map<Connection, Holder> muxedConnections;
     private final Map<Connection, Holder> busyConnections;
+    private int maxMultiplex;
 
-    public MultiplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplexed)
+    public MultiplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
         super(destination, maxConnections, requester);
-        this.maxMultiplexed = maxMultiplexed;
         this.idleConnections = new ArrayDeque<>(maxConnections);
         this.muxedConnections = new HashMap<>(maxConnections);
         this.busyConnections = new HashMap<>(maxConnections);
+        this.maxMultiplex = maxMultiplex;
     }
 
     protected void lock()
@@ -62,6 +62,32 @@ public class MultiplexConnectionPool extends AbstractConnectionPool
     protected void unlock()
     {
         lock.unlock();
+    }
+
+    public int getMaxMultiplex()
+    {
+        lock();
+        try
+        {
+            return maxMultiplex;
+        }
+        finally
+        {
+            unlock();
+        }
+    }
+
+    public void setMaxMultiplex(int maxMultiplex)
+    {
+        lock();
+        try
+        {
+            this.maxMultiplex = maxMultiplex;
+        }
+        finally
+        {
+            unlock();
+        }
     }
 
     @Override
@@ -120,7 +146,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool
                     holder = muxedConnections.values().iterator().next();
                 }
 
-                if (holder.count < maxMultiplexed)
+                if (holder.count < maxMultiplex)
                 {
                     ++holder.count;
                     break;

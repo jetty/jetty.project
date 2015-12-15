@@ -20,7 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 
 /** Utility class to maintain a set of inclusions and exclusions.
@@ -36,35 +36,77 @@ public class IncludeExclude<ITEM>
 {
     private final Set<ITEM> _includes;
     private final Set<ITEM> _excludes;
-    private final BiFunction<Set<ITEM>,ITEM, Boolean> _matcher;
-
+    private final Predicate<ITEM> _includePredicate;
+    private final Predicate<ITEM> _excludePredicate;
+    
+    private static class SetContainsPredicate<ITEM> implements Predicate<ITEM>
+    {
+        private final Set<ITEM> set;
+        
+        public SetContainsPredicate(Set<ITEM> set)
+        {
+            this.set = set;
+        }
+        
+        @Override
+        public boolean test(ITEM item)
+        {
+            return set.contains(item);
+        }
+    }
+    
     /**
      * Default constructor over {@link HashSet}
      */
     public IncludeExclude()
     {
-        this(HashSet.class,null);
+        this(HashSet.class);
     }
     
     /**
      * Construct an IncludeExclude
      * @param setClass The type of {@link Set} to using internally
-     * @param matcher A function to test if a passed ITEM is matched by the passed SET, or null to use {@link Set#contains(Object)}
+     * @param predicate A predicate function to test if a passed ITEM is matched by the passed SET}
      */
-    public <SET extends Set<ITEM>> IncludeExclude(Class<SET> setClass, BiFunction<SET,ITEM, Boolean> matcher)
+    public <SET extends Set<ITEM>> IncludeExclude(Class<SET> setClass)
     {
         try
         {
             _includes = setClass.newInstance();
             _excludes = setClass.newInstance();
-            _matcher = (BiFunction<Set<ITEM>,ITEM, Boolean>)matcher;
+            if(_includes instanceof Predicate) {
+                _includePredicate = (Predicate<ITEM>)_includes;
+            } else {
+                _includePredicate = new SetContainsPredicate<>(_includes);
+            }
+            if(_excludes instanceof Predicate) {
+                _excludePredicate = (Predicate<ITEM>)_excludes;
+            } else {
+                _excludePredicate = new SetContainsPredicate<>(_excludes);
+            }
         }
         catch (InstantiationException | IllegalAccessException e)
         {
             throw new RuntimeException(e);
         }
     }
-
+    
+    /**
+     * Construct an IncludeExclude
+     * 
+     * @param includeSet the Set of items that represent the included space 
+     * @param includePredicate the Predicate for included item testing (null for simple {@link Set#contains(Object)} test)
+     * @param excludeSet the Set of items that represent the excluded space
+     * @param excludePredicate the Predicate for excluded item testing (null for simple {@link Set#contains(Object)} test)
+     */
+    public <SET extends Set<ITEM>> IncludeExclude(Set<ITEM> includeSet, Predicate<ITEM> includePredicate, Set<ITEM> excludeSet, Predicate<ITEM> excludePredicate)
+    {
+        _includes = includeSet;
+        _includePredicate = includePredicate;
+        _excludes = excludeSet;
+        _excludePredicate = excludePredicate;
+    }
+    
     public void include(ITEM element)
     {
         _includes.add(element);
@@ -89,17 +131,11 @@ public class IncludeExclude<ITEM>
     
     public boolean matches(ITEM e)
     {
-        if (_matcher==null)
-        {
-            if (_includes.size()>0 && !_includes.contains(e))
-                return false;
-            return !_excludes.contains(e);
-        }
-        if (_includes.size()>0 && !_matcher.apply(_includes,e))
+        if (!_includes.isEmpty() && !_includePredicate.test(e))
             return false;
-        return !_matcher.apply(_excludes,e);
+        return !_excludePredicate.test(e);
     }
-
+    
     public int size()
     {
         return _includes.size()+_excludes.size();
@@ -124,6 +160,6 @@ public class IncludeExclude<ITEM>
     @Override
     public String toString()
     {
-        return String.format("%s@%x{i=%s,e=%s,m=%s}",this.getClass().getSimpleName(),hashCode(),_includes,_excludes,_matcher);
+        return String.format("%s@%x{i=%s,ip=%s,e=%s,ep=%s}",this.getClass().getSimpleName(),hashCode(),_includes,_includePredicate,_excludes,_excludePredicate);
     }
 }

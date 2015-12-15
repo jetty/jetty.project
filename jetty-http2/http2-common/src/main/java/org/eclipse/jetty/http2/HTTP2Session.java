@@ -989,8 +989,16 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public String toString()
     {
-        return String.format("%s@%x{queueSize=%d,sendWindow=%s,recvWindow=%s,streams=%d,%s}", getClass().getSimpleName(),
-                hashCode(), flusher.getQueueSize(), sendWindow, recvWindow, streams.size(), closed);
+        return String.format("%s@%x{l:%s <-> r:%s,queueSize=%d,sendWindow=%s,recvWindow=%s,streams=%d,%s}",
+                getClass().getSimpleName(),
+                hashCode(),
+                getEndPoint().getLocalAddress(),
+                getEndPoint().getRemoteAddress(),
+                flusher.getQueueSize(),
+                sendWindow,
+                recvWindow,
+                streams.size(),
+                closed);
     }
 
     private class ControlEntry extends HTTP2Flusher.Entry
