@@ -282,7 +282,7 @@ public class SessionData implements Serializable
         _lastNode = in.readUTF(); //last managing node
         _expiry = in.readLong(); 
         _maxInactiveMs = in.readLong();
-        _attributes = (HashMap<String,Object>)in.readObject();
+        _attributes = (ConcurrentHashMap<String,Object>)in.readObject();
     }
     
     
