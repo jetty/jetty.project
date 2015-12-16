@@ -98,22 +98,27 @@ public class PriorityGenerateParseTest
         int weight = 3;
         boolean exclusive = true;
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generatePriority(lease, streamId, parentStreamId, weight, exclusive);
-
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        // Iterate a few times to be sure generator and parser are properly reset.
+        for (int i = 0; i < 2; ++i)
         {
-            while (buffer.hasRemaining())
-            {
-                parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
-            }
-        }
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.generatePriority(lease, streamId, parentStreamId, weight, exclusive);
 
-        Assert.assertEquals(1, frames.size());
-        PriorityFrame frame = frames.get(0);
-        Assert.assertEquals(streamId, frame.getStreamId());
-        Assert.assertEquals(parentStreamId, frame.getParentStreamId());
-        Assert.assertEquals(weight, frame.getWeight());
-        Assert.assertEquals(exclusive, frame.isExclusive());
+            frames.clear();
+            for (ByteBuffer buffer : lease.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+                }
+            }
+
+            Assert.assertEquals(1, frames.size());
+            PriorityFrame frame = frames.get(0);
+            Assert.assertEquals(streamId, frame.getStreamId());
+            Assert.assertEquals(parentStreamId, frame.getParentStreamId());
+            Assert.assertEquals(weight, frame.getWeight());
+            Assert.assertEquals(exclusive, frame.isExclusive());
+        }
     }
 }

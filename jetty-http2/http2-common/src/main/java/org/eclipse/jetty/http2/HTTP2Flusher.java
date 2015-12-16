@@ -230,7 +230,7 @@ public class HTTP2Flusher extends IteratingCallback
         if (actives.isEmpty())
         {
             if (isClosed())
-                abort(new ClosedChannelException());
+                fail(new ClosedChannelException(), true);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Flushed {}", session);
@@ -289,9 +289,6 @@ public class HTTP2Flusher extends IteratingCallback
     @Override
     protected void onCompleteFailure(Throwable x)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Failed", x);
-
         lease.recycle();
 
         // Transfer active items to avoid reentrancy.
@@ -306,10 +303,10 @@ public class HTTP2Flusher extends IteratingCallback
             entry.failed(x);
         }
 
-        abort(x);
+        fail(x, isClosed());
     }
 
-    private void abort(Throwable x)
+    private void fail(Throwable x, boolean closed)
     {
         Queue<Entry> queued;
         synchronized (this)
@@ -319,12 +316,13 @@ public class HTTP2Flusher extends IteratingCallback
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Aborting, queued={}", queued.size());
+            LOG.debug("{}, queued={}", closed ? "Closing" : "Failing", queued.size());
 
         for (Entry entry : queued)
-            closed(entry, x);
+            entry.failed(x);
 
-        session.abort(x);
+        if (!closed)
+            session.abort(x);
     }
 
     private void closed(Entry entry, Throwable failure)

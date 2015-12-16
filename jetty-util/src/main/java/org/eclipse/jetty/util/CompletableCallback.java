@@ -84,6 +84,10 @@ public abstract class CompletableCallback implements Callback
                     }
                     break;
                 }
+                case FAILED:
+                {
+                    return;
+                }
                 default:
                 {
                     throw new IllegalStateException(current.toString());
@@ -109,6 +113,10 @@ public abstract class CompletableCallback implements Callback
                         return;
                     }
                     break;
+                }
+                case FAILED:
+                {
+                    return;
                 }
                 default:
                 {

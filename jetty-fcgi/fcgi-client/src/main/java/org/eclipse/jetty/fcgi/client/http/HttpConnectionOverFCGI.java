@@ -374,9 +374,10 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
                                 close(x);
                             }
                         };
-                        if (!channel.content(buffer, callback))
-                            return true;
-                        return callback.tryComplete();
+                        // Do not short circuit these calls.
+                        boolean proceed = channel.content(buffer, callback);
+                        boolean async = callback.tryComplete();
+                        return !proceed || async;
                     }
                     else
                     {

@@ -57,16 +57,22 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
     protected void release(HttpChannel channel)
     {
         channels.remove(channel);
+        getHttpDestination().release(this);
     }
 
     @Override
     public void close()
     {
+        close(new AsynchronousCloseException());
+    }
+
+    protected void close(Throwable failure)
+    {
         // First close then abort, to be sure that the connection cannot be reused
         // from an onFailure() handler or by blocking code waiting for completion.
         getHttpDestination().close(this);
         session.close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
-        abort(new AsynchronousCloseException());
+        abort(failure);
     }
 
     private void abort(Throwable failure)
@@ -78,5 +84,14 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
                 exchange.getRequest().abort(failure);
         }
         channels.clear();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%h[%s]",
+                getClass().getSimpleName(),
+                this,
+                session);
     }
 }

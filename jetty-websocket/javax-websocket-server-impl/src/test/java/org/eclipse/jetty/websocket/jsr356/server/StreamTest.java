@@ -28,13 +28,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.security.DigestOutputStream;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
@@ -63,7 +59,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
-import org.eclipse.jetty.websocket.common.util.Hex;
+import org.eclipse.jetty.websocket.common.util.Sha1Sum;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -176,31 +172,10 @@ public class StreamTest
         Assert.assertThat("Path should exist: " + file,file.exists(),is(true));
         Assert.assertThat("Path should not be a directory:" + file,file.isDirectory(),is(false));
 
-        String expectedSha1 = loadExpectedSha1Sum(sha1File);
-        String actualSha1 = calculateSha1Sum(file);
+        String expectedSha1 = Sha1Sum.loadSha1(sha1File);
+        String actualSha1 = Sha1Sum.calculate(file);
 
         Assert.assertThat("SHA1Sum of content: " + file,expectedSha1,equalToIgnoringCase(actualSha1));
-    }
-
-    private String calculateSha1Sum(File file) throws IOException, NoSuchAlgorithmException
-    {
-        MessageDigest digest = MessageDigest.getInstance("SHA1");
-        try (FileInputStream fis = new FileInputStream(file);
-                NoOpOutputStream noop = new NoOpOutputStream();
-                DigestOutputStream digester = new DigestOutputStream(noop,digest))
-        {
-            IO.copy(fis,digester);
-            return Hex.asHex(digest.digest());
-        }
-    }
-
-    private String loadExpectedSha1Sum(File sha1File) throws IOException
-    {
-        String contents = IO.readToString(sha1File);
-        Pattern pat = Pattern.compile("^[0-9A-Fa-f]*");
-        Matcher mat = pat.matcher(contents);
-        Assert.assertTrue("Should have found HEX code in SHA1 file: " + sha1File,mat.find());
-        return mat.group();
     }
 
     @ClientEndpoint
@@ -315,34 +290,6 @@ public class StreamTest
         public void onError(Throwable t)
         {
             t.printStackTrace(System.err);
-        }
-    }
-
-    private static class NoOpOutputStream extends OutputStream
-    {
-        @Override
-        public void write(byte[] b) throws IOException
-        {
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) throws IOException
-        {
-        }
-
-        @Override
-        public void flush() throws IOException
-        {
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-        }
-
-        @Override
-        public void write(int b) throws IOException
-        {
         }
     }
 }

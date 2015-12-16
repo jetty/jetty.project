@@ -32,6 +32,8 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.HTTP2ClientConnectionFactory;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
@@ -105,39 +107,17 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     {
         client.setConnectTimeout(httpClient.getConnectTimeout());
 
-        final HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        HttpDestinationOverHTTP2 destination = (HttpDestinationOverHTTP2)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
-        final Promise<Connection> connection = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        Promise<Connection> connectionPromise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
 
-        Session.Listener listener = new Session.Listener.Adapter()
-        {
-            @Override
-            public void onFailure(Session session, Throwable failure)
-            {
-                destination.abort(failure);
-            }
-        };
-
-        final Promise<Session> promise = new Promise<Session>()
-        {
-            @Override
-            public void succeeded(Session session)
-            {
-                connection.succeeded(newHttpConnection(destination, session));
-            }
-
-            @Override
-            public void failed(Throwable failure)
-            {
-                connection.failed(failure);
-            }
-        };
+        SessionListenerPromise listenerPromise = new SessionListenerPromise(destination, connectionPromise);
 
         SslContextFactory sslContextFactory = null;
         if (HttpScheme.HTTPS.is(destination.getScheme()))
             sslContextFactory = httpClient.getSslContextFactory();
 
-        client.connect(sslContextFactory, address, listener, promise, context);
+        client.connect(sslContextFactory, address, listenerPromise, listenerPromise, context);
     }
 
     @Override
@@ -153,5 +133,51 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
     {
         return new HttpConnectionOverHTTP2(destination, session);
+    }
+
+    private class SessionListenerPromise extends Session.Listener.Adapter implements Promise<Session>
+    {
+        private final HttpDestinationOverHTTP2 destination;
+        private final Promise<Connection> promise;
+        private HttpConnectionOverHTTP2 connection;
+
+        public SessionListenerPromise(HttpDestinationOverHTTP2 destination, Promise<Connection> promise)
+        {
+            this.destination = destination;
+            this.promise = promise;
+        }
+
+        @Override
+        public void succeeded(Session session)
+        {
+            connection = newHttpConnection(destination, session);
+            promise.succeeded(connection);
+        }
+
+        @Override
+        public void failed(Throwable failure)
+        {
+            promise.failed(failure);
+        }
+
+        @Override
+        public void onSettings(Session session, SettingsFrame frame)
+        {
+            Map<Integer, Integer> settings = frame.getSettings();
+            if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
+                destination.setMaxRequestsPerConnection(settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS));
+        }
+
+        @Override
+        public void onClose(Session session, GoAwayFrame frame)
+        {
+            connection.close();
+        }
+
+        @Override
+        public void onFailure(Session session, Throwable failure)
+        {
+            connection.close(failure);
+        }
     }
 }
