@@ -46,6 +46,12 @@ public class QuickStartConfiguration extends WebInfConfiguration
         return WebInfConfiguration.class;
     }
     
+    @Override
+    public boolean isEnabledByDefault()
+    {
+        return false;
+    }
+
     /**
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#preConfigure(org.eclipse.jetty.webapp.WebAppContext)
      */
