@@ -20,7 +20,9 @@ package org.eclipse.jetty.util;
 
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class IncludeExcludeTest
 {
@@ -29,8 +31,8 @@ public class IncludeExcludeTest
     {
         IncludeExclude<String> ie = new IncludeExclude<>();
         
-        assertEquals(0,ie.size());
-        assertEquals(true,ie.matches("foo"));
+        assertThat("Empty IncludeExclude", ie.size(), is(0));
+        assertThat("Matches 'foo'",ie.matches("foo"),is(true));
     }
     
     @Test
@@ -40,7 +42,7 @@ public class IncludeExcludeTest
         ie.include("foo");
         ie.include("bar");
         
-        assertEquals(2,ie.size());
+        assertThat("IncludeExclude.size", ie.size(), is(2));
         assertEquals(false,ie.matches(""));
         assertEquals(true,ie.matches("foo"));
         assertEquals(true,ie.matches("bar"));
@@ -86,7 +88,7 @@ public class IncludeExcludeTest
     @Test
     public void testEmptyRegex()
     {
-        IncludeExclude<String> ie = new IncludeExclude<>(RegexSet.class,RegexSet.MATCHER);
+        IncludeExclude<String> ie = new IncludeExclude<>(RegexSet.class);
         
         assertEquals(0,ie.size());
         assertEquals(true,ie.matches("foo"));
@@ -95,7 +97,7 @@ public class IncludeExcludeTest
     @Test
     public void testIncludeRegex()
     {
-        IncludeExclude<String> ie = new IncludeExclude<>(RegexSet.class,RegexSet.MATCHER);
+        IncludeExclude<String> ie = new IncludeExclude<>(RegexSet.class);
         ie.include("f..");
         ie.include("b((ar)|(oo))");
         
@@ -112,7 +114,7 @@ public class IncludeExcludeTest
     @Test
     public void testExcludeRegex()
     {
-        IncludeExclude<String> ie = new IncludeExclude<>(RegexSet.class,RegexSet.MATCHER);
+        IncludeExclude<String> ie = new IncludeExclude<>(RegexSet.class);
         ie.exclude("f..");
         ie.exclude("b((ar)|(oo))");
         
@@ -130,7 +132,7 @@ public class IncludeExcludeTest
     @Test
     public void testIncludeExcludeRegex()
     {
-        IncludeExclude<String> ie = new IncludeExclude<>(RegexSet.class,RegexSet.MATCHER);
+        IncludeExclude<String> ie = new IncludeExclude<>(RegexSet.class);
         ie.include(".*[aeiou].*");
         ie.include("[AEIOU].*");
         ie.exclude("f..");
@@ -146,8 +148,5 @@ public class IncludeExcludeTest
 
         assertEquals(true,ie.matches("foobar"));
         assertEquals(true,ie.matches("Ant"));
-        
     }
-    
-    
 }

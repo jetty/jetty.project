@@ -23,18 +23,15 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.regex.Pattern;
-
 
 /**
  * A Set of Regular expressions strings.
  * <p>
  * Provides the efficient {@link #matches(String)} method to check for a match against all the combined Regex's
  */
-public class RegexSet extends AbstractSet<String>
+public class RegexSet extends AbstractSet<String> implements Predicate<String>
 {
-    public static final BiFunction<RegexSet,String,Boolean> MATCHER=(rs,p)->{return rs.matches(p);};
     private final Set<String> _patterns=new HashSet<String>();
     private final Set<String> _unmodifiable=Collections.unmodifiableSet(_patterns);
     private Pattern _pattern;
@@ -97,6 +94,12 @@ public class RegexSet extends AbstractSet<String>
         }
         builder.append(")$");
         _pattern = Pattern.compile(builder.toString());   
+    }
+    
+    @Override
+    public boolean test(String s)
+    {
+        return _pattern!=null && _pattern.matcher(s).matches();
     }
 
     public boolean matches(String s)
