@@ -44,7 +44,6 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     private static final Logger LOG = Log.getLogger(PathMappings.class);
     private List<MappedResource<E>> mappings = new ArrayList<MappedResource<E>>();
     private MappedResource<E> defaultResource = null;
-    private MappedResource<E> rootResource = null;
 
     @Override
     public String dump()
@@ -106,11 +105,6 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 
     public MappedResource<E> getMatch(String path)
     {
-        if (path.equals("/") && rootResource != null)
-        {
-            return rootResource;
-        }
-        
         int len = mappings.size();
         for (int i = 0; i < len; i++)
         {
@@ -129,22 +123,14 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         return mappings.iterator();
     }
 
-    @SuppressWarnings("incomplete-switch")
     public void put(PathSpec pathSpec, E resource)
     {
         MappedResource<E> entry = new MappedResource<>(pathSpec,resource);
-        switch (pathSpec.group)
+        if (pathSpec.group == PathSpecGroup.DEFAULT)
         {
-            case DEFAULT:
-                defaultResource = entry;
-                break;
-            case ROOT:
-                rootResource = entry;
-                break;
+            defaultResource = entry;
         }
-        
-        // TODO: add warning when replacing an existing pathspec?
-        
+        // TODO: warning on replacement of existing mapping?
         mappings.add(entry);
         if (LOG.isDebugEnabled())
             LOG.debug("Added {} to {}",entry,this);

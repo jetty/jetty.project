@@ -52,10 +52,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.pathmap.MappedResource;
-import org.eclipse.jetty.http.pathmap.PathMappings;
-import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.IdentityService;
@@ -124,8 +121,7 @@ public class ServletHandler extends ScopedHandler
     private MultiMap<FilterMapping> _filterNameMappings;
 
     private final Map<String,ServletHolder> _servletNameMap=new HashMap<>();
-    // private PathMap<ServletHolder> _servletPathMap;
-    private PathMappings<ServletHolder> _servletPathMap;
+    private PathMap<ServletHolder> _servletPathMap;
     
     private ListenerHolder[] _listeners=new ListenerHolder[0];
 
@@ -387,7 +383,7 @@ public class ServletHandler extends ScopedHandler
      * @param pathInContext Path within _context.
      * @return PathMap Entries pathspec to ServletHolder
      */
-    public MappedResource<ServletHolder> getHolderEntry(String pathInContext)
+    public PathMap.MappedEntry<ServletHolder> getHolderEntry(String pathInContext)
     {
         if (_servletPathMap==null)
             return null;
@@ -474,14 +470,14 @@ public class ServletHandler extends ScopedHandler
         if (target.startsWith("/"))
         {
             // Look for the servlet by path
-            MappedResource<ServletHolder> entry=getHolderEntry(target);
+            PathMap.MappedEntry<ServletHolder> entry=getHolderEntry(target);
             if (entry!=null)
             {
-                PathSpec pathSpec = entry.getPathSpec();
-                servlet_holder=entry.getResource();
+                servlet_holder=entry.getValue();
 
-                String servlet_path=pathSpec.getPathMatch(target);
-                String path_info=pathSpec.getPathInfo(target);
+                String servlet_path_spec= entry.getKey();
+                String servlet_path=entry.getMapped()!=null?entry.getMapped():PathMap.pathMatch(servlet_path_spec,target);
+                String path_info=PathMap.pathInfo(servlet_path_spec,target);
 
                 if (DispatcherType.INCLUDE.equals(type))
                 {
@@ -1436,7 +1432,7 @@ public class ServletHandler extends ScopedHandler
         }
         else
         {
-            PathMappings<ServletHolder> pm = new PathMappings<>();
+            PathMap<ServletHolder> pm = new PathMap<>();
             Map<String,ServletMapping> servletPathMappings = new HashMap<String,ServletMapping>();
             
             //create a map of paths to set of ServletMappings that define that mapping
@@ -1499,7 +1495,7 @@ public class ServletHandler extends ScopedHandler
                 if (LOG.isDebugEnabled()) LOG.debug("Chose path={} mapped to servlet={} from default={}", pathSpec, finalMapping.getServletName(), finalMapping.isDefault());
                
                 servletPathMappings.put(pathSpec, finalMapping);
-                pm.put(new ServletPathSpec(pathSpec),_servletNameMap.get(finalMapping.getServletName()));
+                pm.put(pathSpec,_servletNameMap.get(finalMapping.getServletName()));
             }
      
             _servletPathMap=pm;
