@@ -94,7 +94,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     @Override
     public void close()
     {
-        connection.close();
+        /* This is assumed to always be a NORMAL closure, no reason phrase */
+        connection.close(StatusCode.NORMAL, null);
     }
 
     @Override
