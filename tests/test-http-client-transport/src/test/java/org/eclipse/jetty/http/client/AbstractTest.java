@@ -173,8 +173,7 @@ public abstract class AbstractTest
             case H2C:
             case H2:
             {
-                HTTP2Client http2Client = new HTTP2Client();
-                http2Client.setSelectors(1);
+                HTTP2Client http2Client = newHTTP2Client();
                 return new HttpClientTransportOverHTTP2(http2Client);
             }
             case FCGI:
@@ -186,6 +185,13 @@ public abstract class AbstractTest
                 throw new IllegalArgumentException();
             }
         }
+    }
+
+    protected HTTP2Client newHTTP2Client()
+    {
+        HTTP2Client http2Client = new HTTP2Client();
+        http2Client.setSelectors(1);
+        return http2Client;
     }
 
     protected String newURI()
