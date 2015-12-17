@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
-import org.eclipse.jetty.websocket.server.pathmap.PathMappings;
-import org.eclipse.jetty.websocket.server.pathmap.PathSpec;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 public class DummyCreator implements MappedWebSocketCreator

@@ -32,12 +32,15 @@ import java.security.KeyStore;
 
 import javax.net.ssl.SSLEngine;
 
+import org.eclipse.jetty.toolchain.test.JDK;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -207,6 +210,8 @@ public class SslContextFactoryTest
     public void testSetIncludeCipherSuitesRegex() throws Exception
     {
         cf.setIncludeCipherSuites(".*ECDHE.*",".*WIBBLE.*");
+        Assume.assumeFalse(JDK.IS_8);
+        
         cf.start();
         SSLEngine sslEngine = cf.newSSLEngine();
         String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();

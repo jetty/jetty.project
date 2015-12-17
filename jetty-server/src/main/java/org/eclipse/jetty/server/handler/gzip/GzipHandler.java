@@ -74,7 +74,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     private final IncludeExclude<String> _agentPatterns=new IncludeExclude<>(RegexSet.class);
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
-    private final IncludeExclude<String> _paths = new IncludeExclude<String>(PathSpecSet.class);
+    private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
     
     private HttpField _vary;
