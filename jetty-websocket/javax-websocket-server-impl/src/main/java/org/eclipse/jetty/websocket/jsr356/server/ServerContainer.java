@@ -27,6 +27,7 @@ import javax.websocket.Endpoint;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
@@ -35,7 +36,6 @@ import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
-import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
 import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 
@@ -99,7 +99,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     private void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
     {
         JsrCreator creator = new JsrCreator(this,metadata,webSocketServerFactory.getExtensionFactory());
-        mappedCreator.addMapping(new WebSocketPathSpec(metadata.getPath()),creator);
+        mappedCreator.addMapping(new UriTemplatePathSpec(metadata.getPath()),creator);
     }
 
     @Override

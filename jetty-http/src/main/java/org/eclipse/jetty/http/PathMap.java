@@ -71,8 +71,10 @@ import org.eclipse.jetty.util.URIUtil;
  * This class is not synchronized.  If concurrent modifications are
  * possible then it should be synchronized at a higher level.
  * 
- * @param <O> the Map.Entry value type 
+ * @param <O> the Map.Entry value type
+ * @deprecated replaced with {@link org.eclipse.jetty.http.pathmap.PathMappings} (this class will be removed in Jetty 10) 
  */
+@Deprecated
 public class PathMap<O> extends HashMap<String,O>
 {
     /* ------------------------------------------------------------ */
