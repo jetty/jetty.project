@@ -146,12 +146,12 @@ public class MemorySessionStore extends AbstractSessionStore
      * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(java.lang.String)
      */
     @Override
-    public boolean doDelete(String id)
+    public Session doDelete(String id)
     {
         Session s = _sessions.remove(id);
         if (s != null)
             _stats.decrement();
-        return  (s != null);
+        return  s;
     }
     
     

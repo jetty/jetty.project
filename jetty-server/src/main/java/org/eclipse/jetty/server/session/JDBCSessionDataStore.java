@@ -665,7 +665,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         data.setVhost(result.getString(_sessionTableSchema.getVirtualHostColumn())); //TODO needed??? this is part of the key now
 
                         try (InputStream is = _dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn());
-                                ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
+                             ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
                         {
                             Object o = ois.readObject();
                             data.putAllAttributes((Map<String,Object>)o);

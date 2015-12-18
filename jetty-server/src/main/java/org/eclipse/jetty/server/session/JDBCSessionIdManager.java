@@ -197,11 +197,11 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
      * @see org.eclipse.jetty.server.SessionIdManager#removeId(java.lang.String)
      */
     @Override
-    public void removeId (String id)
+    public boolean removeId (String id)
     {
 
         if (id == null)
-            return;
+            return false;
 
         synchronized (_sessionIds)
         {
@@ -210,11 +210,12 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
             try
             {
                 _sessionIds.remove(id);
-                delete(id);
+                return delete(id);
             }
             catch (Exception e)
             {
                 LOG.warn("Problem removing session id="+id, e);
+                return false;
             }
         }
 
@@ -255,7 +256,7 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
      * @param id
      * @throws SQLException
      */
-    private void delete (String id)
+    private boolean delete (String id)
     throws SQLException
     {
         try (Connection connection = _dbAdaptor.getConnection();
@@ -263,7 +264,7 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
         {
             connection.setAutoCommit(true);
             statement.setString(1, id);
-            statement.executeUpdate();
+            return (statement.executeUpdate() > 0);
         }
     }
     

@@ -158,12 +158,13 @@ public class GCloudSessionIdManager extends AbstractSessionIdManager
      * 
      * @param id
      */
-    protected void delete (String id)
+    protected boolean delete (String id)
     {
         if (_datastore == null)
             throw new IllegalStateException ("No DataStore");
         
         _datastore.delete(makeKey(id));
+        return true; //gcloud does not distinguish between first and subsequent removes
     }
     
     
@@ -220,11 +221,11 @@ public class GCloudSessionIdManager extends AbstractSessionIdManager
      * @see org.eclipse.jetty.server.SessionIdManager#removeId(java.lang.String)
      */
     @Override
-    public void removeId(String id)
+    public boolean removeId(String id)
     {
        if (id == null)
-           return;
+           return false;
        
-       delete(id);
+       return delete(id);
     }
 }

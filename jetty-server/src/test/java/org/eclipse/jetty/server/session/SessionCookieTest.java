@@ -107,9 +107,9 @@ public class SessionCookieTest
          * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(org.eclipse.jetty.server.session.SessionKey)
          */
         @Override
-        public boolean doDelete(String key)
+        public Session doDelete(String key)
         {
-            return false;
+            return null;
         }
 
         /** 
@@ -175,10 +175,9 @@ public class SessionCookieTest
          * @see org.eclipse.jetty.server.SessionIdManager#removeId(java.lang.String)
          */
         @Override
-        public void removeId(String id)
+        public boolean removeId(String id)
         {
-            // TODO Auto-generated method stub
-            
+            return true;
         }
     }
     

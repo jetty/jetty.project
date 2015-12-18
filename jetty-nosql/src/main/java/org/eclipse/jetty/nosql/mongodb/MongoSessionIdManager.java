@@ -167,9 +167,10 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
 
     /* ------------------------------------------------------------ */
     @Override
-    public void removeId(String id)
+    public boolean removeId(String id)
     {
        //The corresponding session document will be marked as expired or invalid?
+        return true; //can't distinguish first remove vs subsequent removes
     }
 
   

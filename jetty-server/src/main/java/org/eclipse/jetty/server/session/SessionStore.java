@@ -41,7 +41,7 @@ public interface SessionStore extends LifeCycle
     Session get(String id, boolean staleCheck) throws Exception;
     void put(String id, Session session) throws Exception;
     boolean exists (String id) throws Exception;
-    boolean delete (String id) throws Exception;
+    Session delete (String id) throws Exception;
     void shutdown ();
     Set<String> getExpired ();
 }

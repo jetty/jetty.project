@@ -243,12 +243,12 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
      * 
      * @param id the session id
      */
-    protected void delete (String id)
+    protected boolean delete (String id)
     {
         if (_cache == null)
             throw new IllegalStateException ("No cache");
         
-        _cache.remove(makeKey(id));
+        return _cache.remove(makeKey(id)) != null;
     }
     
     
@@ -283,8 +283,8 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
      * @see org.eclipse.jetty.server.SessionIdManager#removeId(java.lang.String)
      */
     @Override
-    public void removeId(String id)
+    public boolean removeId(String id)
     {
-       delete (id);        
+       return delete (id);        
     }
 }

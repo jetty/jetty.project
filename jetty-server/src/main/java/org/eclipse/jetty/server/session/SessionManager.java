@@ -55,7 +55,7 @@ import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 /**
- * AbstractSessionManager
+ * SessionManager
  *
  *
  */
@@ -748,7 +748,10 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
 
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     */
     public SessionStore getSessionStore ()
     {
         return _sessionStore;
@@ -776,18 +779,18 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     /* ------------------------------------------------------------ */
     /** 
      * Remove session from manager
-     * @param session The session to remove
+     * @param id The session to remove
      * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
      * {@link SessionIdManager#expireAll(String)} should be called.
      * @return if the session was removed 
      */
-    public boolean removeSession(Session session, boolean invalidate)
+    public Session removeSession(String id, boolean invalidate)
     {
         try
         {
             //Remove the Session object from the session store and any backing data store
-            boolean removed = _sessionStore.delete(session.getId());
-            if (removed)
+            Session session = _sessionStore.delete(id);
+            if (session != null)
             {
                 if (invalidate)
                 {
@@ -802,12 +805,12 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                 }
             }
 
-            return removed;
+            return session;
         }
         catch (Exception e)
         {
             LOG.warn(e);
-            return false;
+            return null;
         }
     }
     
@@ -939,11 +942,9 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             session.getSessionData().setId(newId);
             session.setExtendedId(newExtendedId);
             session.getSessionData().setLastSaved(0); //forces an insert
-            session.getSessionData().setDirty(true);
+            session.getSessionData().setDirty(true);  //forces an insert
             _sessionStore.put(newId, session);
-            
-            Session x = _sessionStore.get(newId, false);
-            
+  
             //tell session id manager the id is in use
             _sessionIdManager.useId(session);
             
@@ -968,7 +969,13 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     
    
     
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * Called either when a session has expired, or the app has
+     * invalidated it.
+     * 
+     * @param id
+     */
     public void invalidate (String id)
     {
         if (StringUtil.isBlank(id))
@@ -976,23 +983,26 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
         try
         {
-            Session session = _sessionStore.get(id, false);
-            if (session == null)
+            //remove the session and call the destroy listeners
+            Session session = removeSession(id, true);
+
+            if (session != null)
             {
-                return;  // couldn't get/load a session for this context with that id
+                _sessionTimeStats.set(round((System.currentTimeMillis() - session.getSessionData().getCreated())/1000.0));
+                session.doInvalidate();   
             }
-            
-            _sessionTimeStats.set(round((System.currentTimeMillis() - session.getSessionData().getCreated())/1000.0));
-            session.invalidateAndRemove();           
         }
         catch (Exception e)
         {
             LOG.warn(e);
         }
     }
+
     
-    
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     */
     public Set<String> scavenge ()
     {
         //don't attempt to scavenge if we are shutting down

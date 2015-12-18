@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Locker.Lock;
 
 /**
  * AbstractSessionStore
@@ -89,7 +90,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * @param id
      * @return true if removed false otherwise
      */
-    public abstract boolean doDelete (String id);
+    public abstract Session doDelete (String id);
     
     
     
@@ -193,7 +194,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         
         if (staleCheck && isStale(session))
         {
-            //delete from store so should reload
+            //delete from session store so should reload from session data store
             doDelete(id);
             session = null;
         }
@@ -234,13 +235,26 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         session.setSessionManager(_manager);
 
         //if the session is new, the data has changed, or the cache is considered stale, write it to any backing store
-        if ((session.isNew() || session.getSessionData().isDirty() || isStale(session)) && _sessionDataStore != null)
+        try (Lock lock = session.lock())
         {
-            if (_sessionDataStore.isPassivating())
-                session.willPassivate();
-            _sessionDataStore.store(id, session.getSessionData());
-            if (_sessionDataStore.isPassivating())
-                session.didActivate();
+            if ((session.isNew() || session.getSessionData().isDirty() || isStale(session)) && _sessionDataStore != null)
+            {
+                if (_sessionDataStore.isPassivating())
+                {
+                    session.willPassivate();
+                    try
+                    {
+                        _sessionDataStore.store(id, session.getSessionData());
+                    }
+                    finally
+                    {
+                        session.didActivate();
+                    }
+                }
+                else
+                    _sessionDataStore.store(id, session.getSessionData());
+            }
+
         }
 
         doPutIfAbsent(id,session);
@@ -264,7 +278,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * @see org.eclipse.jetty.server.session.SessionStore#delete(java.lang.String)
      */
     @Override
-    public boolean delete(String id) throws Exception
+    public Session delete(String id) throws Exception
     {
         if (_sessionDataStore != null)
         {
@@ -274,6 +288,12 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         return doDelete(id);
     }
 
+    
+    
+    /**
+     * @param session
+     * @return
+     */
     public boolean isStale (Session session)
     {
         if (_staleStrategy != null)

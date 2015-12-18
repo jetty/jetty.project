@@ -44,8 +44,9 @@ public interface SessionIdManager extends LifeCycle
     /**
      * Remove id
      * @param id the plain session id (no workername extension) of the session to remove
+     * @return true if the id was removed, false otherwise
      */
-    public void removeId (String id);
+    public boolean removeId (String id);
     
     /**
      * Invalidate all sessions on all contexts that share the same id.

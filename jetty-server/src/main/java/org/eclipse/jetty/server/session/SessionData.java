@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SessionData implements Serializable
 {
 
+   
     private static final long serialVersionUID = 1L;
 
     protected String _id;
@@ -53,7 +54,7 @@ public class SessionData implements Serializable
     protected long _cookieSet;
     protected long _accessed;         // the time of the last access
     protected long _lastAccessed;     // the time of the last access excluding this one
-    protected boolean _invalid;
+   // protected boolean _invalid;
     protected long _maxInactiveMs;
     protected Map<String,Object> _attributes = new ConcurrentHashMap<String, Object>();
     protected boolean _dirty;
@@ -232,15 +233,12 @@ public class SessionData implements Serializable
         _lastAccessed = lastAccessed;
     }
 
-    public boolean isInvalid()
+   /* public boolean isInvalid()
     {
         return _invalid;
     }
-
-    public void setInvalid(boolean invalid)
-    {
-        _invalid = invalid;
-    }
+*/
+ 
 
     public long getMaxInactiveMs()
     {

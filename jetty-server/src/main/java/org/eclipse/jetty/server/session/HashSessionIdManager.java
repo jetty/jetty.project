@@ -52,16 +52,6 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionIdManager#newSessionId(long)
-     */
-    @Override
-    public String newSessionId(long seedTerm)
-    {
-        String id = super.newSessionId(seedTerm);
-        return id;
-    }
-    
     
     /** 
      * @see org.eclipse.jetty.server.SessionIdManager#useId(java.lang.String)
@@ -80,9 +70,9 @@ public class HashSessionIdManager extends AbstractSessionIdManager
      * @see org.eclipse.jetty.server.SessionIdManager#removeId(java.lang.String)
      */
     @Override
-    public void removeId(String id)
+    public boolean removeId(String id)
     {
-       _ids.remove(id);
+       return _ids.remove(id);
     }
 
 }

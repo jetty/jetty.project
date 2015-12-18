@@ -19,7 +19,9 @@
 package org.eclipse.jetty.server.session;
 
 import java.security.SecureRandom;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -322,47 +324,29 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     public void expireAll(String id)
     {
         //take the id out of the list of known sessionids for this node
-        removeId(id);
-
-        //tell all contexts that may have a session object with this id to
-        //get rid of them
-        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
-        for (int i=0; contexts!=null && i<contexts.length; i++)
+        if (removeId(id))
         {
-            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-            if (sessionHandler != null)
+            //tell all contexts that may have a session object with this id to
+            //get rid of them
+            for (SessionManager manager:getSessionManagers())
             {
-                SessionManager manager = (SessionManager)sessionHandler.getSessionManager();
-
-                if (manager != null)
-                {
-                    manager.invalidate(id);
-                }
+                manager.invalidate(id);
             }
         }
     }
-    
+
     public void invalidateAll (String id)
     {
         //take the id out of the list of known sessionids for this node
-        removeId(id);
-
-        //tell all contexts that may have a session object with this id to
-        //get rid of them
-        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
-        for (int i=0; contexts!=null && i<contexts.length; i++)
+        if (removeId(id))
         {
-            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-            if (sessionHandler != null)
-            {
-                SessionManager manager = (SessionManager)sessionHandler.getSessionManager();
-
-                if (manager != null)
-                {
-                    manager.invalidate(id);
-                }
-            }
-        }      
+            //tell all contexts that may have a session object with this id to
+            //get rid of them
+            for (SessionManager manager:getSessionManagers())
+            {         
+                manager.invalidate(id);
+            } 
+        }
     }
 
     /** 
@@ -373,9 +357,21 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     { 
         //generate a new id
         String newClusterId = newSessionId(request.hashCode());
-        removeId(oldClusterId);//remove the old one from the list
         
+        removeId(oldClusterId);//remove the old one from the list
+
         //tell all contexts to update the id 
+        for (SessionManager manager:getSessionManagers())
+        {
+            manager.renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
+        }
+    }
+    
+    
+    private Set<SessionManager> getSessionManagers()
+    {
+        Set<SessionManager> managers = new HashSet<>();
+
         Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
         for (int i=0; contexts!=null && i<contexts.length; i++)
         {
@@ -385,10 +381,9 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
                 SessionManager manager = (SessionManager)sessionHandler.getSessionManager();
 
                 if (manager != null)
-                {
-                    manager.renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
-                }
+                    managers.add(manager);
             }
         }
+        return managers;
     }
 }
