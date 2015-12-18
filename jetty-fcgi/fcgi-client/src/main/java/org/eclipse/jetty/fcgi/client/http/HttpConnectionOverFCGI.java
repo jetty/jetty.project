@@ -82,6 +82,11 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         return destination;
     }
 
+    protected Flusher getFlusher()
+    {
+        return flusher;
+    }
+
     @Override
     public void send(Request request, Response.CompleteListener listener)
     {
@@ -270,6 +275,11 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         }
     }
 
+    protected HttpChannelOverFCGI newHttpChannel(int id, Request request)
+    {
+        return new HttpChannelOverFCGI(this, getFlusher(), id, request.getIdleTimeout());
+    }
+
     @Override
     public String toString()
     {
@@ -295,7 +305,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
             // FCGI may be multiplexed, so create one channel for each request.
             int id = acquireRequest();
-            HttpChannelOverFCGI channel = new HttpChannelOverFCGI(HttpConnectionOverFCGI.this, flusher, id, request.getIdleTimeout());
+            HttpChannelOverFCGI channel = newHttpChannel(id, request);
             channels.put(id, channel);
             if (channel.associate(exchange))
                 channel.send();

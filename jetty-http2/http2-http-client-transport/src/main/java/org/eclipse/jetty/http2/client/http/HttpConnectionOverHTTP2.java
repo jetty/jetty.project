@@ -41,17 +41,27 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
         this.session = session;
     }
 
+    public Session getSession()
+    {
+        return session;
+    }
+
     @Override
     protected void send(HttpExchange exchange)
     {
         normalizeRequest(exchange.getRequest());
         // One connection maps to N channels, so for each exchange we create a new channel.
-        HttpChannel channel = new HttpChannelOverHTTP2(getHttpDestination(), this, session);
+        HttpChannel channel = newHttpChannel();
         channels.add(channel);
         if (channel.associate(exchange))
             channel.send();
         else
             channel.release();
+    }
+
+    protected HttpChannelOverHTTP2 newHttpChannel()
+    {
+        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession());
     }
 
     protected void release(HttpChannel channel)
