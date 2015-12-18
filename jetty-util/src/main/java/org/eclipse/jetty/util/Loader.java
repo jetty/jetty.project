@@ -69,7 +69,7 @@ public class Loader
     /* ------------------------------------------------------------ */
     /** Load a class.
      * 
-     * @param loaderClass a similar class, belong in the same classloader of the desired class to load
+     * @param loadClass a similar class, belong in the same classloader of the desired class to load
      * @param name the name of the new class to load, using the same ClassLoader as the <code>loadClass</code> 
      * @return Class
      * @throws ClassNotFoundException if not able to find the class
