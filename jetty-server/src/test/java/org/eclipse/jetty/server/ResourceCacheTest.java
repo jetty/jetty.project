@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -30,6 +31,7 @@ import java.io.OutputStream;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.ResourceHttpContent;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -136,50 +138,83 @@ public class ResourceCacheTest
         cache.setMaxCachedFileSize(85);
         cache.setMaxCachedFiles(4);
 
-        assertTrue(cache.lookup("does not exist")==null);
-        assertTrue(cache.lookup(names[9]) instanceof ResourceHttpContent);
+        assertTrue(cache.getContent("does not exist",4096)==null);
+        assertTrue(cache.getContent(names[9],4096) instanceof ResourceHttpContent);
+        assertTrue(cache.getContent(names[9],4096).getIndirectBuffer()!=null);
 
         HttpContent content;
-        content=cache.lookup(names[8]);
+        content=cache.getContent(names[8],4096);
         assertTrue(content!=null);
         assertEquals(80,content.getContentLengthValue());
+        assertEquals(0,cache.getCachedSize());
+        
+        if (OS.IS_LINUX)
+        {
+            // Initially not using memory mapped files
+            content.getDirectBuffer();
+            assertEquals(80,cache.getCachedSize());
 
+            // with both types of buffer loaded, this is too large for cache
+            content.getIndirectBuffer();
+            assertEquals(0,cache.getCachedSize());
+            assertEquals(0,cache.getCachedFiles());
+
+            cache=new ResourceCache(null,directory,new MimeTypes(),true,false,false);
+            cache.setMaxCacheSize(95);
+            cache.setMaxCachedFileSize(85);
+            cache.setMaxCachedFiles(4);
+            
+            content=cache.getContent(names[8],4096);
+            content.getDirectBuffer();
+            assertEquals(cache.isUseFileMappedBuffer()?0:80,cache.getCachedSize());
+
+            // with both types of buffer loaded, this is not too large for cache because
+            // mapped buffers don't count, so we can continue
+        }
+        content.getIndirectBuffer();
         assertEquals(80,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.lookup(names[1]);
+        content=cache.getContent(names[1],4096);
+        assertEquals(80,cache.getCachedSize());
+        content.getIndirectBuffer();
         assertEquals(90,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.lookup(names[2]);
+        content=cache.getContent(names[2],4096);
+        content.getIndirectBuffer();
         assertEquals(30,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.lookup(names[3]);
+        content=cache.getContent(names[3],4096);
+        content.getIndirectBuffer();
         assertEquals(60,cache.getCachedSize());
         assertEquals(3,cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.lookup(names[4]);
+        content=cache.getContent(names[4],4096);
+        content.getIndirectBuffer();
         assertEquals(90,cache.getCachedSize());
         assertEquals(3,cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.lookup(names[5]);
+        content=cache.getContent(names[5],4096);
+        content.getIndirectBuffer();
         assertEquals(90,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.lookup(names[6]);
+        content=cache.getContent(names[6],4096);
+        content.getIndirectBuffer();
         assertEquals(60,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
 
@@ -189,37 +224,43 @@ public class ResourceCacheTest
         {
             out.write(' ');
         }
-        content=cache.lookup(names[7]);
+        content=cache.getContent(names[7],4096);
+        content.getIndirectBuffer();
         assertEquals(70,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.lookup(names[6]);
+        content=cache.getContent(names[6],4096);
+        content.getIndirectBuffer();
         assertEquals(71,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.lookup(names[0]);
+        content=cache.getContent(names[0],4096);
+        content.getIndirectBuffer();
         assertEquals(72,cache.getCachedSize());
         assertEquals(3,cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.lookup(names[1]);
+        content=cache.getContent(names[1],4096);
+        content.getIndirectBuffer();
         assertEquals(82,cache.getCachedSize());
         assertEquals(4,cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.lookup(names[2]);
+        content=cache.getContent(names[2],4096);
+        content.getIndirectBuffer();
         assertEquals(32,cache.getCachedSize());
         assertEquals(4,cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.lookup(names[3]);
+        content=cache.getContent(names[3],4096);
+        content.getIndirectBuffer();
         assertEquals(61,cache.getCachedSize());
         assertEquals(4,cache.getCachedFiles());
 

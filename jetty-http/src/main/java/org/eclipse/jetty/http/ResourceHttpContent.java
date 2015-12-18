@@ -125,7 +125,7 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public ByteBuffer getDirectBuffer()
     {
-        if (_resource.length()<=0 || _maxBuffer<_resource.length())
+        if (_resource.length()<=0 || _maxBuffer>0 && _maxBuffer<_resource.length())
             return null;
         try
         {
@@ -155,7 +155,7 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public ByteBuffer getIndirectBuffer()
     {
-        if (_resource.length()<=0 || _maxBuffer<_resource.length())
+        if (_resource.length()<=0 || _maxBuffer>0 && _maxBuffer<_resource.length())
             return null;
         try
         {
