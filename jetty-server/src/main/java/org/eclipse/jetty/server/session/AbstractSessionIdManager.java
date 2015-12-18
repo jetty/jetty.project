@@ -33,6 +33,16 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+
+
+/**
+ * AbstractSessionIdManager
+ * 
+ * Manages session ids to ensure each session id within a context is unique, and that
+ * session ids can be shared across contexts (but not session contents).
+ * 
+ * There is only 1 session id manager per Server instance.
+ */
 public abstract class AbstractSessionIdManager extends AbstractLifeCycle implements SessionIdManager
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
@@ -60,18 +70,26 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         _random=random;
     }
 
-    
+    /* ------------------------------------------------------------ */
     public void setServer (Server server)
     {
         _server = server;
     }
     
+    
+    /* ------------------------------------------------------------ */
+
     public Server getServer ()
     {
         return _server;
     }
 
     
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param scavenger
+     */
     public void setSessionScavenger (SessionScavenger scavenger)
     {
         _scavenger = scavenger;
@@ -281,6 +299,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
             _random.setSeed(_random.nextLong()^System.currentTimeMillis()^hashCode()^Runtime.getRuntime().freeMemory());
     }
 
+    
+    /* ------------------------------------------------------------ */
     /** Get the session ID with any worker ID.
      *
      * @param clusterId the cluster id
@@ -303,6 +323,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         return clusterId;
     }
 
+    
+    /* ------------------------------------------------------------ */
     /** Get the session ID without any worker ID.
      *
      * @param extendedId the session id with the worker extension
@@ -315,6 +337,9 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         return (dot>0)?extendedId.substring(0,dot):extendedId;
     }
 
+    
+    
+    /* ------------------------------------------------------------ */
     /** 
      * Remove an id from use by telling all contexts to remove a session with this id.
      * 
@@ -335,6 +360,10 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @param id
+     */
     public void invalidateAll (String id)
     {
         //take the id out of the list of known sessionids for this node
@@ -348,8 +377,12 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
             } 
         }
     }
-
-    /** 
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Generate a new id for a session and update across
+     * all SessionManagers.
+     * 
      * @see org.eclipse.jetty.server.SessionIdManager#renewSessionId(java.lang.String, java.lang.String, javax.servlet.http.HttpServletRequest)
      */
     @Override
@@ -368,7 +401,13 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     }
     
     
-    private Set<SessionManager> getSessionManagers()
+    
+    /* ------------------------------------------------------------ */
+    /** Get SessionManager for every context.
+     * 
+     * @return
+     */
+    protected Set<SessionManager> getSessionManagers()
     {
         Set<SessionManager> managers = new HashSet<>();
 

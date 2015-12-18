@@ -22,9 +22,7 @@ package org.eclipse.jetty.server.session;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -34,7 +32,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 /**
  * SessionScavenger
  *
- * There is 1 session scavenger per SessionIdManager
+ * There is 1 session scavenger per SessionIdManager/Server instance.
  *
  */
 public class SessionScavenger extends AbstractLifeCycle
@@ -172,6 +170,8 @@ public class SessionScavenger extends AbstractLifeCycle
         }
     }
 
+    
+    
     /**
      * Get the period between scavenge cycles.
      * 
@@ -197,37 +197,29 @@ public class SessionScavenger extends AbstractLifeCycle
 
         if (LOG.isDebugEnabled())
             LOG.debug("Scavenging sessions");
-        
-        //find the session managers
-        Handler[] contexts = ((AbstractSessionIdManager)_sessionIdManager).getServer().getChildHandlersByClass(ContextHandler.class);
-        for (int i=0; contexts!=null && i<contexts.length; i++)
-        {
-            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-            if (sessionHandler != null)
-            {
-                SessionManager manager = (SessionManager) sessionHandler.getSessionManager();
-                if (manager != null)
-                {
-                    //call scavenge on each manager to find keys for sessions that have expired
-                    Set<String> expiredKeys = manager.scavenge();
-                    
-                    //for each expired session, tell the session id manager to invalidate its key on all contexts
-                    for (String key:expiredKeys)
-                    {
-                        try
-                        {
-                            ((AbstractSessionIdManager)_sessionIdManager).expireAll(key);
-                        }
-                        catch (Exception e)
-                        {
-                            LOG.warn(e);
-                        }
-                    }
 
+        //find the session managers
+        for (SessionManager manager:((AbstractSessionIdManager)_sessionIdManager).getSessionManagers())
+        {
+            if (manager != null)
+            {
+                //call scavenge on each manager to find keys for sessions that have expired
+                Set<String> expiredKeys = manager.scavenge();
+
+                //for each expired session, tell the session id manager to invalidate its key on all contexts
+                for (String key:expiredKeys)
+                {
+                    try
+                    {
+                        ((AbstractSessionIdManager)_sessionIdManager).expireAll(key);
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.warn(e);
+                    }
                 }
             }
         }
-
     }
 
 

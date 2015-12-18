@@ -209,8 +209,9 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
                 LOG.debug("Removing sessionid="+id);
             try
             {
-                _sessionIds.remove(id);
-                return delete(id);
+                boolean remove = _sessionIds.remove(id);
+                boolean dbremove = delete(id);
+                return remove || dbremove;
             }
             catch (Exception e)
             {

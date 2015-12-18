@@ -54,9 +54,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
+
+
 /**
  * SessionManager
- *
+ * 
+ * Handles session lifecycle. There is one SessionManager per context.
  *
  */
 public class SessionManager extends ContainerLifeCycle implements org.eclipse.jetty.server.SessionManager
@@ -146,13 +149,17 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     {
         return _context.getContextHandler();
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     @ManagedAttribute("path of the session cookie, or null for default")
     public String getSessionPath()
     {
         return _sessionPath;
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     @ManagedAttribute("if greater the zero, the time in seconds a session cookie will last for")
     public int getMaxCookieAge()
     {
@@ -485,7 +492,10 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         }
         return null;
     }
-
+    
+    
+    
+    /* ------------------------------------------------------------ */
     @ManagedAttribute("domain of the session cookie, or null for the default")
     public String getSessionDomain()
     {
@@ -710,10 +720,16 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                 //If the session we got back has expired
                 if (session.isExpiredAt(System.currentTimeMillis()))
                 {
-                    //Tell the id manager that this session id should not be used in case other threads
-                    //try to use the same session id in other contexts
-                    _sessionIdManager.removeId(id);    
-                    //The scavenger thread will pick up this expired session
+                    //Expire the session
+                    try
+                    {
+                        session.invalidate();
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.warn("Invalidating session {} found to be expired when requested", id, e);
+                    }
+                    
                     return null;
                 }
                 
@@ -736,7 +752,9 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             return null;
         }
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * Prepare sessions for session manager shutdown
      * 
@@ -931,25 +949,20 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     {
         try
         {
-            Session session = _sessionStore.get(oldId, true);
+            Session session =_sessionStore.delete(oldId);
             if (session == null)
             {
                 LOG.warn("Unable to renew id to "+newId+" for non-existant session "+oldId);
                 return;
             }
-
-            //save session with new id
-            session.getSessionData().setId(newId);
-            session.setExtendedId(newExtendedId);
-            session.getSessionData().setLastSaved(0); //forces an insert
-            session.getSessionData().setDirty(true);  //forces an insert
+            
+            //swap the ids
+            session.renewId(oldId, oldExtendedId, newId, newExtendedId);
+            
             _sessionStore.put(newId, session);
-  
+            
             //tell session id manager the id is in use
             _sessionIdManager.useId(session);
-            
-            //remove session with old id
-            _sessionStore.delete(oldId);
 
             //inform the listeners
             if (!_sessionIdListeners.isEmpty())
@@ -1013,8 +1026,9 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
     
   
-
-
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     /**
      * CookieConfig
      * 

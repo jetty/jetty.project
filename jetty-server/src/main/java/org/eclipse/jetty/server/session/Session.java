@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -142,7 +141,7 @@ public class Session implements SessionManager.SessionIf
      */
     protected boolean isExpiredAt(long time)
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             return _sessionData.isExpiredAt(time);
         }
@@ -166,43 +165,6 @@ public class Session implements SessionManager.SessionIf
         return _sessionData.getLastNode();
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * 
-     */
-    protected void clearAttributes()
-    {
-        Set<String> keys = null;
-
-        do
-        {
-            keys = _sessionData.getKeys();
-            for (String key:keys)
-            {
-                clearAttribute(key);
-            }
-
-        }
-        while (!keys.isEmpty());
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Unset the attribute.
-     * @param name
-     */
-    protected void clearAttribute (String name)
-    {
-        Object old=null;
-        try (Lock lock = lock())
-        {
-            //if session is not valid, don't accept the set
-
-            old=_sessionData.setAttribute(name,null);
-        }
-        if (old == null)
-            return; //if same as remove attribute but attribute was already removed, no change
-        callSessionAttributeListeners(name, null, old);
-    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -298,7 +260,7 @@ public class Session implements SessionManager.SessionIf
     /* ------------------------------------------------------------ */
     public boolean isValid()
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             return _state==State.VALID;
         }
@@ -308,7 +270,7 @@ public class Session implements SessionManager.SessionIf
     /* ------------------------------------------------------------- */
     public long getCookieSetTime()
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             return _sessionData.getCookieSet();
         }
@@ -319,9 +281,9 @@ public class Session implements SessionManager.SessionIf
     @Override
     public long getCreationTime() throws IllegalStateException
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
-            checkValid();
+            checkValidForRead();
             return _sessionData.getCreated();
         }
     }
@@ -334,7 +296,7 @@ public class Session implements SessionManager.SessionIf
     @Override
     public String getId()
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             return _sessionData.getId();
         }
@@ -364,7 +326,7 @@ public class Session implements SessionManager.SessionIf
     @Override
     public long getLastAccessedTime()
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             return _sessionData.getLastAccessed();
         }
@@ -401,7 +363,7 @@ public class Session implements SessionManager.SessionIf
     @Override
     public int getMaxInactiveInterval()
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             return (int)(_sessionData.getMaxInactiveMs()/1000);
         }
@@ -413,7 +375,7 @@ public class Session implements SessionManager.SessionIf
     @Override
     public HttpSessionContext getSessionContext()
     {
-        checkValid();
+        checkValidForRead();
         return SessionManager.__nullSessionContext;
     }
 
@@ -429,7 +391,7 @@ public class Session implements SessionManager.SessionIf
      * asserts that the session is valid
      * @throws IllegalStateException if the session is invalid
      */
-    protected void checkValid() throws IllegalStateException
+    protected void checkValidForWrite() throws IllegalStateException
     {    
         if (!_lock.isLocked())
             throw new IllegalStateException();
@@ -437,6 +399,22 @@ public class Session implements SessionManager.SessionIf
         if (_state != State.VALID)
             throw new IllegalStateException();
     }
+    
+    
+    /* ------------------------------------------------------------- */
+    /**
+     * asserts that the session is valid
+     * @throws IllegalStateException if the session is invalid
+     */
+    protected void checkValidForRead () throws IllegalStateException
+    {
+        if (!_lock.isLocked())
+            throw new IllegalStateException();
+        if (_state == State.INVALID)
+            throw new IllegalStateException();
+    }
+    
+    
 
 
     /** 
@@ -445,9 +423,9 @@ public class Session implements SessionManager.SessionIf
     @Override
     public Object getAttribute(String name)
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
-            checkValid();
+            checkValidForRead();
             return _sessionData.getAttribute(name);
         }
     }
@@ -458,7 +436,7 @@ public class Session implements SessionManager.SessionIf
     @Override
     public Object getValue(String name)
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         { 
             return _sessionData.getAttribute(name);
         }
@@ -470,9 +448,9 @@ public class Session implements SessionManager.SessionIf
     @Override
     public Enumeration<String> getAttributeNames()
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
-            checkValid();
+            checkValidForRead();
             final Iterator<String> itor = _sessionData.getKeys().iterator();
             return new Enumeration<String> ()
             {
@@ -521,9 +499,9 @@ public class Session implements SessionManager.SessionIf
     @Override
     public String[] getValueNames() throws IllegalStateException
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
-            checkValid();
+            checkValidForRead();
             Iterator<String> itor = _sessionData.getKeys().iterator();
             if (!itor.hasNext())
                 return new String[0];
@@ -545,7 +523,7 @@ public class Session implements SessionManager.SessionIf
         try (Lock lock = lock())
         {
             //if session is not valid, don't accept the set
-            checkValid();
+            checkValidForWrite();
             old=_sessionData.setAttribute(name,value);
         }
         if (value == null && old == null)
@@ -590,21 +568,19 @@ public class Session implements SessionManager.SessionIf
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param request
+     */
     public void renewId(HttpServletRequest request)
     {
         if (_manager == null)
             throw new IllegalStateException ("No session manager for session "+ _sessionData.getId());
         
-        //TODO
-        //simultaneous calls to renew id on same session - all subsequent calls to renew need to wait 
-        //until first renew finishes - and then should they proceed in order, or does first renew win????
-        //Or are simultaneous interleaved renewals ok, so long as we end up with a consistent result???
-        
         String id = null;
         String extendedId = null;
         try (Lock lock = lock())
         {
-            checkValid(); //don't renew id on a session that is not valid
+            checkValidForWrite(); //don't renew id on a session that is not valid
             id = _sessionData.getId(); //grab the values as they are now
             extendedId = getExtendedId();
         }
@@ -613,6 +589,32 @@ public class Session implements SessionManager.SessionIf
         setIdChanged(true);
     }
        
+    
+    /* ------------------------------------------------------------- */
+    /** Swap the id on a session from old to new, keeping the object
+     * the same.
+     * 
+     * @param oldId
+     * @param oldExtendedId
+     * @param newId
+     * @param newExtendedId
+     */
+    public void renewId (String oldId, String oldExtendedId, String newId, String newExtendedId)
+    {
+        try (Lock lock = lock())
+        {
+            checkValidForWrite(); //can't change id on invalid session
+            
+            if (!oldId.equals(getId()))
+                throw new IllegalStateException("Id clash detected on renewal: was "+oldId+" but is "+ getId());
+            
+            //save session with new id
+            _sessionData.setId(newId);
+            setExtendedId(newExtendedId);
+            _sessionData.setLastSaved(0); //forces an insert
+            _sessionData.setDirty(true);  //forces an insert
+        }
+    }
 
     /* ------------------------------------------------------------- */
     /** Called by users to invalidate a session, or called by the
@@ -692,7 +694,23 @@ public class Session implements SessionManager.SessionIf
                 if (LOG.isDebugEnabled())
                     LOG.debug("invalidate {}",_sessionData.getId());
                 if (isValid())
-                    clearAttributes();
+                {
+                    Set<String> keys = null;
+
+                    do
+                    {
+                        keys = _sessionData.getKeys();
+                        for (String key:keys)
+                        {
+                            Object  old=_sessionData.setAttribute(key,null);
+                            if (old == null)
+                                return; //if same as remove attribute but attribute was already removed, no change
+                            callSessionAttributeListeners(key, null, old);
+                        }
+
+                    }
+                    while (!keys.isEmpty());
+                }
             }
             finally
             {
@@ -706,9 +724,9 @@ public class Session implements SessionManager.SessionIf
     @Override
     public boolean isNew() throws IllegalStateException
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
-            checkValid();
+            checkValidForRead();
             return _newSession;
         }
     }
@@ -728,7 +746,7 @@ public class Session implements SessionManager.SessionIf
     /* ------------------------------------------------------------- */
     public boolean isIdChanged ()
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             return _idChanged;
         }
