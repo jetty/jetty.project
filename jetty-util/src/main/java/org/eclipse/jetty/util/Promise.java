@@ -76,6 +76,7 @@ public interface Promise<C>
      *
      * @param completable the CompletableFuture to convert into a promise
      * @return a promise that when completed, completes the given CompletableFuture
+     * @param <T> the type of the result
      */
     static <T> Promise<T> from(CompletableFuture<? super T> completable)
     {

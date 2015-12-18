@@ -52,8 +52,8 @@ public class Loader
     /** Load a class.
      * <p>Load a class either from the thread context classloader or if none, the system
      * loader</p>
-     * @param name the name of the new class to load
      * 
+     * @param name the name of the new class to load
      * @return Class
      * @throws ClassNotFoundException if not able to find the class
      */
@@ -70,6 +70,8 @@ public class Loader
      * Load a class from the same classloader as the passed  <code>loadClass</code>, or if none
      * then use {@link #loadClass(String)}
      * 
+     * @param loaderClass a similar class, belong in the same classloader of the desired class to load
+     * @param name the name of the new class to load
      * @return Class
      * @throws ClassNotFoundException if not able to find the class
      */
