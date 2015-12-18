@@ -765,6 +765,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
             break;
         }
+        
 
         ByteBuffer buffer = _channel.useDirectBuffers() ? httpContent.getDirectBuffer() : null;
         if (buffer == null)
