@@ -79,6 +79,7 @@ public class HttpChannelOverFCGI extends HttpChannel
         if (exchange != null)
         {
             version = exchange.getRequest().getVersion();
+            idle.onOpen();
             sender.send(exchange);
         }
     }
@@ -91,6 +92,7 @@ public class HttpChannelOverFCGI extends HttpChannel
 
     protected boolean responseBegin(int code, String reason)
     {
+        idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return false;
@@ -106,12 +108,14 @@ public class HttpChannelOverFCGI extends HttpChannel
 
     protected boolean responseHeaders()
     {
+       idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         return exchange != null && receiver.responseHeaders(exchange);
     }
 
     protected boolean content(ByteBuffer buffer, Callback callback)
     {
+        idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
             return receiver.responseContent(exchange, buffer, callback);
@@ -151,12 +155,28 @@ public class HttpChannelOverFCGI extends HttpChannel
     private class FCGIIdleTimeout extends IdleTimeout
     {
         private final HttpConnectionOverFCGI connection;
+        private boolean open;
 
         public FCGIIdleTimeout(HttpConnectionOverFCGI connection, long idleTimeout)
         {
             super(connection.getHttpDestination().getHttpClient().getScheduler());
             this.connection = connection;
             setIdleTimeout(idleTimeout);
+        }
+
+        @Override
+        public void onOpen()
+        {
+            open = true;
+            notIdle();
+            super.onOpen();
+        }
+
+        @Override
+        public void onClose()
+        {
+            super.onClose();
+            open = false;
         }
 
         @Override
@@ -170,7 +190,7 @@ public class HttpChannelOverFCGI extends HttpChannel
         @Override
         public boolean isOpen()
         {
-            return connection.getEndPoint().isOpen();
+            return open;
         }
     }
 }
