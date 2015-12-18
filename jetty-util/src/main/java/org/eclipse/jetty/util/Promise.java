@@ -47,6 +47,7 @@ public interface Promise<C>
      * <p>Empty implementation of {@link Promise}</p>
      *
      * @param <C> the type of the context object
+     * @param <T> the type of the result
      */
     public static class Adapter<C> implements Promise<C>
     {
