@@ -56,7 +56,6 @@ public class HashLoginService extends MappedLoginService implements UserListener
     private PropertyUserStore _propertyUserStore;
     private String _config;
     private Resource _configResource;
-    private Scanner _scanner;
     private boolean hotReload = false; // default is not to reload
     
     
@@ -254,9 +253,9 @@ public class HashLoginService extends MappedLoginService implements UserListener
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (_scanner != null)
-            _scanner.stop();
-        _scanner = null;
+        if (_propertyUserStore != null)
+            _propertyUserStore.stop();
+        _propertyUserStore = null;
     }
     
     /* ------------------------------------------------------------ */
