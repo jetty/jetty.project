@@ -73,6 +73,12 @@ public abstract class AbstractTest
 
     public void start(Handler handler) throws Exception
     {
+        startServer(handler);
+        startClient();
+    }
+
+    protected void startServer(Handler handler) throws Exception
+    {
         sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
@@ -80,12 +86,6 @@ public abstract class AbstractTest
         sslContextFactory.setTrustStorePassword("storepwd");
         sslContextFactory.setUseCipherSuitesOrder(true);
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
-        startServer(handler);
-        startClient();
-    }
-
-    private void startServer(Handler handler) throws Exception
-    {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);

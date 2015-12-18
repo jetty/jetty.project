@@ -19,13 +19,13 @@
 package org.eclipse.jetty.client.http;
 
 import java.nio.channels.AsynchronousCloseException;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -76,9 +76,9 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         delegate.send(request, listener);
     }
 
-    protected void send(HttpExchange exchange)
+    protected SendFailure send(HttpExchange exchange)
     {
-        delegate.send(exchange);
+        return delegate.send(exchange);
     }
 
     @Override
@@ -97,10 +97,10 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     @Override
     protected boolean onReadTimeout()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Idle timeout {}", this);
-        close(new TimeoutException());
-        return false;
+        boolean close = delegate.onIdleTimeout();
+        if (!close && !isClosed())
+            fillInterested();
+        return close;
     }
 
     @Override
@@ -134,7 +134,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
 
     protected void close(Throwable failure)
     {
-        if (softClose())
+        if (closed.compareAndSet(false, true))
         {
             // First close then abort, to be sure that the connection cannot be reused
             // from an onFailure() handler or by blocking code waiting for completion.
@@ -148,11 +148,6 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
 
             abort(failure);
         }
-    }
-
-    public boolean softClose()
-    {
-        return closed.compareAndSet(false, true);
     }
 
     protected boolean abort(Throwable failure)
@@ -191,27 +186,30 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         }
 
         @Override
-        protected void send(HttpExchange exchange)
+        protected SendFailure send(HttpExchange exchange)
         {
             Request request = exchange.getRequest();
             normalizeRequest(request);
 
-            // Save the old idle timeout to restore it
+            // Save the old idle timeout to restore it.
             EndPoint endPoint = getEndPoint();
             idleTimeout = endPoint.getIdleTimeout();
             endPoint.setIdleTimeout(request.getIdleTimeout());
 
-            // One channel per connection, just delegate the send
-            if (channel.associate(exchange))
-                channel.send();
-            else
-                channel.release();
+            // One channel per connection, just delegate the send.
+            return send(channel, exchange);
         }
 
         @Override
         public void close()
         {
             HttpConnectionOverHTTP.this.close();
+        }
+
+        @Override
+        protected void close(Throwable failure)
+        {
+            HttpConnectionOverHTTP.this.close(failure);
         }
 
         @Override

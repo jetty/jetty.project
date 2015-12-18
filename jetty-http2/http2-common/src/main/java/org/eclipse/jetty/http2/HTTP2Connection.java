@@ -117,7 +117,8 @@ public class HTTP2Connection extends AbstractConnection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
-        session.onIdleTimeout();
+        if (!session.onIdleTimeout())
+            fillInterested();
         return false;
     }
 

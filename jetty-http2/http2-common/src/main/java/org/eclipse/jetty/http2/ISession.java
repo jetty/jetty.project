@@ -118,7 +118,7 @@ public interface ISession extends Session
      * @see #onShutdown()
      * @see #close(int, String, Callback)
      */
-    public void onIdleTimeout();
+    public boolean onIdleTimeout();
 
     /**
      * <p>Callback method invoked during an HTTP/1.1 to HTTP/2 upgrade requests

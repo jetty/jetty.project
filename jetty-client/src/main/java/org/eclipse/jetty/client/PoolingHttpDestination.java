@@ -105,9 +105,15 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
 
     private void process()
     {
-        C connection = acquire();
-        if (connection != null)
-            process(connection);
+        while (true)
+        {
+            C connection = acquire();
+            if (connection == null)
+                break;
+            boolean proceed = process(connection);
+            if (!proceed)
+                break;
+        }
     }
 
     /**
@@ -118,8 +124,9 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
      * <p>If a request is waiting to be executed, it will be dequeued and executed by the new connection.</p>
      *
      * @param connection the new connection
+     * @return whether to perform more processing
      */
-    public void process(final C connection)
+    public boolean process(final C connection)
     {
         HttpClient client = getHttpClient();
         final HttpExchange exchange = getHttpExchanges().poll();
@@ -129,13 +136,13 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
         {
             if (!connectionPool.release(connection))
                 connection.close();
-
             if (!client.isRunning())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} is stopping", client);
                 connection.close();
             }
+            return false;
         }
         else
         {
@@ -152,12 +159,25 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
             }
             else
             {
-                send(connection, exchange);
+                SendFailure result = send(connection, exchange);
+                if (result != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Send failed {} for {}", result, exchange);
+                    if (result.retry)
+                    {
+                        if (enqueue(getHttpExchanges(), exchange))
+                            return true;
+                    }
+
+                    request.abort(result.failure);
+                }
             }
+            return getHttpExchanges().peek() != null;
         }
     }
 
-    protected abstract void send(C connection, HttpExchange exchange);
+    protected abstract SendFailure send(C connection, HttpExchange exchange);
 
     @Override
     public void release(Connection c)

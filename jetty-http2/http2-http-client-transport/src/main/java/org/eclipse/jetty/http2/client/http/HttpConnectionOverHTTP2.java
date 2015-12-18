@@ -25,6 +25,7 @@ import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.util.Callback;
@@ -47,16 +48,15 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
     }
 
     @Override
-    protected void send(HttpExchange exchange)
+    protected SendFailure send(HttpExchange exchange)
     {
         normalizeRequest(exchange.getRequest());
+
         // One connection maps to N channels, so for each exchange we create a new channel.
         HttpChannel channel = newHttpChannel();
         channels.add(channel);
-        if (channel.associate(exchange))
-            channel.send();
-        else
-            channel.release();
+
+        return send(channel, exchange);
     }
 
     protected HttpChannelOverHTTP2 newHttpChannel()
@@ -76,12 +76,13 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
         close(new AsynchronousCloseException());
     }
 
+    @Override
     protected void close(Throwable failure)
     {
         // First close then abort, to be sure that the connection cannot be reused
         // from an onFailure() handler or by blocking code waiting for completion.
         getHttpDestination().close(this);
-        session.close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
+        session.close(ErrorCode.NO_ERROR.code, failure.getMessage(), Callback.NOOP);
         abort(failure);
     }
 

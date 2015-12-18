@@ -175,6 +175,12 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         }
 
         @Override
+        public boolean onIdleTimeout(Session session)
+        {
+            return connection.onIdleTimeout();
+        }
+
+        @Override
         public void onFailure(Session session, Throwable failure)
         {
             connection.close(failure);

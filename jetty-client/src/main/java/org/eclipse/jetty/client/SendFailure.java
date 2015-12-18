@@ -16,24 +16,22 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.fcgi.client.http;
+package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.PoolingHttpDestination;
-import org.eclipse.jetty.client.SendFailure;
-
-public class HttpDestinationOverFCGI extends PoolingHttpDestination<HttpConnectionOverFCGI>
+public class SendFailure
 {
-    public HttpDestinationOverFCGI(HttpClient client, Origin origin)
+    public final Throwable failure;
+    public final boolean retry;
+
+    public SendFailure(Throwable failure, boolean retry)
     {
-        super(client, origin);
+        this.failure = failure;
+        this.retry = retry;
     }
 
     @Override
-    protected SendFailure send(HttpConnectionOverFCGI connection, HttpExchange exchange)
+    public String toString()
     {
-        return connection.send(exchange);
+        return String.format("%s[failure=%s,retry=%b]", super.toString(), failure, retry);
     }
 }

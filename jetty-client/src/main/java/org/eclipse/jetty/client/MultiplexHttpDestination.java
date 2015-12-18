@@ -69,7 +69,8 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
                 }
                 case CONNECTED:
                 {
-                    process(connection);
+                    if (process(connection))
+                        break;
                     return;
                 }
                 default:
@@ -88,7 +89,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
         C connection = this.connection = (C)result;
         if (connect.compareAndSet(ConnectState.CONNECTING, ConnectState.CONNECTED))
         {
-            process(connection);
+            send();
         }
         else
         {
@@ -104,7 +105,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
         abort(x);
     }
 
-    protected void process(final C connection)
+    protected boolean process(final C connection)
     {
         while (true)
         {
@@ -112,7 +113,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
             int count = requestsPerConnection.get();
             int next = count + 1;
             if (next > max)
-                return;
+                return false;
 
             if (requestsPerConnection.compareAndSet(count, next))
             {
@@ -122,7 +123,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
                 if (exchange == null)
                 {
                     requestsPerConnection.decrementAndGet();
-                    return;
+                    return false;
                 }
 
                 final Request request = exchange.getRequest();
@@ -139,8 +140,21 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
                 }
                 else
                 {
-                    send(connection, exchange);
+                    SendFailure result = send(connection, exchange);
+                    if (result != null)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Send failed {} for {}", result, exchange);
+                        if (result.retry)
+                        {
+                            if (enqueue(getHttpExchanges(), exchange))
+                                return true;
+                        }
+
+                        request.abort(result.failure);
+                    }
                 }
+                return getHttpExchanges().peek() != null;
             }
         }
     }
@@ -177,7 +191,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
         }
     }
 
-    protected abstract void send(C connection, HttpExchange exchange);
+    protected abstract SendFailure send(C connection, HttpExchange exchange);
 
     private enum ConnectState
     {

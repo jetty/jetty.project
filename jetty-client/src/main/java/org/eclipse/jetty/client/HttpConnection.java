@@ -23,6 +23,8 @@ import java.net.HttpCookie;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Connection;
@@ -35,11 +37,15 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public abstract class HttpConnection implements Connection
 {
+    private static final Logger LOG = Log.getLogger(HttpConnection.class);
     private static final HttpField CHUNKED_FIELD = new HttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
 
+    private final AtomicInteger idleTimeoutState = new AtomicInteger();
     private final HttpDestination destination;
 
     protected HttpConnection(HttpDestination destination)
@@ -72,10 +78,12 @@ public abstract class HttpConnection implements Connection
 
         HttpExchange exchange = new HttpExchange(getHttpDestination(), (HttpRequest)request, listeners);
 
-        send(exchange);
+        SendFailure result = send(exchange);
+        if (result != null)
+            request.abort(result.failure);
     }
 
-    protected abstract void send(HttpExchange exchange);
+    protected abstract SendFailure send(HttpExchange exchange);
 
     protected void normalizeRequest(Request request)
     {
@@ -166,6 +174,58 @@ public abstract class HttpConnection implements Connection
         }
         return builder;
     }
+
+    protected SendFailure send(HttpChannel channel, HttpExchange exchange)
+    {
+        // Forbid idle timeouts for the time window where
+        // the request is associated to the channel and sent.
+        // Use a counter to support multiplexed requests.
+        boolean send = false;
+        while (true)
+        {
+            int current = idleTimeoutState.get();
+            if (current < 0)
+                break;
+            if (idleTimeoutState.compareAndSet(current, current + 1))
+            {
+                send = true;
+                break;
+            }
+        }
+
+        if (send)
+        {
+            HttpRequest request = exchange.getRequest();
+            SendFailure result;
+            if (channel.associate(exchange))
+            {
+                channel.send();
+                result = null;
+            }
+            else
+            {
+                channel.release();
+                result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
+            }
+            idleTimeoutState.decrementAndGet();
+            return result;
+        }
+        else
+        {
+            return new SendFailure(new TimeoutException(), true);
+        }
+    }
+
+    public boolean onIdleTimeout()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Idle timeout state {} - {}", idleTimeoutState, this);
+        if (idleTimeoutState.compareAndSet(0, -1))
+            close(new TimeoutException("idle_timeout"));
+        return false;
+    }
+
+    protected abstract void close(Throwable failure);
 
     @Override
     public String toString()
