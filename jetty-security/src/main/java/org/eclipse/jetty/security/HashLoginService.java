@@ -199,5 +199,8 @@ public class HashLoginService extends AbstractLoginService
     protected void doStop() throws Exception
     {
         super.doStop();
+        if (_propertyUserStore != null)
+            _propertyUserStore.stop();
+        _propertyUserStore = null;
     }
 }

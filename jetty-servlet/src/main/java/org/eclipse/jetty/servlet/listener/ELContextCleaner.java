@@ -20,6 +20,7 @@ package org.eclipse.jetty.servlet.listener;
 
 import java.lang.reflect.Field;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.ServletContextEvent;
@@ -98,7 +99,7 @@ public class ELContextCleaner implements ServletContextListener
         if (!properties.isAccessible())
             properties.setAccessible(true);
 
-        ConcurrentHashMap<Class<?>, Object> map = (ConcurrentHashMap<Class<?>, Object>) properties.get(null);
+        Map map = (Map) properties.get(null);
         if (map == null)
             return;
 

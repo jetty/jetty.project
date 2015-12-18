@@ -27,55 +27,47 @@ import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
+
+/**
+ * A HttpContent.Factory for transient content.  The HttpContent's created by 
+ * this factory are not intended to be cached, so memory limits for individual
+ * HttpOutput streams are enforced.
+ */
 public class ResourceContentFactory implements Factory
 {
     private final ResourceFactory _factory;
     private final MimeTypes _mimeTypes;
-    private final int _maxBufferSize;
     private final boolean _gzip;
     
-
     /* ------------------------------------------------------------ */
-    public ResourceContentFactory(ResourceFactory factory, MimeTypes mimeTypes, int maxBufferSize, boolean gzip)
+    public ResourceContentFactory(ResourceFactory factory, MimeTypes mimeTypes, boolean gzip)
     {
         _factory=factory;
         _mimeTypes=mimeTypes;
-        _maxBufferSize=maxBufferSize;
         _gzip=gzip;
     }
 
     /* ------------------------------------------------------------ */
-    /** Get a Entry from the cache.
-     * Get either a valid entry object or create a new one if possible.
-     *
-     * @param pathInContext The key into the cache
-     * @return The entry matching <code>pathInContext</code>, or a new entry 
-     * if no matching entry was found. If the content exists but is not cachable, 
-     * then a {@link ResourceHttpContent} instance is return. If 
-     * the resource does not exist, then null is returned.
-     * @throws IOException Problem loading the resource
-     */
     @Override
-    public HttpContent getContent(String pathInContext)
+    public HttpContent getContent(String pathInContext,int maxBufferSize)
         throws IOException
     {
-       
         // try loading the content from our factory.
         Resource resource=_factory.getResource(pathInContext);
-        HttpContent loaded = load(pathInContext,resource);
+        HttpContent loaded = load(pathInContext,resource,maxBufferSize);
         return loaded;
     }
     
     
     /* ------------------------------------------------------------ */
-    private HttpContent load(String pathInContext, Resource resource)
+    private HttpContent load(String pathInContext, Resource resource, int maxBufferSize)
         throws IOException
     {   
         if (resource==null || !resource.exists())
             return null;
         
         if (resource.isDirectory())
-            return new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),_maxBufferSize);
+            return new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),maxBufferSize);
         
         // Look for a gzip resource or content
         String mt = _mimeTypes.getMimeByExtension(pathInContext);
@@ -85,11 +77,11 @@ public class ResourceContentFactory implements Factory
             String pathInContextGz=pathInContext+".gz";
             Resource resourceGz=_factory.getResource(pathInContextGz);
             if (resourceGz.exists() && resourceGz.lastModified()>=resource.lastModified() && resourceGz.length()<resource.length())
-                return new ResourceHttpContent(resource,mt,_maxBufferSize,
-                       new ResourceHttpContent(resourceGz,_mimeTypes.getMimeByExtension(pathInContextGz),_maxBufferSize));
+                return new ResourceHttpContent(resource,mt,maxBufferSize,
+                       new ResourceHttpContent(resourceGz,_mimeTypes.getMimeByExtension(pathInContextGz),maxBufferSize));
         }
         
-        return new ResourceHttpContent(resource,mt,_maxBufferSize);
+        return new ResourceHttpContent(resource,mt,maxBufferSize);
     }
     
     

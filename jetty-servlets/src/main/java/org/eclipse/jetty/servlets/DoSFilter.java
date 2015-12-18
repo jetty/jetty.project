@@ -1107,10 +1107,10 @@ public class DoSFilter implements Filter
     {
         private static final long serialVersionUID = 3534663738034577872L;
 
-        protected transient final String _id;
-        protected transient final int _type;
-        protected transient final long[] _timestamps;
-        protected transient int _next;
+        protected final String _id;
+        protected final int _type;
+        protected final long[] _timestamps;
+        protected int _next;
 
         public RateTracker(String id, int type, int maxRequestsPerSecond)
         {
@@ -1164,16 +1164,14 @@ public class DoSFilter implements Filter
         public void sessionWillPassivate(HttpSessionEvent se)
         {
             //take the tracker of the list of trackers (if its still there)
-            //and ensure that we take ourselves out of the session so we are not saved
             _rateTrackers.remove(_id);
-            se.getSession().removeAttribute(__TRACKER);
-            if (LOG.isDebugEnabled()) 
-                LOG.debug("Value removed: {}", getId());
         }
 
         public void sessionDidActivate(HttpSessionEvent se)
         {
-            LOG.warn("Unexpected session activation");
+            RateTracker tracker = (RateTracker)se.getSession().getAttribute(__TRACKER);
+            if (tracker!=null)
+                _rateTrackers.put(tracker.getId(),tracker);
         }
 
         @Override

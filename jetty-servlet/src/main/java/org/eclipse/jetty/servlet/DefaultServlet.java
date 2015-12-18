@@ -289,8 +289,15 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             throw new UnavailableException(e.toString());
         }
 
-        _contentFactory=_cache==null?new ResourceContentFactory(this,_mimeTypes,-1,_gzip):_cache; // TODO pass a buffer size
-
+        if (_cache!=null)
+            _contentFactory=_cache;
+        else
+        {
+            _contentFactory=new ResourceContentFactory(this,_mimeTypes,_gzip);
+            if (resourceCache!=null)
+                _servletContext.setAttribute(resourceCache,_contentFactory);
+        }
+        
         _gzipEquivalentFileExtensions = new ArrayList<String>();
         String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
         if (otherGzipExtensions != null)
@@ -461,7 +468,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         try
         {
             // Find the content
-            content=_contentFactory.getContent(pathInContext);
+            content=_contentFactory.getContent(pathInContext,response.getBufferSize());
             if (LOG.isDebugEnabled())
                 LOG.info("content={}",content);
             

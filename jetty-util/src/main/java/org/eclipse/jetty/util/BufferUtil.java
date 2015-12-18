@@ -19,17 +19,21 @@
 package org.eclipse.jetty.util;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.lang.reflect.Field;
 import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.log.Log;
@@ -903,12 +907,48 @@ public class BufferUtil
 
     public static ByteBuffer toMappedBuffer(File file) throws IOException
     {
-        try (RandomAccessFile raf = new RandomAccessFile(file, "r"))
+        try (FileChannel channel = FileChannel.open(file.toPath(),StandardOpenOption.READ))
         {
-            return raf.getChannel().map(MapMode.READ_ONLY, 0, raf.length());
+            return channel.map(MapMode.READ_ONLY, 0, file.length());
         }
     }
 
+    static final Field fdMappedByteBuffer;
+    static
+    {
+        Field fd = null;
+        try
+        {
+            fd=MappedByteBuffer.class.getDeclaredField("fd");
+            fd.setAccessible(true);
+        }
+        catch(Exception e)
+        {   
+        }
+        fdMappedByteBuffer=fd;
+    }
+
+    public static boolean isMappedBuffer(ByteBuffer buffer)
+    {
+        if (!(buffer instanceof MappedByteBuffer))
+            return false;
+        MappedByteBuffer mapped = (MappedByteBuffer) buffer;
+
+        if (fdMappedByteBuffer!=null)
+        {
+            try
+            {
+                if (fdMappedByteBuffer.get(mapped) instanceof FileDescriptor)
+                    return true;
+            }
+            catch(Exception e)
+            {
+            }
+        }            
+        return false;
+    }
+    
+    
     public static ByteBuffer toBuffer(Resource resource,boolean direct) throws IOException
     {
         int len=(int)resource.length();
@@ -1153,6 +1193,7 @@ public class BufferUtil
         
         throw new UnsupportedOperationException();
     }
+
 
 
 

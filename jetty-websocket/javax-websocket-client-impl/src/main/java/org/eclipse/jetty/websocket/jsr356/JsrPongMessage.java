@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 
 import javax.websocket.PongMessage;
 
+import org.eclipse.jetty.util.BufferUtil;
+
 public class JsrPongMessage implements PongMessage
 {
     private final ByteBuffer data;
@@ -34,6 +36,10 @@ public class JsrPongMessage implements PongMessage
     @Override
     public ByteBuffer getApplicationData()
     {
+        if (data == null)
+        {
+            return BufferUtil.EMPTY_BUFFER;
+        }
         return data.slice();
     }
 }

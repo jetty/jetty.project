@@ -35,8 +35,8 @@ import java.util.function.Predicate;
 public class IncludeExclude<ITEM> 
 {
     private final Set<ITEM> _includes;
-    private final Set<ITEM> _excludes;
     private final Predicate<ITEM> _includePredicate;
+    private final Set<ITEM> _excludes;
     private final Predicate<ITEM> _excludePredicate;
     
     private static class SetContainsPredicate<ITEM> implements Predicate<ITEM>
@@ -58,6 +58,7 @@ public class IncludeExclude<ITEM>
     /**
      * Default constructor over {@link HashSet}
      */
+    @SuppressWarnings("unchecked")
     public IncludeExclude()
     {
         this(HashSet.class);
@@ -68,17 +69,20 @@ public class IncludeExclude<ITEM>
      * @param setClass The type of {@link Set} to using internally
      * @param predicate A predicate function to test if a passed ITEM is matched by the passed SET}
      */
+    @SuppressWarnings("unchecked")
     public <SET extends Set<ITEM>> IncludeExclude(Class<SET> setClass)
     {
         try
         {
             _includes = setClass.newInstance();
             _excludes = setClass.newInstance();
+            
             if(_includes instanceof Predicate) {
                 _includePredicate = (Predicate<ITEM>)_includes;
             } else {
                 _includePredicate = new SetContainsPredicate<>(_includes);
             }
+            
             if(_excludes instanceof Predicate) {
                 _excludePredicate = (Predicate<ITEM>)_excludes;
             } else {
@@ -112,7 +116,7 @@ public class IncludeExclude<ITEM>
         _includes.add(element);
     }
     
-    public void include(ITEM... element)
+    public void include(@SuppressWarnings("unchecked") ITEM... element)
     {
         for (ITEM e: element)
             _includes.add(e);
@@ -123,7 +127,7 @@ public class IncludeExclude<ITEM>
         _excludes.add(element);
     }
     
-    public void exclude(ITEM... element)
+    public void exclude(@SuppressWarnings("unchecked") ITEM... element)
     {
         for (ITEM e: element)
             _excludes.add(e);

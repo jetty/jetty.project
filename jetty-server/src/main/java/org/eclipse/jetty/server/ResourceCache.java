@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Comparator;
 import java.util.SortedSet;
@@ -172,7 +173,7 @@ public class ResourceCache implements HttpContent.Factory
     public HttpContent lookup(String pathInContext)
         throws IOException
     {
-        return getContent(pathInContext);
+        return getContent(pathInContext,_maxCachedFileSize);
     }
 
     /* ------------------------------------------------------------ */
@@ -180,6 +181,8 @@ public class ResourceCache implements HttpContent.Factory
      * Get either a valid entry object or create a new one if possible.
      *
      * @param pathInContext The key into the cache
+     * @param maxBuffer The maximum buffer to allocated for this request.  For cached content, a larger buffer may have
+     * previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
      * @return The entry matching <code>pathInContext</code>, or a new entry 
      * if no matching entry was found. If the content exists but is not cachable, 
      * then a {@link ResourceHttpContent} instance is return. If 
@@ -187,7 +190,7 @@ public class ResourceCache implements HttpContent.Factory
      * @throws IOException Problem loading the resource
      */
     @Override
-    public HttpContent getContent(String pathInContext)
+    public HttpContent getContent(String pathInContext,int maxBufferSize)
         throws IOException
     {
         // Is the content in this cache?
@@ -197,14 +200,14 @@ public class ResourceCache implements HttpContent.Factory
        
         // try loading the content from our factory.
         Resource resource=_factory.getResource(pathInContext);
-        HttpContent loaded = load(pathInContext,resource);
+        HttpContent loaded = load(pathInContext,resource,maxBufferSize);
         if (loaded!=null)
             return loaded;
         
         // Is the content in the parent cache?
         if (_parent!=null)
         {
-            HttpContent httpContent=_parent.lookup(pathInContext);
+            HttpContent httpContent=_parent.getContent(pathInContext,maxBufferSize);
             if (httpContent!=null)
                 return httpContent;
         }
@@ -225,14 +228,13 @@ public class ResourceCache implements HttpContent.Factory
         long len = resource.length();
 
         // Will it fit in the cache?
-        return  (len>0 && len<_maxCachedFileSize && len<_maxCacheSize);
+        return  (len>0 && (_useFileMappedBuffer || (len<_maxCachedFileSize && len<_maxCacheSize)));
     }
     
     /* ------------------------------------------------------------ */
-    private HttpContent load(String pathInContext, Resource resource)
+    private HttpContent load(String pathInContext, Resource resource, int maxBufferSize)
         throws IOException
     {
-        
         if (resource==null || !resource.exists())
             return null;
         
@@ -256,7 +258,6 @@ public class ResourceCache implements HttpContent.Factory
                     if (resourceGz.exists() && resourceGz.lastModified()>=resource.lastModified() && resourceGz.length()<resource.length())
                     {
                         contentGz = new CachedHttpContent(pathInContextGz,resourceGz,null);
-                        shrinkCache();
                         CachedHttpContent added = _cache.putIfAbsent(pathInContextGz,contentGz);
                         if (added!=null)
                         {
@@ -270,9 +271,6 @@ public class ResourceCache implements HttpContent.Factory
             else 
                 content = new CachedHttpContent(pathInContext,resource,null);
 
-            // reduce the cache to an acceptable size.
-            shrinkCache();
-
             // Add it to the cache.
             CachedHttpContent added = _cache.putIfAbsent(pathInContext,content);
             if (added!=null)
@@ -284,7 +282,7 @@ public class ResourceCache implements HttpContent.Factory
             return content;
         }
         
-        // Look for a gzip resource or content
+        // Look for non Cacheable gzip resource or content
         String mt = _mimeTypes.getMimeByExtension(pathInContext);
         if (_gzip)
         {
@@ -292,16 +290,16 @@ public class ResourceCache implements HttpContent.Factory
             String pathInContextGz=pathInContext+".gz";
             CachedHttpContent contentGz = _cache.get(pathInContextGz);
             if (contentGz!=null && contentGz.isValid() && contentGz.getResource().lastModified()>=resource.lastModified())
-                return new ResourceHttpContent(resource,mt,getMaxCachedFileSize(),contentGz);
+                return new ResourceHttpContent(resource,mt,maxBufferSize,contentGz);
             
             // Is there a gzip resource?
             Resource resourceGz=_factory.getResource(pathInContextGz);
             if (resourceGz.exists() && resourceGz.lastModified()>=resource.lastModified() && resourceGz.length()<resource.length())
-                return new ResourceHttpContent(resource,mt,getMaxCachedFileSize(),
-                       new ResourceHttpContent(resourceGz,_mimeTypes.getMimeByExtension(pathInContextGz),getMaxCachedFileSize()));
+                return new ResourceHttpContent(resource,mt,maxBufferSize,
+                       new ResourceHttpContent(resourceGz,_mimeTypes.getMimeByExtension(pathInContextGz),maxBufferSize));
         }
         
-        return new ResourceHttpContent(resource,mt,getMaxCachedFileSize());
+        return new ResourceHttpContent(resource,mt,maxBufferSize);
     }
     
     /* ------------------------------------------------------------ */
@@ -359,6 +357,8 @@ public class ResourceCache implements HttpContent.Factory
     /* ------------------------------------------------------------ */
     protected ByteBuffer getDirectBuffer(Resource resource)
     {
+        // Only use file mapped buffers for cached resources, otherwise too much virtual memory commitment for
+        // a non shared resource.  Also ignore max buffer size
         try
         {
             if (_useFileMappedBuffer && resource.getFile()!=null && resource.length()<Integer.MAX_VALUE) 
@@ -421,8 +421,9 @@ public class ResourceCache implements HttpContent.Factory
             _contentLengthValue=exists?(int)resource.length():0;
             _contentLength=new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH,Long.toString(_contentLengthValue));
             
-            _cachedSize.addAndGet(_contentLengthValue);
-            _cachedFiles.incrementAndGet();
+            if (_cachedFiles.incrementAndGet()>_maxCachedFiles)
+                shrinkCache();
+            
             _lastAccessed=System.currentTimeMillis();
             
             _etag=ResourceCache.this._etags?new PreEncodedHttpField(HttpHeader.ETAG,resource.getWeakETag()):null;
@@ -487,8 +488,14 @@ public class ResourceCache implements HttpContent.Factory
         /* ------------------------------------------------------------ */
         protected void invalidate()
         {
-            // Invalidate it
-            _cachedSize.addAndGet(-_contentLengthValue);
+            ByteBuffer indirect=_indirectBuffer.get();
+            if (indirect!=null && _indirectBuffer.compareAndSet(indirect,null))
+                _cachedSize.addAndGet(-BufferUtil.length(indirect));
+            
+            ByteBuffer direct=_directBuffer.get();
+            if (direct!=null && !BufferUtil.isMappedBuffer(direct) && _directBuffer.compareAndSet(direct,null))
+                _cachedSize.addAndGet(-BufferUtil.length(direct));
+
             _cachedFiles.decrementAndGet();
             _resource.close();
         }
@@ -506,7 +513,6 @@ public class ResourceCache implements HttpContent.Factory
         {
             return _lastModified==null?null:_lastModified.getValue();
         }
-
 
         /* ------------------------------------------------------------ */
         @Override
@@ -569,7 +575,11 @@ public class ResourceCache implements HttpContent.Factory
                 if (buffer2==null)
                     LOG.warn("Could not load "+this);
                 else if (_indirectBuffer.compareAndSet(null,buffer2))
+                {
                     buffer=buffer2;
+                    if (_cachedSize.addAndGet(BufferUtil.length(buffer))>_maxCacheSize)
+                        shrinkCache();
+                }
                 else
                     buffer=_indirectBuffer.get();
             }
@@ -578,7 +588,6 @@ public class ResourceCache implements HttpContent.Factory
             return buffer.slice();
         }
         
-
         /* ------------------------------------------------------------ */
         @Override
         public ByteBuffer getDirectBuffer()
@@ -591,7 +600,12 @@ public class ResourceCache implements HttpContent.Factory
                 if (buffer2==null)
                     LOG.warn("Could not load "+this);
                 else if (_directBuffer.compareAndSet(null,buffer2))
+                {
                     buffer=buffer2;
+
+                    if (!BufferUtil.isMappedBuffer(buffer) && _cachedSize.addAndGet(BufferUtil.length(buffer))>_maxCacheSize)
+                        shrinkCache(); 
+                }
                 else
                     buffer=_directBuffer.get();
             }
