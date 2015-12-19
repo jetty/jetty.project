@@ -33,12 +33,28 @@ import org.eclipse.jetty.util.component.Container;
  */
 public interface Connection extends Closeable
 {
+    /**
+     * <p>Adds a listener of connection events.</p>
+     *
+     * @param listener the listener to add
+     */
     public void addListener(Listener listener);
 
+    /**
+     * <p>Removes a listener of connection events.</p>
+     *
+     * @param listener the listener to remove
+     */
+    public void removeListener(Listener listener);
+
+    /**
+     * <p>Callback method invoked when this connection is opened.</p>
+     * <p>Creators of the connection implementation are responsible for calling this method.</p>
+     */
     public void onOpen();
 
     /**
-     * <p>Callback method invoked when this {@link Connection} is closed.</p>
+     * <p>Callback method invoked when this connection is closed.</p>
      * <p>Creators of the connection implementation are responsible for calling this method.</p>
      */
     public void onClose();
@@ -47,7 +63,7 @@ public interface Connection extends Closeable
      * @return the {@link EndPoint} associated with this {@link Connection}
      */
     public EndPoint getEndPoint();
-    
+
     /**
      * <p>Performs a logical close of this connection.</p>
      * <p>For simple connections, this may just mean to delegate the close to the associated
@@ -62,23 +78,24 @@ public interface Connection extends Closeable
     public long getBytesIn();
     public long getBytesOut();
     public long getCreatedTimeStamp();
-    
+
     public interface UpgradeFrom extends Connection
     {
-        /* ------------------------------------------------------------ */
-        /** Take the input buffer from the connection on upgrade.
+        /**
+         * <p>Takes the input buffer from the connection on upgrade.</p>
          * <p>This method is used to take any unconsumed input from
-         * a connection during an upgrade.
+         * a connection during an upgrade.</p>
+         *
          * @return A buffer of unconsumed input. The caller must return the buffer
          * to the bufferpool when consumed and this connection must not.
          */
         ByteBuffer onUpgradeFrom();
     }
-    
+
     public interface UpgradeTo extends Connection
     {
         /**
-         * <p>Callback method invoked when this {@link Connection} is upgraded.</p>
+         * <p>Callback method invoked when this connection is upgraded.</p>
          * <p>This must be called before {@link #onOpen()}.</p>
          * @param prefilled An optional buffer that can contain prefilled data. Typically this
          * results from an upgrade of one protocol to the other where the old connection has buffered
@@ -87,10 +104,8 @@ public interface Connection extends Closeable
          */
         void onUpgradeTo(ByteBuffer prefilled);
     }
-    
-    
-    /* ------------------------------------------------------------ */
-    /** 
+
+    /**
      * <p>A Listener for connection events.</p>
      * <p>Listeners can be added to a {@link Connection} to get open and close events.
      * The AbstractConnectionFactory implements a pattern where objects implement

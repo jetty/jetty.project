@@ -61,6 +61,12 @@ public abstract class AbstractConnection implements Connection
         listeners.add(listener);
     }
 
+    @Override
+    public void removeListener(Listener listener)
+    {
+        listeners.remove(listener);
+    }
+
     public int getInputBufferSize()
     {
         return _inputBufferSize;
