@@ -172,6 +172,12 @@ public class SslConnection extends AbstractConnection
     }
 
     @Override
+    public boolean onIdleExpired()
+    {
+        return getDecryptedEndPoint().getConnection().onIdleExpired();
+    }
+
+    @Override
     public void onFillable()
     {
         // onFillable means that there are encrypted bytes ready to be filled.
@@ -328,15 +334,27 @@ public class SslConnection extends AbstractConnection
 
         public DecryptedEndPoint()
         {
-            super(null,getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
-            setIdleTimeout(getEndPoint().getIdleTimeout());
+            // Disable idle timeout checking: no scheduler and -1 timeout for this instance.
+            super(null, getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
+            super.setIdleTimeout(-1);
+        }
+
+        @Override
+        public long getIdleTimeout()
+        {
+            return getEndPoint().getIdleTimeout();
         }
 
         @Override
         public void setIdleTimeout(long idleTimeout)
         {
-            super.setIdleTimeout(idleTimeout);
             getEndPoint().setIdleTimeout(idleTimeout);
+        }
+
+        @Override
+        public boolean isOpen()
+        {
+            return getEndPoint().isOpen();
         }
 
         @Override
@@ -443,10 +461,10 @@ public class SslConnection extends AbstractConnection
                         }
                     }
                 }
-                
+
                 if (fillable)
                     getExecutor().execute(_runFillable);
-                else 
+                else
                     ensureFillInterested();
             }
         }
@@ -710,13 +728,13 @@ public class SslConnection extends AbstractConnection
             // will return 0 (even if some handshake bytes were flushed and filled).
             // it is the applications responsibility to call flush again - either in a busy loop
             // or better yet by using EndPoint#write to do the flushing.
-            
+
             if (DEBUG)
             {
                 for (ByteBuffer b : appOuts)
                     LOG.debug("{} flush {}", SslConnection.this, BufferUtil.toHexSummary(b));
             }
-            
+
             try
             {
                 if (_cannotAcceptMoreAppDataToFlush)
@@ -746,7 +764,7 @@ public class SslConnection extends AbstractConnection
                     }
                     if (DEBUG)
                         LOG.debug("{} wrap {}", SslConnection.this, wrapResult.toString().replace('\n',' '));
-                    
+
                     Status wrapResultStatus = wrapResult.getStatus();
 
                     boolean allConsumed=true;
@@ -906,7 +924,7 @@ public class SslConnection extends AbstractConnection
             if (!SslConnection.this.isFillInterested())
                 SslConnection.this.fillInterested();
         }
-        
+
         @Override
         public boolean isOutputShutdown()
         {
@@ -920,12 +938,6 @@ public class SslConnection extends AbstractConnection
             shutdownOutput();
             getEndPoint().close();
             super.close();
-        }
-
-        @Override
-        public boolean isOpen()
-        {
-            return getEndPoint().isOpen();
         }
 
         @Override

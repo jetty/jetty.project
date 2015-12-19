@@ -221,6 +221,12 @@ public abstract class AbstractConnection implements Connection
     }
 
     @Override
+    public boolean onIdleExpired()
+    {
+        return true;
+    }
+
+    @Override
     public int getMessagesIn()
     {
         return -1;

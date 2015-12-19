@@ -73,6 +73,19 @@ public interface Connection extends Closeable
     @Override
     public void close();
 
+    /**
+     * <p>Callback method invoked upon an idle timeout event.</p>
+     * <p>Implementations of this method may return true to indicate that the idle timeout
+     * handling should proceed normally, typically failing the EndPoint and causing it to
+     * be closed.</p>
+     * <p>When false is returned, the handling of the idle timeout event is halted
+     * immediately and the EndPoint left in the state it was before the idle timeout event.</p>
+     *
+     * @return true to let the EndPoint handle the idle timeout,
+     *         false to tell the EndPoint to halt the handling of the idle timeout.
+     */
+    public boolean onIdleExpired();
+
     public int getMessagesIn();
     public int getMessagesOut();
     public long getBytesIn();
