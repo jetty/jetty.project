@@ -76,7 +76,6 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
         close(new AsynchronousCloseException());
     }
 
-    @Override
     protected void close(Throwable failure)
     {
         // First close then abort, to be sure that the connection cannot be reused

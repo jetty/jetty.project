@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client.http;
 
 import java.nio.channels.AsynchronousCloseException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -95,12 +96,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     }
 
     @Override
-    protected boolean onReadTimeout()
+    public boolean onIdleExpired()
     {
         boolean close = delegate.onIdleTimeout();
-        if (!close && !isClosed())
-            fillInterested();
-        return close;
+        if (close)
+            close(new TimeoutException("Idle timeout " + getEndPoint().getIdleTimeout() + "ms"));
+        return false;
     }
 
     @Override
@@ -204,12 +205,6 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         public void close()
         {
             HttpConnectionOverHTTP.this.close();
-        }
-
-        @Override
-        protected void close(Throwable failure)
-        {
-            HttpConnectionOverHTTP.this.close(failure);
         }
 
         @Override

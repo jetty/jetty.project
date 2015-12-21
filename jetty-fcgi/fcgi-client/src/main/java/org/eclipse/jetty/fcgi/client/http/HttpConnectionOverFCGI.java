@@ -24,6 +24,7 @@ import java.nio.channels.AsynchronousCloseException;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -190,12 +191,14 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     }
 
     @Override
-    protected boolean onReadTimeout()
+    public boolean onIdleExpired()
     {
         boolean close = delegate.onIdleTimeout();
-        if (!close && !isClosed())
-            fillInterested();
-        return close;
+        if (multiplexed)
+            close &= isFillInterested();
+        if (close)
+            close(new TimeoutException("Idle timeout " + getEndPoint().getIdleTimeout() + "ms"));
+        return false;
     }
 
     protected void release(HttpChannelOverFCGI channel)
@@ -324,7 +327,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             HttpConnectionOverFCGI.this.close();
         }
 
-        @Override
         protected void close(Throwable failure)
         {
             HttpConnectionOverFCGI.this.close(failure);

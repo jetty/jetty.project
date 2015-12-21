@@ -169,7 +169,7 @@ public class HttpReceiverOverHTTPTest
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         connection.getHttpChannel().receive();
         // Simulate an idle timeout
-        connection.onReadTimeout();
+        connection.onIdleExpired();
 
         try
         {

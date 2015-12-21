@@ -832,7 +832,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
      *   stuck because of TCP congestion), therefore we terminate.
      *   See {@link #onGoAway(GoAwayFrame)}.
      *
-     * @return true if the session has been closed, false otherwise
+     * @return true if the session should be closed, false otherwise
      * @see #onGoAway(GoAwayFrame)
      * @see #close(int, String, Callback)
      * @see #onShutdown()
@@ -844,22 +844,17 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             case NOT_CLOSED:
             {
-                if (notifyIdleTimeout(this))
-                {
-                    close(ErrorCode.NO_ERROR.code, "idle_timeout", Callback.NOOP);
-                    return true;
-                }
-                return false;
+                return notifyIdleTimeout(this);
             }
             case LOCALLY_CLOSED:
             case REMOTELY_CLOSED:
             {
                 abort(new TimeoutException());
-                return true;
+                return false;
             }
             default:
             {
-                return true;
+                return false;
             }
         }
     }

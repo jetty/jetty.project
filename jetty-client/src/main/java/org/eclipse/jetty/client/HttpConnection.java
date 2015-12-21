@@ -220,12 +220,8 @@ public abstract class HttpConnection implements Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Idle timeout state {} - {}", idleTimeoutState, this);
-        if (idleTimeoutState.compareAndSet(0, -1))
-            close(new TimeoutException("idle_timeout"));
-        return false;
+        return idleTimeoutState.compareAndSet(0, -1);
     }
-
-    protected abstract void close(Throwable failure);
 
     @Override
     public String toString()

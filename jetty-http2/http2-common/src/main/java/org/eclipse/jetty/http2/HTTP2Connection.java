@@ -113,12 +113,12 @@ public class HTTP2Connection extends AbstractConnection
     }
 
     @Override
-    protected boolean onReadTimeout()
+    public boolean onIdleExpired()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
-        if (!session.onIdleTimeout())
-            fillInterested();
+        boolean close = session.onIdleTimeout();
+        boolean idle = isFillInterested();
+        if (close && idle)
+            session.close(ErrorCode.NO_ERROR.code, "idle_timeout", Callback.NOOP);
         return false;
     }
 
