@@ -181,7 +181,7 @@ public class ResourceCache implements HttpContent.Factory
      * Get either a valid entry object or create a new one if possible.
      *
      * @param pathInContext The key into the cache
-     * @param maxBuffer The maximum buffer to allocated for this request.  For cached content, a larger buffer may have
+     * @param maxBufferSize The maximum buffer to allocated for this request.  For cached content, a larger buffer may have
      * previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
      * @return The entry matching <code>pathInContext</code>, or a new entry 
      * if no matching entry was found. If the content exists but is not cachable, 

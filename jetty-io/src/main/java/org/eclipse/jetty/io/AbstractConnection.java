@@ -61,6 +61,12 @@ public abstract class AbstractConnection implements Connection
         listeners.add(listener);
     }
 
+    @Override
+    public void removeListener(Listener listener)
+    {
+        listeners.remove(listener);
+    }
+
     public int getInputBufferSize()
     {
         return _inputBufferSize;
@@ -212,6 +218,12 @@ public abstract class AbstractConnection implements Connection
     public void close()
     {
         getEndPoint().close();
+    }
+
+    @Override
+    public boolean onIdleExpired()
+    {
+        return true;
     }
 
     @Override

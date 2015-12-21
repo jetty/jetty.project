@@ -320,13 +320,25 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             }
             else
             {
-                send(connection, exchange);
+                SendFailure result = send(connection, exchange);
+                if (result != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Send failed {} for {}", result, exchange);
+                    if (result.retry)
+                    {
+                        if (enqueue(getHttpExchanges(), exchange))
+                            return true;
+                    }
+
+                    request.abort(result.failure);
+                }
             }
             return getHttpExchanges().peek() != null;
         }
     }
 
-    protected abstract void send(Connection connection, HttpExchange exchange);
+    protected abstract SendFailure send(Connection connection, HttpExchange exchange);
 
     public void newConnection(Promise<Connection> promise)
     {

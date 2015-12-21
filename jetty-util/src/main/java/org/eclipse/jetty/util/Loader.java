@@ -92,4 +92,3 @@ public class Loader
         return loader==null ? ResourceBundle.getBundle(name, locale) : ResourceBundle.getBundle(name, locale, loader);
     }
 }
-
