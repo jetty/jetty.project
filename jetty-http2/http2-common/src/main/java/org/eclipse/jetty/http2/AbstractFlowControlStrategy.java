@@ -20,9 +20,12 @@ package org.eclipse.jetty.http2;
 
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+@ManagedObject
 public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
 {
     protected static final Logger LOG = Log.getLogger(FlowControlStrategy.class);
@@ -36,12 +39,14 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
         this.initialStreamRecvWindow = DEFAULT_WINDOW_SIZE;
     }
 
-    protected int getInitialStreamSendWindow()
+    @ManagedAttribute(value = "The initial size of stream's flow control send window", readonly = true)
+    public int getInitialStreamSendWindow()
     {
         return initialStreamSendWindow;
     }
 
-    protected int getInitialStreamRecvWindow()
+    @ManagedAttribute(value = "The initial size of stream's flow control receive window", readonly = true)
+    public int getInitialStreamRecvWindow()
     {
         return initialStreamRecvWindow;
     }
@@ -102,6 +107,8 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
                 int oldSize = stream.updateSendWindow(delta);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Updated stream send window {} -> {} for {}", oldSize, oldSize + delta, stream);
+                if (oldSize <= 0)
+                    onStreamUnstalled(stream);
             }
         }
         else
@@ -109,6 +116,8 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
             int oldSize = session.updateSendWindow(delta);
             if (LOG.isDebugEnabled())
                 LOG.debug("Updated session send window {} -> {} for {}", oldSize, oldSize + delta, session);
+            if (oldSize <= 0)
+                onSessionUnstalled(session);
         }
     }
 
@@ -165,5 +174,17 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Stream stalled {}", stream);
+    }
+
+    protected void onSessionUnstalled(ISession session)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Session unstalled {}", session);
+    }
+
+    protected void onStreamUnstalled(IStream stream)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stream unstalled {}", stream);
     }
 }

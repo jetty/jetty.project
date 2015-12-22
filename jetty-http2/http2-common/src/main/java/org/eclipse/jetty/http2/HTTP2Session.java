@@ -54,11 +54,15 @@ import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public abstract class HTTP2Session implements ISession, Parser.Listener
+@ManagedObject
+public abstract class HTTP2Session extends ContainerLifeCycle implements ISession, Parser.Listener
 {
     private static final Logger LOG = Log.getLogger(HTTP2Session.class);
 
@@ -73,7 +77,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private final Scheduler scheduler;
     private final EndPoint endPoint;
     private final Generator generator;
-    private final Listener listener;
+    private final Session.Listener listener;
     private final FlowControlStrategy flowControl;
     private final HTTP2Flusher flusher;
     private int maxLocalStreams;
@@ -81,7 +85,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private long streamIdleTimeout;
     private boolean pushEnabled;
 
-    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControlStrategy flowControl, int initialStreamId)
+    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
         this.scheduler = scheduler;
         this.endPoint = endPoint;
@@ -98,6 +102,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         this.pushEnabled = true; // SPEC: by default, push is enabled.
     }
 
+    @Override
+    protected void doStart() throws Exception
+    {
+        addBean(flowControl);
+        super.doStart();
+    }
+
+    @ManagedAttribute(value = "The flow control strategy", readonly = true)
     public FlowControlStrategy getFlowControlStrategy()
     {
         return flowControl;
@@ -123,6 +135,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         this.maxRemoteStreams = maxRemoteStreams;
     }
 
+    @ManagedAttribute("The stream's idle timeout")
     public long getStreamIdleTimeout()
     {
         return streamIdleTimeout;
@@ -709,17 +722,25 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         return result;
     }
 
+    @ManagedAttribute("The number of active streams")
+    public int getStreamCount()
+    {
+        return streams.size();
+    }
+
     @Override
     public IStream getStream(int streamId)
     {
         return streams.get(streamId);
     }
 
+    @ManagedAttribute(value = "The flow control send window", readonly = true)
     public int getSendWindow()
     {
         return sendWindow.get();
     }
 
+    @ManagedAttribute(value = "The flow control receive window", readonly = true)
     public int getRecvWindow()
     {
         return recvWindow.get();
@@ -753,6 +774,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     }
 
     @Override
+    @ManagedAttribute(value = "Whether HTTP/2 push is enabled", readonly = true)
     public boolean isPushEnabled()
     {
         return pushEnabled;
