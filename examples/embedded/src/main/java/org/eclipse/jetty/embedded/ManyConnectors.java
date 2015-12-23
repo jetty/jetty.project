@@ -97,7 +97,10 @@ public class ManyConnectors
         // resolve the https connection before handing control over to the Jetty
         // Server.
         HttpConfiguration https_config = new HttpConfiguration(http_config);
-        https_config.addCustomizer(new SecureRequestCustomizer());
+        SecureRequestCustomizer src = new SecureRequestCustomizer();
+        src.setStsMaxAge(2000);
+        src.setStsIncludeSubDomains(true);
+        https_config.addCustomizer(src);
 
         // HTTPS connector
         // We create a second ServerConnector, passing in the http configuration
