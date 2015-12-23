@@ -45,6 +45,12 @@ http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/
 ## Whether request host names are checked to match any SNI names
 # jetty.ssl.sniHostCheck=true
 
+## max age in seconds for a Strict-Transport-Security response header (default -1)
+# jetty.ssl.stsMaxAgeSeconds=31536000
+
+## include subdomain property in any Strict-Transport-Security header (default false)
+# jetty.ssl.stsIncludeSubdomains=true
+
 ### SslContextFactory Configuration
 ## Note that OBF passwords are not secure, just protected from casual observation
 ## See http://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
