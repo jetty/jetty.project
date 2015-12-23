@@ -926,6 +926,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     // occurred, we need to call onWritePossible to tell async
                     // producer that the last write completed.
                     // So fall through
+                case PENDING:
+                case UNREADY:
                 case READY:
                     try
                     {
