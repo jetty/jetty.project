@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.http2;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -30,6 +33,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
 {
     protected static final Logger LOG = Log.getLogger(FlowControlStrategy.class);
 
+    private final AtomicLong sessionStalls = new AtomicLong();
     private int initialStreamSendWindow;
     private int initialStreamRecvWindow;
 
@@ -148,13 +152,19 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
             return;
 
         ISession session = stream.getSession();
-        int oldSize = session.updateSendWindow(-length);
+        int oldSessionWindow = session.updateSendWindow(-length);
+        int newSessionWindow = oldSessionWindow - length;
         if (LOG.isDebugEnabled())
-            LOG.debug("Updated session send window {} -> {} for {}", oldSize, oldSize - length, session);
+            LOG.debug("Updated session send window {} -> {} for {}", oldSessionWindow, newSessionWindow, session);
+        if (newSessionWindow <= 0)
+            onSessionStalled(session);
 
-        oldSize = stream.updateSendWindow(-length);
+        int oldStreamWindow = stream.updateSendWindow(-length);
+        int newStreamWindow = oldStreamWindow - length;
         if (LOG.isDebugEnabled())
-            LOG.debug("Updated stream send window {} -> {} for {}", oldSize, oldSize - length, stream);
+            LOG.debug("Updated stream send window {} -> {} for {}", oldStreamWindow, newStreamWindow, stream);
+        if (newStreamWindow <= 0)
+            onStreamStalled(stream);
     }
 
     @Override
@@ -162,15 +172,14 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     {
     }
 
-    @Override
-    public void onSessionStalled(ISession session)
+    protected void onSessionStalled(ISession session)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Session stalled {}", session);
+        sessionStalls.incrementAndGet();
     }
 
-    @Override
-    public void onStreamStalled(IStream stream)
+    protected void onStreamStalled(IStream stream)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Stream stalled {}", stream);
@@ -186,5 +195,17 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Stream unstalled {}", stream);
+    }
+
+    @ManagedAttribute(value = "The number of times the session flow control has stalled", readonly = true)
+    public long getSessionStallCount()
+    {
+        return sessionStalls.get();
+    }
+
+    @ManagedOperation(value = "Resets the statistics", impact = "ACTION")
+    public void reset()
+    {
+        sessionStalls.set(0);
     }
 }

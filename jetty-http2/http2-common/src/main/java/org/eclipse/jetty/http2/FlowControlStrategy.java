@@ -41,8 +41,4 @@ public interface FlowControlStrategy
     public void onDataSending(IStream stream, int length);
 
     public void onDataSent(IStream stream, int length);
-
-    public void onSessionStalled(ISession session);
-
-    public void onStreamStalled(IStream stream);
 }
