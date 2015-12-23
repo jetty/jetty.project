@@ -148,13 +148,19 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
             return;
 
         ISession session = stream.getSession();
-        int oldSize = session.updateSendWindow(-length);
+        int oldSessionWindow = session.updateSendWindow(-length);
+        int newSessionWindow = oldSessionWindow - length;
         if (LOG.isDebugEnabled())
-            LOG.debug("Updated session send window {} -> {} for {}", oldSize, oldSize - length, session);
+            LOG.debug("Updated session send window {} -> {} for {}", oldSessionWindow, newSessionWindow, session);
+        if (newSessionWindow <= 0)
+            onSessionStalled(session);
 
-        oldSize = stream.updateSendWindow(-length);
+        int oldStreamWindow = stream.updateSendWindow(-length);
+        int newStreamWindow = oldStreamWindow - length;
         if (LOG.isDebugEnabled())
-            LOG.debug("Updated stream send window {} -> {} for {}", oldSize, oldSize - length, stream);
+            LOG.debug("Updated stream send window {} -> {} for {}", oldStreamWindow, newStreamWindow, stream);
+        if (newStreamWindow <= 0)
+            onStreamStalled(stream);
     }
 
     @Override
@@ -162,15 +168,13 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     {
     }
 
-    @Override
-    public void onSessionStalled(ISession session)
+    protected void onSessionStalled(ISession session)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Session stalled {}", session);
     }
 
-    @Override
-    public void onStreamStalled(IStream stream)
+    protected void onStreamStalled(IStream stream)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Stream stalled {}", stream);
