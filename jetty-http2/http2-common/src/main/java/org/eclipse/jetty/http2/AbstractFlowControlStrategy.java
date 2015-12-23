@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.http2;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -30,6 +33,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
 {
     protected static final Logger LOG = Log.getLogger(FlowControlStrategy.class);
 
+    private final AtomicLong sessionStalls = new AtomicLong();
     private int initialStreamSendWindow;
     private int initialStreamRecvWindow;
 
@@ -172,6 +176,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Session stalled {}", session);
+        sessionStalls.incrementAndGet();
     }
 
     protected void onStreamStalled(IStream stream)
@@ -190,5 +195,17 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Stream unstalled {}", stream);
+    }
+
+    @ManagedAttribute(value = "The number of times the session flow control has stalled", readonly = true)
+    public long getSessionStallCount()
+    {
+        return sessionStalls.get();
+    }
+
+    @ManagedOperation(value = "Resets the statistics", impact = "ACTION")
+    public void reset()
+    {
+        sessionStalls.set(0);
     }
 }
