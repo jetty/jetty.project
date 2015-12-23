@@ -140,13 +140,15 @@ public class HTTP2Client extends ContainerLifeCycle
         if (connectionFactory == null)
         {
             HTTP2ClientConnectionFactory h2 = new HTTP2ClientConnectionFactory();
-            ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), h2, getProtocols());
             setClientConnectionFactory((endPoint, context) ->
             {
                 ClientConnectionFactory factory = h2;
                 SslContextFactory sslContextFactory = (SslContextFactory)context.get(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
                 if (sslContextFactory != null)
+                {
+                    ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), h2, getProtocols());
                     factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), alpn);
+                }
                 return factory.newConnection(endPoint, context);
             });
         }
