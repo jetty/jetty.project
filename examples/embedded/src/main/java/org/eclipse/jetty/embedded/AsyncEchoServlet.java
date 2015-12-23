@@ -34,6 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 
 public class AsyncEchoServlet extends HttpServlet
 {
+    private static final long serialVersionUID = 1L;
+
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
@@ -62,17 +64,22 @@ public class AsyncEchoServlet extends HttpServlet
         @Override
         public void onDataAvailable() throws IOException
         {
-            onWritePossible();
+            handleAsyncIO();
         }
 
         @Override
         public void onAllDataRead() throws IOException
         {
-            onWritePossible();
+            handleAsyncIO();
         }
 
         @Override
         public void onWritePossible() throws IOException
+        {
+            handleAsyncIO();
+        }
+        
+        private void handleAsyncIO() throws IOException
         {
             // This method is called:
             //   1) after first registering a WriteListener (ready for first write)
@@ -81,8 +88,17 @@ public class AsyncEchoServlet extends HttpServlet
             //   4) from an input callback 
            
             // We should try to read, only if we are able to write!
-            while (output.isReady() && input.isReady())
+            while (true)
             {
+                if (!output.isReady())
+                    // Don't even try to read anything until it is possible to write something,
+                    // when onWritePossible will be called
+                    break;
+
+                if (!input.isReady())
+                    // Nothing available to read, so wait for another call to onDataAvailable
+                    break;
+                
                 int read = input.read(buffer);
                 if (read<0)
                 {
@@ -100,7 +116,7 @@ public class AsyncEchoServlet extends HttpServlet
         @Override
         public void onError(Throwable failure)
         {
-            failure.printStackTrace();
+            new Throwable("onError",failure).printStackTrace();
             asyncContext.complete();
         }
     }
