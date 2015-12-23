@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,9 +57,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
 
-    private final Locker _locker = new Locker();
-    private boolean _selecting = false;
-    private final Queue<Runnable> _actions = new ArrayDeque<>();
+    private final AtomicBoolean _selecting = new AtomicBoolean(false);
+    private final ConcurrentLinkedDeque<Runnable> _actions = new ConcurrentLinkedDeque<>();
     private final SelectorManager _selectorManager;
     private final int _id;
     private final ExecutionStrategy _strategy;
@@ -110,16 +110,13 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             LOG.debug("Queued change {} on {}", change, this);
 
         Selector selector = null;
-        try (Locker.Lock lock = _locker.lock())
+        _actions.offer(change);
+
+        if (_selecting.getAndSet(false))
         {
-            _actions.offer(change);
-            if (_selecting)
-            {
-                selector = _selector;
-                // To avoid the extra select wakeup.
-                _selecting = false;
-            }
+            selector = _selector;
         }
+
         if (selector != null)
             selector.wakeup();
     }
@@ -180,16 +177,12 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         {
             while (true)
             {
-                Runnable action;
-                try (Locker.Lock lock = _locker.lock())
+                final Runnable action = _actions.poll();
+                if (action == null)
                 {
-                    action = _actions.poll();
-                    if (action == null)
-                    {
-                        // No more actions, so we need to select
-                        _selecting = true;
-                        return null;
-                    }
+                    // No more actions, so we need to select
+                    _selecting.set(true);
+                    return null;
                 }
 
                 if (action instanceof Product)
@@ -227,11 +220,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector loop woken up from select, {}/{} selected", selected, selector.keys().size());
 
-                    try (Locker.Lock lock = _locker.lock())
-                    {
-                        // finished selecting
-                        _selecting = false;
-                    }
+                    _selecting.set(false);
 
                     _keys = selector.selectedKeys();
                     _cursor = _keys.iterator();
