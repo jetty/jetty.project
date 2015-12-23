@@ -39,6 +39,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
@@ -50,6 +51,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public static final String SESSION_LISTENER_CONTEXT_KEY = "http2.client.sessionListener";
     public static final String SESSION_PROMISE_CONTEXT_KEY = "http2.client.sessionPromise";
 
+    private final Connection.Listener connectionListener = new ConnectionListener();
     private int initialSessionRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
 
     @Override
@@ -67,7 +69,9 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         FlowControlStrategy flowControl = newFlowControlStrategy();
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
-        return new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, 8192, promise, listener);
+        HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, client.getInputBufferSize(), promise, listener);
+        connection.addListener(connectionListener);
+        return connection;
     }
 
     protected FlowControlStrategy newFlowControlStrategy()
@@ -75,11 +79,19 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         return new BufferingFlowControlStrategy(0.5F);
     }
 
+    /**
+     * @deprecated use {@link HTTP2Client#getInitialSessionRecvWindow()} instead
+     */
+    @Deprecated
     public int getInitialSessionRecvWindow()
     {
         return initialSessionRecvWindow;
     }
 
+    /**
+     * @deprecated use {@link HTTP2Client#setInitialSessionRecvWindow(int)} instead
+     */
+    @Deprecated
     public void setInitialSessionRecvWindow(int initialSessionRecvWindow)
     {
         this.initialSessionRecvWindow = initialSessionRecvWindow;
@@ -108,8 +120,14 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);
+
             ISession session = getSession();
-            int windowDelta = getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+
+            int sessionRecv = client.getInitialSessionRecvWindow();
+            if (sessionRecv == FlowControlStrategy.DEFAULT_WINDOW_SIZE)
+                sessionRecv = initialSessionRecvWindow;
+
+            int windowDelta = sessionRecv - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
             if (windowDelta > 0)
             {
                 session.updateRecvWindow(windowDelta);
@@ -136,6 +154,23 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         {
             close();
             promise.failed(x);
+        }
+    }
+
+    private class ConnectionListener implements Connection.Listener
+    {
+        @Override
+        public void onOpened(Connection connection)
+        {
+            HTTP2ClientConnection http2Connection = (HTTP2ClientConnection)connection;
+            http2Connection.client.addManaged((LifeCycle)http2Connection.getSession());
+        }
+
+        @Override
+        public void onClosed(Connection connection)
+        {
+            HTTP2ClientConnection http2Connection = (HTTP2ClientConnection)connection;
+            http2Connection.client.removeBean(http2Connection.getSession());
         }
     }
 }

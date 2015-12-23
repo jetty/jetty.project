@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
@@ -71,6 +72,7 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
             client.setByteBufferPool(httpClient.getByteBufferPool());
             client.setConnectTimeout(httpClient.getConnectTimeout());
             client.setIdleTimeout(httpClient.getIdleTimeout());
+            client.setInputBufferSize(httpClient.getResponseBufferSize());
         }
         addBean(client);
         super.doStart();
@@ -158,6 +160,14 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         public void failed(Throwable failure)
         {
             promise.failed(failure);
+        }
+
+        @Override
+        public Map<Integer, Integer> onPreface(Session session)
+        {
+            Map<Integer, Integer> settings = new HashMap<>();
+            settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, client.getInitialStreamRecvWindow());
+            return settings;
         }
 
         @Override
