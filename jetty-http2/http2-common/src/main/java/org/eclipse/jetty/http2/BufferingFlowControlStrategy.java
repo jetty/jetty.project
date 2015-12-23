@@ -26,6 +26,8 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
  * <p>A flow control strategy that accumulates updates and emits window control
@@ -49,6 +51,7 @@ import org.eclipse.jetty.util.Callback;
  * <p>The application consumes the remaining 15, so now SB=15, and no window
  * control frame is emitted.</p>
  */
+@ManagedObject
 public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
 {
     private final AtomicInteger maxSessionRecvWindow = new AtomicInteger(DEFAULT_WINDOW_SIZE);
@@ -65,6 +68,12 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
     {
         super(initialStreamSendWindow);
         this.bufferRatio = bufferRatio;
+    }
+
+    @ManagedAttribute("The ratio between the receive buffer and the consume buffer")
+    public float getBufferRatio()
+    {
+        return bufferRatio;
     }
 
     @Override

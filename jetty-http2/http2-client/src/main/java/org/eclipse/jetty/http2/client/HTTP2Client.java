@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
+import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -41,6 +42,8 @@ import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -107,6 +110,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * client.stop();
  * </pre>
  */
+@ManagedObject
 public class HTTP2Client extends ContainerLifeCycle
 {
     private Executor executor;
@@ -117,7 +121,10 @@ public class HTTP2Client extends ContainerLifeCycle
     private int selectors = 1;
     private long idleTimeout = 30000;
     private long connectTimeout = 10000;
+    private int inputBufferSize = 8192;
     private List<String> protocols = Arrays.asList("h2", "h2-17", "h2-16", "h2-15", "h2-14");
+    private int initialSessionRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+    private int initialStreamRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
 
     @Override
     protected void doStart() throws Exception
@@ -134,13 +141,15 @@ public class HTTP2Client extends ContainerLifeCycle
         if (connectionFactory == null)
         {
             HTTP2ClientConnectionFactory h2 = new HTTP2ClientConnectionFactory();
-            ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), h2, getProtocols());
             setClientConnectionFactory((endPoint, context) ->
             {
                 ClientConnectionFactory factory = h2;
                 SslContextFactory sslContextFactory = (SslContextFactory)context.get(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
                 if (sslContextFactory != null)
+                {
+                    ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), h2, getProtocols());
                     factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), alpn);
+                }
                 return factory.newConnection(endPoint, context);
             });
         }
@@ -204,6 +213,7 @@ public class HTTP2Client extends ContainerLifeCycle
         this.connectionFactory = connectionFactory;
     }
 
+    @ManagedAttribute("The number of selectors")
     public int getSelectors()
     {
         return selectors;
@@ -214,6 +224,7 @@ public class HTTP2Client extends ContainerLifeCycle
         this.selectors = selectors;
     }
 
+    @ManagedAttribute("The idle timeout in milliseconds")
     public long getIdleTimeout()
     {
         return idleTimeout;
@@ -224,6 +235,7 @@ public class HTTP2Client extends ContainerLifeCycle
         this.idleTimeout = idleTimeout;
     }
 
+    @ManagedAttribute("The connect timeout in milliseconds")
     public long getConnectTimeout()
     {
         return connectTimeout;
@@ -237,6 +249,18 @@ public class HTTP2Client extends ContainerLifeCycle
             selector.setConnectTimeout(connectTimeout);
     }
 
+    @ManagedAttribute("The size of the buffer used to read from the network")
+    public int getInputBufferSize()
+    {
+        return inputBufferSize;
+    }
+
+    public void setInputBufferSize(int inputBufferSize)
+    {
+        this.inputBufferSize = inputBufferSize;
+    }
+
+    @ManagedAttribute("The ALPN protocol list")
     public List<String> getProtocols()
     {
         return protocols;
@@ -245,6 +269,28 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setProtocols(List<String> protocols)
     {
         this.protocols = protocols;
+    }
+
+    @ManagedAttribute("The initial size of session's flow control receive window")
+    public int getInitialSessionRecvWindow()
+    {
+        return initialSessionRecvWindow;
+    }
+
+    public void setInitialSessionRecvWindow(int initialSessionRecvWindow)
+    {
+        this.initialSessionRecvWindow = initialSessionRecvWindow;
+    }
+
+    @ManagedAttribute("The initial size of stream's flow control receive window")
+    public int getInitialStreamRecvWindow()
+    {
+        return initialStreamRecvWindow;
+    }
+
+    public void setInitialStreamRecvWindow(int initialStreamRecvWindow)
+    {
+        this.initialStreamRecvWindow = initialStreamRecvWindow;
     }
 
     public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
