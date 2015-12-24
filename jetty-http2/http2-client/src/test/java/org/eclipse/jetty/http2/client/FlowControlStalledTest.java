@@ -27,7 +27,6 @@ import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -67,19 +66,14 @@ public class FlowControlStalledTest
     protected HTTP2Client client;
     protected Server server;
 
-    protected void start(Supplier<FlowControlStrategy> flowControlFactory, ServerSessionListener listener) throws Exception
+    protected void start(FlowControlStrategy.Factory flowControlFactory, ServerSessionListener listener) throws Exception
     {
         QueuedThreadPool serverExecutor = new QueuedThreadPool();
         serverExecutor.setName("server");
         server = new Server(serverExecutor);
-        connector = new ServerConnector(server, new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener)
-        {
-            @Override
-            protected FlowControlStrategy newFlowControlStrategy()
-            {
-                return flowControlFactory.get();
-            }
-        });
+        RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener);
+        connectionFactory.setFlowControlStrategyFactory(flowControlFactory);
+        connector = new ServerConnector(server, connectionFactory);
         server.addConnector(connector);
         server.start();
 
@@ -87,14 +81,7 @@ public class FlowControlStalledTest
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
         client.setExecutor(clientExecutor);
-        client.setClientConnectionFactory(new HTTP2ClientConnectionFactory()
-        {
-            @Override
-            protected FlowControlStrategy newFlowControlStrategy()
-            {
-                return flowControlFactory.get();
-            }
-        });
+        client.setFlowControlStrategyFactory(flowControlFactory);
         client.start();
     }
 

@@ -105,7 +105,7 @@ public abstract class AbstractTest
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(provideClientTransport(transport), sslContextFactory);
+        client = newHttpClient(provideClientTransport(transport), sslContextFactory);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         client.start();
@@ -185,6 +185,11 @@ public abstract class AbstractTest
                 throw new IllegalArgumentException();
             }
         }
+    }
+
+    protected HttpClient newHttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
+    {
+        return new HttpClient(transport, sslContextFactory);
     }
 
     protected HTTP2Client newHTTP2Client()

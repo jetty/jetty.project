@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
@@ -65,17 +64,12 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
         Generator generator = new Generator(byteBufferPool);
-        FlowControlStrategy flowControl = newFlowControlStrategy();
+        FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, client.getInputBufferSize(), promise, listener);
         connection.addListener(connectionListener);
         return connection;
-    }
-
-    protected FlowControlStrategy newFlowControlStrategy()
-    {
-        return new BufferingFlowControlStrategy(0.5F);
     }
 
     private class HTTP2ClientConnection extends HTTP2Connection implements Callback

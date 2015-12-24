@@ -46,6 +46,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int initialStreamSendWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
     private int maxConcurrentStreams = -1;
     private int maxHeaderBlockFragment = 0;
+    private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -102,6 +103,16 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.maxHeaderBlockFragment = maxHeaderBlockFragment;
     }
 
+    public FlowControlStrategy.Factory getFlowControlStrategyFactory()
+    {
+        return flowControlStrategyFactory;
+    }
+
+    public void setFlowControlStrategyFactory(FlowControlStrategy.Factory flowControlStrategyFactory)
+    {
+        this.flowControlStrategyFactory = flowControlStrategyFactory;
+    }
+
     public HttpConfiguration getHttpConfiguration()
     {
         return httpConfiguration;
@@ -113,7 +124,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
         Generator generator = new Generator(connector.getByteBufferPool(), getMaxDynamicTableSize(), getMaxHeaderBlockFragment());
-        FlowControlStrategy flowControl = newFlowControlStrategy();
+        FlowControlStrategy flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener, flowControl);
         session.setMaxLocalStreams(getMaxConcurrentStreams());
         session.setMaxRemoteStreams(getMaxConcurrentStreams());
@@ -128,11 +139,6 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
                         endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
         connection.addListener(connectionListener);
         return configure(connection, connector, endPoint);
-    }
-
-    protected FlowControlStrategy newFlowControlStrategy()
-    {
-        return new BufferingFlowControlStrategy(getInitialStreamSendWindow(), 0.5F);
     }
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);
