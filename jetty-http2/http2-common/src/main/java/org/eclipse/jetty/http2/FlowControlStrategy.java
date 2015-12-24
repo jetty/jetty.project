@@ -41,4 +41,9 @@ public interface FlowControlStrategy
     public void onDataSending(IStream stream, int length);
 
     public void onDataSent(IStream stream, int length);
+
+    public interface Factory
+    {
+        public FlowControlStrategy newFlowControlStrategy();
+    }
 }

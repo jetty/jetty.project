@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
+import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -124,6 +125,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private List<String> protocols = Arrays.asList("h2", "h2-17", "h2-16", "h2-15", "h2-14");
     private int initialSessionRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
     private int initialStreamRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+    private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
 
     @Override
     protected void doStart() throws Exception
@@ -210,6 +212,16 @@ public class HTTP2Client extends ContainerLifeCycle
     {
         this.updateBean(this.connectionFactory, connectionFactory);
         this.connectionFactory = connectionFactory;
+    }
+
+    public FlowControlStrategy.Factory getFlowControlStrategyFactory()
+    {
+        return flowControlStrategyFactory;
+    }
+
+    public void setFlowControlStrategyFactory(FlowControlStrategy.Factory flowControlStrategyFactory)
+    {
+        this.flowControlStrategyFactory = flowControlStrategyFactory;
     }
 
     @ManagedAttribute("The number of selectors")
