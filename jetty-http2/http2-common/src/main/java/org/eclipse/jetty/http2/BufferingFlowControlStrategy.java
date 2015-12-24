@@ -57,7 +57,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
     private final AtomicInteger maxSessionRecvWindow = new AtomicInteger(DEFAULT_WINDOW_SIZE);
     private final AtomicInteger sessionLevel = new AtomicInteger();
     private final Map<IStream, AtomicInteger> streamLevels = new ConcurrentHashMap<>();
-    private final float bufferRatio;
+    private float bufferRatio;
 
     public BufferingFlowControlStrategy(float bufferRatio)
     {
@@ -74,6 +74,11 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
     public float getBufferRatio()
     {
         return bufferRatio;
+    }
+
+    public void setBufferRatio(float bufferRatio)
+    {
+        this.bufferRatio = bufferRatio;
     }
 
     @Override
@@ -96,9 +101,11 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
         if (length <= 0)
             return;
 
+        float ratio = bufferRatio;
+
         WindowUpdateFrame windowFrame = null;
         int level = sessionLevel.addAndGet(length);
-        int maxLevel = (int)(maxSessionRecvWindow.get() * bufferRatio);
+        int maxLevel = (int)(maxSessionRecvWindow.get() * ratio);
         if (level > maxLevel)
         {
             level = sessionLevel.getAndSet(0);
@@ -127,7 +134,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                 if (streamLevel != null)
                 {
                     level = streamLevel.addAndGet(length);
-                    maxLevel = (int)(getInitialStreamRecvWindow() * bufferRatio);
+                    maxLevel = (int)(getInitialStreamRecvWindow() * ratio);
                     if (level > maxLevel)
                     {
                         level = streamLevel.getAndSet(0);
