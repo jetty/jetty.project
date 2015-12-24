@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 
 /* ------------------------------------------------------------ */
@@ -58,7 +59,7 @@ import org.eclipse.jetty.util.resource.Resource;
  *
  *
  */
-public class ResourceHandler extends HandlerWrapper
+public class ResourceHandler extends HandlerWrapper implements ResourceFactory
 {
     private static final Logger LOG = Log.getLogger(ResourceHandler.class);
 
@@ -67,12 +68,13 @@ public class ResourceHandler extends HandlerWrapper
     Resource _defaultStylesheet;
     Resource _stylesheet;
     String[] _welcomeFiles={"index.html"};
-    MimeTypes _mimeTypes = new MimeTypes();
+    MimeTypes _mimeTypes;
     String _cacheControl;
     boolean _directory;
+    boolean _gzip;
     boolean _etags;
-    int _minMemoryMappedContentLength=1024;
-    int _minAsyncContentLength=0;
+    int _minMemoryMappedContentLength=0;
+    int _minAsyncContentLength=16*1024;
 
     /* ------------------------------------------------------------ */
     public ResourceHandler()
@@ -179,7 +181,8 @@ public class ResourceHandler extends HandlerWrapper
     {
         Context scontext = ContextHandler.getCurrentContext();
         _context = (scontext==null?null:scontext.getContextHandler());
-
+        _mimeTypes = _context==null?new MimeTypes():_context.getMimeTypes();
+        
         super.doStart();
     }
 
@@ -297,24 +300,25 @@ public class ResourceHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /*
      */
-    public Resource getResource(String path) throws MalformedURLException
+    @Override
+    public Resource getResource(String path)
     {
-        if (path==null || !path.startsWith("/"))
-            throw new MalformedURLException(path);
-
         if (LOG.isDebugEnabled())
             LOG.debug("{} getResource({})",_context==null?_baseResource:_context,_baseResource,path);
-        
-        Resource base = _baseResource;
-        if (base==null)
-        {
-            if (_context==null)
-                return null;
-            return _context.getResource(path);
-        }
 
+        if (path==null || !path.startsWith("/"))
+            return null;
+        
         try
         {
+            Resource base = _baseResource;
+            if (base==null)
+            {
+                if (_context==null)
+                    return null;
+                return _context.getResource(path);
+            }
+
             path=URIUtil.canonicalPath(path);
             Resource r = base.addPath(path);
             if (r!=null && r.isAlias() && (_context==null || !_context.checkAlias(path, r)))
@@ -327,7 +331,7 @@ public class ResourceHandler extends HandlerWrapper
         }
         catch(Exception e)
         {
-            LOG.ignore(e);
+            LOG.debug(e);
         }
 
         return null;
