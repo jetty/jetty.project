@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 @ManagedObject
@@ -159,7 +158,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize());
     }
 
-    private static class ConnectionListener extends ContainerLifeCycle implements Connection.Listener
+    private class ConnectionListener implements Connection.Listener
     {
         @Override
         public void onOpened(Connection connection)

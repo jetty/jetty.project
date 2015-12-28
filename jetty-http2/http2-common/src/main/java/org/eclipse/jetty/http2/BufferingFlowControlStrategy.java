@@ -198,4 +198,15 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
             Atomics.updateMax(maxSessionRecvWindow, sessionWindow);
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[ratio=%.2f,sessionStallTime=%dms,streamsStallTime=%dms]",
+                getClass().getSimpleName(),
+                hashCode(),
+                bufferRatio,
+                getSessionStallTime(),
+                getStreamsStallTime());
+    }
 }
