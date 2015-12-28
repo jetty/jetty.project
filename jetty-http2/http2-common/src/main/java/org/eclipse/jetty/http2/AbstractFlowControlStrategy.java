@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.http2;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.api.Stream;
@@ -25,15 +29,20 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 @ManagedObject
-public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
+public abstract class AbstractFlowControlStrategy implements FlowControlStrategy, Dumpable
 {
     protected static final Logger LOG = Log.getLogger(FlowControlStrategy.class);
 
-    private final AtomicLong sessionStalls = new AtomicLong();
+    private final AtomicLong sessionStall = new AtomicLong();
+    private final AtomicLong sessionStallTime = new AtomicLong();
+    private final Map<IStream, Long> streamsStalls = new ConcurrentHashMap<>();
+    private final AtomicLong streamsStallTime = new AtomicLong();
     private int initialStreamSendWindow;
     private int initialStreamRecvWindow;
 
@@ -174,38 +183,62 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
 
     protected void onSessionStalled(ISession session)
     {
+        sessionStall.set(System.nanoTime());
         if (LOG.isDebugEnabled())
             LOG.debug("Session stalled {}", session);
-        sessionStalls.incrementAndGet();
     }
 
     protected void onStreamStalled(IStream stream)
     {
+        streamsStalls.put(stream, System.nanoTime());
         if (LOG.isDebugEnabled())
             LOG.debug("Stream stalled {}", stream);
     }
 
     protected void onSessionUnstalled(ISession session)
     {
+        sessionStallTime.addAndGet(System.nanoTime() - sessionStall.getAndSet(0));
         if (LOG.isDebugEnabled())
             LOG.debug("Session unstalled {}", session);
     }
 
     protected void onStreamUnstalled(IStream stream)
     {
+        Long time = streamsStalls.remove(stream);
+        if (time != null)
+            streamsStallTime.addAndGet(System.nanoTime() - time);
         if (LOG.isDebugEnabled())
             LOG.debug("Stream unstalled {}", stream);
     }
 
-    @ManagedAttribute(value = "The number of times the session flow control has stalled", readonly = true)
-    public long getSessionStallCount()
+    @ManagedAttribute(value = "The time, in milliseconds, that the session flow control has stalled", readonly = true)
+    public long getSessionStallTime()
     {
-        return sessionStalls.get();
+        return TimeUnit.NANOSECONDS.toMillis(sessionStallTime.get());
+    }
+
+    @ManagedAttribute(value = "The time, in milliseconds, that the streams flow control has stalled", readonly = true)
+    public long getStreamsStallTime()
+    {
+        return TimeUnit.NANOSECONDS.toMillis(streamsStallTime.get());
     }
 
     @ManagedOperation(value = "Resets the statistics", impact = "ACTION")
     public void reset()
     {
-        sessionStalls.set(0);
+        sessionStallTime.set(0);
+        streamsStallTime.set(0);
+    }
+
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(toString()).append(System.lineSeparator());
     }
 }
