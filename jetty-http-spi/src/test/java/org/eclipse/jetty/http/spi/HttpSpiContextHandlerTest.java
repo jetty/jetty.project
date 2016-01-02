@@ -47,184 +47,199 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpPrincipal;
 
-public class HttpSpiContextHandlerTest {
+public class HttpSpiContextHandlerTest
+{
 
-	private HttpSpiContextHandler httpSpiContextHandler;
+    private HttpSpiContextHandler httpSpiContextHandler;
 
-	private HttpContext httpContext;
+    private HttpContext httpContext;
 
-	private HttpHandler httpHandler;
+    private HttpHandler httpHandler;
 
-	private Request baseRequest;
+    private Request baseRequest;
 
-	private HttpServletRequest req;
+    private HttpServletRequest req;
 
-	private HttpServletResponse resp;
-	
-	private HttpExchange httpExchange;
-	
-	private Authenticator auth;
+    private HttpServletResponse resp;
 
-	@Before
-	public void setUp() throws Exception {
-		httpContext = mock(HttpContext.class);
-		httpHandler = mock(HttpHandler.class);
-		httpSpiContextHandler = new HttpSpiContextHandler(httpContext, httpHandler);
-	}
+    private HttpExchange httpExchange;
 
-	@Test
-	public void testGetSetHttpHandler() {
-		// given
-		httpHandler = mock(HttpHandler.class);
+    private Authenticator auth;
 
-		// when
-		httpSpiContextHandler.setHttpHandler(httpHandler);
+    @Before
+    public void setUp() throws Exception
+    {
+        httpContext = mock(HttpContext.class);
+        httpHandler = mock(HttpHandler.class);
+        httpSpiContextHandler = new HttpSpiContextHandler(httpContext,httpHandler);
+    }
 
-		// then
-		assertEquals("HttpHandler instances must be equal.", httpHandler, httpSpiContextHandler.getHttpHandler());
-	}
+    @Test
+    public void testGetSetHttpHandler()
+    {
+        // given
+        httpHandler = mock(HttpHandler.class);
 
-	@Test
-	public void testDoScopeWithNoHandler() throws Exception {
-		// given
-		setUpDoScope();
+        // when
+        httpSpiContextHandler.setHttpHandler(httpHandler);
 
-		// when
-		httpSpiContextHandler.doScope("test", baseRequest, req, resp);
+        // then
+        assertEquals("HttpHandler instances must be equal.",httpHandler,httpSpiContextHandler.getHttpHandler());
+    }
 
-		// then
-		assertFalse("Context path doesn't start with /, so none of the handler will handle the request",
-				baseRequest.isHandled());
-	}
+    @Test
+    public void testDoScopeWithNoHandler() throws Exception
+    {
+        // given
+        setUpDoScope();
 
-	@Test
-	public void testDoScopeHttpExchangeHandler() throws Exception {
-		// given
-		setUpDoScope();
+        // when
+        httpSpiContextHandler.doScope("test",baseRequest,req,resp);
 
-		// when
-		httpSpiContextHandler.doScope("/test", baseRequest, req, resp);
+        // then
+        assertFalse("Context path doesn't start with /, so none of the handler will handle the request",baseRequest.isHandled());
+    }
 
-		// then
-		verify(httpHandler).handle((JettyHttpExchange) anyObject());
-	}
+    @Test
+    public void testDoScopeHttpExchangeHandler() throws Exception
+    {
+        // given
+        setUpDoScope();
 
-	@Test
-	public void testDoScopeHttpsExchangeHandler() throws Exception {
-		// given
-		setUpDoScope();
-		when(baseRequest.isSecure()).thenReturn(true);
+        // when
+        httpSpiContextHandler.doScope("/test",baseRequest,req,resp);
 
-		// when
-		httpSpiContextHandler.doScope("/test", baseRequest, req, resp);
+        // then
+        verify(httpHandler).handle((JettyHttpExchange)anyObject());
+    }
 
-		// then
-		verify(httpHandler).handle((JettyHttpsExchange) anyObject());
-	}
+    @Test
+    public void testDoScopeHttpsExchangeHandler() throws Exception
+    {
+        // given
+        setUpDoScope();
+        when(baseRequest.isSecure()).thenReturn(true);
 
-	@Test
-	public void testDoScopeAuthenticationHandlerFailure() throws Exception {
-		// given
-		Authenticator.Result failure = new Authenticator.Failure(SpiConstants.FAILURE_STATUS);
-		setUpAuthentication(failure);
+        // when
+        httpSpiContextHandler.doScope("/test",baseRequest,req,resp);
 
-		// when
-		httpSpiContextHandler.doScope("/test", baseRequest, req, resp);
+        // then
+        verify(httpHandler).handle((JettyHttpsExchange)anyObject());
+    }
 
-		// then
-		verify(resp).sendError(SpiConstants.FAILURE_STATUS);
-	}
+    @Test
+    public void testDoScopeAuthenticationHandlerFailure() throws Exception
+    {
+        // given
+        Authenticator.Result failure = new Authenticator.Failure(SpiConstants.FAILURE_STATUS);
+        setUpAuthentication(failure);
 
-	@Test
-	public void testDoScopeAuthenticationHandlerSuccess() throws Exception {
-		// given
-		HttpPrincipal principle = mock(HttpPrincipal.class);
-		Authenticator.Result retry = new Authenticator.Success(principle);
-		setUpSuccessAuthentication(retry);
+        // when
+        httpSpiContextHandler.doScope("/test",baseRequest,req,resp);
 
-		// when
-		httpSpiContextHandler.doScope("/test", baseRequest, req, resp);
+        // then
+        verify(resp).sendError(SpiConstants.FAILURE_STATUS);
+    }
 
-		// then
-		verify(httpHandler).handle((JettyHttpExchange) anyObject());
-	}
+    @Test
+    public void testDoScopeAuthenticationHandlerSuccess() throws Exception
+    {
+        // given
+        HttpPrincipal principle = mock(HttpPrincipal.class);
+        Authenticator.Result retry = new Authenticator.Success(principle);
+        setUpSuccessAuthentication(retry);
 
-	@Test
-	public void testDoScopeAuthenticationHandlerRetry() throws Exception {
-		// given
-		Authenticator.Result retry = new Authenticator.Retry(SpiConstants.RETRY_STATUS);
-		setUpRetryAuthentication(retry);
+        // when
+        httpSpiContextHandler.doScope("/test",baseRequest,req,resp);
 
-		// when
-		httpSpiContextHandler.doScope("/test", baseRequest, req, resp);
+        // then
+        verify(httpHandler).handle((JettyHttpExchange)anyObject());
+    }
 
-		// then
-		verify(resp).setStatus(SpiConstants.RETRY_STATUS);
-	}
+    @Test
+    public void testDoScopeAuthenticationHandlerRetry() throws Exception
+    {
+        // given
+        Authenticator.Result retry = new Authenticator.Retry(SpiConstants.RETRY_STATUS);
+        setUpRetryAuthentication(retry);
 
-	@Test
-	public void testDoScopeExceptionWithLoggerEnable() throws Exception {
-		// given
-		setUpAuthenticationException();
-		Log.getRootLogger().setDebugEnabled(true);
+        // when
+        httpSpiContextHandler.doScope("/test",baseRequest,req,resp);
 
-		// when
-		httpSpiContextHandler.doScope("/test", baseRequest, req, resp);
+        // then
+        verify(resp).setStatus(SpiConstants.RETRY_STATUS);
+    }
 
-		// then
-		verify(resp).setStatus(SpiConstants.FAILURE_STATUS);
-	}
+    @Test
+    public void testDoScopeExceptionWithLoggerEnable() throws Exception
+    {
+        // given
+        setUpAuthenticationException();
+        Log.getRootLogger().setDebugEnabled(true);
 
-	@Test
-	public void testDoScopeExceptionWithLoggerDisable() throws Exception {
-		// given
-		setUpAuthenticationException();
+        // when
+        httpSpiContextHandler.doScope("/test",baseRequest,req,resp);
 
-		// when
-		httpSpiContextHandler.doScope("/test", baseRequest, req, resp);
+        // then
+        verify(resp).setStatus(SpiConstants.FAILURE_STATUS);
+    }
 
-		// then
-		verify(resp).setStatus(SpiConstants.FAILURE_STATUS);
-	}
+    @Test
+    public void testDoScopeExceptionWithLoggerDisable() throws Exception
+    {
+        // given
+        setUpAuthenticationException();
 
-	private void setUpDoScope() throws Exception {
-		req = mock(HttpServletRequest.class);
-		resp = mock(HttpServletResponse.class);
-		baseRequest = mock(Request.class);
-	}
+        // when
+        httpSpiContextHandler.doScope("/test",baseRequest,req,resp);
 
-	private void setUpAuthenticationException() throws Exception {
-		setUpDoScope();
-		ServletOutputStream printStream = mock(ServletOutputStream.class);
-		when(resp.getOutputStream()).thenReturn(printStream);
-		HttpChannel httpChannel = mock(HttpChannel.class);
-		when(baseRequest.getHttpChannel()).thenReturn(httpChannel);
-		HttpConfiguration configuration = mock(HttpConfiguration.class);
-		when(httpChannel.getHttpConfiguration()).thenReturn(configuration);
-		doThrow(new RuntimeException()).when(httpContext).getAuthenticator();
-	}
+        // then
+        verify(resp).setStatus(SpiConstants.FAILURE_STATUS);
+    }
 
-	private void setUpAuthentication(Result result) throws Exception {
-		setUpDoScope();
-		httpExchange=mock(HttpExchange.class);
-		auth=mock(Authenticator.class);
-		Map<String,List<String>> reqHeaders=new HashMap<>();
-		reqHeaders.put("accepted-Language", SpiUtility.getReqHeaderValues());
-		Headers headers=new Headers();
-		headers.putAll(reqHeaders);
-		 when(httpExchange.getResponseHeaders()).thenReturn(headers);
-		 when(auth.authenticate(anyObject())).thenReturn(result); 
-		 when(httpContext.getAuthenticator()).thenReturn(auth);
-	}	
+    private void setUpDoScope() throws Exception
+    {
+        req = mock(HttpServletRequest.class);
+        resp = mock(HttpServletResponse.class);
+        baseRequest = mock(Request.class);
+    }
 
-	private void setUpRetryAuthentication(Result result) throws Exception {
-		setUpAuthentication(result);
-		when(req.getAttribute(SpiConstants.USER_NAME)).thenReturn(SpiConstants.VALID_USER);
-	}
+    private void setUpAuthenticationException() throws Exception
+    {
+        setUpDoScope();
+        ServletOutputStream printStream = mock(ServletOutputStream.class);
+        when(resp.getOutputStream()).thenReturn(printStream);
+        HttpChannel httpChannel = mock(HttpChannel.class);
+        when(baseRequest.getHttpChannel()).thenReturn(httpChannel);
+        HttpConfiguration configuration = mock(HttpConfiguration.class);
+        when(httpChannel.getHttpConfiguration()).thenReturn(configuration);
+        doThrow(new RuntimeException()).when(httpContext).getAuthenticator();
+    }
 
-	private void setUpSuccessAuthentication(Result result) throws Exception {
-		setUpAuthentication(result);
-		when(req.getAttribute(SpiConstants.USER_NAME)).thenReturn(SpiConstants.VALID_USER);
-		when(req.getAttribute(SpiConstants.PASSWORD)).thenReturn(SpiConstants.VALID_PASSWORD);
-	}
+    private void setUpAuthentication(Result result) throws Exception
+    {
+        setUpDoScope();
+        httpExchange = mock(HttpExchange.class);
+        auth = mock(Authenticator.class);
+        Map<String, List<String>> reqHeaders = new HashMap<>();
+        reqHeaders.put("accepted-Language",SpiUtility.getReqHeaderValues());
+        Headers headers = new Headers();
+        headers.putAll(reqHeaders);
+        when(httpExchange.getResponseHeaders()).thenReturn(headers);
+        when(auth.authenticate(anyObject())).thenReturn(result);
+        when(httpContext.getAuthenticator()).thenReturn(auth);
+    }
+
+    private void setUpRetryAuthentication(Result result) throws Exception
+    {
+        setUpAuthentication(result);
+        when(req.getAttribute(SpiConstants.USER_NAME)).thenReturn(SpiConstants.VALID_USER);
+    }
+
+    private void setUpSuccessAuthentication(Result result) throws Exception
+    {
+        setUpAuthentication(result);
+        when(req.getAttribute(SpiConstants.USER_NAME)).thenReturn(SpiConstants.VALID_USER);
+        when(req.getAttribute(SpiConstants.PASSWORD)).thenReturn(SpiConstants.VALID_PASSWORD);
+    }
 }

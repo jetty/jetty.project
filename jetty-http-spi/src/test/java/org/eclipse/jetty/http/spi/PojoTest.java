@@ -30,17 +30,19 @@ import com.openpojo.validation.test.impl.SetterTester;
 /*
  * This class tests all the getters and setters for a given list of classes.
  */
-public class PojoTest {
+public class PojoTest
+{
 
-	private Validator validator;
+    private Validator validator;
 
-	@Test
-	public void testOpenPojo() {
-		validator = ValidatorBuilder.create().with(new SetterTester()).with(new GetterTester()).build();
-		List<Class> classes = Arrays.asList(DelegatingThreadPool.class, JettyExchange.class, JettyHttpServer.class,
-				JettyHttpServerProvider.class);
-		for (Class clazz : classes) {
-			validator.validate(PojoClassFactory.getPojoClass(clazz));
-		}
-	}
+    @Test
+    public void testOpenPojo()
+    {
+        validator = ValidatorBuilder.create().with(new SetterTester()).with(new GetterTester()).build();
+        List<Class> classes = Arrays.asList(DelegatingThreadPool.class,JettyExchange.class,JettyHttpServer.class,JettyHttpServerProvider.class);
+        for (Class clazz : classes)
+        {
+            validator.validate(PojoClassFactory.getPojoClass(clazz));
+        }
+    }
 }

@@ -36,132 +36,140 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(JettyHttpServer.class)
-public class JettyHttpServerTest extends JettyHttpServerBase {
+public class JettyHttpServerTest extends JettyHttpServerBase
+{
 
-	private DelegatingThreadPool delegatingThreadPool;
+    private DelegatingThreadPool delegatingThreadPool;
 
-	private Executor executor;
+    private Executor executor;
 
-	private Executor actualExecutor;
+    private Executor actualExecutor;
 
-	private HttpConfiguration httpConfiguration;
+    private HttpConfiguration httpConfiguration;
 
-	private InetSocketAddress inetSocketAddress;
+    private InetSocketAddress inetSocketAddress;
 
-	private InetSocketAddress address;
+    private InetSocketAddress address;
 
-	private ServerConnector serverConnector;
+    private ServerConnector serverConnector;
 
-	private HttpConfiguration configuration;
+    private HttpConfiguration configuration;
 
-	@Test
-	public void testSetExecutor() {
-		// given
-		delegatingThreadPool = SpiUtility.getDelegatingThreadPool();
-		jettyHttpServer = new JettyHttpServer(new Server(delegatingThreadPool), false);
-		executor = SpiUtility.getDelegatingThreadPool();
-		jettyHttpServer.setExecutor(executor);
+    @Test
+    public void testSetExecutor()
+    {
+        // given
+        delegatingThreadPool = SpiUtility.getDelegatingThreadPool();
+        jettyHttpServer = new JettyHttpServer(new Server(delegatingThreadPool),false);
+        executor = SpiUtility.getDelegatingThreadPool();
+        jettyHttpServer.setExecutor(executor);
 
-		// when
-		actualExecutor = jettyHttpServer.getExecutor();
+        // when
+        actualExecutor = jettyHttpServer.getExecutor();
 
-		// then
-		assertEquals("Executor instances must be equal.", executor, actualExecutor);
-	}
+        // then
+        assertEquals("Executor instances must be equal.",executor,actualExecutor);
+    }
 
-	@Test
-	public void testGetExecutor() throws Exception {
-		// when
-		executor = jettyHttpServer.getExecutor();
+    @Test
+    public void testGetExecutor() throws Exception
+    {
+        // when
+        executor = jettyHttpServer.getExecutor();
 
-		// then
-		assertNotNull("Executor instance shouldn't be null after server creation", executor);
-	}
+        // then
+        assertNotNull("Executor instance shouldn't be null after server creation",executor);
+    }
 
-	@Test
-	public void testGetDefaultHttpConfiguration() throws Exception {
-		// when
-		httpConfiguration = jettyHttpServer.getHttpConfiguration();
+    @Test
+    public void testGetDefaultHttpConfiguration() throws Exception
+    {
+        // when
+        httpConfiguration = jettyHttpServer.getHttpConfiguration();
 
-		// then
-		assertNotNull("HttpConfiguratoin instance shouldn't be null after server creation", httpConfiguration);
-	}
+        // then
+        assertNotNull("HttpConfiguratoin instance shouldn't be null after server creation",httpConfiguration);
+    }
 
-	@Test
-	public void testGetCustomHttpConfiguration() throws Exception {
-		// given
-		configuration = new HttpConfiguration();
+    @Test
+    public void testGetCustomHttpConfiguration() throws Exception
+    {
+        // given
+        configuration = new HttpConfiguration();
 
-		// when
-		jettyHttpServer = new JettyHttpServer(new Server(), false, configuration);
+        // when
+        jettyHttpServer = new JettyHttpServer(new Server(),false,configuration);
 
-		// then
-		assertEquals("Configuration instance must be equal.", configuration, jettyHttpServer.getHttpConfiguration());
-	}
+        // then
+        assertEquals("Configuration instance must be equal.",configuration,jettyHttpServer.getHttpConfiguration());
+    }
 
-	@Test
-	public void testInetSocketAddress() throws Exception {
-		// given
-		inetSocketAddress = new InetSocketAddress(SpiConstants.LOCAL_HOST, 8080);
+    @Test
+    public void testInetSocketAddress() throws Exception
+    {
+        // given
+        inetSocketAddress = new InetSocketAddress(SpiConstants.LOCAL_HOST,8080);
 
-		// when
-		jettyHttpServer.bind(inetSocketAddress, SpiConstants.BACK_LOG);
+        // when
+        jettyHttpServer.bind(inetSocketAddress,SpiConstants.BACK_LOG);
 
-		// then
-		assertEquals("InetSocketAddress instances must be equal", inetSocketAddress, jettyHttpServer.getAddress());
-	}
+        // then
+        assertEquals("InetSocketAddress instances must be equal",inetSocketAddress,jettyHttpServer.getAddress());
+    }
 
-	@Test
-	public void testBindWithNewPort() throws Exception {
-		// given
-		SpiUtility.callBind(jettyHttpServer);
-		inetSocketAddress = new InetSocketAddress(SpiConstants.LOCAL_HOST, 8082);
+    @Test
+    public void testBindWithNewPort() throws Exception
+    {
+        // given
+        SpiUtility.callBind(jettyHttpServer);
+        inetSocketAddress = new InetSocketAddress(SpiConstants.LOCAL_HOST,8082);
 
-		// when
-		jettyHttpServer.bind(inetSocketAddress, 8082);
+        // when
+        jettyHttpServer.bind(inetSocketAddress,8082);
 
-		// then
-		assertEquals("InetSocketAddress instances must be equal", inetSocketAddress, jettyHttpServer.getAddress());
-	}
+        // then
+        assertEquals("InetSocketAddress instances must be equal",inetSocketAddress,jettyHttpServer.getAddress());
+    }
 
-	@Test
-	public void testBindWithNewPortWithDebugDisable() throws Exception {
-		// given
-		SpiUtility.callBind(jettyHttpServer);
-		inetSocketAddress = new InetSocketAddress(SpiConstants.LOCAL_HOST, 8082);
-		Log.getRootLogger().setDebugEnabled(false);
+    @Test
+    public void testBindWithNewPortWithDebugDisable() throws Exception
+    {
+        // given
+        SpiUtility.callBind(jettyHttpServer);
+        inetSocketAddress = new InetSocketAddress(SpiConstants.LOCAL_HOST,8082);
+        Log.getRootLogger().setDebugEnabled(false);
 
-		// when
-		jettyHttpServer.bind(inetSocketAddress, 8082);
+        // when
+        jettyHttpServer.bind(inetSocketAddress,8082);
 
-		// then
-		assertEquals("InetSocketAddress instances must be equal", inetSocketAddress, jettyHttpServer.getAddress());
-	}
+        // then
+        assertEquals("InetSocketAddress instances must be equal",inetSocketAddress,jettyHttpServer.getAddress());
+    }
 
-	@Test
-	public void testServerConnector() {
-		// given
-		address = new InetSocketAddress(SpiConstants.DEFAULT_PORT);
+    @Test
+    public void testServerConnector()
+    {
+        // given
+        address = new InetSocketAddress(SpiConstants.DEFAULT_PORT);
 
-		// when
-		serverConnector = jettyHttpServer.newServerConnector(address, SpiConstants.HUNDRED);
+        // when
+        serverConnector = jettyHttpServer.newServerConnector(address,SpiConstants.HUNDRED);
 
-		// then
-		assertEquals("Port value must be equal to default port value", SpiConstants.DEFAULT_PORT,
-				serverConnector.getPort());
-	}
+        // then
+        assertEquals("Port value must be equal to default port value",SpiConstants.DEFAULT_PORT,serverConnector.getPort());
+    }
 
-	@Test(expected = UnsupportedOperationException.class)
-	public void testStart() {
-		// given
-		jettyHttpServer.start();
-		executor = SpiUtility.getDelegatingThreadPool();
+    @Test(expected = UnsupportedOperationException.class)
+    public void testStart()
+    {
+        // given
+        jettyHttpServer.start();
+        executor = SpiUtility.getDelegatingThreadPool();
 
-		// when
-		jettyHttpServer.setExecutor(executor);
+        // when
+        jettyHttpServer.setExecutor(executor);
 
-		// then
-		fail("An Unsupported Operation exception must have been raised by now as we cannot "
-				+ "reset executor after server started.");
-	}
+        // then
+        fail("An Unsupported Operation exception must have been raised by now as we cannot " + "reset executor after server started.");
+    }
 }

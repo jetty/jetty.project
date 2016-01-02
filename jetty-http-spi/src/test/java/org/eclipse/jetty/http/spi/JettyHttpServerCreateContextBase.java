@@ -24,36 +24,42 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 
-public class JettyHttpServerCreateContextBase {
-	
-	protected JettyHttpServer jettyHttpServer;
-	
-	protected Server getContextHandlerServer(){
-		//context handler default path is "/"
-		Handler handler = new ContextHandler();
-		Server server = new Server();
-		server.setHandler(handler);
-		return server;
-	}
-	
-	protected Server getContextHandlerCollectionServer(){
-		Handler handler = new ContextHandlerCollection();
-		Server server = new Server();
-		server.setHandler(handler);
-		return server;
-	}
-	
-	protected Server getContextHandlerCollectionsServer(){
-		ContextHandlerCollection handler = new ContextHandlerCollection();
-		Handler[] handles = { handler };
-		HandlerCollection contextHandler = new HandlerCollection();
-		contextHandler.setHandlers(handles);
-		Server server = new Server();
-		server.setHandler(contextHandler);
-		return server;
-	}
-	
-	protected void initializeJettyHttpServer(Server server){
-		jettyHttpServer = new JettyHttpServer(server, false);
-	}
+public class JettyHttpServerCreateContextBase
+{
+
+    protected JettyHttpServer jettyHttpServer;
+
+    protected Server getContextHandlerServer()
+    {
+        // context handler default path is "/"
+        Handler handler = new ContextHandler();
+        Server server = new Server();
+        server.setHandler(handler);
+        return server;
+    }
+
+    protected Server getContextHandlerCollectionServer()
+    {
+        Handler handler = new ContextHandlerCollection();
+        Server server = new Server();
+        server.setHandler(handler);
+        return server;
+    }
+
+    protected Server getContextHandlerCollectionsServer()
+    {
+        ContextHandlerCollection handler = new ContextHandlerCollection();
+        Handler[] handles =
+        { handler };
+        HandlerCollection contextHandler = new HandlerCollection();
+        contextHandler.setHandlers(handles);
+        Server server = new Server();
+        server.setHandler(contextHandler);
+        return server;
+    }
+
+    protected void initializeJettyHttpServer(Server server)
+    {
+        jettyHttpServer = new JettyHttpServer(server,false);
+    }
 }

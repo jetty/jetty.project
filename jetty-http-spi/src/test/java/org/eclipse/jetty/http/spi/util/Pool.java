@@ -22,26 +22,28 @@ package org.eclipse.jetty.http.spi.util;
  * This class holds the default pool constants
  *
  */
-public enum Pool {
-	
-	DEFAULT_SIZE(0),
-	
-	CORE_POOL_SIZE(15),
-	
-	MAXIMUM_POOL_SIZE(20),
-	
-	KEEP_ALIVE_TIME(300),
-	
-	DEFAULT_WORK_QUEUE_SIZE(20)	
-	;
-	
-	private final int value;
+public enum Pool
+{
 
-    private Pool(int value) {
+    DEFAULT_SIZE(0),
+
+    CORE_POOL_SIZE(15),
+
+    MAXIMUM_POOL_SIZE(20),
+
+    KEEP_ALIVE_TIME(300),
+
+    DEFAULT_WORK_QUEUE_SIZE(20);
+
+    private final int value;
+
+    private Pool(int value)
+    {
         this.value = value;
     }
 
-	public int getValue() {
-		return value;
-	}
+    public int getValue()
+    {
+        return value;
+    }
 }

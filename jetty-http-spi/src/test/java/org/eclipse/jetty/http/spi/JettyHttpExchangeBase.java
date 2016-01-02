@@ -24,21 +24,23 @@ import javax.servlet.http.HttpServletResponse;
 import org.junit.Before;
 import com.sun.net.httpserver.HttpContext;
 
-public class JettyHttpExchangeBase {
+public class JettyHttpExchangeBase
+{
 
-	protected HttpServletRequest request;
+    protected HttpServletRequest request;
 
-	protected HttpServletResponse response;
-	
-	protected HttpContext context;
-	
-	protected JettyHttpExchange jettyHttpExchange;	
+    protected HttpServletResponse response;
 
-	@Before
-	public void setUp() throws Exception {
-		request = mock(HttpServletRequest.class);
-		response = mock(HttpServletResponse.class);
-		context = mock(HttpContext.class);
-		jettyHttpExchange = new JettyHttpExchange(context, request, response);
-	}
+    protected HttpContext context;
+
+    protected JettyHttpExchange jettyHttpExchange;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        request = mock(HttpServletRequest.class);
+        response = mock(HttpServletResponse.class);
+        context = mock(HttpContext.class);
+        jettyHttpExchange = new JettyHttpExchange(context,request,response);
+    }
 }

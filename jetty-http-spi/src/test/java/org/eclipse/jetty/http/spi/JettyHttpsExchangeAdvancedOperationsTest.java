@@ -31,68 +31,70 @@ import org.eclipse.jetty.http.spi.util.SpiUtility;
 import org.junit.Test;
 import com.sun.net.httpserver.Headers;
 
-public class JettyHttpsExchangeAdvancedOperationsTest extends JettyHttpsExchangeBase {
+public class JettyHttpsExchangeAdvancedOperationsTest extends JettyHttpsExchangeBase
+{
 
-	private JettyHttpsExchange mockJettyHttpsExchange;
+    private JettyHttpsExchange mockJettyHttpsExchange;
 
-	private Boolean match;
+    private Boolean match;
 
-	private Headers headers;
+    private Headers headers;
 
-	private InputStream is;
+    private InputStream is;
 
-	private OutputStream os;
+    private OutputStream os;
 
-	@Test
-	public void testAdvancedOperations() throws Exception {
-		// given
-		mockJettyHttpsExchange = mock(JettyHttpsExchange.class);
+    @Test
+    public void testAdvancedOperations() throws Exception
+    {
+        // given
+        mockJettyHttpsExchange = mock(JettyHttpsExchange.class);
 
-		// when
-		match = jettyHttpsExchange.equals(mockJettyHttpsExchange);
+        // when
+        match = jettyHttpsExchange.equals(mockJettyHttpsExchange);
 
-		// then
-		assertFalse("This should return false as both instances shouldn't equal", match);
-	}
+        // then
+        assertFalse("This should return false as both instances shouldn't equal",match);
+    }
 
-	@Test
-	public void testRequestHeaders() throws Exception {
-		// given
-		when(request.getHeaderNames())
-				.thenReturn(Collections.enumeration(SpiUtility.getAcceptCharsetHeader().keySet()));
-		when(request.getHeaders(SpiConstants.ACCEPT_CHARSET)).thenReturn(
-				Collections.enumeration(SpiUtility.getAcceptCharsetHeader().get(SpiConstants.ACCEPT_CHARSET)));
+    @Test
+    public void testRequestHeaders() throws Exception
+    {
+        // given
+        when(request.getHeaderNames()).thenReturn(Collections.enumeration(SpiUtility.getAcceptCharsetHeader().keySet()));
+        when(request.getHeaders(SpiConstants.ACCEPT_CHARSET))
+                .thenReturn(Collections.enumeration(SpiUtility.getAcceptCharsetHeader().get(SpiConstants.ACCEPT_CHARSET)));
 
-		// when
-		headers = jettyHttpsExchange.getRequestHeaders();
+        // when
+        headers = jettyHttpsExchange.getRequestHeaders();
 
-		// then
-		assertTrue("CharSetKey must be registered in headers list", headers.containsKey(SpiConstants.ACCEPT_CHARSET));
-		assertEquals("Charset value must be UTF8", SpiConstants.UTF_8,
-				headers.get(SpiConstants.ACCEPT_CHARSET).get(SpiConstants.ZERO));
-	}
+        // then
+        assertTrue("CharSetKey must be registered in headers list",headers.containsKey(SpiConstants.ACCEPT_CHARSET));
+        assertEquals("Charset value must be UTF8",SpiConstants.UTF_8,headers.get(SpiConstants.ACCEPT_CHARSET).get(SpiConstants.ZERO));
+    }
 
-	@Test
-	public void testResponseHeaders() throws Exception {
-		// when
-		jettyHttpsExchange.sendResponseHeaders(SpiConstants.TWO_HUNDRED, SpiConstants.THOUSAND);
+    @Test
+    public void testResponseHeaders() throws Exception
+    {
+        // when
+        jettyHttpsExchange.sendResponseHeaders(SpiConstants.TWO_HUNDRED,SpiConstants.THOUSAND);
 
-		// then
-		assertEquals("Response must be equal to 200", SpiConstants.TWO_HUNDRED,
-				(Integer) jettyHttpsExchange.getResponseCode());
-	}
+        // then
+        assertEquals("Response must be equal to 200",SpiConstants.TWO_HUNDRED,(Integer)jettyHttpsExchange.getResponseCode());
+    }
 
-	@Test
-	public void testInputStream() throws Exception {
-		// given
-		is = mock(InputStream.class);
-		os = mock(OutputStream.class);
+    @Test
+    public void testInputStream() throws Exception
+    {
+        // given
+        is = mock(InputStream.class);
+        os = mock(OutputStream.class);
 
-		// when
-		jettyHttpsExchange.setStreams(is, os);
+        // when
+        jettyHttpsExchange.setStreams(is,os);
 
-		// then
-		assertEquals("Input stream must be equal", is, jettyHttpsExchange.getRequestBody());
-		assertEquals("Output stream must be equal", os, jettyHttpsExchange.getResponseBody());
-	}
+        // then
+        assertEquals("Input stream must be equal",is,jettyHttpsExchange.getRequestBody());
+        assertEquals("Output stream must be equal",os,jettyHttpsExchange.getResponseBody());
+    }
 }

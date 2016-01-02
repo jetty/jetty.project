@@ -28,57 +28,63 @@ import org.junit.After;
 import org.junit.Test;
 import com.sun.net.httpserver.HttpServer;
 
-public class JettyHttpServerProviderTest {
+public class JettyHttpServerProviderTest
+{
 
-	private HttpServer jettyHttpServer;
+    private HttpServer jettyHttpServer;
 
-	@After
-	public void tearDown() throws Exception {
-		JettyHttpServerProvider.setServer(null);
-		if (jettyHttpServer != null) {
-			jettyHttpServer.stop(SpiConstants.ONE);
-		}
-	}
+    @After
+    public void tearDown() throws Exception
+    {
+        JettyHttpServerProvider.setServer(null);
+        if (jettyHttpServer != null)
+        {
+            jettyHttpServer.stop(SpiConstants.ONE);
+        }
+    }
 
-	@Test
-	public void testCreateHttpServer() throws Exception {
-		// when
-		initializeHttpServerProvider();
+    @Test
+    public void testCreateHttpServer() throws Exception
+    {
+        // when
+        initializeHttpServerProvider();
 
-		// then
-		assertNotNull("HttpServer instance shouldn't be null after server creation", jettyHttpServer);
-	}
+        // then
+        assertNotNull("HttpServer instance shouldn't be null after server creation",jettyHttpServer);
+    }
 
-	@Test(expected = IOException.class)
-	public void testCreateHttpServerIOException() throws Exception {
-		// given
-		Server server = new Server();
-		JettyHttpServerProvider.setServer(server);
+    @Test(expected = IOException.class)
+    public void testCreateHttpServerIOException() throws Exception
+    {
+        // given
+        Server server = new Server();
+        JettyHttpServerProvider.setServer(server);
 
-		// when
-		initializeHttpServerProvider();
-		
-		//then
-		fail("A IOException must have occured by now as port is in use and shared flag is on");
-	}
+        // when
+        initializeHttpServerProvider();
 
-	@Test(expected = UnsupportedOperationException.class)
-	public void testcreateHttpsServerUnsupportedOperationException() throws Exception {
-		// given
-		initializeHttpServerProvider();
-		JettyHttpServerProvider jettyHttpServerProvider = new JettyHttpServerProvider();
+        // then
+        fail("A IOException must have occured by now as port is in use and shared flag is on");
+    }
 
-		// when
-		jettyHttpServerProvider.createHttpsServer(new InetSocketAddress("localhost", SpiConstants.ONE),SpiConstants.BACK_LOG);
-		
-		//then
-		fail("A UnsupportedOperationException must have occured by now as "
-				+ "JettyHttpServerProvider not supporting this operation");
-	}
+    @Test(expected = UnsupportedOperationException.class)
+    public void testcreateHttpsServerUnsupportedOperationException() throws Exception
+    {
+        // given
+        initializeHttpServerProvider();
+        JettyHttpServerProvider jettyHttpServerProvider = new JettyHttpServerProvider();
 
-	private void initializeHttpServerProvider() throws Exception {
-		String localHost = "localhost";
-		int port = SpiConstants.ONE;
-		jettyHttpServer = new JettyHttpServerProvider().createHttpServer(new InetSocketAddress(localHost, port), SpiConstants.BACK_LOG);
-	}
+        // when
+        jettyHttpServerProvider.createHttpsServer(new InetSocketAddress("localhost",SpiConstants.ONE),SpiConstants.BACK_LOG);
+
+        // then
+        fail("A UnsupportedOperationException must have occured by now as " + "JettyHttpServerProvider not supporting this operation");
+    }
+
+    private void initializeHttpServerProvider() throws Exception
+    {
+        String localHost = "localhost";
+        int port = SpiConstants.ONE;
+        jettyHttpServer = new JettyHttpServerProvider().createHttpServer(new InetSocketAddress(localHost,port),SpiConstants.BACK_LOG);
+    }
 }

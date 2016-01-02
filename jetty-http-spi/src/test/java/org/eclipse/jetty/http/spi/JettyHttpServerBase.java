@@ -27,27 +27,33 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.powermock.reflect.Whitebox;
 
-public class JettyHttpServerBase {
-	
-	protected JettyHttpServer jettyHttpServer;
+public class JettyHttpServerBase
+{
 
-	@BeforeClass
-	public static void setUpBeforeClass() {
-		Log.getRootLogger().setDebugEnabled(true);
-	}
+    protected JettyHttpServer jettyHttpServer;
 
-	@Before
-	public void setUp() throws Exception {
-		jettyHttpServer = new JettyHttpServer(new Server(), false);
-	}
+    @BeforeClass
+    public static void setUpBeforeClass()
+    {
+        Log.getRootLogger().setDebugEnabled(true);
+    }
 
-	@After
-	public void tearDown() throws Exception {
-		if (jettyHttpServer != null){
-			Server server=Whitebox.getInternalState(jettyHttpServer, "_server"); 
-			if( server.getBeans(NetworkConnector.class)!=null){
-				jettyHttpServer.stop(SpiConstants.DELAY);
-			}
-		}
-	}
+    @Before
+    public void setUp() throws Exception
+    {
+        jettyHttpServer = new JettyHttpServer(new Server(),false);
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        if (jettyHttpServer != null)
+        {
+            Server server = Whitebox.getInternalState(jettyHttpServer,"_server");
+            if (server.getBeans(NetworkConnector.class) != null)
+            {
+                jettyHttpServer.stop(SpiConstants.DELAY);
+            }
+        }
+    }
 }

@@ -36,127 +36,135 @@ import org.junit.Test;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpPrincipal;
 
-public class JettyHttpsExchangeBasicOperationsTest extends JettyHttpsExchangeBase{
+public class JettyHttpsExchangeBasicOperationsTest extends JettyHttpsExchangeBase
+{
 
-	private InetSocketAddress address;
+    private InetSocketAddress address;
 
-	private URI uri;
+    private URI uri;
 
-	private String reqMethod;
+    private String reqMethod;
 
-	private String protocol;
+    private String protocol;
 
-	private HttpPrincipal principal;
+    private HttpPrincipal principal;
 
-	@Test
-	public void testBasicOperations() {
-		assertNotNull("Hashcode shouldn't be null", jettyHttpsExchange.hashCode());
-		assertNotNull("String representation shouldn't be null", jettyHttpsExchange.toString());
-		assertEquals("Context should be equal", context, jettyHttpsExchange.getHttpContext());
-		assertNull("SSL session must be null as this method call always returns null",
-				jettyHttpsExchange.getSSLSession());
-		assertEquals("Default size must be equal to zero", SpiConstants.ZERO,
-				jettyHttpsExchange.getResponseHeaders().size());
-	}
+    @Test
+    public void testBasicOperations()
+    {
+        assertNotNull("Hashcode shouldn't be null",jettyHttpsExchange.hashCode());
+        assertNotNull("String representation shouldn't be null",jettyHttpsExchange.toString());
+        assertEquals("Context should be equal",context,jettyHttpsExchange.getHttpContext());
+        assertNull("SSL session must be null as this method call always returns null",jettyHttpsExchange.getSSLSession());
+        assertEquals("Default size must be equal to zero",SpiConstants.ZERO,jettyHttpsExchange.getResponseHeaders().size());
+    }
 
-	@Test
-	public void testUri() throws Exception {
-		//given
-		when(request.getRequestURI()).thenReturn(SpiConstants.REQUEST_URI);
-		when(request.getQueryString()).thenReturn(SpiConstants.QUERY_STRING);
+    @Test
+    public void testUri() throws Exception
+    {
+        // given
+        when(request.getRequestURI()).thenReturn(SpiConstants.REQUEST_URI);
+        when(request.getQueryString()).thenReturn(SpiConstants.QUERY_STRING);
 
-		//when
-		uri = jettyHttpsExchange.getRequestURI();
+        // when
+        uri = jettyHttpsExchange.getRequestURI();
 
-		//then
-		assertEquals("Query strings must be equal", SpiConstants.QUERY_STRING, uri.getQuery());
-		assertEquals("Query strings must be equal", SpiConstants.REQUEST_URI, uri.getPath());
-	}
+        // then
+        assertEquals("Query strings must be equal",SpiConstants.QUERY_STRING,uri.getQuery());
+        assertEquals("Query strings must be equal",SpiConstants.REQUEST_URI,uri.getPath());
+    }
 
-	@Test
-	public void testRemoteAddress() throws Exception {
-		//given
-		when(request.getRemoteAddr()).thenReturn(SpiConstants.LOCAL_HOST);
-		when(request.getRemotePort()).thenReturn(SpiConstants.DEFAULT_PORT);
+    @Test
+    public void testRemoteAddress() throws Exception
+    {
+        // given
+        when(request.getRemoteAddr()).thenReturn(SpiConstants.LOCAL_HOST);
+        when(request.getRemotePort()).thenReturn(SpiConstants.DEFAULT_PORT);
 
-		//when
-		address = jettyHttpsExchange.getRemoteAddress();
+        // when
+        address = jettyHttpsExchange.getRemoteAddress();
 
-		//then
-		assertEquals("Host name must be equal with local host", SpiConstants.LOCAL_HOST, address.getHostName());
-		assertEquals("Port value must be equal to default port", SpiConstants.DEFAULT_PORT, address.getPort());
-	}
+        // then
+        assertEquals("Host name must be equal with local host",SpiConstants.LOCAL_HOST,address.getHostName());
+        assertEquals("Port value must be equal to default port",SpiConstants.DEFAULT_PORT,address.getPort());
+    }
 
-	@Test
-	public void testLocalAddress() throws Exception {
-		//given
-		when(request.getLocalAddr()).thenReturn(SpiConstants.LOCAL_HOST);
-		when(request.getLocalPort()).thenReturn(SpiConstants.DEFAULT_PORT);
+    @Test
+    public void testLocalAddress() throws Exception
+    {
+        // given
+        when(request.getLocalAddr()).thenReturn(SpiConstants.LOCAL_HOST);
+        when(request.getLocalPort()).thenReturn(SpiConstants.DEFAULT_PORT);
 
-		//when
-		address = jettyHttpsExchange.getLocalAddress();
+        // when
+        address = jettyHttpsExchange.getLocalAddress();
 
-		//then
-		assertEquals("Host name must be equal with local host", SpiConstants.LOCAL_HOST, address.getHostName());
-		assertEquals("Port value must be equal to default port", SpiConstants.DEFAULT_PORT, address.getPort());
-	}
+        // then
+        assertEquals("Host name must be equal with local host",SpiConstants.LOCAL_HOST,address.getHostName());
+        assertEquals("Port value must be equal to default port",SpiConstants.DEFAULT_PORT,address.getPort());
+    }
 
-	@Test
-	public void testGetMethod() throws Exception {
-		//given
-		when(request.getMethod()).thenReturn(SpiConstants.REQUEST_METHOD);
+    @Test
+    public void testGetMethod() throws Exception
+    {
+        // given
+        when(request.getMethod()).thenReturn(SpiConstants.REQUEST_METHOD);
 
-		//when
-		reqMethod = jettyHttpsExchange.getRequestMethod();
+        // when
+        reqMethod = jettyHttpsExchange.getRequestMethod();
 
-		//then
-		assertEquals("Request method must be POST", SpiConstants.REQUEST_METHOD, reqMethod);
-	}
+        // then
+        assertEquals("Request method must be POST",SpiConstants.REQUEST_METHOD,reqMethod);
+    }
 
-	@Test
-	public void testProtocol() throws Exception {
-		//given
-		when(request.getProtocol()).thenReturn(SpiConstants.PROTOCOL);
+    @Test
+    public void testProtocol() throws Exception
+    {
+        // given
+        when(request.getProtocol()).thenReturn(SpiConstants.PROTOCOL);
 
-		//when
-		protocol = jettyHttpsExchange.getProtocol();
+        // when
+        protocol = jettyHttpsExchange.getProtocol();
 
-		//then
-		assertEquals("Protocol must be equal to HTTP", SpiConstants.PROTOCOL, protocol);
-	}
+        // then
+        assertEquals("Protocol must be equal to HTTP",SpiConstants.PROTOCOL,protocol);
+    }
 
-	@Test
-	public void testPrincipal() throws Exception {
-		//given
-		principal = mock(HttpPrincipal.class);
+    @Test
+    public void testPrincipal() throws Exception
+    {
+        // given
+        principal = mock(HttpPrincipal.class);
 
-		//when
-		jettyHttpsExchange.setPrincipal(principal);
+        // when
+        jettyHttpsExchange.setPrincipal(principal);
 
-		//then
-		assertEquals("Principal instances must be equal", principal, jettyHttpsExchange.getPrincipal());
-	}
+        // then
+        assertEquals("Principal instances must be equal",principal,jettyHttpsExchange.getPrincipal());
+    }
 
-	@Test(expected = RuntimeException.class)
-	public void testClose() throws Exception {
-		//given
-		doOutputStreamSetup();
+    @Test(expected = RuntimeException.class)
+    public void testClose() throws Exception
+    {
+        // given
+        doOutputStreamSetup();
 
-		//when
-		jettyHttpsExchange.close();
-		jettyHttpsExchange.close();
+        // when
+        jettyHttpsExchange.close();
+        jettyHttpsExchange.close();
 
-		//then
-		fail("A RuntimeException must have occured by now as we are closing a stream which has been already closed");
-	}
+        // then
+        fail("A RuntimeException must have occured by now as we are closing a stream which has been already closed");
+    }
 
-	private void doOutputStreamSetup() throws Exception {
-		request = mock(HttpServletRequest.class);
-		response = mock(HttpServletResponse.class);
-		context = mock(HttpContext.class);
-		ServletOutputStream os = mock(ServletOutputStream.class);
-		doNothing().doThrow(new IOException("Test")).when(os).close();
-		when(response.getOutputStream()).thenReturn(os);
-		jettyHttpsExchange = new JettyHttpsExchange(context, request, response);
-	}
+    private void doOutputStreamSetup() throws Exception
+    {
+        request = mock(HttpServletRequest.class);
+        response = mock(HttpServletResponse.class);
+        context = mock(HttpContext.class);
+        ServletOutputStream os = mock(ServletOutputStream.class);
+        doNothing().doThrow(new IOException("Test")).when(os).close();
+        when(response.getOutputStream()).thenReturn(os);
+        jettyHttpsExchange = new JettyHttpsExchange(context,request,response);
+    }
 }

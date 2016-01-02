@@ -23,10 +23,12 @@ package org.eclipse.jetty.http.spi.util;
  * This is a sample task. Test cases uses this for testing purpose
  *
  */
-public class PrintTask implements Runnable{
-		@Override
-		public void run() {
-			System.out.println("Started print task execution ");
-			System.out.println("Completed print task execution");
-		}
+public class PrintTask implements Runnable
+{
+    @Override
+    public void run()
+    {
+        System.out.println("Started print task execution ");
+        System.out.println("Completed print task execution");
+    }
 }

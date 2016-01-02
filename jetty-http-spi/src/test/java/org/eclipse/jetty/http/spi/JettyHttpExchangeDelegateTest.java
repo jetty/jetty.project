@@ -31,46 +31,50 @@ import org.junit.Before;
 import org.junit.Test;
 import com.sun.net.httpserver.HttpContext;
 
-public class JettyHttpExchangeDelegateTest {
-	
-	private HttpContext jaxWsContext;
-	
-	private  HttpServletRequest req;
-	
-	private HttpServletResponse resp;
-	
-	private JettyHttpExchangeDelegate httpDelegate;
-	
-	@Before
-	public void setUp() throws Exception {
-		jaxWsContext=mock(HttpContext.class);
-	    req=mock(HttpServletRequest.class);
-	    resp=mock(HttpServletResponse.class);
-	}
+public class JettyHttpExchangeDelegateTest
+{
 
-	@Test(expected=RuntimeException.class)
-	public void testInputStreamRuntimeException() throws Exception{
-		//given
-		when(req.getInputStream()).thenThrow(new IOException ()); 
-		
-		//when
-		new JettyHttpExchangeDelegate (jaxWsContext,req,resp);
-		
-		//then
-		fail("A RuntimeException must have been occured by now as getInputStream() throwing exception");
-	}
-	
-	@Test
-	public void testGetRequestUri(){
-		//given		
-		httpDelegate=new JettyHttpExchangeDelegate (jaxWsContext,req,resp);
-		when(req.getQueryString()).thenReturn(null);
-		when(req.getRequestURI()).thenReturn(SpiConstants.REQUEST_URI);
-		
-		//when
-		URI  uri=httpDelegate.getRequestURI();
-		
-		//then
-		assertNull("QueryString must be null as we set it up in request scope", uri.getQuery());
-	}
+    private HttpContext jaxWsContext;
+
+    private HttpServletRequest req;
+
+    private HttpServletResponse resp;
+
+    private JettyHttpExchangeDelegate httpDelegate;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        jaxWsContext = mock(HttpContext.class);
+        req = mock(HttpServletRequest.class);
+        resp = mock(HttpServletResponse.class);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testInputStreamRuntimeException() throws Exception
+    {
+        // given
+        when(req.getInputStream()).thenThrow(new IOException());
+
+        // when
+        new JettyHttpExchangeDelegate(jaxWsContext,req,resp);
+
+        // then
+        fail("A RuntimeException must have been occured by now as getInputStream() throwing exception");
+    }
+
+    @Test
+    public void testGetRequestUri()
+    {
+        // given
+        httpDelegate = new JettyHttpExchangeDelegate(jaxWsContext,req,resp);
+        when(req.getQueryString()).thenReturn(null);
+        when(req.getRequestURI()).thenReturn(SpiConstants.REQUEST_URI);
+
+        // when
+        URI uri = httpDelegate.getRequestURI();
+
+        // then
+        assertNull("QueryString must be null as we set it up in request scope",uri.getQuery());
+    }
 }

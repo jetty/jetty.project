@@ -38,74 +38,81 @@ import org.powermock.reflect.Whitebox;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(JettyHttpServer.class)
-public class JettyHttpServerExceptionsTest extends JettyHttpServerBase{
+public class JettyHttpServerExceptionsTest extends JettyHttpServerBase
+{
 
-	private Executor executor;	
+    private Executor executor;
 
-	@Test(expected = IllegalArgumentException.class)
-	public void testSetExecutorIllegalArgumentException() {
-		// given
-		executor = null;
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetExecutorIllegalArgumentException()
+    {
+        // given
+        executor = null;
 
-		// when
-		jettyHttpServer.setExecutor(executor);
-		
-		//then
-		fail("An IllegalArgumentException must have occured by now as executor is null");
-	}
+        // when
+        jettyHttpServer.setExecutor(executor);
 
-	@Test(expected = UnsupportedOperationException.class)
-	public void testSetExecutorUnsupportedOperationException() {
-		// given
-		executor = SpiUtility.getThreadPoolExecutor(Pool.CORE_POOL_SIZE.getValue(), SpiConstants.poolInfo);
+        // then
+        fail("An IllegalArgumentException must have occured by now as executor is null");
+    }
 
-		// when
-		jettyHttpServer.setExecutor(executor);
-		
-		//then
-		fail("An UnsupportedOperationException must have occured by now as executor "
-				+ "instance is not of type DelegatingThreadPool");
-	}
+    @Test(expected = UnsupportedOperationException.class)
+    public void testSetExecutorUnsupportedOperationException()
+    {
+        // given
+        executor = SpiUtility.getThreadPoolExecutor(Pool.CORE_POOL_SIZE.getValue(),SpiConstants.poolInfo);
 
-	@Test(expected = IOException.class)
-	public void testBindIOException() throws Exception {
-		// given
-		setUpForBindException();
+        // when
+        jettyHttpServer.setExecutor(executor);
 
-		// when
-		jettyHttpServer.stop(SpiConstants.DELAY);
-		
-		//then
-		fail("A IOException must have occured by now as the server shared value is true");
-	}
+        // then
+        fail("An UnsupportedOperationException must have occured by now as executor " + "instance is not of type DelegatingThreadPool");
+    }
 
-	private void setUpForBindException() throws Exception {
-		jettyHttpServer = new JettyHttpServer(new Server(), true);
-		jettyHttpServer.start();
-		SpiUtility.callBind(jettyHttpServer);
-	}
-	
-	@Test(expected=RuntimeException.class)
-	public void testStopServer()throws Exception{
-		//given
-		Server server=mock(Server.class);
-		when(server.getBeans(NetworkConnector.class)).thenReturn(null);
-		jettyHttpServer=new JettyHttpServer(server, false);
-		jettyHttpServer.bind(SpiUtility.getInetSocketAddress(), SpiConstants.BACK_LOG);
-		
-		//when
-		jettyHttpServer.stop(SpiConstants.DELAY);
-		
-		//then
-		fail("A RuntimeException must have occured by now as we are stopping the server with wrong object");
-	}
-	
-	@Test
-	public void test()throws Exception{
-		//when
-		ContextHandlerCollection handler=Whitebox.<ContextHandlerCollection>invokeMethod(jettyHttpServer, "findContextHandlerCollection",new Object[]{null});
-		
-		//then
-		assertNull("Handler must be null as handlers parameter is null",handler);
-	}
+    @Test(expected = IOException.class)
+    public void testBindIOException() throws Exception
+    {
+        // given
+        setUpForBindException();
+
+        // when
+        jettyHttpServer.stop(SpiConstants.DELAY);
+
+        // then
+        fail("A IOException must have occured by now as the server shared value is true");
+    }
+
+    private void setUpForBindException() throws Exception
+    {
+        jettyHttpServer = new JettyHttpServer(new Server(),true);
+        jettyHttpServer.start();
+        SpiUtility.callBind(jettyHttpServer);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testStopServer() throws Exception
+    {
+        // given
+        Server server = mock(Server.class);
+        when(server.getBeans(NetworkConnector.class)).thenReturn(null);
+        jettyHttpServer = new JettyHttpServer(server,false);
+        jettyHttpServer.bind(SpiUtility.getInetSocketAddress(),SpiConstants.BACK_LOG);
+
+        // when
+        jettyHttpServer.stop(SpiConstants.DELAY);
+
+        // then
+        fail("A RuntimeException must have occured by now as we are stopping the server with wrong object");
+    }
+
+    @Test
+    public void test() throws Exception
+    {
+        // when
+        ContextHandlerCollection handler = Whitebox.<ContextHandlerCollection> invokeMethod(jettyHttpServer,"findContextHandlerCollection",new Object[]
+        { null });
+
+        // then
+        assertNull("Handler must be null as handlers parameter is null",handler);
+    }
 }

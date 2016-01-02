@@ -22,17 +22,20 @@ import org.eclipse.jetty.http.spi.util.SpiUtility;
 import org.junit.After;
 import org.junit.Before;
 
-public class DelegateThreadPoolBase {
-	
-	protected DelegatingThreadPool delegatingThreadPool;
-	
-	@Before
-	public void setUp() throws Exception {
-		delegatingThreadPool = SpiUtility.getDelegatingThreadPool();
-	}	
+public class DelegateThreadPoolBase
+{
 
-	@After
-	public void tearDown() throws Exception {
-		delegatingThreadPool.stop();
-	}
+    protected DelegatingThreadPool delegatingThreadPool;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        delegatingThreadPool = SpiUtility.getDelegatingThreadPool();
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        delegatingThreadPool.stop();
+    }
 }

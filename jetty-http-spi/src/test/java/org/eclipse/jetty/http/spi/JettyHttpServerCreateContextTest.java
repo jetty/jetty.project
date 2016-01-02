@@ -27,84 +27,91 @@ import org.junit.Before;
 import org.junit.Test;
 import com.sun.net.httpserver.HttpContext;
 
-public class JettyHttpServerCreateContextTest extends JettyHttpServerCreateContextBase{
-	
-	private HttpContext context;
-	
-	private Server server;
+public class JettyHttpServerCreateContextTest extends JettyHttpServerCreateContextBase
+{
 
-	@Before
-	public void setUp() throws Exception {
-		initializeJettyHttpServer(new Server());
-	}
+    private HttpContext context;
 
-	@After
-	public void tearDown() throws Exception {
-		if(jettyHttpServer!=null){
-			jettyHttpServer.stop(SpiConstants.ONE);
-		}
-	}
+    private Server server;
 
-	@Test(expected=RuntimeException.class)
-	public void testWithoutContextHandler() {
-		//when
-		jettyHttpServer.createContext("/");
-		
-		//then
-		fail("A runtime exception must have occured by now as We haven't configure at "
-				+ "least one context handler collection.");		
-	}
-	
-	@Test(expected=RuntimeException.class)
-	public void testWithContextHandler() {
-		//given
-		server=getContextHandlerServer();
-		initializeJettyHttpServer(server);
-		
-		//when		
-		jettyHttpServer.createContext("/");
-		
-		//then
-		fail("A runtime exception must have occured by now as another context already bound to the given path.");		
-	}
-	
-	@Test(expected=RuntimeException.class)
-	public void testWithoutMatchedContextHandler() {
-		//given
-		server=getContextHandlerServer();
-		initializeJettyHttpServer(server);
-		
-		//when
-		jettyHttpServer.createContext("/a-context-that-does-not-exist");
-		
-		//then
-		fail("A runtime exception must have occured by now as there is no matching "
-				+ "context handler collection has found.");		
-	}
-	
-	@Test
-	public void testWithMatchedContextHandler() {
-		//given
-		server=getContextHandlerCollectionServer();
-		initializeJettyHttpServer(server);
-		
-		//when
-		context=jettyHttpServer.createContext("/");
-		
-		//then
-		assertEquals("Path must be equal to /", "/", context.getPath());		
-	}
-	
-	@Test
-	public void testWithMatchedContextHandlerCollections() {
-		//given
-		server=getContextHandlerCollectionsServer();
-		initializeJettyHttpServer(server);
-		
-		//when
-		context=jettyHttpServer.createContext("/");	
-		
-		//then
-		assertEquals("Path must be equal to /", "/", context.getPath());	
-	}	
+    @Before
+    public void setUp() throws Exception
+    {
+        initializeJettyHttpServer(new Server());
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        if (jettyHttpServer != null)
+        {
+            jettyHttpServer.stop(SpiConstants.ONE);
+        }
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testWithoutContextHandler()
+    {
+        // when
+        jettyHttpServer.createContext("/");
+
+        // then
+        fail("A runtime exception must have occured by now as We haven't configure at " + "least one context handler collection.");
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testWithContextHandler()
+    {
+        // given
+        server = getContextHandlerServer();
+        initializeJettyHttpServer(server);
+
+        // when
+        jettyHttpServer.createContext("/");
+
+        // then
+        fail("A runtime exception must have occured by now as another context already bound to the given path.");
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testWithoutMatchedContextHandler()
+    {
+        // given
+        server = getContextHandlerServer();
+        initializeJettyHttpServer(server);
+
+        // when
+        jettyHttpServer.createContext("/a-context-that-does-not-exist");
+
+        // then
+        fail("A runtime exception must have occured by now as there is no matching " + "context handler collection has found.");
+    }
+
+    @Test
+    public void testWithMatchedContextHandler()
+    {
+        // given
+        server = getContextHandlerCollectionServer();
+        initializeJettyHttpServer(server);
+
+        // when
+        context = jettyHttpServer.createContext("/");
+
+        // then
+        assertEquals("Path must be equal to /","/",context.getPath());
+    }
+
+    @Test
+    public void testWithMatchedContextHandlerCollections()
+    {
+        // given
+        server = getContextHandlerCollectionsServer();
+        initializeJettyHttpServer(server);
+
+        // when
+        context = jettyHttpServer.createContext("/");
+
+        // then
+        assertEquals("Path must be equal to /","/",context.getPath());
+    }
 }

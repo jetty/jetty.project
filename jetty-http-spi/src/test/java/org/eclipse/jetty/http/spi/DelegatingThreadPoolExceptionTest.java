@@ -27,36 +27,37 @@ import org.eclipse.jetty.http.spi.util.SpiConstants;
 import org.eclipse.jetty.http.spi.util.SpiUtility;
 import org.junit.Test;
 
-public class DelegatingThreadPoolExceptionTest extends DelegateThreadPoolBase{
+public class DelegatingThreadPoolExceptionTest extends DelegateThreadPoolBase
+{
 
-	private ThreadPoolExecutor threadPoolExecutor;
+    private ThreadPoolExecutor threadPoolExecutor;
 
-	@Test(expected = IllegalStateException.class)
-	public void testJoinIllegalStateException() throws Exception {
-		// given
-		Executor mockExecutor = mock(Executor.class);
-		delegatingThreadPool.setExecutor(mockExecutor);
+    @Test(expected = IllegalStateException.class)
+    public void testJoinIllegalStateException() throws Exception
+    {
+        // given
+        Executor mockExecutor = mock(Executor.class);
+        delegatingThreadPool.setExecutor(mockExecutor);
 
-		// when
-		delegatingThreadPool.join();
-		
-		//then
-		fail("A IllegalStateException must have occured by now as executor type "
-				+ "not in ThreadPool or ExecutorService.");
-	}
+        // when
+        delegatingThreadPool.join();
 
-	@Test(expected = IllegalStateException.class)
-	public void testSetExecutorIllegalStateException() throws Exception {
-		// given
-		delegatingThreadPool.start();
-		threadPoolExecutor = SpiUtility.getThreadPoolExecutor(Pool.CORE_POOL_SIZE.getValue(),
-				SpiConstants.poolInfo);
+        // then
+        fail("A IllegalStateException must have occured by now as executor type " + "not in ThreadPool or ExecutorService.");
+    }
 
-		// when
-		delegatingThreadPool.setExecutor(threadPoolExecutor);
-		
-		//then
-		fail("A IllegalStateException must have occured by now as current threadpool "
-				+ "has been already started. So it shouldn't allow us to reset the pool.");
-	}
+    @Test(expected = IllegalStateException.class)
+    public void testSetExecutorIllegalStateException() throws Exception
+    {
+        // given
+        delegatingThreadPool.start();
+        threadPoolExecutor = SpiUtility.getThreadPoolExecutor(Pool.CORE_POOL_SIZE.getValue(),SpiConstants.poolInfo);
+
+        // when
+        delegatingThreadPool.setExecutor(threadPoolExecutor);
+
+        // then
+        fail("A IllegalStateException must have occured by now as current threadpool "
+                + "has been already started. So it shouldn't allow us to reset the pool.");
+    }
 }
