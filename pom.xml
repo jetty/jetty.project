@@ -22,7 +22,7 @@
     <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>
     <developerConnection>scm:git:ssh://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</developerConnection>
     <url>http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree</url>
-    <tag>HEAD</tag>
+    <tag>jetty-8</tag>
   </scm>
   <build>
     <defaultGoal>install</defaultGoal>
@@ -213,7 +213,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-             <copyright-range>${project.inceptionYear}-2015</copyright-range>
+             <copyright-range>${project.inceptionYear}-2016</copyright-range>
           </properties>
           <mapping>
             <java>DOUBLESLASH_STYLE</java>
