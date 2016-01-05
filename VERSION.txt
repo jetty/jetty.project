@@ -1,3 +1,5 @@
+jetty-9.3.7-SNAPSHOT
+
 jetty-9.3.7.RC0 - 05 January 2016
  + 458745 Async ISE in async Echo
  + 481567 permessage-deflate causing data-dependent ju.zip.DataFormatException:
