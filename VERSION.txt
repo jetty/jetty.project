@@ -1,4 +1,51 @@
-jetty-9.3.7-SNAPSHOT
+jetty-9.3.7.RC0 - 05 January 2016
+ + 458745 Async ISE in async Echo
+ + 481567 permessage-deflate causing data-dependent ju.zip.DataFormatException:
+   invalid stored block lengths
+ + 482173 Track original Query string in Rewrite RuleContainer too
+ + 482243 Fixed GzipHandler for Include.
+ + 482270 Expose upgrade request locales.
+ + 482272 Fixed relative symlink checking
+ + 482506 HTTP/2 load test with h2load fails.
+ + 482670 HttpURI wrongly parser URI paths starting with /@
+ + 482855 Content-Length omitted for POST requests with empty body
+ + 482959 Local stream count never decrements when closing a stream causing
+   IllegalStateException.
+ + 483009 MultiPartContentProvider may send wrong Content-Length.
+ + 483039 HTTP2 Upgrade case sensitivity on Connection header
+ + 483344 text/csv Mime Type For CSV in mime properties File
+ + 483413 Warn on @Deprecated servlet/filter use
+ + 483422 Empty chunked body in 304 Response
+ + 483620 Servlet annotation mapping to "/" should override webdefault.xml
+   mapping
+ + 483857 jetty-client onComplete isn't called in case of exception in
+   GZIPContentDecoder.
+ + 483878 Parallel requests stuck via the http client transport over HTTP/2.
+ + 484167 GOAWAY frames aren't handling disconnects appropriately on Client.
+ + 484210 HttpClient over HTTP/2 should honor maxConcurrentStreams.
+ + 484262 Race condition between GOAWAY disconnect and ability to make new
+   request.
+ + 484349 Promote WebSocket PathMappings / PathSpec to Jetty Http
+ + 484350 Allow GzipHandler path include/exclude to use regex
+ + 484397 Unavoidable NullPointerException in onMessage-Handler for
+   PongMessages
+ + 484440 Swap WebSocket PathMappings for new jetty-http PathMappings
+ + 484585 Avoid sending request using a connection that is idle timing out.
+ + 484603 HashLoginService does not stop its PropertyUserStore
+ + 484612 Restore WebSocket Session.close() sending 1000/Normal status code
+ + 484621 Client hangs till timeout when Authentication.authenticate() throws
+   exception.
+ + 484622 Improve handling of Direct and Mapped buffers for static content
+ + 484624 Disable CachingWebAppClassLoader
+ + 484657 Support HSTS rfc6797
+ + 484683 FastCGI request idle timeout is handled incorrectly.
+ + 484718 Review idle timeout handling.
+ + 484801 Avoid non-cached memory mapped files
+ + 484818 Expose interesting HTTP/2 attributes and operations via JMX.
+ + 484822 Jetty ThreadMonitor memory leak
+ + 484861 Improve FlowControlStrategy stall handling.
+ + 484876 Make simpler to customize the FlowControlStrategy.
+ + 484878 Make BufferingFlowControlStrategy.bufferRatio configurable via JMX.
 
 jetty-9.3.6.v20151106 - 06 November 2015
  + 419966 Add ContentProvider that submits multipart/form-data.
