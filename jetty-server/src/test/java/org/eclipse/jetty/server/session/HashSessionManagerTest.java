@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -80,7 +81,25 @@ public class HashSessionManagerTest
         Server server = new Server();
         SessionHandler handler = new SessionHandler();
         handler.setServer(server);
-        HashSessionManager manager = new HashSessionManager();
+        HashSessionManager manager = new HashSessionManager()
+        {
+            @Override
+            public void doStart() throws Exception
+            {
+                super.doStart();
+                Scheduler timerBean = getBean(Scheduler.class);
+                Assert.assertNotNull(timerBean);
+            }
+
+            @Override
+            public void doStop() throws Exception
+            {
+                super.doStop();
+                Scheduler timerBean = getBean(Scheduler.class);
+                Assert.assertNull(timerBean);
+            }
+
+        };
         manager.setStoreDirectory(testDir);
         manager.setMaxInactiveInterval(5);
         Assert.assertTrue(testDir.exists());
