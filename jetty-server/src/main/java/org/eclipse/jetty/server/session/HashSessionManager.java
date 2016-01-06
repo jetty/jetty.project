@@ -182,8 +182,13 @@ public class HashSessionManager extends AbstractSessionManager
             _saveTask=null;
             if (_task!=null)
                 _task.cancel();
-
+            
             _task=null;
+            
+            //if we're managing our own timer, remove it
+            if (isManaged(_timer))
+               removeBean(_timer);
+
             _timer=null;
         }
        
@@ -192,7 +197,6 @@ public class HashSessionManager extends AbstractSessionManager
         super.doStop();
 
         _sessions.clear();
-
     }
 
     /* ------------------------------------------------------------ */
