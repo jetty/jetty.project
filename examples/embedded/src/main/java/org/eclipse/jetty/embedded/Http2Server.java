@@ -181,8 +181,8 @@ public class Http2Server
             
             Cookie[] cookies = request.getCookies();
             if(cookies != null) {
-				for (Cookie c : cookies)
-	                content+="cookie "+c.getName()+"="+c.getValue()+"\n";
+                for (Cookie c : cookies)
+                    content+="cookie "+c.getName()+"="+c.getValue()+"\n";
             }
             response.setContentLength(content.length());
             response.getOutputStream().print(content);
