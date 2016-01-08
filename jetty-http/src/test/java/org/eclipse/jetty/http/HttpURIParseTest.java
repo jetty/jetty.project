@@ -159,7 +159,11 @@ public class HttpURIParseTest
         {"info;q1=v1?q2=v2",null,null,null,"info;q1=v1","q1=v1","q2=v2",null},
         
         // Path-less, query only (seen from JSP/JSTL and <c:url> use
-        {"?q1=v1&q2=v2",null,null,null,"",null,"q1=v1&q2=v2",null}
+        {"?q1=v1&q2=v2",null,null,null,"",null,"q1=v1&q2=v2",null},
+        
+        // Extra slashes in url
+        {"http://test.com//hello////hello2", "http", "test.com", null, "/hello/hello2", null, null, null},
+        {"http://test.com///hello", "http", "test.com", null, "/hello", null, null, null}
         };
         
         return Arrays.asList(tests);
@@ -206,11 +210,11 @@ public class HttpURIParseTest
             assertThat("[" + input + "] .scheme",httpUri.getScheme(),is(scheme));
             assertThat("[" + input + "] .host",httpUri.getHost(),is(host));
             assertThat("[" + input + "] .port",httpUri.getPort(),is(port == null ? -1 : Integer.parseInt(port)));
-            assertThat("[" + input + "] .path",httpUri.getPath(),is(path));
+            assertThat("[" + input + "] .path",httpUri.getPath(),is(path.replaceAll("//+", "/")));
             assertThat("[" + input + "] .param",httpUri.getParam(),is(param));
             assertThat("[" + input + "] .query",httpUri.getQuery(),is(query));
             assertThat("[" + input + "] .fragment",httpUri.getFragment(),is(fragment));
-            assertThat("[" + input + "] .toString",httpUri.toString(),is(input));
+            assertThat("[" + input + "] .toString",httpUri.toString(),is(input.replaceAll("(?<=\\w)(//+)", "/")));
         }
         catch (URISyntaxException e)
         {
@@ -245,12 +249,12 @@ public class HttpURIParseTest
         assertThat("[" + input + "] .scheme",httpUri.getScheme(),is(scheme));
         assertThat("[" + input + "] .host",httpUri.getHost(),is(host));
         assertThat("[" + input + "] .port",httpUri.getPort(),is(port == null ? -1 : Integer.parseInt(port)));
-        assertThat("[" + input + "] .path",httpUri.getPath(),is(path));
+        assertThat("[" + input + "] .path",httpUri.getPath(),is(path.replaceAll("//+", "/")));
         assertThat("[" + input + "] .param",httpUri.getParam(),is(param));
         assertThat("[" + input + "] .query",httpUri.getQuery(),is(query));
         assertThat("[" + input + "] .fragment",httpUri.getFragment(),is(fragment));
         
-        assertThat("[" + input + "] .toString",httpUri.toString(),is(input));
+        assertThat("[" + input + "] .toString",httpUri.toString(),is(input.replaceAll("(?<=\\w)(//+)", "/")));
     }
     
     @Test
@@ -273,10 +277,10 @@ public class HttpURIParseTest
         assertThat("[" + input + "] .scheme",httpUri.getScheme(),is(javaUri.getScheme()));
         assertThat("[" + input + "] .host",httpUri.getHost(),is(javaUri.getHost()));
         assertThat("[" + input + "] .port",httpUri.getPort(),is(javaUri.getPort()));
-        assertThat("[" + input + "] .path",httpUri.getPath(),is(javaUri.getRawPath()));
+        assertThat("[" + input + "] .path",httpUri.getPath(),is(javaUri.getRawPath().replaceAll("//+", "/")));
         // Not Relevant for java.net.URI -- assertThat("["+input+"] .param", httpUri.getParam(), is(param));
         assertThat("[" + input + "] .query",httpUri.getQuery(),is(javaUri.getRawQuery()));
         assertThat("[" + input + "] .fragment",httpUri.getFragment(),is(javaUri.getFragment()));
-        assertThat("[" + input + "] .toString",httpUri.toString(),is(javaUri.toASCIIString()));
+        assertThat("[" + input + "] .toString",httpUri.toString(),is(javaUri.toASCIIString().replaceAll("(?<=\\w)(//+)", "/")));
     }
 }

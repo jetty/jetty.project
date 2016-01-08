@@ -745,7 +745,6 @@ public class HttpParser
                         }
 
                         setState(State.HEADER);
-                        
                         handle=_requestHandler.startRequest(_methodString,_uri.toString(), _version)||handle;
                         continue;
                     }
