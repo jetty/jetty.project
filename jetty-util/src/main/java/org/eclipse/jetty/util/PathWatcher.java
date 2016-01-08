@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.util;
 
-import static java.nio.file.StandardWatchEventKinds.*;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
 import java.io.File;
 import java.io.IOException;
@@ -1244,7 +1246,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             LOG.debug("Starting java.nio file watching with {}",watchService);
         }
 
-        while (watchService != null)
+        while (watchService != null  && thread == Thread.currentThread())
         {
             WatchKey key = null;
 
