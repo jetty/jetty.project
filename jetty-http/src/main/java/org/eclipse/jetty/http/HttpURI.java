@@ -109,7 +109,7 @@ public class HttpURI
         _scheme = scheme;
         _host = host;
         _port = port;
-        _path = path;
+        setPath(path);
         _param = param;
         _query = query;
         _fragment = fragment;
@@ -140,7 +140,7 @@ public class HttpURI
             _host="";
         _port=uri.getPort();
         _user = uri.getUserInfo();
-        _path=uri.getRawPath();
+        setPath(uri.getRawPath());
         
         _decodedPath = uri.getPath();
         if (_decodedPath != null)
@@ -220,7 +220,7 @@ public class HttpURI
                             break;
                         case '?':
                             // assume empty path (if seen at start)
-                            _path = "";
+                            setPath("");
                             mark=i+1;
                             state=State.QUERY;
                             break;
@@ -229,7 +229,7 @@ public class HttpURI
                             state=State.FRAGMENT;
                             break;
                         case '*':
-                            _path="*";
+                            setPath("*");
                             state=State.ASTERISK;
                             break;
 
@@ -271,7 +271,7 @@ public class HttpURI
 
                         case '?':
                             // must have been in a path 
-                            _path=uri.substring(mark,i);
+                            setPath(uri.substring(mark,i));
                             mark=i+1;
                             state=State.QUERY;
                             break;
@@ -284,7 +284,7 @@ public class HttpURI
                         
                         case '#':
                             // must have been in a path 
-                            _path=uri.substring(mark,i);
+                            setPath(uri.substring(mark,i));
                             state=State.FRAGMENT;
                             break;
                     }
@@ -296,9 +296,14 @@ public class HttpURI
                     switch(c)
                     {
                         case '/':
-                            _host="";
-                            mark=i+1;
-                            state=State.HOST;
+                        	if(isBeforeHost(uri, i))
+                        	{
+                        		mark=i+1;
+                        		state=State.HOST;
+                        	} else {
+                        		path_mark = i;
+                        		state = State.PATH;
+                        	}
                             break;
                             
                         case '@':
@@ -337,7 +342,6 @@ public class HttpURI
                             _user=uri.substring(mark,i);
                             mark=i+1;
                             break;
-                            
                         case '[':
                             state=State.IPV6;
                             break;
@@ -390,12 +394,12 @@ public class HttpURI
                             state=State.PARAM;
                             break;
                         case '?':
-                            _path=uri.substring(path_mark,i);
+                            setPath(uri.substring(path_mark,i));
                             mark=i+1;
                             state=State.QUERY;
                             break;
                         case '#':
-                            _path=uri.substring(path_mark,i);
+                            setPath(uri.substring(path_mark,i));
                             mark=i+1;
                             state=State.FRAGMENT;
                             break;
@@ -411,13 +415,13 @@ public class HttpURI
                     switch (c)
                     {
                         case '?':
-                            _path=uri.substring(path_mark,i);
+                            setPath(uri.substring(path_mark,i));
                             _param=uri.substring(mark,i);
                             mark=i+1;
                             state=State.QUERY;
                             break;
                         case '#':
-                            _path=uri.substring(path_mark,i);
+                            setPath(uri.substring(path_mark,i));
                             _param=uri.substring(mark,i);
                             mark=i+1;
                             state=State.FRAGMENT;
@@ -465,11 +469,11 @@ public class HttpURI
             case START:
                 break;
             case SCHEME_OR_PATH:
-                _path=uri.substring(mark,end);
+                setPath(uri.substring(mark,end));
                 break;
 
             case HOST_OR_PATH:
-                _path=uri.substring(mark,end);
+                setPath(uri.substring(mark,end));
                 break;
                 
             case HOST:
@@ -492,12 +496,12 @@ public class HttpURI
                 break;
                 
             case PARAM:
-                _path=uri.substring(path_mark,end);
+                setPath(uri.substring(path_mark,end));
                 _param=uri.substring(mark,end);
                 break;
                 
             case PATH:
-                _path=uri.substring(path_mark,end);
+                setPath(uri.substring(path_mark,end));
                 break;
                 
             case QUERY:
@@ -512,6 +516,15 @@ public class HttpURI
             else
                 _decodedPath=_path.substring(0,_path.length()-_param.length()-1);
         }
+    }
+    
+    /**
+     * @return Whether the current position in the URI is before the host portion of the URL
+     */
+    public boolean isBeforeHost(String uri, int currentPosition)
+    {
+    	return currentPosition == 1 && uri.charAt(0) == '/' // URL that starts with double forwardslash
+    		   || currentPosition > 2 && uri.charAt(currentPosition - 2) == ':'; // URL that begins with protocol (eg http://) 
     }
 
     /* ------------------------------------------------------------ */
@@ -701,7 +714,7 @@ public class HttpURI
     public void setPath(String path)
     {
         _uri=null;
-        _path=path;
+        _path=path.replaceAll("//+", "/");
         _decodedPath=null;
     }
     
