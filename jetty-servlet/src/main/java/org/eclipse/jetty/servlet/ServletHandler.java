@@ -585,27 +585,23 @@ public class ServletHandler extends ScopedHandler
         }
 
         // Servlet name filters
-        if (servletHolder != null && _filterNameMappings!=null && _filterNameMappings.size() > 0)
+        if (servletHolder != null && _filterNameMappings!=null && !_filterNameMappings.isEmpty())
         {
-            // Servlet name filters
-            if (_filterNameMappings.size() > 0)
+            Object o= _filterNameMappings.get(servletHolder.getName());
+
+            for (int i=0; i<LazyList.size(o);i++)
             {
-                Object o= _filterNameMappings.get(servletHolder.getName());
+                FilterMapping mapping = LazyList.get(o,i);
+                if (mapping.appliesTo(dispatch))
+                    filters.add(mapping.getFilterHolder());
+            }
 
-                for (int i=0; i<LazyList.size(o);i++)
-                {
-                    FilterMapping mapping = LazyList.get(o,i);
-                    if (mapping.appliesTo(dispatch))
-                        filters.add(mapping.getFilterHolder());
-                }
-
-                o= _filterNameMappings.get("*");
-                for (int i=0; i<LazyList.size(o);i++)
-                {
-                    FilterMapping mapping = LazyList.get(o,i);
-                    if (mapping.appliesTo(dispatch))
-                        filters.add(mapping.getFilterHolder());
-                }
+            o= _filterNameMappings.get("*");
+            for (int i=0; i<LazyList.size(o);i++)
+            {
+                FilterMapping mapping = LazyList.get(o,i);
+                if (mapping.appliesTo(dispatch))
+                    filters.add(mapping.getFilterHolder());
             }
         }
 
