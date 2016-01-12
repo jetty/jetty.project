@@ -801,7 +801,7 @@ public class StartArgs
         }
         
         // Skip [files] validation on a module
-        if (arg.startsWith("--skip-vile-validation="))
+        if (arg.startsWith("--skip-file-validation="))
         {
             List<String> moduleNames = getValues(arg);
             for (String moduleName : moduleNames)
