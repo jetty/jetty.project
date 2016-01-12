@@ -93,6 +93,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         this.outgoingHandler = connection;
         this.incomingHandler = websocket;
         this.connection.getIOState().addListener(this);
+        this.policy = containerScope.getPolicy();
         
         addBean(this.connection);
         addBean(this.websocket);
