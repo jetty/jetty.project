@@ -1,4 +1,14 @@
-jetty-9.1.6-SNAPSHOT
+jetty-9.1.6.v20160112 - 12 January 2016
+ + 423392 Fix buffer overflow in AsyncGzipFilter
+ + 434247 Redirect loop in FastCGI proxying for HTTPS sites.
+ + 434505 Allow property files on start.jar command line Signed-off-by: Tom
+   Zeller<tzeller@dragonacea.biz>
+ + 436345 Refactor AbstractSession to minimize burden on subclasses to
+   implement behaviour
+ + 460297 Use webapp classloader for infinispan deserialization
+ + 467165 Add --skip-file-validation to start.jar --help output
+ + 481075 Infinispan Session statistics are not accurate
+ + 481960 Add --skip-file-validation to 9.1.x
 
 jetty-9.1.5.v20140505 - 05 May 2014
  + 431459 Jetty WebSocket compression extensions fails to handle big messages
