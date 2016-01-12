@@ -1,3 +1,5 @@
+jetty-9.1.7-SNAPSHOT
+
 jetty-9.1.6.v20160112 - 12 January 2016
  + 423392 Fix buffer overflow in AsyncGzipFilter
  + 434247 Redirect loop in FastCGI proxying for HTTPS sites.
