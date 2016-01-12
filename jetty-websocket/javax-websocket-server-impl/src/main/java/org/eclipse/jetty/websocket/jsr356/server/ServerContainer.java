@@ -30,6 +30,7 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
@@ -56,7 +57,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         EventDriverFactory eventDriverFactory = this.webSocketServerFactory.getEventDriverFactory();
         eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
         eventDriverFactory.addImplementation(new JsrServerExtendsEndpointImpl());
-        this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this,this));
+        this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this));
         addBean(webSocketServerFactory);
     }
     
@@ -239,5 +240,17 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         webSocketServerFactory.getPolicy().setMaxTextMessageSize(max);
         // incoming streaming buffer size
         webSocketServerFactory.getPolicy().setMaxTextMessageBufferSize(max);
+    }
+
+    @Override
+    public void onSessionClosed(WebSocketSession session)
+    {
+        webSocketServerFactory.onSessionClosed(session);
+    }
+
+    @Override
+    public void onSessionOpened(WebSocketSession session)
+    {
+        webSocketServerFactory.onSessionOpened(session);
     }
 }

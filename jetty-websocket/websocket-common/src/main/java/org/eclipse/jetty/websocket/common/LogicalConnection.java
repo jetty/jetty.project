@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -155,4 +154,10 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * @return the suspend token
      */
     SuspendToken suspend();
+
+    /**
+     * Get Unique ID for the Connection
+     * @return the unique ID for the connection
+     */
+    public String getId();
 }

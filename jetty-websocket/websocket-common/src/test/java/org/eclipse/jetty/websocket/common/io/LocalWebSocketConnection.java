@@ -108,6 +108,12 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
+    public String getId()
+    {
+        return this.id;
+    }
+
+    @Override
     public long getIdleTimeout()
     {
         return 0;
