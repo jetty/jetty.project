@@ -35,7 +35,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * <p>
      * Basic usage: results in an non-blocking async write, then connection close.
      * 
-     * @see StatusCode
+     * @see org.eclipse.jetty.websocket.api.StatusCode
      * @see #close(int, String)
      */
     public void close();
@@ -49,7 +49,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      *            the status code
      * @param reason
      *            the (optional) reason. (can be null for no reason)
-     * @see StatusCode
+     * @see org.eclipse.jetty.websocket.api.StatusCode
      */
     public void close(int statusCode, String reason);
 

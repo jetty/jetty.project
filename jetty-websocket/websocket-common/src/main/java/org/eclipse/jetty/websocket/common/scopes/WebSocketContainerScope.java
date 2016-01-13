@@ -69,14 +69,14 @@ public interface WebSocketContainerScope
     /**
      * A Session has been opened
      * 
-     * @param the session that was opened
+     * @param session the session that was opened
      */
     public void onSessionOpened(WebSocketSession session);
     
     /**
      * A Session has been closed
      * 
-     * @param the session that was closed
+     * @param session the session that was closed
      */
     public void onSessionClosed(WebSocketSession session);
 

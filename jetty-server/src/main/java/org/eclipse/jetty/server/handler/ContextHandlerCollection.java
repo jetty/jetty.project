@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
 /** ContextHandlerCollection.
  *
  * This {@link org.eclipse.jetty.server.handler.HandlerCollection} is creates a
- * {@link org.eclipse.jetty.http.PathMap} to it's contained handlers based
+ * Map of contexts to it's contained handlers based
  * on the context path and virtual hosts of any contained {@link org.eclipse.jetty.server.handler.ContextHandler}s.
  * The contexts do not need to be directly contained, only children of the contained handlers.
  * Multiple contexts may have the same context path and they are called in order until one

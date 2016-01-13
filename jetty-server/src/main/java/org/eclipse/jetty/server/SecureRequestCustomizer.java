@@ -177,12 +177,11 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
 
     /**
-     * <p>
      * Customizes the request attributes for general secure settings.
      * The default impl calls {@link Request#setSecure(boolean)} with true
      * and sets a response header if the Strict-Transport-Security options 
      * are set.
-     * </p>
+     * @param request the request being customized
      */
     protected void customizeSecure(Request request)
     {
