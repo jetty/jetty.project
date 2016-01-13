@@ -21,8 +21,10 @@ package org.eclipse.jetty.quickstart;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 
 import org.eclipse.jetty.server.NetworkConnector;
@@ -33,6 +35,7 @@ import org.eclipse.jetty.webapp.WebDescriptor;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class QuickStartTest
@@ -175,5 +178,74 @@ public class QuickStartTest
         assertThat(content,Matchers.containsString("JNDI Test WebApp"));
       
         server.stop();
+    }
+    
+    @Test
+    public void testNormalize() throws Exception
+    {
+        String jetty_base=System.getProperty("jetty.base");
+        String jetty_home=System.getProperty("jetty.home");
+        String user_home=System.getProperty("user.home");
+        String user_dir=System.getProperty("user.dir");
+        try
+        {
+            System.setProperty("jetty.home","/opt/jetty-distro");
+            System.setProperty("jetty.base","/opt/jetty-distro/demo.base");
+            System.setProperty("user.home","/home/user");
+            System.setProperty("user.dir","/etc/init.d");
+            AttributeNormalizer normalizer = new AttributeNormalizer(Resource.newResource("/opt/jetty-distro/demo.base/webapps/root"));
+
+            String[][] tests = { 
+                    { "WAR", "/opt/jetty-distro/demo.base/webapps/root" },
+                    { "jetty.home", "/opt/jetty-distro" },
+                    { "jetty.base", "/opt/jetty-distro/demo.base" },
+                    { "user.home", "/home/user" },
+                    { "user.dir", "/etc/init.d" },
+            };
+
+            for (String[] test : tests)
+            {
+                Assert.assertEquals("file:${"+test[0]+"}",normalizer.normalize("file:"+test[1]));
+                Assert.assertEquals("file:${"+test[0]+"}",normalizer.normalize("file:"+test[1]+"/"));
+                Assert.assertEquals("file:${"+test[0]+"}/file",normalizer.normalize("file:"+test[1]+"/file"));
+                Assert.assertEquals("file:${"+test[0]+"}",normalizer.normalize(new URI("file:"+test[1])));
+                Assert.assertEquals("file:${"+test[0]+"}",normalizer.normalize(new URI("file:"+test[1]+"/")));
+                Assert.assertEquals("file:${"+test[0]+"}/file",normalizer.normalize(new URI("file:"+test[1]+"/file")));
+                Assert.assertEquals("file:${"+test[0]+"}",normalizer.normalize(new URL("file:"+test[1])));
+                Assert.assertEquals("file:${"+test[0]+"}",normalizer.normalize(new URL("file:"+test[1]+"/")));
+                Assert.assertEquals("file:${"+test[0]+"}/file",normalizer.normalize(new URL("file:"+test[1]+"/file")));
+                Assert.assertEquals("jar:file:${"+test[0]+"}!/file",normalizer.normalize("jar:file:"+test[1]+"!/file"));
+                Assert.assertEquals("jar:file:${"+test[0]+"}!/file",normalizer.normalize("jar:file:"+test[1]+"/!/file"));
+                Assert.assertEquals("jar:file:${"+test[0]+"}/file!/file",normalizer.normalize("jar:file:"+test[1]+"/file!/file"));
+                Assert.assertEquals("jar:file:${"+test[0]+"}!/file",normalizer.normalize(new URI("jar:file:"+test[1]+"!/file")));
+                Assert.assertEquals("jar:file:${"+test[0]+"}!/file",normalizer.normalize(new URI("jar:file:"+test[1]+"/!/file")));
+                Assert.assertEquals("jar:file:${"+test[0]+"}/file!/file",normalizer.normalize(new URI("jar:file:"+test[1]+"/file!/file")));
+                Assert.assertEquals("jar:file:${"+test[0]+"}!/file",normalizer.normalize(new URL("jar:file:"+test[1]+"!/file")));
+                Assert.assertEquals("jar:file:${"+test[0]+"}!/file",normalizer.normalize(new URL("jar:file:"+test[1]+"/!/file")));
+                Assert.assertEquals("jar:file:${"+test[0]+"}/file!/file",normalizer.normalize(new URL("jar:file:"+test[1]+"/file!/file")));
+            }
+        }
+        finally
+        {
+            if (user_dir==null)
+                System.clearProperty("user.dir");
+            else
+                System.setProperty("user.dir",user_dir);
+
+            if (user_home==null)
+                System.clearProperty("user.home");
+            else
+                System.setProperty("user.home",user_home);
+
+            if (jetty_home==null)
+                System.clearProperty("jetty.home");
+            else
+                System.setProperty("jetty.home",jetty_home);
+
+            if (jetty_base==null)
+                System.clearProperty("jetty.base");
+            else
+                System.setProperty("jetty.base",jetty_base);
+        }
     }
 }
