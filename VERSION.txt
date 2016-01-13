@@ -1,3 +1,5 @@
+jetty-9.3.7-SNAPSHOT
+
 jetty-9.3.7.RC1 - 13 January 2016
  + 481986 Dead JSR 356 Server Session still being tracked after
    Session/Connection closure
