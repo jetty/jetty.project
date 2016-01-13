@@ -368,7 +368,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private void extractQueryParameters()
     {
-        if (_metadata.getURI() == null || !_metadata.getURI().hasQuery())
+        if (_metadata == null || _metadata.getURI() == null || !_metadata.getURI().hasQuery())
             _queryParameters=NO_PARAMS;
         else
         {
