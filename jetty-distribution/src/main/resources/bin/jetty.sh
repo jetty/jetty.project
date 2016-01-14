@@ -527,6 +527,7 @@ case "$ACTION" in
 
   restart)
     JETTY_SH=$0
+    > "$JETTY_STATE"
     if [ ! -f $JETTY_SH ]; then
       if [ ! -f $JETTY_HOME/bin/jetty.sh ]; then
         echo "$JETTY_HOME/bin/jetty.sh does not exist."
