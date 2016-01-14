@@ -17,7 +17,7 @@
   </properties>
 
   <modules>
-    <module>gcloud-session-manager</module>
+    <module>jetty-gcloud-session-manager</module>
   </modules>
 
 </project>
