@@ -29,6 +29,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
+import java.util.Arrays;
 
 import javax.net.ssl.SSLEngine;
 
@@ -56,6 +57,20 @@ public class SslContextFactoryTest
         cf = new SslContextFactory();
     }
 
+    @Test
+    public void testSLOTH() throws Exception
+    {
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+
+        cf.start();
+
+        System.err.println(Arrays.asList(cf.getSelectedProtocols()));
+        for (String cipher : cf.getSelectedCipherSuites())
+            System.err.println(cipher);
+
+    }
+    
     @Test
     public void testNoTsFileKs() throws Exception
     {
