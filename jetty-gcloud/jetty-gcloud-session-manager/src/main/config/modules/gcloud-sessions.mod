@@ -40,7 +40,7 @@ maven://com.google.api-client/google-api-client/1.15.0-rc|lib/gcloud/google-api-
 maven://com.google.apis/google-api-services-datastore/v1beta2-rev23-1.19.0|lib/gcloud/google-api-services-datastore-v1beta2-rev23-1.19.0.jar
 
 [lib]
-lib/gcloud-session-manager-${jetty.version}.jar
+lib/jetty-gcloud-session-manager-${jetty.version}.jar
 lib/gcloud/*.jar
 
 [xml]
