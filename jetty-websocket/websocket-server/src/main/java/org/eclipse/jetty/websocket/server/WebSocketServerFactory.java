@@ -36,11 +36,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -618,6 +622,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         if (LOG.isDebugEnabled())
             LOG.debug("Handshake Response: {}", handshaker);
 
+        if (getSendServerVersion(connector))
+            response.setHeader("Server",HttpConfiguration.SERVER_VERSION);
+        
         // Process (version specific) handshake response
         handshaker.doHandshakeResponse(request, response);
 
@@ -625,5 +632,20 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             LOG.debug("Websocket upgrade {} {} {} {}", request.getRequestURI(), version, response.getAcceptedSubProtocol(), wsConnection);
 
         return true;
+    }
+
+    private boolean getSendServerVersion(Connector connector)
+    {
+        ConnectionFactory connFactory = connector.getConnectionFactory(HttpVersion.HTTP_1_1.asString());
+        if (connFactory == null)
+            return false;
+
+        if (connFactory instanceof HttpConnectionFactory)
+        {
+            HttpConfiguration httpConf = ((HttpConnectionFactory)connFactory).getHttpConfiguration();
+            if (httpConf != null)
+                return httpConf.getSendServerVersion();
+        }
+        return false;
     }
 }
