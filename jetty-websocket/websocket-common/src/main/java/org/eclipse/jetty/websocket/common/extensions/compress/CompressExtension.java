@@ -407,12 +407,13 @@ public abstract class CompressExtension extends AbstractExtension
         {
             Frame frame = entry.frame;
             BatchMode batchMode = entry.batchMode;
-            if (OpCode.isControlFrame(frame.getOpCode()) || !frame.hasPayload())
+            if (OpCode.isControlFrame(frame.getOpCode()))
             {
+                // Do not deflate control frames
                 nextOutgoingFrame(frame,this,batchMode);
                 return;
             }
-
+            
             compress(entry,true);
         }
 
@@ -434,7 +435,7 @@ public abstract class CompressExtension extends AbstractExtension
                 // no input supplied
                 needsCompress = false;
             }
-
+            
             ByteArrayOutputStream out = new ByteArrayOutputStream();
 
             byte[] output = new byte[outputLength];
@@ -486,7 +487,8 @@ public abstract class CompressExtension extends AbstractExtension
             }
             else if (fin)
             {
-                // Special case: 8.2.3.6.  Generating an Empty Fragment Manually
+                // Special case: 7.2.3.6.  Generating an Empty Fragment Manually
+                // https://tools.ietf.org/html/rfc7692#section-7.2.3.6
                 payload = ByteBuffer.wrap(new byte[] { 0x00 });
             }
 
