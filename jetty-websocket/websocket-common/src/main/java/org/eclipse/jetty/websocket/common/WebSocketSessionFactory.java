@@ -31,26 +31,10 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 public class WebSocketSessionFactory implements SessionFactory
 {
     private final WebSocketContainerScope containerScope;
-    private final SessionListener[] listeners;
 
-    public WebSocketSessionFactory(WebSocketContainerScope containerScope, SessionListener... sessionListeners)
+    public WebSocketSessionFactory(WebSocketContainerScope containerScope)
     {
         this.containerScope = containerScope;
-        if ((sessionListeners != null) && (sessionListeners.length > 0))
-        {
-            this.listeners = sessionListeners;
-        }
-        else
-        {
-            if (this.containerScope instanceof SessionListener)
-            {
-                this.listeners = new SessionListener[] { (SessionListener)containerScope };
-            }
-            else
-            {
-                this.listeners = new SessionListener[0];
-            }
-        }
    }
 
     @Override
@@ -62,6 +46,6 @@ public class WebSocketSessionFactory implements SessionFactory
     @Override
     public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
-        return new WebSocketSession(containerScope, requestURI,websocket,connection,listeners);
+        return new WebSocketSession(containerScope, requestURI,websocket,connection);
     }
 }

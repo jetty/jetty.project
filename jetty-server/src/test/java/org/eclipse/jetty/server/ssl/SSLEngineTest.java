@@ -189,7 +189,7 @@ public class SSLEngineTest
 
         Socket[] client=new Socket[numConns];
 
-        SSLContext ctx=SSLContext.getInstance("SSLv3");
+        SSLContext ctx=SSLContext.getInstance("TLSv1.2");
         ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
 
         int port=connector.getLocalPort();

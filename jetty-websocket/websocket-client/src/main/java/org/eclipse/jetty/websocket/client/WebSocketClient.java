@@ -53,7 +53,6 @@ import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.common.SessionFactory;
-import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
@@ -64,7 +63,7 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 /**
  * WebSocketClient provides a means of establishing connections to remote websocket endpoints.
  */
-public class WebSocketClient extends ContainerLifeCycle implements SessionListener, WebSocketContainerScope
+public class WebSocketClient extends ContainerLifeCycle implements WebSocketContainerScope
 {
     private static final Logger LOG = Log.getLogger(WebSocketClient.class);
 

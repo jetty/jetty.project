@@ -67,7 +67,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     private final URI requestURI;
     private final LogicalConnection connection;
     private final EventDriver websocket;
-    private final SessionListener[] sessionListeners;
     private final Executor executor;
     private ClassLoader classLoader;
     private ExtensionFactory extensionFactory;
@@ -80,7 +79,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
 
-    public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, EventDriver websocket, LogicalConnection connection, SessionListener... sessionListeners)
+    public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
         Objects.requireNonNull(containerScope,"Container Scope cannot be null");
         Objects.requireNonNull(requestURI,"Request URI cannot be null");
@@ -90,11 +89,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         this.requestURI = requestURI;
         this.websocket = websocket;
         this.connection = connection;
-        this.sessionListeners = sessionListeners;
         this.executor = connection.getExecutor();
         this.outgoingHandler = connection;
         this.incomingHandler = websocket;
         this.connection.getIOState().addListener(this);
+        this.policy = containerScope.getPolicy();
         
         addBean(this.connection);
         addBean(this.websocket);
@@ -435,36 +434,28 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
                 CloseInfo close = ioState.getCloseInfo();
                 // confirmed close of local endpoint
                 notifyClose(close.getStatusCode(),close.getReason());
-                
-                // notify session listeners
-                for (SessionListener listener : sessionListeners)
+                try
                 {
-                    try
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("{}.onSessionClosed()",listener.getClass().getSimpleName());
-                        listener.onSessionClosed(this);
-                    }
-                    catch (Throwable t)
-                    {
-                        LOG.ignore(t);
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{}.onSessionClosed()",containerScope.getClass().getSimpleName());
+                    containerScope.onSessionClosed(this);
+                }
+                catch (Throwable t)
+                {
+                    LOG.ignore(t);
                 }
                 break;
             case CONNECTED:
                 // notify session listeners
-                for (SessionListener listener : sessionListeners)
+                try
                 {
-                    try
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("{}.onSessionOpen()", listener.getClass().getSimpleName());
-                        listener.onSessionOpened(this);
-                    }
-                    catch (Throwable t)
-                    {
-                        LOG.ignore(t);
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{}.onSessionOpened()",containerScope.getClass().getSimpleName());
+                    containerScope.onSessionOpened(this);
+                }
+                catch (Throwable t)
+                {
+                    LOG.ignore(t);
                 }
                 break;
         }

@@ -214,6 +214,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final WebSocketPolicy policy;
     private final AtomicBoolean suspendToken;
     private final FrameFlusher flusher;
+    private final String id;
     private List<ExtensionConfig> extensions;
     private boolean isFilling;
     private ByteBuffer prefillBuffer;
@@ -224,6 +225,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         super(endp,executor);
+        this.id = String.format("%s:%d->%s:%d",
+                endp.getLocalAddress().getAddress().getHostAddress(),
+                endp.getLocalAddress().getPort(),
+                endp.getRemoteAddress().getAddress().getHostAddress(),
+                endp.getRemoteAddress().getPort());
         this.policy = policy;
         this.bufferPool = bufferPool;
         this.generator = new Generator(policy,bufferPool);
@@ -346,6 +352,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public Generator getGenerator()
     {
         return generator;
+    }
+    
+    @Override
+    public String getId()
+    {
+        return id;
     }
 
     @Override
@@ -745,6 +757,43 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public String toString()
     {
         return String.format("%s@%X{endp=%s,ios=%s,f=%s,g=%s,p=%s}",getClass().getSimpleName(),hashCode(),getEndPoint(),ioState,flusher,generator,parser);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        
+        EndPoint endp = getEndPoint();
+        if(endp != null)
+        {
+            result = prime * result + endp.getLocalAddress().hashCode();
+            result = prime * result + endp.getRemoteAddress().hashCode();
+        }
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        AbstractWebSocketConnection other = (AbstractWebSocketConnection)obj;
+        EndPoint endp = getEndPoint();
+        EndPoint otherEndp = other.getEndPoint();
+        if (endp == null)
+        {
+            if (otherEndp != null)
+                return false;
+        }
+        else if (!endp.equals(otherEndp))
+            return false;
+        return true;
     }
 
     /**
