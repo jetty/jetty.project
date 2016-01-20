@@ -922,6 +922,8 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 {
                     _generator.setPersistent(true);
                     _parser.setPersistent(true);
+                    if (_parser instanceof HttpParser)
+                        ((HttpParser)_parser).setState(HttpParser.STATE_END);
                 }
 
                 if (_server.getSendDateHeader())

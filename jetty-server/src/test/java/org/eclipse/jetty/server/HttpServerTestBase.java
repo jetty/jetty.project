@@ -1234,6 +1234,58 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
+    @Test
+    public void testAvailableForPipelinedRequests() throws Exception
+    {
+        configureServer(new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                int available = request.getInputStream().available();
+                ServletOutputStream output = response.getOutputStream();
+                output.println(target);
+                output.println(String.valueOf(available));
+            }
+        });
+
+        Socket client = newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream output = client.getOutputStream();
+            InputStream input = client.getInputStream();
+
+            output.write((
+                    "GET /one HTTP/1.1\r\n"+
+                            "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                            "\r\n"+
+                    "GET /two HTTP/1.1\r\n"+
+                            "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                            "\r\n"
+            ).getBytes());
+            output.flush();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+
+            while(reader.readLine().length() > 0)
+            {
+                // Skip response headers.
+            }
+            assertEquals("/one", reader.readLine());
+            assertEquals(0, Integer.parseInt(reader.readLine()));
+
+            while(reader.readLine().length() > 0)
+            {
+                // Skip response headers.
+            }
+            assertEquals("/two", reader.readLine());
+            assertEquals(0, Integer.parseInt(reader.readLine()));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
 
     @Test
     public void testDualRequest1() throws Exception
