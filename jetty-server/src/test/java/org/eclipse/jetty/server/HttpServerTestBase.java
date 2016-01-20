@@ -18,26 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Random;
-import java.util.concurrent.Exchanger;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -50,12 +30,23 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.matchers.JUnitMatchers;
 
+import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.Random;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  *
@@ -1231,6 +1222,58 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
+    @Test
+    public void testAvailableForPipelinedRequests() throws Exception
+    {
+        configureServer(new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                int available = request.getInputStream().available();
+                ServletOutputStream output = response.getOutputStream();
+                output.println(target);
+                output.println(String.valueOf(available));
+            }
+        });
+
+        Socket client = newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream output = client.getOutputStream();
+            InputStream input = client.getInputStream();
+
+            output.write((
+                    "GET /one HTTP/1.1\r\n"+
+                            "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                            "\r\n"+
+                    "GET /two HTTP/1.1\r\n"+
+                            "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                            "\r\n"
+            ).getBytes());
+            output.flush();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+
+            while(reader.readLine().length() > 0)
+            {
+                // Skip response headers.
+            }
+            assertEquals("/one", reader.readLine());
+            assertEquals(0, Integer.parseInt(reader.readLine()));
+
+            while(reader.readLine().length() > 0)
+            {
+                // Skip response headers.
+            }
+            assertEquals("/two", reader.readLine());
+            assertEquals(0, Integer.parseInt(reader.readLine()));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
 
     @Test
     public void testDualRequest1() throws Exception
@@ -1419,9 +1462,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "\r\n"
             ).getBytes());
             os.flush();
-            
+
             Thread.sleep(200);
-            
+
             // write an pipelined request
             os.write((
                     "GET / HTTP/1.1\r\n"+
@@ -1430,11 +1473,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "\r\n"
             ).getBytes());
             os.flush();
-            
+
             String response=readResponse(client);
             assertThat(response,JUnitMatchers.containsString("RESUMEDHTTP/1.1 200 OK"));
             assertThat((System.currentTimeMillis()-start),greaterThanOrEqualTo(1999L));
-            
+
             // TODO This test should also check that that the CPU did not spin during the suspend.
         }
         finally

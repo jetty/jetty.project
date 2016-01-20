@@ -18,39 +18,10 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.continuation.ContinuationThrowable;
-import org.eclipse.jetty.http.EncodedHttpURI;
-import org.eclipse.jetty.http.Generator;
-import org.eclipse.jetty.http.HttpBuffers;
-import org.eclipse.jetty.http.HttpContent;
-import org.eclipse.jetty.http.HttpException;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpHeaderValues;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersions;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.Parser;
-import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.http.*;
+import org.eclipse.jetty.io.*;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
-import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.io.UncheckedPrintWriter;
 import org.eclipse.jetty.server.nio.NIOConnector;
 import org.eclipse.jetty.server.ssl.SslConnector;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -59,6 +30,13 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
 
 /**
  * <p>A HttpConnection represents the connection of a HTTP client to the server
@@ -866,7 +844,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             _endp.close();
             return;
         }
-        
+
         _requests++;
         _generator.setVersion(_version);
         switch (_version)
@@ -884,6 +862,8 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 {
                     _generator.setPersistent(true);
                     _parser.setPersistent(true);
+                    if (_parser instanceof HttpParser)
+                        ((HttpParser)_parser).setState(HttpParser.STATE_END);
                 }
 
                 if (_server.getSendDateHeader())
@@ -1158,12 +1138,12 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     if (lml!=-1)
                         _responseFields.putDateField(HttpHeaders.LAST_MODIFIED_BUFFER, lml);
                 }
-                
+
                 Buffer etag=httpContent.getETag();
                 if (etag!=null)
                     _responseFields.put(HttpHeaders.ETAG_BUFFER,etag);
 
-                
+
                 boolean direct=_connector instanceof NIOConnector && ((NIOConnector)_connector).getUseDirectBuffers() && !(_connector instanceof SslConnector);
                 content = direct?httpContent.getDirectBuffer():httpContent.getIndirectBuffer();
                 if (content==null)
