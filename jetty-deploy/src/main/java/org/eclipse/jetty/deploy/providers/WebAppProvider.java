@@ -245,6 +245,28 @@ public class WebAppProvider extends ScanningAppProvider
     }
 
     /* ------------------------------------------------------------ */
+    protected void initializeWebAppContextDefaults(WebAppContext webapp)
+    {
+        if (_defaultsDescriptor != null)
+            webapp.setDefaultsDescriptor(_defaultsDescriptor);
+        webapp.setExtractWAR(_extractWars);
+        webapp.setParentLoaderPriority(_parentLoaderPriority);
+        if (_configurationClasses != null)
+            webapp.setConfigurationClasses(_configurationClasses);
+
+        if (_tempDirectory != null)
+        {
+            /* Since the Temp Dir is really a context base temp directory,
+             * Lets set the Temp Directory in a way similar to how WebInfConfiguration does it,
+             * instead of setting the WebAppContext.setTempDirectory(File).  
+             * If we used .setTempDirectory(File) all webapps will wind up in the
+             * same temp / work directory, overwriting each others work.
+             */
+            webapp.setAttribute(WebAppContext.BASETEMPDIR, _tempDirectory);
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
     public ContextHandler createContextHandler(final App app) throws Exception
     {
@@ -267,9 +289,7 @@ public class WebAppProvider extends ScanningAppProvider
                     if (context instanceof WebAppContext)
                     {
                         WebAppContext webapp = (WebAppContext)context;
-                        webapp.setParentLoaderPriority(_parentLoaderPriority);
-                        if (_defaultsDescriptor != null)
-                            webapp.setDefaultsDescriptor(_defaultsDescriptor);
+                        initializeWebAppContextDefaults(webapp);
                     }
                 }
             };
@@ -327,31 +347,10 @@ public class WebAppProvider extends ScanningAppProvider
             context = "/" + context;
         }
 
-
         webAppContext.setContextPath(context);
         webAppContext.setWar(file.getAbsolutePath());
-        if (_defaultsDescriptor != null)
-        {
-            webAppContext.setDefaultsDescriptor(_defaultsDescriptor);
-        }
-        webAppContext.setExtractWAR(_extractWars);
-        webAppContext.setParentLoaderPriority(_parentLoaderPriority);
-        if (_configurationClasses != null)
-        {
-            webAppContext.setConfigurationClasses(_configurationClasses);
-        }
+        initializeWebAppContextDefaults(webAppContext);
 
-        if (_tempDirectory != null)
-        {
-            /* Since the Temp Dir is really a context base temp directory,
-             * Lets set the Temp Directory in a way similar to how WebInfConfiguration does it,
-             * instead of setting the
-             * WebAppContext.setTempDirectory(File).  
-             * If we used .setTempDirectory(File) all webapps will wind up in the
-             * same temp / work directory, overwriting each others work.
-             */
-            webAppContext.setAttribute(WebAppContext.BASETEMPDIR, _tempDirectory);
-        }
         return webAppContext;
     }
     

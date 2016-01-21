@@ -68,6 +68,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
     private boolean _checkGzExists = true;
+    private boolean _syncFlush = false;
     
     // non-static, as other GzipHandler instances may have different configurations
     private final ThreadLocal<Deflater> _deflater = new ThreadLocal<Deflater>();
@@ -191,6 +192,27 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         for (String m : methods)
             _methods.include(m);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if {@link Deflater#SYNC_FLUSH} is used, else {@link Deflater#NO_FLUSH}
+     */
+    public boolean isSyncFlush()
+    {
+        return _syncFlush;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * <p>Set the {@link Deflater} flush mode to use.  {@link Deflater#SYNC_FLUSH}
+     * should be used if the application wishes to stream the data, but this may
+     * hurt compression performance.
+     * @param syncFlush True if {@link Deflater#SYNC_FLUSH} is used, else {@link Deflater#NO_FLUSH}
+     */
+    public void setSyncFlush(boolean syncFlush)
+    {
+        _syncFlush = syncFlush;
     }
 
     /* ------------------------------------------------------------ */
@@ -465,7 +487,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // install interceptor and handle
-        out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,baseRequest.getHttpChannel(),out.getInterceptor()));
+        out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,baseRequest.getHttpChannel(),out.getInterceptor(),_syncFlush));
         if (_handler!=null)
             _handler.handle(target,baseRequest, request, response);
     }
