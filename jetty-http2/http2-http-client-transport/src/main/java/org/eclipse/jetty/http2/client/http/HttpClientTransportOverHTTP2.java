@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.HTTP2ClientConnectionFactory;
@@ -196,4 +197,9 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
             connection.close(failure);
         }
     }
+
+	@Override
+	public HttpVersion getHttpVersion() {
+		return HttpVersion.HTTP_2;
+	}
 }

@@ -426,7 +426,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public Request newRequest(URI uri)
     {
-        return newHttpRequest(newConversation(), uri);
+        return newHttpRequest(newConversation(), uri).version(transport.getHttpVersion());
     }
 
     protected Request copyRequest(HttpRequest oldRequest, URI newURI)
