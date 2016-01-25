@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 
 /**
@@ -64,8 +65,15 @@ public interface HttpClientTransport extends ClientConnectionFactory
     /**
      * Establishes a physical connection to the given {@code address}.
      *
-     *  @param address the address to connect to
+     * @param address the address to connect to
      * @param context the context information to establish the connection
      */
     public void connect(InetSocketAddress address, Map<String, Object> context);
+    
+    /**
+     * Return a {@link HttpClientTransport}'s HTTP version, transport-specific, {@link HttpVersion} enum
+     * 
+     * @return a {@link HttpClientTransport}'s HTTP version, transport-specific, {@link HttpVersion} enum
+     */
+    public HttpVersion getHttpVersion();
 }

@@ -27,6 +27,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Map;
 
 import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
@@ -141,6 +142,11 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
                 connectFailed(context, x);
             }
         }
+    }
+
+    @Override
+    public HttpVersion getHttpVersion() {
+        return HttpVersion.HTTP_1_1;
     }
 
     protected void connectFailed(Map<String, Object> context, Throwable x)
