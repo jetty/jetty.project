@@ -71,9 +71,9 @@ public interface HttpClientTransport extends ClientConnectionFactory
     public void connect(InetSocketAddress address, Map<String, Object> context);
     
     /**
-     * Return HTTP version that is implemented in this class.
+     * Return a {@link HttpClientTransport}'s HTTP version, transport-specific, {@link HttpVersion} enum
      * 
-     * @return a transport's http version, transport-specific, {@link HttpVersion} enum
+     * @return a {@link HttpClientTransport}'s HTTP version, transport-specific, {@link HttpVersion} enum
      */
     public HttpVersion getHttpVersion();
 }

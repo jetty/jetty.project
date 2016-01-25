@@ -132,6 +132,11 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
             factory = new ALPNClientConnectionFactory(client.getExecutor(), factory, client.getProtocols());
         return factory.newConnection(endPoint, context);
     }
+    
+    @Override
+    public HttpVersion getHttpVersion() {
+            return HttpVersion.HTTP_2;
+    }
 
     protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
     {
@@ -197,9 +202,4 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
             connection.close(failure);
         }
     }
-
-	@Override
-	public HttpVersion getHttpVersion() {
-		return HttpVersion.HTTP_2;
-	}
 }

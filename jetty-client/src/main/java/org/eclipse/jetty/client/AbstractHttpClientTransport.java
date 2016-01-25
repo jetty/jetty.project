@@ -144,10 +144,10 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
         }
     }
 
-	@Override
-	public HttpVersion getHttpVersion() {
-		return HttpVersion.HTTP_1_1;
-	}
+    @Override
+    public HttpVersion getHttpVersion() {
+        return HttpVersion.HTTP_1_1;
+    }
 
     protected void connectFailed(Map<String, Object> context, Throwable x)
     {
