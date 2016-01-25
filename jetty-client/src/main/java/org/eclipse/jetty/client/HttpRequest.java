@@ -20,6 +20,9 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
+import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -78,6 +81,8 @@ public class HttpRequest implements Request
     private long timeout;
     private ContentProvider content;
     private boolean followRedirects;
+    private CookieManager cookieManager;
+    private CookieStore cookieStore;
     private List<HttpCookie> cookies;
     private Map<String, Object> attributes;
     private List<RequestListener> requestListeners;
@@ -288,6 +293,38 @@ public class HttpRequest implements Request
             headers.remove(header);
         else
             headers.add(header, value);
+        return this;
+    }
+
+    @Override
+    public CookieStore getCookieStore()
+    {
+        return cookieStore == null ? client.getCookieStore() : cookieStore;
+    }
+
+    @Override
+    public Request setCookieStore(CookieStore cookieStore)
+    {
+        this.cookieStore = cookieStore;
+        cookieManager = cookieStore == null ? null : new CookieManager(cookieStore, CookiePolicy.ACCEPT_ALL);
+        return this;
+    }
+
+    CookieManager getCookieManager()
+    {
+        return cookieManager == null ? client.getCookieManager() : cookieManager;
+    }
+
+    boolean hasCookieManager()
+    {
+        return cookieManager != null;
+    }
+
+    @Override
+    public Request setCookieManager(CookieManager cookieManager)
+    {
+        this.cookieManager = cookieManager;
+        cookieStore = cookieManager == null ? null : cookieManager.getCookieStore();
         return this;
     }
 

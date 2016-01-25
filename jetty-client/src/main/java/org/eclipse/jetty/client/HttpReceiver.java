@@ -184,7 +184,7 @@ public abstract class HttpReceiver
                     case SET_COOKIE:
                     case SET_COOKIE2:
                     {
-                        storeCookie(exchange.getRequest().getURI(), field);
+                        storeCookie(exchange.getRequest(), field);
                         break;
                     }
                     default:
@@ -202,8 +202,9 @@ public abstract class HttpReceiver
         return false;
     }
 
-    protected void storeCookie(URI uri, HttpField field)
+    protected void storeCookie(HttpRequest request, HttpField field)
     {
+        URI uri = request.getURI();
         try
         {
             String value = field.getValue();
@@ -211,7 +212,7 @@ public abstract class HttpReceiver
             {
                 Map<String, List<String>> header = new HashMap<>(1);
                 header.put(field.getHeader().asString(), Collections.singletonList(value));
-                getHttpDestination().getHttpClient().getCookieManager().put(uri, header);
+                request.getCookieManager().put(uri, header);
             }
         }
         catch (IOException x)

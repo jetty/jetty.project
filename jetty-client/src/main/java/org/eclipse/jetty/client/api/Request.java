@@ -19,6 +19,8 @@
 package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
+import java.net.CookieManager;
+import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -165,6 +167,23 @@ public interface Request
      * @return this request object
      */
     Request header(HttpHeader header, String value);
+
+    /**
+     * @return the cookie store associated with this request
+     */
+    public CookieStore getCookieStore();
+
+    /**
+     * @param cookieStore the cookie store associated with this request
+     * @return this request object
+     */
+    public Request setCookieStore(CookieStore cookieStore);
+
+    /**
+     * @param cookieManager the cookie handler associated with this request
+     * @return this request object
+     */
+    public Request setCookieManager(CookieManager cookieManager);
 
     /**
      * @return the cookies associated with this request
