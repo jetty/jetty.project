@@ -39,7 +39,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
-import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -100,6 +99,11 @@ public class ErrorHandler extends AbstractHandler
                         LOG.warn(Log.EXCEPTION, e);
                         return;
                     }
+                }
+            } else {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("No Error Page mapping for request({} {}) (using default)",request.getMethod(),request.getRequestURI());
                 }
             }
         }
