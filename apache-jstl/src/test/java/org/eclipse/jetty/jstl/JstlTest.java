@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.jstl;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
@@ -74,6 +75,16 @@ public class JstlTest
         
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
+        
+        /* TODO: Bug #486530 - sub-handler on WebAppContext prevents startup
+        context.setHandler(new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                    throws IOException, ServletException
+            {
+            }
+        });
+         */
         
         File scratchDir = MavenTestingUtils.getTargetFile("tests/" + JstlTest.class.getSimpleName() + "-scratch");
         FS.ensureEmpty(scratchDir);
