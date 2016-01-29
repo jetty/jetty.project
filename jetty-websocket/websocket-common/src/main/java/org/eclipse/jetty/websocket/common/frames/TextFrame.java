@@ -34,6 +34,8 @@ public class TextFrame extends DataFrame
     @Override
     public Type getType()
     {
+        if (getOpCode() == OpCode.CONTINUATION)
+            return Type.CONTINUATION;
         return Type.TEXT;
     }
 
