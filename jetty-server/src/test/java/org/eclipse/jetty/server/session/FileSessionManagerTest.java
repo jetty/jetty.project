@@ -128,23 +128,6 @@ public class FileSessionManagerTest
         handler.setServer(server);
         FileSessionManager manager = new FileSessionManager();
         manager.getSessionDataStore().setStoreDir(testDir);
-            @Override
-            public void doStart() throws Exception
-            {
-                super.doStart();
-                Scheduler timerBean = getBean(Scheduler.class);
-                Assert.assertNotNull(timerBean);
-            }
-
-            @Override
-            public void doStop() throws Exception
-            {
-                super.doStop();
-                Scheduler timerBean = getBean(Scheduler.class);
-                Assert.assertNull(timerBean);
-            }
-
-        };
         manager.setMaxInactiveInterval(5);
         Assert.assertTrue(testDir.exists());
         Assert.assertTrue(testDir.canWrite());

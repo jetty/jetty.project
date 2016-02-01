@@ -42,11 +42,6 @@ public class HashSessionManager extends SessionManager
     @Override
     public void doStop() throws Exception
     {
-            
-            //if we're managing our own timer, remove it
-            if (isManaged(_timer))
-               removeBean(_timer);
-
         super.doStop();
     }
     
