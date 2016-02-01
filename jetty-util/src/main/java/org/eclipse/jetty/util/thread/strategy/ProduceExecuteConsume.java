@@ -62,7 +62,7 @@ public class ProduceExecuteConsume implements ExecutionStrategy
             }
             catch(RejectedExecutionException e)
             {
-                // Close or discard tasks that cannot be executed
+                //  Discard/reject tasks that cannot be executed
                 if (task instanceof Rejectable)
                 {
                     try

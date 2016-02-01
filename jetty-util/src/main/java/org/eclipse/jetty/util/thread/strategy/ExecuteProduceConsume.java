@@ -147,6 +147,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
                 }
                 catch(Throwable e)
                 {
+                    // just warn if lowresources execute fails and keep producing
                     LOG.warn(e);
                 }
             }
@@ -218,7 +219,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
                 }
                 catch(RejectedExecutionException e)
                 {
-                    // If we cannot execute, the close or discard the task and keep producing
+                    // If we cannot execute, then discard/reject the task and keep producing
                     LOG.debug(e);
                     LOG.warn("RejectedExecution {}",task);
                     try

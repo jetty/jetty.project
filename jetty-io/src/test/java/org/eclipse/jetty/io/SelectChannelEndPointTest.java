@@ -777,11 +777,45 @@ public class SelectChannelEndPointTest
             }.start();
         }
 
+        // unblock the handling
         latch.countDown();
+        
+        // wait for all clients to complete or fail
         closed.await();
+        
+        // assert some clients must have been rejected
         Assert.assertThat(rejections.get(),Matchers.greaterThan(0));
+        // but not all of them
         Assert.assertThat(rejections.get(),Matchers.lessThan(10));
+        // none should have timed out
         Assert.assertThat(timeout.get(),Matchers.equalTo(0));
-        Assert.assertThat(echoed.get(),Matchers.equalTo(10-rejections.get()));        
+        // and the rest should have worked
+        Assert.assertThat(echoed.get(),Matchers.equalTo(10-rejections.get())); 
+        
+        // and the selector is still working for new requests
+        try(Socket client = newClient();)
+        {
+            client.setSoTimeout(5000);
+
+            SocketChannel server = _connector.accept();
+            server.configureBlocking(false);
+
+            _manager.accept(server);
+
+            // Write client to server
+            client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
+            client.getOutputStream().flush();
+            client.shutdownOutput();
+
+            // Verify echo server to client
+            for (char c : "HelloWorld".toCharArray())
+            {
+                int b = client.getInputStream().read();
+                assertTrue(b > 0);
+                assertEquals(c, (char)b);
+            }
+            assertEquals(-1,client.getInputStream().read());
+        }
+        
     }
 }
