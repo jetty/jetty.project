@@ -241,7 +241,7 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
         if (user==null)
         {
             KnownUser userPrincipal = loadUserInfo(username);
-            if (userPrincipal.authenticate(credentials))
+            if (userPrincipal != null && userPrincipal.authenticate(credentials))
             {
                 //safe to load the roles
                 String[] roles = loadRoleInfo(userPrincipal);
