@@ -36,9 +36,12 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -48,6 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -121,10 +125,18 @@ public class SelectChannelEndPointTest
         ByteBuffer _in = BufferUtil.allocate(32 * 1024);
         ByteBuffer _out = BufferUtil.allocate(32 * 1024);
         long _last = -1;
+        final CountDownLatch _latch;
 
         public TestConnection(EndPoint endp)
         {
             super(endp, _threadPool);
+            _latch=null;
+        }
+        
+        public TestConnection(EndPoint endp,CountDownLatch latch)
+        {
+            super(endp, _threadPool);
+            _latch=latch;
         }
 
         @Override
@@ -150,6 +162,18 @@ public class SelectChannelEndPointTest
         @Override
         public void onFillable()
         {
+            if (_latch!=null)
+            {
+                try
+                {
+                    _latch.await();
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            
             Callback blocking = _blockingRead;
             if (blocking!=null)
             {
@@ -667,5 +691,97 @@ public class SelectChannelEndPointTest
                 break;
         }
         assertFalse(server.isOpen());
+    }
+    
+
+    @Test
+    public void testRejectedExecution() throws Exception
+    {
+        _manager.stop();
+        _threadPool.stop();
+        
+        final CountDownLatch latch = new CountDownLatch(1);
+        
+        BlockingQueue<Runnable> q = new ArrayBlockingQueue<>(4);
+        _threadPool = new QueuedThreadPool(4,4,60000,q);
+        _manager = new SelectorManager(_threadPool, _scheduler, 1)
+        {
+            @Override
+            public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
+            {
+                return new TestConnection(endpoint,latch);
+            }
+
+            @Override
+            protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+            {
+                SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, selectionKey, getScheduler(), 60000);
+                _lastEndPoint = endp;
+                _lastEndPointLatch.countDown();
+                return endp;
+            }
+        };
+        
+        _threadPool.start();
+        _manager.start();
+        
+        AtomicInteger timeout = new AtomicInteger();
+        AtomicInteger rejections = new AtomicInteger();
+        AtomicInteger echoed = new AtomicInteger();
+        
+        CountDownLatch closed = new CountDownLatch(10);
+        for (int i=0;i<10;i++)
+        {
+            new Thread()
+            {
+                public void run()
+                {
+                    try(Socket client = newClient();)
+                    {
+                        client.setSoTimeout(5000);
+
+                        SocketChannel server = _connector.accept();
+                        server.configureBlocking(false);
+
+                        _manager.accept(server);
+
+                        // Write client to server
+                        client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
+                        client.getOutputStream().flush();
+                        client.shutdownOutput();
+
+                        // Verify echo server to client
+                        for (char c : "HelloWorld".toCharArray())
+                        {
+                            int b = client.getInputStream().read();
+                            assertTrue(b > 0);
+                            assertEquals(c, (char)b);
+                        }
+                        assertEquals(-1,client.getInputStream().read());
+                        echoed.incrementAndGet();
+                    }
+                    catch(SocketTimeoutException x)
+                    {
+                        x.printStackTrace();
+                        timeout.incrementAndGet();
+                    }
+                    catch(Throwable x)
+                    {
+                        rejections.incrementAndGet();
+                    }
+                    finally
+                    {
+                        closed.countDown();
+                    }
+                }
+            }.start();
+        }
+
+        latch.countDown();
+        closed.await();
+        Assert.assertThat(rejections.get(),Matchers.greaterThan(0));
+        Assert.assertThat(rejections.get(),Matchers.lessThan(10));
+        Assert.assertThat(timeout.get(),Matchers.equalTo(0));
+        Assert.assertThat(echoed.get(),Matchers.equalTo(10-rejections.get()));        
     }
 }

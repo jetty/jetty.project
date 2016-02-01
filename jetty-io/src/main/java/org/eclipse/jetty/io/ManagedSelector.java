@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.ExecutionStrategy.Rejectable;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -541,7 +542,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    class Accept implements Runnable
+    class Accept implements Runnable, Rejectable
     {
         private final SocketChannel channel;
         private final Object attachment;
@@ -552,6 +553,13 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             this.attachment = attachment;
         }
 
+        @Override
+        public void reject()
+        {
+            LOG.debug("rejected accept {}",channel);
+            closeNoExceptions(channel);
+        }
+        
         @Override
         public void run()
         {
@@ -568,7 +576,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    private class CreateEndPoint implements Product
+    private class CreateEndPoint implements Product, Rejectable
     {
         private final SocketChannel channel;
         private final SelectionKey key;
@@ -591,6 +599,13 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                 LOG.debug(x);
                 failed(x);
             }
+        }
+
+        @Override
+        public void reject()
+        {
+            LOG.debug("rejected create {}",channel);
+            closeNoExceptions(channel);
         }
 
         protected void failed(Throwable failure)

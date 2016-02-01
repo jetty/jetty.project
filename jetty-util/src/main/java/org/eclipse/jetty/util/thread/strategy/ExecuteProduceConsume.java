@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.thread.strategy;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -140,7 +141,14 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
             while (_threadpool!=null && _threadpool.isLowOnThreads())
             {
                 LOG.debug("EWYK low resources {}",this);
-                _lowresources.execute();
+                try
+                {
+                    _lowresources.execute();
+                }
+                catch(Throwable e)
+                {
+                    LOG.warn(e);
+                }
             }
             
             // no longer low resources so produceAndRun normally
@@ -204,13 +212,37 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
                 // Spawn a new thread to continue production by running the produce loop.
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} dispatch",this);
-                _executor.execute(this);
+                try
+                {
+                    _executor.execute(this);
+                }
+                catch(RejectedExecutionException e)
+                {
+                    // If we cannot execute, the close or discard the task and keep producing
+                    LOG.debug(e);
+                    LOG.warn("RejectedExecution {}",task);
+                    try
+                    {
+                        if (task instanceof Rejectable)
+                            ((Rejectable)task).reject();
+                    }
+                    catch (Exception x)
+                    {
+                        e.addSuppressed(x);
+                        LOG.warn(e);
+                    }
+                    finally
+                    {
+                        task=null;
+                    }
+                }
             }
 
             // Run the task.
             if (LOG.isDebugEnabled())
                 LOG.debug("{} run {}",this,task);
-            task.run();
+            if (task != null)
+                task.run();
             if (LOG.isDebugEnabled())
                 LOG.debug("{} ran {}",this,task);
 

@@ -20,6 +20,7 @@ package org.eclipse.jetty.util.thread;
 
 import java.lang.reflect.Constructor;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
@@ -53,6 +54,15 @@ public interface ExecutionStrategy
      */
     public void execute();
 
+    
+    /**
+     * A task that can handle {@link RejectedExecutionException}
+     */
+    public interface Rejectable
+    {
+        public void reject();
+    }
+    
     /**
      * <p>A producer of {@link Runnable} tasks to run.</p>
      * <p>The {@link ExecutionStrategy} will repeatedly invoke {@link #produce()} until

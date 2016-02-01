@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ExecutionStrategy.Rejectable;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -67,7 +68,24 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             return SelectChannelEndPoint.this.toString()+":runUpdateKey";
         }
     };
-    private final Runnable _runFillable = new Runnable()
+    
+    private abstract class RejectableRunnable implements Runnable,Rejectable
+    {
+        @Override 
+        public void reject()
+        {
+            try
+            {
+                close();
+            }
+            catch (Throwable x)
+            {
+                LOG.warn(x);
+            }
+        }
+    }
+    
+    private final Runnable _runFillable = new RejectableRunnable()
     {
         @Override
         public void run()
@@ -81,7 +99,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             return SelectChannelEndPoint.this.toString()+":runFillable";
         }
     };
-    private final Runnable _runCompleteWrite = new Runnable()
+    private final Runnable _runCompleteWrite = new RejectableRunnable()
     {
         @Override
         public void run()
@@ -95,7 +113,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             return SelectChannelEndPoint.this.toString()+":runCompleteWrite";
         }
     };
-    private final Runnable _runFillableCompleteWrite = new Runnable()
+    private final Runnable _runFillableCompleteWrite = new RejectableRunnable()
     {
         @Override
         public void run()
