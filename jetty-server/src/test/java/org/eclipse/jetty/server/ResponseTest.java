@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -236,7 +236,20 @@ public class ResponseTest
         response.addHeader("Content-Type","application/json");
         response.getWriter();
         assertEquals("application/json",response.getContentType());
+    }
 
+    @Test
+    public void testStrangeContentType() throws Exception
+    {
+        Response response = newResponse();
+
+        assertEquals(null, response.getContentType());
+
+        response.recycle();
+        response.setContentType("text/html;charset=utf-8;charset=UTF-8");
+        response.getWriter();
+        assertEquals("text/html;charset=utf-8;charset=UTF-8",response.getContentType());
+        assertEquals("utf-8",response.getCharacterEncoding().toLowerCase());
     }
 
     @Test

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -97,7 +97,10 @@ public class ManyConnectors
         // resolve the https connection before handing control over to the Jetty
         // Server.
         HttpConfiguration https_config = new HttpConfiguration(http_config);
-        https_config.addCustomizer(new SecureRequestCustomizer());
+        SecureRequestCustomizer src = new SecureRequestCustomizer();
+        src.setStsMaxAge(2000);
+        src.setStsIncludeSubDomains(true);
+        https_config.addCustomizer(src);
 
         // HTTPS connector
         // We create a second ServerConnector, passing in the http configuration

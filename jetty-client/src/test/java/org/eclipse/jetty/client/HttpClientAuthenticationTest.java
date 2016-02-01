@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,6 +34,8 @@ import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.DigestAuthentication;
 import org.eclipse.jetty.security.Authenticator;
@@ -47,6 +49,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -319,5 +322,48 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
         Assert.assertNotNull(response);
         Assert.assertEquals(401, response.getStatus());
+    }
+
+    @Test
+    public void test_Authentication_ThrowsException() throws Exception
+    {
+        startBasic(new EmptyServerHandler());
+
+        // Request without Authentication would cause a 401,
+        // but the client will throw an exception trying to
+        // send the credentials to the server.
+        final String cause = "thrown_explicitly_by_test";
+        client.getAuthenticationStore().addAuthentication(new Authentication()
+        {
+            @Override
+            public boolean matches(String type, URI uri, String realm)
+            {
+                return true;
+            }
+
+            @Override
+            public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
+            {
+                throw new RuntimeException(cause);
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/secure")
+                .timeout(5, TimeUnit.SECONDS)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertTrue(result.isFailed());
+                        Assert.assertEquals(cause, result.getFailure().getMessage());
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

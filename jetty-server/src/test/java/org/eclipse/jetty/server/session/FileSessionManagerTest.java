@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -128,6 +128,23 @@ public class FileSessionManagerTest
         handler.setServer(server);
         FileSessionManager manager = new FileSessionManager();
         manager.getSessionDataStore().setStoreDir(testDir);
+            @Override
+            public void doStart() throws Exception
+            {
+                super.doStart();
+                Scheduler timerBean = getBean(Scheduler.class);
+                Assert.assertNotNull(timerBean);
+            }
+
+            @Override
+            public void doStop() throws Exception
+            {
+                super.doStop();
+                Scheduler timerBean = getBean(Scheduler.class);
+                Assert.assertNull(timerBean);
+            }
+
+        };
         manager.setMaxInactiveInterval(5);
         Assert.assertTrue(testDir.exists());
         Assert.assertTrue(testDir.canWrite());

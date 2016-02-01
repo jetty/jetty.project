@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -54,11 +54,15 @@ import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public abstract class HTTP2Session implements ISession, Parser.Listener
+@ManagedObject
+public abstract class HTTP2Session extends ContainerLifeCycle implements ISession, Parser.Listener
 {
     private static final Logger LOG = Log.getLogger(HTTP2Session.class);
 
@@ -73,7 +77,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private final Scheduler scheduler;
     private final EndPoint endPoint;
     private final Generator generator;
-    private final Listener listener;
+    private final Session.Listener listener;
     private final FlowControlStrategy flowControl;
     private final HTTP2Flusher flusher;
     private int maxLocalStreams;
@@ -81,7 +85,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private long streamIdleTimeout;
     private boolean pushEnabled;
 
-    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControlStrategy flowControl, int initialStreamId)
+    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
         this.scheduler = scheduler;
         this.endPoint = endPoint;
@@ -98,6 +102,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         this.pushEnabled = true; // SPEC: by default, push is enabled.
     }
 
+    @Override
+    protected void doStart() throws Exception
+    {
+        addBean(flowControl);
+        super.doStart();
+    }
+
+    @ManagedAttribute(value = "The flow control strategy", readonly = true)
     public FlowControlStrategy getFlowControlStrategy()
     {
         return flowControl;
@@ -123,6 +135,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         this.maxRemoteStreams = maxRemoteStreams;
     }
 
+    @ManagedAttribute("The stream's idle timeout")
     public long getStreamIdleTimeout()
     {
         return streamIdleTimeout;
@@ -535,7 +548,13 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 {
                     if (closed.compareAndSet(current, CloseState.LOCALLY_CLOSED))
                     {
-                        byte[] payload = reason == null ? null : reason.getBytes(StandardCharsets.UTF_8);
+                        byte[] payload = null;
+                        if (reason != null)
+                        {
+                            // Trim the reason to avoid attack vectors.
+                            reason = reason.substring(0, Math.min(reason.length(), 32));
+                            payload = reason.getBytes(StandardCharsets.UTF_8);
+                        }
                         GoAwayFrame frame = new GoAwayFrame(lastStreamId.get(), error, payload);
                         control(null, callback, frame);
                         return true;
@@ -703,17 +722,25 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         return result;
     }
 
+    @ManagedAttribute("The number of active streams")
+    public int getStreamCount()
+    {
+        return streams.size();
+    }
+
     @Override
     public IStream getStream(int streamId)
     {
         return streams.get(streamId);
     }
 
+    @ManagedAttribute(value = "The flow control send window", readonly = true)
     public int getSendWindow()
     {
         return sendWindow.get();
     }
 
+    @ManagedAttribute(value = "The flow control receive window", readonly = true)
     public int getRecvWindow()
     {
         return recvWindow.get();
@@ -747,6 +774,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     }
 
     @Override
+    @ManagedAttribute(value = "Whether HTTP/2 push is enabled", readonly = true)
     public boolean isPushEnabled()
     {
         return pushEnabled;
@@ -826,30 +854,29 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
      *   stuck because of TCP congestion), therefore we terminate.
      *   See {@link #onGoAway(GoAwayFrame)}.
      *
+     * @return true if the session should be closed, false otherwise
      * @see #onGoAway(GoAwayFrame)
      * @see #close(int, String, Callback)
      * @see #onShutdown()
      */
     @Override
-    public void onIdleTimeout()
+    public boolean onIdleTimeout()
     {
         switch (closed.get())
         {
             case NOT_CLOSED:
             {
-                // Real idle timeout, just close.
-                close(ErrorCode.NO_ERROR.code, "idle_timeout", Callback.NOOP);
-                break;
+                return notifyIdleTimeout(this);
             }
             case LOCALLY_CLOSED:
             case REMOTELY_CLOSED:
             {
                 abort(new TimeoutException());
-                break;
+                return false;
             }
             default:
             {
-                break;
+                return false;
             }
         }
     }
@@ -971,6 +998,19 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
+        }
+    }
+
+    protected boolean notifyIdleTimeout(Session session)
+    {
+        try
+        {
+            return listener.onIdleTimeout(session);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+            return true;
         }
     }
 

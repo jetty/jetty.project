@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -948,6 +948,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     // occurred, we need to call onWritePossible to tell async
                     // producer that the last write completed.
                     // So fall through
+                case PENDING:
+                case UNREADY:
                 case READY:
                     try
                     {

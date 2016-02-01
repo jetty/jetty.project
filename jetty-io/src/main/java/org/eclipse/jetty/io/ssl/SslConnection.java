@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -78,7 +78,6 @@ import org.eclipse.jetty.util.log.Logger;
 public class SslConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(SslConnection.class);
-    private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
     private static final ByteBuffer __FILL_CALLED_FLUSH= BufferUtil.allocate(0);
     private static final ByteBuffer __FLUSH_CALLED_FILL= BufferUtil.allocate(0);
     private final ByteBufferPool _bufferPool;
@@ -173,6 +172,12 @@ public class SslConnection extends AbstractConnection
     }
 
     @Override
+    public boolean onIdleExpired()
+    {
+        return getDecryptedEndPoint().getConnection().onIdleExpired();
+    }
+
+    @Override
     public void onFillable()
     {
         // onFillable means that there are encrypted bytes ready to be filled.
@@ -181,7 +186,7 @@ public class SslConnection extends AbstractConnection
         // to do the fill and/or flush again and these calls will do the actually
         // filling.
 
-        if (DEBUG)
+        if (LOG.isDebugEnabled())
             LOG.debug("onFillable enter {}", _decryptedEndPoint);
 
         // We have received a close handshake, close the end point to send FIN.
@@ -202,7 +207,7 @@ public class SslConnection extends AbstractConnection
             }
         }
 
-        if (DEBUG)
+        if (LOG.isDebugEnabled())
             LOG.debug("onFillable exit {}", _decryptedEndPoint);
     }
 
@@ -265,7 +270,7 @@ public class SslConnection extends AbstractConnection
                 boolean fillable = false;
                 synchronized (DecryptedEndPoint.this)
                 {
-                    if (DEBUG)
+                    if (LOG.isDebugEnabled())
                         LOG.debug("write.complete {}", SslConnection.this.getEndPoint());
 
                     releaseEncryptedOutputBuffer();
@@ -292,7 +297,7 @@ public class SslConnection extends AbstractConnection
                 boolean fail_filler = false;
                 synchronized (DecryptedEndPoint.this)
                 {
-                    if (DEBUG)
+                    if (LOG.isDebugEnabled())
                         LOG.debug("{} write.failed", SslConnection.this, x);
                     BufferUtil.clear(_encryptedOutput);
                     releaseEncryptedOutputBuffer();
@@ -329,33 +334,39 @@ public class SslConnection extends AbstractConnection
 
         public DecryptedEndPoint()
         {
-            super(((AbstractEndPoint)getEndPoint()).getScheduler());
-            setIdleTimeout(getEndPoint().getIdleTimeout());
+            // Disable idle timeout checking: no scheduler and -1 timeout for this instance.
+            super(null);
+            super.setIdleTimeout(-1);
         }
 
-        
-        
+        @Override
+        public long getIdleTimeout()
+        {
+            return getEndPoint().getIdleTimeout();
+        }
+
+        @Override
+        public void setIdleTimeout(long idleTimeout)
+        {
+            getEndPoint().setIdleTimeout(idleTimeout);
+        }
+
+        @Override
+        public boolean isOpen()
+        {
+            return getEndPoint().isOpen();
+        }
+
         @Override
         public InetSocketAddress getLocalAddress()
         {
             return getEndPoint().getLocalAddress();
         }
 
-
-
         @Override
         public InetSocketAddress getRemoteAddress()
         {
             return getEndPoint().getRemoteAddress();
-        }
-
-
-
-        @Override
-        public void setIdleTimeout(long idleTimeout)
-        {
-            super.setIdleTimeout(idleTimeout);
-            getEndPoint().setIdleTimeout(idleTimeout);
         }
 
         @Override
@@ -374,7 +385,7 @@ public class SslConnection extends AbstractConnection
             boolean try_again = false;
             synchronized (DecryptedEndPoint.this)
             {
-                if (DEBUG)
+                if (LOG.isDebugEnabled())
                     LOG.debug("onIncompleteFlush {}", SslConnection.this);
                 // If we have pending output data,
                 if (BufferUtil.hasContent(_encryptedOutput))
@@ -462,10 +473,10 @@ public class SslConnection extends AbstractConnection
                         }
                     }
                 }
-                
+
                 if (fillable)
                     getExecutor().execute(_runFillable);
-                else 
+                else
                     ensureFillInterested();
             }
         }
@@ -531,7 +542,7 @@ public class SslConnection extends AbstractConnection
                         {
                             BufferUtil.flipToFlush(app_in, pos);
                         }
-                        if (DEBUG)
+                        if (LOG.isDebugEnabled())
                         {
                             LOG.debug("{} net={} unwrap {}", SslConnection.this, net_filled, unwrapResult.toString().replace('\n',' '));
                             LOG.debug("{} filled {}",SslConnection.this,BufferUtil.toHexSummary(buffer));
@@ -594,7 +605,7 @@ public class SslConnection extends AbstractConnection
                                 if (unwrapHandshakeStatus == HandshakeStatus.FINISHED && !_handshaken)
                                 {
                                     _handshaken = true;
-                                    if (DEBUG)
+                                    if (LOG.isDebugEnabled())
                                         LOG.debug("{} {} handshook {}/{}", SslConnection.this,
                                                 _sslEngine.getUseClientMode() ? "client" : "resumed server",
                                                 _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
@@ -603,7 +614,7 @@ public class SslConnection extends AbstractConnection
                                 // Check whether renegotiation is allowed
                                 if (_handshaken && handshakeStatus != HandshakeStatus.NOT_HANDSHAKING && !isRenegotiationAllowed())
                                 {
-                                    if (DEBUG)
+                                    if (LOG.isDebugEnabled())
                                         LOG.debug("{} renegotiation denied", SslConnection.this);
                                     closeInbound();
                                     return -1;
@@ -729,13 +740,13 @@ public class SslConnection extends AbstractConnection
             // will return 0 (even if some handshake bytes were flushed and filled).
             // it is the applications responsibility to call flush again - either in a busy loop
             // or better yet by using EndPoint#write to do the flushing.
-            
-            if (DEBUG)
+
+            if (LOG.isDebugEnabled())
             {
                 for (ByteBuffer b : appOuts)
                     LOG.debug("{} flush {}", SslConnection.this, BufferUtil.toHexSummary(b));
             }
-            
+
             try
             {
                 if (_cannotAcceptMoreAppDataToFlush)
@@ -763,9 +774,9 @@ public class SslConnection extends AbstractConnection
                     {
                         BufferUtil.flipToFlush(_encryptedOutput, pos);
                     }
-                    if (DEBUG)
+                    if (LOG.isDebugEnabled())
                         LOG.debug("{} wrap {}", SslConnection.this, wrapResult.toString().replace('\n',' '));
-                    
+
                     Status wrapResultStatus = wrapResult.getStatus();
 
                     boolean allConsumed=true;
@@ -801,13 +812,13 @@ public class SslConnection extends AbstractConnection
                             throw new IllegalStateException();
 
                         default:
-                            if (DEBUG)
+                            if (LOG.isDebugEnabled())
                                 LOG.debug("{} wrap {} {}", SslConnection.this, wrapResultStatus, BufferUtil.toHexSummary(_encryptedOutput));
 
                             if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED && !_handshaken)
                             {
                                 _handshaken = true;
-                                if (DEBUG)
+                                if (LOG.isDebugEnabled())
                                     LOG.debug("{} server handshook complete {}/{}", SslConnection.this, _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
                             }
 
@@ -816,7 +827,7 @@ public class SslConnection extends AbstractConnection
                             // Check whether renegotiation is allowed
                             if (_handshaken && handshakeStatus != HandshakeStatus.NOT_HANDSHAKING && !isRenegotiationAllowed())
                             {
-                                if (DEBUG)
+                                if (LOG.isDebugEnabled())
                                     LOG.debug("{} renegotiation denied", SslConnection.this);
                                 getEndPoint().shutdownOutput();
                                 return allConsumed;
@@ -890,7 +901,7 @@ public class SslConnection extends AbstractConnection
         public void doShutdownOutput()
         {
             boolean ishut = isInputShutdown();
-            if (DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("{} shutdownOutput: ishut={}", SslConnection.this, ishut);
             if (ishut)
             {
@@ -924,7 +935,7 @@ public class SslConnection extends AbstractConnection
             if (!SslConnection.this.isFillInterested())
                 SslConnection.this.fillInterested();
         }
-        
+
         @Override
         public boolean isOutputShutdown()
         {
@@ -953,12 +964,6 @@ public class SslConnection extends AbstractConnection
             }
             getEndPoint().close();
             super.doClose();
-        }
-
-        @Override
-        public boolean isOpen()
-        {
-            return getEndPoint().isOpen();
         }
 
         @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -135,27 +135,36 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
-            final Authentication.Result authnResult = authentication.authenticate(request, response, headerInfo, conversation);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Authentication result {}", authnResult);
-            if (authnResult == null)
+            try
             {
-                forwardSuccessComplete(request, response);
-                return;
-            }
-
-            conversation.setAttribute(AUTHENTICATION_ATTRIBUTE, true);
-
-            Request newRequest = client.copyRequest(request, request.getURI());
-            authnResult.apply(newRequest);
-            newRequest.onResponseSuccess(new Response.SuccessListener()
-            {
-                @Override
-                public void onSuccess(Response response)
+                final Authentication.Result authnResult = authentication.authenticate(request, response, headerInfo, conversation);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Authentication result {}", authnResult);
+                if (authnResult == null)
                 {
-                    client.getAuthenticationStore().addAuthenticationResult(authnResult);
+                    forwardSuccessComplete(request, response);
+                    return;
                 }
-            }).send(null);
+
+                conversation.setAttribute(AUTHENTICATION_ATTRIBUTE, true);
+
+                Request newRequest = client.copyRequest(request, request.getURI());
+                authnResult.apply(newRequest);
+                newRequest.onResponseSuccess(new Response.SuccessListener()
+                {
+                    @Override
+                    public void onSuccess(Response response)
+                    {
+                        client.getAuthenticationStore().addAuthenticationResult(authnResult);
+                    }
+                }).send(null);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Authentication failed", x);
+                forwardFailureComplete(request, null, response, x);
+            }
         }
 
         private void forwardSuccessComplete(HttpRequest request, Response response)
