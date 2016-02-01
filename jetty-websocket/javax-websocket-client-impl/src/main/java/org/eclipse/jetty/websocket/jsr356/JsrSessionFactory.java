@@ -19,36 +19,32 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.net.URI;
-import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionFactory;
-import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.jsr356.endpoints.AbstractJsrEventDriver;
 
 public class JsrSessionFactory implements SessionFactory
 {
-    private AtomicLong idgen = new AtomicLong(0);
+    private static final Logger LOG = Log.getLogger(JsrSessionFactory.class);
     private final ClientContainer container;
-    private final SessionListener[] listeners;
 
-    public JsrSessionFactory(ClientContainer container, SessionListener... sessionListeners)
+    public JsrSessionFactory(ClientContainer container)
     {
+        if(LOG.isDebugEnabled()) {
+            LOG.debug("Container: {}", container);
+        }
         this.container = container;
-        this.listeners = sessionListeners;
     }
 
     @Override
     public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
-        return new JsrSession(container,getNextId(),requestURI,websocket,connection,listeners);
-    }
-
-    public String getNextId()
-    {
-        return String.format("websocket-%d",idgen.incrementAndGet());
+        return new JsrSession(container,connection.getId(),requestURI,websocket,connection);
     }
 
     @Override

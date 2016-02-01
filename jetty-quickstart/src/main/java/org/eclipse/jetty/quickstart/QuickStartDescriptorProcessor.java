@@ -99,6 +99,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
                 values.add(value);
         }
 
+        AttributeNormalizer normalizer = new AttributeNormalizer(context.getBaseResource());
         // handle values
         switch(name)
         {
@@ -125,15 +126,14 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
             case MetaInfConfiguration.METAINF_TLDS:
             {
                 List<Object> tlds = new ArrayList<>();
-                String war=context.getBaseResource().getURI().toString();
                 Object o=context.getAttribute(MetaInfConfiguration.METAINF_TLDS);
                 if (o instanceof Collection<?>)
                     tlds.addAll((Collection<?>)o);
                 for (String i : values)
                 {
-                    Resource r = Resource.newResource(i.replace("${WAR}/",war));
+                    Resource r = Resource.newResource(normalizer.expand(i));
                     if (r.exists())
-                        tlds.add(r.getURL());
+                        tlds.add(r.getURI().toURL());
                     else
                         throw new IllegalArgumentException("TLD not found: "+r);                    
                 }
@@ -145,10 +145,9 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
             
             case MetaInfConfiguration.METAINF_RESOURCES:
             {
-                String war=context.getBaseResource().getURI().toString();
                 for (String i : values)
                 {
-                    Resource r = Resource.newResource(i.replace("${WAR}/",war));
+                    Resource r = Resource.newResource(normalizer.expand(i));
                     if (r.exists())
                         visitMetaInfResource(context,r); 
                     else

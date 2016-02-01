@@ -222,7 +222,7 @@ public class FileSystemResourceTest
     @Test
     public void testAddPath() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         
         Path subdir = dir.resolve("sub");
         FS.ensureDirExists(subdir.toFile());
@@ -240,7 +240,7 @@ public class FileSystemResourceTest
     @Test
     public void testAddRootPath() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Path subdir = dir.resolve("sub");
         Files.createDirectories(subdir);
 
@@ -288,7 +288,7 @@ public class FileSystemResourceTest
     @Test
     public void testIsContainedIn() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         Path foo = dir.resolve("foo");
         Files.createFile(foo);
@@ -303,7 +303,7 @@ public class FileSystemResourceTest
     @Test
     public void testIsDirectory() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         Path foo = dir.resolve("foo");
         Files.createFile(foo);
@@ -324,7 +324,7 @@ public class FileSystemResourceTest
     @Test
     public void testLastModified() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         File file = testdir.getFile("foo");
         file.createNewFile();
 
@@ -340,7 +340,7 @@ public class FileSystemResourceTest
     @Test
     public void testLastModified_NotExists() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         
         try (Resource base = newResource(dir.toFile()))
         {
@@ -352,7 +352,7 @@ public class FileSystemResourceTest
     @Test
     public void testLength() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         Path file = dir.resolve("foo");
@@ -375,7 +375,7 @@ public class FileSystemResourceTest
     @Test
     public void testLength_NotExists() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         try (Resource base = newResource(dir.toFile()))
@@ -388,7 +388,7 @@ public class FileSystemResourceTest
     @Test
     public void testDelete() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         Path file = dir.resolve("foo");
         Files.createFile(file);
@@ -408,7 +408,7 @@ public class FileSystemResourceTest
     @Test
     public void testDelete_NotExists() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         try (Resource base = newResource(dir.toFile()))
@@ -426,7 +426,7 @@ public class FileSystemResourceTest
     @Test
     public void testName() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         String expected = dir.toAbsolutePath().toString();
@@ -440,7 +440,7 @@ public class FileSystemResourceTest
     @Test
     public void testInputStream() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         Path file = dir.resolve("foo");
@@ -466,7 +466,7 @@ public class FileSystemResourceTest
     @Test
     public void testReadableByteChannel() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
 
         Path file = dir.resolve("foo");
@@ -495,7 +495,7 @@ public class FileSystemResourceTest
     @Test
     public void testGetURI() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
 
         Path file = dir.resolve("foo");
@@ -514,7 +514,7 @@ public class FileSystemResourceTest
     @Test
     public void testGetURL() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
 
         Path file = dir.resolve("foo");
@@ -532,7 +532,7 @@ public class FileSystemResourceTest
     @Test
     public void testList() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         Files.createFile(dir.resolve("foo"));
@@ -561,7 +561,7 @@ public class FileSystemResourceTest
     @Test
     public void testSymlink() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         
         Path foo = dir.resolve("foo");
         Path bar = dir.resolve("bar");
@@ -601,7 +601,7 @@ public class FileSystemResourceTest
     @Test
     public void testNonExistantSymlink() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         Path foo = dir.resolve("foo");
@@ -644,7 +644,7 @@ public class FileSystemResourceTest
     @Test
     public void testCaseInsensitiveAlias() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         Path path = dir.resolve("file");
         Files.createFile(path);
@@ -681,7 +681,7 @@ public class FileSystemResourceTest
     @Test
     public void testCase8dot3Alias() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         Path path = dir.resolve("TextFile.Long.txt");
@@ -718,7 +718,7 @@ public class FileSystemResourceTest
     @Test
     public void testNTFSFileStreamAlias() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
 
         Path path = dir.resolve("testfile");
@@ -761,7 +761,7 @@ public class FileSystemResourceTest
     @Test
     public void testNTFSFileDataStreamAlias() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
 
         Path path = dir.resolve("testfile");
@@ -806,7 +806,7 @@ public class FileSystemResourceTest
     @Test
     public void testNTFSFileEncodedDataStreamAlias() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
 
         Path path = dir.resolve("testfile");
@@ -843,7 +843,7 @@ public class FileSystemResourceTest
     @Test
     public void testSemicolon() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         
         try
         {
@@ -868,7 +868,7 @@ public class FileSystemResourceTest
     @Test
     public void testSingleQuote() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         try
@@ -894,7 +894,7 @@ public class FileSystemResourceTest
     @Test
     public void testSingleBackTick() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         try
@@ -923,7 +923,7 @@ public class FileSystemResourceTest
     @Test
     public void testBrackets() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         try
@@ -949,7 +949,7 @@ public class FileSystemResourceTest
     @Test
     public void testBraces() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         try
@@ -978,7 +978,7 @@ public class FileSystemResourceTest
     @Test
     public void testCaret() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         try
@@ -1007,7 +1007,7 @@ public class FileSystemResourceTest
     @Test
     public void testPipe() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         try
@@ -1040,13 +1040,13 @@ public class FileSystemResourceTest
     @Test
     public void testExist_Normal() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         Path path = dir.resolve("a.jsp");
         Files.createFile(path);
 
-        URI ref = testdir.getDir().toURI().resolve("a.jsp");
+        URI ref = testdir.getPath().toUri().resolve("a.jsp");
         try (Resource fileres = newResource(ref))
         {
             assertThat("Resource: " + fileres,fileres.exists(),is(true));
@@ -1056,7 +1056,7 @@ public class FileSystemResourceTest
     @Test
     public void testSingleQuoteInFileName() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         Path fooA = dir.resolve("foo's.txt");
@@ -1121,7 +1121,7 @@ public class FileSystemResourceTest
     @Test
     public void testExist_BadURINull() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         Path path = dir.resolve("a.jsp");
@@ -1130,7 +1130,7 @@ public class FileSystemResourceTest
         try
         {
             // request with null at end
-            URI uri = testdir.getDir().toURI().resolve("a.jsp%00");
+            URI uri = testdir.getPath().toUri().resolve("a.jsp%00");
             assertThat("Null URI",uri,notNullValue());
 
             Resource r = newResource(uri);
@@ -1147,7 +1147,7 @@ public class FileSystemResourceTest
     @Test
     public void testExist_BadURINullX() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
         
         Path path = dir.resolve("a.jsp");
@@ -1156,7 +1156,7 @@ public class FileSystemResourceTest
         try
         {
             // request with null and x at end
-            URI uri = testdir.getDir().toURI().resolve("a.jsp%00x");
+            URI uri = testdir.getPath().toUri().resolve("a.jsp%00x");
             assertThat("NullX URI",uri,notNullValue());
 
             Resource r = newResource(uri);
@@ -1173,7 +1173,7 @@ public class FileSystemResourceTest
     @Test
     public void testEncoding() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Files.createDirectories(dir);
 
         Path specials = dir.resolve("a file with,spe#ials");
@@ -1192,7 +1192,7 @@ public class FileSystemResourceTest
     @Test
     public void testUtf8Dir() throws Exception
     {
-        Path dir = testdir.getDir().toPath().normalize().toRealPath();
+        Path dir = testdir.getPath().normalize().toRealPath();
         Path utf8Dir = dir.resolve("bãm");
         Files.createDirectories(utf8Dir);
         
@@ -1209,4 +1209,6 @@ public class FileSystemResourceTest
             assertThat("Alias: " + r,r,hasNoAlias());
         }
     }
+    
+    
 }

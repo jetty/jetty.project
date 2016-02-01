@@ -22,6 +22,9 @@ package org.eclipse.jetty.quickstart;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
@@ -55,6 +58,7 @@ import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.MetaData.OriginInfo;
@@ -128,16 +132,16 @@ public class QuickStartDescriptorGenerator
         // Set some special context parameters
 
         // The location of the war file on disk
-        String resourceBase = _webApp.getBaseResource().getFile().getCanonicalFile().getAbsoluteFile().toURI().toString();
+        AttributeNormalizer normalizer = new AttributeNormalizer(_webApp.getBaseResource());
 
         // The library order
         addContextParamFromAttribute(out,ServletContext.ORDERED_LIBS);
         //the servlet container initializers
         addContextParamFromAttribute(out,AnnotationConfiguration.CONTAINER_INITIALIZERS);
         //the tlds discovered
-        addContextParamFromAttribute(out,MetaInfConfiguration.METAINF_TLDS,resourceBase);
+        addContextParamFromAttribute(out,MetaInfConfiguration.METAINF_TLDS,normalizer);
         //the META-INF/resources discovered
-        addContextParamFromAttribute(out,MetaInfConfiguration.METAINF_RESOURCES,resourceBase);
+        addContextParamFromAttribute(out,MetaInfConfiguration.METAINF_RESOURCES,normalizer);
 
 
         // init params
@@ -515,7 +519,27 @@ public class QuickStartDescriptorGenerator
      */
     private void addContextParamFromAttribute(XmlAppendable out, String attribute) throws IOException
     {
-        addContextParamFromAttribute(out,attribute,null);
+        Object o = _webApp.getAttribute(attribute);
+        if (o == null)
+            return;
+                
+        Collection<?> c =  (o instanceof Collection)? (Collection<?>)o:Collections.singletonList(o);
+        StringBuilder v=new StringBuilder();
+        for (Object i:c)
+        {
+            if (i!=null)
+            {
+                if (v.length()>0)
+                    v.append(",\n    ");
+                else
+                    v.append("\n    ");
+                QuotedStringTokenizer.quote(v,i.toString());
+            }
+        }
+        out.openTag("context-param")
+        .tag("param-name",attribute)
+        .tagCDATA("param-value",v.toString())
+        .closeTag();        
     }
     
     /**
@@ -526,7 +550,7 @@ public class QuickStartDescriptorGenerator
      * @param resourceBase
      * @throws IOException
      */
-    private void addContextParamFromAttribute(XmlAppendable out, String attribute, String resourceBase) throws IOException
+    private void addContextParamFromAttribute(XmlAppendable out, String attribute, AttributeNormalizer normalizer) throws IOException
     {
         Object o = _webApp.getAttribute(attribute);
         if (o == null)
@@ -542,16 +566,14 @@ public class QuickStartDescriptorGenerator
                     v.append(",\n    ");
                 else
                     v.append("\n    ");
-                if (resourceBase==null)
-                    QuotedStringTokenizer.quote(v,i.toString());
-                else
-                    QuotedStringTokenizer.quote(v,i.toString().replace(resourceBase,"${WAR}/"));
+                QuotedStringTokenizer.quote(v,normalizer.normalize(i));
             }
         }
         out.openTag("context-param")
         .tag("param-name",attribute)
         .tagCDATA("param-value",v.toString())
-        .closeTag();        
+        .closeTag();  
+        
     }
 
     /**

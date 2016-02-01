@@ -71,6 +71,12 @@ public class DummyConnection implements LogicalConnection
     }
 
     @Override
+    public String getId()
+    {
+        return "dummy";
+    }
+
+    @Override
     public long getIdleTimeout()
     {
         return 0;

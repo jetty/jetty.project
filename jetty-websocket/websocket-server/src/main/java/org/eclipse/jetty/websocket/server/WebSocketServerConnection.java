@@ -39,7 +39,7 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection imple
             endp.setIdleTimeout(policy.getIdleTimeout());
         }
     }
-
+    
     @Override
     public InetSocketAddress getLocalAddress()
     {

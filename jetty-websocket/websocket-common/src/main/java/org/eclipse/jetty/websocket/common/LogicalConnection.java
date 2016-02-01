@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -36,7 +35,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * <p>
      * Basic usage: results in an non-blocking async write, then connection close.
      * 
-     * @see StatusCode
+     * @see org.eclipse.jetty.websocket.api.StatusCode
      * @see #close(int, String)
      */
     public void close();
@@ -50,7 +49,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      *            the status code
      * @param reason
      *            the (optional) reason. (can be null for no reason)
-     * @see StatusCode
+     * @see org.eclipse.jetty.websocket.api.StatusCode
      */
     public void close(int statusCode, String reason);
 
@@ -155,4 +154,10 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * @return the suspend token
      */
     SuspendToken suspend();
+
+    /**
+     * Get Unique ID for the Connection
+     * @return the unique ID for the connection
+     */
+    public String getId();
 }
