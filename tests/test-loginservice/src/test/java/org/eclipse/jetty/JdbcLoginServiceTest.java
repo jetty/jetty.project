@@ -161,6 +161,21 @@ public class JdbcLoginServiceTest
          }
      }
 
+     public void testGetWithNonExistantUser() throws Exception
+     {
+         try
+         {
+             startClient("foo", "bar");
+
+             ContentResponse response = _client.GET(_baseUri.resolve("input.txt"));
+             assertEquals(HttpServletResponse.SC_UNAUTHORIZED,response.getStatus());
+         }
+         finally
+         {
+             stopClient();
+         }
+     }
+
      //Head requests to jetty-client are not working: see https://bugs.eclipse.org/bugs/show_bug.cgi?id=394552
      @Ignore
      public void testHead() throws Exception
@@ -201,7 +216,7 @@ public class JdbcLoginServiceTest
          }
      }
 
-     protected void startClient()
+     protected void startClient(String username, String pwd)
          throws Exception
      {
          _client = new HttpClient();
@@ -209,9 +224,16 @@ public class JdbcLoginServiceTest
          executor.setName(executor.getName() + "-client");
          _client.setExecutor(executor);
          AuthenticationStore authStore = _client.getAuthenticationStore();
-         authStore.addAuthentication(new BasicAuthentication(_baseUri, __realm, "jetty", "jetty"));
+         authStore.addAuthentication(new BasicAuthentication(_baseUri, __realm, username, pwd));
          _client.start();
      }
+
+     protected void startClient()
+         throws Exception
+     {
+         startClient("jetty", "jetty");
+     }
+
 
      protected void stopClient()
          throws Exception

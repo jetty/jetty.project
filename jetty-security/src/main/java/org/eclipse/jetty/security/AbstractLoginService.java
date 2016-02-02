@@ -166,7 +166,7 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
             return null;
 
         UserPrincipal userPrincipal = loadUserInfo(username);
-        if (userPrincipal.authenticate(credentials))
+        if (userPrincipal != null && userPrincipal.authenticate(credentials))
         {
             //safe to load the roles
             String[] roles = loadRoleInfo(userPrincipal);
