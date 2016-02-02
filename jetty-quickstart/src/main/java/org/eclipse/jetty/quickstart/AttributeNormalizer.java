@@ -59,6 +59,7 @@ public class AttributeNormalizer
     {
         public final Path path;
         public final String key;
+        private int weight = -1;
 
         public PathAttribute(String key, Path path) throws IOException
         {
@@ -83,11 +84,27 @@ public class AttributeNormalizer
         
         private static Path toCanonicalPath(Path path) throws IOException
         {
+            if (path == null)
+            {
+                return null;
+            }
             if (Files.exists(path))
             {
                 return path.toRealPath();
             }
             return path.toAbsolutePath();
+        }
+
+        public PathAttribute weight(int newweight)
+        {
+            this.weight = newweight;
+            return this;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("PathAttribute[%s=>%s,%d]",key,path,weight);
         }
     }
 
@@ -106,7 +123,22 @@ public class AttributeNormalizer
                 return 1;
             }
             
-            return o2.path.getNameCount() - o1.path.getNameCount();
+            // Different lengths?
+            int diff = o2.path.getNameCount() - o1.path.getNameCount();
+            if(diff != 0)
+            {
+                return diff;
+            }
+            
+            // Different names?
+            diff = o2.path.compareTo(o1.path);
+            if(diff != 0)
+            {
+                return diff;
+            }
+            
+            // The paths are the same, base now on weight
+            return o2.weight - o1.weight;
         }
     }
 
@@ -117,11 +149,11 @@ public class AttributeNormalizer
         try
         {
             // Track path attributes for expansion
-            attributes.add(new PathAttribute("WAR", baseResource == null ? null : baseResource.getFile().toPath()));
-            attributes.add(new PathAttribute("jetty.base", "jetty.base"));
-            attributes.add(new PathAttribute("jetty.home", "jetty.home"));
-            attributes.add(new PathAttribute("user.home", "user.home"));
-            attributes.add(new PathAttribute("user.dir", "user.dir"));
+            attributes.add(new PathAttribute("WAR", baseResource == null ? null : baseResource.getFile().toPath()).weight(10));
+            attributes.add(new PathAttribute("jetty.base", "jetty.base").weight(9));
+            attributes.add(new PathAttribute("jetty.home", "jetty.home").weight(8));
+            attributes.add(new PathAttribute("user.home", "user.home").weight(7));
+            attributes.add(new PathAttribute("user.dir", "user.dir").weight(6));
             
             Collections.sort(attributes, new PathAttributeComparator());
         }
