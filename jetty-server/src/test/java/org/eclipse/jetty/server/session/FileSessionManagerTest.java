@@ -74,14 +74,15 @@ public class FileSessionManagerTest
         handler.setSessionManager(manager);
         manager.start();
         
-        String expectedFilename = "../../_0.0.0.0_dangerFile";
-        
+        //Create a file that is in the parent dir of the session storeDir
+        String expectedFilename =  "_0.0.0.0_dangerFile";    
         MavenTestingUtils.getTargetFile(expectedFilename).createNewFile();
-        
         Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile(expectedFilename).exists());
 
-        manager.getSession("../../_0.0.0.0_dangerFile");
-        
+        //Verify that passing in the relative filename of an unrecoverable session does not lead
+        //to deletion of file outside the session dir (needs deleteUnrecoverableFiles(true))
+        Session session = manager.getSession("../_0.0.0.0_dangerFile");
+        Assert.assertTrue(session == null);
         Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile(expectedFilename).exists());
 
     }
@@ -111,7 +112,7 @@ public class FileSessionManagerTest
 
         Assert.assertTrue("File should exist!", new File(testDir, expectedFilename).exists());
 
-        manager.getSession("validFile123");
+        Session session = manager.getSession("validFile123");
 
         Assert.assertTrue("File shouldn't exist!", !new File(testDir,expectedFilename).exists());
     }
