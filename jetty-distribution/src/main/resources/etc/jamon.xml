@@ -7,13 +7,13 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-  <Get id="oldhandler" name="handler" />
-  <Set name="handler">
-    <New id="JamonHandler" class="com.jamonapi.http.JAMonJettyHandlerNew">
-      <Set name="handler"><Ref refid="oldhandler" /></Set>
-      <Set name="summaryLabels"><Property name="jamon.summaryLabels" /></Set>
-    </New>
-  </Set>
+  <Call name="insertHandler">
+    <Arg>
+      <New id="JamonHandler" class="com.jamonapi.http.JAMonJettyHandlerNew">
+        <Set name="summaryLabels"><Property name="jamon.summaryLabels" /></Set>
+      </New>
+    </Arg>
+  </Call>
 
   <Ref refid="Contexts">
     <Call name="addHandler">

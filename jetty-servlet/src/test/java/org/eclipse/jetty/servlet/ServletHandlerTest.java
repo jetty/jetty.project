@@ -26,6 +26,7 @@ import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
 
+import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.junit.Before;
 import org.junit.Test;
@@ -427,6 +428,5 @@ public class ServletHandlerTest
         assertTrue(pf == mappings[6].getFilterHolder()); //isMatchAfter = true;
     }
   
-    
     
 }
