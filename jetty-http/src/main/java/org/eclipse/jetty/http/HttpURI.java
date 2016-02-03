@@ -334,6 +334,8 @@ public class HttpURI
                             state=State.PORT;
                             break;
                         case '@':
+                            if (_user!=null)
+                                throw new IllegalArgumentException("Bad authority");
                             _user=uri.substring(mark,i);
                             mark=i+1;
                             break;
@@ -372,7 +374,16 @@ public class HttpURI
 
                 case PORT:
                 {
-                    if (c=='/')
+                    if (c=='@')
+                    {
+                        if (_user!=null)
+                            throw new IllegalArgumentException("Bad authority");
+                        // It wasn't a port, but a password!
+                        _user=_host+":"+uri.substring(mark,i);
+                        mark=i+1;
+                        state=State.HOST;
+                    }
+                    else if (c=='/')
                     {
                         _port=TypeUtil.parseInt(uri,mark,i-mark,10);
                         path_mark=mark=i;
@@ -744,6 +755,12 @@ public class HttpURI
         if (_port>0)
             return _host+":"+_port;
         return _host;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String getUser()
+    {
+        return _user;
     }
 
 

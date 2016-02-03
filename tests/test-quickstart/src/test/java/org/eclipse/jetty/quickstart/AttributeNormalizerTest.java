@@ -18,12 +18,17 @@
 
 package org.eclipse.jetty.quickstart;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
@@ -43,14 +48,48 @@ public class AttributeNormalizerTest
     public static List<String[]> data()
     {
         String[][] tests = { 
-                { "WAR", "/opt/jetty-distro/demo.base/webapps/root" }, 
-                { "jetty.home", "/opt/jetty-distro" },
-                { "jetty.base", "/opt/jetty-distro/demo.base" }, 
-                { "user.home", "/home/user" }, 
-                { "user.dir", "/etc/init.d" }, 
+                { "WAR", toSystemPath("/opt/jetty-distro/demo.base/webapps/root") }, 
+                { "jetty.home", toSystemPath("/opt/jetty-distro") },
+                { "jetty.base", toSystemPath("/opt/jetty-distro/demo.base") }, 
+                { "user.home", toSystemPath("/home/user") }, 
+                { "user.dir", toSystemPath("/etc/init.d") }, 
         };
 
         return Arrays.asList(tests);
+    }
+
+    /**
+     * As the declared paths in this testcase might be actual paths on the system
+     * running these tests, the expected paths should be cleaned up to represent
+     * the actual system paths.
+     * <p>
+     * Eg: on fedora /etc/init.d is a symlink to /etc/rc.d/init.d
+     */
+    private static String toSystemPath(String rawpath)
+    {
+        Path path = FileSystems.getDefault().getPath(rawpath);
+        if (Files.exists(path))
+        {
+            // It exists, resolve it to the real path
+            try
+            {
+                path = path.toRealPath();
+            }
+            catch (IOException e)
+            {
+                // something prevented us from resolving to real path, fallback to
+                // absolute path resolution (not as accurate)
+                path = path.toAbsolutePath();
+                e.printStackTrace();
+            }
+        }
+        else
+        {
+            // File doesn't exist, resolve to absolute path
+            // We can't rely on File.toCanonicalPath() here
+            path = path.toAbsolutePath();
+        }
+        return path.toString();
     }
 
     private static String origJettyBase;
@@ -97,108 +136,108 @@ public class AttributeNormalizerTest
     @Test
     public void testEqual()
     {
-        assertEquals("file:${" + key + "}",normalizer.normalize("file:" + path));
+        assertThat(normalizer.normalize("file:" + path), is("file:${" + key + "}"));
     }
 
     @Test
     public void testEqualsSlash()
     {
-        assertEquals("file:${" + key + "}",normalizer.normalize("file:" + path + "/"));
+        assertThat(normalizer.normalize("file:" + path + "/"), is("file:${" + key + "}"));
     }
 
     @Test
     public void testEqualsSlashFile()
     {
-        assertEquals("file:${" + key + "}/file",normalizer.normalize("file:" + path + "/file"));
+        assertThat(normalizer.normalize("file:" + path + "/file"), is("file:${" + key + "}/file"));
     }
 
     @Test
     public void testURIEquals() throws URISyntaxException
     {
-        assertEquals("file:${" + key + "}",normalizer.normalize(new URI("file:" + path)));
+        assertThat(normalizer.normalize(new URI("file:" + path)), is("file:${" + key + "}"));
     }
 
     @Test
     public void testURIEqualsSlash() throws URISyntaxException
     {
-        assertEquals("file:${" + key + "}",normalizer.normalize(new URI("file:" + path + "/")));
+        assertThat(normalizer.normalize(new URI("file:" + path + "/")), is("file:${" + key + "}"));
     }
 
     @Test
     public void testURIEqualsSlashFile() throws URISyntaxException
     {
-        assertEquals("file:${" + key + "}/file",normalizer.normalize(new URI("file:" + path + "/file")));
+        assertThat(normalizer.normalize(new URI("file:" + path + "/file")), is("file:${" + key + "}/file"));
     }
 
     @Test
     public void testURLEquals() throws MalformedURLException
     {
-        assertEquals("file:${" + key + "}",normalizer.normalize(new URL("file:" + path)));
+        assertThat(normalizer.normalize(new URL("file:" + path)), is("file:${" + key + "}"));
     }
 
     @Test
     public void testURLEqualsSlash() throws MalformedURLException
     {
-        assertEquals("file:${" + key + "}",normalizer.normalize(new URL("file:" + path + "/")));
+        assertThat(normalizer.normalize(new URL("file:" + path + "/")), is("file:${" + key + "}"));
     }
 
     @Test
     public void testURLEqualsSlashFile() throws MalformedURLException
     {
-        assertEquals("file:${" + key + "}/file",normalizer.normalize(new URL("file:" + path + "/file")));
+        assertThat(normalizer.normalize(new URL("file:" + path + "/file")), is("file:${" + key + "}/file"));
     }
 
     @Test
     public void testJarFileEquals_BangFile()
     {
-        assertEquals("jar:file:${" + key + "}!/file",normalizer.normalize("jar:file:" + path + "!/file"));
+        assertThat(normalizer.normalize("jar:file:" + path + "!/file"), is("jar:file:${" + key + "}!/file"));
     }
 
     @Test
     public void testJarFileEquals_SlashBangFile()
     {
-        assertEquals("jar:file:${" + key + "}!/file",normalizer.normalize("jar:file:" + path + "/!/file"));
+        assertThat(normalizer.normalize("jar:file:" + path + "/!/file"), is("jar:file:${" + key + "}!/file"));
     }
 
     @Test
     public void testJarFileEquals_FileBangFile()
     {
-        assertEquals("jar:file:${" + key + "}/file!/file",normalizer.normalize("jar:file:" + path + "/file!/file"));
+        assertThat(normalizer.normalize("jar:file:" + path + "/file!/file"), is("jar:file:${" + key + "}/file!/file"));
     }
 
     @Test
     public void testJarFileEquals_URIBangFile() throws URISyntaxException
     {
-        assertEquals("jar:file:${" + key + "}!/file",normalizer.normalize(new URI("jar:file:" + path + "!/file")));
+        assertThat(normalizer.normalize(new URI("jar:file:" + path + "!/file")), is("jar:file:${" + key + "}!/file"));
     }
 
     @Test
     public void testJarFileEquals_URISlashBangFile() throws URISyntaxException
     {
-        assertEquals("jar:file:${" + key + "}!/file",normalizer.normalize(new URI("jar:file:" + path + "/!/file")));
+        assertThat(normalizer.normalize(new URI("jar:file:" + path + "/!/file")), is("jar:file:${" + key + "}!/file"));
     }
 
     @Test
     public void testJarFileEquals_URIFileBangFile() throws URISyntaxException
     {
-        assertEquals("jar:file:${" + key + "}/file!/file",normalizer.normalize(new URI("jar:file:" + path + "/file!/file")));
+        assertThat(normalizer.normalize(new URI("jar:file:" + path + "/file!/file")), is("jar:file:${" + key + "}/file!/file"));
     }
 
     @Test
     public void testJarFileEquals_URLBangFile() throws MalformedURLException
     {
-        assertEquals("jar:file:${" + key + "}!/file",normalizer.normalize(new URL("jar:file:" + path + "!/file")));
+        assertThat(normalizer.normalize(new URL("jar:file:" + path + "!/file")), is("jar:file:${" + key + "}!/file"));
     }
 
     @Test
     public void testJarFileEquals_URLSlashBangFile() throws MalformedURLException
     {
-        assertEquals("jar:file:${" + key + "}!/file",normalizer.normalize(new URL("jar:file:" + path + "/!/file")));
+        assertThat(normalizer.normalize(new URL("jar:file:" + path + "/!/file")), is("jar:file:${" + key + "}!/file"));
     }
 
     @Test
     public void testJarFileEquals_URLFileBangFile() throws MalformedURLException
     {
-        assertEquals("jar:file:${" + key + "}/file!/file",normalizer.normalize(new URL("jar:file:" + path + "/file!/file")));
+        assertThat(normalizer.normalize(new URL("jar:file:" + path + "/file!/file")), is("jar:file:${" + key + "}/file!/file"));
     }
 }

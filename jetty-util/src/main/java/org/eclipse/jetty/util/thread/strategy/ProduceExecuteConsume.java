@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.thread.strategy;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -55,7 +56,26 @@ public class ProduceExecuteConsume implements ExecutionStrategy
                 break;
 
             // Execute the task.
-            _executor.execute(task);
+            try
+            {
+                _executor.execute(task);
+            }
+            catch(RejectedExecutionException e)
+            {
+                //  Discard/reject tasks that cannot be executed
+                if (task instanceof Rejectable)
+                {
+                    try
+                    {
+                        ((Rejectable)task).reject();
+                    }
+                    catch (Throwable x)
+                    {
+                        e.addSuppressed(x);
+                        LOG.warn(e);
+                    }
+                }
+            }
         }
     }
 

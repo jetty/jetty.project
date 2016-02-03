@@ -88,3 +88,6 @@ http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/
 ## Whether cipher order is significant (since java 8 only)
 # jetty.sslContext.useCipherSuitesOrder=true
 
+## To configure Includes / Excludes for Cipher Suites or Protocols see tweak-ssl.xml example at
+## https://www.eclipse.org/jetty/documentation/current/configuring-ssl.html#configuring-sslcontextfactory-cipherSuites
+

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -26,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -80,6 +82,11 @@ public class HandlerWrapper extends AbstractHandlerContainer
         if (isStarted())
             throw new IllegalStateException(STARTED);
 
+        // check for loops
+        if (handler==this || (handler instanceof HandlerContainer &&
+            Arrays.asList(((HandlerContainer)handler).getChildHandlers()).contains(this)))
+            throw new IllegalStateException("setHandler loop");
+        
         if (handler!=null)
             handler.setServer(getServer());
         
@@ -102,10 +109,18 @@ public class HandlerWrapper extends AbstractHandlerContainer
      */
     public void insertHandler(HandlerWrapper wrapper)
     {
-        if (wrapper==null || wrapper.getHandler()!=null)
+        if (wrapper==null)
             throw new IllegalArgumentException();
-        wrapper.setHandler(getHandler());
+        
+        HandlerWrapper tail = wrapper;
+        while(tail.getHandler() instanceof HandlerWrapper)
+            tail=(HandlerWrapper)tail.getHandler();
+        if (tail.getHandler()!=null)
+            throw new IllegalArgumentException("bad tail of inserted wrapper chain");
+        
+        Handler next=getHandler();
         setHandler(wrapper);
+        tail.setHandler(next);
     }
 
     /* ------------------------------------------------------------ */

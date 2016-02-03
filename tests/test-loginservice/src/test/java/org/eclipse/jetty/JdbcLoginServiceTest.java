@@ -160,13 +160,13 @@ public class JdbcLoginServiceTest
              stopClient();
          }
      }
-
-     public void testGetWithNonExistantUser() throws Exception
+     
+     @Test
+     public void testGetNonExistantUser () throws Exception
      {
          try
          {
              startClient("foo", "bar");
-
              ContentResponse response = _client.GET(_baseUri.resolve("input.txt"));
              assertEquals(HttpServletResponse.SC_UNAUTHORIZED,response.getStatus());
          }
@@ -216,7 +216,7 @@ public class JdbcLoginServiceTest
          }
      }
 
-     protected void startClient(String username, String pwd)
+     protected void startClient(String user, String pwd)
          throws Exception
      {
          _client = new HttpClient();
@@ -224,7 +224,7 @@ public class JdbcLoginServiceTest
          executor.setName(executor.getName() + "-client");
          _client.setExecutor(executor);
          AuthenticationStore authStore = _client.getAuthenticationStore();
-         authStore.addAuthentication(new BasicAuthentication(_baseUri, __realm, username, pwd));
+         authStore.addAuthentication(new BasicAuthentication(_baseUri, __realm, user, pwd));
          _client.start();
      }
 
