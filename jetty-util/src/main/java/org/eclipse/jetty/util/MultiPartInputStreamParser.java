@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Locale;
 
 import javax.servlet.MultipartConfigElement;
-import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.log.Log;
@@ -113,7 +112,7 @@ public class MultiPartInputStreamParser
             if (MultiPartInputStreamParser.this._config.getMaxFileSize() > 0 && _size + 1 > MultiPartInputStreamParser.this._config.getMaxFileSize())
                 throw new IllegalStateException ("Multipart Mime part "+_name+" exceeds max filesize");
 
-            if (_file == null && MultiPartInputStreamParser.this.isFileNeeded(_size + 1))
+            if (MultiPartInputStreamParser.this._config.getFileSizeThreshold() > 0 && _size + 1 > MultiPartInputStreamParser.this._config.getFileSizeThreshold() && _file==null)
                 createFile();
 
             _out.write(b);
@@ -126,7 +125,7 @@ public class MultiPartInputStreamParser
             if (MultiPartInputStreamParser.this._config.getMaxFileSize() > 0 && _size + length > MultiPartInputStreamParser.this._config.getMaxFileSize())
                 throw new IllegalStateException ("Multipart Mime part "+_name+" exceeds max filesize");
 
-            if (_file == null && MultiPartInputStreamParser.this.isFileNeeded(_size + length))
+            if (MultiPartInputStreamParser.this._config.getFileSizeThreshold() > 0 && _size + length > MultiPartInputStreamParser.this._config.getFileSizeThreshold() && _file==null)
                 createFile();
 
             _out.write(bytes, offset, length);
@@ -429,31 +428,6 @@ public class MultiPartInputStreamParser
         return _parts.getValue(name, 0);
     }
 
-
-    /**
-     * Test to determine if the file content sizes exceeds the {@link MultipartConfig#fileSizeThreshold()} 
-     * necessary to produce a file on disk
-     * <p>
-     * Configured {@link MultipartConfig#fileSizeThreshold()} of <code>0</code> is always true, negative is always false, 
-     * all other configurations are tested against <code>size</code> parameter
-     *  
-     * @param size the file size to test against.
-     * @return true if file is needed, false otherwise
-     */
-    protected boolean isFileNeeded(long size)
-    {
-        if (_config.getFileSizeThreshold() < 0)
-        {
-            // Negative file size threshold means no file, ever
-            return false;
-        }
-        if (_config.getFileSizeThreshold() == 0)
-        {
-            // 0 means always create a file
-            return true;
-        }
-        return size > _config.getFileSizeThreshold();
-    }
 
     /**
      * Parse, if necessary, the multipart stream.
