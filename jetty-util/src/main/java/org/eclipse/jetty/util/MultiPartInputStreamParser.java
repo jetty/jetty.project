@@ -63,6 +63,7 @@ public class MultiPartInputStreamParser
     protected File _tmpDir;
     protected File _contextTmpDir;
     protected boolean _deleteOnExit;
+    protected boolean _writeFilesWithFilenames;
 
 
 
@@ -94,9 +95,19 @@ public class MultiPartInputStreamParser
         protected void open()
         throws IOException
         {
-            //Write to a buffer in memory until we discover we've exceed the
-            //MultipartConfig fileSizeThreshold
-            _out = _bout= new ByteArrayOutputStream2();
+            //We will either be writing to a file, if it has a filename on the content-disposition
+            //and otherwise a byte-array-input-stream, OR if we exceed the getFileSizeThreshold, we
+            //will need to change to write to a file.
+            if (isWriteFilesWithFilenames() && _filename != null && _filename.trim().length() > 0)
+            {
+                createFile();
+            }
+            else
+            {
+                //Write to a buffer in memory until we discover we've exceed the
+                //MultipartConfig fileSizeThreshold
+                _out = _bout= new ByteArrayOutputStream2();
+            }
         }
 
         protected void close()
@@ -744,6 +755,15 @@ public class MultiPartInputStreamParser
         _deleteOnExit = deleteOnExit;
     }
 
+    public void setWriteFilesWithFilenames (boolean writeFilesWithFilenames)
+    {
+        _writeFilesWithFilenames = writeFilesWithFilenames;
+    }
+    
+    public boolean isWriteFilesWithFilenames ()
+    {
+        return _writeFilesWithFilenames;
+    }
 
     public boolean isDeleteOnExit()
     {
