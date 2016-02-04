@@ -18,10 +18,9 @@
 
 package org.eclipse.jetty.servlets;
 
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -31,15 +30,10 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.EnumSet;
-import java.util.Enumeration;
 import java.util.Map;
 
 import javax.servlet.DispatcherType;
@@ -51,12 +45,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
-import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class MultipartFilterTest
@@ -65,45 +56,16 @@ public class MultipartFilterTest
     private ServletTester tester;
     FilterHolder multipartFilter;
     
-    @SuppressWarnings("serial")
     public static class FilenameServlet extends TestServlet
     {
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            assertThat(req.getAttribute("fileup"), notNullValue());
+            assertNotNull(req.getAttribute("fileup"));
             super.doPost(req, resp);
         }
     }
-    
-    @SuppressWarnings("serial")
-    public static class ParameterListServlet extends TestServlet
-    {
-        @Override
-        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-        {
-            resp.setContentType("text/plain");
-            PrintWriter out = resp.getWriter();
-            
-            Enumeration<String> pnames = req.getParameterNames();
-            while (pnames.hasMoreElements())
-            {
-                String pname = pnames.nextElement();
-                Object param = req.getParameter(pname);
-                out.printf("Parameter[%s] = ",pname);
-                if (param == null)
-                {
-                    out.println(" <null>");
-                }
-                else
-                {
-                    out.printf("(%s) %s%n",param.getClass().getName(),param);
-                }
-            }
-        }
-    }
 
-    @SuppressWarnings("serial")
     public static class BoundaryServlet extends TestServlet
     {
         @Override
@@ -111,11 +73,9 @@ public class MultipartFilterTest
         {
             //we have configured the multipart filter to always store to disk (file size threshold == 1)
             //but fileName has no filename param, so only the attribute should be set
-            assertThat("getParameter('fileName')", req.getParameter("fileName"), nullValue());
-            assertThat("getAttribute('fileName')", req.getAttribute("fileName"), notNullValue());
-            
+            assertNull(req.getParameter("fileName"));
+            assertNotNull(req.getAttribute("fileName"));
             File f = (File)req.getAttribute("fileName");
-            assertThat("File exists", f.exists(), is(true));
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             IO.copy(new FileInputStream(f), baos);
             assertEquals(getServletContext().getAttribute("fileName"), baos.toString());
@@ -133,36 +93,34 @@ public class MultipartFilterTest
         }
     }
     
-    @SuppressWarnings("serial")
     public static class TestServlet extends DumpServlet
     {
 
-        @SuppressWarnings("deprecation")
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            String fileup = req.getParameter("fileup");
-            assertThat("getParameter('fileup')",fileup,notNullValue());
-            
-            System.err.println("Fileup=" + req.getParameter("fileup"));
-            
-            String fileupType = req.getParameter("fileup" + MultiPartFilter.CONTENT_TYPE_SUFFIX);
-            assertThat("req.getParameter('fileup'+CONTENT_TYPE_SUFFIX)",fileupType,is("application/octet-stream"));
+            assertNotNull(req.getParameter("fileup"));
+            System.err.println("Fileup="+req.getParameter("fileup"));
+            assertNotNull(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
+            assertEquals(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX), "application/octet-stream");
             super.doPost(req, resp);
         }
+
     }
 
-    @SuppressWarnings("deprecation")
+
+
     @Before
     public void setUp() throws Exception
     {
-        Path tmpDir = MavenTestingUtils.getTargetTestingPath("testmultupart");
-        FS.ensureEmpty(tmpDir);
-        
-        _dir = tmpDir.toFile();
+        _dir = File.createTempFile("testmultupart",null);
+        assertTrue(_dir.delete());
+        assertTrue(_dir.mkdir());
+        _dir.deleteOnExit();
+        assertTrue(_dir.isDirectory());
 
         tester=new ServletTester("/context");
-        tester.getContext().setResourceBase(tmpDir.toString());
+        tester.getContext().setResourceBase(_dir.getCanonicalPath());
         tester.getContext().addServlet(TestServlet.class, "/");
         tester.getContext().setAttribute("javax.servlet.context.tempdir", _dir);
         multipartFilter = tester.getContext().addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
@@ -832,7 +790,6 @@ public class MultipartFilterTest
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
     }
 
-    @SuppressWarnings("serial")
     public static class TestServletParameterMap extends DumpServlet
     {
         @Override
@@ -843,7 +800,7 @@ public class MultipartFilterTest
             super.doPost(req, resp);
         }
     }
-    
+
     /**
      * Validate that the getParameterMap() call is correctly unencoding the parameters in the
      * map that it returns.
@@ -873,7 +830,7 @@ public class MultipartFilterTest
         "Content-Type: application/octet-stream\r\n\r\n"+
         "How now brown cow."+
         "\r\n--" + boundary + "\r\n"+
-        "Content-Disposition: form-data; name=\"strup\""+ // FIXME: this is missing a "\r\n"??
+        "Content-Disposition: form-data; name=\"strup\""+
         "Content-Type: application/octet-stream\r\n\r\n"+
         "How now brown cow."+
         "\r\n--" + boundary + "--\r\n\r\n";
@@ -883,119 +840,6 @@ public class MultipartFilterTest
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
-    }
-    
-    /**
-     * Validate that the uploaded file can be accessed on the name it was given
-     * @throws Exception on test failure
-     */
-    @Test
-    @Ignore("Fails for Bug #486394")
-    public void testFileUpload_AccessViaFilename() throws Exception
-    {
-        tester.addServlet(ParameterListServlet.class,"/paramlist");
-        
-        multipartFilter.setInitParameter("fileOutputBuffer", "1");
-        multipartFilter.setInitParameter("deleteFiles", "false");
-        multipartFilter.setInitParameter("writeFilesWithFilenames", "true");
-
-        // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
-
-        // test GET
-        request.setMethod("POST");
-        request.setURI("/context/paramlist");
-        request.setVersion("HTTP/1.1");
-        request.setHeader("Host","tester");
-        request.setHeader("Connection","close");
-        String boundary="XyXyXy";
-        request.setHeader("Content-Type","multipart/form-data; boundary=" + boundary);
-
-        StringBuilder content = new StringBuilder();
-        content.append("--").append(boundary).append("\r\n");
-        content.append("Content-Disposition: form-data; name=\"file\"; filename=\"tiny.dat\"\r\n");
-        content.append("Content-Type: application/octet-stream\r\n");
-        content.append("\r\n");
-        content.append("How now brown cow.\r\n");
-        content.append("--").append(boundary).append("--\r\n");
-        content.append("\r\n");
-        
-        request.setContent(content.toString());
-
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        assertThat("Response status", response.getStatus(), is(HttpServletResponse.SC_OK));
-        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-        
-        String contents = assertUploadedFileExists("tiny.dat");
-        assertThat("contents", contents, containsString("How now brown cow."));
-    }
-    
-    /**
-     * Validate that the two upload files, with the same name="" on two different parts,
-     * can be accessed with the filename="" portions.
-     * @throws Exception on test failure
-     */
-    @Test
-    @Ignore("Fails for Bug #486394")
-    public void testTwoFileUploads_AccessViaFilename() throws Exception
-    {
-        tester.addServlet(ParameterListServlet.class,"/paramlist");
-        
-        multipartFilter.setInitParameter("fileOutputBuffer", "1");
-        multipartFilter.setInitParameter("deleteFiles", "false");
-        multipartFilter.setInitParameter("writeFilesWithFilenames", "true");
-
-        // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
-
-        // test GET
-        request.setMethod("POST");
-        request.setURI("/context/paramlist");
-        request.setVersion("HTTP/1.1");
-        request.setHeader("Host","tester");
-        request.setHeader("Connection","close");
-
-        String boundary="XyXyXy";
-        request.setHeader("Content-Type","multipart/form-data; boundary=" + boundary);
-
-        StringBuilder content = new StringBuilder();
-        content.append("--").append(boundary).append("\r\n");
-        content.append("Content-Disposition: form-data; name=\"same\"; filename=\"crocodile.dat\"\r\n");
-        content.append("Content-Type: application/octet-stream\r\n");
-        content.append("\r\n");
-        content.append("See ya later, aligator.\r\n");
-        content.append("--").append(boundary).append("\r\n");
-        content.append("Content-Disposition: form-data; name=\"same\"; filename=\"aligator.dat\"\r\n");
-        content.append("Content-Type: application/octet-stream\r\n");
-        content.append("\r\n");
-        content.append("In a while, crocodile.\r\n");
-        content.append("--").append(boundary).append("--\r\n");
-        content.append("\r\n");
-        
-        request.setContent(content.toString());
-
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        assertThat("Response status", response.getStatus(), is(HttpServletResponse.SC_OK));
-        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-        
-        String contents = assertUploadedFileExists("crocodile.dat");
-        assertThat("contents", contents, containsString("See ya later, aligator."));
-        
-        contents = assertUploadedFileExists("aligator.dat");
-        assertThat("contents", contents, containsString("In a while, crocodile."));
-    }
-    
-    private String assertUploadedFileExists(String filename) throws IOException
-    {
-        File uploadedFile = new File(_dir,filename);
-        assertThat("Uploaded File[" + uploadedFile + "].exists",uploadedFile.exists(),is(true));
-        
-        try (Reader reader = new FileReader(uploadedFile))
-        {
-            return IO.toString(reader);
-        }
     }
 
     public static class TestServletCharSet extends HttpServlet
@@ -1103,9 +947,13 @@ public class MultipartFilterTest
         assertTrue(response.getContent().indexOf("000")>=0);
     }
     
-    @SuppressWarnings("serial")
+    
+    
     public static class DumpServlet extends HttpServlet
     {
+        private static final long serialVersionUID = 201012011130L;
+
+        /* ------------------------------------------------------------ */
         /**
          * @see javax.servlet.http.HttpServlet#doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
          */
