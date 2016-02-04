@@ -216,13 +216,8 @@ public class JdbcLoginServiceTest
          }
      }
 
-     protected void startClient(String username, String pwd)
+     protected void startClient(String user, String pwd)
          throws Exception
-     {
-         startClient("jetty", "jetty");
-     }
-     
-     protected void startClient(String user, String pwd) throws Exception
      {
          _client = new HttpClient();
          QueuedThreadPool executor = new QueuedThreadPool();
