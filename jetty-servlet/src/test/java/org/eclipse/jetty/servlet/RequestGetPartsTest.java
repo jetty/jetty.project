@@ -15,7 +15,6 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 //
-
 package org.eclipse.jetty.servlet;
 
 import static org.hamcrest.Matchers.containsString;
