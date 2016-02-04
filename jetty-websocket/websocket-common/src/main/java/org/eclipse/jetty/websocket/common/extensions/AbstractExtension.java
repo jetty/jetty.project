@@ -23,7 +23,9 @@ import java.io.IOException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -38,7 +40,7 @@ import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 @ManagedObject("Abstract Extension")
-public abstract class AbstractExtension extends ContainerLifeCycle implements Extension
+public abstract class AbstractExtension extends AbstractLifeCycle implements Dumpable, Extension
 {
     private final Logger log;
     private WebSocketPolicy policy;
@@ -52,11 +54,15 @@ public abstract class AbstractExtension extends ContainerLifeCycle implements Ex
     {
         log = Log.getLogger(this.getClass());
     }
-
+    
     @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
     public void dump(Appendable out, String indent) throws IOException
     {
-        super.dump(out, indent);
         // incoming
         dumpWithHeading(out, indent, "incoming", this.nextIncoming);
         dumpWithHeading(out, indent, "outgoing", this.nextOutgoing);

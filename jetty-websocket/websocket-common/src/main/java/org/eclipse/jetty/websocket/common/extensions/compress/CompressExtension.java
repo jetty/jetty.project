@@ -74,28 +74,34 @@ public abstract class CompressExtension extends AbstractExtension
 
     private final Queue<FrameEntry> entries = new ConcurrentArrayQueue<>();
     private final IteratingCallback flusher = new Flusher();
-    private final Deflater deflater;
-    private final Inflater inflater;
+    private Deflater deflaterImpl;
+    private Inflater inflaterImpl;
     protected AtomicInteger decompressCount = new AtomicInteger(0);
     private int tailDrop = TAIL_DROP_NEVER;
     private int rsvUse = RSV_USE_ALWAYS;
 
     protected CompressExtension()
     {
-        deflater = new Deflater(Deflater.DEFAULT_COMPRESSION,NOWRAP);
-        inflater = new Inflater(NOWRAP);
         tailDrop = getTailDropMode();
         rsvUse = getRsvUseMode();
     }
 
     public Deflater getDeflater()
     {
-        return deflater;
+        if (deflaterImpl == null)
+        {
+            deflaterImpl = new Deflater(Deflater.DEFAULT_COMPRESSION,NOWRAP);
+        }
+        return deflaterImpl;
     }
 
     public Inflater getInflater()
     {
-        return inflater;
+        if (inflaterImpl == null)
+        {
+            inflaterImpl = new Inflater(NOWRAP);
+        }
+        return inflaterImpl;
     }
 
     /**
@@ -154,6 +160,8 @@ public abstract class CompressExtension extends AbstractExtension
             return;
         }
         byte[] output = new byte[DECOMPRESS_BUF_SIZE];
+        
+        Inflater inflater = getInflater();
         
         while(buf.hasRemaining() && inflater.needsInput())
         {
@@ -346,6 +354,17 @@ public abstract class CompressExtension extends AbstractExtension
         }
         return true;
     }
+    
+    @Override
+    protected void doStop() throws Exception
+    {
+        LOG.info("doStop()");
+        if(deflaterImpl != null)
+            deflaterImpl.end();
+        if(inflaterImpl != null)
+            inflaterImpl.end();
+        super.doStop();
+    }
 
     @Override
     public String toString()
@@ -429,6 +448,8 @@ public abstract class CompressExtension extends AbstractExtension
                 LOG.debug("Compressing {}: {} bytes in {} bytes chunk",entry,remaining,outputLength);
 
             boolean needsCompress = true;
+            
+            Deflater deflater = getDeflater();
 
             if (deflater.needsInput() && !supplyInput(deflater,data))
             {
