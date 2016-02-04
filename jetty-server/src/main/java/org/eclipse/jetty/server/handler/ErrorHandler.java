@@ -99,6 +99,11 @@ public class ErrorHandler extends AbstractHandler
                         throw new IOException(x);
                     }
                 }
+            } else {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("No Error Page mapping for request({} {}) (using default)",request.getMethod(),request.getRequestURI());
+                }
                 else
                 {
                     LOG.warn("Could not dispatch to error page: {}", error_page);

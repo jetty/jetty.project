@@ -30,6 +30,8 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * An ErrorHandler that maps exceptions and status codes to URIs for dispatch using
@@ -38,6 +40,8 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.ErrorPageMapper
 {
     public final static String GLOBAL_ERROR_PAGE = "org.eclipse.jetty.server.error_page.global";
+    private static final Logger LOG = Log.getLogger(ErrorPageErrorHandler.class);
+    enum PageLookupTechnique{ THROWABLE, STATUS_CODE, GLOBAL } 
 
     protected ServletContext _servletContext;
     private final Map<String,String> _errorPages= new HashMap<>(); // code or exception to URL
@@ -48,11 +52,15 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
     {
         String error_page= null;
 
+        PageLookupTechnique pageSource = null;
+        
         Throwable th = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
 
         // Walk the cause hierarchy
         while (error_page == null && th != null )
         {
+            pageSource = PageLookupTechnique.THROWABLE;
+            
             Class<?> exClass=th.getClass();
             error_page = _errorPages.get(exClass.getName());
 
@@ -68,13 +76,17 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             th=(th instanceof ServletException)?((ServletException)th).getRootCause():null;
         }
 
+        Integer errorStatusCode = null;
+        
         if (error_page == null)
         {
+            pageSource = PageLookupTechnique.STATUS_CODE;
+            
             // look for an exact code match
-            Integer code=(Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
-            if (code!=null)
+            errorStatusCode = (Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
+            if (errorStatusCode!=null)
             {
-                error_page=_errorPages.get(Integer.toString(code));
+                error_page= (String)_errorPages.get(Integer.toString(errorStatusCode));
 
                 // if still not found
                 if ((error_page == null) && (_errorPageList != null))
@@ -83,7 +95,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                     for (int i = 0; i < _errorPageList.size(); i++)
                     {
                         ErrorCodeRange errCode = _errorPageList.get(i);
-                        if (errCode.isInRange(code))
+                        if (errCode.isInRange(errorStatusCode))
                         {
                             error_page = errCode.getUri();
                             break;
@@ -95,7 +107,38 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
 
         // Try servlet 3.x global error page.
         if (error_page == null)
+        {
+            pageSource = PageLookupTechnique.GLOBAL;
             error_page = _errorPages.get(GLOBAL_ERROR_PAGE);
+        }
+        
+        if (LOG.isDebugEnabled())
+        {
+            StringBuilder dbg = new StringBuilder();
+            dbg.append("getErrorPage(");
+            dbg.append(request.getMethod()).append(' ');
+            dbg.append(request.getRequestURI());
+            dbg.append(") => error_page=").append(error_page);
+            switch (pageSource)
+            {
+                case THROWABLE:
+                    dbg.append(" (from Throwable ");
+                    dbg.append(th.getClass().getName());
+                    dbg.append(')');
+                    LOG.debug(dbg.toString(),th);
+                    break;
+                case STATUS_CODE:
+                    dbg.append(" (from status code ");
+                    dbg.append(errorStatusCode);
+                    dbg.append(')');
+                    LOG.debug(dbg.toString());
+                    break;
+                case GLOBAL:
+                    dbg.append(" (from global default)");
+                    LOG.debug(dbg.toString());
+                    break;
+            }
+        }
 
         return error_page;
     }

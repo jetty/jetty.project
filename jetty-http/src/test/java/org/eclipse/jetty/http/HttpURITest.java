@@ -22,6 +22,7 @@ package org.eclipse.jetty.http;
 import static org.junit.Assert.*;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -192,5 +193,14 @@ public class HttpURITest
         uri.setAuthority(null,0);
         assertEquals("http:/path/info",uri.toString());
         
+    }
+    
+    @Test
+    public void testBasicAuthCredentials() throws Exception
+    {
+        HttpURI uri = new HttpURI("http://user:password@example.com:8888/blah");
+        assertEquals("http://user:password@example.com:8888/blah", uri.toString());
+        assertEquals(uri.getAuthority(), "example.com:8888");
+        assertEquals(uri.getUser(), "user:password");
     }
 }

@@ -28,6 +28,7 @@ import java.nio.channels.SelectionKey;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ExecutionStrategy.Rejectable;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -73,6 +74,27 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     }
     
+    private abstract class RejectableRunnable extends RunnableTask implements Rejectable
+    {
+        RejectableRunnable(String op)
+        {
+            super(op);
+        }
+
+        @Override 
+        public void reject()
+        {
+            try
+            {
+                close();
+            }
+            catch (Throwable x)
+            {
+                LOG.warn(x);
+            }
+        }
+    }
+    
     private final Runnable _runUpdateKey = new RunnableTask("runUpdateKey")
     {
         @Override
@@ -82,7 +104,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     };
 
-    private final Runnable _runFillable = new RunnableTask("runFillable")
+    private final Runnable _runFillable = new RejectableRunnable("runFillable")
     {
         @Override
         public void run()
@@ -91,7 +113,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     };
 
-    private final Runnable _runCompleteWrite = new RunnableTask("runCompleteWrite")
+    private final Runnable _runCompleteWrite = new RejectableRunnable("runCompleteWrite")
     {
         @Override
         public void run()
@@ -100,7 +122,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     };
 
-    private final Runnable _runFillableCompleteWrite = new RunnableTask("runFillableCompleteWrite")
+    private final Runnable _runFillableCompleteWrite = new RejectableRunnable("runFillableCompleteWrite")
     {
         @Override
         public void run()

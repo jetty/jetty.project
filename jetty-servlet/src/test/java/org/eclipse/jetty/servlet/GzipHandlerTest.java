@@ -81,7 +81,6 @@ public class GzipHandlerTest
         
         _server.setHandler(gzipHandler);
         gzipHandler.setHandler(context);
-        context.setHandler(servlets);
         servlets.addServletWithMapping(TestServlet.class,"/content");
         servlets.addServletWithMapping(ForwardServlet.class,"/forward");
         servlets.addServletWithMapping(IncludeServlet.class,"/include");
@@ -91,7 +90,6 @@ public class GzipHandlerTest
     
     public static class TestServlet extends HttpServlet
     {
-
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
         {

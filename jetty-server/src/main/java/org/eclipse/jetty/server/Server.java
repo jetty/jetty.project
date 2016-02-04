@@ -654,7 +654,6 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return The URI of the first {@link NetworkConnector} and first {@link ContextHandler}, or null
      */
-    @SuppressWarnings("resource")
     public URI getURI()
     {
         NetworkConnector connector=null;
@@ -674,7 +673,10 @@ public class Server extends HandlerWrapper implements Attributes
 
         try
         {
-            String scheme=connector.getDefaultConnectionFactory().getProtocol().startsWith("SSL-")?"https":"http";
+            String protocol = connector.getDefaultConnectionFactory().getProtocol();
+            String scheme="http";
+            if (protocol.startsWith("SSL-") || protocol.equals("SSL"))
+                scheme = "https";
 
             String host=connector.getHost();
             if (context!=null && context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)

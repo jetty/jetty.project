@@ -100,7 +100,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * The maximum size of a form that can be processed by this context is controlled by the system properties org.eclipse.jetty.server.Request.maxFormKeys
  * and org.eclipse.jetty.server.Request.maxFormContentSize.  These can also be configured with {@link #setMaxFormContentSize(int)} and {@link #setMaxFormKeys(int)}
  * <p>
- * This servers executore is made available via a context attributed "org.eclipse.jetty.server.Executor".
+ * This servers executor is made available via a context attributed "org.eclipse.jetty.server.Executor".
  * <p>
  * By default, the context is created with alias checkers for {@link AllowSymLinkAliasChecker} (unix only) and {@link ApproveNonExistentDirectoryAliases}.
  * If these alias checkers are not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
