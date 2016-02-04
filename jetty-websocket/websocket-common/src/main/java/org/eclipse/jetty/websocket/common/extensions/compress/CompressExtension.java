@@ -358,7 +358,6 @@ public abstract class CompressExtension extends AbstractExtension
     @Override
     protected void doStop() throws Exception
     {
-        LOG.info("doStop()");
         if(deflaterImpl != null)
             deflaterImpl.end();
         if(inflaterImpl != null)
