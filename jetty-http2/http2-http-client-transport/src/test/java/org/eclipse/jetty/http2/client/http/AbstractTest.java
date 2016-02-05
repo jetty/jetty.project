@@ -19,8 +19,11 @@
 package org.eclipse.jetty.http2.client.http;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -38,25 +41,38 @@ public class AbstractTest
     protected ServerConnector connector;
     protected HttpClient client;
 
-    protected void start(int maxConcurrentStreams, Handler handler) throws Exception
+    protected void start(ServerSessionListener listener) throws Exception
+    {
+        prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener));
+        server.start();
+        prepareClient();
+        client.start();
+    }
+
+    protected void start(Handler handler) throws Exception
+    {
+        prepareServer(new HTTP2ServerConnectionFactory(new HttpConfiguration()));
+        server.setHandler(handler);
+        server.start();
+        prepareClient();
+        client.start();
+    }
+
+    protected void prepareServer(ConnectionFactory connectionFactory)
     {
         QueuedThreadPool serverExecutor = new QueuedThreadPool();
         serverExecutor.setName("server");
         server = new Server(serverExecutor);
-
-        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(new HttpConfiguration());
-        http2.setMaxConcurrentStreams(maxConcurrentStreams);
-        connector = new ServerConnector(server, 1, 1, http2);
+        connector = new ServerConnector(server, 1, 1, connectionFactory);
         server.addConnector(connector);
+    }
 
-        server.setHandler(handler);
-        server.start();
-
+    protected void prepareClient() throws Exception
+    {
         client = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client()), null);
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
         client.setExecutor(clientExecutor);
-        client.start();
     }
 
     @After

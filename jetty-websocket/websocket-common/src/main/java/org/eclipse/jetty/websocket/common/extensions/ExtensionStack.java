@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -89,6 +90,11 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
                 Extension ext = exts.next();
                 ext.setNextOutgoingFrames(nextOutgoing);
                 nextOutgoing = ext;
+                
+                if (ext instanceof LifeCycle)
+                {
+                    addBean(ext,true);
+                }
             }
 
             // Connect incomings

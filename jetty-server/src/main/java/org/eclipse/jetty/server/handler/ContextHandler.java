@@ -768,6 +768,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             old_context = __context.get();
             __context.set(_scontext);
 
+            enterScope(null, getState());
+
             // defers the calling of super.doStart()
             startContext();
 
@@ -855,7 +857,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         ClassLoader old_classloader = null;
         ClassLoader old_webapploader = null;
         Thread current_thread = null;
-
+        exitScope(null);
         Context old_context = __context.get();
         __context.set(_scontext);
         try

@@ -89,7 +89,10 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
+        {
+            callback.failed(new IOException("terminated"));
             return;
+        }
 
         if (responseContent(exchange, frame.getData(), callback))
         {

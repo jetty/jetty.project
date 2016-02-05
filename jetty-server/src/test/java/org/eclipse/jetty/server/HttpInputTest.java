@@ -221,6 +221,67 @@ public class HttpInputTest
         assertThat(_history.poll(),nullValue());
     }
 
+
+    @Test
+    public void testReRead() throws Exception
+    {
+        _in.addContent(new TContent("AB"));
+        _in.addContent(new TContent("CD"));
+        _fillAndParseSimulate.offer("EF");
+        _fillAndParseSimulate.offer("GH");
+        assertThat(_in.available(),equalTo(2));
+        assertThat(_in.isFinished(),equalTo(false));
+        assertThat(_in.isReady(),equalTo(true));
+
+        assertThat(_in.getContentConsumed(),equalTo(0L));
+        assertThat(_in.read(),equalTo((int)'A'));
+        assertThat(_in.getContentConsumed(),equalTo(1L));
+        assertThat(_in.read(),equalTo((int)'B'));
+        assertThat(_in.getContentConsumed(),equalTo(2L));
+        
+        assertThat(_history.poll(),equalTo("Content succeeded AB"));
+        assertThat(_history.poll(),nullValue());
+        assertThat(_in.read(),equalTo((int)'C'));
+        assertThat(_in.read(),equalTo((int)'D'));
+        
+        assertThat(_history.poll(),equalTo("Content succeeded CD"));
+        assertThat(_history.poll(),nullValue());
+        assertThat(_in.read(),equalTo((int)'E'));
+        
+        _in.prependContent(new HttpInput.Content(BufferUtil.toBuffer("abcde")));
+
+        assertThat(_in.available(),equalTo(5));
+        assertThat(_in.isFinished(),equalTo(false));
+        assertThat(_in.isReady(),equalTo(true));
+
+        assertThat(_in.getContentConsumed(),equalTo(0L));
+        assertThat(_in.read(),equalTo((int)'a'));
+        assertThat(_in.getContentConsumed(),equalTo(1L));
+        assertThat(_in.read(),equalTo((int)'b'));
+        assertThat(_in.getContentConsumed(),equalTo(2L));
+        assertThat(_in.read(),equalTo((int)'c'));
+        assertThat(_in.read(),equalTo((int)'d'));        
+        assertThat(_in.read(),equalTo((int)'e'));
+        
+        
+        
+        assertThat(_in.read(),equalTo((int)'F'));
+
+        assertThat(_history.poll(),equalTo("produceContent 2"));
+        assertThat(_history.poll(),equalTo("Content succeeded EF"));
+        assertThat(_history.poll(),nullValue());
+        
+        assertThat(_in.read(),equalTo((int)'G'));
+        assertThat(_in.read(),equalTo((int)'H'));
+        
+        assertThat(_history.poll(),equalTo("Content succeeded GH"));
+        assertThat(_history.poll(),nullValue());
+        
+        assertThat(_in.getContentConsumed(),equalTo(8L));
+        
+        assertThat(_history.poll(),nullValue());
+    }
+    
     @Test
     public void testBlockingRead() throws Exception
     {

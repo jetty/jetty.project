@@ -21,6 +21,7 @@ package org.eclipse.jetty.http.client;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
@@ -35,6 +36,7 @@ import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Assert;
@@ -237,6 +239,50 @@ public class HttpClientTest extends AbstractTest
 
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
         Assert.assertEquals(chunks * chunkSize, Integer.parseInt(response.getContentAsString()));
+    }
+
+    @Test
+    public void testRequestAfterFailedRequest() throws Exception
+    {
+        int length = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.getOutputStream().write(new byte[length]);
+            }
+        });
+
+        // Make a request with a large enough response buffer.
+        org.eclipse.jetty.client.api.Request request = client.newRequest(newURI());
+        FutureResponseListener listener = new FutureResponseListener(request, length);
+        request.send(listener);
+        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(response.getStatus(), 200);
+
+        // Make a request with a small response buffer, should fail.
+        try
+        {
+            request = client.newRequest(newURI());
+            listener = new FutureResponseListener(request, length / 10);
+            request.send(listener);
+            listener.get(5, TimeUnit.SECONDS);
+            Assert.fail();
+        }
+        catch (ExecutionException x)
+        {
+            // Buffering capacity exceeded.
+            x.printStackTrace();
+        }
+
+        // Verify that we can make another request.
+        request = client.newRequest(newURI());
+        listener = new FutureResponseListener(request, length);
+        request.send(listener);
+        response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(response.getStatus(), 200);
     }
 
     private void sleep(long time) throws IOException
