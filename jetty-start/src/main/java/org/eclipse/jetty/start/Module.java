@@ -279,7 +279,7 @@ public class Module
         {
             return true;
         }
-        
+
         System.err.printf("%nModule %s:%n",getName());
         System.err.printf(" + contains software not provided by the Eclipse Foundation!%n");
         System.err.printf(" + contains software not covered by the Eclipse Public License!%n");
@@ -309,7 +309,7 @@ public class Module
                 System.err.printf("%nProceed (y/N)? ");
                 String line = input.readLine();
 
-                licenseAck = !(line == null || line.length() == 0 || !line.toLowerCase().startsWith("y"));
+                licenseAck = !(line == null || line.length() == 0 || !line.toLowerCase(Locale.ENGLISH).startsWith("y"));
             }
         }
 

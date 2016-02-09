@@ -18,12 +18,33 @@
 
 package org.eclipse.jetty.runner;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.server.handler.*;
+import org.eclipse.jetty.server.AbstractConnector;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.ConnectorStatistics;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.NCSARequestLog;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.ShutdownMonitor;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -35,15 +56,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
-
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 
 
 /**
@@ -111,8 +123,9 @@ public class Runner
                         addJars(item);
                     else
                     {
-                        if (path.toLowerCase().endsWith(".jar") ||
-                            path.toLowerCase().endsWith(".zip"))
+                        String lowerCasePath = path.toLowerCase(Locale.ENGLISH);
+                        if (lowerCasePath.endsWith(".jar") ||
+                            lowerCasePath.endsWith(".zip"))
                         {
                             URL url = item.getURL();
                             _classpath.add(url);
@@ -247,7 +260,7 @@ public class Runner
 
         for (int i=0;i<args.length;i++)
         {
-            switch (args[i]) 
+            switch (args[i])
             {
                 case "--port":
                     port = Integer.parseInt(args[++i]);
@@ -309,9 +322,9 @@ public class Runner
                         }
 
                         //apply jetty config files if there are any
-                        if (_configFiles != null) 
+                        if (_configFiles != null)
                         {
-                            for (String cfg : _configFiles) 
+                            for (String cfg : _configFiles)
                             {
                                 try (Resource resource = Resource.newResource(cfg)) {
                                     XmlConfiguration xmlConfiguration = new XmlConfiguration(resource.getURL());
@@ -322,7 +335,7 @@ public class Runner
 
                         //check that everything got configured, and if not, make the handlers
                         HandlerCollection handlers = (HandlerCollection) _server.getChildHandlerByClass(HandlerCollection.class);
-                        if (handlers == null) 
+                        if (handlers == null)
                         {
                             handlers = new HandlerCollection();
                             _server.setHandler(handlers);
@@ -330,14 +343,14 @@ public class Runner
 
                         //check if contexts already configured
                         _contexts = (ContextHandlerCollection) handlers.getChildHandlerByClass(ContextHandlerCollection.class);
-                        if (_contexts == null) 
+                        if (_contexts == null)
                         {
                             _contexts = new ContextHandlerCollection();
                             prependHandler(_contexts, handlers);
                         }
 
 
-                        if (_enableStats) 
+                        if (_enableStats)
                         {
                             //if no stats handler already configured
                             if (handlers.getChildHandlerByClass(StatisticsHandler.class) == null) {
@@ -352,7 +365,7 @@ public class Runner
                                 ServletContextHandler statsContext = new ServletContextHandler(_contexts, "/stats");
                                 statsContext.addServlet(new ServletHolder(new StatisticsServlet()), "/");
                                 statsContext.setSessionHandler(new SessionHandler());
-                                if (_statsPropFile != null) 
+                                if (_statsPropFile != null)
                                 {
                                     HashLoginService loginService = new HashLoginService("StatsRealm", _statsPropFile);
                                     Constraint constraint = new Constraint();
@@ -374,14 +387,14 @@ public class Runner
                         }
 
                         //ensure a DefaultHandler is present
-                        if (handlers.getChildHandlerByClass(DefaultHandler.class) == null) 
+                        if (handlers.getChildHandlerByClass(DefaultHandler.class) == null)
                         {
                             handlers.addHandler(new DefaultHandler());
                         }
 
                         //ensure a log handler is present
                         _logHandler = (RequestLogHandler) handlers.getChildHandlerByClass(RequestLogHandler.class);
-                        if (_logHandler == null) 
+                        if (_logHandler == null)
                         {
                             _logHandler = new RequestLogHandler();
                             handlers.addHandler(_logHandler);
@@ -390,7 +403,7 @@ public class Runner
 
                         //check a connector is configured to listen on
                         Connector[] connectors = _server.getConnectors();
-                        if (connectors == null || connectors.length == 0) 
+                        if (connectors == null || connectors.length == 0)
                         {
                             ServerConnector connector = new ServerConnector(_server);
                             connector.setPort(port);
@@ -399,12 +412,12 @@ public class Runner
                             _server.addConnector(connector);
                             if (_enableStats)
                                 connector.addBean(new ConnectorStatistics());
-                        } 
-                        else 
+                        }
+                        else
                         {
-                            if (_enableStats) 
+                            if (_enableStats)
                             {
-                                for (Connector connector : connectors) 
+                                for (Connector connector : connectors)
                                 {
                                     ((AbstractConnector) connector).addBean(new ConnectorStatistics());
                                 }
@@ -415,7 +428,7 @@ public class Runner
                     }
 
                     // Create a context
-                    try (Resource ctx = Resource.newResource(args[i])) 
+                    try (Resource ctx = Resource.newResource(args[i]))
                     {
                         if (!ctx.exists())
                             usage("Context '" + ctx + "' does not exist");
@@ -424,7 +437,7 @@ public class Runner
                             contextPath = "/" + contextPath;
 
                         // Configure the context
-                        if (!ctx.isDirectory() && ctx.toString().toLowerCase().endsWith(".xml")) 
+                        if (!ctx.isDirectory() && ctx.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                         {
                             // It is a context config file
                             XmlConfiguration xmlConfiguration = new XmlConfiguration(ctx.getURL());
@@ -435,7 +448,7 @@ public class Runner
                             _contexts.addHandler(handler);
                             handler.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern", __containerIncludeJarPattern);
                         }
-                        else 
+                        else
                         {
                             // assume it is a WAR file
                             WebAppContext webapp = new WebAppContext(_contexts, ctx.toString(), contextPath);
