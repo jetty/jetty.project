@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
+import java.util.Locale;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
@@ -109,7 +110,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             return;
 
         ErrorCode error = ErrorCode.from(frame.getError());
-        String reason = error == null ? "reset" : error.name().toLowerCase();
+        String reason = error == null ? "reset" : error.name().toLowerCase(Locale.ENGLISH);
         exchange.getRequest().abort(new IOException(reason));
     }
 

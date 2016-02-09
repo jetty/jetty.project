@@ -19,6 +19,7 @@
 package org.eclipse.jetty.quickstart;
 
 import java.io.FileOutputStream;
+import java.util.Locale;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -28,13 +29,10 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * QuickStartWar
- *
  */
 public class QuickStartWebApp extends WebAppContext
 {
     private static final Logger LOG = Log.getLogger(QuickStartWebApp.class);
-    
-    
     
     public static final String[] __configurationClasses = new String[] 
             {
@@ -44,13 +42,11 @@ public class QuickStartWebApp extends WebAppContext
                 org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName()
             };
     
-    
     private boolean _preconfigure=false;
     private boolean _autoPreconfigure=false;
     private boolean _startWebapp=false;
     private PreconfigureDescriptorProcessor _preconfigProcessor;
     
-
     public static final String[] __preconfigurationClasses = new String[]
     { 
         org.eclipse.jetty.webapp.WebInfConfiguration.class.getCanonicalName(), 
@@ -74,8 +70,8 @@ public class QuickStartWebApp extends WebAppContext
         return _preconfigure;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Preconfigure webapp
+    /** 
+     * Preconfigure webapp
      * @param preconfigure  If true, then starting the webapp will generate 
      * the WEB-INF/quickstart-web.xml rather than start the webapp.
      */
@@ -104,8 +100,6 @@ public class QuickStartWebApp extends WebAppContext
             super.startWebapp();
     }
     
-    
-    
     @Override
     protected void stopWebapp() throws Exception
     {
@@ -114,7 +108,7 @@ public class QuickStartWebApp extends WebAppContext
         
         super.stopWebapp();
     }
-
+    
     @Override
     protected void doStart() throws Exception
     {
@@ -128,7 +122,7 @@ public class QuickStartWebApp extends WebAppContext
 
         if (base.isDirectory())
             dir=base;
-        else if (base.toString().toLowerCase().endsWith(".war"))
+        else if (base.toString().toLowerCase(Locale.ENGLISH).endsWith(".war"))
         {
             war=base;
             String w=war.toString();
@@ -176,7 +170,6 @@ public class QuickStartWebApp extends WebAppContext
         super.doStart();
     }
 
-
     public void generateQuickstartWebXml(String extraXML) throws Exception
     {
         Resource descriptor = getWebInf().addPath(QuickStartDescriptorGenerator.DEFAULT_QUICKSTART_DESCRIPTOR_NAME);
@@ -187,7 +180,5 @@ public class QuickStartWebApp extends WebAppContext
         {
             generator.generateQuickStartWebXml(fos);
         }
-    }
-
-  
+    } 
 }

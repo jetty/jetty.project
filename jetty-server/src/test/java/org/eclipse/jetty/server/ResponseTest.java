@@ -85,7 +85,7 @@ public class ResponseTest
         _channel = new HttpChannel(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             private Throwable _channelError;
-            
+
             @Override
             public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
             {
@@ -100,12 +100,12 @@ public class ResponseTest
             {
                 return false;
             }
-            
+
             @Override
             public void push(org.eclipse.jetty.http.MetaData.Request request)
-            {   
+            {
             }
-            
+
             @Override
             public void onCompleted()
             {
@@ -189,7 +189,7 @@ public class ResponseTest
         response.setContentType("text/json");
         response.getWriter();
         assertEquals("text/json", response.getContentType());
-        
+
         response.recycle();
         response.setContentType("text/json");
         response.setCharacterEncoding("UTF-8");
@@ -230,7 +230,7 @@ public class ResponseTest
         response.recycle();
         response.addHeader("Content-Type","text/something");
         assertEquals("text/something",response.getContentType());
-        
+
         response.recycle();
         response.addHeader("Content-Type","application/json");
         response.getWriter();
@@ -248,7 +248,7 @@ public class ResponseTest
         response.setContentType("text/html;charset=utf-8;charset=UTF-8");
         response.getWriter();
         assertEquals("text/html;charset=utf-8;charset=UTF-8",response.getContentType());
-        assertEquals("utf-8",response.getCharacterEncoding().toLowerCase());
+        assertEquals("utf-8",response.getCharacterEncoding().toLowerCase(Locale.ENGLISH));
     }
 
     @Test
@@ -447,7 +447,7 @@ public class ResponseTest
         writer.println("test");
         writer.flush();
         Assert.assertFalse(writer.checkError());
-        
+
         Throwable cause = new IOException("problem at mill");
         _channel.abort(cause);
         writer.println("test");
@@ -461,7 +461,7 @@ public class ResponseTest
         {
             Assert.assertEquals(cause,e.getCause());
         }
-        
+
     }
 
     @Test
@@ -733,7 +733,7 @@ public class ResponseTest
         assertEquals("null=",fields.get("Set-Cookie"));
 
         fields.clear();
-        
+
         response.addSetCookie("minimal","value",null,null,-1,null,false,false,-1);
         assertEquals("minimal=value",fields.get("Set-Cookie"));
 
@@ -748,7 +748,7 @@ public class ResponseTest
         assertFalse(e.hasMoreElements());
         assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.get("Expires"));
         assertFalse(e.hasMoreElements());
-        
+
         //test cookies with same name, different domain
         fields.clear();
         response.addSetCookie("everything","other","domain1","path",0,"blah",true,true,0);
@@ -759,7 +759,7 @@ public class ResponseTest
         assertTrue(e.hasMoreElements());
         assertEquals("everything=value;Version=1;Path=path;Domain=domain2;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
-        
+
         //test cookies with same name, same path, one with domain, one without
         fields.clear();
         response.addSetCookie("everything","other","domain1","path",0,"blah",true,true,0);
@@ -770,8 +770,8 @@ public class ResponseTest
         assertTrue(e.hasMoreElements());
         assertEquals("everything=value;Version=1;Path=path;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
-        
-        
+
+
         //test cookies with same name, different path
         fields.clear();
         response.addSetCookie("everything","other","domain1","path1",0,"blah",true,true,0);
@@ -782,7 +782,7 @@ public class ResponseTest
         assertTrue(e.hasMoreElements());
         assertEquals("everything=value;Version=1;Path=path2;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
-        
+
         //test cookies with same name, same domain, one with path, one without
         fields.clear();
         response.addSetCookie("everything","other","domain1","path1",0,"blah",true,true,0);
@@ -793,7 +793,7 @@ public class ResponseTest
         assertTrue(e.hasMoreElements());
         assertEquals("everything=value;Version=1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
-        
+
         //test cookies same name only, no path, no domain
         fields.clear();
         response.addSetCookie("everything","other","","",0,"blah",true,true,0);
@@ -841,7 +841,7 @@ public class ResponseTest
         assertEquals("name=value%=",setCookie);
 
     }
-    
+
     private Response newResponse()
     {
         _channel.recycle();

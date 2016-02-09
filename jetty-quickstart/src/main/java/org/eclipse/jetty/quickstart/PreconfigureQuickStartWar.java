@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.quickstart;
 
+import java.util.Locale;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -101,7 +103,7 @@ public class PreconfigureQuickStartWar
 
         if (xml != null)
         {
-            if (xml.isDirectory() || !xml.toString().toLowerCase().endsWith(".xml"))
+            if (xml.isDirectory() || !xml.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                 error("Bad context.xml: "+xml);
             XmlConfiguration xmlConfiguration = new XmlConfiguration(xml.getURL());
             xmlConfiguration.configure(webapp);

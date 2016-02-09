@@ -25,6 +25,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -89,8 +90,6 @@ public class Runner
     protected boolean _enableStats=false;
     protected String _statsPropFile;
 
-
-
     /**
      * Classpath
      */
@@ -118,8 +117,9 @@ public class Runner
                         addJars(item);
                     else
                     {
-                        if (path.toLowerCase().endsWith(".jar") ||
-                            path.toLowerCase().endsWith(".zip"))
+                        String lowerCasePath = path.toLowerCase(Locale.ENGLISH);
+                        if (lowerCasePath.endsWith(".jar") ||
+                            lowerCasePath.endsWith(".zip"))
                         {
                             URL url = item.getURL();
                             _classpath.add(url);
@@ -147,7 +147,6 @@ public class Runner
     public Runner()
     {
     }
-
 
     /**
      * Generate helpful usage message and exit
@@ -186,8 +185,6 @@ public class Runner
         System.err.println("org.eclipse.jetty.runner.Runner: "+Server.getVersion());
         System.exit(1);
     }
-
-
 
     /**
      * Configure a jetty instance and deploy the webapps presented as args
@@ -424,7 +421,7 @@ public class Runner
                             contextPath = "/" + contextPath;
 
                         // Configure the context
-                        if (!ctx.isDirectory() && ctx.toString().toLowerCase().endsWith(".xml")) 
+                        if (!ctx.isDirectory() && ctx.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                         {
                             // It is a context config file
                             XmlConfiguration xmlConfiguration = new XmlConfiguration(ctx.getURL());
@@ -481,7 +478,6 @@ public class Runner
         }
     }
 
-
     protected void prependHandler (Handler handler, HandlerCollection handlers)
     {
         if (handler == null || handlers == null)
@@ -494,15 +490,11 @@ public class Runner
        handlers.setHandlers(children);
     }
 
-
-
-
     public void run() throws Exception
     {
         _server.start();
         _server.join();
     }
-
 
     /**
      * Establish a classloader with custom paths (if any)
@@ -523,9 +515,6 @@ public class Runner
             Thread.currentThread().setContextClassLoader(_classLoader);
         }
     }
-
-
-
 
     public static void main(String[] args)
     {

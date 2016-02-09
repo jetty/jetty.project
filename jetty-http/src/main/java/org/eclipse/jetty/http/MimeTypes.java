@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.MissingResourceException;
@@ -40,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
- * 
+ *
  */
 public class MimeTypes
 {
@@ -58,16 +59,16 @@ public class MimeTypes
 
         TEXT_HTML_8859_1("text/html;charset=iso-8859-1",TEXT_HTML),
         TEXT_HTML_UTF_8("text/html;charset=utf-8",TEXT_HTML),
-        
+
         TEXT_PLAIN_8859_1("text/plain;charset=iso-8859-1",TEXT_PLAIN),
         TEXT_PLAIN_UTF_8("text/plain;charset=utf-8",TEXT_PLAIN),
-        
+
         TEXT_XML_8859_1("text/xml;charset=iso-8859-1",TEXT_XML),
         TEXT_XML_UTF_8("text/xml;charset=utf-8",TEXT_XML),
-        
+
         TEXT_JSON_8859_1("text/json;charset=iso-8859-1",TEXT_JSON),
         TEXT_JSON_UTF_8("text/json;charset=utf-8",TEXT_JSON),
-        
+
         APPLICATION_JSON_8859_1("text/json;charset=iso-8859-1",APPLICATION_JSON),
         APPLICATION_JSON_UTF_8("text/json;charset=utf-8",APPLICATION_JSON);
 
@@ -91,7 +92,7 @@ public class MimeTypes
             _charsetString=null;
             _assumedCharset=false;
             _field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,_string);
-        } 
+        }
 
         /* ------------------------------------------------------------ */
         Type(String s,Type base)
@@ -101,7 +102,7 @@ public class MimeTypes
             _base=base;
             int i=s.indexOf(";charset=");
             _charset=Charset.forName(s.substring(i+9));
-            _charsetString=_charset==null?null:_charset.toString().toLowerCase();
+            _charsetString=_charset.toString().toLowerCase(Locale.ENGLISH);
             _assumedCharset=false;
             _field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,_string);
         }
@@ -113,7 +114,7 @@ public class MimeTypes
             _base=this;
             _buffer=BufferUtil.toBuffer(s);
             _charset=cs;
-            _charsetString=_charset==null?null:_charset.toString().toLowerCase();
+            _charsetString=_charset==null?null:_charset.toString().toLowerCase(Locale.ENGLISH);
             _assumedCharset=true;
             _field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,_string);
         }
@@ -123,23 +124,23 @@ public class MimeTypes
         {
             return _buffer.asReadOnlyBuffer();
         }
-        
+
         /* ------------------------------------------------------------ */
         public Charset getCharset()
         {
             return _charset;
         }
-        
+
         /* ------------------------------------------------------------ */
         public String getCharsetString()
         {
             return _charsetString;
         }
-        
+
         /* ------------------------------------------------------------ */
         public boolean is(String s)
         {
-            return _string.equalsIgnoreCase(s);    
+            return _string.equalsIgnoreCase(s);
         }
 
         /* ------------------------------------------------------------ */
@@ -147,7 +148,7 @@ public class MimeTypes
         {
             return _string;
         }
-        
+
         /* ------------------------------------------------------------ */
         @Override
         public String toString()
@@ -261,7 +262,7 @@ public class MimeTypes
                 _mimeMap.put(StringUtil.asciiToLowerCase(ext.getKey()),normalizeMimeType(ext.getValue()));
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the MIME type by filename extension.
      * @param filename A file name
@@ -316,7 +317,7 @@ public class MimeTypes
     {
         return new HashSet<>(__dftMimeMap.values());
     }
-    
+
     /* ------------------------------------------------------------ */
     private static String normalizeMimeType(String type)
     {
@@ -401,7 +402,7 @@ public class MimeTypes
     {
         return __encodings.get(value);
     }
-    
+
     public static String getContentTypeWithoutCharset(String value)
     {
         int end=value.length();
@@ -424,7 +425,7 @@ public class MimeTypes
                 {
                     quote=true;
                 }
-                
+
                 switch(state)
                 {
                     case 11:
@@ -438,11 +439,11 @@ public class MimeTypes
                         break;
                     default:
                         start=i;
-                        state=0;           
+                        state=0;
                 }
                 continue;
             }
-            
+
             if (quote)
             {
                 if (builder!=null && state!=10)

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
+import java.util.Locale;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -37,7 +38,7 @@ public class HuffmanTest
             {"D.6.1l","9d29ad171863c78f0b97c8e9ae82ae43d3","https://www.example.com"},
             {"D.6.2te","640cff","303"},
         };
-    
+
     @Test
     public void testDecode() throws Exception
     {
@@ -48,7 +49,7 @@ public class HuffmanTest
             Assert.assertEquals(test[0],test[2],decoded);
         }
     }
-    
+
     @Test
     public void testDecodeTrailingFF() throws Exception
     {
@@ -59,7 +60,7 @@ public class HuffmanTest
             Assert.assertEquals(test[0],test[2],decoded);
         }
     }
-    
+
     @Test
     public void testEncode() throws Exception
     {
@@ -69,7 +70,7 @@ public class HuffmanTest
             int pos=BufferUtil.flipToFill(buf);
             Huffman.encode(buf,test[2]);
             BufferUtil.flipToFlush(buf,pos);
-            String encoded=TypeUtil.toHexString(BufferUtil.toArray(buf)).toLowerCase();
+            String encoded=TypeUtil.toHexString(BufferUtil.toArray(buf)).toLowerCase(Locale.ENGLISH);
             Assert.assertEquals(test[0],test[1],encoded);
             Assert.assertEquals(test[1].length()/2,Huffman.octetsNeeded(test[2]));
         }
@@ -82,7 +83,7 @@ public class HuffmanTest
         for (int i=0;i<bad.length;i++)
         {
             String s="bad '"+bad[i]+"'";
-            
+
             try
             {
                 Huffman.octetsNeeded(s);
@@ -91,7 +92,7 @@ public class HuffmanTest
             catch(IllegalArgumentException e)
             {
             }
-            
+
             try
             {
                 Huffman.encode(BufferUtil.allocate(32),s);
@@ -102,6 +103,6 @@ public class HuffmanTest
             }
         }
     }
-    
-    
+
+
 }
