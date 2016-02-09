@@ -1,3 +1,5 @@
+jetty-8.1.20-SNAPSHOT
+
 jetty-8.1.19.v20160209 - 09 February 2016
  + 426490 HttpServletResponse.setBufferSize(0) results in tight loop (100% cpu
    hog)
