@@ -18,16 +18,10 @@
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -35,9 +29,13 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
-/**
- *
- */
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 public class HttpFieldsTest
 {
     @Test
@@ -69,7 +67,6 @@ public class HttpFieldsTest
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "value:0");
         assertEquals(false, e.hasMoreElements());
-        
     }
 
     @Test
@@ -106,7 +103,7 @@ public class HttpFieldsTest
         assertEquals("value1",header.get("name1"));
         assertEquals("value1",header.get("Name1"));
         assertEquals(null,header.get("Name2"));
-        
+
         assertEquals("value0",header.getField("name0").getValue());
         assertEquals("value0",header.getField("Name0").getValue());
         assertEquals("value1",header.getField("name1").getValue());
@@ -121,9 +118,9 @@ public class HttpFieldsTest
             Assert.fail();
         }
         catch(NoSuchElementException e)
-        {}        
+        {}
     }
-    
+
     @Test
     public void testGetKnown() throws Exception
     {
@@ -134,10 +131,10 @@ public class HttpFieldsTest
 
         assertEquals("value0",header.get(HttpHeader.CONNECTION));
         assertEquals("value1",header.get(HttpHeader.ACCEPT));
-        
+
         assertEquals("value0",header.getField(HttpHeader.CONNECTION).getValue());
         assertEquals("value1",header.getField(HttpHeader.ACCEPT).getValue());
-        
+
         assertEquals(null,header.getField(HttpHeader.AGE));
         assertEquals(null,header.get(HttpHeader.AGE));
     }
@@ -174,11 +171,11 @@ public class HttpFieldsTest
         BufferUtil.flipToFill(buffer);
         HttpGenerator.putTo(header,buffer);
         BufferUtil.flipToFlush(buffer,0);
-        String out = BufferUtil.toString(buffer).toLowerCase();
+        String out = BufferUtil.toString(buffer).toLowerCase(Locale.ENGLISH);
 
-        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE).toLowerCase()));
-        Assert.assertThat(out,Matchers.containsString((HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED).toLowerCase()));
-        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP).toLowerCase()));
+        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE).toLowerCase(Locale.ENGLISH)));
+        Assert.assertThat(out,Matchers.containsString((HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED).toLowerCase(Locale.ENGLISH)));
+        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP).toLowerCase(Locale.ENGLISH)));
     }
 
     @Test
@@ -302,7 +299,6 @@ public class HttpFieldsTest
         assertEquals(false, e.hasMoreElements());
     }
 
-
     @Test
     public void testGetValues() throws Exception
     {
@@ -330,7 +326,7 @@ public class HttpFieldsTest
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "value0D");
         assertEquals(false, e.hasMoreElements());
-        
+
         e = fields.getValues("name1",",");
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "value1A");
@@ -343,7 +339,6 @@ public class HttpFieldsTest
         assertEquals(false, e.hasMoreElements());
     }
 
-
     @Test
     public void testGetQualityValues() throws Exception
     {
@@ -355,7 +350,7 @@ public class HttpFieldsTest
         fields.add("name", "nothing;q=0");
         fields.add("name", "one;q=0.4");
         fields.add("name", "three;x=y;q=0.2;a=b,two;q=0.3");
-        
+
         List<String> list = HttpFields.qualityList(fields.getValues("name",","));
         assertEquals("zero",HttpFields.valueParameters(list.get(0),null));
         assertEquals("one",HttpFields.valueParameters(list.get(1),null));
@@ -363,7 +358,7 @@ public class HttpFieldsTest
         assertEquals("three",HttpFields.valueParameters(list.get(3),null));
         assertEquals("four",HttpFields.valueParameters(list.get(4),null));
     }
-    
+
     @Test
     public void testDateFields() throws Exception
     {
@@ -446,9 +441,9 @@ public class HttpFieldsTest
         {
             assertTrue(true);
         }
-            
+
         long i3=header.getLongField("I3");
-        
+
         try
         {
             header.getLongField("I4");
@@ -484,7 +479,6 @@ public class HttpFieldsTest
         header.putLongField("I6",-47);
         assertEquals("46",header.get("I5"));
         assertEquals("-47",header.get("I6"));
-
     }
 
     @Test
@@ -512,8 +506,8 @@ public class HttpFieldsTest
             assertFalse(""+i,header.contains("n"+i,"xyz"));
             assertEquals(""+i,i>=4,header.contains("n"+i,"def"));
         }
-        
-        
+
+
         assertTrue(header.contains(new HttpField("N5","def")));
         assertTrue(header.contains(new HttpField("accept","abc")));
         assertTrue(header.contains(HttpHeader.ACCEPT,"abc"));
@@ -521,9 +515,7 @@ public class HttpFieldsTest
         assertFalse(header.contains(new HttpField("N8","def")));
         assertFalse(header.contains(HttpHeader.ACCEPT,"def"));
         assertFalse(header.contains(HttpHeader.AGE,"abc"));
-        
+
         assertFalse(header.containsKey("n11"));
-        
     }
-    
 }
