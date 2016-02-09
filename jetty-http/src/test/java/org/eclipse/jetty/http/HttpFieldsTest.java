@@ -18,19 +18,21 @@
 
 package org.eclipse.jetty.http;
 
+import java.nio.ByteBuffer;
+import java.util.Enumeration;
+import java.util.Locale;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import java.nio.ByteBuffer;
-import java.util.Enumeration;
-import org.eclipse.jetty.util.BufferUtil;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
 
 /**
  *
@@ -134,11 +136,11 @@ public class HttpFieldsTest
         BufferUtil.flipToFill(buffer);
         HttpGenerator.putTo(header,buffer);
         BufferUtil.flipToFlush(buffer,0);
-        String out = BufferUtil.toString(buffer).toLowerCase();
+        String out = BufferUtil.toString(buffer).toLowerCase(Locale.ENGLISH);
 
-        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE).toLowerCase()));
-        Assert.assertThat(out,Matchers.containsString((HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED).toLowerCase()));
-        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP).toLowerCase()));
+        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE).toLowerCase(Locale.ENGLISH)));
+        Assert.assertThat(out,Matchers.containsString((HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED).toLowerCase(Locale.ENGLISH)));
+        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP).toLowerCase(Locale.ENGLISH)));
     }
 
     @Test
@@ -290,7 +292,7 @@ public class HttpFieldsTest
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "value0D");
         assertEquals(false, e.hasMoreElements());
-        
+
         e = fields.getValues("name1",",");
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "value1A");
@@ -301,7 +303,7 @@ public class HttpFieldsTest
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "value1D");
         assertEquals(false, e.hasMoreElements());
-        
+
     }
 
     @Test
