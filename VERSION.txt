@@ -1,4 +1,23 @@
-jetty-8.1.19-SNAPSHOT
+jetty-8.1.19.v20160209 - 09 February 2016
+ + 426490 HttpServletResponse.setBufferSize(0) results in tight loop (100% cpu
+   hog)
+ + 480896 Response.sendError should honor Server.setSendServerVersion()
+ + 480897 Proxy use need Response.sendError(-1) to harshly close the endpoint
+ + 480898 Introduce FilterMapping.getDispatcherTypes() method
+ + 480903 Loader should avoid looking in same Classloader twice for
+   resource/class
+ + 482039 Create shaded jar for isolated jetty-client use
+ + 482041 Add ServletHandler.newCachedChain() to ease customization
+ + 482046 Allow finer control of ServletHandler logging of bad requests
+ + 482055 Increase visibility of ServletHandler.notFound() to public
+ + 482056 Compact path before using it in getRequestDispatcher()
+ + 482057 MultiPartInputStream temp file permissions should be limited to user
+ + 482058 MultiPartInputStream test initial part boundary incorrectly allows
+   empty string
+ + 482172 Report form key size count in UrlEncoded exceptions
+ + 482173 Track original Query string in Rewrite RuleContainer too
+ + 483422 Empty chunked body in 304 Response
+ + 486167 ServletInputStream.available() broken for pipelined requests.
 
 jetty-8.1.18.v20150929 - 29 September 2015
  + 467434 NPE in SslContextFactory

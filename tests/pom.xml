@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>8.1.19-SNAPSHOT</version>
+    <version>8.1.19.v20160209</version>
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>tests-parent</artifactId>
