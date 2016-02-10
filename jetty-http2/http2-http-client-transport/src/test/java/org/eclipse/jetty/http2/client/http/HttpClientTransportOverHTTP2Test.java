@@ -18,11 +18,16 @@
 
 package org.eclipse.jetty.http2.client.http;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -36,6 +41,8 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -144,6 +151,31 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         {
             Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
         }
+    }
+
+    @Test
+    public void testRequestHasHTTP2Version() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                HttpVersion version = HttpVersion.fromString(request.getProtocol());
+                response.setStatus(version == HttpVersion.HTTP_2 ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500);
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .onRequestBegin(request ->
+                {
+                    if (request.getVersion() != HttpVersion.HTTP_2)
+                        request.abort(new Exception("Not a HTTP/2 request"));
+                })
+                .send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @Ignore
