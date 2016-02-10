@@ -34,8 +34,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Sweeper;
 
-public class MultiplexConnectionPool extends AbstractConnectionPool
+public class MultiplexConnectionPool extends AbstractConnectionPool implements Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(MultiplexConnectionPool.class);
 
@@ -307,6 +308,71 @@ public class MultiplexConnectionPool extends AbstractConnectionPool
 
         ContainerLifeCycle.dumpObject(out, this);
         ContainerLifeCycle.dump(out, indent, connections);
+    }
+
+    @Override
+    public boolean sweep()
+    {
+        List<Connection> toSweep = new ArrayList<>();
+        lock();
+        try
+        {
+            busyConnections.values().stream()
+                    .map(holder -> holder.connection)
+                    .filter(connection -> connection instanceof Sweeper.Sweepable)
+                    .collect(Collectors.toCollection(() -> toSweep));
+            muxedConnections.values().stream()
+                    .map(holder -> holder.connection)
+                    .filter(connection -> connection instanceof Sweeper.Sweepable)
+                    .collect(Collectors.toCollection(() -> toSweep));
+        }
+        finally
+        {
+            unlock();
+        }
+
+        for (Connection connection : toSweep)
+        {
+            if (((Sweeper.Sweepable)connection).sweep())
+            {
+                boolean removed = remove(connection, true);
+                LOG.warn("Connection swept: {}{}{} from active connections{}{}",
+                        connection,
+                        System.lineSeparator(),
+                        removed ? "Removed" : "Not removed",
+                        System.lineSeparator(),
+                        dump());
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        int busySize;
+        int muxedSize;
+        int idleSize;
+        lock();
+        try
+        {
+            busySize = busyConnections.size();
+            muxedSize = muxedConnections.size();
+            idleSize = idleConnections.size();
+        }
+        finally
+        {
+            unlock();
+        }
+        return String.format("%s@%x[c=%d/%d,b=%d,m=%d,i=%d]",
+                getClass().getSimpleName(),
+                hashCode(),
+                getConnectionCount(),
+                getMaxConnectionCount(),
+                busySize,
+                muxedSize,
+                idleSize);
     }
 
     private static class Holder

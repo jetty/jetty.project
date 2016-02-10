@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
@@ -35,13 +36,12 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
 @ManagedObject("The connection pool")
-public class DuplexConnectionPool extends AbstractConnectionPool implements Dumpable, Sweeper.Sweepable
+public class DuplexConnectionPool extends AbstractConnectionPool implements Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(DuplexConnectionPool.class);
 
@@ -255,15 +255,13 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Dump
     @Override
     public boolean sweep()
     {
-        List<Connection> toSweep = new ArrayList<>();
+        List<Connection> toSweep;
         lock();
         try
         {
-            for (Connection connection : activeConnections)
-            {
-                if (connection instanceof Sweeper.Sweepable)
-                    toSweep.add(connection);
-            }
+            toSweep = activeConnections.stream()
+                    .filter(connection -> connection instanceof Sweeper.Sweepable)
+                    .collect(Collectors.toList());
         }
         finally
         {
@@ -303,8 +301,9 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Dump
             unlock();
         }
 
-        return String.format("%s[c=%d/%d,a=%d,i=%d]",
+        return String.format("%s@%x[c=%d/%d,a=%d,i=%d]",
                 getClass().getSimpleName(),
+                hashCode(),
                 getConnectionCount(),
                 getMaxConnectionCount(),
                 activeSize,
