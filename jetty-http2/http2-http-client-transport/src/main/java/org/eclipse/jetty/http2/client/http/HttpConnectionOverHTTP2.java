@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.SendFailure;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.util.Callback;
@@ -50,6 +51,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
     @Override
     protected SendFailure send(HttpExchange exchange)
     {
+        exchange.getRequest().version(HttpVersion.HTTP_2);
         normalizeRequest(exchange.getRequest());
 
         // One connection maps to N channels, so for each exchange we create a new channel.
