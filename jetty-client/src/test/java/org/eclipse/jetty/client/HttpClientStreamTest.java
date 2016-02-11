@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static org.junit.Assert.fail;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -51,7 +48,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
@@ -69,6 +65,9 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static java.nio.file.StandardOpenOption.CREATE;
+import static org.junit.Assert.fail;
 
 public class HttpClientStreamTest extends AbstractHttpClientServerTest
 {
@@ -97,14 +96,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .file(upload)
-                .onRequestSuccess(new Request.SuccessListener()
-                {
-                    @Override
-                    public void onSuccess(Request request)
-                    {
-                        requestTime.set(System.nanoTime());
-                    }
-                })
+                .onRequestSuccess(request -> requestTime.set(System.nanoTime()))
                 .timeout(10, TimeUnit.SECONDS)
                 .send();
         long responseTime = System.nanoTime();
@@ -649,14 +641,10 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
                     .content(content)
-                    .send(new Response.CompleteListener()
+                    .send(result ->
                     {
-                        @Override
-                        public void onComplete(Result result)
-                        {
-                            if (result.isSucceeded() && result.getResponse().getStatus() == 200)
-                                latch.countDown();
-                        }
+                        if (result.isSucceeded() && result.getResponse().getStatus() == 200)
+                            latch.countDown();
                     });
 
             // Make sure we provide the content *after* the request has been "sent".
@@ -703,14 +691,10 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
                     .content(content)
-                    .send(new Response.CompleteListener()
+                    .send(result ->
                     {
-                        @Override
-                        public void onComplete(Result result)
-                        {
-                            if (result.isSucceeded() && result.getResponse().getStatus() == 200)
-                                latch.countDown();
-                        }
+                        if (result.isSucceeded() && result.getResponse().getStatus() == 200)
+                            latch.countDown();
                     });
         }
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -947,14 +931,10 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         client.newRequest("0.0.0.1", connector.getLocalPort())
                 .scheme(scheme)
                 .content(content)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isFailed())
-                            latch.countDown();
-                    }
+                    if (result.isFailed())
+                        latch.countDown();
                 });
 
         try (OutputStream output = content.getOutputStream())
@@ -990,24 +970,16 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .content(content)
-                .onRequestBegin(new Request.BeginListener()
+                .onRequestBegin(request ->
                 {
-                    @Override
-                    public void onBegin(Request request)
-                    {
-                        content.offer(ByteBuffer.wrap(new byte[256]), callback);
-                        content.offer(ByteBuffer.wrap(new byte[256]), callback);
-                        request.abort(new Exception("explicitly_thrown_by_test"));
-                    }
+                    content.offer(ByteBuffer.wrap(new byte[256]), callback);
+                    content.offer(ByteBuffer.wrap(new byte[256]), callback);
+                    request.abort(new Exception("explicitly_thrown_by_test"));
                 })
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isFailed())
-                            completeLatch.countDown();
-                    }
+                    if (result.isFailed())
+                        completeLatch.countDown();
                 });
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(failLatch.await(5, TimeUnit.SECONDS));
@@ -1046,14 +1018,10 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         client.newRequest("0.0.0.1", connector.getLocalPort())
                 .scheme(scheme)
                 .content(content)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        Assert.assertTrue(result.isFailed());
-                        completeLatch.countDown();
-                    }
+                    Assert.assertTrue(result.isFailed());
+                    completeLatch.countDown();
                 });
 
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
@@ -1122,22 +1090,11 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .content(provider)
-                .onRequestCommit(new Request.CommitListener()
+                .onRequestCommit(request -> commit.set(true))
+                .send(result ->
                 {
-                    @Override
-                    public void onCommit(Request request)
-                    {
-                        commit.set(true);
-                    }
-                })
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        Assert.assertTrue(result.isFailed());
-                        completeLatch.countDown();
-                    }
+                    Assert.assertTrue(result.isFailed());
+                    completeLatch.countDown();
                 });
 
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
