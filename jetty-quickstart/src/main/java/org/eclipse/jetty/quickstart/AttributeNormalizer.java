@@ -142,14 +142,19 @@ public class AttributeNormalizer
         }
     }
 
+    private URI warURI;
     private List<PathAttribute> attributes = new ArrayList<>();
 
     public AttributeNormalizer(Resource baseResource)
     {
+        // WAR URI is always evaluated before paths.
+        warURI = baseResource == null ? null : baseResource.getURI();
+        // We don't normalize or resolve the baseResource URI
+        if (!warURI.isAbsolute())
+            throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);
         try
         {
             // Track path attributes for expansion
-            attributes.add(new PathAttribute("WAR", baseResource == null ? null : baseResource.getFile().toPath()).weight(10));
             attributes.add(new PathAttribute("jetty.base", "jetty.base").weight(9));
             attributes.add(new PathAttribute("jetty.home", "jetty.home").weight(8));
             attributes.add(new PathAttribute("user.home", "user.home").weight(7));
@@ -306,7 +311,13 @@ public class AttributeNormalizer
 
     private String getString(String property)
     {
-        // Use known attributes first
+        // Use war path (if known)
+        if("WAR".equalsIgnoreCase(property))
+        {
+            return warURI.toASCIIString();
+        }
+        
+        // Use known path attributes
         for (PathAttribute attr : attributes)
         {
             if (attr.key.equalsIgnoreCase(property))

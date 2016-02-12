@@ -48,7 +48,8 @@ public class AttributeNormalizerTest
     public static List<String[]> data()
     {
         String[][] tests = { 
-                { "WAR", toSystemPath("/opt/jetty-distro/demo.base/webapps/root") }, 
+                // Can't test 'WAR' property, as its not a Path (which this testcase works with)
+                // { "WAR", toSystemPath("http://localhost/resources/webapps/root") }, 
                 { "jetty.home", toSystemPath("/opt/jetty-distro") },
                 { "jetty.base", toSystemPath("/opt/jetty-distro/demo.base") }, 
                 { "user.home", toSystemPath("/home/user") }, 
