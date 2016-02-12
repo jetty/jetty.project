@@ -123,6 +123,11 @@ public class AttributeNormalizer
                 return 1;
             }
             
+            if( (o1.path == null) && (o2.path == null) )
+            {
+                return 0;
+            }
+            
             // Different lengths?
             int diff = o2.path.getNameCount() - o1.path.getNameCount();
             if(diff != 0)
@@ -200,13 +205,30 @@ public class AttributeNormalizer
             {
                 return "file:" + normalizePath(new File(uri).toPath());
             }
-
+            else
+            {
+                if(uri.isAbsolute())
+                {
+                    return normalizeUri(uri);
+                }
+            }
         }
         catch (Exception e)
         {
             LOG.warn(e);
         }
         return String.valueOf(o);
+    }
+    
+    public String normalizeUri(URI uri)
+    {
+        String uriStr = uri.toASCIIString();
+        String warStr = warURI.toASCIIString();
+        if (uriStr.startsWith(warStr))
+        {
+            return "${WAR}" + uriStr.substring(warStr.length());
+        }
+        return uriStr;
     }
 
     public String normalizePath(Path path)
