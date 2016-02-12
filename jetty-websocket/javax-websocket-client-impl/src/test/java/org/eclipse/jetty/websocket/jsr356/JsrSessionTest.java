@@ -32,7 +32,6 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.test.DummyConnection;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.SimpleEndpointMetadata;
-import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEndpointEventDriver;
 import org.eclipse.jetty.websocket.jsr356.handlers.ByteArrayWholeHandler;
 import org.eclipse.jetty.websocket.jsr356.handlers.ByteBufferPartialHandler;
@@ -60,7 +59,7 @@ public class JsrSessionTest
         SimpleEndpointMetadata metadata = new SimpleEndpointMetadata(websocket.getClass());
         // Executor executor = null;
 
-        EndpointInstance ei = new EndpointInstance(websocket,config,metadata);
+        ConfiguredEndpoint ei = new ConfiguredEndpoint(websocket,config,metadata);
         
         EventDriver driver = new JsrEndpointEventDriver(policy,ei);
         DummyConnection connection = new DummyConnection();

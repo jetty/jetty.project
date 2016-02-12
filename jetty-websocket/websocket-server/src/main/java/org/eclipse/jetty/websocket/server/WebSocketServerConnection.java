@@ -34,10 +34,6 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection imple
     public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         super(endp,executor,scheduler,policy,bufferPool);
-        if (policy.getIdleTimeout() > 0)
-        {
-            endp.setIdleTimeout(policy.getIdleTimeout());
-        }
     }
     
     @Override

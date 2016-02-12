@@ -21,7 +21,7 @@ package examples;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.events.EventCapture;
+import org.eclipse.jetty.websocket.common.test.EventCapture;
 
 public class ListenerFrameSocket implements WebSocketFrameListener
 {

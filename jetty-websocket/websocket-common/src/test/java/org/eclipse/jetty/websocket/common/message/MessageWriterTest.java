@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.common.message;
 
 import static org.hamcrest.Matchers.is;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
@@ -27,10 +29,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
-import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
+import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
@@ -55,8 +56,8 @@ public class MessageWriterTest
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private WebSocketPolicy policy;
-    private TrackingSocket socket;
-    private LocalWebSocketSession session;
+    private TrackingSocket remoteSocket;
+    private WebSocketSession session;
 
     @After
     public void closeSession() throws Exception
@@ -66,26 +67,27 @@ public class MessageWriterTest
     }
 
     @Before
-    public void setupSession() throws Exception
+    public void setupSession() throws URISyntaxException
     {
         policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
         policy.setMaxTextMessageBufferSize(1024);
 
-        // Event Driver factory
-        EventDriverFactory factory = new EventDriverFactory(policy);
-
         // Container
         WebSocketContainerScope containerScope = new SimpleContainerScope(policy,bufferPool);
 
-        // local socket
-        EventDriver driver = factory.wrap(new TrackingSocket("local"));
-
         // remote socket
-        socket = new TrackingSocket("remote");
-        OutgoingFrames socketPipe = FramePipes.to(factory.wrap(socket));
+        remoteSocket = new TrackingSocket("remote");
+        URI remoteURI = new URI("ws://localhost/remote");
+        LocalWebSocketConnection remoteConnection = new LocalWebSocketConnection(bufferPool);
+        WebSocketSession remoteSession = new WebSocketSession(containerScope,remoteURI,remoteSocket,remoteConnection);
+        OutgoingFrames socketPipe = FramePipes.to(remoteSession);
 
-        session = new LocalWebSocketSession(containerScope,testname,driver);
+        // Local Session
+        TrackingSocket localSocket = new TrackingSocket("local");
+        URI localURI = new URI("ws://localhost/local");
+        LocalWebSocketConnection localConnection = new LocalWebSocketConnection(bufferPool);
+        session = new WebSocketSession(containerScope,localURI,localSocket,localConnection);
 
         session.setPolicy(policy);
         // talk to our remote socket
@@ -106,8 +108,8 @@ public class MessageWriterTest
             stream.write("World");
         }
 
-        Assert.assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
-        String msg = socket.messageQueue.poll();
+        Assert.assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
+        String msg = remoteSocket.messageQueue.poll();
         Assert.assertThat("Message",msg,is("Hello World"));
     }
 
@@ -119,8 +121,8 @@ public class MessageWriterTest
             stream.append("Hello World");
         }
 
-        Assert.assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
-        String msg = socket.messageQueue.poll();
+        Assert.assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
+        String msg = remoteSocket.messageQueue.poll();
         Assert.assertThat("Message",msg,is("Hello World"));
     }
 
@@ -139,8 +141,8 @@ public class MessageWriterTest
             stream.write(buf);
         }
 
-        Assert.assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
-        String msg = socket.messageQueue.poll();
+        Assert.assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
+        String msg = remoteSocket.messageQueue.poll();
         String expected = new String(buf);
         Assert.assertThat("Message",msg,is(expected));
     }

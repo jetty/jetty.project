@@ -39,9 +39,9 @@ import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.test.DummyConnection;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
+import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
-import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.server.samples.partial.PartialTrackingSocket;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -76,7 +76,7 @@ public class OnPartialTest
         AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(containerScope,endpoint,config);
         AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
-        EndpointInstance ei = new EndpointInstance(websocket,config,metadata);
+        ConfiguredEndpoint ei = new ConfiguredEndpoint(websocket,config,metadata);
         EventDriver driver = driverImpl.create(ei,policy);
         Assert.assertThat("EventDriver",driver,notNullValue());
 

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.websocket.MessageHandler;
+import javax.websocket.MessageHandler.Whole;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -37,7 +38,7 @@ public class MessageHandlerFactory
 {
     private static final Logger LOG = Log.getLogger(MessageHandlerFactory.class);
     /** Registered MessageHandlers at this level */
-    private Map<Class<? extends MessageHandler>, List<MessageHandlerMetadata>> registered;
+    private Map<MessageHandler, List<MessageHandlerMetadata>> registered;
 
     public MessageHandlerFactory()
     {
@@ -49,6 +50,21 @@ public class MessageHandlerFactory
         if (LOG.isDebugEnabled())
         {
             LOG.debug("getMetadata({})",handler);
+        }
+        List<MessageHandlerMetadata> ret = registered.get(handler);
+        if (ret != null)
+        {
+            return ret;
+        }
+
+        return register(handler);
+    }
+    
+    public <T> List<MessageHandlerMetadata> getMetadata(Class<T> clazz, Whole<T> handler) throws IllegalStateException
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("getMetadata({},{})",clazz,handler);
         }
         List<MessageHandlerMetadata> ret = registered.get(handler);
         if (ret != null)

@@ -27,6 +27,5 @@ public class ByteBufferPartialHandler implements MessageHandler.Partial<ByteBuff
     @Override
     public void onMessage(ByteBuffer partialMessage, boolean last)
     {
-        // TODO Auto-generated method stub
     }
 }

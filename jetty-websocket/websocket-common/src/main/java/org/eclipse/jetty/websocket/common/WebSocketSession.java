@@ -19,8 +19,10 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -28,9 +30,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -41,6 +46,7 @@ import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.CloseStatus;
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -48,17 +54,47 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
+import org.eclipse.jetty.websocket.api.WebSocketPingPongListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
+import org.eclipse.jetty.websocket.common.frames.ReadOnlyDelegatedFrame;
+import org.eclipse.jetty.websocket.common.functions.OnByteArrayFunction;
+import org.eclipse.jetty.websocket.common.functions.OnByteBufferFunction;
+import org.eclipse.jetty.websocket.common.functions.OnCloseFunction;
+import org.eclipse.jetty.websocket.common.functions.OnErrorFunction;
+import org.eclipse.jetty.websocket.common.functions.OnFrameFunction;
+import org.eclipse.jetty.websocket.common.functions.OnInputStreamFunction;
+import org.eclipse.jetty.websocket.common.functions.OnOpenFunction;
+import org.eclipse.jetty.websocket.common.functions.OnReaderFunction;
+import org.eclipse.jetty.websocket.common.functions.OnTextFunction;
 import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
+import org.eclipse.jetty.websocket.common.message.ByteArrayMessageSink;
+import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
+import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.common.message.MessageSink;
+import org.eclipse.jetty.websocket.common.message.PartialBinaryMessageSink;
+import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
+import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
+import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 @ManagedObject("A Jetty WebSocket Session")
 public class WebSocketSession extends ContainerLifeCycle implements Session, RemoteEndpointFactory, WebSocketSessionScope, IncomingFrames, Connection.Listener, ConnectionStateListener
@@ -68,21 +104,36 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private final WebSocketContainerScope containerScope;
     private final URI requestURI;
     private final LogicalConnection connection;
-    private final EventDriver websocket;
     private final Executor executor;
+
+    // The websocket endpoint object itself
+    private final Object endpoint;
+
+    // The functions for calling into websocket endpoint's declared event handlers
+    protected Function<Session, Void> onOpenFunction;
+    protected Function<CloseInfo, Void> onCloseFunction;
+    protected Function<Throwable, Void> onErrorFunction;
+    protected Function<ByteBuffer, Void> onPingFunction;
+    protected Function<ByteBuffer, Void> onPongFunction;
+    protected Function<Frame, Void> onFrameFunction;
+
+    // Message Handling sinks
+    protected MessageSink onTextSink;
+    protected MessageSink onBinarySink;
+    protected MessageSink activeMessageSink;
+
     private ClassLoader classLoader;
     private ExtensionFactory extensionFactory;
-    private RemoteEndpointFactory remoteEndpointFactory;
+    private BatchMode batchmode = BatchMode.AUTO;
     private String protocolVersion;
     private Map<String, String[]> parameterMap = new HashMap<>();
-    private RemoteEndpoint remote;
-    private IncomingFrames incomingHandler;
+    private WebSocketRemoteEndpoint remote;
     private OutgoingFrames outgoingHandler;
     private WebSocketPolicy policy;
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
 
-    public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, EventDriver websocket, LogicalConnection connection)
+    public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, Object endpoint, LogicalConnection connection)
     {
         Objects.requireNonNull(containerScope,"Container Scope cannot be null");
         Objects.requireNonNull(requestURI,"Request URI cannot be null");
@@ -90,23 +141,222 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         this.classLoader = Thread.currentThread().getContextClassLoader();
         this.containerScope = containerScope;
         this.requestURI = requestURI;
-        this.websocket = websocket;
+        this.endpoint = endpoint;
         this.connection = connection;
         this.executor = connection.getExecutor();
         this.outgoingHandler = connection;
-        this.incomingHandler = websocket;
         this.connection.getIOState().addListener(this);
-        this.policy = containerScope.getPolicy();
+        this.policy = containerScope.getPolicy().clonePolicy();
+
+        discoverEndpointFunctions(this.endpoint);
 
         addBean(this.connection);
-        addBean(this.websocket);
+    }
+
+    protected void discoverEndpointFunctions(Object endpoint)
+    {
+        // Connection Listener
+
+        if (endpoint instanceof WebSocketConnectionListener)
+        {
+            WebSocketConnectionListener wslistener = (WebSocketConnectionListener)endpoint;
+            onOpenFunction = (sess) -> {
+                wslistener.onWebSocketConnect(sess);
+                return null;
+            };
+            onCloseFunction = (closeinfo) -> {
+                wslistener.onWebSocketClose(closeinfo.getStatusCode(),closeinfo.getReason());
+                return null;
+            };
+            onErrorFunction = (cause) -> {
+                wslistener.onWebSocketError(cause);
+                return null;
+            };
+        }
+
+        // Simple Data Listener
+
+        if (endpoint instanceof WebSocketListener)
+        {
+            WebSocketListener wslistener = (WebSocketListener)endpoint;
+            onTextSink = new StringMessageSink(policy,(payload) -> {
+                wslistener.onWebSocketText(payload);
+                return null;
+            });
+            onBinarySink = new ByteArrayMessageSink(policy,(payload) -> {
+                wslistener.onWebSocketBinary(payload,0,payload.length);
+                return null;
+            });
+        }
+
+        // Ping/Pong Listener
+
+        if (endpoint instanceof WebSocketPingPongListener)
+        {
+            WebSocketPingPongListener wslistener = (WebSocketPingPongListener)endpoint;
+            onPongFunction = (pong) -> {
+                ByteBuffer payload = pong;
+                if (pong == null)
+                    payload = BufferUtil.EMPTY_BUFFER;
+                wslistener.onWebSocketPong(payload);
+                return null;
+            };
+            onPingFunction = (ping) -> {
+                ByteBuffer payload = ping;
+                if (ping == null)
+                    payload = BufferUtil.EMPTY_BUFFER;
+                wslistener.onWebSocketPing(payload);
+                return null;
+            };
+        }
+
+        // Partial Data / Message Listener
+
+        if (endpoint instanceof WebSocketPartialListener)
+        {
+            for(Method method: WebSocketPartialListener.class.getDeclaredMethods())
+            {
+                if(method.getName().equals("onWebSocketPartialText"))
+                    assertNotSet(onTextSink, "TEXT Message Handler", endpoint.getClass(), method);
+                else if(method.getName().equals("onWebSocketPartialBinary"))
+                    assertNotSet(onBinarySink, "BINARY Message Handler", endpoint.getClass(), method);
+            }
+            
+            WebSocketPartialListener wslistener = (WebSocketPartialListener)endpoint;
+            onTextSink = new PartialTextMessageSink((partial) -> {
+                wslistener.onWebSocketPartialText(partial.getPayload(),partial.isFin());
+                return null;
+            });
+            onBinarySink = new PartialBinaryMessageSink((partial) -> {
+                wslistener.onWebSocketPartialBinary(partial.getPayload(),partial.isFin());
+                return null;
+            });
+        }
+
+        // Frame Listener
+
+        if (endpoint instanceof WebSocketFrameListener)
+        {
+            WebSocketFrameListener wslistener = (WebSocketFrameListener)endpoint;
+            onFrameFunction = (frame) -> {
+                wslistener.onWebSocketFrame(new ReadOnlyDelegatedFrame(frame));
+                return null;
+            };
+        }
+
+        // Test for annotated websocket endpoint
+        
+        Class<?> endpointClass = endpoint.getClass();
+        WebSocket websocket = endpointClass.getAnnotation(WebSocket.class);
+        if (websocket != null)
+        {
+            policy.setInputBufferSize(websocket.inputBufferSize());
+            policy.setMaxBinaryMessageSize(websocket.maxBinaryMessageSize());
+            policy.setMaxTextMessageSize(websocket.maxTextMessageSize());
+            policy.setIdleTimeout(websocket.maxIdleTime());
+            
+            this.batchmode = websocket.batchMode();
+            
+            Method onmethod = null;
+
+            // OnWebSocketConnect [0..1]
+            onmethod = ReflectUtils.findAnnotatedMethod(endpointClass,OnWebSocketConnect.class);
+            if (onmethod != null)
+            {
+                assertNotSet(onOpenFunction, "Open/Connect Handler", endpointClass, onmethod);
+                onOpenFunction = new OnOpenFunction(endpoint,onmethod);
+            }
+            // OnWebSocketClose [0..1]
+            onmethod = ReflectUtils.findAnnotatedMethod(endpointClass,OnWebSocketClose.class);
+            if (onmethod != null)
+            {
+                assertNotSet(onCloseFunction, "Close Handler", endpointClass, onmethod);
+                onCloseFunction = new OnCloseFunction(this,endpoint,onmethod);
+            }
+            // OnWebSocketError [0..1]
+            onmethod = ReflectUtils.findAnnotatedMethod(endpointClass,OnWebSocketError.class);
+            if (onmethod != null)
+            {
+                assertNotSet(onErrorFunction, "Error Handler", endpointClass, onmethod);
+                onErrorFunction = new OnErrorFunction(this,endpoint,onmethod);
+            }
+            // OnWebSocketFrame [0..1]
+            onmethod = ReflectUtils.findAnnotatedMethod(endpointClass,OnWebSocketFrame.class);
+            if (onmethod != null)
+            {
+                assertNotSet(onFrameFunction, "Frame Handler", endpointClass, onmethod);
+                onFrameFunction = new OnFrameFunction(this,endpoint,onmethod);
+            }
+            // OnWebSocketMessage [0..2]
+            Method onmessages[] = ReflectUtils.findAnnotatedMethods(endpointClass,OnWebSocketMessage.class);
+            if (onmessages != null && onmessages.length > 0)
+            {
+                for (Method onmsg : onmessages)
+                {
+                    if (OnTextFunction.hasMatchingSignature(onmsg))
+                    {
+                        assertNotSet(onTextSink, "TEXT Message Handler", endpointClass, onmsg);
+                        // Normal Text Message
+                        onTextSink = new StringMessageSink(policy,new OnTextFunction(this,endpointClass,onmsg));
+                    }
+                    else if (OnByteBufferFunction.hasMatchingSignature(onmsg))
+                    {
+                        assertNotSet(onBinarySink, "Binary Message Handler", endpointClass, onmsg);
+                        // ByteBuffer Binary Message
+                        onBinarySink = new ByteBufferMessageSink(policy,new OnByteBufferFunction(this,endpointClass,onmsg));
+                    }
+                    else if (OnByteArrayFunction.hasMatchingSignature(onmsg))
+                    {
+                        assertNotSet(onBinarySink, "Binary Message Handler", endpointClass, onmsg);
+                        // byte[] Binary Message
+                        onBinarySink = new ByteArrayMessageSink(policy,new OnByteArrayFunction(this,endpointClass,onmsg));
+                    }
+                    else if (OnInputStreamFunction.hasMatchingSignature(onmsg))
+                    {
+                        assertNotSet(onBinarySink, "Binary Message Handler", endpointClass, onmsg);
+                        // InputStream Binary Message
+                        onBinarySink = new InputStreamMessageSink(executor,new OnInputStreamFunction(this,endpointClass,onmsg));
+                    }
+                    else if (OnReaderFunction.hasMatchingSignature(onmsg))
+                    {
+                        assertNotSet(onTextSink, "TEXT Message Handler", endpointClass, onmsg);
+                        // Reader Text Message
+                        onTextSink = new ReaderMessageSink(executor,new OnReaderFunction(this,endpointClass,onmsg));
+                    }
+                    else
+                    {
+                        // Not a valid @OnWebSocketMessage declaration signature
+                        throw InvalidSignatureException.build(onmsg,OnWebSocketMessage.class,
+                                OnTextFunction.getDynamicArgsBuilder(),
+                                OnByteBufferFunction.getDynamicArgsBuilder(),
+                                OnByteArrayFunction.getDynamicArgsBuilder(),
+                                OnInputStreamFunction.getDynamicArgsBuilder(),
+                                OnReaderFunction.getDynamicArgsBuilder());
+                    }
+                }
+            }
+        }
+    }
+
+    protected void assertNotSet(Object val, String role, Class<?> pojo, Method method)
+    {
+        if(val == null)
+            return;
+        
+        StringBuilder err = new StringBuilder();
+        err.append("Cannot replace previously assigned ");
+        err.append(role);
+        err.append(" with ");
+        ReflectUtils.append(err,pojo,method);
+
+        throw new InvalidWebSocketException(err.toString());
     }
 
     @Override
     public void close()
     {
         /* This is assumed to always be a NORMAL closure, no reason phrase */
-        close(StatusCode.NORMAL, null);
+        connection.close(StatusCode.NORMAL,null);
     }
 
     @Override
@@ -141,7 +391,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     protected void doStart() throws Exception
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
             LOG.debug("starting - {}",this);
 
         Iterator<RemoteEndpointFactory> iter = ServiceLoader.load(RemoteEndpointFactory.class).iterator();
@@ -160,9 +410,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     protected void doStop() throws Exception
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
             LOG.debug("stopping - {}",this);
-        try
+
+        if (getConnection() != null)
         {
             close(StatusCode.SHUTDOWN,"Shutdown");
         }
@@ -177,16 +428,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpThis(out);
-        out.append(indent).append(" +- incomingHandler : ");
-        if (incomingHandler instanceof Dumpable)
-        {
-            ((Dumpable)incomingHandler).dump(out,indent + "    ");
-        }
-        else
-        {
-            out.append(incomingHandler.toString()).append(System.lineSeparator());
-        }
-
+        out.append(indent).append(" +- endpoint : ").append(endpoint.getClass().getName()).append('@').append(Integer.toHexString(endpoint.hashCode()));
         out.append(indent).append(" +- outgoingHandler : ");
         if (outgoingHandler instanceof Dumpable)
         {
@@ -249,6 +491,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         return this.containerScope;
     }
 
+    public Executor getExecutor()
+    {
+        return executor;
+    }
+
     public ExtensionFactory getExtensionFactory()
     {
         return extensionFactory;
@@ -261,12 +508,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public long getIdleTimeout()
     {
         return connection.getMaxIdleTimeout();
-    }
-
-    @ManagedAttribute(readonly = true)
-    public IncomingFrames getIncomingHandler()
-    {
-        return incomingHandler;
     }
 
     @Override
@@ -296,7 +537,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     public RemoteEndpoint getRemote()
     {
-        if(LOG_OPEN.isDebugEnabled())
+        if (LOG_OPEN.isDebugEnabled())
             LOG_OPEN.debug("[{}] {}.getRemote()",policy.getBehavior(),this.getClass().getSimpleName());
         ConnectionState state = connection.getIOState().getConnectionState();
 
@@ -331,7 +572,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         return this.upgradeResponse;
     }
 
-
     @Override
     public WebSocketSession getWebSocketSession()
     {
@@ -343,7 +583,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((connection == null)?0:connection.hashCode());
+        result = (prime * result) + ((connection == null) ? 0 : connection.hashCode());
         return result;
     }
 
@@ -353,11 +593,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     public void incomingError(Throwable t)
     {
-        if (connection.getIOState().isInputAvailable())
-        {
-            // Forward Errors to User WebSocket Object
-            websocket.incomingError(t);
-        }
+        // Forward Errors to User WebSocket Object
+        if (onErrorFunction != null)
+            onErrorFunction.apply(t);
     }
 
     /**
@@ -372,12 +610,120 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             Thread.currentThread().setContextClassLoader(classLoader);
             if (connection.getIOState().isInputAvailable())
             {
-                // Forward Frames Through Extension List
-                incomingHandler.incomingFrame(frame);
+                if (onFrameFunction != null)
+                    onFrameFunction.apply(frame);
+
+                byte opcode = frame.getOpCode();
+                switch (opcode)
+                {
+                    case OpCode.CLOSE:
+                    {
+                        boolean validate = true;
+                        CloseFrame closeframe = (CloseFrame)frame;
+                        CloseInfo close = new CloseInfo(closeframe,validate);
+
+                        // process handshake
+                        getConnection().getIOState().onCloseRemote(close);
+
+                        return;
+                    }
+                    case OpCode.PING:
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("PING: {}",BufferUtil.toDetailString(frame.getPayload()));
+
+                        ByteBuffer pongBuf;
+                        if (frame.hasPayload())
+                        {
+                            pongBuf = ByteBuffer.allocate(frame.getPayload().remaining());
+                            BufferUtil.put(frame.getPayload().slice(),pongBuf);
+                            BufferUtil.flipToFlush(pongBuf,0);
+                        }
+                        else
+                        {
+                            pongBuf = ByteBuffer.allocate(0);
+                        }
+
+                        if (onPingFunction != null)
+                            onPingFunction.apply(frame.getPayload());
+
+                        getRemote().sendPong(pongBuf);
+                        break;
+                    }
+                    case OpCode.PONG:
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("PONG: {}",BufferUtil.toDetailString(frame.getPayload()));
+
+                        if (onPongFunction != null)
+                            onPongFunction.apply(frame.getPayload());
+                        break;
+                    }
+                    case OpCode.BINARY:
+                    {
+                        if (activeMessageSink == null)
+                            activeMessageSink = onBinarySink;
+
+                        if (activeMessageSink != null)
+                            activeMessageSink.accept(frame.getPayload(),frame.isFin());
+                        return;
+                    }
+                    case OpCode.TEXT:
+                    {
+                        if (activeMessageSink == null)
+                            activeMessageSink = onTextSink;
+
+                        if (activeMessageSink != null)
+                            activeMessageSink.accept(frame.getPayload(),frame.isFin());
+                        return;
+                    }
+                    case OpCode.CONTINUATION:
+                    {
+                        if (activeMessageSink != null)
+                            activeMessageSink.accept(frame.getPayload(),frame.isFin());
+
+                        return;
+                    }
+                    default:
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Unhandled OpCode: {}",opcode);
+                    }
+                }
+            }
+        }
+        catch (NotUtf8Exception e)
+        {
+            notifyError(e);
+            close(StatusCode.BAD_PAYLOAD,e.getMessage());
+        }
+        catch (CloseException e)
+        {
+            close(e.getStatusCode(),e.getMessage());
+        }
+        catch (Throwable t)
+        {
+            LOG.warn("Unhandled Error (closing connection)",t);
+
+            notifyError(t);
+
+            // Unhandled Error, close the connection.
+            switch (policy.getBehavior())
+            {
+                case SERVER:
+                    close(StatusCode.SERVER_ERROR,t.getClass().getSimpleName());
+                    break;
+                case CLIENT:
+                    close(StatusCode.POLICY_VIOLATION,t.getClass().getSimpleName());
+                    break;
             }
         }
         finally
         {
+            // Unset active MessageSink if this was a fin frame
+            if (frame.isFin() && activeMessageSink != null)
+                activeMessageSink = null;
+
             Thread.currentThread().setContextClassLoader(old);
         }
     }
@@ -411,7 +757,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         {
             LOG.debug("notifyClose({},{})",statusCode,reason);
         }
-        websocket.onClose(new CloseInfo(statusCode,reason));
+        if (onCloseFunction != null)
+            onCloseFunction.apply(new CloseInfo(statusCode,reason));
     }
 
     public void notifyError(Throwable cause)
@@ -427,7 +774,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     public void onOpened(Connection connection)
     {
-        if(LOG_OPEN.isDebugEnabled())
+        if (LOG_OPEN.isDebugEnabled())
             LOG_OPEN.debug("[{}] {}.onOpened()",policy.getBehavior(),this.getClass().getSimpleName());
         open();
     }
@@ -470,17 +817,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         }
     }
 
-    public WebSocketRemoteEndpoint newRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoingFrames, BatchMode batchMode)
-    {
-        return new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
-    }
-
     /**
      * Open/Activate the session
      */
     public void open()
     {
-        if(LOG_OPEN.isDebugEnabled())
+        if (LOG_OPEN.isDebugEnabled())
             LOG_OPEN.debug("[{}] {}.open()",policy.getBehavior(),this.getClass().getSimpleName());
 
         if (remote != null)
@@ -489,18 +831,19 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             return;
         }
 
-        try(ThreadClassLoaderScope scope = new ThreadClassLoaderScope(classLoader))
+        try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(classLoader))
         {
             // Upgrade success
             connection.getIOState().onConnected();
 
             // Connect remote
-            remote = remoteEndpointFactory.newRemoteEndpoint(connection,outgoingHandler,getBatchMode());
-            if(LOG_OPEN.isDebugEnabled())
+            remote = new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
+            if (LOG_OPEN.isDebugEnabled())
                 LOG_OPEN.debug("[{}] {}.open() remote={}",policy.getBehavior(),this.getClass().getSimpleName(),remote);
 
             // Open WebSocket
-            websocket.openSession(this);
+            if (onOpenFunction != null)
+                onOpenFunction.apply(this);
 
             // Open connection
             connection.getIOState().onOpened();
@@ -521,7 +864,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             // Exception on end-user WS-Endpoint.
             // Fast-fail & close connection with reason.
             int statusCode = StatusCode.SERVER_ERROR;
-            if(policy.getBehavior() == WebSocketBehavior.CLIENT)
+            if (policy.getBehavior() == WebSocketBehavior.CLIENT)
             {
                 statusCode = StatusCode.POLICY_VIOLATION;
             }
@@ -591,7 +934,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
      */
     public BatchMode getBatchMode()
     {
-        return BatchMode.AUTO;
+        return this.batchmode;
     }
 
     @Override
@@ -599,11 +942,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         StringBuilder builder = new StringBuilder();
         builder.append("WebSocketSession[");
-        builder.append("websocket=").append(websocket);
+        builder.append("websocket=").append(endpoint.getClass().getName());
         builder.append(",behavior=").append(policy.getBehavior());
         builder.append(",connection=").append(connection);
         builder.append(",remote=").append(remote);
-        builder.append(",incoming=").append(incomingHandler);
         builder.append(",outgoing=").append(outgoingHandler);
         builder.append("]");
         return builder.toString();

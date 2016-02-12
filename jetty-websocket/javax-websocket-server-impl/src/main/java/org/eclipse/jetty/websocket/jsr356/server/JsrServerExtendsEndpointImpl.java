@@ -23,7 +23,7 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
-import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
+import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEndpointEventDriver;
 
 public class JsrServerExtendsEndpointImpl implements EventDriverImpl
@@ -31,12 +31,12 @@ public class JsrServerExtendsEndpointImpl implements EventDriverImpl
     @Override
     public EventDriver create(Object websocket, WebSocketPolicy policy)
     {
-        if (!(websocket instanceof EndpointInstance))
+        if (!(websocket instanceof ConfiguredEndpoint))
         {
-            throw new IllegalStateException(String.format("Websocket %s must be an %s",websocket.getClass().getName(),EndpointInstance.class.getName()));
+            throw new IllegalStateException(String.format("Websocket %s must be an %s",websocket.getClass().getName(),ConfiguredEndpoint.class.getName()));
         }
         
-        EndpointInstance ei = (EndpointInstance)websocket;
+        ConfiguredEndpoint ei = (ConfiguredEndpoint)websocket;
         JsrEndpointEventDriver driver = new JsrEndpointEventDriver(policy, ei);
         
         ServerEndpointConfig config = (ServerEndpointConfig)ei.getConfig();
@@ -58,12 +58,12 @@ public class JsrServerExtendsEndpointImpl implements EventDriverImpl
     @Override
     public boolean supports(Object websocket)
     {
-        if (!(websocket instanceof EndpointInstance))
+        if (!(websocket instanceof ConfiguredEndpoint))
         {
             return false;
         }
 
-        EndpointInstance ei = (EndpointInstance)websocket;
+        ConfiguredEndpoint ei = (ConfiguredEndpoint)websocket;
         Object endpoint = ei.getEndpoint();
 
         return (endpoint instanceof javax.websocket.Endpoint);

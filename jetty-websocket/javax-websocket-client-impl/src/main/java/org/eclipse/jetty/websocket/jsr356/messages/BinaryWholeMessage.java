@@ -27,11 +27,11 @@ import javax.websocket.MessageHandler.Whole;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
+import org.eclipse.jetty.websocket.common.message.ByteArrayMessageSink;
 import org.eclipse.jetty.websocket.jsr356.DecoderFactory;
 import org.eclipse.jetty.websocket.jsr356.MessageHandlerWrapper;
 
-public class BinaryWholeMessage extends SimpleBinaryMessage
+public class BinaryWholeMessage extends ByteArrayMessageSink
 {
     private final MessageHandlerWrapper msgWrapper;
     private final MessageHandler.Whole<Object> wholeHandler;

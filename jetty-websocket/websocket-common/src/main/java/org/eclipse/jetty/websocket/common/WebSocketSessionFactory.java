@@ -20,9 +20,8 @@ package org.eclipse.jetty.websocket.common;
 
 import java.net.URI;
 
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.events.JettyAnnotatedEventDriver;
-import org.eclipse.jetty.websocket.common.events.JettyListenerEventDriver;
+import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 /**
@@ -38,13 +37,13 @@ public class WebSocketSessionFactory implements SessionFactory
    }
 
     @Override
-    public boolean supports(EventDriver websocket)
+    public boolean supports(Object websocket)
     {
-        return (websocket instanceof JettyAnnotatedEventDriver) || (websocket instanceof JettyListenerEventDriver);
+        return (websocket instanceof WebSocketConnectionListener) || (websocket.getClass().getAnnotation(WebSocket.class) != null);
     }
 
     @Override
-    public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
+    public WebSocketSession createSession(URI requestURI, Object websocket, LogicalConnection connection)
     {
         return new WebSocketSession(containerScope, requestURI,websocket,connection);
     }

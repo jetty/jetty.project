@@ -33,6 +33,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
+import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
@@ -109,7 +110,7 @@ public class OnCloseTest
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         ClientEndpointConfig config = metadata.getConfig();
         TrackingSocket endpoint = (TrackingSocket)testcase.closeClass.newInstance();
-        EndpointInstance ei = new EndpointInstance(endpoint,config,metadata);
+        ConfiguredEndpoint ei = new ConfiguredEndpoint(endpoint,config,metadata);
         JsrEvents<ClientEndpoint, ClientEndpointConfig> jsrevents = new JsrEvents<>(metadata);
 
         EventDriver driver = new JsrAnnotatedEventDriver(policy,ei,jsrevents);

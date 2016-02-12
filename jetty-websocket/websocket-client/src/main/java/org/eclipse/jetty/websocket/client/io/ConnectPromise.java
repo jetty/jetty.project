@@ -27,7 +27,6 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 /**
  * Holder for the pending connect information.
@@ -36,26 +35,29 @@ public abstract class ConnectPromise extends FuturePromise<Session> implements R
 {
     private static final Logger LOG = Log.getLogger(ConnectPromise.class);
     private final WebSocketClient client;
-    private final EventDriver driver;
     private final ClientUpgradeRequest request;
+    private final Object webSocketEndpoint;
     private final Masker masker;
     private UpgradeListener upgradeListener;
     private ClientUpgradeResponse response;
     private WebSocketSession session;
 
-    public ConnectPromise(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
+    public ConnectPromise(WebSocketClient client, ClientUpgradeRequest request, Object websocket)
     {
         this.client = client;
-        this.driver = driver;
         this.request = request;
+        this.webSocketEndpoint = websocket;
         this.masker = client.getMasker();
     }
 
     @Override
     public void failed(Throwable cause)
     {
-        // Notify websocket of failure to connect
-        driver.onError(cause);
+        if (session != null)
+        {
+            // Notify websocket of failure to connect
+            session.notifyError(cause);
+        }
 
         // Notify promise/future of failure to connect
         super.failed(cause);
@@ -65,10 +67,10 @@ public abstract class ConnectPromise extends FuturePromise<Session> implements R
     {
         return client;
     }
-
-    public EventDriver getDriver()
+    
+    public Object getWebSocketEndpoint()
     {
-        return this.driver;
+        return webSocketEndpoint;
     }
 
     public Masker getMasker()

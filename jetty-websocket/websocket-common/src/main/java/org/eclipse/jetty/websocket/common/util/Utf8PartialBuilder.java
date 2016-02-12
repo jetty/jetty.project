@@ -32,20 +32,12 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
  */
 public class Utf8PartialBuilder
 {
-    private final StringBuilder str;
-    private final Utf8Appendable utf8;
+    private StringBuilder str;
+    private Utf8Appendable utf8;
 
     public Utf8PartialBuilder()
     {
-        this.str = new StringBuilder();
-        this.utf8 = new Utf8Appendable(str)
-        {
-            @Override
-            public int length()
-            {
-                return str.length();
-            }
-        };
+        reset();
     }
 
     public String toPartialString(ByteBuffer buf)
@@ -59,5 +51,18 @@ public class Utf8PartialBuilder
         String ret = str.toString();
         str.setLength(0);
         return ret;
+    }
+    
+    public void reset()
+    {
+        this.str = new StringBuilder();
+        this.utf8 = new Utf8Appendable(str)
+        {
+            @Override
+            public int length()
+            {
+                return str.length();
+            }
+        };
     }
 }

@@ -45,6 +45,7 @@ import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy.PolicyUpdate;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -58,7 +59,7 @@ import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 /**
  * Provides the implementation of {@link LogicalConnection} within the framework of the new {@link org.eclipse.jetty.io.Connection} framework of {@code jetty-io}.
  */
-public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, ConnectionStateListener, Dumpable
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, ConnectionStateListener, PolicyUpdate, Dumpable 
 {
     private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -244,8 +245,16 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.flusher = new Flusher(bufferPool,generator,endp);
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
+        this.policy.addListener(this);
     }
-
+    
+    @Override
+    public void onPolicyUpdate(WebSocketPolicy policy)
+    {
+        this.setInputBufferSize(policy.getInputBufferSize());
+        this.setMaxIdleTimeout(policy.getIdleTimeout());
+    }
+    
     @Override
     public Executor getExecutor()
     {
@@ -316,7 +325,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             endPoint.close();
         }
     }
-
+    
     protected void execute(Runnable task)
     {
         try
@@ -434,6 +443,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         if (LOG.isDebugEnabled())
             LOG.debug("{} onClose()",policy.getBehavior());
         super.onClose();
+        policy.removeListener(this);
         ioState.onDisconnected();
         flusher.close();
     }

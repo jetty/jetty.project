@@ -30,7 +30,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 /**
  * Internal Connection/Client Manager used to track active clients, their physical vs virtual connection information, and provide some means to create new
@@ -42,9 +41,9 @@ public class ConnectionManager extends ContainerLifeCycle
     {
         private SocketAddress bindAddress;
 
-        public PhysicalConnect(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
+        public PhysicalConnect(WebSocketClient client, ClientUpgradeRequest request, Object websocket)
         {
-            super(client,driver,request);
+            super(client,request,websocket);
             this.bindAddress = client.getBindAddress();
         }
 
@@ -138,9 +137,9 @@ public class ConnectionManager extends ContainerLifeCycle
         this.client = client;
     }
 
-    public ConnectPromise connect(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
+    public ConnectPromise connect(WebSocketClient client, ClientUpgradeRequest request, Object websocket)
     {
-        return new PhysicalConnect(client,driver,request);
+        return new PhysicalConnect(client,request,websocket);
     }
 
     @Override

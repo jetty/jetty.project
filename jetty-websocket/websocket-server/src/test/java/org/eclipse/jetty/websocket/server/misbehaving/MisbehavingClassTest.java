@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.server.misbehaving;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
@@ -29,7 +30,6 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
@@ -72,30 +72,32 @@ public class MisbehavingClassTest
         {
             client.setProtocols("listener-runtime-connect");
             client.setTimeout(1,TimeUnit.SECONDS);
+            try (StacklessLogging scope = new StacklessLogging(BadSocketsServlet.class))
+            {
+                ListenerRuntimeOnConnectSocket socket = badSocketsServlet.listenerRuntimeConnect;
+                socket.reset();
 
-            ListenerRuntimeOnConnectSocket socket = badSocketsServlet.listenerRuntimeConnect;
-            socket.reset();
+                client.connect();
+                client.sendStandardRequest();
+                client.expectUpgradeResponse();
 
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+                EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+                WebSocketFrame frame = frames.poll();
+                assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+                CloseInfo close = new CloseInfo(frame);
+                assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
 
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
-            assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
-            CloseInfo close = new CloseInfo(frame);
-            assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+                client.write(close.asFrame()); // respond with close
 
-            client.write(close.asFrame()); // respond with close
+                // ensure server socket got close event
+                assertThat("Close Latch",socket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
+                assertThat("closeStatusCode",socket.closeStatusCode,is(StatusCode.SERVER_ERROR));
 
-            // ensure server socket got close event
-            assertThat("Close Latch",socket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-            assertThat("closeStatusCode",socket.closeStatusCode,is(StatusCode.SERVER_ERROR));
-
-            // Validate errors
-            assertThat("socket.onErrors",socket.errors.size(),is(1));
-            Throwable cause = socket.errors.pop();
-            assertThat("Error type",cause,instanceOf(RuntimeException.class));
+                // Validate errors
+                assertThat("socket.onErrors",socket.errors.size(),is(1));
+                Throwable cause = socket.errors.pop();
+                assertThat("Error type",cause,instanceOf(ArrayIndexOutOfBoundsException.class));
+            }
         }
     }
     
@@ -107,30 +109,32 @@ public class MisbehavingClassTest
         {
             client.setProtocols("annotated-runtime-connect");
             client.setTimeout(1,TimeUnit.SECONDS);
+            try (StacklessLogging scope = new StacklessLogging(BadSocketsServlet.class))
+            {
+                AnnotatedRuntimeOnConnectSocket socket = badSocketsServlet.annotatedRuntimeConnect;
+                socket.reset();
 
-            AnnotatedRuntimeOnConnectSocket socket = badSocketsServlet.annotatedRuntimeConnect;
-            socket.reset();
+                client.connect();
+                client.sendStandardRequest();
+                client.expectUpgradeResponse();
 
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+                EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+                WebSocketFrame frame = frames.poll();
+                assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+                CloseInfo close = new CloseInfo(frame);
+                assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
 
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
-            assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
-            CloseInfo close = new CloseInfo(frame);
-            assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+                client.write(close.asFrame()); // respond with close
 
-            client.write(close.asFrame()); // respond with close
+                // ensure server socket got close event
+                assertThat("Close Latch",socket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
+                assertThat("closeStatusCode",socket.closeStatusCode,is(StatusCode.SERVER_ERROR));
 
-            // ensure server socket got close event
-            assertThat("Close Latch",socket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-            assertThat("closeStatusCode",socket.closeStatusCode,is(StatusCode.SERVER_ERROR));
-
-            // Validate errors
-            assertThat("socket.onErrors",socket.errors.size(),is(1));
-            Throwable cause = socket.errors.pop();
-            assertThat("Error type",cause,instanceOf(RuntimeException.class));
+                // Validate errors
+                assertThat("socket.onErrors",socket.errors.size(),is(1));
+                Throwable cause = socket.errors.pop();
+                assertThat("Error type",cause,instanceOf(ArrayIndexOutOfBoundsException.class));
+            }
         }
     }
 }

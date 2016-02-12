@@ -103,7 +103,6 @@ public class WebSocketClientSelectorManager extends SelectorManager
             else
             {
                 // Standard "ws://"
-                endPoint.setIdleTimeout(connectPromise.getDriver().getPolicy().getIdleTimeout());
                 return newUpgradeConnection(channel,endPoint,connectPromise);
             }
         }
