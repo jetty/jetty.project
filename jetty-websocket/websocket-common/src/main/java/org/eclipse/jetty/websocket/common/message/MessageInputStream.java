@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * An InputStream that can access a queue of ByteBuffer payloads, along with expected InputStream blocking behavior.
  */
-public class MessageInputStream extends InputStream implements MessageAppender
+public class MessageInputStream extends InputStream implements MessageSink
 {
     private static final Logger LOG = Log.getLogger(MessageInputStream.class);
     private static final ByteBuffer EOF = ByteBuffer.allocate(0).asReadOnlyBuffer();
@@ -54,13 +54,13 @@ public class MessageInputStream extends InputStream implements MessageAppender
     {
         this.timeoutMs = timeoutMs;
     }
-
+    
     @Override
-    public void appendFrame(ByteBuffer framePayload, boolean fin) throws IOException
+    public void accept(ByteBuffer payload, Boolean fin)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Appending {} chunk: {}",fin?"final":"non-final",BufferUtil.toDetailString(framePayload));
+            LOG.debug("Appending {} chunk: {}",fin?"final":"non-final",BufferUtil.toDetailString(payload));
         }
 
         // If closed, we should just toss incoming payloads into the bit bucket.
@@ -74,26 +74,26 @@ public class MessageInputStream extends InputStream implements MessageAppender
         // be processed after this method returns.
         try
         {
-            if (framePayload == null)
+            if (payload == null)
             {
                 // skip if no payload
                 return;
             }
 
-            int capacity = framePayload.remaining();
+            int capacity = payload.remaining();
             if (capacity <= 0)
             {
                 // skip if no payload data to copy
                 return;
             }
             // TODO: the copy buffer should be pooled too, but no buffer pool available from here.
-            ByteBuffer copy = framePayload.isDirect()?ByteBuffer.allocateDirect(capacity):ByteBuffer.allocate(capacity);
-            copy.put(framePayload).flip();
+            ByteBuffer copy = payload.isDirect()?ByteBuffer.allocateDirect(capacity):ByteBuffer.allocate(capacity);
+            copy.put(payload).flip();
             buffers.put(copy);
         }
         catch (InterruptedException e)
         {
-            throw new IOException(e);
+            throw new RuntimeException(e);
         }
         finally
         {
@@ -124,14 +124,6 @@ public class MessageInputStream extends InputStream implements MessageAppender
     public boolean markSupported()
     {
         return false;
-    }
-
-    @Override
-    public void messageComplete()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Message completed");
-        buffers.offer(EOF);
     }
 
     @Override

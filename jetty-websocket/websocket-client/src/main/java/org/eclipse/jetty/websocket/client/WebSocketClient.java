@@ -53,7 +53,6 @@ import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
-import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
@@ -72,10 +71,18 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     //
     private final WebSocketContainerScope containerScope;
     private final WebSocketExtensionFactory extensionRegistry;
-    private final EventDriverFactory eventDriverFactory;
-    private final SessionFactory sessionFactory;
-
-    private final int id = ThreadLocalRandom.current().nextInt();
+    private boolean daemon = false;
+    private SessionFactory sessionFactory;
+    private ByteBufferPool bufferPool;
+    private Executor executor;
+    private DecoratedObjectFactory objectFactory;
+    private Scheduler scheduler;
+    private CookieStore cookieStore;
+    private ConnectionManager connectionManager;
+    private Masker masker;
+    private SocketAddress bindAddress;
+    private long connectTimeout = SelectorManager.DEFAULT_CONNECT_TIMEOUT;
+    private boolean dispatchIO = true;
 
     /**
      * Instantiate a WebSocketClient with defaults
@@ -290,8 +297,11 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         
         this.extensionRegistry = new WebSocketExtensionFactory(containerScope);
         
-        this.eventDriverFactory = eventDriverFactory;
-        this.sessionFactory = sessionFactory;
+        this.masker = new RandomMasker();
+        
+        addBean(this.executor);
+        addBean(this.sslContextFactory);
+        addBean(this.bufferPool);
     }
 
     public Future<Session> connect(Object websocket, URI toUri) throws IOException
@@ -380,10 +390,62 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
         init();
 
-        WebSocketUpgradeRequest wsReq = new WebSocketUpgradeRequest(this,httpClient,request);
+        // Create the appropriate (physical vs virtual) connection task
+        ConnectPromise promise = manager.connect(this,request,websocket);
 
-        wsReq.setUpgradeListener(upgradeListener);
-        return wsReq.sendAsync();
+        if (upgradeListener != null)
+        {
+            promise.setUpgradeListener(upgradeListener);
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Connect Promise: {}",promise);
+
+        // Execute the connection on the executor thread
+        executor.execute(promise);
+
+        // Return the future
+        return promise;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Starting {}",this);
+
+        String name = WebSocketClient.class.getSimpleName() + "@" + hashCode();
+
+        if (bufferPool == null)
+        {
+            setBufferPool(new MappedByteBufferPool());
+        }
+
+        if (scheduler == null)
+        {
+            scheduler = new ScheduledExecutorScheduler(name + "-scheduler",daemon);
+            addBean(scheduler);
+        }
+
+        if (cookieStore == null)
+        {
+            setCookieStore(new HttpCookieStore.Empty());
+        }
+
+        if(this.sessionFactory == null)
+        {
+            setSessionFactory(new WebSocketSessionFactory(this));
+        }
+        
+        if(this.objectFactory == null)
+        {
+            this.objectFactory = new DecoratedObjectFactory();
+        }
+
+        super.doStart();
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("Started {}",this);
     }
 
     @Override
@@ -445,12 +507,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         return httpClient.getCookieStore();
     }
-
-    public EventDriverFactory getEventDriverFactory()
-    {
-        return eventDriverFactory;
-    }
-
+    
     public Executor getExecutor()
     {
         return httpClient.getExecutor();
@@ -645,7 +702,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     @Deprecated
     public void setDispatchIO(boolean dispatchIO)
     {
-        this.httpClient.setDispatchIO(dispatchIO);
+        this.dispatchIO = dispatchIO;
     }
 
     public void setExecutor(Executor executor)

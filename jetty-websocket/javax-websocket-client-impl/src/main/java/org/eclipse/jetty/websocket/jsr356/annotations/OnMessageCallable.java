@@ -23,7 +23,7 @@ import java.lang.reflect.Method;
 import javax.websocket.Decoder;
 import javax.websocket.Encoder;
 
-import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.EncoderFactory;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;

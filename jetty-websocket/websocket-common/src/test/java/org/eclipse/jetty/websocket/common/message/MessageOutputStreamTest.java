@@ -22,6 +22,8 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
@@ -29,9 +31,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
+import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
@@ -57,7 +59,7 @@ public class MessageOutputStreamTest
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private WebSocketPolicy policy;
-    private TrackingSocket socket;
+    private TrackingSocket remoteSocket;
     private LocalWebSocketSession session;
 
     @After
@@ -68,7 +70,7 @@ public class MessageOutputStreamTest
     }
 
     @Before
-    public void setupSession() throws Exception
+    public void setupSession() throws URISyntaxException
     {
         policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
@@ -76,18 +78,15 @@ public class MessageOutputStreamTest
 
         // Container
         WebSocketContainerScope containerScope = new SimpleContainerScope(policy,bufferPool);
-    
-        // Event Driver factory
-        EventDriverFactory factory = new EventDriverFactory(containerScope);
-    
-        // local socket
-        EventDriver driver = factory.wrap(new TrackingSocket("local"));
 
         // remote socket
-        socket = new TrackingSocket("remote");
-        OutgoingFrames socketPipe = FramePipes.to(factory.wrap(socket));
+        remoteSocket = new TrackingSocket("remote");
+        WebSocketSession remoteSession = new LocalWebSocketSession(containerScope,testname,remoteSocket);
+        OutgoingFrames socketPipe = FramePipes.to(remoteSession);
 
-        session = new LocalWebSocketSession(containerScope,testname,driver);
+        // Local Session
+        TrackingSocket localSocket = new TrackingSocket("local");
+        session = new LocalWebSocketSession(containerScope,testname,localSocket);
 
         session.setPolicy(policy);
         // talk to our remote socket
@@ -108,8 +107,8 @@ public class MessageOutputStreamTest
             stream.write("World".getBytes("UTF-8"));
         }
 
-        Assert.assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
-        String msg = socket.messageQueue.poll();
+        Assert.assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
+        String msg = remoteSocket.messageQueue.poll();
         Assert.assertThat("Message",msg,allOf(containsString("byte[11]"),containsString("Hello World")));
     }
 
@@ -121,8 +120,8 @@ public class MessageOutputStreamTest
             stream.write("Hello World".getBytes("UTF-8"));
         }
 
-        Assert.assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
-        String msg = socket.messageQueue.poll();
+        Assert.assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
+        String msg = remoteSocket.messageQueue.poll();
         Assert.assertThat("Message",msg,allOf(containsString("byte[11]"),containsString("Hello World")));
     }
 
@@ -140,8 +139,8 @@ public class MessageOutputStreamTest
             stream.write(buf);
         }
 
-        Assert.assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
-        String msg = socket.messageQueue.poll();
+        Assert.assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
+        String msg = remoteSocket.messageQueue.poll();
         Assert.assertThat("Message",msg,allOf(containsString("byte[" + bufsize + "]"),containsString("xxxo>>>")));
     }
 }

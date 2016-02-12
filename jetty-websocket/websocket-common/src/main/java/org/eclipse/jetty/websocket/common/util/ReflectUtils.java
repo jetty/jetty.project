@@ -18,12 +18,18 @@
 
 package org.eclipse.jetty.websocket.common.util;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.common.DuplicateAnnotationException;
 
 public class ReflectUtils
 {
@@ -125,6 +131,103 @@ public class ReflectUtils
         return sb;
     }
 
+    public static void assertIsAnnotated(Method method, Class<? extends Annotation> annoClass)
+    {
+        if (method.getAnnotation(annoClass) == null)
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("Method does not declare required @");
+            err.append(annoClass.getName());
+            err.append(" annotation: ");
+            err.append(method);
+
+            throw new InvalidWebSocketException(err.toString());
+        }
+    }
+
+    public static void assertIsPublicNonStatic(Method method)
+    {
+        int mods = method.getModifiers();
+        if (!Modifier.isPublic(mods))
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("Invalid declaration of ");
+            err.append(method);
+            err.append(System.lineSeparator());
+
+            err.append("Method modifier must be public");
+
+            throw new InvalidWebSocketException(err.toString());
+        }
+
+        if (Modifier.isStatic(mods))
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("Invalid declaration of ");
+            err.append(method);
+            err.append(System.lineSeparator());
+
+            err.append("Method modifier must not be static");
+
+            throw new InvalidWebSocketException(err.toString());
+        }
+    }
+
+    public static void assertIsReturn(Method method, Class<?> type)
+    {
+        if (!type.equals(method.getReturnType()))
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("Invalid declaration of ");
+            err.append(method);
+            err.append(System.lineSeparator());
+
+            err.append("Return type must be ").append(type);
+
+            throw new InvalidWebSocketException(err.toString());
+        }
+    }
+
+    public static Method findAnnotatedMethod(Class<?> pojo, Class<? extends Annotation> anno)
+    {
+        Method methods[] = findAnnotatedMethods(pojo,anno);
+        if(methods == null) {
+            return null;
+        }
+        
+        if(methods.length > 1) 
+        {
+            throw DuplicateAnnotationException.build(pojo,anno,methods);
+        }
+        
+        return methods[0];
+    }
+
+    public static Method[] findAnnotatedMethods(Class<?> pojo, Class<? extends Annotation> anno)
+    {
+        List<Method> methods = null;
+        Class<?> clazz = pojo;
+
+        while ((clazz != null) && Object.class.isAssignableFrom(clazz))
+        {
+            for (Method method : clazz.getDeclaredMethods())
+            {
+                if (method.getAnnotation(anno) != null)
+                {
+                    if (methods == null)
+                        methods = new ArrayList<>();
+                    methods.add(method);
+                }
+            }
+            clazz = clazz.getSuperclass();
+        }
+
+        if (methods == null)
+            return null;
+        int len = methods.size();
+        return methods.toArray(new Method[len]);
+    }
+
     /**
      * Given a Base (concrete) Class, find the interface specified, and return its concrete Generic class declaration.
      * 
@@ -184,6 +287,26 @@ public class ReflectUtils
         {
             return false;
         }
+    }
+
+    public static boolean isSameParameters(Class<?>[] actual, Class<?>[] params)
+    {
+        if (actual.length != params.length)
+        {
+            // skip
+            return false;
+        }
+
+        int len = params.length;
+        for (int i = 0; i < len; i++)
+        {
+            if (!actual[i].equals(params[i]))
+            {
+                return false; // not valid
+            }
+        }
+
+        return true;
     }
 
     private static boolean resolveGenericRef(GenericRef ref, Class<?> clazz, Type type)
@@ -344,7 +467,26 @@ public class ReflectUtils
     public static String toString(Class<?> pojo, Method method)
     {
         StringBuilder str = new StringBuilder();
+        
+        append(str,pojo,method);
 
+        return str.toString();
+    }
+
+    public static String trimClassName(String name)
+    {
+        int idx = name.lastIndexOf('.');
+        name = name.substring(idx + 1);
+        idx = name.lastIndexOf('$');
+        if (idx >= 0)
+        {
+            name = name.substring(idx + 1);
+        }
+        return name;
+    }
+
+    public static void append(StringBuilder str, Class<?> pojo, Method method)
+    {
         // method modifiers
         int mod = method.getModifiers() & Modifier.methodModifiers();
         if (mod != 0)
@@ -356,9 +498,12 @@ public class ReflectUtils
         Type retType = method.getGenericReturnType();
         appendTypeName(str,retType,false).append(' ');
 
-        // class name
-        str.append(pojo.getName());
-        str.append("#");
+        if (pojo != null)
+        {
+            // class name
+            str.append(pojo.getName());
+            str.append("#");
+        }
 
         // method name
         str.append(method.getName());
@@ -376,20 +521,12 @@ public class ReflectUtils
             }
         }
         str.append(')');
-
+        
         // TODO: show exceptions?
-        return str.toString();
     }
 
-    public static String trimClassName(String name)
+    public static void append(StringBuilder str, Method method)
     {
-        int idx = name.lastIndexOf('.');
-        name = name.substring(idx + 1);
-        idx = name.lastIndexOf('$');
-        if (idx >= 0)
-        {
-            name = name.substring(idx + 1);
-        }
-        return name;
+        append(str, null, method);
     }
 }

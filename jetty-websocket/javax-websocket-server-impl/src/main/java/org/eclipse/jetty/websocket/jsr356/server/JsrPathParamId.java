@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import javax.websocket.server.PathParam;
 
-import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.IJsrParamId;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrCallable;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param;

@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketPingPongListener;
-import org.eclipse.jetty.websocket.common.events.EventCapture;
+import org.eclipse.jetty.websocket.common.test.EventCapture;
 
 public class ListenerPingPongSocket implements WebSocketPingPongListener
 {

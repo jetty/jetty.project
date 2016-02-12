@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.client.JsrClientEndpointImpl;
 
 public class JsrEventDriverFactory extends EventDriverFactory
@@ -41,9 +41,9 @@ public class JsrEventDriverFactory extends EventDriverFactory
     @Override
     protected String getClassName(Object websocket)
     {
-        if (websocket instanceof EndpointInstance)
+        if (websocket instanceof ConfiguredEndpoint)
         {
-            EndpointInstance ce = (EndpointInstance)websocket;
+            ConfiguredEndpoint ce = (ConfiguredEndpoint)websocket;
             return ce.getEndpoint().getClass().getName();
         }
 

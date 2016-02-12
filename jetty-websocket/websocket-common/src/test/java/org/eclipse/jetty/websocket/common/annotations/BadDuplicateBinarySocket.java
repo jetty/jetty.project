@@ -42,7 +42,7 @@ public class BadDuplicateBinarySocket
     }
 
     /**
-     * Second method
+     * Second method (also binary)
      * @param stream the input stream
      */
     @OnWebSocketMessage

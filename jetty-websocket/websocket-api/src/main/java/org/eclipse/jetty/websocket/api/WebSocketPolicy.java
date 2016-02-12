@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.api;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Settings for WebSocket operations.
  */
@@ -34,6 +37,13 @@ public class WebSocketPolicy
     {
         return new WebSocketPolicy(WebSocketBehavior.SERVER);
     }
+    
+    /* NOTE TO OTHER DEVELOPERS: 
+     * If you change any of these default values,
+     * make sure you sync the values with 
+     * org.eclipse.jetty.websocket.api.annotations.WebSocket 
+     * annotation defaults
+     */
 
     /**
      * The maximum size of a text message during parsing/generating.
@@ -76,14 +86,14 @@ public class WebSocketPolicy
      * <p>
      * Negative values indicate a disabled timeout.
      */
-    private long asyncWriteTimeout = 60000;
+    private long asyncWriteTimeout = 60_000;
 
     /**
      * The time in ms (milliseconds) that a websocket may be idle before closing.
      * <p>
      * Default: 300000 (ms)
      */
-    private long idleTimeout = 300000;
+    private long idleTimeout = 300_000;
 
     /**
      * The size of the input (read from network layer) buffer size.
@@ -96,6 +106,13 @@ public class WebSocketPolicy
      * Behavior of the websockets
      */
     private final WebSocketBehavior behavior;
+    
+    public static interface PolicyUpdate
+    {
+        public void onPolicyUpdate(WebSocketPolicy policy);
+    }
+    
+    private List<PolicyUpdate> listeners = new ArrayList<>();
 
     public WebSocketPolicy(WebSocketBehavior behavior)
     {
@@ -152,7 +169,26 @@ public class WebSocketPolicy
         clone.maxBinaryMessageBufferSize = this.maxBinaryMessageBufferSize;
         clone.inputBufferSize = this.inputBufferSize;
         clone.asyncWriteTimeout = this.asyncWriteTimeout;
+        // clone.listeners.addAll(this.listeners);
         return clone;
+    }
+    
+    public void addListener(PolicyUpdate update)
+    {
+        this.listeners.add(update);
+    }
+    
+    public void removeListener(PolicyUpdate update)
+    {
+        this.listeners.remove(update);
+    }
+    
+    private void notifyOfUpdate()
+    {
+        for(PolicyUpdate update: listeners)
+        {
+            update.onPolicyUpdate(this);
+        }
     }
 
     /**
@@ -248,8 +284,11 @@ public class WebSocketPolicy
      */
     public void setAsyncWriteTimeout(long ms)
     {
+        boolean dirty = (this.asyncWriteTimeout != ms);
         assertLessThan("AsyncWriteTimeout",ms,"IdleTimeout",idleTimeout);
         this.asyncWriteTimeout = ms;
+        if (dirty)
+            notifyOfUpdate();
     }
 
     /**
@@ -260,8 +299,11 @@ public class WebSocketPolicy
      */
     public void setIdleTimeout(long ms)
     {
+        boolean dirty = (this.idleTimeout != ms);
         assertGreaterThan("IdleTimeout",ms,0);
         this.idleTimeout = ms;
+        if (dirty)
+            notifyOfUpdate();
     }
 
     /**
@@ -272,8 +314,11 @@ public class WebSocketPolicy
      */
     public void setInputBufferSize(int size)
     {
+        boolean dirty = (this.inputBufferSize != size);
         assertGreaterThan("InputBufferSize",size,1);
         this.inputBufferSize = size;
+        if(dirty)
+            notifyOfUpdate();
     }
 
     /**
@@ -286,9 +331,12 @@ public class WebSocketPolicy
      */
     public void setMaxBinaryMessageBufferSize(int size)
     {
+        boolean dirty = (this.maxBinaryMessageBufferSize != size);
         assertGreaterThan("MaxBinaryMessageBufferSize",size,1);
 
         this.maxBinaryMessageBufferSize = size;
+        if(dirty)
+            notifyOfUpdate();
     }
 
     /**
@@ -301,9 +349,12 @@ public class WebSocketPolicy
      */
     public void setMaxBinaryMessageSize(int size)
     {
-        assertGreaterThan("MaxBinaryMessageSize",size,-1);
+        boolean dirty = (this.maxBinaryMessageSize != size);
+        assertGreaterThan("MaxBinaryMessageSize",size,1);
 
         this.maxBinaryMessageSize = size;
+        if(dirty)
+            notifyOfUpdate();
     }
 
     /**
@@ -316,9 +367,12 @@ public class WebSocketPolicy
      */
     public void setMaxTextMessageBufferSize(int size)
     {
+        boolean dirty = (this.maxTextMessageBufferSize != size);
         assertGreaterThan("MaxTextMessageBufferSize",size,1);
 
         this.maxTextMessageBufferSize = size;
+        if(dirty)
+            notifyOfUpdate();
     }
 
     /**
@@ -331,9 +385,12 @@ public class WebSocketPolicy
      */
     public void setMaxTextMessageSize(int size)
     {
-        assertGreaterThan("MaxTextMessageSize",size,-1);
+        boolean dirty = (this.maxTextMessageSize != size);
+        assertGreaterThan("MaxTextMessageSize",size,1);
 
         this.maxTextMessageSize = size;
+        if(dirty)
+            notifyOfUpdate();
     }
 
     @Override
@@ -341,14 +398,10 @@ public class WebSocketPolicy
     {
         StringBuilder builder = new StringBuilder();
         builder.append("WebSocketPolicy@").append(Integer.toHexString(hashCode()));
-        builder.append("[behavior=").append(behavior);
-        builder.append(",maxTextMessageSize=").append(maxTextMessageSize);
-        builder.append(",maxTextMessageBufferSize=").append(maxTextMessageBufferSize);
-        builder.append(",maxBinaryMessageSize=").append(maxBinaryMessageSize);
-        builder.append(",maxBinaryMessageBufferSize=").append(maxBinaryMessageBufferSize);
-        builder.append(",asyncWriteTimeout=").append(asyncWriteTimeout);
+        builder.append("[").append(behavior);
+        builder.append(",textSize=").append(maxTextMessageSize);
+        builder.append(",binarySize=").append(maxBinaryMessageSize);
         builder.append(",idleTimeout=").append(idleTimeout);
-        builder.append(",inputBufferSize=").append(inputBufferSize);
         builder.append("]");
         return builder.toString();
     }

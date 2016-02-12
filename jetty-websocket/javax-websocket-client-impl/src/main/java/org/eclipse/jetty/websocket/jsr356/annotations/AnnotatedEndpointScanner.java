@@ -31,8 +31,8 @@ import javax.websocket.OnOpen;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.events.annotated.AbstractMethodAnnotationScanner;
-import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointConfig> extends AbstractMethodAnnotationScanner<AnnotatedEndpointMetadata<T, C>>

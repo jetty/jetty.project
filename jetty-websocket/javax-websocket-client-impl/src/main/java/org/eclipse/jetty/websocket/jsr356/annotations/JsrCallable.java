@@ -26,8 +26,8 @@ import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
-import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;

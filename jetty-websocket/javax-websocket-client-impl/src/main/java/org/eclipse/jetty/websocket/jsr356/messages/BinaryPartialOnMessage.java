@@ -24,13 +24,13 @@ import java.nio.ByteBuffer;
 import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.common.message.MessageAppender;
+import org.eclipse.jetty.websocket.common.message.MessageSink;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 
 /**
  * Partial BINARY MessageAppender for &#064;{@link OnMessage} annotated methods
  */
-public class BinaryPartialOnMessage implements MessageAppender
+public class BinaryPartialOnMessage implements MessageSink
 {
     private final JsrAnnotatedEventDriver driver;
     private boolean finished;

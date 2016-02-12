@@ -35,7 +35,7 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;

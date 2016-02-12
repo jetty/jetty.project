@@ -40,9 +40,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
+import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
-import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
@@ -97,8 +97,8 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         this.configuration.getFactory().addSessionFactory(new JsrSessionFactory(this));
         addBean(this.configuration);
     }
-
-    public EndpointInstance newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
+    
+    public ConfiguredEndpoint newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
     {
         EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass(),config);
         ServerEndpointConfig cec = config;
@@ -113,7 +113,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
                 cec = new BasicServerEndpointConfig(this,endpoint.getClass(),path);
             }
         }
-        return new EndpointInstance(endpoint,cec,metadata);
+        return new ConfiguredEndpoint(endpoint,cec,metadata);
     }
 
     @Override

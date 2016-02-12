@@ -33,6 +33,67 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 @Deprecated
 public class ConnectionManager extends ContainerLifeCycle
 {
+    private class PhysicalConnect extends ConnectPromise
+    {
+        private SocketAddress bindAddress;
+
+        public PhysicalConnect(WebSocketClient client, ClientUpgradeRequest request, Object websocket)
+        {
+            super(client,request,websocket);
+            this.bindAddress = client.getBindAddress();
+        }
+
+        @Override
+        public void run()
+        {
+            SocketChannel channel = null;
+            try
+            {
+                channel = SocketChannel.open();
+                if (bindAddress != null)
+                {
+                    channel.bind(bindAddress);
+                }
+
+                URI wsUri = getRequest().getRequestURI();
+
+                channel.socket().setTcpNoDelay(true); // disable nagle
+                channel.configureBlocking(false); // async always
+
+                InetSocketAddress address = toSocketAddress(wsUri);
+
+                if (channel.connect(address))
+                {
+                    getSelector().accept(channel, this);
+                }
+                else
+                {
+                    getSelector().connect(channel, this);
+                }
+            }
+            catch (Throwable t)
+            {
+                // close the socket channel
+                if (channel != null)
+                {
+                    try
+                    {
+                        channel.close();
+                    }
+                    catch (IOException ignore)
+                    {
+                        LOG.ignore(ignore);
+                    }
+                }
+                
+                // notify the future
+                failed(t);
+            }
+        }
+    }
+
+    private static final Logger LOG = Log.getLogger(ConnectionManager.class);
+
     public static InetSocketAddress toSocketAddress(URI uri)
     {
         if (!uri.isAbsolute())
@@ -66,5 +127,46 @@ public class ConnectionManager extends ContainerLifeCycle
 
     public ConnectionManager(WebSocketClient client)
     {
+        this.client = client;
+    }
+
+    public ConnectPromise connect(WebSocketClient client, ClientUpgradeRequest request, Object websocket)
+    {
+        return new PhysicalConnect(client,request,websocket);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        selector = newWebSocketClientSelectorManager(client);
+        selector.setSslContextFactory(client.getSslContextFactory());
+        selector.setConnectTimeout(client.getConnectTimeout());
+        addBean(selector);
+
+        super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        removeBean(selector);
+    }
+
+    public WebSocketClientSelectorManager getSelector()
+    {
+        return selector;
+    }
+
+    /**
+     * Factory method for new WebSocketClientSelectorManager (used by other projects like cometd)
+     * 
+     * @param client
+     *            the client used to create the WebSocketClientSelectorManager
+     * @return the new WebSocketClientSelectorManager
+     */
+    protected WebSocketClientSelectorManager newWebSocketClientSelectorManager(WebSocketClient client)
+    {
+        return new WebSocketClientSelectorManager(client);
     }
 }

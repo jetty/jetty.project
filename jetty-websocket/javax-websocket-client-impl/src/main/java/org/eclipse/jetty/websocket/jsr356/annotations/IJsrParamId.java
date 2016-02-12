@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 
 /**
  * JSR-356 Parameter Identification processing.

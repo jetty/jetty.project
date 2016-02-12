@@ -258,8 +258,8 @@ public class WebSocketCloseTest
         try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastfail");
-            client.setTimeout(5,TimeUnit.SECONDS);
-            try (StacklessLogging scope = new StacklessLogging(FastFailSocket.class, WebSocketSession.class))
+            client.setTimeout(1,TimeUnit.SECONDS);
+            try (StacklessLogging scope = new StacklessLogging(CloseServlet.class))
             {
                 client.connect();
                 client.sendStandardRequest();

@@ -23,14 +23,14 @@ import java.nio.ByteBuffer;
 
 import javax.websocket.OnMessage;
 
-import org.eclipse.jetty.websocket.common.message.MessageAppender;
+import org.eclipse.jetty.websocket.common.message.MessageSink;
 import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 
 /**
  * Partial TEXT MessageAppender for &#064;{@link OnMessage} annotated methods
  */
-public class TextPartialOnMessage implements MessageAppender
+public class TextPartialOnMessage implements MessageSink
 {
     private final JsrAnnotatedEventDriver driver;
     private final Utf8PartialBuilder utf8Partial;
