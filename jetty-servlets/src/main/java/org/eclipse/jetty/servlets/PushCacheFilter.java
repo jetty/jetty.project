@@ -16,14 +16,15 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -154,7 +155,7 @@ public class PushCacheFilter implements Filter
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} referrer={} conditional={}", request.getMethod(), request.getRequestURI(), referrer, conditional);
+            LOG.debug("{} {} referrer={} conditional={} synthetic={}", request.getMethod(), request.getRequestURI(), referrer, conditional, isPushRequest(request));
 
         String path = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
         String query = request.getQueryString();
@@ -231,13 +232,12 @@ public class PushCacheFilter implements Filter
             }
         }
 
-        // Push some resources?
         PrimaryResource primaryResource = _cache.get(path);
         if (primaryResource == null)
         {
-            PrimaryResource t = new PrimaryResource();
-            primaryResource = _cache.putIfAbsent(path, t);
-            primaryResource = primaryResource == null ? t : primaryResource;
+            PrimaryResource r = new PrimaryResource();
+            primaryResource = _cache.putIfAbsent(path, r);
+            primaryResource = primaryResource == null ? r : primaryResource;
             primaryResource._timestamp.compareAndSet(0, now);
             if (LOG.isDebugEnabled())
                 LOG.debug("Cached primary resource {}", path);
@@ -253,18 +253,35 @@ public class PushCacheFilter implements Filter
             }
         }
 
-        // Push associated for non conditional
-        if (!conditional && !primaryResource._associated.isEmpty())
+        // Push associated resources.
+        if (!isPushRequest(request) && !conditional && !primaryResource._associated.isEmpty())
         {
-            for (RequestDispatcher dispatcher : primaryResource._associated.values())
+            // Breadth-first push of associated resources.
+            Queue<PrimaryResource> queue = new ArrayDeque<>();
+            queue.offer(primaryResource);
+            while (!queue.isEmpty())
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Pushing {} for {}", dispatcher, path);
-                ((Dispatcher)dispatcher).push(request);
+                PrimaryResource parent = queue.poll();
+                for (Map.Entry<String, RequestDispatcher> entry : parent._associated.entrySet())
+                {
+                    PrimaryResource child = _cache.get(entry.getKey());
+                    if (child != null)
+                        queue.offer(child);
+
+                    Dispatcher dispatcher = (Dispatcher)entry.getValue();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Pushing {} for {}", dispatcher, path);
+                    dispatcher.push(request);
+                }
             }
         }
 
         chain.doFilter(request, resp);
+    }
+
+    private boolean isPushRequest(HttpServletRequest request)
+    {
+        return Boolean.TRUE.equals(request.getAttribute("org.eclipse.jetty.pushed"));
     }
 
     @Override
