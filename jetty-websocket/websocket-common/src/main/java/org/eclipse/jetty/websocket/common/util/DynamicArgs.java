@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.websocket.common.util;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 /**
  * Provide argument utilities for working with methods that
@@ -29,184 +32,53 @@ import java.util.List;
  * <li>Can identify a set of parameters as matching the Builder</li>
  * <li>Can create a DynamicArgs for the matched signature</li>
  * <li>Can create an argument array for the provided potential arguments,
- *     suitable to be used with {@link Method#invoke(Object, Object...)}</li>
+ * suitable to be used with {@link Method#invoke(Object, Object...)}</li>
  * </ol>
  */
 public class DynamicArgs
 {
     public static interface Signature
     {
-        public boolean matches(Class<?>[] types);
+        /**
+         * Predicate to test if signature matches
+         * 
+         * @return the predicate to test if signature matches
+         */
+        public Predicate<Class<?>[]> getPredicate();
+
+        /**
+         * BiFunction to use to invoke method
+         * against give object, with provided (potential) arguments,
+         * returning appropriate result from invocation.
+         * 
+         * @param method
+         *            the method to base BiFunction off of.
+         * @param callArgs
+         *            the description of arguments passed into each {@link DynamicArgs#invoke(Object, Object...)}
+         *            call in the future. Used to map the incoming arguments to the method arguments.
+         * @return the return result of the invoked method
+         */
+        public BiFunction<Object, Object[], Object> getInvoker(Method method, DynamicArgs.Arg... callArgs);
+
         public void appendDescription(StringBuilder str);
-        public Object[] toArgs(Object[] potentialArgs, int[] argReferences);
-    }
-    
-    public static class UnorderedSignature implements Signature
-    {
-        private final Class<?>[] validParams;
-        private int[] validParamsIndex;
-
-        public UnorderedSignature(Class<?> ... classes)
-        {
-            this.validParams = classes;
-        }
-
-        public UnorderedSignature indexedAs(int ... index)
-        {
-            this.validParamsIndex = index;
-            return this;
-        }
-
-        public Class<?>[] getParams()
-        {
-            return validParams;
-        }
-
-        public int[] getIndex()
-        {
-            return validParamsIndex;
-        }
-
-        public int size()
-        {
-            return validParams.length;
-        }
-
-        public boolean matches(Class<?>[] types)
-        {
-            // Matches if the provided types
-            // match the valid params in any order
-            
-            if (types.length != validParams.length)
-                return false;
-            int len = validParams.length;
-            for (int i = 0; i < len; i++)
-            {
-                if (!validParams[i].equals(types[i]))
-                    return false;
-            }
-            return true;
-        }
-
-        public void appendDescription(StringBuilder str)
-        {
-            str.append('(');
-            boolean delim = false;
-            for (Class<?> type : validParams)
-            {
-                if (delim)
-                {
-                    str.append(',');
-                }
-                str.append(' ');
-                str.append(type.getName());
-                if (type.isArray())
-                {
-                    str.append("[]");
-                }
-                delim = true;
-            }
-            str.append(')');
-        }
-
-        public Object[] toArgs(Object[] potentialArgs, int[] argReferences)
-        {
-            int slen = size();
-            int plen = potentialArgs.length;
-            Object args[] = new Object[slen];
-            for (int sidx = 0; sidx < slen; sidx++)
-            {
-                int wantIdx = validParamsIndex[sidx];
-                for (int argIdx = 0; argIdx < plen; argIdx++)
-                {
-                    if (argReferences[argIdx] == wantIdx)
-                        args[sidx] = potentialArgs[argIdx];
-                }
-            }
-            return args;
-        }
     }
 
-    public static class ExactSignature implements Signature
+    public static class Arg
     {
-        private final Class<?>[] params;
-        private int[] index;
-
-        public ExactSignature(Class<?> ... classes)
+        public Arg(int idx, Class<?> type)
         {
-            this.params = classes;
+            this.index = idx;
+            this.type = type;
         }
-
-        public ExactSignature indexedAs(int ... index)
+        
+        public int index;
+        public Class<?> type;
+        public Object tag;
+        
+        @Override
+        public String toString()
         {
-            this.index = index;
-            return this;
-        }
-
-        public Class<?>[] getParams()
-        {
-            return params;
-        }
-
-        public int[] getIndex()
-        {
-            return index;
-        }
-
-        public int size()
-        {
-            return params.length;
-        }
-
-        public boolean matches(Class<?>[] types)
-        {
-            if (types.length != params.length)
-                return false;
-            int len = params.length;
-            for (int i = 0; i < len; i++)
-            {
-                if (!params[i].equals(types[i]))
-                    return false;
-            }
-            return true;
-        }
-
-        public void appendDescription(StringBuilder str)
-        {
-            str.append('(');
-            boolean delim = false;
-            for (Class<?> type : params)
-            {
-                if (delim)
-                {
-                    str.append(',');
-                }
-                str.append(' ');
-                str.append(type.getName());
-                if (type.isArray())
-                {
-                    str.append("[]");
-                }
-                delim = true;
-            }
-            str.append(')');
-        }
-
-        public Object[] toArgs(Object[] potentialArgs, int[] argReferences)
-        {
-            int slen = size();
-            int plen = potentialArgs.length;
-            Object args[] = new Object[slen];
-            for (int sidx = 0; sidx < slen; sidx++)
-            {
-                int wantIdx = index[sidx];
-                for (int argIdx = 0; argIdx < plen; argIdx++)
-                {
-                    if (argReferences[argIdx] == wantIdx)
-                        args[sidx] = potentialArgs[argIdx];
-                }
-            }
-            return args;
+            return String.format("%s[%d%s]",type.getSimpleName(),index,tag == null ? "" : "/" + tag);
         }
     }
 
@@ -214,60 +86,60 @@ public class DynamicArgs
     {
         private List<Signature> signatures = new ArrayList<>();
 
-        public DynamicArgs build(Method method)
+        public DynamicArgs build(Method method, Arg... callArgs)
         {
             Class<?> paramTypes[] = method.getParameterTypes();
             for (Signature sig : signatures)
             {
-                if (sig.matches(paramTypes))
+                if (sig.getPredicate().test(paramTypes))
                 {
-                    return new DynamicArgs(sig);
+                    return new DynamicArgs(sig.getInvoker(method,callArgs));
                 }
             }
 
             return null;
         }
 
-        public boolean hasMatchingSignature(Method method)
-        {
-            Class<?> paramTypes[] = method.getParameterTypes();
-            for (Signature sig : signatures)
-            {
-                if (sig.matches(paramTypes))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        
         public Builder addSignature(Signature sig)
         {
             signatures.add(sig);
             return this;
         }
 
-        public List<Signature> getSignatures()
+        public void appendDescription(StringBuilder err)
         {
-            return this.signatures;
+            for (Signature sig : signatures)
+            {
+                err.append(System.lineSeparator());
+                sig.appendDescription(err);
+            }
         }
     }
 
-    private final Signature signature;
-    private int argReferences[];
+    private final BiFunction<Object, Object[], Object> invoker;
 
-    public DynamicArgs(Signature sig)
+    private DynamicArgs(BiFunction<Object, Object[], Object> invoker)
     {
-        this.signature = sig;
+        this.invoker = invoker;
     }
 
-    public void setArgReferences(int... argIndex)
+    /**
+     * Invoke the signature / method with the provided potential args.
+     * 
+     * @param o
+     *            the object to call method on
+     * @param potentialArgs
+     *            the potential args in the same order as the FIXME
+     * @return the response object from the invoke
+     * @throws IllegalAccessException
+     *             if unable to access the method or object
+     * @throws IllegalArgumentException
+     *             if call to method has invalid/illegal arguments
+     * @throws InvocationTargetException
+     *             if unable to invoke the method on the object
+     */
+    public Object invoke(Object o, Object... potentialArgs) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException
     {
-        this.argReferences = argIndex;
-    }
-
-    public Object[] toArgs(Object... potentialArgs)
-    {
-        return signature.toArgs(potentialArgs,argReferences);
+        return invoker.apply(o,potentialArgs);
     }
 }
