@@ -35,17 +35,13 @@ public class InvalidSignatureException extends InvalidWebSocketException
         err.append(method);
         err.append(System.lineSeparator());
 
-        err.append("Acceptable method declarations for @");
+        err.append("Acceptable #").append(method.getName());
+        err.append("() argument declarations for @");
         err.append(annoClass.getSimpleName());
         err.append(" are:");
         for (DynamicArgs.Builder argsBuilder : dynArgsBuilders)
         {
-            for (DynamicArgs.Signature signature : argsBuilder.getSignatures())
-            {
-                err.append(System.lineSeparator());
-                err.append("public void ").append(method.getName());
-                signature.appendDescription(err);
-            }
+            argsBuilder.appendDescription(err);
         }
         return new InvalidSignatureException(err.toString());
     }

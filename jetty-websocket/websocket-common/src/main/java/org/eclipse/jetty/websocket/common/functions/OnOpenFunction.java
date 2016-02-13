@@ -28,8 +28,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs;
+import org.eclipse.jetty.websocket.common.util.ExactSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
-import org.eclipse.jetty.websocket.common.util.DynamicArgs.ExactSignature;
 
 /**
  * Jetty {@link WebSocket} {@link OnWebSocketConnect} method {@link Function}
