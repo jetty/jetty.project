@@ -19,10 +19,11 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.*;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -56,6 +57,52 @@ public class HttpURITest
         }
     }
 
+    @Test
+    public void testParse()
+    {
+        HttpURI uri = new HttpURI();
+
+        uri.parse("*");
+        assertThat(uri.getHost(),nullValue());
+        assertThat(uri.getPath(),is("*"));
+        
+        uri.parse("/foo/bar");
+        assertThat(uri.getHost(),nullValue());
+        assertThat(uri.getPath(),is("/foo/bar"));
+        
+        uri.parse("//foo/bar");
+        assertThat(uri.getHost(),is("foo"));
+        assertThat(uri.getPath(),is("/bar"));
+        
+        uri.parse("http://foo/bar");
+        assertThat(uri.getHost(),is("foo"));
+        assertThat(uri.getPath(),is("/bar"));
+    }
+
+    @Test
+    public void testParseRequestTarget()
+    {
+        HttpURI uri = new HttpURI();
+
+        uri.parseRequestTarget("GET","*");
+        assertThat(uri.getHost(),nullValue());
+        assertThat(uri.getPath(),is("*"));
+        
+        uri.parseRequestTarget("GET","/foo/bar");
+        assertThat(uri.getHost(),nullValue());
+        assertThat(uri.getPath(),is("/foo/bar"));
+        
+        uri.parseRequestTarget("GET","//foo/bar");
+        assertThat(uri.getHost(),nullValue());
+        assertThat(uri.getPath(),is("//foo/bar"));
+        
+        uri.parseRequestTarget("GET","http://foo/bar");
+        assertThat(uri.getHost(),is("foo"));
+        assertThat(uri.getPath(),is("/bar"));
+    }
+    
+    
+    
     @Test
     public void testUnicodeErrors() throws UnsupportedEncodingException
     {
