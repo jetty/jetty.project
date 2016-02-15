@@ -101,10 +101,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public boolean startRequest(String method, String uri, HttpVersion version)
     {
         _metadata.setMethod(method);
-        if (HttpMethod.CONNECT.is(method))
-            _metadata.getURI().parseConnect(uri);
-        else
-            _metadata.getURI().parse(uri);
+        _metadata.getURI().parseRequestTarget(method,uri);
         _metadata.setHttpVersion(version);
         _unknownExpectation = false;
         _expect100Continue = false;
@@ -334,6 +331,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     return true;
 
                 badMessage(HttpStatus.UPGRADE_REQUIRED_426,null);
+                _httpConnection.getParser().close();
                 return false;
             }
 
