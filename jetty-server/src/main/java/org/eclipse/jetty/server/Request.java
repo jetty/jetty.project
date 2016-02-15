@@ -225,7 +225,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public boolean isPushSupported()
     {
-        return getHttpChannel().getHttpTransport().isPushSupported();
+        return !isPush() && getHttpChannel().getHttpTransport().isPushSupported();
     }
 
     /* ------------------------------------------------------------ */
