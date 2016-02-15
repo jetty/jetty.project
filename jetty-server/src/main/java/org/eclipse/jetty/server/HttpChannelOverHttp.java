@@ -331,6 +331,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     return true;
 
                 badMessage(HttpStatus.UPGRADE_REQUIRED_426,null);
+                _httpConnection.getParser().close();
                 return false;
             }
 

@@ -641,8 +641,8 @@ public class HttpParser
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
-                        handle=_responseHandler.startResponse(_version, _responseStatus, null)||handle;
                         setState(State.HEADER);
+                        handle=_responseHandler.startResponse(_version, _responseStatus, null)||handle;
                     }
                     else
                     {
@@ -714,8 +714,8 @@ public class HttpParser
                     {
                         if (_responseHandler!=null)
                         {
-                            handle=_responseHandler.startResponse(_version, _responseStatus, null)||handle;
                             setState(State.HEADER);
+                            handle=_responseHandler.startResponse(_version, _responseStatus, null)||handle;
                         }
                         else
                         {
@@ -761,7 +761,6 @@ public class HttpParser
                     if (ch == HttpTokens.LINE_FEED)
                     {
                         String reason=takeString();
-
                         setState(State.HEADER);
                         handle=_responseHandler.startResponse(_version, _responseStatus, reason)||handle;
                         continue;
@@ -953,8 +952,8 @@ public class HttpParser
                                     return handle;
 
                                 case NO_CONTENT:
-                                    handle=_handler.headerComplete()||handle;
                                     setState(State.END);
+                                    handle=_handler.headerComplete()||handle;
                                     handle=_handler.messageComplete()||handle;
                                     return handle;
 
