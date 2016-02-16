@@ -1489,14 +1489,13 @@ public class RequestTest
                 request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
 
                 //We should get an error when we getParams if there was a problem parsing the multipart
-                request.getParameter("xxx");
+                request.getPart("xxx");
                 //A 200 response is actually wrong here
             }
             catch (RuntimeException e)
             {
                 response.sendError(500);
             }
-           
         }
     }
     
