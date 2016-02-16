@@ -1,0 +1,10 @@
+## Customize the circle CI test machine
+machine:
+ java:
+  version: oraclejdk8
+
+## Prevent mvn dependency:resolve failing for intra-dependencies
+dependencies:
+ override: 
+  - mvn -fn dependency:resolve     
+
