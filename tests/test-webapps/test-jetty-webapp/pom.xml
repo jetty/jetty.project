@@ -118,9 +118,7 @@
             <contextPath>/test</contextPath>
             <tempDirectory>${project.build.directory}/work</tempDirectory>
             <sessionHandler implementation="org.eclipse.jetty.server.session.SessionHandler">
-              <sessionManager implementation="org.eclipse.jetty.server.session.HashSessionManager">
-                <storeDirectory>${basedir}/target/sessions</storeDirectory>
-              </sessionManager>
+              <sessionManager implementation="org.eclipse.jetty.server.session.HashSessionManager"/>
             </sessionHandler>
           </webApp>
           <loginServices>
