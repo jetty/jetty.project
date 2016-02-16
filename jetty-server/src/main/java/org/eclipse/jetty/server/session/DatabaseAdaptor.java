@@ -61,6 +61,9 @@ public class DatabaseAdaptor
     private String _connectionUrl;
     private Driver _driver;
     private DataSource _datasource;
+ 
+
+
     private String _jndiName;
 
 
@@ -217,6 +220,37 @@ public class DatabaseAdaptor
         _jndiName=jndi;
     }
 
+    
+    public String getDatasourceName ()
+    {
+        return _jndiName;
+    }
+    
+
+    public DataSource getDatasource()
+    {
+        return _datasource;
+    }
+
+    
+    public String getDriverClassName()
+    {
+        return _driverClassName;
+    }
+
+
+    public Driver getDriver()
+    {
+        return _driver;
+    }
+
+    public String getConnectionUrl()
+    {
+        return _connectionUrl;
+    }
+   
+    
+    
     public void initialize ()
     throws Exception
     {
@@ -249,7 +283,6 @@ public class DatabaseAdaptor
             }
         }
     }
-    
    
     
     /**
