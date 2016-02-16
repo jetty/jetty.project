@@ -43,6 +43,7 @@ import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainer
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class SessionTrackingTest
@@ -129,6 +130,7 @@ public class SessionTrackingTest
     }
 
     @Test
+    @Ignore
     public void testAddRemoveSessions() throws Exception
     {
         // Create Client
