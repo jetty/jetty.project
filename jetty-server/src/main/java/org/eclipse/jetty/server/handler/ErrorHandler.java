@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -189,7 +190,7 @@ public class ErrorHandler extends AbstractHandler
     protected void writeErrorPageStacks(HttpServletRequest request, Writer writer)
         throws IOException
     {
-        Throwable th = (Throwable)request.getAttribute("javax.servlet.error.exception");
+        Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
         while(th!=null)
         {
             writer.write("<h3>Caused by:</h3><pre>");

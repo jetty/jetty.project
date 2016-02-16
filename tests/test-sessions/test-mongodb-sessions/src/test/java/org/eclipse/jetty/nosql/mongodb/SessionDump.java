@@ -24,6 +24,7 @@ import java.io.PrintWriter;
 import java.util.Date;
 import java.util.Enumeration;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -178,7 +179,7 @@ public class SessionDump extends HttpServlet
     /* ------------------------------------------------------------ */
     private String getURI(HttpServletRequest request)
     {
-        String uri=(String)request.getAttribute("javax.servlet.forward.request_uri");
+        String uri=(String)request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
         if (uri==null)
             uri=request.getRequestURI();
         return uri;

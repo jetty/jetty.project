@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -76,7 +77,7 @@ public class ConcatServletTest
             @Override
             protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                String includedURI = (String)request.getAttribute("javax.servlet.include.request_uri");
+                String includedURI = (String)request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI);
                 response.getOutputStream().println(includedURI);
             }
         });
