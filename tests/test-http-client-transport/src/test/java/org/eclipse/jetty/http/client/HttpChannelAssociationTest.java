@@ -49,8 +49,10 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class HttpChannelAssociationTest extends AbstractTest
 {
     public HttpChannelAssociationTest(Transport transport)
