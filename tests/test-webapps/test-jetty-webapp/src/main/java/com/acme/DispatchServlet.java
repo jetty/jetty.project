@@ -68,8 +68,8 @@ public class DispatchServlet extends HttpServlet
 
         String info;
 
-        if (sreq.getAttribute("javax.servlet.include.servlet_path") != null)
-            info= (String)sreq.getAttribute("javax.servlet.include.path_info");
+        if (sreq.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH) != null)
+            info= (String)sreq.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
         else
             info= sreq.getPathInfo();
 

@@ -20,6 +20,7 @@ package org.eclipse.jetty.jsp;
 
 import java.io.IOException;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -59,10 +60,10 @@ public class JettyJspServlet extends JspServlet
 
         String servletPath=null;
         String pathInfo=null;
-        if (request.getAttribute("javax.servlet.include.request_uri")!=null)
+        if (request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI)!=null)
         {
-            servletPath=(String)request.getAttribute("javax.servlet.include.servlet_path");
-            pathInfo=(String)request.getAttribute("javax.servlet.include.path_info");
+            servletPath=(String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            pathInfo=(String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
             if (servletPath==null)
             {
                 servletPath=request.getServletPath();

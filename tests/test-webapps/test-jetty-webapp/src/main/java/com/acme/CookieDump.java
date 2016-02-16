@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
@@ -105,7 +106,7 @@ public class CookieDump extends HttpServlet
     /* ------------------------------------------------------------ */
     private String getURI(HttpServletRequest request)
     {
-        String uri=(String)request.getAttribute("javax.servlet.forward.request_uri");
+        String uri=(String)request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
         if (uri==null)
             uri=request.getRequestURI();
         return uri;
