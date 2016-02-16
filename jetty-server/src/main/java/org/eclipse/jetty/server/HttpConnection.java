@@ -689,6 +689,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
                 switch (result)
                 {
+                    case NEED_INFO:
+                        throw new EofException("request lifecycle violation");
+                        
                     case NEED_HEADER:
                     {
                         _header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);
