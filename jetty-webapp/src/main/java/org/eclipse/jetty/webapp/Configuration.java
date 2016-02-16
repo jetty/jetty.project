@@ -34,7 +34,7 @@ public interface Configuration
 {
     public final static String ATTR="org.eclipse.jetty.webapp.configuration";
 
-    public default String getClassName() { return getClass().getName(); }
+    public default String getName() { return getClass().getName(); }
     
     /* ------------------------------------------------------------------------------- */
     /** Get a class that this class replaces/extends

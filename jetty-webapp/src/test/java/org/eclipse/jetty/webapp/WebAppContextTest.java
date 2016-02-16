@@ -68,7 +68,7 @@ public class WebAppContextTest
     {
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
-        Assert.assertThat(Arrays.asList(wac.getConfigurations()).stream().map(Configuration::getClassName).collect(Collectors.toList()),
+        Assert.assertThat(Arrays.asList(wac.getConfigurations()).stream().map(Configuration::getName).collect(Collectors.toList()),
                 Matchers.contains( 
                         "org.eclipse.jetty.webapp.WebInfConfiguration",
                         "org.eclipse.jetty.webapp.WebXmlConfiguration",
