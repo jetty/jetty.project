@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -342,8 +343,10 @@ public class HttpGenerator
             {
                 if (info==null)
                     return Result.NEED_INFO;
-                
-                switch(info.getVersion())
+                HttpVersion version=info.getVersion();
+                if (version==null)
+                    throw new IllegalStateException("No version");
+                switch(version)
                 {
                     case HTTP_1_0:
                         if (_persistent==null)
@@ -356,7 +359,7 @@ public class HttpGenerator
                         break;
                         
                     default:
-                        throw new IllegalArgumentException(info.getVersion()+" not supported");
+                        throw new IllegalArgumentException(version+" not supported");
                 }
                 
                 // Do we need a response header
