@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -40,7 +41,7 @@ public class Licensing
             // skip, no license
             return;
         }
-        
+
         if (licenseMap.containsKey(module.getName()))
         {
             // skip, already being tracked
@@ -63,7 +64,7 @@ public class Licensing
         {
             return true;
         }
-        
+
         System.err.printf("%nALERT: There are enabled module(s) with licenses.%n");
         System.err.printf("The following %d module(s):%n", licenseMap.size());
         System.err.printf(" + contains software not provided by the Eclipse Foundation!%n");
@@ -98,7 +99,7 @@ public class Licensing
             System.err.printf("%nProceed (y/N)? ");
             String response = input.readLine();
 
-            licenseAck = (Utils.isNotBlank(response) && response.toLowerCase().startsWith("y"));
+            licenseAck = (Utils.isNotBlank(response) && response.toLowerCase(Locale.ENGLISH).startsWith("y"));
         }
 
         return licenseAck;

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -54,7 +54,17 @@ public class MultipartFilterTest
 {
     private File _dir;
     private ServletTester tester;
-
+    FilterHolder multipartFilter;
+    
+    public static class FilenameServlet extends TestServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            assertNotNull(req.getAttribute("fileup"));
+            super.doPost(req, resp);
+        }
+    }
 
     public static class BoundaryServlet extends TestServlet
     {
@@ -113,7 +123,7 @@ public class MultipartFilterTest
         tester.getContext().setResourceBase(_dir.getCanonicalPath());
         tester.getContext().addServlet(TestServlet.class, "/");
         tester.getContext().setAttribute("javax.servlet.context.tempdir", _dir);
-        FilterHolder multipartFilter = tester.getContext().addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
+        multipartFilter = tester.getContext().addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
         multipartFilter.setInitParameter("deleteFiles", "true");
         multipartFilter.setInitParameter("fileOutputBuffer", "1"); //write a file if  there's more than 1 byte content
         tester.start();
@@ -885,6 +895,60 @@ public class MultipartFilterTest
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
     }
 
+    
+    @Test
+    public void testFilesWithFilenames ()
+            throws Exception
+    {       
+        multipartFilter.setInitParameter("fileOutputBuffer", "0");
+        multipartFilter.setInitParameter("writeFilesWithFilenames", "true");
+        
+        
+        String boundary="XyXyXy";
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+        tester.addServlet(FilenameServlet.class,"/testf");
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/testf");
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+
+        String content = "--XyXyXy\r"+
+        "Content-Disposition: form-data; name=\"fileName\"\r"+
+        "Content-Type: text/plain; charset=US-ASCII\r"+
+        "Content-Transfer-Encoding: 8bit\r"+
+        "\r"+
+        "abc\r"+
+        "--XyXyXy\r"+
+        "Content-Disposition: form-data; name=\"desc\"\r"+ 
+        "Content-Type: text/plain; charset=US-ASCII\r"+ 
+        "Content-Transfer-Encoding: 8bit\r"+
+        "\r"+
+        "123\r"+ 
+        "--XyXyXy\r"+ 
+        "Content-Disposition: form-data; name=\"title\"\r"+
+        "Content-Type: text/plain; charset=US-ASCII\r"+
+        "Content-Transfer-Encoding: 8bit\r"+ 
+        "\r"+
+        "ttt\r"+ 
+        "--XyXyXy\r"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r"+
+        "Content-Type: application/octet-stream\r"+
+        "Content-Transfer-Encoding: binary\r"+ 
+        "\r"+
+        "000\r"+ 
+        "--XyXyXy--\r";
+        request.setContent(content);
+
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus()); 
+        assertTrue(response.getContent().indexOf("000")>=0);
+    }
+    
+    
+    
     public static class DumpServlet extends HttpServlet
     {
         private static final long serialVersionUID = 201012011130L;

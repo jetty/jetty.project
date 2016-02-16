@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.util;
 
-import static java.nio.file.StandardWatchEventKinds.*;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
 import java.io.File;
 import java.io.IOException;
@@ -1244,7 +1246,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             LOG.debug("Starting java.nio file watching with {}",watchService);
         }
 
-        while (watchService != null)
+        while (watchService != null  && thread == Thread.currentThread())
         {
             WatchKey key = null;
 

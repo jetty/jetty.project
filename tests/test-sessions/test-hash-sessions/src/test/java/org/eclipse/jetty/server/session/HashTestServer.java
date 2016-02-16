@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,8 @@ import org.eclipse.jetty.server.SessionManager;
  */
 public class HashTestServer extends AbstractTestServer
 {
-
+    static int __workers=0;
+    
     public HashTestServer(int port)
     {
         super(port, 30, 10);
@@ -40,13 +41,14 @@ public class HashTestServer extends AbstractTestServer
 
     public SessionIdManager newSessionIdManager(Object config)
     {
-        return new HashSessionIdManager();
+        HashSessionIdManager mgr = new HashSessionIdManager(_server);
+        mgr.setWorkerName("worker"+(__workers++));
+        return mgr;
     }
 
     public SessionManager newSessionManager()
     {
         HashSessionManager manager = new HashSessionManager();
-        manager.setScavengePeriod(_scavengePeriod);
         return manager;
     }
 

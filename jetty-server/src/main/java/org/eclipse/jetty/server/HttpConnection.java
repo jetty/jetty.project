@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -217,19 +217,20 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         HttpConnection last=setCurrentConnection(this);
         try
         {
-            while (true)
+            while (getEndPoint().isOpen())
             {
-                // Fill the request buffer (if needed)
+                // Fill the request buffer (if needed).
                 int filled = fillRequestBuffer();
 
-                // Parse the request buffer
+                // Parse the request buffer.
                 boolean handle = parseRequestBuffer();
+
                 // If there was a connection upgrade, the other
                 // connection took over, nothing more to do here.
                 if (getEndPoint().getConnection()!=this)
                     break;
 
-                // Handle close parser
+                // Handle closed parser.
                 if (_parser.isClose() || _parser.isClosed())
                 {
                     close();
@@ -245,13 +246,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     if (suspended || getEndPoint().getConnection() != this)
                         break;
                 }
-
-                // Continue or break?
-                else if (filled<=0)
+                else
                 {
-                    if (filled==0)
-                        fillInterested();
-                    break;
+                    if (filled <= 0)
+                    {
+                        if (filled == 0)
+                            fillInterested();
+                        break;
+                    }
                 }
             }
         }
@@ -687,6 +689,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
                 switch (result)
                 {
+                    case NEED_INFO:
+                        throw new EofException("request lifecycle violation");
+                        
                     case NEED_HEADER:
                     {
                         _header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);

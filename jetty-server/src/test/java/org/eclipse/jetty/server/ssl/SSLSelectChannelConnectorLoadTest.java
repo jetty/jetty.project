@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,16 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.URI;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Random;
@@ -90,6 +94,15 @@ public class SSLSelectChannelConnectorLoadTest
     {
         server.stop();
         server.join();
+    }
+    
+    @Test
+    public void testGetURI()
+    {
+        URI uri = server.getURI();
+        assertThat("Server.uri.scheme", uri.getScheme(), is("https"));
+        assertThat("Server.uri.port", uri.getPort(), is(connector.getLocalPort()));
+        assertThat("Server.uri.path", uri.getPath(), is("/"));
     }
 
     @Test

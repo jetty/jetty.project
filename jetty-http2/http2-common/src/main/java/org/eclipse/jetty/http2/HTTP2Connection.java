@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -113,11 +113,12 @@ public class HTTP2Connection extends AbstractConnection
     }
 
     @Override
-    protected boolean onReadTimeout()
+    public boolean onIdleExpired()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
-        session.onIdleTimeout();
+        boolean close = session.onIdleTimeout();
+        boolean idle = isFillInterested();
+        if (close && idle)
+            session.close(ErrorCode.NO_ERROR.code, "idle_timeout", Callback.NOOP);
         return false;
     }
 

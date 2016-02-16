@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,47 +28,11 @@ import org.junit.Test;
 
 public class SessionRenewTest extends AbstractSessionRenewTest
 {
-    File tmpDir;
-    
-    @Before
-    public void before() throws Exception
-    {
-        tmpDir = File.createTempFile("hash-session-renew-test", null);
-        tmpDir.delete();
-        tmpDir.mkdirs();
-        tmpDir.deleteOnExit();
-    }
-    
-    @After 
-    public void after()
-    {
-        IO.delete(tmpDir);
-    }
     
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return new HashTestServer(port, max, scavenge)
-        {
-
-            @Override
-            public SessionManager newSessionManager()
-            {
-                HashSessionManager sessionManager = (HashSessionManager)super.newSessionManager();
-                sessionManager.setSavePeriod(2);
-                
-                try
-                {
-                    sessionManager.setStoreDirectory(tmpDir);
-                }
-                catch (Exception e)
-                {
-                    throw new IllegalStateException(e);
-                }
-                return sessionManager;
-            }
-
-        };
+        return new HashTestServer(port, max, scavenge);
     }
 
     @Test

@@ -1,3 +1,9 @@
+This is the canonical repository for the Jetty project, feel free to fork and contribute now!  
+
+Make sure you have a CLA on file!
+
+- [https://www.eclipse.org/legal/clafaq.php](https://www.eclipse.org/legal/clafaq.php)
+
 Project description
 ============
 

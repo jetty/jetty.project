@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -201,6 +201,13 @@ public interface Session
         public void onClose(Session session, GoAwayFrame frame);
 
         /**
+         * <p>Callback method invoked when the idle timeout expired.</p>
+         * @param session the session
+         * @return whether the session should be closed
+         */
+        public boolean onIdleTimeout(Session session);
+
+        /**
          * <p>Callback method invoked when a failure has been detected for this session.</p>
          *
          * @param session the session
@@ -243,6 +250,12 @@ public interface Session
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
+            }
+
+            @Override
+            public boolean onIdleTimeout(Session session)
+            {
+                return true;
             }
 
             @Override

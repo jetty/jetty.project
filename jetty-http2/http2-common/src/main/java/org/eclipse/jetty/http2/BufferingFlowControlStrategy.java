@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,8 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
  * <p>A flow control strategy that accumulates updates and emits window control
@@ -49,12 +51,13 @@ import org.eclipse.jetty.util.Callback;
  * <p>The application consumes the remaining 15, so now SB=15, and no window
  * control frame is emitted.</p>
  */
+@ManagedObject
 public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
 {
     private final AtomicInteger maxSessionRecvWindow = new AtomicInteger(DEFAULT_WINDOW_SIZE);
     private final AtomicInteger sessionLevel = new AtomicInteger();
     private final Map<IStream, AtomicInteger> streamLevels = new ConcurrentHashMap<>();
-    private final float bufferRatio;
+    private float bufferRatio;
 
     public BufferingFlowControlStrategy(float bufferRatio)
     {
@@ -64,6 +67,17 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
     public BufferingFlowControlStrategy(int initialStreamSendWindow, float bufferRatio)
     {
         super(initialStreamSendWindow);
+        this.bufferRatio = bufferRatio;
+    }
+
+    @ManagedAttribute("The ratio between the receive buffer and the consume buffer")
+    public float getBufferRatio()
+    {
+        return bufferRatio;
+    }
+
+    public void setBufferRatio(float bufferRatio)
+    {
         this.bufferRatio = bufferRatio;
     }
 
@@ -87,9 +101,11 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
         if (length <= 0)
             return;
 
+        float ratio = bufferRatio;
+
         WindowUpdateFrame windowFrame = null;
         int level = sessionLevel.addAndGet(length);
-        int maxLevel = (int)(maxSessionRecvWindow.get() * bufferRatio);
+        int maxLevel = (int)(maxSessionRecvWindow.get() * ratio);
         if (level > maxLevel)
         {
             level = sessionLevel.getAndSet(0);
@@ -118,7 +134,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                 if (streamLevel != null)
                 {
                     level = streamLevel.addAndGet(length);
-                    maxLevel = (int)(getInitialStreamRecvWindow() * bufferRatio);
+                    maxLevel = (int)(getInitialStreamRecvWindow() * ratio);
                     if (level > maxLevel)
                     {
                         level = streamLevel.getAndSet(0);
@@ -181,5 +197,16 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
             int sessionWindow = session.updateRecvWindow(0);
             Atomics.updateMax(maxSessionRecvWindow, sessionWindow);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[ratio=%.2f,sessionStallTime=%dms,streamsStallTime=%dms]",
+                getClass().getSimpleName(),
+                hashCode(),
+                bufferRatio,
+                getSessionStallTime(),
+                getStreamsStallTime());
     }
 }

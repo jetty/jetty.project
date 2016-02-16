@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
+import java.util.Locale;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
@@ -89,7 +90,10 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
+        {
+            callback.failed(new IOException("terminated"));
             return;
+        }
 
         if (responseContent(exchange, frame.getData(), callback))
         {
@@ -106,7 +110,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             return;
 
         ErrorCode error = ErrorCode.from(frame.getError());
-        String reason = error == null ? "reset" : error.name().toLowerCase();
+        String reason = error == null ? "reset" : error.name().toLowerCase(Locale.ENGLISH);
         exchange.getRequest().abort(new IOException(reason));
     }
 

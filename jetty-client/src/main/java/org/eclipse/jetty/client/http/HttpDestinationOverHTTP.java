@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.PoolingHttpDestination;
+import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.client.api.Connection;
 
 public class HttpDestinationOverHTTP extends PoolingHttpDestination
@@ -32,8 +33,8 @@ public class HttpDestinationOverHTTP extends PoolingHttpDestination
     }
 
     @Override
-    protected void send(Connection connection, HttpExchange exchange)
+    protected SendFailure send(Connection connection, HttpExchange exchange)
     {
-        ((HttpConnectionOverHTTP)connection).send(exchange);
+        return ((HttpConnectionOverHTTP)connection).send(exchange);
     }
 }

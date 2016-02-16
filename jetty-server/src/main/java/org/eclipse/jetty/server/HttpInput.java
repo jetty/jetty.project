@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.TimeoutException;
@@ -51,7 +52,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     private final static Content EARLY_EOF_CONTENT = new EofContent("EARLY_EOF");
 
     private final byte[] _oneByteBuffer = new byte[1];
-    private final Queue<Content> _inputQ = new ArrayDeque<>();
+    private final Deque<Content> _inputQ = new ArrayDeque<>();
     private final HttpChannelState _channelState;
     private ReadListener _listener;
     private State _state = STREAM;
@@ -369,6 +370,33 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
+    /**
+     * Adds some content to the start of this input stream.
+     * <p>Typically used to push back content that has
+     * been read, perhaps mutated.  The bytes prepended are
+     * deducted for the contentConsumed total</p>
+     * @param item the content to add
+     * @return true if content channel woken for read
+     */
+    public boolean prependContent(Content item)
+    {
+        boolean woken=false;
+        synchronized (_inputQ)
+        {
+            _inputQ.push(item);
+            _contentConsumed-=item.remaining();
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} prependContent {}", this, item);
+
+            if (_listener==null)
+                _inputQ.notify();
+            else
+                woken=_channelState.onReadPossible();
+        }
+
+        return woken;
+    }
+    
     /**
      * Adds some content to this input stream.
      *

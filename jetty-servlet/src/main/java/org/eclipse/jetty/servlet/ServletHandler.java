@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,6 +51,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.IdentityService;
@@ -583,27 +585,23 @@ public class ServletHandler extends ScopedHandler
         }
 
         // Servlet name filters
-        if (servletHolder != null && _filterNameMappings!=null && _filterNameMappings.size() > 0)
+        if (servletHolder != null && _filterNameMappings!=null && !_filterNameMappings.isEmpty())
         {
-            // Servlet name filters
-            if (_filterNameMappings.size() > 0)
+            Object o= _filterNameMappings.get(servletHolder.getName());
+
+            for (int i=0; i<LazyList.size(o);i++)
             {
-                Object o= _filterNameMappings.get(servletHolder.getName());
+                FilterMapping mapping = LazyList.get(o,i);
+                if (mapping.appliesTo(dispatch))
+                    filters.add(mapping.getFilterHolder());
+            }
 
-                for (int i=0; i<LazyList.size(o);i++)
-                {
-                    FilterMapping mapping = LazyList.get(o,i);
-                    if (mapping.appliesTo(dispatch))
-                        filters.add(mapping.getFilterHolder());
-                }
-
-                o= _filterNameMappings.get("*");
-                for (int i=0; i<LazyList.size(o);i++)
-                {
-                    FilterMapping mapping = LazyList.get(o,i);
-                    if (mapping.appliesTo(dispatch))
-                        filters.add(mapping.getFilterHolder());
-                }
+            o= _filterNameMappings.get("*");
+            for (int i=0; i<LazyList.size(o);i++)
+            {
+                FilterMapping mapping = LazyList.get(o,i);
+                if (mapping.appliesTo(dispatch))
+                    filters.add(mapping.getFilterHolder());
             }
         }
 

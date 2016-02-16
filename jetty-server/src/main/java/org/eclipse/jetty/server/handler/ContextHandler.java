@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -100,7 +100,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * The maximum size of a form that can be processed by this context is controlled by the system properties org.eclipse.jetty.server.Request.maxFormKeys
  * and org.eclipse.jetty.server.Request.maxFormContentSize.  These can also be configured with {@link #setMaxFormContentSize(int)} and {@link #setMaxFormKeys(int)}
  * <p>
- * This servers executore is made available via a context attributed "org.eclipse.jetty.server.Executor".
+ * This servers executor is made available via a context attributed "org.eclipse.jetty.server.Executor".
  * <p>
  * By default, the context is created with alias checkers for {@link AllowSymLinkAliasChecker} (unix only) and {@link ApproveNonExistentDirectoryAliases}.
  * If these alias checkers are not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
@@ -768,6 +768,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             old_context = __context.get();
             __context.set(_scontext);
 
+            enterScope(null, getState());
+
             // defers the calling of super.doStart()
             startContext();
 
@@ -855,7 +857,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         ClassLoader old_classloader = null;
         ClassLoader old_webapploader = null;
         Thread current_thread = null;
-
+        exitScope(null);
         Context old_context = __context.get();
         __context.set(_scontext);
         try

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -51,7 +53,10 @@ import org.junit.Test;
  */
 public abstract class AbstractLastAccessTimeTest
 {
+    
     public abstract AbstractTestServer createServer(int port, int max, int scavenge);
+ 
+   
 
     @Test
     public void testLastAccessTime() throws Exception
@@ -67,7 +72,7 @@ public abstract class AbstractLastAccessTimeTest
         TestSessionListener listener1 = new TestSessionListener();
         context.getSessionHandler().addEventListener(listener1);
         context.addServlet(holder1, servletMapping);
-        AbstractSessionManager m1 = (AbstractSessionManager)context.getSessionHandler().getSessionManager();
+        SessionManager m1 = (SessionManager)context.getSessionHandler().getSessionManager();
         
 
         try
@@ -77,7 +82,7 @@ public abstract class AbstractLastAccessTimeTest
             AbstractTestServer server2 = createServer(0, maxInactivePeriod, scavengePeriod);
             ServletContextHandler context2 = server2.addContext(contextPath);
             context2.addServlet(TestServlet.class, servletMapping);
-            AbstractSessionManager m2 = (AbstractSessionManager)context2.getSessionHandler().getSessionManager();
+            SessionManager m2 = (SessionManager)context2.getSessionHandler().getSessionManager();
 
             try
             {
@@ -93,9 +98,9 @@ public abstract class AbstractLastAccessTimeTest
                     assertEquals("test", response1.getContentAsString());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue( sessionCookie != null );
-                    assertEquals(1, m1.getSessions());
-                    assertEquals(1, m1.getSessionsMax());
-                    assertEquals(1, m1.getSessionsTotal());
+                    assertEquals(1, ((MemorySessionStore)m1.getSessionStore()).getSessions());
+                    assertEquals(1, ((MemorySessionStore)m1.getSessionStore()).getSessionsMax());
+                    assertEquals(1, ((MemorySessionStore)m1.getSessionStore()).getSessionsTotal());
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");        
                     
@@ -120,12 +125,13 @@ public abstract class AbstractLastAccessTimeTest
                         Thread.sleep(requestInterval);
                         assertSessionCounts(1,1,1, m2);
                     }
+                    
                     // At this point, session1 should be eligible for expiration.
                     // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                     Thread.sleep(scavengePeriod * 2500L);
 
                     //check that the session was not scavenged over on server1 by ensuring that the SessionListener destroy method wasn't called
-                    assertFalse(listener1.destroyed);
+                    assertFalse(listener1._destroys.contains(AbstractTestServer.extractSessionId(sessionCookie)));
                     assertAfterScavenge(m1);
                 }
                 finally
@@ -144,38 +150,38 @@ public abstract class AbstractLastAccessTimeTest
         }
     }
     
-    public void assertAfterSessionCreated (AbstractSessionManager m)
+    public void assertAfterSessionCreated (SessionManager m)
     {
         assertSessionCounts(1, 1, 1, m);
     }
     
-    public void assertAfterScavenge (AbstractSessionManager manager)
+    public void assertAfterScavenge (SessionManager manager)
     {
         assertSessionCounts(1,1,1, manager);
     }
     
-    public void assertSessionCounts (int current, int max, int total, AbstractSessionManager manager)
+    public void assertSessionCounts (int current, int max, int total, SessionManager manager)
     {
-        assertEquals(current, manager.getSessions());
-        assertEquals(max, manager.getSessionsMax());
-        assertEquals(total, manager.getSessionsTotal());
+        assertEquals(current, ((MemorySessionStore)manager.getSessionStore()).getSessions());
+        assertEquals(max, ((MemorySessionStore)manager.getSessionStore()).getSessionsMax());
+        assertEquals(total, ((MemorySessionStore)manager.getSessionStore()).getSessionsTotal());
     }
 
     public static class TestSessionListener implements HttpSessionListener
     {
-        public boolean destroyed = false;
-        public boolean created = false;
+        public Set<String> _creates = new HashSet<String>();
+        public Set<String> _destroys = new HashSet<String>();
 
         @Override
         public void sessionDestroyed(HttpSessionEvent se)
         {
-           destroyed = true;
+           _destroys.add(se.getSession().getId());
         }
 
         @Override
         public void sessionCreated(HttpSessionEvent se)
         {
-            created = true;
+            _creates.add(se.getSession().getId());
         }
     }
 
@@ -183,7 +189,10 @@ public abstract class AbstractLastAccessTimeTest
 
     public static class TestServlet extends HttpServlet
     {
-
+        /**
+         * 
+         */
+        private static final long serialVersionUID = 1L;
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
@@ -212,14 +221,14 @@ public abstract class AbstractLastAccessTimeTest
 
         private void sendResult(HttpSession session, PrintWriter writer)
         {
-                if (session != null)
-                {
-                        writer.print(session.getAttribute("test"));
-                }
-                else
-                {
-                        writer.print("null");
-                }
+            if (session != null)
+            {
+                writer.print(session.getAttribute("test"));
+            }
+            else
+            {
+                writer.print("null");
+            }
         }
     }
 }

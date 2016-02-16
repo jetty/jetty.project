@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -76,6 +76,7 @@ public interface Promise<C>
      *
      * @param completable the CompletableFuture to convert into a promise
      * @return a promise that when completed, completes the given CompletableFuture
+     * @param <T> the type of the result
      */
     static <T> Promise<T> from(CompletableFuture<? super T> completable)
     {

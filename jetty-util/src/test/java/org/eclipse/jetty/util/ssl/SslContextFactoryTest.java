@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,15 +29,19 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
+import java.util.Arrays;
 
 import javax.net.ssl.SSLEngine;
 
+import org.eclipse.jetty.toolchain.test.JDK;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,6 +57,20 @@ public class SslContextFactoryTest
         cf = new SslContextFactory();
     }
 
+    @Test
+    public void testSLOTH() throws Exception
+    {
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+
+        cf.start();
+
+        System.err.println(Arrays.asList(cf.getSelectedProtocols()));
+        for (String cipher : cf.getSelectedCipherSuites())
+            System.err.println(cipher);
+
+    }
+    
     @Test
     public void testNoTsFileKs() throws Exception
     {
@@ -207,6 +225,8 @@ public class SslContextFactoryTest
     public void testSetIncludeCipherSuitesRegex() throws Exception
     {
         cf.setIncludeCipherSuites(".*ECDHE.*",".*WIBBLE.*");
+        Assume.assumeFalse(JDK.IS_8);
+        
         cf.start();
         SSLEngine sslEngine = cf.newSSLEngine();
         String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();

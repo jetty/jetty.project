@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,8 +34,10 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.nosql.NoSqlSession;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.Session;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -48,7 +50,19 @@ import org.junit.Test;
 public class AttributeNameTest 
 {
 
+    
+    @BeforeClass
+    public static void beforeClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+        MongoTestServer.createCollection();
+    }
 
+    @AfterClass
+    public static void afterClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+    }
 
     public AbstractTestServer createServer(int port, int max, int scavenge)
     throws Exception
@@ -129,14 +143,14 @@ public class AttributeNameTest
             String action = request.getParameter("action");
             if ("init".equals(action))
             {
-                NoSqlSession session = (NoSqlSession)request.getSession(true);
+                Session session = (Session)request.getSession(true);
                 session.setAttribute("a.b.c",System.currentTimeMillis());               
                 sendResult(session,httpServletResponse.getWriter());
-                
+
             }
             else
             {
-                NoSqlSession session = (NoSqlSession)request.getSession(false);
+                Session session = (Session)request.getSession(false);
                 assertNotNull(session);     
                 assertNotNull(session.getAttribute("a.b.c"));
                 sendResult(session,httpServletResponse.getWriter());
@@ -144,7 +158,7 @@ public class AttributeNameTest
 
         }
 
-        private void sendResult(NoSqlSession session, PrintWriter writer)
+        private void sendResult(Session session, PrintWriter writer)
         {
             if (session != null)
             {

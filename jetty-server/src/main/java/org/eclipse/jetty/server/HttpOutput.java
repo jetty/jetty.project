@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -163,12 +163,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             write(content, complete, blocker);
             blocker.block();
         }
-        catch (Throwable failure)
+        catch (Exception failure)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(failure);
             abort(failure);
-            throw failure;
+            if (failure instanceof IOException)
+                throw failure;
+            throw new IOException(failure);
         }
     }
 
@@ -787,6 +789,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
             break;
         }
+        
 
         ByteBuffer buffer = _channel.useDirectBuffers() ? httpContent.getDirectBuffer() : null;
         if (buffer == null)
@@ -947,6 +950,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     // occurred, we need to call onWritePossible to tell async
                     // producer that the last write completed.
                     // So fall through
+                case PENDING:
+                case UNREADY:
                 case READY:
                     try
                     {

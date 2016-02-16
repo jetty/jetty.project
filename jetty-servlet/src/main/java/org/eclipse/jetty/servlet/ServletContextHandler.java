@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -66,6 +66,8 @@ import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /** 
  * Servlet Context.
@@ -83,6 +85,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 @ManagedObject("Servlet Context Handler")
 public class ServletContextHandler extends ContextHandler
 {
+    private static final Logger LOG = Log.getLogger(ServletContextHandler.class);
+    
     public final static int SESSIONS=1;
     public final static int SECURITY=2;
     public final static int GZIP=4;
@@ -169,7 +173,21 @@ public class ServletContextHandler extends ContextHandler
         
         if (errorHandler!=null)
             setErrorHandler(errorHandler);
+    }
+    
+    @Override
+    public void setHandler(Handler handler)
+    {
+        LOG.warn("ServletContextHandler.setHandler should not be called directly. Use insertHandler or setSessionHandler etc.");
+        super.setHandler(handler);
+    }
 
+    private void doSetHandler(HandlerWrapper wrapper, Handler handler)
+    {
+        if (wrapper==this)
+            super.setHandler(handler);
+        else
+            wrapper.setHandler(handler);
     }
     
     /* ------------------------------------------------------------ */
@@ -189,12 +207,7 @@ public class ServletContextHandler extends ContextHandler
                 handler=(HandlerWrapper)handler.getHandler();
             
             if (handler.getHandler()!=_sessionHandler)
-            {
-                if (handler== this)
-                    super.setHandler(_sessionHandler);
-                else
-                    handler.setHandler(_sessionHandler);
-            }
+                doSetHandler(handler,_sessionHandler);
             handler=_sessionHandler;
         }
         
@@ -208,12 +221,7 @@ public class ServletContextHandler extends ContextHandler
                 handler=(HandlerWrapper)handler.getHandler();
 
             if (handler.getHandler()!=_securityHandler)
-            {
-                if (handler== this)
-                    super.setHandler(_securityHandler);
-                else
-                    handler.setHandler(_securityHandler);
-            }
+                doSetHandler(handler,_securityHandler);
             handler=_securityHandler;
         }
 
@@ -226,12 +234,7 @@ public class ServletContextHandler extends ContextHandler
                 handler=(HandlerWrapper)handler.getHandler();
 
             if (handler.getHandler()!=_gzipHandler)
-            {
-                if (handler== this)
-                    super.setHandler(_gzipHandler);
-                else
-                    handler.setHandler(_gzipHandler);
-            }
+                doSetHandler(handler,_gzipHandler);
             handler=_gzipHandler;
         }
 
@@ -244,12 +247,7 @@ public class ServletContextHandler extends ContextHandler
                 handler=(HandlerWrapper)handler.getHandler();
 
             if (handler.getHandler()!=_servletHandler)
-            {
-                if (handler== this)
-                    super.setHandler(_servletHandler);
-                else
-                    handler.setHandler(_servletHandler);
-            }
+                doSetHandler(handler,_servletHandler);
             handler=_servletHandler;
         }
         
@@ -554,7 +552,7 @@ public class ServletContextHandler extends ContextHandler
         {
             if (wrapper.getHandler()==handler)
             {
-                wrapper.setHandler(replace);
+                doSetHandler(wrapper,replace);
                 return true;
             }
             
@@ -664,20 +662,38 @@ public class ServletContextHandler extends ContextHandler
      */
     public void insertHandler(HandlerWrapper handler)
     {
-        HandlerWrapper h=this;
-        
-        // Skip any injected handlers
-        while (h.getHandler() instanceof HandlerWrapper)
+        if (handler instanceof SessionHandler)
+            setSessionHandler((SessionHandler)handler);
+        else if (handler instanceof SecurityHandler)
+            setSecurityHandler((SecurityHandler)handler);
+        else if (handler instanceof GzipHandler)
+            setGzipHandler((GzipHandler)handler);
+        else if (handler instanceof ServletHandler)
+            setServletHandler((ServletHandler)handler);
+        else
         {
-            HandlerWrapper wrapper = (HandlerWrapper)h.getHandler();
-            if (wrapper instanceof SessionHandler ||
-                wrapper instanceof SecurityHandler ||
-                wrapper instanceof ServletHandler)
-                break;
-            h=wrapper;
+            HandlerWrapper tail = handler;
+            while(tail.getHandler() instanceof HandlerWrapper)
+                tail=(HandlerWrapper)tail.getHandler();
+            if (tail.getHandler()!=null)
+                throw new IllegalArgumentException("bad tail of inserted wrapper chain");
+            
+            // Skip any injected handlers
+            HandlerWrapper h=this;
+            while (h.getHandler() instanceof HandlerWrapper)
+            {
+                HandlerWrapper wrapper = (HandlerWrapper)h.getHandler();
+                if (wrapper instanceof SessionHandler ||
+                        wrapper instanceof SecurityHandler ||
+                        wrapper instanceof ServletHandler)
+                    break;
+                h=wrapper;
+            }
+            
+            Handler next=h.getHandler();
+            doSetHandler(h,handler);
+            doSetHandler(tail,next);
         }
-        
-        h.setHandler(handler);
         relinkHandlers();
     }
     

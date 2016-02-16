@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,8 +40,10 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -48,6 +51,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -521,6 +525,45 @@ public class DefaultServletTest
         }
     }
 
+    @Test
+    public void testDirectFromResourceHttpContent() throws Exception
+    {
+        if (!OS.IS_LINUX)
+            return;
+        
+        testdir.ensureEmpty();
+        File resBase = testdir.getPathFile("docroot").toFile();
+        FS.ensureDirExists(resBase);
+        context.setBaseResource(Resource.newResource(resBase));
+        
+        File index = new File(resBase, "index.html");
+        createFile(index, "<h1>Hello World</h1>");
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("useFileMappedBuffer", "true");
+        defholder.setInitParameter("welcomeServlets", "exact");
+        defholder.setInitParameter("gzip", "false");
+        defholder.setInitParameter("resourceCache","resourceCache");
+
+        String response;
+
+        response = connector.getResponses("GET /context/index.html HTTP/1.0\r\n\r\n");
+        assertResponseContains("<h1>Hello World</h1>", response);
+        
+        ResourceContentFactory factory = (ResourceContentFactory)context.getServletContext().getAttribute("resourceCache");
+        
+        HttpContent content = factory.getContent("/index.html",200);
+        ByteBuffer buffer = content.getDirectBuffer();
+        Assert.assertTrue(buffer.isDirect());        
+        content = factory.getContent("/index.html",5);
+        buffer = content.getDirectBuffer();
+        Assert.assertTrue(buffer==null);        
+    }
+    
+    
+    
     @Test
     public void testRangeRequests() throws Exception
     {

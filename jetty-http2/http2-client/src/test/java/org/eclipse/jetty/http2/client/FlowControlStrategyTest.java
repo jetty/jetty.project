@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -84,14 +84,9 @@ public abstract class FlowControlStrategyTest
         QueuedThreadPool serverExecutor = new QueuedThreadPool();
         serverExecutor.setName("server");
         server = new Server(serverExecutor);
-        connector = new ServerConnector(server, new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener)
-        {
-            @Override
-            protected FlowControlStrategy newFlowControlStrategy()
-            {
-                return FlowControlStrategyTest.this.newFlowControlStrategy();
-            }
-        });
+        RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener);
+        connectionFactory.setFlowControlStrategyFactory(FlowControlStrategyTest.this::newFlowControlStrategy);
+        connector = new ServerConnector(server, connectionFactory);
         server.addConnector(connector);
         server.start();
 
@@ -99,14 +94,7 @@ public abstract class FlowControlStrategyTest
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
         client.setExecutor(clientExecutor);
-        client.setClientConnectionFactory(new HTTP2ClientConnectionFactory()
-        {
-            @Override
-            protected FlowControlStrategy newFlowControlStrategy()
-            {
-                return FlowControlStrategyTest.this.newFlowControlStrategy();
-            }
-        });
+        client.setFlowControlStrategyFactory(FlowControlStrategyTest.this::newFlowControlStrategy);
         client.start();
     }
 

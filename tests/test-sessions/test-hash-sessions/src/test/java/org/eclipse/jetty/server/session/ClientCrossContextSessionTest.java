@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,19 +18,30 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.io.File;
+
+import org.eclipse.jetty.util.IO;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
 {
-    public AbstractTestServer createServer(int port)
-    {
-        return new HashTestServer(port);
-    }
+
 
     @Test
     public void testCrossContextDispatch() throws Exception
     {
         super.testCrossContextDispatch();
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractClientCrossContextSessionTest#createServer(int)
+     */
+    @Override
+    public AbstractTestServer createServer(int port)
+    {
+        return new HashTestServer(port);
     }
 
 }

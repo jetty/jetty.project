@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,19 +20,26 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.SendFailure;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.eclipse.jetty.util.thread.Sweeper;
 
-public class HttpConnectionOverHTTP2 extends HttpConnection
+public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable
 {
     private final Set<HttpChannel> channels = new ConcurrentHashSet<>();
+    private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicInteger sweeps = new AtomicInteger();
     private final Session session;
 
     public HttpConnectionOverHTTP2(HttpDestination destination, Session session)
@@ -41,23 +48,38 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
         this.session = session;
     }
 
-    @Override
-    protected void send(HttpExchange exchange)
+    public Session getSession()
     {
+        return session;
+    }
+
+    @Override
+    protected SendFailure send(HttpExchange exchange)
+    {
+        exchange.getRequest().version(HttpVersion.HTTP_2);
         normalizeRequest(exchange.getRequest());
+
         // One connection maps to N channels, so for each exchange we create a new channel.
-        HttpChannel channel = new HttpChannelOverHTTP2(getHttpDestination(), this, session);
+        HttpChannel channel = newHttpChannel();
         channels.add(channel);
-        if (channel.associate(exchange))
-            channel.send();
-        else
-            channel.release();
+
+        return send(channel, exchange);
+    }
+
+    protected HttpChannelOverHTTP2 newHttpChannel()
+    {
+        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession());
     }
 
     protected void release(HttpChannel channel)
     {
         channels.remove(channel);
         getHttpDestination().release(this);
+    }
+
+    public boolean isClosed()
+    {
+        return closed.get();
     }
 
     @Override
@@ -68,11 +90,14 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
 
     protected void close(Throwable failure)
     {
-        // First close then abort, to be sure that the connection cannot be reused
-        // from an onFailure() handler or by blocking code waiting for completion.
-        getHttpDestination().close(this);
-        session.close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
-        abort(failure);
+        if (closed.compareAndSet(false, true))
+        {
+            // First close then abort, to be sure that the connection cannot be reused
+            // from an onFailure() handler or by blocking code waiting for completion.
+            getHttpDestination().close(this);
+            session.close(ErrorCode.NO_ERROR.code, failure.getMessage(), Callback.NOOP);
+            abort(failure);
+        }
     }
 
     private void abort(Throwable failure)
@@ -87,11 +112,22 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
     }
 
     @Override
+    public boolean sweep()
+    {
+        if (!isClosed())
+            return false;
+        if (sweeps.incrementAndGet() < 4)
+            return false;
+        return true;
+    }
+
+    @Override
     public String toString()
     {
-        return String.format("%s@%h[%s]",
+        return String.format("%s@%x(closed=%b)[%s]",
                 getClass().getSimpleName(),
-                this,
+                hashCode(),
+                isClosed(),
                 session);
     }
 }

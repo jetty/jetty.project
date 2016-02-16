@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -189,7 +189,7 @@ public class SSLEngineTest
 
         Socket[] client=new Socket[numConns];
 
-        SSLContext ctx=SSLContext.getInstance("SSLv3");
+        SSLContext ctx=SSLContext.getInstance("TLSv1.2");
         ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
 
         int port=connector.getLocalPort();

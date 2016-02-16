@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -342,8 +343,10 @@ public class HttpGenerator
             {
                 if (info==null)
                     return Result.NEED_INFO;
-                
-                switch(info.getVersion())
+                HttpVersion version=info.getVersion();
+                if (version==null)
+                    throw new IllegalStateException("No version");
+                switch(version)
                 {
                     case HTTP_1_0:
                         if (_persistent==null)
@@ -356,7 +359,7 @@ public class HttpGenerator
                         break;
                         
                     default:
-                        throw new IllegalArgumentException(info.getVersion()+" not supported");
+                        throw new IllegalArgumentException(version+" not supported");
                 }
                 
                 // Do we need a response header
@@ -638,7 +641,7 @@ public class HttpGenerator
 
                             if (values[0]==null)
                             {
-                                split = StringUtil.csvSplit(field.getValue());
+                            split = StringUtil.csvSplit(field.getValue());
                                 if (split.length>0)
                                 {
                                     values=new HttpHeaderValue[split.length];

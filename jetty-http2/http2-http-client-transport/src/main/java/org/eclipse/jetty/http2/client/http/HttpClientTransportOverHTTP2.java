@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
@@ -71,6 +72,7 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
             client.setByteBufferPool(httpClient.getByteBufferPool());
             client.setConnectTimeout(httpClient.getConnectTimeout());
             client.setIdleTimeout(httpClient.getIdleTimeout());
+            client.setInputBufferSize(httpClient.getResponseBufferSize());
         }
         addBean(client);
         super.doStart();
@@ -161,6 +163,14 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         }
 
         @Override
+        public Map<Integer, Integer> onPreface(Session session)
+        {
+            Map<Integer, Integer> settings = new HashMap<>();
+            settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, client.getInitialStreamRecvWindow());
+            return settings;
+        }
+
+        @Override
         public void onSettings(Session session, SettingsFrame frame)
         {
             Map<Integer, Integer> settings = frame.getSettings();
@@ -172,6 +182,12 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         public void onClose(Session session, GoAwayFrame frame)
         {
             connection.close();
+        }
+
+        @Override
+        public boolean onIdleTimeout(Session session)
+        {
+            return connection.onIdleTimeout();
         }
 
         @Override

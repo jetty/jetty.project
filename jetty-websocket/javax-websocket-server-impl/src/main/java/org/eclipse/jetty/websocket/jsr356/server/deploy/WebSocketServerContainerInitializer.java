@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,8 @@ import java.util.Set;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.HandlesTypes;
 import javax.websocket.DeploymentException;
@@ -47,6 +49,39 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     public static final String ENABLE_KEY = "org.eclipse.jetty.websocket.jsr356";
     private static final Logger LOG = Log.getLogger(WebSocketServerContainerInitializer.class);
 
+    
+    /**
+     * DestroyListener
+     *
+     *
+     */
+    public static class ContextDestroyListener implements ServletContextListener
+    {
+        @Override
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            //noop
+        }
+
+        @Override
+        public void contextDestroyed(ServletContextEvent sce)
+        {
+            //remove any ServerContainer beans
+            if (sce.getServletContext() instanceof ContextHandler.Context)
+            {
+                ContextHandler handler = ((ContextHandler.Context)sce.getServletContext()).getContextHandler();
+                ServerContainer bean = handler.getBean(ServerContainer.class);
+                if (bean != null)
+                    handler.removeBean(bean);
+            }
+            
+            //remove reference in attributes
+            sce.getServletContext().removeAttribute(javax.websocket.server.ServerContainer.class.getName());
+        }
+    }
+    
+    
+    
     /**
      * Jetty Native approach.
      * <p>
@@ -63,7 +98,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
         // Create the Jetty ServerContainer implementation
         ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),context.getServer().getThreadPool());
-        context.addBean(jettyContainer);
+        context.addBean(jettyContainer, true);
 
         // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
         context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
@@ -88,7 +123,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
         // Create the Jetty ServerContainer implementation
         ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),jettyContext.getServer().getThreadPool());
-        jettyContext.addBean(jettyContainer);
+        jettyContext.addBean(jettyContainer, true);
 
         // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
         context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
@@ -171,9 +206,8 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
             // Create the Jetty ServerContainer implementation
             ServerContainer jettyContainer = configureContext(context,jettyContext);
-
-            // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
-            context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
+            
+            context.addListener(new ContextDestroyListener()); //make sure context is cleaned up when the context stops
             
             // Establish the DecoratedObjectFactory thread local 
             // for various ServiceLoader initiated components to use.
@@ -278,7 +312,9 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
                     throw new ServletException(e);
                 }
             }
-        } finally {
+        }
+        finally
+        {
             Thread.currentThread().setContextClassLoader(old);
         }
     }

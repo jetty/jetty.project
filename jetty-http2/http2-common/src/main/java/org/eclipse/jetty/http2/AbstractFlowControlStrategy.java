@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,31 @@
 
 package org.eclipse.jetty.http2;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
+@ManagedObject
+public abstract class AbstractFlowControlStrategy implements FlowControlStrategy, Dumpable
 {
     protected static final Logger LOG = Log.getLogger(FlowControlStrategy.class);
 
+    private final AtomicLong sessionStall = new AtomicLong();
+    private final AtomicLong sessionStallTime = new AtomicLong();
+    private final Map<IStream, Long> streamsStalls = new ConcurrentHashMap<>();
+    private final AtomicLong streamsStallTime = new AtomicLong();
     private int initialStreamSendWindow;
     private int initialStreamRecvWindow;
 
@@ -36,12 +52,14 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
         this.initialStreamRecvWindow = DEFAULT_WINDOW_SIZE;
     }
 
-    protected int getInitialStreamSendWindow()
+    @ManagedAttribute(value = "The initial size of stream's flow control send window", readonly = true)
+    public int getInitialStreamSendWindow()
     {
         return initialStreamSendWindow;
     }
 
-    protected int getInitialStreamRecvWindow()
+    @ManagedAttribute(value = "The initial size of stream's flow control receive window", readonly = true)
+    public int getInitialStreamRecvWindow()
     {
         return initialStreamRecvWindow;
     }
@@ -102,6 +120,8 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
                 int oldSize = stream.updateSendWindow(delta);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Updated stream send window {} -> {} for {}", oldSize, oldSize + delta, stream);
+                if (oldSize <= 0)
+                    onStreamUnstalled(stream);
             }
         }
         else
@@ -109,6 +129,8 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
             int oldSize = session.updateSendWindow(delta);
             if (LOG.isDebugEnabled())
                 LOG.debug("Updated session send window {} -> {} for {}", oldSize, oldSize + delta, session);
+            if (oldSize <= 0)
+                onSessionUnstalled(session);
         }
     }
 
@@ -139,13 +161,19 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
             return;
 
         ISession session = stream.getSession();
-        int oldSize = session.updateSendWindow(-length);
+        int oldSessionWindow = session.updateSendWindow(-length);
+        int newSessionWindow = oldSessionWindow - length;
         if (LOG.isDebugEnabled())
-            LOG.debug("Updated session send window {} -> {} for {}", oldSize, oldSize - length, session);
+            LOG.debug("Sending, session send window {} -> {} for {}", oldSessionWindow, newSessionWindow, session);
+        if (newSessionWindow <= 0)
+            onSessionStalled(session);
 
-        oldSize = stream.updateSendWindow(-length);
+        int oldStreamWindow = stream.updateSendWindow(-length);
+        int newStreamWindow = oldStreamWindow - length;
         if (LOG.isDebugEnabled())
-            LOG.debug("Updated stream send window {} -> {} for {}", oldSize, oldSize - length, stream);
+            LOG.debug("Sending, stream send window {} -> {} for {}", oldStreamWindow, newStreamWindow, stream);
+        if (newStreamWindow <= 0)
+            onStreamStalled(stream);
     }
 
     @Override
@@ -153,17 +181,64 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     {
     }
 
-    @Override
-    public void onSessionStalled(ISession session)
+    protected void onSessionStalled(ISession session)
     {
+        sessionStall.set(System.nanoTime());
         if (LOG.isDebugEnabled())
             LOG.debug("Session stalled {}", session);
     }
 
-    @Override
-    public void onStreamStalled(IStream stream)
+    protected void onStreamStalled(IStream stream)
     {
+        streamsStalls.put(stream, System.nanoTime());
         if (LOG.isDebugEnabled())
             LOG.debug("Stream stalled {}", stream);
+    }
+
+    protected void onSessionUnstalled(ISession session)
+    {
+        sessionStallTime.addAndGet(System.nanoTime() - sessionStall.getAndSet(0));
+        if (LOG.isDebugEnabled())
+            LOG.debug("Session unstalled {}", session);
+    }
+
+    protected void onStreamUnstalled(IStream stream)
+    {
+        Long time = streamsStalls.remove(stream);
+        if (time != null)
+            streamsStallTime.addAndGet(System.nanoTime() - time);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stream unstalled {}", stream);
+    }
+
+    @ManagedAttribute(value = "The time, in milliseconds, that the session flow control has stalled", readonly = true)
+    public long getSessionStallTime()
+    {
+        return TimeUnit.NANOSECONDS.toMillis(sessionStallTime.get());
+    }
+
+    @ManagedAttribute(value = "The time, in milliseconds, that the streams flow control has stalled", readonly = true)
+    public long getStreamsStallTime()
+    {
+        return TimeUnit.NANOSECONDS.toMillis(streamsStallTime.get());
+    }
+
+    @ManagedOperation(value = "Resets the statistics", impact = "ACTION")
+    public void reset()
+    {
+        sessionStallTime.set(0);
+        streamsStallTime.set(0);
+    }
+
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(toString()).append(System.lineSeparator());
     }
 }

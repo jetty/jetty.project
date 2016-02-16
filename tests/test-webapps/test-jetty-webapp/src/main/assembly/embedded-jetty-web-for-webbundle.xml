@@ -13,7 +13,6 @@ detected.
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
-
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Required minimal context configuration :                        -->
   <!--  + contextPath                                                  -->

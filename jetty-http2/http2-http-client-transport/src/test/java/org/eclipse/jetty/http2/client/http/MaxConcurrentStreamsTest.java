@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Assert;
@@ -35,6 +38,17 @@ import org.junit.Test;
 
 public class MaxConcurrentStreamsTest extends AbstractTest
 {
+    private void start(int maxConcurrentStreams, Handler handler) throws Exception
+    {
+        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(new HttpConfiguration());
+        http2.setMaxConcurrentStreams(maxConcurrentStreams);
+        prepareServer(http2);
+        server.setHandler(handler);
+        server.start();
+        prepareClient();
+        client.start();
+    }
+
     @Test
     public void testOneConcurrentStream() throws Exception
     {

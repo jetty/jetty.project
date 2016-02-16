@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,8 +53,6 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
-import org.eclipse.jetty.websocket.common.SessionFactory;
-import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
@@ -73,7 +71,7 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
  * <p>
  * This should be specific to a JVM if run in a standalone mode. or specific to a WebAppContext if running on the Jetty server.
  */
-public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketContainerScope, SessionListener
+public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketContainerScope
 {
     private static final Logger LOG = Log.getLogger(ClientContainer.class);
     
@@ -105,8 +103,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         this.scopeDelegate = scope;
         client = new WebSocketClient(scope, new SslContextFactory(trustAll));
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
-        SessionFactory sessionFactory = new JsrSessionFactory(this,this,client);
-        client.setSessionFactory(sessionFactory);
+        client.setSessionFactory(new JsrSessionFactory(this));
         addBean(client);
 
         this.endpointClientMetadataCache = new ConcurrentHashMap<>();

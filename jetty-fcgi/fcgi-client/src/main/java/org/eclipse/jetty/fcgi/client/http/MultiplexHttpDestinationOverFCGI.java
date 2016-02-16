@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.MultiplexHttpDestination;
 import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.client.api.Connection;
 
 public class MultiplexHttpDestinationOverFCGI extends MultiplexHttpDestination
@@ -32,8 +33,8 @@ public class MultiplexHttpDestinationOverFCGI extends MultiplexHttpDestination
     }
 
     @Override
-    protected void send(Connection connection, HttpExchange exchange)
+    protected SendFailure send(Connection connection, HttpExchange exchange)
     {
-        ((HttpConnectionOverFCGI)connection).send(exchange);
+        return ((HttpConnectionOverFCGI)connection).send(exchange);
     }
 }

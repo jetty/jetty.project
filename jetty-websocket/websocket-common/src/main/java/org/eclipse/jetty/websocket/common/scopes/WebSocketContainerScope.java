@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 /**
  * Defined Scope for a WebSocketContainer.
@@ -64,4 +65,19 @@ public interface WebSocketContainerScope
      * @return the SslContextFactory in use by the container (can be null if no SSL context is defined)
      */
     public SslContextFactory getSslContextFactory();
+
+    /**
+     * A Session has been opened
+     * 
+     * @param session the session that was opened
+     */
+    public void onSessionOpened(WebSocketSession session);
+    
+    /**
+     * A Session has been closed
+     * 
+     * @param session the session that was closed
+     */
+    public void onSessionClosed(WebSocketSession session);
+
 }

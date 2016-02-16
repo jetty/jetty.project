@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -74,6 +74,12 @@ public abstract class AbstractTest
 
     public void start(Handler handler) throws Exception
     {
+        startServer(handler);
+        startClient();
+    }
+
+    protected void startServer(Handler handler) throws Exception
+    {
         sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
@@ -81,12 +87,6 @@ public abstract class AbstractTest
         sslContextFactory.setTrustStorePassword("storepwd");
         sslContextFactory.setUseCipherSuitesOrder(true);
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
-        startServer(handler);
-        startClient();
-    }
-
-    private void startServer(Handler handler) throws Exception
-    {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
@@ -105,7 +105,7 @@ public abstract class AbstractTest
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(provideClientTransport(transport), sslContextFactory);
+        client = newHttpClient(provideClientTransport(transport), sslContextFactory);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         client.start();
@@ -173,8 +173,7 @@ public abstract class AbstractTest
             case H2C:
             case H2:
             {
-                HTTP2Client http2Client = new HTTP2Client();
-                http2Client.setSelectors(1);
+                HTTP2Client http2Client = newHTTP2Client();
                 return new HttpClientTransportOverHTTP2(http2Client);
             }
             case FCGI:
@@ -186,6 +185,18 @@ public abstract class AbstractTest
                 throw new IllegalArgumentException();
             }
         }
+    }
+
+    protected HttpClient newHttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
+    {
+        return new HttpClient(transport, sslContextFactory);
+    }
+
+    protected HTTP2Client newHTTP2Client()
+    {
+        HTTP2Client http2Client = new HTTP2Client();
+        http2Client.setSelectors(1);
+        return http2Client;
     }
 
     protected String newURI()

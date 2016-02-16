@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 
 import javax.websocket.PongMessage;
 
+import org.eclipse.jetty.util.BufferUtil;
+
 public class JsrPongMessage implements PongMessage
 {
     private final ByteBuffer data;
@@ -34,6 +36,10 @@ public class JsrPongMessage implements PongMessage
     @Override
     public ByteBuffer getApplicationData()
     {
+        if (data == null)
+        {
+            return BufferUtil.EMPTY_BUFFER;
+        }
         return data.slice();
     }
 }

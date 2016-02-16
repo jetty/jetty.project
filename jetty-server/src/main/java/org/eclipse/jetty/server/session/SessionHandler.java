@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -243,6 +243,7 @@ public class SessionHandler extends ScopedHandler
         if (requested_session_id != null && sessionManager != null)
         {
             HttpSession session = sessionManager.getHttpSession(requested_session_id);
+            
             if (session != null && sessionManager.isValid(session))
                 baseRequest.setSession(session);
             return;
@@ -273,7 +274,6 @@ public class SessionHandler extends ScopedHandler
                         if (requested_session_id != null)
                         {
                             session = sessionManager.getHttpSession(requested_session_id);
-
                             if (session != null && sessionManager.isValid(session))
                             {
                                 break;

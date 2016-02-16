@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -177,6 +177,23 @@ public class HttpURI
     }
 
     /* ------------------------------------------------------------ */
+    /** Parse according to https://tools.ietf.org/html/rfc7230#section-5.3
+     * @param method
+     * @param uri
+     */
+    public void parseRequestTarget(String method,String uri)
+    {
+        clear();
+        _uri=uri;
+
+        if (HttpMethod.CONNECT.is(method))
+            _path=uri;
+        else
+            parse(uri.startsWith("/")?State.PATH:State.START,uri,0,uri.length());
+    }
+
+    /* ------------------------------------------------------------ */
+    @Deprecated
     public void parseConnect(String uri)
     {
         clear();
@@ -334,6 +351,8 @@ public class HttpURI
                             state=State.PORT;
                             break;
                         case '@':
+                            if (_user!=null)
+                                throw new IllegalArgumentException("Bad authority");
                             _user=uri.substring(mark,i);
                             mark=i+1;
                             break;
@@ -372,7 +391,16 @@ public class HttpURI
 
                 case PORT:
                 {
-                    if (c=='/')
+                    if (c=='@')
+                    {
+                        if (_user!=null)
+                            throw new IllegalArgumentException("Bad authority");
+                        // It wasn't a port, but a password!
+                        _user=_host+":"+uri.substring(mark,i);
+                        mark=i+1;
+                        state=State.HOST;
+                    }
+                    else if (c=='/')
                     {
                         _port=TypeUtil.parseInt(uri,mark,i-mark,10);
                         path_mark=mark=i;
@@ -744,6 +772,12 @@ public class HttpURI
         if (_port>0)
             return _host+":"+_port;
         return _host;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String getUser()
+    {
+        return _user;
     }
 
 

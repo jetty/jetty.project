@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -104,6 +104,7 @@ public class MultiPartFilter implements Filter
     private boolean _deleteFiles;
     private ServletContext _context;
     private int _fileOutputBuffer = 0;
+    private boolean _writeFilesWithFilenames = false;
     private long _maxFileSize = -1L;
     private long _maxRequestSize = -1L;
     private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys", 1000);
@@ -130,6 +131,7 @@ public class MultiPartFilter implements Filter
         String mfks = filterConfig.getInitParameter("maxFormKeys");
         if (mfks!=null)
             _maxFormKeys=Integer.parseInt(mfks);
+        _writeFilesWithFilenames = "true".equalsIgnoreCase(filterConfig.getInitParameter("writeFilesWithFilenames"));
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -164,6 +166,7 @@ public class MultiPartFilter implements Filter
         MultipartConfigElement config = new MultipartConfigElement(tempdir.getCanonicalPath(), _maxFileSize, _maxRequestSize, _fileOutputBuffer);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(in, content_type, config, tempdir);
         mpis.setDeleteOnExit(_deleteFiles);
+        mpis.setWriteFilesWithFilenames(_writeFilesWithFilenames);
         request.setAttribute(MULTIPART, mpis);
         try
         {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -166,7 +166,7 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
             return null;
 
         UserPrincipal userPrincipal = loadUserInfo(username);
-        if (userPrincipal.authenticate(credentials))
+        if (userPrincipal != null && userPrincipal.authenticate(credentials))
         {
             //safe to load the roles
             String[] roles = loadRoleInfo(userPrincipal);

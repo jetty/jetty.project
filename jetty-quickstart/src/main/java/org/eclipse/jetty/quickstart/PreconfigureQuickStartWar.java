@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,8 @@
 //
 
 package org.eclipse.jetty.quickstart;
+
+import java.util.Locale;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
@@ -101,7 +103,7 @@ public class PreconfigureQuickStartWar
 
         if (xml != null)
         {
-            if (xml.isDirectory() || !xml.toString().toLowerCase().endsWith(".xml"))
+            if (xml.isDirectory() || !xml.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                 error("Bad context.xml: "+xml);
             XmlConfiguration xmlConfiguration = new XmlConfiguration(xml.getURL());
             xmlConfiguration.configure(webapp);

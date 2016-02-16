@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -26,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 
 import javax.servlet.ServletException;
@@ -77,7 +81,6 @@ public class GzipHandlerTest
         
         _server.setHandler(gzipHandler);
         gzipHandler.setHandler(context);
-        context.setHandler(servlets);
         servlets.addServletWithMapping(TestServlet.class,"/content");
         servlets.addServletWithMapping(ForwardServlet.class,"/forward");
         servlets.addServletWithMapping(IncludeServlet.class,"/include");
@@ -87,7 +90,6 @@ public class GzipHandlerTest
     
     public static class TestServlet extends HttpServlet
     {
-
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
         {
@@ -197,5 +199,17 @@ public class GzipHandlerTest
         IO.copy(testIn,testOut);
 
         assertEquals(__icontent, testOut.toString("UTF8"));
+    }
+    
+    @Test
+    public void testAddGetPaths()
+    {
+        GzipHandler gzip = new GzipHandler();
+        gzip.addIncludedPaths("/foo");
+        gzip.addIncludedPaths("^/bar.*$");
+        
+        String[] includedPaths = gzip.getIncludedPaths();
+        assertThat("Included Paths.size", includedPaths.length, is(2));
+        assertThat("Included Paths", Arrays.asList(includedPaths), contains("/foo","^/bar.*$"));
     }
 }

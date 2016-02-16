@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,19 +19,34 @@
 package org.eclipse.jetty.server.session;
 
 import java.security.SecureRandom;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+
+
+/**
+ * AbstractSessionIdManager
+ * 
+ * Manages session ids to ensure each session id within a context is unique, and that
+ * session ids can be shared across contexts (but not session contents).
+ * 
+ * There is only 1 session id manager per Server instance.
+ */
 public abstract class AbstractSessionIdManager extends AbstractLifeCycle implements SessionIdManager
 {
-    private static final Logger LOG = Log.getLogger(AbstractSessionIdManager.class);
-
+    private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    
     private final static String __NEW_SESSION_ID="org.eclipse.jetty.server.newSessionId";
 
     protected Random _random;
@@ -39,18 +54,49 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     protected String _workerName;
     protected String _workerAttr;
     protected long _reseed=100000L;
+    protected Server _server;
+    protected SessionScavenger _scavenger;
 
     /* ------------------------------------------------------------ */
-    public AbstractSessionIdManager()
+    public AbstractSessionIdManager(Server server)
     {
+        _server = server;
     }
 
     /* ------------------------------------------------------------ */
-    public AbstractSessionIdManager(Random random)
+    public AbstractSessionIdManager(Server server, Random random)
     {
+        this(server);
         _random=random;
     }
 
+    /* ------------------------------------------------------------ */
+    public void setServer (Server server)
+    {
+        _server = server;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+
+    public Server getServer ()
+    {
+        return _server;
+    }
+
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param scavenger
+     */
+    public void setSessionScavenger (SessionScavenger scavenger)
+    {
+        _scavenger = scavenger;
+        _scavenger.setSessionIdManager(this);
+    }
+   
+    
 
     /* ------------------------------------------------------------ */
     /**
@@ -65,6 +111,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         return _workerName;
     }
 
+    
+    
     /* ------------------------------------------------------------ */
     /**
      * Set the workername. If set, the workername is dot appended to the session
@@ -133,14 +181,14 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
             String requested_id=request.getRequestedSessionId();
             if (requested_id!=null)
             {
-                String cluster_id=getClusterId(requested_id);
-                if (idInUse(cluster_id))
+                String cluster_id=getId(requested_id);
+                if (isIdInUse(cluster_id))
                     return cluster_id;
             }
 
             // Else reuse any new session ID already defined for this request.
             String new_id=(String)request.getAttribute(__NEW_SESSION_ID);
-            if (new_id!=null&&idInUse(new_id))
+            if (new_id!=null&&isIdInUse(new_id))
                 return new_id;
 
             // pick a new unique ID!
@@ -156,7 +204,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     {
         // pick a new unique ID!
         String id=null;
-        while (id==null||id.length()==0||idInUse(id))
+        while (id==null||id.length()==0||isIdInUse(id))
         {
             long r0=_weakRandom
                     ?(hashCode()^Runtime.getRuntime().freeMemory()^_random.nextInt()^((seedTerm)<<32))
@@ -198,23 +246,32 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     }
 
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public abstract void renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request);
 
     
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
+        if (_server == null)
+            throw new IllegalStateException("No Server for SessionIdManager");
        initRandom();
        _workerAttr=(_workerName!=null && _workerName.startsWith("$"))?_workerName.substring(1):null;
+       
+       if (_scavenger == null)
+       {
+           LOG.warn("No SessionScavenger set, using defaults");
+           _scavenger = new SessionScavenger();
+           _scavenger.setSessionIdManager(this);
+       }
+       
+       _scavenger.start();
     }
 
     /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
     {
+        _scavenger.stop();
     }
 
     /* ------------------------------------------------------------ */
@@ -242,6 +299,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
             _random.setSeed(_random.nextLong()^System.currentTimeMillis()^hashCode()^Runtime.getRuntime().freeMemory());
     }
 
+    
+    /* ------------------------------------------------------------ */
     /** Get the session ID with any worker ID.
      *
      * @param clusterId the cluster id
@@ -249,7 +308,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
      * @return sessionId plus any worker ID.
      */
     @Override
-    public String getNodeId(String clusterId, HttpServletRequest request)
+    public String getExtendedId(String clusterId, HttpServletRequest request)
     {
         if (_workerName!=null)
         {
@@ -264,17 +323,106 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         return clusterId;
     }
 
+    
+    /* ------------------------------------------------------------ */
     /** Get the session ID without any worker ID.
      *
-     * @param nodeId the node id
+     * @param extendedId the session id with the worker extension
      * @return sessionId without any worker ID.
      */
     @Override
-    public String getClusterId(String nodeId)
+    public String getId(String extendedId)
     {
-        int dot=nodeId.lastIndexOf('.');
-        return (dot>0)?nodeId.substring(0,dot):nodeId;
+        int dot=extendedId.lastIndexOf('.');
+        return (dot>0)?extendedId.substring(0,dot):extendedId;
     }
 
+    
+    
+    /* ------------------------------------------------------------ */
+    /** 
+     * Remove an id from use by telling all contexts to remove a session with this id.
+     * 
+     * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
+     */
+    @Override
+    public void expireAll(String id)
+    {
+        //take the id out of the list of known sessionids for this node
+        if (removeId(id))
+        {
+            //tell all contexts that may have a session object with this id to
+            //get rid of them
+            for (SessionManager manager:getSessionManagers())
+            {
+                manager.invalidate(id);
+            }
+        }
+    }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @param id
+     */
+    public void invalidateAll (String id)
+    {
+        //take the id out of the list of known sessionids for this node
+        if (removeId(id))
+        {
+            //tell all contexts that may have a session object with this id to
+            //get rid of them
+            for (SessionManager manager:getSessionManagers())
+            {         
+                manager.invalidate(id);
+            } 
+        }
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Generate a new id for a session and update across
+     * all SessionManagers.
+     * 
+     * @see org.eclipse.jetty.server.SessionIdManager#renewSessionId(java.lang.String, java.lang.String, javax.servlet.http.HttpServletRequest)
+     */
+    @Override
+    public void renewSessionId (String oldClusterId, String oldNodeId, HttpServletRequest request)
+    { 
+        //generate a new id
+        String newClusterId = newSessionId(request.hashCode());
+        
+        removeId(oldClusterId);//remove the old one from the list
+
+        //tell all contexts to update the id 
+        for (SessionManager manager:getSessionManagers())
+        {
+            manager.renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
+        }
+    }
+    
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Get SessionManager for every context.
+     * 
+     * @return
+     */
+    protected Set<SessionManager> getSessionManagers()
+    {
+        Set<SessionManager> managers = new HashSet<>();
+
+        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
+        for (int i=0; contexts!=null && i<contexts.length; i++)
+        {
+            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+            if (sessionHandler != null) 
+            {
+                SessionManager manager = (SessionManager)sessionHandler.getSessionManager();
+
+                if (manager != null)
+                    managers.add(manager);
+            }
+        }
+        return managers;
+    }
 }
