@@ -39,6 +39,7 @@ import java.util.TimerTask;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -329,7 +330,7 @@ public class Dump extends HttpServlet
 
         // handle an error
         String error= request.getParameter("error");
-        if (error != null && error.length() > 0 && request.getAttribute("javax.servlet.error.status_code")==null)
+        if (error != null && error.length() > 0 && request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE)==null)
         {
             response.getOutputStream().println("THIS SHOULD NOT BE SEEN!");
             response.sendError(Integer.parseInt(error));
@@ -874,7 +875,7 @@ public class Dump extends HttpServlet
     /* ------------------------------------------------------------ */
     private String getURI(HttpServletRequest request)
     {
-        String uri= (String)request.getAttribute("javax.servlet.forward.request_uri");
+        String uri= (String)request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
         if (uri == null)
             uri= request.getRequestURI();
         return uri;

@@ -118,13 +118,9 @@ public class JdbcTestServer extends AbstractTestServer
             JDBCSessionIdManager idManager = new JDBCSessionIdManager(_server);
             idManager.setWorkerName("w"+(__workers++));
             idManager.getDatabaseAdaptor().setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:(String)config));
-            JDBCSessionIdManager.SessionIdTableSchema idTableSchema = new JDBCSessionIdManager.SessionIdTableSchema();
+            JDBCSessionIdManager.SessionIdTableSchema idTableSchema = idManager.getSessionIdTableSchema();
             idTableSchema.setTableName("mysessionids");
             idTableSchema.setIdColumn("myid");
-
-    
-
-            
             return idManager;
         }
     }

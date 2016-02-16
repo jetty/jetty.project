@@ -13,12 +13,15 @@
         <Ref refid="Server"/>
       </Arg>
       <Set name="workerName"><Property name="jetty.jdbcSession.workerName" default="node1"/></Set>
-      <Set name="scavengeInterval"><Property name="jetty.jdbcSession.scavenge" default="1800"/></Set>
-
+      <Set name="sessionScavenger">
+        <New class="org.eclipse.jetty.server.session.SessionScavenger">
+          <Set name="scavengeIntervalSec"><Property name="jetty.jdbcSession.scavenge" default="1800"/></Set>
+        </New>
+      </Set>
       <!-- ===================================================================== -->
       <!-- Uncomment either the datasource or driver setup and configure         -->
       <!-- ===================================================================== -->
-
+      <Get name="databaseAdaptor">
       <!--
           <Set name="DatasourceName"><Property name="jetty.jdbcSession.datasource" default="javax.sql.DataSource/default"/></Set>
       -->
@@ -28,6 +31,7 @@
           <Arg><Property name="jetty.jdbcSession.connectionURL"/></Arg>
         </Call>
       -->
+      </Get>
     </New>
   </Set>
 
