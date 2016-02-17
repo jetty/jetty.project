@@ -1,0 +1,9 @@
+## Configure for Circle CI
+machine:
+ java:
+  version: oraclejdk8
+
+dependencies:
+ override: 
+  - mvn -fn dependency:resolve     
+
