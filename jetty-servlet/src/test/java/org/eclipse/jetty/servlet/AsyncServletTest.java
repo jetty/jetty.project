@@ -486,10 +486,8 @@ public class AsyncServletTest
             "onStartAsync",
             "start",
             "onTimeout",
-            "ERROR /ctx/path/error",
-            "!initial",
-            "onComplete"));
-        assertContains("ERROR DISPATCH: /ctx/path/error",response);
+            "onComplete")); // Error Page Loop!
+        assertContains("HTTP ERROR 500",response);
     }
 
     @Test
