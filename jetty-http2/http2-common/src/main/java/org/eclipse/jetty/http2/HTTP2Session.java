@@ -615,7 +615,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private void frame(HTTP2Flusher.Entry entry, boolean flush)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Sending {}", entry.frame);
+            LOG.debug("{} {}", flush ? "Sending" : "Queueing", entry.frame);
         // Ping frames are prepended to process them as soon as possible.
         boolean queued = entry.frame.getType() == FrameType.PING ? flusher.prepend(entry) : flusher.append(entry);
         if (queued && flush)
