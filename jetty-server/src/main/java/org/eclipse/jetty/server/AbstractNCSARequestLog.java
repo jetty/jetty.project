@@ -71,7 +71,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
      * @return true if logging is enabled
      */
     protected abstract boolean isEnabled();
-    
+
     /* ------------------------------------------------------------ */
 
     /**
@@ -82,7 +82,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     public abstract void write(String requestEntry) throws IOException;
 
     /* ------------------------------------------------------------ */
-    
+
     private void append(StringBuilder buf,String s)
     {
         if (s==null || s.length()==0)
@@ -90,7 +90,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
         else
             buf.append(s);
     }
-    
+
     /**
      * Writes the request and response information to the output stream.
      *
@@ -101,9 +101,6 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     {
         try
         {
-            int status = response.getCommittedMetaData().getStatus();
-            long written = response.getHttpChannel().getBytesWritten();
-            
             if (_ignorePathMap != null && _ignorePathMap.getMatch(request.getRequestURI()) != null)
                 return;
 
@@ -147,6 +144,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             append(buf,request.getProtocol());
             buf.append("\" ");
 
+            int status = response.getCommittedMetaData().getStatus();
             if (status >=0)
             {
                 buf.append((char)('0' + ((status / 100) % 10)));
@@ -156,6 +154,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             else
                 buf.append(status);
 
+            long written = response.getHttpChannel().getBytesWritten();
             if (written >= 0)
             {
                 buf.append(' ');
@@ -180,7 +179,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
 
             if (_extended)
-                logExtended(request, buf);
+                logExtended(buf, request, response);
 
             if (_logCookies)
             {
@@ -221,18 +220,12 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             LOG.warn(e);
         }
     }
-    
-    /* ------------------------------------------------------------ */
 
     /**
-     * Writes extended request and response information to the output stream.
-     *
-     * @param request  request object
-     * @param b        StringBuilder to write to
-     * @throws IOException if unable to log the extended information
+     * @deprecated override {@link #logExtended(StringBuilder, Request, Response)} instead
      */
-    protected void logExtended(Request request,
-                               StringBuilder b) throws IOException
+    @Deprecated
+    protected void logExtended(Request request, StringBuilder b) throws IOException
     {
         String referer = request.getHeader(HttpHeader.REFERER.toString());
         if (referer == null)
@@ -255,6 +248,18 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
         }
     }
 
+    /**
+     * Writes extended request and response information to the output stream.
+     *
+     * @param b        StringBuilder to write to
+     * @param request  request object
+     * @param response response object
+     * @throws IOException if unable to log the extended information
+     */
+    protected void logExtended(StringBuilder b, Request request, Response response) throws IOException
+    {
+        logExtended(request, b);
+    }
 
     /**
      * Set request paths that will not be logged.
