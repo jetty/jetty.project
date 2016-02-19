@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Connection;
@@ -46,13 +45,14 @@ public abstract class HttpConnection implements Connection
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
     private static final HttpField CHUNKED_FIELD = new HttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
 
-    private final AtomicInteger idleTimeoutGuard = new AtomicInteger();
     private final HttpDestination destination;
-    private long idleTimeoutStamp = System.nanoTime();
+    private int idleTimeoutGuard;
+    private long idleTimeoutStamp;
 
     protected HttpConnection(HttpDestination destination)
     {
         this.destination = destination;
+        this.idleTimeoutStamp = System.nanoTime();
     }
 
     public HttpClient getHttpClient()
@@ -182,17 +182,12 @@ public abstract class HttpConnection implements Connection
         // Forbid idle timeouts for the time window where
         // the request is associated to the channel and sent.
         // Use a counter to support multiplexed requests.
-        boolean send = false;
-        while (true)
+        boolean send;
+        synchronized (this)
         {
-            int current = idleTimeoutGuard.get();
-            if (current < 0)
-                break;
-            if (idleTimeoutGuard.compareAndSet(current, current + 1))
-            {
-                send = true;
-                break;
-            }
+            send = idleTimeoutGuard >= 0;
+            if (send)
+                ++idleTimeoutGuard;
         }
 
         if (send)
@@ -209,8 +204,13 @@ public abstract class HttpConnection implements Connection
                 channel.release();
                 result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
             }
-            idleTimeoutStamp = System.nanoTime();
-            idleTimeoutGuard.decrementAndGet();
+
+            synchronized (this)
+            {
+                --idleTimeoutGuard;
+                idleTimeoutStamp = System.nanoTime();
+            }
+
             return result;
         }
         else
@@ -221,19 +221,24 @@ public abstract class HttpConnection implements Connection
 
     public boolean onIdleTimeout(long idleTimeout)
     {
-        if (idleTimeoutGuard.compareAndSet(0, -1))
+        synchronized (this)
         {
-            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - idleTimeoutStamp);
-            boolean idle = elapsed > idleTimeout / 2;
-            if (LOG.isDebugEnabled())
-                LOG.debug("Idle timeout {}/{}ms - {}", elapsed, idleTimeout, this);
-            return idle;
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Idle timeout skipped - {}", this);
-            return false;
+            if (idleTimeoutGuard == 0)
+            {
+                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - idleTimeoutStamp);
+                boolean idle = elapsed > idleTimeout / 2;
+                if (idle)
+                    idleTimeoutGuard = -1;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Idle timeout {}/{}ms - {}", elapsed, idleTimeout, this);
+                return idle;
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Idle timeout skipped - {}", this);
+                return false;
+            }
         }
     }
 
