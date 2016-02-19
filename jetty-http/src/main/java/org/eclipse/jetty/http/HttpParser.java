@@ -74,8 +74,7 @@ import static org.eclipse.jetty.http.HttpTokens.TAB;
  * is used to help the parsing of subsequent messages.
  * </p>
  * <p>
- * The parser can work in varying compliance modes (set either in constructor or with 
- * the "org.eclipse.jetty.http.HttpParser.COMPLIANCE" System property):
+ * The parser can work in varying compliance modes:
  * <dl>
  * <dt>RFC7230</dt><dd>(default) Compliance with RFC7230</dd>
  * <dt>RFC2616</dt><dd>Wrapped headers supported</dd>
@@ -91,7 +90,6 @@ public class HttpParser
     public static final Logger LOG = Log.getLogger(HttpParser.class);
     @Deprecated
     public final static String __STRICT="org.eclipse.jetty.http.HttpParser.STRICT";
-    public final static String __COMPLIANCE="org.eclipse.jetty.http.HttpParser.COMPLIANCE";
     public final static int INITIAL_URI_LENGTH=256;
 
     /**
@@ -230,11 +228,7 @@ public class HttpParser
     
     private static Compliance compliance()
     {
-        String compliance = System.getProperty(__COMPLIANCE);
-        if (compliance!=null)
-            return Compliance.valueOf(compliance);
-        Boolean strict = Boolean.getBoolean(__STRICT);
-        
+        Boolean strict = Boolean.getBoolean(__STRICT);        
         return strict?Compliance.STRICT:Compliance.RFC7230;
     }
 
@@ -259,7 +253,7 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     public HttpParser(ResponseHandler handler,int maxHeaderBytes)
     {
-        this(handler,maxHeaderBytes,Compliance.RFC7230);
+        this(handler,maxHeaderBytes,compliance());
     }
 
     /* ------------------------------------------------------------------------------- */
