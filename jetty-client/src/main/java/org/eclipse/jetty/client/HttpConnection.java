@@ -23,6 +23,7 @@ import java.net.HttpCookie;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -45,8 +46,9 @@ public abstract class HttpConnection implements Connection
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
     private static final HttpField CHUNKED_FIELD = new HttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
 
-    private final AtomicInteger idleTimeoutState = new AtomicInteger();
+    private final AtomicInteger idleTimeoutGuard = new AtomicInteger();
     private final HttpDestination destination;
+    private long idleTimeoutStamp = System.nanoTime();
 
     protected HttpConnection(HttpDestination destination)
     {
@@ -183,10 +185,10 @@ public abstract class HttpConnection implements Connection
         boolean send = false;
         while (true)
         {
-            int current = idleTimeoutState.get();
+            int current = idleTimeoutGuard.get();
             if (current < 0)
                 break;
-            if (idleTimeoutState.compareAndSet(current, current + 1))
+            if (idleTimeoutGuard.compareAndSet(current, current + 1))
             {
                 send = true;
                 break;
@@ -207,7 +209,8 @@ public abstract class HttpConnection implements Connection
                 channel.release();
                 result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
             }
-            idleTimeoutState.decrementAndGet();
+            idleTimeoutStamp = System.nanoTime();
+            idleTimeoutGuard.decrementAndGet();
             return result;
         }
         else
@@ -216,11 +219,22 @@ public abstract class HttpConnection implements Connection
         }
     }
 
-    public boolean onIdleTimeout()
+    public boolean onIdleTimeout(long idleTimeout)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Idle timeout state {} - {}", idleTimeoutState, this);
-        return idleTimeoutState.compareAndSet(0, -1);
+        if (idleTimeoutGuard.compareAndSet(0, -1))
+        {
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - idleTimeoutStamp);
+            boolean idle = elapsed > idleTimeout / 2;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Idle timeout {}/{}ms - {}", elapsed, idleTimeout, this);
+            return idle;
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Idle timeout skipped - {}", this);
+            return false;
+        }
     }
 
     @Override
