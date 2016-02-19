@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Locker;
 
 /**
  * Container class for the MBean instances
@@ -51,6 +52,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
         __unique.clear();
     }
     
+    private final Locker _lock = new Locker();
     private final MBeanServer _mbeanServer;
     private final WeakHashMap<Object, ObjectName> _beans = new WeakHashMap<Object, ObjectName>();
     private String _domain = null;
@@ -63,8 +65,11 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
      */
     public synchronized ObjectName findMBean(Object object)
     {
-        ObjectName bean = _beans.get(object);
-        return bean == null ? null : bean;
+        try (Locker.Lock lock = _lock.lock())
+        {
+            ObjectName bean = _beans.get(object);
+            return bean == null ? null : bean;
+        }
     }
 
     /**
@@ -75,11 +80,14 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
      */
     public synchronized Object findBean(ObjectName oname)
     {
-        for (Map.Entry<Object, ObjectName> entry : _beans.entrySet())
+        try (Locker.Lock lock = _lock.lock())
         {
-            ObjectName bean = entry.getValue();
-            if (bean.equals(oname))
-                return entry.getKey();
+            for (Map.Entry<Object, ObjectName> entry : _beans.entrySet())
+            {
+                ObjectName bean = entry.getValue();
+                if (bean.equals(oname))
+                    return entry.getKey();
+            }
         }
         return null;
     }
@@ -130,32 +138,31 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("beanAdded {}->{}",parent,obj);
-        
-        // Is their an object name for the parent
-        ObjectName pname=null;
-        if (parent!=null)
+
+        try (Locker.Lock lock = _lock.lock())
         {
-            pname=_beans.get(parent);
-            if (pname==null)
+            // Is their an object name for the parent
+            ObjectName pname=null;
+            if (parent!=null)
             {
-                // create the parent bean
-                beanAdded(null,parent);
                 pname=_beans.get(parent);
+                if (pname==null)
+                {
+                    // create the parent bean
+                    beanAdded(null,parent);
+                    pname=_beans.get(parent);
+                }
             }
-        }
-        
-        // Does an mbean already exist?
-        if (obj == null || _beans.containsKey(obj))
-            return;
-        
-        try
-        {
+
+            // Does an mbean already exist?
+            if (obj == null || _beans.containsKey(obj))
+                return;
+
             // Create an MBean for the object
             Object mbean = ObjectMBean.mbeanFor(obj);
             if (mbean == null)
                 return;
 
-            
             ObjectName oname = null;
             if (mbean instanceof ObjectMBean)
             {
@@ -171,7 +178,6 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
                 if (domain == null)
                     domain = obj.getClass().getPackage().getName();
 
-
                 String type = obj.getClass().getName().toLowerCase(Locale.ENGLISH);
                 int dot = type.lastIndexOf('.');
                 if (dot >= 0)
@@ -183,10 +189,10 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
                 String context = (mbean instanceof ObjectMBean)?makeName(((ObjectMBean)mbean).getObjectContextBasis()):null;
                 if (context==null && pname!=null)
                     context=pname.getKeyProperty("context");
-                                
+
                 if (context != null && context.length()>1)
                     buf.append("context=").append(context).append(",");
-                
+
                 buf.append("type=").append(type);
 
                 String name = (mbean instanceof ObjectMBean)?makeName(((ObjectMBean)mbean).getObjectNameBasis()):context;
@@ -194,7 +200,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
                     buf.append(",").append("name=").append(name);
 
                 String basis = buf.toString();
-                
+
                 AtomicInteger count = __unique.get(basis);
                 if (count==null)
                 {
@@ -202,7 +208,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
                     if (count==null)
                         count=__unique.get(basis);
                 }
-                
+
                 oname = ObjectName.getInstance(domain + ":" + basis + ",id=" + count.getAndIncrement());
             }
 
@@ -210,7 +216,6 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("Registered {}", oinstance.getObjectName());
             _beans.put(obj, oinstance.getObjectName());
-
         }
         catch (Exception e)
         {
@@ -223,23 +228,26 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("beanRemoved {}",obj);
-        ObjectName bean = _beans.remove(obj);
-
-        if (bean != null)
+        try (Locker.Lock lock = _lock.lock())
         {
-            try
+            ObjectName bean = _beans.remove(obj);
+
+            if (bean != null)
             {
-                _mbeanServer.unregisterMBean(bean);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unregistered {}", bean);
-            }
-            catch (javax.management.InstanceNotFoundException e)
-            {
-                LOG.ignore(e);
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e);
+                try
+                {
+                    _mbeanServer.unregisterMBean(bean);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unregistered {}", bean);
+                }
+                catch (javax.management.InstanceNotFoundException e)
+                {
+                    LOG.ignore(e);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn(e);
+                }
             }
         }
     }
@@ -258,8 +266,11 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out,this);
-        ContainerLifeCycle.dump(out, indent, _beans.entrySet());
+        try (Locker.Lock lock = _lock.lock())
+        {
+            ContainerLifeCycle.dumpObject(out,this);
+            ContainerLifeCycle.dump(out, indent, _beans.entrySet());
+        }
     }
 
     @Override
@@ -270,17 +281,22 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
 
     public void destroy()
     {
-        for (ObjectName oname : _beans.values())
-            if (oname!=null)
+        try (Locker.Lock lock = _lock.lock())
+        {
+            for (ObjectName oname : _beans.values())
             {
-                try
+                if (oname!=null)
                 {
-                    _mbeanServer.unregisterMBean(oname);
-                }
-                catch (MBeanRegistrationException | InstanceNotFoundException e)
-                {
-                    LOG.warn(e);
+                    try
+                    {
+                        _mbeanServer.unregisterMBean(oname);
+                    }
+                    catch (MBeanRegistrationException | InstanceNotFoundException e)
+                    {
+                        LOG.warn(e);
+                    }
                 }
             }
+        }
     }
 }

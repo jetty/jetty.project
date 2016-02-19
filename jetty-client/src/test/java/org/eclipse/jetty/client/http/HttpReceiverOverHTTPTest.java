@@ -170,7 +170,9 @@ public class HttpReceiverOverHTTPTest
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         connection.getHttpChannel().receive();
-        // Simulate an idle timeout
+        // ByteArrayEndPoint has an idle timeout of 0 by default,
+        // so to simulate an idle timeout is enough to wait a bit.
+        Thread.sleep(100);
         connection.onIdleExpired();
 
         try

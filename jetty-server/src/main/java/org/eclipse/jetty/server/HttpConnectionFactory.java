@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -31,6 +32,7 @@ import org.eclipse.jetty.util.annotation.Name;
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private final HttpConfiguration _config;
+    private HttpParser.Compliance _httpCompliance=HttpParser.Compliance.RFC7230;
 
     public HttpConnectionFactory()
     {
@@ -52,9 +54,24 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _config;
     }
 
+    public HttpParser.Compliance getHttpCompliance()
+    {
+        return _httpCompliance;
+    }
+
+    /**
+     * @param httpCompliance String value of {@link HttpParser.Compliance}
+     */
+    public void setHttpCompliance(HttpParser.Compliance httpCompliance)
+    {
+        _httpCompliance = httpCompliance;
+    }
+
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return configure(new HttpConnection(_config, connector, endPoint), connector, endPoint);
+        return configure(new HttpConnection(_config, connector, endPoint, _httpCompliance), connector, endPoint);
     }
+    
+    
 }

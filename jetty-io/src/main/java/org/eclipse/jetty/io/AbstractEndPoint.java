@@ -371,7 +371,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     protected void onIdleExpired(TimeoutException timeout)
     {
         Connection connection = _connection;
-        if (connection != null && !_connection.onIdleExpired())
+        if (connection != null && !connection.onIdleExpired())
             return;
 
         boolean output_shutdown=isOutputShutdown();
