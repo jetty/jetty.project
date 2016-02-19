@@ -348,6 +348,9 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     @Override
     public void expireAll(String id)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Expiring {}",id);
+        
         //take the id out of the list of known sessionids for this node
         if (removeId(id))
         {
@@ -358,6 +361,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
                 manager.invalidate(id);
             }
         }
+        else if (LOG.isDebugEnabled())
+            LOG.debug("Not present in idmgr: {}", id);
     }
 
     /* ------------------------------------------------------------ */

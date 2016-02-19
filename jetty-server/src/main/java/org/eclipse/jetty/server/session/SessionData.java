@@ -26,6 +26,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /**
  * SessionData
  *
@@ -36,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class SessionData implements Serializable
 {
-
+    private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
    
     private static final long serialVersionUID = 1L;
 
@@ -285,6 +288,8 @@ public class SessionData implements Serializable
     
     public boolean isExpiredAt (long time)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Testing expiry on session {}: Never expires? {} Is expired?{}", _id, (getExpiry()<= 0), (getExpiry() < time));
         if (getExpiry() <= 0)
             return false; //never expires
         
