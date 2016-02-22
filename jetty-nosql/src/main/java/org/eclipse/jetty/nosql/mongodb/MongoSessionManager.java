@@ -322,7 +322,8 @@ public class MongoSessionManager extends NoSqlSessionManager
     @Override
     protected Object refresh(NoSqlSession session, Object version)
     {
-        __log.debug("MongoSessionManager:refresh session {}", session.getId());
+        if (__log.isDebugEnabled())
+            __log.debug("MongoSessionManager:refresh session {}", session.getId());
 
         // check if our in memory version is the same as what is on the disk
         if (version != null)
@@ -335,7 +336,8 @@ public class MongoSessionManager extends NoSqlSessionManager
                 
                 if (saved != null && saved.equals(version))
                 {
-                    __log.debug("MongoSessionManager:refresh not needed session {}", session.getId());
+                    if (__log.isDebugEnabled())
+                        __log.debug("MongoSessionManager:refresh not needed session {}", session.getId());
                     return version;
                 }
                 version = saved;
@@ -347,8 +349,9 @@ public class MongoSessionManager extends NoSqlSessionManager
 
         // If it doesn't exist, invalidate
         if (o == null)
-        {
-            __log.debug("MongoSessionManager:refresh:marking session {} invalid, no object", session.getClusterId());
+        {            
+            if (__log.isDebugEnabled())
+                __log.debug("MongoSessionManager:refresh:marking session {} invalid, no object", session.getClusterId());
             session.invalidate();
             return null;
         }
@@ -357,7 +360,8 @@ public class MongoSessionManager extends NoSqlSessionManager
         Boolean valid = (Boolean)o.get(__VALID);
         if (valid == null || !valid)
         {
-            __log.debug("MongoSessionManager:refresh:marking session {} invalid, valid flag {}", session.getClusterId(), valid);
+            if (__log.isDebugEnabled())
+                __log.debug("MongoSessionManager:refresh:marking session {} invalid, valid flag {}", session.getClusterId(), valid);
             session.invalidate();
             return null;
         }
@@ -386,7 +390,7 @@ public class MongoSessionManager extends NoSqlSessionManager
                     Object value = decodeValue(attrs.get(name));
 
                     //session does not already contain this attribute, so bind it
-                    if (session.getAttribute(attr) == null)
+                    if (session.doGet(attr) == null)
                     { 
                         session.doPutOrRemove(attr,value);
                         session.bindValue(attr,value);
@@ -435,19 +439,26 @@ public class MongoSessionManager extends NoSqlSessionManager
 
         return null;
     }
+    
+    
+   
+                             
+    
 
     /*------------------------------------------------------------ */
     @Override
     protected synchronized NoSqlSession loadSession(String clusterId)
     {
         DBObject o = _dbSessions.findOne(new BasicDBObject(__ID,clusterId));
-        
-        __log.debug("MongoSessionManager:id={} loaded={}", clusterId, o);
+
+        if (__log.isDebugEnabled())
+            __log.debug("MongoSessionManager:id={} loaded={}", clusterId, o);
         if (o == null)
             return null;
-        
+
         Boolean valid = (Boolean)o.get(__VALID);
-        __log.debug("MongoSessionManager:id={} valid={}", clusterId, valid);
+        if (__log.isDebugEnabled())
+            __log.debug("MongoSessionManager:id={} valid={}", clusterId, valid);
         if (valid == null || !valid)
             return null;
         
@@ -461,11 +472,12 @@ public class MongoSessionManager extends NoSqlSessionManager
 
             // get the session for the context
             DBObject attrs = (DBObject)getNestedValue(o,getContextKey());
-
-            __log.debug("MongoSessionManager:attrs {}", attrs);
+            if (__log.isDebugEnabled())
+                __log.debug("MongoSessionManager:attrs {}", attrs);
             if (attrs != null)
             {
-                __log.debug("MongoSessionManager: session {} present for context {}", clusterId, getContextKey());
+                if (__log.isDebugEnabled())
+                    __log.debug("MongoSessionManager: session {} present for context {}", clusterId, getContextKey());
                 //only load a session if it exists for this context
                 session = new NoSqlSession(this,created,accessed,clusterId,version);
                 
@@ -483,7 +495,7 @@ public class MongoSessionManager extends NoSqlSessionManager
                 }
                 session.didActivate();
             }
-            else
+            else if (__log.isDebugEnabled())
                 __log.debug("MongoSessionManager: session  {} not present for context {}",clusterId, getContextKey());        
 
             return session;
@@ -505,7 +517,8 @@ public class MongoSessionManager extends NoSqlSessionManager
     @Override
     protected boolean remove(NoSqlSession session)
     {
-        __log.debug("MongoSessionManager:remove:session {} for context {}",session.getClusterId(), getContextKey());
+        if (__log.isDebugEnabled())
+            __log.debug("MongoSessionManager:remove:session {} for context {}",session.getClusterId(), getContextKey());
 
         /*
          * Check if the session exists and if it does remove the context
@@ -539,7 +552,8 @@ public class MongoSessionManager extends NoSqlSessionManager
     @Override
     protected void expire (String idInCluster)
     {
-        __log.debug("MongoSessionManager:expire session {} ", idInCluster);
+        if (__log.isDebugEnabled())
+            __log.debug("MongoSessionManager:expire session {} ", idInCluster);
 
         //Expire the session for this context
         super.expire(idInCluster);
@@ -559,6 +573,34 @@ public class MongoSessionManager extends NoSqlSessionManager
             BasicDBObject key = new BasicDBObject(__ID,idInCluster);
             _dbSessions.update(key,update,false,false,WriteConcern.SAFE);
         }       
+    }
+    
+    
+    
+    /**
+     *  Passivate out any sessions that are not expired, but have been idle
+     *  longer than the idle timeout
+     */
+    protected void idle ()
+    {
+        //no idle timout set, so don't idle out any sessions
+        if (getIdlePeriod() <= 0)
+            return;
+        
+        long idleMs = getIdlePeriod()*1000L;
+        long now = System.currentTimeMillis();
+        
+        synchronized (this) //necessary?
+        {
+            for (NoSqlSession session:_sessions.values())
+            {
+                if (session.getAccessed()+ idleMs < now)
+                {
+                    //idle the session by passivating the session to mongo, then clearing the session's attribute map in memory
+                    session.idle();
+                }
+            }
+        }
     }
     
     

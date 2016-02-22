@@ -45,6 +45,7 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     private int _stalePeriod=0;
     private int _savePeriod=0;
     private int _idlePeriod=-1;
+    private boolean _deidleBeforeExpiry = true;
     private boolean _invalidateOnStop;
     private boolean _preserveOnStop = true;
     private boolean _saveAllAttributes;
@@ -82,6 +83,8 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
         
         if (session==null)
         {
+            __log.debug("Session {} is not in memory", idInCluster);
+            
             //session not in this node's memory, load it
             session=loadSession(idInCluster);
             
@@ -109,6 +112,8 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
             else
                 __log.debug("session does not exist {}", idInCluster);
         }
+        else
+            session.deIdle();
 
         return session;
     }
@@ -206,8 +211,15 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
                 //we need to expire the session with its listeners, so load it
                 session = loadSession(idInCluster);
             }
+            else
+            {
+                //deidle if the session was idled
+                if (isDeidleBeforeExpiry())
+                    session.deIdle();
+            }
 
-            if (session != null)
+            //check that session is still valid after potential de-idle
+            if (session != null && session.isValid())
                 session.timeout();
         }
         catch (Exception e)
@@ -304,7 +316,6 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
      * The Idle Period is the time in seconds before an in memory session is passivated.
      * When this period is exceeded, the session will be passivated and removed from memory.  If the session was dirty, it will be written to the DB.
      * If the idle period is set to a value &lt; 0, then the session is never idled.
-     * If the save period is set to 0, then the session is idled whenever the active request count goes from 1 to 0.
      * @return the idlePeriod
      */
     public int getIdlePeriod()
@@ -317,7 +328,6 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
      * The Idle Period is the time in seconds before an in memory session is passivated.
      * When this period is exceeded, the session will be passivated and removed from memory.  If the session was dirty, it will be written to the DB.
      * If the idle period is set to a value &lt; 0, then the session is never idled.
-     * If the save period is set to 0, then the session is idled whenever the active request count goes from 1 to 0.
      * @param idlePeriod the idlePeriod in seconds
      */
     public void setIdlePeriod(int idlePeriod)
@@ -383,6 +393,18 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     public void setSaveAllAttributes(boolean saveAllAttributes)
     {
         _saveAllAttributes = saveAllAttributes;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isDeidleBeforeExpiry()
+    {
+        return _deidleBeforeExpiry;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setDeidleBeforeExpiry(boolean deidleBeforeExpiry)
+    {
+        _deidleBeforeExpiry = deidleBeforeExpiry;
     }
     
     /* ------------------------------------------------------------ */

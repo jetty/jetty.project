@@ -76,10 +76,10 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     
     final DBCollection _sessions;
     protected Server _server;
-    private Scheduler _scheduler;
-    private boolean _ownScheduler;
-    private Scheduler.Task _scavengerTask;
-    private Scheduler.Task _purgerTask;
+    protected Scheduler _scheduler;
+    protected boolean _ownScheduler;
+    protected Scheduler.Task _scavengerTask;
+    protected Scheduler.Task _purgerTask;
  
 
     
@@ -134,6 +134,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
             try
             {
                 scavenge();
+                idle();
             }
             finally
             {
@@ -682,6 +683,26 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
                 if (manager != null && manager instanceof MongoSessionManager)
                 {
                     ((MongoSessionManager)manager).expire(sessionId);
+                }
+            }
+        }      
+    }
+    
+    
+    public void idle ()
+    {
+        //tell all contexts to passivate out idle sessions
+        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
+        for (int i=0; contexts!=null && i<contexts.length; i++)
+        {
+            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+            if (sessionHandler != null) 
+            {
+                SessionManager manager = sessionHandler.getSessionManager();
+
+                if (manager != null && manager instanceof MongoSessionManager)
+                {
+                    ((MongoSessionManager)manager).idle();
                 }
             }
         }      

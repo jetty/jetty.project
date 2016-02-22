@@ -26,7 +26,6 @@ import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.SessionHandler;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
@@ -60,6 +59,12 @@ public class MongoTestServer extends AbstractTestServer
                 _sessions.remove(session);
             }
         }
+        
+        public void cancelScavenge ()
+        {
+            if (_scavengerTask != null)
+                _scavengerTask.cancel();
+        }
     }
     
     public MongoTestServer(int port)
@@ -84,7 +89,6 @@ public class MongoTestServer extends AbstractTestServer
     {
         try
         {
-            System.err.println("MongoTestServer:SessionIdManager scavenge: delay:"+ _scavengePeriod + " period:"+_scavengePeriod);
             MongoSessionIdManager idManager = new TestMongoSessionIdManager(_server);
             idManager.setWorkerName("w"+(__workers++));
             idManager.setScavengePeriod(_scavengePeriod);                  
