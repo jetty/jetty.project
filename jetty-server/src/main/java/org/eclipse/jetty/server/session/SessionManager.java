@@ -581,7 +581,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         session.setSessionManager(this);
         session.setLastNode(_sessionIdManager.getWorkerName());
         session.getSessionData().setExpiry(_dftMaxIdleSecs <= 0 ? 0 : (created + _dftMaxIdleSecs*1000L));
-
         if (request.isSecure())
             session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
 
@@ -822,6 +821,8 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                     }
                 }
             }
+            //TODO if session object is not known to this node, how to get rid of it if no other
+            //node knows about it?
 
             return session;
         }

@@ -470,7 +470,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         else
         {
-            LOG.info(_request.getRequestURI(), failure);
+            LOG.warn(_request.getRequestURI(), failure);
         }
 
         try

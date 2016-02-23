@@ -55,6 +55,7 @@ public class InfinispanTestSessionServer extends AbstractTestServer
         InfinispanSessionIdManager idManager = new InfinispanSessionIdManager(getServer());
         idManager.setWorkerName("w"+(__workers++));
         idManager.setCache((BasicCache)config);
+        idManager.setInfinispanIdleTimeoutSec(0);
         return idManager;
     }
 

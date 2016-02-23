@@ -207,7 +207,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public HttpFields getHttpFields()
     {
-        return _metadata.getFields();
+        return _metadata==null?null:_metadata.getFields();
     }
 
     /* ------------------------------------------------------------ */
@@ -369,7 +369,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private void extractQueryParameters()
     {
-        if (_metadata.getURI() == null || !_metadata.getURI().hasQuery())
+        if (_metadata == null || _metadata.getURI() == null || !_metadata.getURI().hasQuery())
             _queryParameters=NO_PARAMS;
         else
         {
@@ -656,7 +656,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getContentType()
     {
-        String content_type = _metadata.getFields().get(HttpHeader.CONTENT_TYPE);
+        String content_type = _metadata==null?null:_metadata.getFields().get(HttpHeader.CONTENT_TYPE);
         if (_characterEncoding==null && content_type!=null)
         {
             MimeTypes.Type mime = MimeTypes.CACHE.get(content_type);
@@ -944,7 +944,7 @@ public class Request implements HttpServletRequest
             if (local!=null)
                 return local.getHostString();
         }
-        
+
         try
         {
             String name =InetAddress.getLocalHost().getHostName();
@@ -1142,7 +1142,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getQueryString()
     {
-        return _metadata.getURI().getQuery();
+        return _metadata==null?null:_metadata.getURI().getQuery();
     }
 
     /* ------------------------------------------------------------ */
@@ -1370,7 +1370,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getServerName()
     {
-        String name = _metadata.getURI().getHost();
+        String name = _metadata==null?null:_metadata.getURI().getHost();
 
         // Return already determined host
         if (name != null)
@@ -1383,7 +1383,7 @@ public class Request implements HttpServletRequest
     private String findServerName()
     {
         // Return host from header field
-        HttpField host = _metadata.getFields().getField(HttpHeader.HOST);
+        HttpField host = _metadata==null?null:_metadata.getFields().getField(HttpHeader.HOST);
         if (host!=null)
         {
             // TODO is this needed now?
@@ -1418,8 +1418,8 @@ public class Request implements HttpServletRequest
     @Override
     public int getServerPort()
     {
-        HttpURI uri = _metadata.getURI();
-        int port = (uri.getHost()==null)?findServerPort():uri.getPort();
+        HttpURI uri = _metadata==null?null:_metadata.getURI();
+        int port = (uri == null || uri.getHost()==null)?findServerPort():uri.getPort();
 
         // If no port specified, return the default port for the scheme
         if (port <= 0)
@@ -1437,7 +1437,7 @@ public class Request implements HttpServletRequest
     private int findServerPort()
     {
         // Return host from header field
-        HttpField host = _metadata.getFields().getField(HttpHeader.HOST);
+        HttpField host = _metadata==null?null:_metadata.getFields().getField(HttpHeader.HOST);
         if (host!=null)
         {
             // TODO is this needed now?

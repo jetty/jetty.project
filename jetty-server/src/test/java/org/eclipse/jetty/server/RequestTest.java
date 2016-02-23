@@ -55,6 +55,7 @@ import javax.servlet.http.Part;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.Utf8Appendable;
@@ -217,7 +218,7 @@ public class RequestTest
 
     @Test
     public void testMultiPart() throws Exception
-    {        
+    {
         final File testTmpDir = File.createTempFile("reqtest", null);
         if (testTmpDir.exists())
             testTmpDir.delete();
@@ -275,10 +276,10 @@ public class RequestTest
         // System.err.println(responses);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
-    
+
     @Test
     public void testBadMultiPart() throws Exception
-    {        
+    {
         //a bad multipart where one of the fields has no name
         final File testTmpDir = File.createTempFile("badmptest", null);
         if (testTmpDir.exists())
@@ -480,7 +481,7 @@ public class RequestTest
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
         assertEquals("8888",results.get(i++));
-        
+
 
         results.clear();
         response=_connector.getResponses(
@@ -492,7 +493,7 @@ public class RequestTest
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
         assertEquals("8888",results.get(i++));
-        
+
         results.clear();
         response=_connector.getResponses(
                 "GET http://myhost:8888/ HTTP/1.1\n"+
@@ -718,7 +719,7 @@ public class RequestTest
         String response = _connector.getResponses(request);
         assertThat(response,Matchers.containsString(" 200 OK"));
     }
-    
+
     @Test
     public void test8859EncodedForm() throws Exception
     {
@@ -746,7 +747,7 @@ public class RequestTest
         String response = _connector.getResponses(request);
         assertThat(response,Matchers.containsString(" 200 OK"));
     }
-    
+
     @Test
     public void testUTF8EncodedForm() throws Exception
     {
@@ -774,8 +775,8 @@ public class RequestTest
         String response = _connector.getResponses(request);
         assertThat(response,Matchers.containsString(" 200 OK"));
     }
-    
-    
+
+
     @Test
     public void testPartialRead() throws Exception
     {
@@ -859,10 +860,10 @@ public class RequestTest
         assertTrue(responses.indexOf("read='param=wrong' param=right")>0);
 
     }
-    
+
     @Test
     public void testSessionAfterRedirect() throws Exception
-    { 
+    {
         Handler handler = new AbstractHandler()
         {
             @Override
@@ -1345,7 +1346,7 @@ public class RequestTest
             ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         }
     }
-    
+
     @Test
     public void testHashDOSSize() throws Exception
     {
@@ -1398,6 +1399,40 @@ public class RequestTest
         Request request = new Request(null, null);
         request.setCharacterEncoding("doesNotExist");
     }
+
+    @Test
+    public void testGetterSafeFromNullPointerException()
+    {
+        Request request = new Request(null, null);
+
+        assertNull(request.getAuthType());
+        assertNull(request.getAuthentication());
+
+        assertNull(request.getContentType());
+
+        assertNull(request.getCookies());
+        assertNull(request.getContext());
+        assertNull(request.getContextPath());
+
+        assertNull(request.getHttpFields());
+        assertNull(request.getHttpURI());
+
+        assertNotNull(request.getScheme());
+        assertNotNull(request.getServerName());
+        assertNotNull(request.getServerPort());
+
+        assertNotNull(request.getAttributeNames());
+        assertFalse(request.getAttributeNames().hasMoreElements());
+
+        request.extractParameters();
+        assertNull(request.getQueryString());
+        assertNotNull(request.getQueryParameters());
+        assertEquals(0,request.getQueryParameters().size());
+        assertNotNull(request.getParameterMap());
+        assertEquals(0,request.getParameterMap().size());
+    }
+
+
 
     interface RequestTester
     {
@@ -1467,7 +1502,7 @@ public class RequestTest
             }
         }
     }
-    
+
     private class BadMultiPartRequestHandler extends AbstractHandler
     {
         File tmpDir;
@@ -1489,16 +1524,13 @@ public class RequestTest
                 request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
 
                 //We should get an error when we getParams if there was a problem parsing the multipart
-                request.getParameter("xxx");
+                request.getPart("xxx");
                 //A 200 response is actually wrong here
             }
             catch (RuntimeException e)
             {
                 response.sendError(500);
             }
-           
         }
     }
-    
-    
 }

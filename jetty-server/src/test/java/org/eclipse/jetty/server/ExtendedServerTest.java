@@ -29,6 +29,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
@@ -55,7 +56,7 @@ public class ExtendedServerTest extends HttpServerTestBase
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return configure(new ExtendedHttpConnection(getHttpConfiguration(), connector, endPoint), connector, endPoint);
+                return configure(new ExtendedHttpConnection(getHttpConfiguration(), connector, endPoint,getHttpCompliance()), connector, endPoint);
             }
         })
         {
@@ -93,9 +94,9 @@ public class ExtendedServerTest extends HttpServerTestBase
 
     private static class ExtendedHttpConnection extends HttpConnection
     {
-        public ExtendedHttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
+        public ExtendedHttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, HttpParser.Compliance compliance)
         {
-            super(config,connector,endPoint);
+            super(config,connector,endPoint,compliance);
         }
 
         @Override

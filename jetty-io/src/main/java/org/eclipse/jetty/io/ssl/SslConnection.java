@@ -36,7 +36,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
@@ -144,18 +143,8 @@ public class SslConnection extends AbstractConnection
     @Override
     public void onOpen()
     {
-        try
-        {
-            // Begin the handshake
-            _sslEngine.beginHandshake();
-            super.onOpen();
-            getDecryptedEndPoint().getConnection().onOpen();
-        }
-        catch (SSLException x)
-        {
-            getEndPoint().close();
-            throw new RuntimeIOException(x);
-        }
+        super.onOpen();
+        getDecryptedEndPoint().getConnection().onOpen();
     }
 
     @Override

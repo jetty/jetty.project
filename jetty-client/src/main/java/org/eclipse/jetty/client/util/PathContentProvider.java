@@ -31,14 +31,17 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A {@link ContentProvider} for files using JDK 7's {@code java.nio.file} APIs.
- * <p>
- * It is possible to specify, at the constructor, a buffer size used to read content from the
- * stream, by default 4096 bytes.
+ * <p>A {@link ContentProvider} for files using JDK 7's {@code java.nio.file} APIs.</p>
+ * <p>It is possible to specify, at the constructor, a buffer size used to read
+ * content from the stream, by default 4096 bytes.
+ * If a {@link ByteBufferPool} is provided via {@link #setByteBufferPool(ByteBufferPool)},
+ * the buffer will be allocated from that pool, otherwise one buffer will be
+ * allocated and used to read the file.</p>
  */
 public class PathContentProvider extends AbstractTypedContentProvider
 {
@@ -47,6 +50,7 @@ public class PathContentProvider extends AbstractTypedContentProvider
     private final Path filePath;
     private final long fileSize;
     private final int bufferSize;
+    private ByteBufferPool bufferPool;
 
     public PathContentProvider(Path filePath) throws IOException
     {
@@ -81,6 +85,16 @@ public class PathContentProvider extends AbstractTypedContentProvider
         return fileSize;
     }
 
+    public ByteBufferPool getByteBufferPool()
+    {
+        return bufferPool;
+    }
+
+    public void setByteBufferPool(ByteBufferPool byteBufferPool)
+    {
+        this.bufferPool = byteBufferPool;
+    }
+
     @Override
     public Iterator<ByteBuffer> iterator()
     {
@@ -89,7 +103,7 @@ public class PathContentProvider extends AbstractTypedContentProvider
 
     private class PathIterator implements Iterator<ByteBuffer>, Closeable
     {
-        private final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
+        private ByteBuffer buffer;
         private SeekableByteChannel channel;
         private long position;
 
@@ -106,6 +120,9 @@ public class PathContentProvider extends AbstractTypedContentProvider
             {
                 if (channel == null)
                 {
+                    buffer = bufferPool == null ?
+                            ByteBuffer.allocateDirect(bufferSize) :
+                            bufferPool.acquire(bufferSize, true);
                     channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Opened file {}", filePath);
@@ -120,9 +137,6 @@ public class PathContentProvider extends AbstractTypedContentProvider
                     LOG.debug("Read {} bytes from {}", read, filePath);
 
                 position += read;
-
-                if (!hasNext())
-                    close();
 
                 buffer.flip();
                 return buffer;
@@ -140,16 +154,12 @@ public class PathContentProvider extends AbstractTypedContentProvider
         }
 
         @Override
-        public void remove()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public void close()
         {
             try
             {
+                if (bufferPool != null && buffer != null)
+                    bufferPool.release(buffer);
                 if (channel != null)
                     channel.close();
             }

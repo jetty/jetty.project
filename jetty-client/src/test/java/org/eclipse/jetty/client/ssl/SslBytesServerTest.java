@@ -111,12 +111,12 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint)
+                return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint,getHttpCompliance())
                 {
                     @Override
-                    protected HttpParser newHttpParser()
+                    protected HttpParser newHttpParser(HttpParser.Compliance compliance)
                     {
-                        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize())
+                        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(),compliance)
                         {
                             @Override
                             public boolean parseNext(ByteBuffer buffer)

@@ -74,10 +74,13 @@ import static org.eclipse.jetty.http.HttpTokens.TAB;
  * is used to help the parsing of subsequent messages.
  * </p>
  * <p>
- * If the system property "org.eclipse.jetty.http.HttpParser.STRICT" is set to true,
- * then the parser will strictly pass on the exact strings received for methods and header
- * fields.  Otherwise a fast case insensitive string lookup is used that may alter the
- * case of the method and/or headers
+ * The parser can work in varying compliance modes:
+ * <dl>
+ * <dt>RFC7230</dt><dd>(default) Compliance with RFC7230</dd>
+ * <dt>RFC2616</dt><dd>Wrapped headers supported</dd>
+ * <dt>STRICT</dt><dd>(misnomer) Adherence to Servlet Specification requirement for 
+ * exact case of header names, bypassing the header caches, which are case insensitive, 
+ * otherwise equivalent to RFC2616</dd>
  * </p>
  * <p>
  * @see <a href="http://tools.ietf.org/html/rfc7230">RFC 7230</a>
@@ -85,7 +88,8 @@ import static org.eclipse.jetty.http.HttpTokens.TAB;
 public class HttpParser
 {
     public static final Logger LOG = Log.getLogger(HttpParser.class);
-    public final static boolean __STRICT=Boolean.getBoolean("org.eclipse.jetty.http.HttpParser.STRICT");
+    @Deprecated
+    public final static String __STRICT="org.eclipse.jetty.http.HttpParser.STRICT";
     public final static int INITIAL_URI_LENGTH=256;
 
     /**
@@ -102,6 +106,9 @@ public class HttpParser
      */
     public final static Trie<HttpField> CACHE = new ArrayTrie<>(2048);
 
+    // Compliance 
+    public enum Compliance { STRICT, RFC2616, RFC7230 };
+    
     // States
     public enum State
     {
@@ -139,7 +146,7 @@ public class HttpParser
     private final RequestHandler _requestHandler;
     private final ResponseHandler _responseHandler;
     private final int _maxHeaderBytes;
-    private final boolean _strict;
+    private final Compliance _compliance;
     private HttpField _field;
     private HttpHeader _header;
     private String _headerString;
@@ -218,49 +225,69 @@ public class HttpParser
         CACHE.put(new HttpField(HttpHeader.AUTHORIZATION,(String)null));
         CACHE.put(new HttpField(HttpHeader.COOKIE,(String)null));
     }
+    
+    private static Compliance compliance()
+    {
+        Boolean strict = Boolean.getBoolean(__STRICT);        
+        return strict?Compliance.STRICT:Compliance.RFC7230;
+    }
 
     /* ------------------------------------------------------------------------------- */
     public HttpParser(RequestHandler handler)
     {
-        this(handler,-1,__STRICT);
+        this(handler,-1,compliance());
     }
 
     /* ------------------------------------------------------------------------------- */
     public HttpParser(ResponseHandler handler)
     {
-        this(handler,-1,__STRICT);
+        this(handler,-1,compliance());
     }
 
     /* ------------------------------------------------------------------------------- */
     public HttpParser(RequestHandler handler,int maxHeaderBytes)
     {
-        this(handler,maxHeaderBytes,__STRICT);
+        this(handler,maxHeaderBytes,compliance());
     }
 
     /* ------------------------------------------------------------------------------- */
     public HttpParser(ResponseHandler handler,int maxHeaderBytes)
     {
-        this(handler,maxHeaderBytes,__STRICT);
+        this(handler,maxHeaderBytes,compliance());
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Deprecated
     public HttpParser(RequestHandler handler,int maxHeaderBytes,boolean strict)
+    {
+        this(handler,maxHeaderBytes,strict?Compliance.STRICT:compliance());
+    }
+    
+    /* ------------------------------------------------------------------------------- */
+    @Deprecated
+    public HttpParser(ResponseHandler handler,int maxHeaderBytes,boolean strict)
+    {
+        this(handler,maxHeaderBytes,strict?Compliance.STRICT:compliance());
+    }
+        
+    /* ------------------------------------------------------------------------------- */
+    public HttpParser(RequestHandler handler,int maxHeaderBytes,Compliance compliance)
     {
         _handler=handler;
         _requestHandler=handler;
         _responseHandler=null;
         _maxHeaderBytes=maxHeaderBytes;
-        _strict=strict;
+        _compliance=compliance==null?compliance():compliance;
     }
 
     /* ------------------------------------------------------------------------------- */
-    public HttpParser(ResponseHandler handler,int maxHeaderBytes,boolean strict)
+    public HttpParser(ResponseHandler handler,int maxHeaderBytes,Compliance compliance)
     {
         _handler=handler;
         _requestHandler=null;
         _responseHandler=handler;
         _maxHeaderBytes=maxHeaderBytes;
-        _strict=strict;
+        _compliance=compliance==null?compliance():compliance;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -556,7 +583,7 @@ public class HttpParser
                         _length=_string.length();
                         _methodString=takeString();
                         HttpMethod method=HttpMethod.CACHE.get(_methodString);
-                        if (method!=null && !_strict)
+                        if (method!=null && _compliance!=Compliance.STRICT)
                             _methodString=method.asString();
                         setState(State.SPACE1);
                     }
@@ -832,7 +859,7 @@ public class HttpParser
                         _host=true;
                         if (!(_field instanceof HostPortHttpField))
                         {
-                            _field=new HostPortHttpField(_header,_strict?_headerString:_header.asString(),_valueString);
+                            _field=new HostPortHttpField(_header,_compliance==Compliance.STRICT?_headerString:_header.asString(),_valueString);
                             add_to_connection_trie=_connectionFields!=null;
                         }
                       break;
@@ -861,7 +888,7 @@ public class HttpParser
                 if (add_to_connection_trie && !_connectionFields.isFull() && _header!=null && _valueString!=null)
                 {
                     if (_field==null)
-                        _field=new HttpField(_header,_strict?_headerString:_header.asString(),_valueString);
+                        _field=new HttpField(_header,_compliance==Compliance.STRICT?_headerString:_header.asString(),_valueString);
                     _connectionFields.put(_field);
                 }
             }
@@ -905,10 +932,32 @@ public class HttpParser
                         case HttpTokens.COLON:
                         case HttpTokens.SPACE:
                         case HttpTokens.TAB:
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Continuation");
+                        {
+                            if (_compliance.ordinal()>=Compliance.RFC7230.ordinal())
+                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Continuation");
 
+                            // header value without name - continuation?
+                            if (_valueString==null)
+                            {
+                                _string.setLength(0);
+                                _length=0;
+                            }
+                            else
+                            {
+                                setString(_valueString);
+                                _string.append(' ');
+                                _length++;
+                                _valueString=null;
+                            }
+                            setState(State.HEADER_VALUE);
+                            break;
+                        }
+                        
                         case HttpTokens.LINE_FEED:
                         {
+                            // process previous header
+                            parsedHeader();
+                            
                             _contentPosition=0;
 
                             // End of headers!
@@ -967,9 +1016,13 @@ public class HttpParser
                         default:
                         {
                             // now handle the ch
-                            if (ch<=HttpTokens.SPACE)
+                            if (ch<HttpTokens.SPACE)
                                 throw new BadMessageException();
 
+                            // process previous header
+                            parsedHeader();
+                            
+                            // handle new header
                             if (buffer.hasRemaining())
                             {
                                 // Try a look ahead for the known header name and value.
@@ -982,7 +1035,7 @@ public class HttpParser
                                     final String n;
                                     final String v;
 
-                                    if (_strict)
+                                    if (_compliance==Compliance.STRICT)
                                     {
                                         // Have to get the fields exactly from the buffer to match case
                                         String fn=field.getName();
@@ -1106,7 +1159,6 @@ public class HttpParser
                         _valueString=null;
                         _length=-1;
 
-                        parsedHeader();
                         setState(State.HEADER);
                         break;
                     }
@@ -1135,7 +1187,6 @@ public class HttpParser
                             _valueString=takeString();
                             _length=-1;
                         }
-                        parsedHeader();
                         setState(State.HEADER);
                         break;
                     }

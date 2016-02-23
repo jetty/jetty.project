@@ -41,7 +41,6 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
-    public static final int DEFAULT_IDLE_EXPIRY_MULTIPLE = 2;
 
 
     /**
@@ -51,8 +50,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
 
     private SessionIdManager _idMgr = null;
     
-    
-    private int _idleExpiryMultiple = DEFAULT_IDLE_EXPIRY_MULTIPLE;
+    private int _infinispanIdleTimeoutSec;
     
 
     /**
@@ -139,21 +137,25 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
        long now = System.currentTimeMillis();
        
        Set<String> expired = new HashSet<String>();
-       if (LOG.isDebugEnabled())
-           LOG.debug("Getting expired sessions " + now);
        
        for (String candidate:candidates)
        {
+           if (LOG.isDebugEnabled())
+               LOG.debug("Checking expiry for candidate {}", candidate);
            try
            {
                SessionData sd = load(candidate);
-               if (sd == null || sd.isExpiredAt(now))
+
+               if (sd == null || sd.isExpiredAt(now)) 
+               {
                    expired.add(candidate);
-                   
+                   if (LOG.isDebugEnabled())
+                       LOG.debug("Is null {} is expired {}", (sd==null), (sd !=null));
+               }    
            }
            catch (Exception e)
            {
-               LOG.warn("Error checking if session {} is expired", candidate, e);
+               LOG.warn("Error checking if candidate {} is expired", candidate, e);
            }
        }
        
@@ -170,10 +172,13 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         //if no requests arrive at any node before this timeout occurs, or no node 
         //scavenges the session before this timeout occurs, the session will be removed.
         //NOTE: that no session listeners can be called for this.
-        if (data.getMaxInactiveMs() > 0)
-            _cache.put(getCacheKey(id, _context), data, -1, TimeUnit.MILLISECONDS, (data.getMaxInactiveMs() * _idleExpiryMultiple), TimeUnit.MILLISECONDS);
+        if (data.getMaxInactiveMs() > 0 && getInfinispanIdleTimeoutSec() > 0)
+            _cache.put(getCacheKey(id, _context), data, -1, TimeUnit.MILLISECONDS, getInfinispanIdleTimeoutSec(), TimeUnit.SECONDS);
         else
             _cache.put(getCacheKey(id, _context), data);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Session {} saved to infinispan, expires {} ", id, data.getExpiry());
         
         //tickle the session id manager to keep the sessionid entry for this session up-to-date
         if (_idMgr != null && _idMgr instanceof InfinispanSessionIdManager)
@@ -197,5 +202,15 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     public boolean isPassivating()
     {
         return true;
+    }
+    
+    public void setInfinispanIdleTimeoutSec (int sec)
+    {
+        _infinispanIdleTimeoutSec = sec;
+    }
+    
+    public int getInfinispanIdleTimeoutSec ()
+    {
+        return _infinispanIdleTimeoutSec;
     }
 }

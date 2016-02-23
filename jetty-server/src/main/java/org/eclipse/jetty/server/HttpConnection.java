@@ -90,7 +90,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return last;
     }
 
-    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, HttpParser.Compliance compliance)
     {
         super(endPoint, connector.getExecutor());
         _config = config;
@@ -99,7 +99,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _generator = newHttpGenerator();
         _channel = newHttpChannel();
         _input = _channel.getRequest().getHttpInput();
-        _parser = newHttpParser();
+        _parser = newHttpParser(compliance);
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
     }
@@ -119,9 +119,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this);
     }
 
-    protected HttpParser newHttpParser()
+    protected HttpParser newHttpParser(HttpParser.Compliance compliance)
     {
-        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize());
+        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(), compliance);
     }
 
     protected HttpParser.RequestHandler newRequestHandler()

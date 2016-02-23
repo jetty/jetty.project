@@ -21,7 +21,6 @@ package org.eclipse.jetty.jmx;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
-import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 
 import org.eclipse.jetty.util.component.Container;
@@ -44,15 +42,15 @@ import org.eclipse.jetty.util.log.Logger;
 public class MBeanContainer implements Container.InheritedListener, Dumpable
 {
     private final static Logger LOG = Log.getLogger(MBeanContainer.class.getName());
-    private final static ConcurrentMap<String, AtomicInteger> __unique = new ConcurrentHashMap<String, AtomicInteger>();
+    private final static ConcurrentMap<String, AtomicInteger> __unique = new ConcurrentHashMap<>();
 
     public static void resetUnique()
     {
         __unique.clear();
     }
-    
+
     private final MBeanServer _mbeanServer;
-    private final WeakHashMap<Object, ObjectName> _beans = new WeakHashMap<Object, ObjectName>();
+    private final Map<Object, ObjectName> _beans = new ConcurrentHashMap<>();
     private String _domain = null;
 
     /**
@@ -61,25 +59,23 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
      * @param object instance for which object name is looked up
      * @return object name associated with specified instance, or null if not found
      */
-    public synchronized ObjectName findMBean(Object object)
+    public ObjectName findMBean(Object object)
     {
-        ObjectName bean = _beans.get(object);
-        return bean == null ? null : bean;
+        return _beans.get(object);
     }
 
     /**
      * Lookup an instance by object name
      *
-     * @param oname object name of instance
+     * @param objectName object name of instance
      * @return instance associated with specified object name, or null if not found
      */
-    public synchronized Object findBean(ObjectName oname)
+    public Object findBean(ObjectName objectName)
     {
         for (Map.Entry<Object, ObjectName> entry : _beans.entrySet())
         {
-            ObjectName bean = entry.getValue();
-            if (bean.equals(oname))
-                return entry.getKey();
+            if (entry.getKey().equals(objectName))
+                return entry.getValue();
         }
         return null;
     }
@@ -129,92 +125,90 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
     public void beanAdded(Container parent, Object obj)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("beanAdded {}->{}",parent,obj);
-        
-        // Is their an object name for the parent
-        ObjectName pname=null;
-        if (parent!=null)
+            LOG.debug("beanAdded {}->{}", parent, obj);
+
+        // Is there an object name for the parent ?
+        ObjectName parentObjectName = null;
+        if (parent != null)
         {
-            pname=_beans.get(parent);
-            if (pname==null)
+            parentObjectName = findMBean(parent);
+            if (parentObjectName == null)
             {
-                // create the parent bean
-                beanAdded(null,parent);
-                pname=_beans.get(parent);
+                // Create the parent bean.
+                beanAdded(null, parent);
+                parentObjectName = findMBean(parent);
             }
         }
-        
-        // Does an mbean already exist?
+
+        // Does the mbean already exist ?
         if (obj == null || _beans.containsKey(obj))
             return;
-        
+
         try
         {
-            // Create an MBean for the object
+            // Create an MBean for the object.
             Object mbean = ObjectMBean.mbeanFor(obj);
             if (mbean == null)
                 return;
 
-            
-            ObjectName oname = null;
+            ObjectName objectName = null;
             if (mbean instanceof ObjectMBean)
             {
                 ((ObjectMBean)mbean).setMBeanContainer(this);
-                oname = ((ObjectMBean)mbean).getObjectName();
+                objectName = ((ObjectMBean)mbean).getObjectName();
             }
 
-            //no override mbean object name, so make a generic one
-            if (oname == null)
-            {      
-                //if no explicit domain, create one
+            // No override of the mbean's ObjectName, so make a generic one.
+            if (objectName == null)
+            {
+                // If no explicit domain, create one.
                 String domain = _domain;
                 if (domain == null)
                     domain = obj.getClass().getPackage().getName();
-
 
                 String type = obj.getClass().getName().toLowerCase(Locale.ENGLISH);
                 int dot = type.lastIndexOf('.');
                 if (dot >= 0)
                     type = type.substring(dot + 1);
 
+                StringBuilder buf = new StringBuilder();
 
-                StringBuffer buf = new StringBuffer();
+                String context = (mbean instanceof ObjectMBean) ? makeName(((ObjectMBean)mbean).getObjectContextBasis()) : null;
+                if (context == null && parentObjectName != null)
+                    context = parentObjectName.getKeyProperty("context");
 
-                String context = (mbean instanceof ObjectMBean)?makeName(((ObjectMBean)mbean).getObjectContextBasis()):null;
-                if (context==null && pname!=null)
-                    context=pname.getKeyProperty("context");
-                                
-                if (context != null && context.length()>1)
+                if (context != null && context.length() > 1)
                     buf.append("context=").append(context).append(",");
-                
+
                 buf.append("type=").append(type);
 
-                String name = (mbean instanceof ObjectMBean)?makeName(((ObjectMBean)mbean).getObjectNameBasis()):context;
-                if (name != null && name.length()>1)
+                String name = (mbean instanceof ObjectMBean) ? makeName(((ObjectMBean)mbean).getObjectNameBasis()) : context;
+                if (name != null && name.length() > 1)
                     buf.append(",").append("name=").append(name);
 
                 String basis = buf.toString();
-                
+
                 AtomicInteger count = __unique.get(basis);
-                if (count==null)
+                if (count == null)
                 {
-                    count=__unique.putIfAbsent(basis,new AtomicInteger());
-                    if (count==null)
-                        count=__unique.get(basis);
+                    count = new AtomicInteger();
+                    AtomicInteger existing = __unique.putIfAbsent(basis, count);
+                    if (existing != null)
+                        count = existing;
                 }
-                
-                oname = ObjectName.getInstance(domain + ":" + basis + ",id=" + count.getAndIncrement());
+
+                objectName = ObjectName.getInstance(domain + ":" + basis + ",id=" + count.getAndIncrement());
             }
 
-            ObjectInstance oinstance = _mbeanServer.registerMBean(mbean, oname);
+            _mbeanServer.registerMBean(mbean, objectName);
             if (LOG.isDebugEnabled())
-                LOG.debug("Registered {}", oinstance.getObjectName());
-            _beans.put(obj, oinstance.getObjectName());
+                LOG.debug("Registered {}", objectName);
 
+            _beans.put(obj, objectName);
         }
-        catch (Exception e)
+        catch (Throwable x)
         {
-            LOG.warn("bean: " + obj, e);
+            LOG.warn("bean: " + obj, x);
         }
     }
 
@@ -222,26 +216,12 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
     public void beanRemoved(Container parent, Object obj)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("beanRemoved {}",obj);
-        ObjectName bean = _beans.remove(obj);
+            LOG.debug("beanRemoved {}", obj);
 
-        if (bean != null)
-        {
-            try
-            {
-                _mbeanServer.unregisterMBean(bean);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unregistered {}", bean);
-            }
-            catch (javax.management.InstanceNotFoundException e)
-            {
-                LOG.ignore(e);
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e);
-            }
-        }
+        ObjectName objectName = _beans.remove(obj);
+
+        if (objectName != null)
+            unregister(objectName);
     }
 
     /**
@@ -250,9 +230,15 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
      */
     public String makeName(String basis)
     {
-        if (basis==null)
-            return basis;
-        return basis.replace(':', '_').replace('*', '_').replace('?', '_').replace('=', '_').replace(',', '_').replace(' ', '_');
+        if (basis == null)
+            return null;
+        return basis
+                .replace(':', '_')
+                .replace('*', '_')
+                .replace('?', '_')
+                .replace('=', '_')
+                .replace(',', '_')
+                .replace(' ', '_');
     }
 
     @Override
@@ -270,17 +256,26 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
 
     public void destroy()
     {
-        for (ObjectName oname : _beans.values())
-            if (oname!=null)
-            {
-                try
-                {
-                    _mbeanServer.unregisterMBean(oname);
-                }
-                catch (MBeanRegistrationException | InstanceNotFoundException e)
-                {
-                    LOG.warn(e);
-                }
-            }
+        _beans.values().stream()
+                .filter(objectName -> objectName != null)
+                .forEach(this::unregister);
+    }
+
+    private void unregister(ObjectName objectName)
+    {
+        try
+        {
+            getMBeanServer().unregisterMBean(objectName);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unregistered {}", objectName);
+        }
+        catch (MBeanRegistrationException | InstanceNotFoundException x)
+        {
+            LOG.ignore(x);
+        }
+        catch (Throwable x)
+        {
+            LOG.warn(x);
+        }
     }
 }

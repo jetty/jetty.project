@@ -459,7 +459,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @Override
     public String toString()
     {
-        return String.format("%s[%s]%x%s,queue=%d,pool=%s",
+        return String.format("%s[%s]@%x%s,queue=%d,pool=%s",
                 HttpDestination.class.getSimpleName(),
                 asString(),
                 hashCode(),

@@ -26,11 +26,12 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.SessionManager;
+
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.AbstractSessionIdManager;
 import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.server.session.SessionManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.infinispan.commons.api.BasicCache;
@@ -68,9 +69,8 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     public final static String ID_KEY = "__o.e.j.s.infinispanIdMgr__";
-    public static final int DEFAULT_IDLE_EXPIRY_MULTIPLE = 2;
     protected BasicCache<String,Object> _cache;
-    private int _idleExpiryMultiple = DEFAULT_IDLE_EXPIRY_MULTIPLE;
+    private int _infinispanIdleTimeoutSec = 0;
 
     
     
@@ -141,22 +141,27 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
             LOG.warn("Problem checking inUse for id="+clusterId, e);
             return false;
         }
-        
+
+    }
+
+
+    public void setInfinispanIdleTimeoutSec (int sec)
+    {
+        if (sec <= 1)
+        {
+            LOG.warn("Idle expiry multiple of {} for session ids set to less than minimum. Using value of {} instead.", sec, 0);
+            _infinispanIdleTimeoutSec = 0;
+        }
+        else
+            _infinispanIdleTimeoutSec = sec;
     }
 
     
-    public void setIdleExpiryMultiple (int multiplier)
+    
+    
+    public int getInfinispanIdleTimeoutSec()
     {
-        if (multiplier <= 1)
-        {
-            LOG.warn("Idle expiry multiple of {} for session ids set to less than minimum. Using value of {} instead.", multiplier, DEFAULT_IDLE_EXPIRY_MULTIPLE);
-        }
-        _idleExpiryMultiple = multiplier;
-    }
-
-    public int getIdleExpiryMultiple ()
-    {
-        return _idleExpiryMultiple;
+        return _infinispanIdleTimeoutSec;
     }
     
    
@@ -273,10 +278,10 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
         if (session == null)
             return;
         
-      if (session.getMaxInactiveInterval() == 0)
-            insert (session.getId());
+        if (session.getMaxInactiveInterval() > 0 && getInfinispanIdleTimeoutSec() > 0)
+            insert (session.getId(), getInfinispanIdleTimeoutSec());
         else
-            insert (session.getId(), session.getMaxInactiveInterval() * getIdleExpiryMultiple());
+            insert (session.getId());
     }
 
     /** 
@@ -286,5 +291,26 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     public boolean removeId(String id)
     {
        return delete (id);        
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Remove an id from use by telling all contexts to remove a session with this id.
+     * 
+     * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
+     */
+    @Override
+    public void expireAll(String id)
+    {
+        LOG.debug("Expiring "+id);
+        //take the id out of the list of known sessionids for this node - TODO consider if we didn't remove it from this node
+        //it is because infinispan probably already timed it out. So, we only want to expire it from memory and NOT load it if present
+        removeId(id);
+        //tell all contexts that may have a session object with this id to
+        //get rid of them
+        for (SessionManager manager:getSessionManagers())
+        {
+            manager.invalidate(id);
+        }
     }
 }

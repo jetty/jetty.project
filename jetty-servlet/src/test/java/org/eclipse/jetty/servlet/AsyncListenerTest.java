@@ -19,6 +19,7 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.AsyncContext;
@@ -31,8 +32,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.junit.After;
 import org.junit.Test;
 
@@ -82,6 +86,8 @@ public class AsyncListenerTest
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
             ServletOutputStream output = response.getOutputStream();
             output.println(event.getThrowable().getClass().getName());
+            if (event.getThrowable().getCause()!=null)
+                output.println(event.getThrowable().getCause().getClass().getName());
             output.println("COMPLETE");
             event.getAsyncContext().complete();
         });
@@ -151,10 +157,17 @@ public class AsyncListenerTest
         });
 
         // Add a custom error page.
-        ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler();
-        errorHandler.setServer(server);
-        errorHandler.addErrorPage(HttpStatus.BAD_GATEWAY_502, "/error");
-        server.addManaged(errorHandler);
+        ErrorHandler errorHandler = new ErrorHandler()
+        {
+            @Override
+            protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
+            {
+                writer.write("CUSTOM\n");
+                super.writeErrorPageMessage(request,writer,code,message,uri);
+            }
+            
+        };
+        server.setErrorHandler(errorHandler);
 
         String httpResponse = connector.getResponses("" +
                 "GET /ctx/path HTTP/1.1\r\n" +
@@ -184,7 +197,7 @@ public class AsyncListenerTest
                         consumer.accept(event);
                     }
                 });
-                throw new TestRuntimeException();
+                throw new QuietServletException(new TestRuntimeException());
             }
         }), "/path/*");
         context.addServlet(new ServletHolder(new HttpServlet()
@@ -297,10 +310,18 @@ public class AsyncListenerTest
         });
 
         // Add a custom error page.
-        ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler();
+        ErrorHandler errorHandler = new ErrorHandler()
+        {
+            @Override
+            protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
+            {
+                writer.write("CUSTOM\n");
+                super.writeErrorPageMessage(request,writer,code,message,uri);
+            }
+            
+        };
         errorHandler.setServer(server);
-        errorHandler.addErrorPage(HttpStatus.BAD_GATEWAY_502, "/error");
-        server.addManaged(errorHandler);
+        server.setErrorHandler(errorHandler);
 
         String httpResponse = connector.getResponses("" +
                 "GET / HTTP/1.1\r\n" +
