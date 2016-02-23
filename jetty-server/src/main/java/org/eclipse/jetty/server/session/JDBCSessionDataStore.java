@@ -867,11 +867,11 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             connection.setAutoCommit(true);
             
             /*
-             * 1. Select sessions for our node and context that have expired
+             * 1. Select sessions for our context that have expired
              */
             long upperBound = now;
             if (LOG.isDebugEnabled())
-                LOG.debug ("{}- Pass 1: Searching for sessions for node {} and context {} expired before {}", _context.getWorkerName(), _context.getCanonicalContextPath(), upperBound);
+                LOG.debug ("{}- Pass 1: Searching for sessions for context {} expired before {}", _context.getWorkerName(), _context.getCanonicalContextPath(), upperBound);
 
             try (PreparedStatement statement = _sessionTableSchema.getMyExpiredSessionsStatement(connection, _context.getCanonicalContextPath(), _context.getVhost(), upperBound))
             {

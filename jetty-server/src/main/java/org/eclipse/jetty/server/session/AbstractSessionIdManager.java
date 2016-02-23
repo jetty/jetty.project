@@ -351,7 +351,15 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         if (LOG.isDebugEnabled())
             LOG.debug("Expiring {}",id);
         
-        //take the id out of the list of known sessionids for this node
+        //TODO handle cases:
+        //1. infinispan session id manager may not be able to remove id because it has timed out in infinispan but yet
+        //we want to remove a session object from the session store (session data store probably ok because it has same timeout as session id mgr entries)
+        //2. a session id manager may not know all session ids (ie subset in memory only) and therefore won't remove
+        //it, but it should be removed from the session data store (could it be in session store?)
+        //3. old sessions that no node is handling, eg after all restarted, but need to be removed from
+        //session data store, AND have listeners called on them.
+        //BUT want to avoid loading into memory sessions that this node is not managing (eg have 3 nodes all running session mgrs,
+        //all 3 find the expired session and load it into memory and expire it
         if (removeId(id))
         {
             //tell all contexts that may have a session object with this id to
