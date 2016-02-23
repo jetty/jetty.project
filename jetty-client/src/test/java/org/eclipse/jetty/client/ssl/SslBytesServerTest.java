@@ -53,6 +53,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.ssl.SslBytesTest.TLSRecord.Type;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -114,7 +115,7 @@ public class SslBytesServerTest extends SslBytesTest
                 return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint,getHttpCompliance())
                 {
                     @Override
-                    protected HttpParser newHttpParser(HttpParser.Compliance compliance)
+                    protected HttpParser newHttpParser(HttpCompliance compliance)
                     {
                         return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(),compliance)
                         {

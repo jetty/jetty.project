@@ -32,6 +32,41 @@ import org.junit.Test;
 
 public class HttpGeneratorServerTest
 { 
+    @Test
+    public void test_0_9() throws Exception
+    {
+        ByteBuffer header = BufferUtil.allocate(8096);
+        ByteBuffer content = BufferUtil.toBuffer("0123456789");
+
+        HttpGenerator gen = new HttpGenerator();
+
+        HttpGenerator.Result result = gen.generateResponse(null, null, null, content, true);
+        assertEquals(HttpGenerator.Result.NEED_INFO, result);
+        assertEquals(HttpGenerator.State.START, gen.getState());
+
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_0_9, 200, null, new HttpFields(), 10);
+        info.getFields().add("Content-Type", "test/data");
+        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+
+        result = gen.generateResponse(info, null, null, content, true);
+        assertEquals(HttpGenerator.Result.FLUSH, result);
+        assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
+        String response = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        response += BufferUtil.toString(content);
+        BufferUtil.clear(content);        
+
+        result = gen.generateResponse(null, null, null, content, false);
+        assertEquals(HttpGenerator.Result.SHUTDOWN_OUT, result);
+        assertEquals(HttpGenerator.State.END, gen.getState());
+        
+        assertEquals(10, gen.getContentPrepared());
+        
+        assertThat(response, not(containsString("200 OK")));
+        assertThat(response, not(containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT")));
+        assertThat(response, not(containsString("Content-Length: 10")));
+        assertThat(response, containsString("0123456789"));
+    }
     
     @Test
     public void testSimple() throws Exception

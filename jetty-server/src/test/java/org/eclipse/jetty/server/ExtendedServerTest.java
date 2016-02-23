@@ -29,7 +29,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -93,7 +93,7 @@ public class ExtendedServerTest extends HttpServerTestBase
 
     private static class ExtendedHttpConnection extends HttpConnection
     {
-        public ExtendedHttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, HttpParser.Compliance compliance)
+        public ExtendedHttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, HttpCompliance compliance)
         {
             super(config,connector,endPoint,compliance);
         }

@@ -260,6 +260,11 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
 
         switch (_metadata.getVersion())
         {
+            case HTTP_0_9:
+            {
+                persistent=false;
+                break;
+            }
             case HTTP_1_0:
             {
                 if (getHttpConfiguration().isPersistentConnectionsEnabled())
@@ -337,7 +342,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
 
             default:
             {
-                throw new IllegalStateException();
+                throw new IllegalStateException("unsupported version "+_metadata.getVersion());
             }
         }
 
