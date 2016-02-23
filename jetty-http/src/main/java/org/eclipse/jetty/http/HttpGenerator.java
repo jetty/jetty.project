@@ -359,7 +359,12 @@ public class HttpGenerator
                         break;
                         
                     default:
-                        throw new IllegalArgumentException(version+" not supported");
+                        _persistent = false;
+                        _endOfContent=EndOfContent.EOF_CONTENT;
+                        if (BufferUtil.hasContent(content))
+                            _contentPrepared+=content.remaining();
+                        _state = last?State.COMPLETING:State.COMMITTED;
+                        return Result.FLUSH;
                 }
                 
                 // Do we need a response header

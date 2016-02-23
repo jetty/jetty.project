@@ -35,3 +35,6 @@ etc/jetty-http.xml
 
 ## Thread priority delta to give to acceptor threads
 # jetty.http.acceptorPriorityDelta=0
+
+## HTTP Compliance: RFC7230, RFC2616, LEGACY
+# jetty.http.compliance=RFC7230

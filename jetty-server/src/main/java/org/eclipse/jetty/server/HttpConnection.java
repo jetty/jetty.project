@@ -24,6 +24,7 @@ import java.nio.channels.WritePendingException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -90,7 +91,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return last;
     }
 
-    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, HttpParser.Compliance compliance)
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, HttpCompliance compliance)
     {
         super(endPoint, connector.getExecutor());
         _config = config;
@@ -119,7 +120,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this);
     }
 
-    protected HttpParser newHttpParser(HttpParser.Compliance compliance)
+    protected HttpParser newHttpParser(HttpCompliance compliance)
     {
         return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(), compliance);
     }
