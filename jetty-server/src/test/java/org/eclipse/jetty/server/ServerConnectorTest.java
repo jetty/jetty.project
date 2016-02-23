@@ -37,6 +37,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -49,6 +50,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 public class ServerConnectorTest
@@ -234,5 +236,33 @@ public class ServerConnectorTest
         assertSame(proxy, factories.iterator().next());
         assertEquals(2, connector.getBeans(ConnectionFactory.class).size());
         assertEquals(proxy.getProtocol(), connector.getDefaultProtocol());
+    }
+
+    @Test
+    public void testExceptionWhileAccepting() throws Exception
+    {
+        Server server = new Server();
+        AtomicLong spins = new AtomicLong();
+        ServerConnector connector = new ServerConnector(server)
+        {
+            @Override
+            public void accept(int acceptorID) throws IOException
+            {
+                spins.incrementAndGet();
+                throw new IOException("explicitly_thrown_by_test");
+            }
+        };
+        server.addConnector(connector);
+        server.start();
+
+        try
+        {
+            Thread.sleep(1000);
+            assertThat(spins.get(), Matchers.lessThan(5L));
+        }
+        finally
+        {
+            server.stop();
+        }
     }
 }
