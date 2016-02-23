@@ -81,8 +81,7 @@ import static org.eclipse.jetty.http.HttpTokens.TAB;
  * <dt>LEGACY</dt><dd>(aka STRICT) Adherence to Servlet Specification requirement for 
  * exact case of header names, bypassing the header caches, which are case insensitive, 
  * otherwise equivalent to RFC2616</dd>
- * </p>
- * <p>
+ * </dl>
  * @see <a href="http://tools.ietf.org/html/rfc7230">RFC 7230</a>
  */
 public class HttpParser

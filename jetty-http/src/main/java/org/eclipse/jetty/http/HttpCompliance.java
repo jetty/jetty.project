@@ -27,5 +27,6 @@ package org.eclipse.jetty.http;
  * <dt>LEGACY</dt><dd>(aka STRICT) Adherence to Servlet Specification requirement for 
  * exact case of header names, bypassing the header caches, which are case insensitive, 
  * otherwise equivalent to RFC2616</dd>
+ * </dl>
  */
 public enum HttpCompliance { LEGACY, RFC2616, RFC7230 }
