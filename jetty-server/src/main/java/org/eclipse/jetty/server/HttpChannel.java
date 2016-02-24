@@ -736,12 +736,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (LOG.isDebugEnabled())
                 LOG.debug("Commit failed", x);
 
-            if (x instanceof EofException || x instanceof ClosedChannelException)
-            {
-                _callback.failed(x);
-                _response.getHttpOutput().closed();
-            }
-            else
+            if (x instanceof BadMessageException)
             {
                 _transport.send(HttpGenerator.RESPONSE_500_INFO, false, null, true, new Callback()
                 {
@@ -755,10 +750,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     @Override
                     public void failed(Throwable th)
                     {
+                        _transport.abort(x);
                         _callback.failed(x);
-                        _response.getHttpOutput().closed();
                     }
                 });
+            }
+            else
+            {
+                _transport.abort(x);
+                _callback.failed(x);
             }
         }
     }

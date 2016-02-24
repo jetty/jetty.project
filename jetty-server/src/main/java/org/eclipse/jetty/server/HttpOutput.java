@@ -447,11 +447,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         // write any remaining content in the buffer directly
         if (len>0)
         {
-            ByteBuffer wrap = ByteBuffer.wrap(b, off, len);
-            ByteBuffer view = wrap.duplicate();
-
             // write a buffer capacity at a time to avoid JVM pooling large direct buffers
             // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6210541
+            ByteBuffer view = ByteBuffer.wrap(b, off, len);
             while (len>getBufferSize())
             {
                 int p=view.position();
