@@ -28,19 +28,21 @@ import org.eclipse.jetty.util.component.LifeCycle;
  */
 public interface SessionIdManager extends LifeCycle
 {
+    /* ------------------------------------------------------------ */
     /**
      * @param id The plain session ID (ie no workername extension)
      * @return True if the session ID is in use by at least one context.
      */
     public boolean isIdInUse(String id);
     
-    
+    /* ------------------------------------------------------------ */
     /**
      * Notify the sessionid manager that a particular session id is in use
-     * @param the session whose id is being used
+     * @param session the session whose id is being used
      */
     public void useId (Session session);
     
+    /* ------------------------------------------------------------ */
     /**
      * Remove id
      * @param id the plain session id (no workername extension) of the session to remove
@@ -48,6 +50,8 @@ public interface SessionIdManager extends LifeCycle
      */
     public boolean removeId (String id);
     
+    
+    /* ------------------------------------------------------------ */
     /**
      * Invalidate all sessions on all contexts that share the same id.
      * 
@@ -55,6 +59,7 @@ public interface SessionIdManager extends LifeCycle
      */
     public void expireAll(String id);
     
+    /* ------------------------------------------------------------ */
     /**
      * Create a new Session ID.
      * 
@@ -65,7 +70,10 @@ public interface SessionIdManager extends LifeCycle
     public String newSessionId(HttpServletRequest request,long created);
     
     
-    
+    /* ------------------------------------------------------------ */
+    /** 
+     * @return the unique name of this server instance
+     */
     public String getWorkerName();
     
     

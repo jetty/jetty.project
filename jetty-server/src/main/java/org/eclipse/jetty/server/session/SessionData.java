@@ -84,6 +84,9 @@ public class SessionData implements Serializable
     }
     
 
+    /**
+     * @return time at which session was last written out
+     */
     public long getLastSaved()
     {
         return _lastSaved;
@@ -91,32 +94,53 @@ public class SessionData implements Serializable
 
 
 
+    /**
+     * @param lastSaved
+     */
     public void setLastSaved(long lastSaved)
     {
         _lastSaved = lastSaved;
     }
 
 
+    /**
+     * @return true if a session needs to be written out
+     */
     public boolean isDirty()
     {
         return _dirty;
     }
 
+    /**
+     * @param dirty
+     */
     public void setDirty(boolean dirty)
     {
         _dirty = dirty;
     }
     
+    /**
+     * @param name
+     * @return the value of the attribute named
+     */
     public Object getAttribute (String name)
     {
         return _attributes.get(name);
     }
 
+    /**
+     * @return a Set of attribute names
+     */
     public Set<String> getKeys()
     {
         return _attributes.keySet();
     }
     
+    /**
+     * @param name
+     * @param value
+     * @return
+     */
     public Object setAttribute (String name, Object value)
     {
         Object old = (value==null?_attributes.remove(name):_attributes.put(name,value));
@@ -128,6 +152,9 @@ public class SessionData implements Serializable
     }
     
     
+    /**
+     * @param name
+     */
     public void setDirty (String name)
     {
         setDirty (true);
@@ -135,101 +162,161 @@ public class SessionData implements Serializable
     
     
     
+    /**
+     * @param attributes
+     */
     public void putAllAttributes (Map<String,Object> attributes)
     {
         _attributes.putAll(attributes);
     }
     
+    /**
+     * @return an unmodifiable map of the attributes
+     */
     public Map<String,Object> getAllAttributes()
     {
         return Collections.unmodifiableMap(_attributes);
     }
     
+    /**
+     * @return the id of the session
+     */
     public String getId()
     {
         return _id;
     }
 
+    /**
+     * @param id
+     */
     public void setId(String id)
     {
         _id = id;
     }
 
+    /**
+     * @return the context path associated with this session
+     */
     public String getContextPath()
     {
         return _contextPath;
     }
 
+    /**
+     * @param contextPath
+     */
     public void setContextPath(String contextPath)
     {
         _contextPath = contextPath;
     }
 
+    /**
+     * @return virtual host of context associated with session
+     */
     public String getVhost()
     {
         return _vhost;
     }
 
+    /**
+     * @param vhost
+     */
     public void setVhost(String vhost)
     {
         _vhost = vhost;
     }
 
+    /**
+     * @return last node to manage the session
+     */
     public String getLastNode()
     {
         return _lastNode;
     }
 
+    /**
+     * @param lastNode
+     */
     public void setLastNode(String lastNode)
     {
         _lastNode = lastNode;
     }
 
+    /**
+     * @return time at which session expires
+     */
     public long getExpiry()
     {
         return _expiry;
     }
 
+    /**
+     * @param expiry
+     */
     public void setExpiry(long expiry)
     {
         _expiry = expiry;
     }
 
+    /**
+     * @return
+     */
     public long getCreated()
     {
         return _created;
     }
 
+    /**
+     * @param created
+     */
     public void setCreated(long created)
     {
         _created = created;
     }
 
+    /**
+     * @return time cookie was set
+     */
     public long getCookieSet()
     {
         return _cookieSet;
     }
 
+    /**
+     * @param cookieSet
+     */
     public void setCookieSet(long cookieSet)
     {
         _cookieSet = cookieSet;
     }
 
+    /**
+     * @return time session was accessed
+     */
     public long getAccessed()
     {
         return _accessed;
     }
 
+    /**
+     * @param accessed
+     */
     public void setAccessed(long accessed)
     {
         _accessed = accessed;
     }
 
+    /**
+     * @return previous time session was accessed
+     */
     public long getLastAccessed()
     {
         return _lastAccessed;
     }
 
+    /**
+     * @param lastAccessed
+     */
     public void setLastAccessed(long lastAccessed)
     {
         _lastAccessed = lastAccessed;
@@ -242,16 +329,26 @@ public class SessionData implements Serializable
 */
  
 
+    /**
+     * @return
+     */
     public long getMaxInactiveMs()
     {
         return _maxInactiveMs;
     }
 
+    /**
+     * @param maxInactive
+     */
     public void setMaxInactiveMs(long maxInactive)
     {
         _maxInactiveMs = maxInactive;
     }
 
+    /**
+     * @param out
+     * @throws IOException
+     */
     private void writeObject(java.io.ObjectOutputStream out) throws IOException
     {  
         out.writeUTF(_id); //session id
@@ -269,6 +366,11 @@ public class SessionData implements Serializable
         out.writeObject(_attributes);
     }
     
+    /**
+     * @param in
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
     {
         _id = in.readUTF();
@@ -286,6 +388,10 @@ public class SessionData implements Serializable
     }
     
     
+    /**
+     * @param time
+     * @return
+     */
     public boolean isExpiredAt (long time)
     {
         if (LOG.isDebugEnabled())

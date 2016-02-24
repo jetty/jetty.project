@@ -38,9 +38,9 @@ public class NullSessionDataStore extends AbstractSessionDataStore
         return null;
     }
 
-    
+
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(org.eclipse.jetty.server.session.SessionKey, long, long, long, long)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#newSessionData(java.lang.String, long, long, long, long)
      */
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
@@ -57,8 +57,9 @@ public class NullSessionDataStore extends AbstractSessionDataStore
        return true;
     }
 
+
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore()
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, boolean)
      */
     @Override
     public void doStore(String id, SessionData data, boolean isNew) throws Exception
@@ -66,8 +67,9 @@ public class NullSessionDataStore extends AbstractSessionDataStore
         //noop
     }
 
+ 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired()
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
      */
     @Override
     public Set<String> getExpired(Set<String> candidates)

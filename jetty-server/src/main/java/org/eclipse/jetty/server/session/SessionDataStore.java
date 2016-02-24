@@ -36,7 +36,7 @@ public interface SessionDataStore extends LifeCycle
      * given context. A SessionDataStore can only 
      * be used by one context(/session manager).
      * 
-     * @param context
+     * @param context context associated
      */
     void initialize(SessionContext context);
     
@@ -44,8 +44,8 @@ public interface SessionDataStore extends LifeCycle
     
     /**
      * Read in session data from storage
-     * @param id
-     * @return
+     * @param id identity of session to load
+     * @return the SessionData matching the id
      * @throws Exception
      */
     public SessionData load (String id) throws Exception;
@@ -53,7 +53,12 @@ public interface SessionDataStore extends LifeCycle
     
     /**
      * Create a new SessionData 
-     * @return
+     * @param id
+     * @param created
+     * @param accessed
+     * @param lastAccessed
+     * @param maxInactiveMs
+     * @return  a new SessionData object
      */
     public SessionData newSessionData (String id, long created, long accessed, long lastAccessed, long maxInactiveMs);
     
@@ -62,8 +67,8 @@ public interface SessionDataStore extends LifeCycle
     
     /**
      * Write out session data to storage
-     * @param id
-     * @param data
+     * @param id identity of session to store
+     * @param data info of session to store
      * @throws Exception
      */
     public void store (String id, SessionData data) throws Exception;
@@ -72,8 +77,8 @@ public interface SessionDataStore extends LifeCycle
     
     /**
      * Delete session data from storage
-     * @param id
-     * @return
+     * @param id identity of session to delete
+     * @return true if the session was deleted from the permanent store
      * @throws Exception
      */
     public boolean delete (String id) throws Exception;
@@ -88,7 +93,7 @@ public interface SessionDataStore extends LifeCycle
      * @param candidates if provided, these are keys of sessions that
      * the SessionStore thinks has expired and should be verified by the
      * SessionDataStore
-     * @return
+     * @return set of session ids
      */
     public Set<String> getExpired (Set<String> candidates);
     
@@ -96,7 +101,7 @@ public interface SessionDataStore extends LifeCycle
     
     /**
      * True if this type of datastore will passivate session objects
-     * @return
+     * @return true if this store can passivate sessions, false otherwise
      */
     public boolean isPassivating ();
     
