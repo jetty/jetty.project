@@ -160,10 +160,9 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
 
 
     
+
     /** 
-     * Record the session id as being in use
-     * 
-     * @see org.eclipse.jetty.server.SessionIdManager#useId(java.lang.String)
+     * @see org.eclipse.jetty.server.SessionIdManager#useId(org.eclipse.jetty.server.session.Session)
      */
     @Override
     public void useId (Session session)
@@ -225,7 +224,7 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
     /**
      * Insert a new used session id into the table.
      *
-     * @param id
+     * @param id the id to put into the table
      * @throws SQLException
      */
     private void insert (String id)
@@ -254,7 +253,7 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
     /**
      * Remove a session id from the table.
      *
-     * @param id
+     * @param id the id to remove from the table
      * @throws SQLException
      */
     private boolean delete (String id)
@@ -273,8 +272,8 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
     /**
      * Check if a session id exists.
      *
-     * @param id
-     * @return
+     * @param id the id to check
+     * @return true if the id exists in the table, false otherwise
      * @throws SQLException
      */
     private boolean exists (String id)
@@ -350,7 +349,7 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
 
     /**
      * Get the database adaptor in order to configure it
-     * @return
+     * @return the database adpator
      */
     public DatabaseAdaptor getDatabaseAdaptor ()
     {

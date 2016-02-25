@@ -115,16 +115,46 @@ public class HttpParserTest
     }
 
     @Test
+    public void testLineParse1_RFC2616() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("GET /999\015\012");
+        
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler,HttpCompliance.RFC2616);
+        parseAll(parser,buffer);
+
+        assertNull(_bad);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/999", _uriOrStatus);
+        assertEquals("HTTP/0.9", _versionOrReason);
+        assertEquals(-1, _headers);
+    }
+    
+    @Test
     public void testLineParse1() throws Exception
     {
         ByteBuffer buffer= BufferUtil.toBuffer("GET /999\015\012");
 
-        _versionOrReason= null;
         HttpParser.RequestHandler handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parseAll(parser,buffer);
-        
         assertEquals("HTTP/0.9 not supported", _bad);
+    }
+
+    @Test
+    public void testLineParse2_RFC2616() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("POST /222  \015\012");
+
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler,HttpCompliance.RFC2616);
+        parseAll(parser,buffer);
+
+        assertNull(_bad);
+        assertEquals("POST", _methodOrVersion);
+        assertEquals("/222", _uriOrStatus);
+        assertEquals("HTTP/0.9", _versionOrReason);
+        assertEquals(-1, _headers);
     }
 
     @Test
@@ -136,7 +166,7 @@ public class HttpParserTest
         HttpParser.RequestHandler handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parseAll(parser,buffer);
-        assertEquals("HTTP/0.9 not supported", _bad);
+        assertEquals("HTTP/0.9 not supported", _bad);        
     }
 
     @Test
@@ -230,7 +260,7 @@ public class HttpParserTest
                 "\015\012");
         
         HttpParser.RequestHandler handler  = new Handler();
-        HttpParser parser= new HttpParser(handler,4096,HttpParser.Compliance.RFC2616);
+        HttpParser parser= new HttpParser(handler,4096,HttpCompliance.RFC2616);
         parseAll(parser,buffer);
 
         Assert.assertThat(_bad,Matchers.nullValue());
@@ -252,7 +282,7 @@ public class HttpParserTest
                 "\015\012");
         
         HttpParser.RequestHandler handler  = new Handler();
-        HttpParser parser= new HttpParser(handler,4096,HttpParser.Compliance.RFC7230);
+        HttpParser parser= new HttpParser(handler,4096,HttpCompliance.RFC7230);
         parseAll(parser,buffer);
 
         Assert.assertThat(_bad,Matchers.notNullValue());
@@ -602,7 +632,7 @@ public class HttpParserTest
                 "cOnNeCtIoN: ClOsE\015\012"+
                 "\015\012");
         HttpParser.RequestHandler handler  = new Handler();
-        HttpParser parser= new HttpParser(handler,-1,HttpParser.Compliance.RFC7230);
+        HttpParser parser= new HttpParser(handler,-1,HttpCompliance.RFC7230);
         parseAll(parser,buffer);
         assertNull(_bad);
         assertEquals("GET", _methodOrVersion);
@@ -624,7 +654,7 @@ public class HttpParserTest
                 "cOnNeCtIoN: ClOsE\015\012"+
                 "\015\012");
         HttpParser.RequestHandler handler  = new Handler();
-        HttpParser parser= new HttpParser(handler,-1,HttpParser.Compliance.STRICT);
+        HttpParser parser= new HttpParser(handler,-1,HttpCompliance.LEGACY);
         parseAll(parser,buffer);
         assertNull(_bad);
         assertEquals("gEt", _methodOrVersion);

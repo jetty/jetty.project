@@ -32,11 +32,22 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
     protected SessionContext _context; //context associated with this session data store
 
 
+    /**
+     * Store the session data persistently.
+     * 
+     * @param id identity of session to store
+     * @param data info of the session
+     * @param isNew has session been written out before or not
+     * @throws Exception
+     */
     public abstract void doStore(String id, SessionData data, boolean isNew) throws Exception;
 
    
 
     
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
+     */
     public void initialize (SessionContext context)
     {
         if (isStarted())
@@ -69,8 +80,9 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
     }
     
 
+
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(org.eclipse.jetty.server.session.SessionKey, long, long, long, long)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(java.lang.String, long, long, long, long)
      */
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
@@ -78,6 +90,9 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
         return new SessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
  
+    /**
+     * @throws IllegalStateException
+     */
     protected void checkStarted () throws IllegalStateException
     {
         if (isStarted())

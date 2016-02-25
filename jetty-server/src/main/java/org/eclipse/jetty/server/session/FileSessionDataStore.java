@@ -88,8 +88,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
 
  
+
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(org.eclipse.jetty.server.session.SessionKey)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
      */
     @Override
     public boolean delete(String id) throws Exception
@@ -108,8 +109,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         return false;
     }
 
+
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired()
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
      */
     @Override
     public Set<String> getExpired(Set<String> candidates)
@@ -119,8 +121,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
 
 
+
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(org.eclipse.jetty.server.session.SessionKey)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
      */
     @Override
     public SessionData load(String id) throws Exception
@@ -173,9 +176,8 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     
         
 
-    
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, boolean)
      */
     @Override
     public void doStore(String id, SessionData data, boolean isNew) throws Exception
@@ -200,6 +202,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
     }
     
+    /**
+     * 
+     */
     public void initializeStore ()
     {
         if (_storeDir == null)
@@ -219,6 +224,12 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @param os the output stream to save to
+     * @param id identity of the session
+     * @param data the info of the session
+     * @throws IOException
+     */
     private void save(OutputStream os, String id, SessionData data)  throws IOException
     {    
         DataOutputStream out = new DataOutputStream(os);
@@ -243,12 +254,21 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
     }
 
+    /**
+     * @param id identity of session
+     * @return
+     */
     private String getFileName (String id)
     {
         return _context.getCanonicalContextPath()+"_"+_context.getVhost()+"_"+id;
     }
 
 
+    /**
+     * @param is inputstream containing session data
+     * @return
+     * @throws Exception
+     */
     private SessionData load (InputStream is)
             throws Exception
     {
@@ -289,6 +309,12 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
     }
 
+    /**
+     * @param is inputstream containing session data
+     * @param size number of attributes
+     * @param data the data to restore to
+     * @throws Exception
+     */
     private void restoreAttributes (InputStream is, int size, SessionData data)
             throws Exception
     {

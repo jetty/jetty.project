@@ -19,6 +19,12 @@
 package org.eclipse.jetty.http;
 
 /* ------------------------------------------------------------------------------- */
+/** 
+ * <p>Exception thrown to indicate a Bad HTTP Message has either been received
+ * or attempted to be generated.  Typically these are handled with either 400
+ * or 500 responses.</p>
+ */
+@SuppressWarnings("serial")
 public class BadMessageException extends RuntimeException
 {
     final int _code;

@@ -51,11 +51,9 @@ public class MemorySessionStore extends AbstractSessionStore
      */
     public class MemorySession extends Session
     {
-
         /**
-         * @param manager
-         * @param request
-         * @param data
+         * @param request the request associated with the new session
+         * @param data the info for the session
          */
         public MemorySession(HttpServletRequest request, SessionData data)
         {
@@ -63,11 +61,8 @@ public class MemorySessionStore extends AbstractSessionStore
         }
         
         
-        
-
         /**
-         * @param manager
-         * @param data
+         * @param data the info for the restored session object
          */
         public MemorySession(SessionData data)
         {
@@ -222,8 +217,9 @@ public class MemorySessionStore extends AbstractSessionStore
     }
 
 
+ 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#newSession(java.lang.String)
+     * @see org.eclipse.jetty.server.session.AbstractSessionStore#newSession(javax.servlet.http.HttpServletRequest, java.lang.String, long, long)
      */
     @Override
     public Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs)

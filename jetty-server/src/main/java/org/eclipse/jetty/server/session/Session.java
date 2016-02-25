@@ -755,7 +755,7 @@ public class Session implements SessionManager.SessionIf
     
     /* ------------------------------------------------------------- */
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionManager.SessionIf#getSession()
+     * @see org.eclipse.jetty.server.session.SessionManager.SessionIf#getSession()
      */
     @Override
     public Session getSession()

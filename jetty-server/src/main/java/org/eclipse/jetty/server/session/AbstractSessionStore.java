@@ -50,7 +50,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     /**
      * Create a new Session object from session data
      * @param data
-     * @return
+     * @return a new Session object
      */
     public abstract Session newSession (SessionData data);
 
@@ -59,7 +59,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     /**
      * Get the session matching the key
      * @param id session id
-     * @return
+     * @return the Session object matching the id
      */
     public abstract Session doGet(String id);
     
@@ -79,7 +79,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     /**
      * Check to see if the session exists in the store
      * @param id
-     * @return
+     * @return true if the Session object exists in the session store
      */
     public abstract boolean doExists (String id);
     
@@ -97,7 +97,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     
     /**
      * Get a list of keys for sessions that the store thinks has expired
-     * @return
+     * @return ids of all Session objects that might have expired
      */
     public abstract Set<String> doGetExpiredCandidates();
     
@@ -112,11 +112,17 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     }
     
     
+    /**
+     * @param manager
+     */
     public void setSessionManager (SessionManager manager)
     {
         _manager = manager;
     }
     
+    /**
+     * @return the SessionManger
+     */
     public SessionManager getSessionManager()
     {
         return _manager;
@@ -124,6 +130,9 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     
     
 
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionStore#initialize(org.eclipse.jetty.server.session.SessionContext)
+     */
     public void initialize (SessionContext context)
     {
         if (isStarted())
@@ -131,6 +140,9 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         _context = context;
     }
     
+    /** 
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
+     */
     @Override
     protected void doStart() throws Exception
     {
@@ -149,6 +161,9 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         super.doStart();
     }
 
+    /** 
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
+     */
     @Override
     protected void doStop() throws Exception
     {
@@ -156,34 +171,47 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         super.doStop();
     }
 
+    /**
+     * @return the SessionDataStore or null if there isn't one
+     */
     public SessionDataStore getSessionDataStore()
     {
         return _sessionDataStore;
     }
 
+    /**
+     * @param sessionDataStore
+     */
     public void setSessionDataStore(SessionDataStore sessionDataStore)
     {
         _sessionDataStore = sessionDataStore;
     }
     
+    /**
+     * @return the strategy for detecting stale sessions or null if there isn't one
+     */
     public StalenessStrategy getStaleStrategy()
     {
         return _staleStrategy;
     }
 
+    /**
+     * @param staleStrategy
+     */
     public void setStaleStrategy(StalenessStrategy staleStrategy)
     {
         _staleStrategy = staleStrategy;
     }
 
+
     /** 
-     * Get a session object.
+     *  Get a session object.
      * 
      * If the session object is not in this session store, try getting
      * the data for it from a SessionDataStore associated with the 
      * session manager.
      * 
-     * @see org.eclipse.jetty.server.session.SessionStore#get(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionStore#get(java.lang.String, boolean)
      */
     @Override
     public Session get(String id, boolean staleCheck) throws Exception
@@ -292,7 +320,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     
     /**
      * @param session
-     * @return
+     * @return true or false according to the StaleStrategy
      */
     public boolean isStale (Session session)
     {
@@ -319,6 +347,9 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
 
 
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionStore#newSession(javax.servlet.http.HttpServletRequest, java.lang.String, long, long)
+     */
     @Override
     public Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs)
     {

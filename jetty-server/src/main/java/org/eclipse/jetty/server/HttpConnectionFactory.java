@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -32,17 +32,23 @@ import org.eclipse.jetty.util.annotation.Name;
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private final HttpConfiguration _config;
-    private HttpParser.Compliance _httpCompliance=HttpParser.Compliance.RFC7230;
+    private HttpCompliance _httpCompliance;
 
     public HttpConnectionFactory()
     {
         this(new HttpConfiguration());
     }
-
+    
     public HttpConnectionFactory(@Name("config") HttpConfiguration config)
+    {
+        this(config,null);
+    }
+
+    public HttpConnectionFactory(@Name("config") HttpConfiguration config, @Name("compliance") HttpCompliance compliance)
     {
         super(HttpVersion.HTTP_1_1.asString());
         _config=config;
+        _httpCompliance=compliance==null?HttpCompliance.RFC7230:compliance;
         if (config==null)
             throw new IllegalArgumentException("Null HttpConfiguration");
         addBean(_config);
@@ -54,15 +60,15 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _config;
     }
 
-    public HttpParser.Compliance getHttpCompliance()
+    public HttpCompliance getHttpCompliance()
     {
         return _httpCompliance;
     }
 
     /**
-     * @param httpCompliance String value of {@link HttpParser.Compliance}
+     * @param httpCompliance String value of {@link HttpCompliance}
      */
-    public void setHttpCompliance(HttpParser.Compliance httpCompliance)
+    public void setHttpCompliance(HttpCompliance httpCompliance)
     {
         _httpCompliance = httpCompliance;
     }

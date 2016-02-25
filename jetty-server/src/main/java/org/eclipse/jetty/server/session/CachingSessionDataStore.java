@@ -74,7 +74,7 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
     
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(org.eclipse.jetty.server.session.SessionKey)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
      */
     @Override
     public SessionData load(String id) throws Exception
@@ -101,8 +101,9 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
         return d;
     }
 
+
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(org.eclipse.jetty.server.session.SessionKey)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
      */
     @Override
     public boolean delete(String id) throws Exception
@@ -124,8 +125,9 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
         return null;
     }
 
+
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData, boolean)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, boolean)
      */
     @Override
     public void doStore(String id, SessionData data, boolean isNew) throws Exception

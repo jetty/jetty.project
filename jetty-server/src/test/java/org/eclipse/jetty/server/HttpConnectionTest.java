@@ -42,6 +42,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.MimeTypes;
@@ -236,6 +237,18 @@ public class HttpConnectionTest
         checkContains(response,0,"HTTP/1.1 400 Bad URI");
     }
 
+    @Test
+    public void test_0_9() throws Exception
+    {
+        connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
+        String response=connector.getResponses("GET /R1\n");
+
+        int offset=0;
+        checkNotContained(response,offset,"HTTP/1.1");
+        checkNotContained(response,offset,"200");
+        checkContains(response,offset,"pathInfo=/R1");
+    }
+    
     @Test
     public void testSimple() throws Exception
     {

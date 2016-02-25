@@ -58,12 +58,19 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     protected SessionScavenger _scavenger;
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param server the server associated with the id manager
+     */
     public AbstractSessionIdManager(Server server)
     {
         _server = server;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param server the server associated with the id manager
+     * @param random a random number generator to use for ids
+     */
     public AbstractSessionIdManager(Server server, Random random)
     {
         this(server);
@@ -71,6 +78,9 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param server the server associated with this id manager
+     */
     public void setServer (Server server)
     {
         _server = server;
@@ -78,7 +88,9 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     
     
     /* ------------------------------------------------------------ */
-
+    /**
+     * @return the server associated with this id manager
+     */
     public Server getServer ()
     {
         return _server;
@@ -88,7 +100,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     
     /* ------------------------------------------------------------ */
     /**
-     * @param scavenger
+     * @param scavenger a SessionScavenger 
      */
     public void setSessionScavenger (SessionScavenger scavenger)
     {
@@ -103,7 +115,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
      * Get the workname. If set, the workername is dot appended to the session
      * ID and can be used to assist session affinity in a load balancer.
      *
-     * @return String or null
+     * @return name or null
      */
     @Override
     public String getWorkerName()
@@ -133,12 +145,18 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return the random number generator
+     */
     public Random getRandom()
     {
         return _random;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param random a random number generator for generating ids
+     */
     public synchronized void setRandom(Random random)
     {
         _random=random;
@@ -166,7 +184,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     /* ------------------------------------------------------------ */
     /**
      * Create a new session id if necessary.
-     *
+     * 
      * @see org.eclipse.jetty.server.SessionIdManager#newSessionId(javax.servlet.http.HttpServletRequest, long)
      */
     @Override
@@ -200,6 +218,10 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param seedTerm
+     * @return a new unique session id
+     */
     public String newSessionId(long seedTerm)
     {
         // pick a new unique ID!
@@ -249,6 +271,9 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
 
     
     /* ------------------------------------------------------------ */
+    /** 
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
+     */
     @Override
     protected void doStart() throws Exception
     {
@@ -268,6 +293,9 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     }
 
     /* ------------------------------------------------------------ */
+    /** 
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
+     */
     @Override
     protected void doStop() throws Exception
     {
@@ -418,7 +446,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     /* ------------------------------------------------------------ */
     /** Get SessionManager for every context.
      * 
-     * @return
+     * @return all session managers
      */
     protected Set<SessionManager> getSessionManagers()
     {

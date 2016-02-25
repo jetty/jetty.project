@@ -630,7 +630,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
  
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(org.eclipse.jetty.server.session.SessionKey)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
      */
     @Override
     public SessionData load(String id) throws Exception
@@ -748,7 +748,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore()
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, boolean)
      */
     @Override
     public void doStore(String id, SessionData data, boolean isNew) throws Exception
@@ -849,8 +849,9 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
 
 
+
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired()
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
      */
     @Override
     public Set<String> getExpired(Set<String> candidates)

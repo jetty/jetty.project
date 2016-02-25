@@ -228,7 +228,7 @@ public class HttpGenerator
                     generateRequestLine(info,header);
 
                     if (info.getVersion()==HttpVersion.HTTP_0_9)
-                        throw new IllegalArgumentException("HTTP/0.9 not supported");
+                        throw new BadMessageException(500,"HTTP/0.9 not supported");
                     
                     generateHeaders(info,header,content,last);
 
@@ -256,7 +256,7 @@ public class HttpGenerator
                 catch(Exception e)
                 {
                     String message= (e instanceof BufferOverflowException)?"Request header too large":e.getMessage();
-                    throw new IOException(message,e);
+                    throw new BadMessageException(500,message,e);
                 }
                 finally
                 {
@@ -345,7 +345,7 @@ public class HttpGenerator
                     return Result.NEED_INFO;
                 HttpVersion version=info.getVersion();
                 if (version==null)
-                    throw new IllegalStateException("No version");
+                    throw new BadMessageException(500,"No version");
                 switch(version)
                 {
                     case HTTP_1_0:
@@ -359,7 +359,12 @@ public class HttpGenerator
                         break;
                         
                     default:
-                        throw new IllegalArgumentException(version+" not supported");
+                        _persistent = false;
+                        _endOfContent=EndOfContent.EOF_CONTENT;
+                        if (BufferUtil.hasContent(content))
+                            _contentPrepared+=content.remaining();
+                        _state = last?State.COMPLETING:State.COMMITTED;
+                        return Result.FLUSH;
                 }
                 
                 // Do we need a response header
@@ -406,7 +411,7 @@ public class HttpGenerator
                 catch(Exception e)
                 {
                     String message= (e instanceof BufferOverflowException)?"Response header too large":e.getMessage();
-                    throw new IOException(message,e);
+                    throw new BadMessageException(500,message,e);
                 }
                 finally
                 {
@@ -757,7 +762,7 @@ public class HttpGenerator
                     long actual_length = _contentPrepared+BufferUtil.length(content);
 
                     if (content_length>=0 && content_length!=actual_length)
-                        throw new IllegalArgumentException("Content-Length header("+content_length+") != actual("+actual_length+")");
+                        throw new BadMessageException(500,"Content-Length header("+content_length+") != actual("+actual_length+")");
                     
                     // Do we need to tell the headers about it
                     putContentLength(header,actual_length,content_type,request,response);
@@ -782,7 +787,7 @@ public class HttpGenerator
             }
 
             case NO_CONTENT:
-                throw new IllegalStateException();
+                throw new BadMessageException(500);
 
             case EOF_CONTENT:
                 _persistent = request!=null;
@@ -805,7 +810,7 @@ public class HttpGenerator
                 if (c.endsWith(HttpHeaderValue.CHUNKED.toString()))
                     putTo(transfer_encoding,header);
                 else
-                    throw new IllegalArgumentException("BAD TE");
+                    throw new BadMessageException(500,"BAD TE");
             }
             else
                 header.put(TRANSFER_ENCODING_CHUNKED);
