@@ -350,7 +350,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @return true if delegating to named or anonymous pool
      * @see Thread#setDaemon(boolean)
      */
-    @ManagedAttribute("thead pool using a daemon thread")
+    @ManagedAttribute("thread pool using a daemon thread")
     public boolean isDaemon()
     {
         return _daemon;
