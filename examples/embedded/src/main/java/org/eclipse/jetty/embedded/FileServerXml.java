@@ -29,9 +29,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * via an {@link XmlConfiguration} config file that does the identical work.
  * </p>
  * <p>
- * See <a href=
- * "http://https://github.com/eclipse/jetty.project/blob/master/examples/embedded/src/main/resources/fileserver.xml"
- * >fileserver.xml</a>
+ * See <a href="https://raw.githubusercontent.com/eclipse/jetty.project/master/examples/embedded/src/main/resources/fileserver.xml">fileserver.xml</a>
  * </p>
  */
 public class FileServerXml
