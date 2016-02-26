@@ -9,7 +9,11 @@ server
 etc/jetty-ssl.xml
 
 [files]
+<<<<<<< HEAD
 http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/src/main/config/etc/keystore|etc/keystore
+=======
+https://raw.githubusercontent.com/eclipse/jetty.project/master/jetty-server/src/test/config/etc/keystore?id=${jetty.tag.version}|etc/keystore
+>>>>>>> 76b34fe... Issue #367 Resolve remaining git.eclipse.org build references
 
 [ini-template]
 ### SSL Keystore Configuration
