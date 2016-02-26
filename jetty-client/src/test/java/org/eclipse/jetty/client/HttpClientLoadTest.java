@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -122,25 +122,19 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         client.setByteBufferPool(clientBufferPool);
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
-        client.setDispatchIO(false);
         client.setStrictEventOrdering(false);
         client.start();
 
-        Random random = new Random();
         // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
         int runs = 1;
         int iterations = 500;
         for (int i = 0; i < runs; ++i)
-        {
-            run(random, iterations);
-        }
+            run(iterations);
 
         // Re-run after warmup
         iterations = 5_000;
         for (int i = 0; i < runs; ++i)
-        {
-            run(random, iterations);
-        }
+            run(iterations);
 
         System.gc();
 
@@ -160,15 +154,14 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
     {
         start(new LoadHandler());
 
-        Random random = new Random();
         int runs = 1;
         int iterations = 256;
         IntStream.range(0, 16).parallel().forEach(i ->
                 IntStream.range(0, runs).forEach(j ->
-                        run(random, iterations)));
+                        run(iterations)));
     }
 
-    private void run(Random random, int iterations)
+    private void run(int iterations)
     {
         CountDownLatch latch = new CountDownLatch(iterations);
         List<String> failures = new ArrayList<>();
@@ -178,30 +171,26 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
 
         // Dumps the state of the client if the test takes too long
         final Thread testThread = Thread.currentThread();
-        Scheduler.Task task = client.getScheduler().schedule(new Runnable()
+        Scheduler.Task task = client.getScheduler().schedule(() ->
         {
-            @Override
-            public void run()
+            logger.warn("Interrupting test, it is taking too long");
+            for (String host : Arrays.asList("localhost", "127.0.0.1"))
             {
-                logger.warn("Interrupting test, it is taking too long");
-                for (String host : Arrays.asList("localhost", "127.0.0.1"))
+                HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, connector.getLocalPort());
+                DuplexConnectionPool connectionPool = destination.getConnectionPool();
+                for (Connection connection : new ArrayList<>(connectionPool.getActiveConnections()))
                 {
-                    HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, connector.getLocalPort());
-                    DuplexConnectionPool connectionPool = destination.getConnectionPool();
-                    for (Connection connection : new ArrayList<>(connectionPool.getActiveConnections()))
-                    {
-                        HttpConnectionOverHTTP active = (HttpConnectionOverHTTP)connection;
-                        logger.warn(active.getEndPoint() + " exchange " + active.getHttpChannel().getHttpExchange());
-                    }
+                    HttpConnectionOverHTTP active = (HttpConnectionOverHTTP)connection;
+                    logger.warn(active.getEndPoint() + " exchange " + active.getHttpChannel().getHttpExchange());
                 }
-                testThread.interrupt();
             }
+            testThread.interrupt();
         }, iterations * factor, TimeUnit.MILLISECONDS);
 
         long begin = System.nanoTime();
         for (int i = 0; i < iterations; ++i)
         {
-            test(random, latch, failures);
+            test(latch, failures);
 //            test("http", "localhost", "GET", false, false, 64 * 1024, false, latch, failures);
         }
         Assert.assertTrue(await(latch, iterations, TimeUnit.SECONDS));
@@ -216,8 +205,9 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         Assert.assertTrue(failures.toString(), failures.isEmpty());
     }
 
-    private void test(Random random, final CountDownLatch latch, final List<String> failures)
+    private void test(final CountDownLatch latch, final List<String> failures)
     {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         // Choose a random destination
         String host = random.nextBoolean() ? "localhost" : "127.0.0.1";
         // Choose a random method
