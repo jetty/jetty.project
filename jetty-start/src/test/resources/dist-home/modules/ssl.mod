@@ -80,4 +80,3 @@ jetty.ssl.port=8443
 
 ## Whether cipher order is significant (since java 8 only)
 # jetty.sslContext.useCipherSuitesOrder=true
-

@@ -90,4 +90,3 @@ https://raw.githubusercontent.com/eclipse/jetty.project/master/jetty-server/src/
 
 ## To configure Includes / Excludes for Cipher Suites or Protocols see tweak-ssl.xml example at
 ## https://www.eclipse.org/jetty/documentation/current/configuring-ssl.html#configuring-sslcontextfactory-cipherSuites
-

@@ -20,7 +20,9 @@ Information regarding source code management, builds, coding standards, and more
 
 - [https://www.eclipse.org/jetty/documentation/current/advanced-contributing.html](https://www.eclipse.org/jetty/documentation/current/advanced-contributing.html)
 
-The canonical Jetty git repository is located at GitHub.  Providing you have completed the contributors agreement mentioned below we will endeavor to pull your commit into Jetty proper.
+The canonical Jetty git repository is located at GitHub.  Providing you have
+completed the contributors agreement mentioned below we will endeavor to pull
+your commit into Jetty proper.
 
 Contributor License Agreement
 ------------------------------
