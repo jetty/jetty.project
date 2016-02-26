@@ -30,7 +30,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * </p>
  * <p>
  * See <a href=
- * "http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/examples/embedded/src/main/resources/fileserver.xml"
+ * "https://raw.githubusercontent.com/eclipse/jetty.project/master/examples/embedded/src/main/resources/fileserver.xml"
  * >fileserver.xml</a>
  * </p>
  */
