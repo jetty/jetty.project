@@ -107,7 +107,8 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         int length = original.remaining();
         final ByteBuffer copy = byteBufferPool.acquire(length, original.isDirect());
         BufferUtil.clearToFill(copy);
-        copy.put(original).flip();
+        copy.put(original);
+        BufferUtil.flipToFlush(copy, 0);
 
         Callback delegate = new Callback()
         {

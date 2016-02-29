@@ -173,7 +173,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         int length = original.remaining();
         final ByteBuffer copy = byteBufferPool.acquire(length, original.isDirect());
         BufferUtil.clearToFill(copy);
-        copy.put(original).flip();
+        copy.put(original);
+        BufferUtil.flipToFlush(copy, 0);
 
         boolean handle = onContent(new HttpInput.Content(copy)
         {
