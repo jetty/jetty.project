@@ -58,7 +58,7 @@ public class Generator
             int length = Math.min(MAX_CONTENT_LENGTH, contentLength);
             buffer.putShort((short)length);
             buffer.putShort((short)0);
-            buffer.flip();
+            BufferUtil.flipToFlush(buffer, 0);
 
             if (contentLength == 0)
                 break;

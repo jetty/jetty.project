@@ -95,7 +95,7 @@ public class ServerGenerator extends Generator
             buffer.put(bytes.get(i)).put(COLON).put(bytes.get(i + 1)).put(EOL);
         buffer.put(EOL);
 
-        buffer.flip();
+        BufferUtil.flipToFlush(buffer, 0);
 
         return generateContent(request, buffer, true, false, callback, FCGI.FrameType.STDOUT);
     }
@@ -129,7 +129,7 @@ public class ServerGenerator extends Generator
         endRequestBuffer.putInt(0x00_08_00_00);
         endRequestBuffer.putInt(aborted ? 1 : 0);
         endRequestBuffer.putInt(0);
-        endRequestBuffer.flip();
+        BufferUtil.flipToFlush(endRequestBuffer, 0);
         return endRequestBuffer;
     }
 }

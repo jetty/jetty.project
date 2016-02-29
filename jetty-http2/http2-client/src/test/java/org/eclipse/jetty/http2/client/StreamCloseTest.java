@@ -130,18 +130,25 @@ public class StreamCloseTest extends AbstractTest
                     public void onData(final Stream stream, DataFrame frame, final Callback callback)
                     {
                         Assert.assertTrue(((HTTP2Stream)stream).isRemotelyClosed());
+
                         completable.thenRun(() ->
-                                stream.data(frame, new Callback()
+                        {
+                            // We must copy the data that we send asynchronously.
+                            ByteBuffer data = frame.getData();
+                            ByteBuffer copy = ByteBuffer.allocate(data.remaining());
+                            copy.put(data).flip();
+                            stream.data(new DataFrame(stream.getId(), copy, frame.isEndStream()), new Callback()
+                            {
+                                @Override
+                                public void succeeded()
                                 {
-                                    @Override
-                                    public void succeeded()
-                                    {
-                                        Assert.assertTrue(stream.isClosed());
-                                        Assert.assertEquals(0, stream.getSession().getStreams().size());
-                                        callback.succeeded();
-                                        serverDataLatch.countDown();
-                                    }
-                                }));
+                                    Assert.assertTrue(stream.isClosed());
+                                    Assert.assertEquals(0, stream.getSession().getStreams().size());
+                                    callback.succeeded();
+                                    serverDataLatch.countDown();
+                                }
+                            });
+                        });
                     }
                 };
             }
@@ -157,6 +164,7 @@ public class StreamCloseTest extends AbstractTest
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
                 // The sent data callback may not be notified yet here.
+                callback.succeeded();
                 completeLatch.countDown();
             }
         });
