@@ -117,6 +117,8 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     public Set<String> getExpired(Set<String> candidates)
     {
         //we don't want to open up each file and check, so just leave it up to the SessionStore
+        //TODO as the session manager is likely to be a lazy loader, if a session is never requested, its
+        //file will stay forever after a restart
         return candidates;
     }
 

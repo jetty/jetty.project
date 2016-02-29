@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.http.HttpServletRequest;
@@ -113,14 +114,16 @@ public class SessionCookieTest
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doGetExpiredCandidates()
+         * @see org.eclipse.jetty.server.session.SessionStore#getStream()
          */
         @Override
-        public Set<String> doGetExpiredCandidates()
+        public Stream<Session> getStream()
         {
             // TODO Auto-generated method stub
             return null;
-        } 
+        }
+
+   
     }
 
     

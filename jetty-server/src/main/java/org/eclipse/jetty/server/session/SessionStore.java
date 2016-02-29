@@ -19,7 +19,9 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -43,5 +45,9 @@ public interface SessionStore extends LifeCycle
     boolean exists (String id) throws Exception;
     Session delete (String id) throws Exception;
     void shutdown ();
-    Set<String> getExpired ();
+    Set<String> checkExpiration (Set<String> candidates);
+    void inspect();
+    void setIdlePassivationTimeoutSec(int sec);
+    int getIdlePassivationTimeoutSec();
+    Stream<Session> getStream();
 }

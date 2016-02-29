@@ -293,24 +293,7 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
        return delete (id);        
     }
 
-    /* ------------------------------------------------------------ */
-    /** 
-     * Remove an id from use by telling all contexts to remove a session with this id.
-     * 
-     * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
-     */
-    @Override
-    public void expireAll(String id)
-    {
-        LOG.debug("Expiring "+id);
-        //take the id out of the list of known sessionids for this node - TODO consider if we didn't remove it from this node
-        //it is because infinispan probably already timed it out. So, we only want to expire it from memory and NOT load it if present
-        removeId(id);
-        //tell all contexts that may have a session object with this id to
-        //get rid of them
-        for (SessionManager manager:getSessionManagers())
-        {
-            manager.invalidate(id);
-        }
-    }
+   
+
+    
 }

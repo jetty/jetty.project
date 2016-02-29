@@ -65,6 +65,9 @@ public class Session implements SessionManager.SessionIf
     private boolean _newSession;
     private State _state = State.VALID; //state of the session:valid,invalid or being invalidated
     private Locker _lock = new Locker();
+
+
+    private boolean _isPassivated;
     
     public Session (HttpServletRequest request, SessionData data)
     {
@@ -146,6 +149,17 @@ public class Session implements SessionManager.SessionIf
             return _sessionData.isExpiredAt(time);
         }
     }
+    
+    
+    protected boolean isIdleLongerThan (int sec)
+    {
+        long now = System.currentTimeMillis();
+        try (Lock lock = _lock.lockIfNotHeld())
+        {
+            return ((_sessionData.getAccessed() + (sec*1000)) < now);
+        }
+    }
+    
     
     /* ------------------------------------------------------------ */
     /**
@@ -520,7 +534,7 @@ public class Session implements SessionManager.SessionIf
     public void setAttribute(String name, Object value)
     {
         Object old=null;
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             //if session is not valid, don't accept the set
             checkValidForWrite();
@@ -578,7 +592,7 @@ public class Session implements SessionManager.SessionIf
         
         String id = null;
         String extendedId = null;
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             checkValidForWrite(); //don't renew id on a session that is not valid
             id = _sessionData.getId(); //grab the values as they are now
@@ -601,7 +615,7 @@ public class Session implements SessionManager.SessionIf
      */
     public void renewId (String oldId, String oldExtendedId, String newId, String newExtendedId)
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             checkValidForWrite(); //can't change id on invalid session
             
@@ -632,7 +646,7 @@ public class Session implements SessionManager.SessionIf
 
         boolean result = false;
 
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             switch (_state)
             {
@@ -669,7 +683,7 @@ public class Session implements SessionManager.SessionIf
         }
     }
     
-    
+ 
     
     /* ------------------------------------------------------------- */
     /** Grab the lock on the session
@@ -687,7 +701,7 @@ public class Session implements SessionManager.SessionIf
     /* ------------------------------------------------------------- */
     protected void doInvalidate() throws IllegalStateException
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             try
             {
@@ -769,4 +783,26 @@ public class Session implements SessionManager.SessionIf
     {
         return _sessionData;
     }
+
+    
+    /* ------------------------------------------------------------- */
+    /**
+     * @return
+     */
+    public boolean isPassivated()
+    {
+        return _isPassivated;
+    }
+
+    /* ------------------------------------------------------------- */
+    /**
+     * @param isPassivated
+     */
+    public void setPassivated(boolean isPassivated)
+    {
+        _isPassivated = isPassivated;
+    }
+    
+    
+    
 }

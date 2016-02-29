@@ -1017,13 +1017,14 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     /**
      * @return
      */
-    public Set<String> scavenge ()
+    public void inspect ()
     {
         //don't attempt to scavenge if we are shutting down
         if (isStopping() || isStopped())
-            return Collections.emptySet();
+            return;
 
-        return _sessionStore.getExpired();
+         _sessionStore.inspect();
+        //return _sessionStore.getExpired();
     }
     
   

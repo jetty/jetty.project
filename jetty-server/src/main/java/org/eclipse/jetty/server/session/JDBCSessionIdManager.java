@@ -50,7 +50,7 @@ public class JDBCSessionIdManager extends org.eclipse.jetty.server.session.Abstr
 
     protected final HashSet<String> _sessionIds = new HashSet<String>();
     protected Server _server;
-    protected SessionScavenger _scavenger;
+    protected PeriodicSessionInspector _scavenger;
 
     private DatabaseAdaptor _dbAdaptor = new DatabaseAdaptor();
 

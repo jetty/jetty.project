@@ -42,7 +42,7 @@ public abstract class AbstractTestServer
     protected final int _scavengePeriod;
     protected final ContextHandlerCollection _contexts;
     protected SessionIdManager _sessionIdManager;
-    private SessionScavenger _scavenger;
+    private PeriodicSessionInspector _scavenger;
 
   
     
@@ -83,8 +83,8 @@ public abstract class AbstractTestServer
         _sessionIdManager = newSessionIdManager(sessionIdMgrConfig);
         _server.setSessionIdManager(_sessionIdManager);
         ((AbstractSessionIdManager) _sessionIdManager).setServer(_server);
-        _scavenger = new SessionScavenger();
-        _scavenger.setScavengeIntervalSec(scavengePeriod);
+        _scavenger = new PeriodicSessionInspector();
+        _scavenger.setIntervalSec(scavengePeriod);
         ((AbstractSessionIdManager)_sessionIdManager).setSessionScavenger(_scavenger);
     }
     
