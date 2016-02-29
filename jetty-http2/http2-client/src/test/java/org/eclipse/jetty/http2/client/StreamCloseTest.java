@@ -131,24 +131,23 @@ public class StreamCloseTest extends AbstractTest
                     {
                         Assert.assertTrue(((HTTP2Stream)stream).isRemotelyClosed());
 
+                        // We must copy the data that we send asynchronously.
+                        ByteBuffer data = frame.getData();
+                        ByteBuffer copy = ByteBuffer.allocate(data.remaining());
+                        copy.put(data).flip();
+
                         completable.thenRun(() ->
-                        {
-                            // We must copy the data that we send asynchronously.
-                            ByteBuffer data = frame.getData();
-                            ByteBuffer copy = ByteBuffer.allocate(data.remaining());
-                            copy.put(data).flip();
-                            stream.data(new DataFrame(stream.getId(), copy, frame.isEndStream()), new Callback()
-                            {
-                                @Override
-                                public void succeeded()
+                                stream.data(new DataFrame(stream.getId(), copy, frame.isEndStream()), new Callback()
                                 {
-                                    Assert.assertTrue(stream.isClosed());
-                                    Assert.assertEquals(0, stream.getSession().getStreams().size());
-                                    callback.succeeded();
-                                    serverDataLatch.countDown();
-                                }
-                            });
-                        });
+                                    @Override
+                                    public void succeeded()
+                                    {
+                                        Assert.assertTrue(stream.isClosed());
+                                        Assert.assertEquals(0, stream.getSession().getStreams().size());
+                                        callback.succeeded();
+                                        serverDataLatch.countDown();
+                                    }
+                                }));
                     }
                 };
             }

@@ -36,43 +36,34 @@ public class DataGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public void generate(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
+    public int generate(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
     {
-        generateData(lease, frame.getStreamId(), frame.getData(), frame.isEndStream(), maxLength);
+        return generateData(lease, frame.getStreamId(), frame.getData(), frame.isEndStream(), maxLength);
     }
 
-    public void generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, int maxLength)
+    public int generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, int maxLength)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
         int dataLength = data.remaining();
         int maxFrameSize = headerGenerator.getMaxFrameSize();
-        if (dataLength <= maxLength && dataLength <= maxFrameSize)
+        int length = Math.min(dataLength, Math.min(maxFrameSize, maxLength));
+        if (length == dataLength)
         {
-            // Single frame.
             generateFrame(lease, streamId, data, last);
-            return;
         }
-
-        // Other cases, we need to slice the original buffer into multiple frames.
-
-        int length = Math.min(maxLength, dataLength);
-        int frames = length / maxFrameSize;
-        if (frames * maxFrameSize != length)
-            ++frames;
-
-        int begin = data.position();
-        int end = data.limit();
-        for (int i = 1; i <= frames; ++i)
+        else
         {
-            int limit = begin + Math.min(maxFrameSize * i, length);
-            data.limit(limit);
+            int limit = data.limit();
+            int newLimit = data.position() + length;
+            data.limit(newLimit);
             ByteBuffer slice = data.slice();
-            data.position(limit);
-            generateFrame(lease, streamId, slice, i == frames && last && limit == end);
+            data.position(newLimit);
+            data.limit(limit);
+            generateFrame(lease, streamId, slice, false);
         }
-        data.limit(end);
+        return length;
     }
 
     private void generateFrame(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last)
@@ -88,6 +79,7 @@ public class DataGenerator
         BufferUtil.flipToFlush(header, 0);
         lease.append(header, true);
 
-        lease.append(data, false);
+        if (data.remaining() > 0)
+            lease.append(data, false);
     }
 }
