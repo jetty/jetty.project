@@ -48,6 +48,7 @@ public class Configurations extends AbstractList<Configuration>
         ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
         for (Configuration configuration : configs)
             __known.put(configuration.getName(),configuration);
+        
         LOG.debug("Known Configurations {}",__known.keySet());
     }
 

@@ -80,7 +80,8 @@ public class ClasspathPattern
     /* ------------------------------------------------------------ */
     public ClasspathPattern(String... patterns)
     {
-        add(patterns);
+        if (patterns!=null && patterns.length>0)
+            add(patterns);
     }
     
     /* ------------------------------------------------------------ */
@@ -92,6 +93,9 @@ public class ClasspathPattern
     /* ------------------------------------------------------------ */
     public void add(String... patterns)
     {
+        if (patterns==null || patterns.length==0)
+            return;
+        
         for (String p :patterns)
         {
             if (_entries.stream().anyMatch(e->{return p.equals(e.toString());}))
