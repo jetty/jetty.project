@@ -70,6 +70,10 @@ public class StreamCountTest extends AbstractTest
                             MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, fields);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), callback);
                         }
+                        else
+                        {
+                            callback.succeeded();
+                        }
                     }
                 };
             }
@@ -143,6 +147,10 @@ public class StreamCountTest extends AbstractTest
                             HttpFields fields = new HttpFields();
                             MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, fields);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), callback);
+                        }
+                        else
+                        {
+                            callback.succeeded();
                         }
                     }
                 };

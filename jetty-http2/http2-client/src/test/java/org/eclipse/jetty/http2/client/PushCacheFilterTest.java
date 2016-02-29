@@ -101,6 +101,7 @@ public class PushCacheFilterTest extends AbstractTest
                         @Override
                         public void onData(Stream stream, DataFrame frame, Callback callback)
                         {
+                            callback.succeeded();
                             warmupLatch.countDown();
                         }
                     });
@@ -188,6 +189,7 @@ public class PushCacheFilterTest extends AbstractTest
                         @Override
                         public void onData(Stream stream, DataFrame frame, Callback callback)
                         {
+                            callback.succeeded();
                             warmupLatch.countDown();
                         }
                     });
@@ -273,6 +275,7 @@ public class PushCacheFilterTest extends AbstractTest
                         @Override
                         public void onData(Stream stream, DataFrame frame, Callback callback)
                         {
+                            callback.succeeded();
                             warmupLatch.countDown();
                         }
                     });
@@ -298,6 +301,7 @@ public class PushCacheFilterTest extends AbstractTest
                     @Override
                     public void onData(Stream stream, DataFrame frame, Callback callback)
                     {
+                        callback.succeeded();
                         pushLatch.countDown();
                     }
                 };
@@ -325,6 +329,7 @@ public class PushCacheFilterTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
+                callback.succeeded();
                 if (frame.isEndStream())
                     secondaryResponseLatch.countDown();
             }
@@ -372,6 +377,7 @@ public class PushCacheFilterTest extends AbstractTest
                         @Override
                         public void onData(Stream stream, DataFrame frame, Callback callback)
                         {
+                            callback.succeeded();
                             warmupLatch.countDown();
                         }
                     });
@@ -655,6 +661,7 @@ public class PushCacheFilterTest extends AbstractTest
                             @Override
                             public void onData(Stream stream, DataFrame frame, Callback callback)
                             {
+                                callback.succeeded();
                                 if (frame.isEndStream())
                                     warmupLatch.countDown();
                             }
@@ -676,6 +683,7 @@ public class PushCacheFilterTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
+                callback.succeeded();
                 if (frame.isEndStream())
                     primaryResponseLatch.countDown();
             }

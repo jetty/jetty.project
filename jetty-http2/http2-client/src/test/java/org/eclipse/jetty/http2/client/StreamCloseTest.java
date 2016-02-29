@@ -129,7 +129,12 @@ public class StreamCloseTest extends AbstractTest
                     public void onData(final Stream stream, DataFrame frame, final Callback callback)
                     {
                         Assert.assertTrue(((HTTP2Stream)stream).isRemotelyClosed());
-                        stream.data(frame, new Callback()
+
+                        // We must copy the data that we send asynchronously.
+                        ByteBuffer data = frame.getData();
+                        ByteBuffer copy = ByteBuffer.allocate(data.remaining());
+                        copy.put(data).flip();
+                        stream.data(new DataFrame(stream.getId(), copy, frame.isEndStream()), new Callback()
                         {
                             @Override
                             public void succeeded()
@@ -155,6 +160,7 @@ public class StreamCloseTest extends AbstractTest
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
                 // The sent data callback may not be notified yet here.
+                callback.succeeded();
                 completeLatch.countDown();
             }
         });
