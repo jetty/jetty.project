@@ -14,7 +14,7 @@ etc/jetty-ssl.xml
 etc/jetty-ssl-context.xml
 
 [files]
-http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/src/test/config/etc/keystore?id=${jetty.tag.version}|etc/keystore
+https://raw.githubusercontent.com/eclipse/jetty.project/master/jetty-server/src/test/config/etc/keystore?id=${jetty.tag.version}|etc/keystore
 
 [ini-template]
 ### TLS(SSL) Connector Configuration
@@ -90,4 +90,3 @@ http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/
 
 ## To configure Includes / Excludes for Cipher Suites or Protocols see tweak-ssl.xml example at
 ## https://www.eclipse.org/jetty/documentation/current/configuring-ssl.html#configuring-sslcontextfactory-cipherSuites
-

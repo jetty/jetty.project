@@ -1,5 +1,28 @@
 jetty-9.4.0-SNAPSHOT
 
+jetty-9.2.15.v20160210 - 10 February 2016
+ + 482042 New API, Allow customization of ServletHandler path mapping
+ + 482243 Fixed GzipHandler for Include.
+ + 482270 Expose upgrade request locales.
+ + 482855 Content-Length omitted for POST requests with empty body
+ + 483620 Servlet annotation mapping to "/" should override webdefault.xml
+   mapping
+ + 483857 jetty-client onComplete isn't called in case of exception in
+   GZIPContentDecoder.
+ + 484349 Promote WebSocket PathMappings / PathSpec to Jetty Http
+ + 484350 Allow GzipHandler path include/exclude to use regex
+ + 484397 Unavoidable NullPointerException in onMessage-Handler for
+   PongMessages
+ + 484603 HashLoginService does not stop its PropertyUserStore
+ + 484612 Restore WebSocket Session.close() sending 1000/Normal status code
+ + 484621 Client hangs till timeout when Authentication.authenticate() throws
+   exception.
+ + 487511 Jetty HTTP won't work on turkish systems.
+ + 485535 jetty.sh results in FAILED when running service restart
+ + 485663 NullPointerException in WebSocketSession during upgrade with DEBUG
+   logging
+ + 485712 Quickstart web.xml is absolute 
+
 jetty-9.3.7.v20160115 - 15 January 2016
  + 471171 Support SYNC_FLUSH in GzipHandler
  + 485469 permessage-deflate extension causes protocol error in Firefox/Chrome
