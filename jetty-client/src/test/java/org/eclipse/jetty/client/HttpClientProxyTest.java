@@ -32,6 +32,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.B64Code;
@@ -151,6 +152,102 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         requests.set(0);
         ContentResponse response3 = client.newRequest(serverHost, serverPort)
                 .scheme(scheme)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(status, response3.getStatus());
+        Assert.assertEquals(1, requests.get());
+    }
+
+    @Test
+    public void testAuthenticatedProxiedRequestWithRedirect() throws Exception
+    {
+        String user = "foo";
+        String password = "bar";
+        String credentials = B64Code.encode(user + ":" + password, StandardCharsets.ISO_8859_1);
+        String proxyHost = "localhost";
+        String serverHost = "server";
+        int serverPort = HttpScheme.HTTP.is(scheme) ? 80 : 443;
+        String realm = "test_realm";
+        int status = HttpStatus.NO_CONTENT_204;
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                if (target.startsWith("/proxy"))
+                {
+                    String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                    if (authorization == null)
+                    {
+                        response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                        response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
+                    }
+                    else
+                    {
+                        String prefix = "Basic ";
+                        if (authorization.startsWith(prefix))
+                        {
+                            String attempt = authorization.substring(prefix.length());
+                            if (credentials.equals(attempt))
+                            {
+                                // Change also the host, to verify that proxy authentication works in this case too.
+                                response.sendRedirect(scheme + "://127.0.0.1:" + serverPort + "/server");
+                            }
+                        }
+                    }
+                }
+                else if (target.startsWith("/server"))
+                {
+                    response.setStatus(status);
+                }
+                else
+                {
+                    response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                }
+            }
+        });
+
+        int proxyPort = connector.getLocalPort();
+        client.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
+
+        ContentResponse response1 = client.newRequest(serverHost, serverPort)
+                .scheme(scheme)
+                .path("/proxy")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        // No Authentication available => 407.
+        Assert.assertEquals(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407, response1.getStatus());
+
+        // Add authentication...
+        URI uri = URI.create(scheme + "://" + proxyHost + ":" + proxyPort);
+        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, user, password));
+        final AtomicInteger requests = new AtomicInteger();
+        client.getRequestListeners().add(new Request.Listener.Adapter()
+        {
+            @Override
+            public void onSuccess(Request request)
+            {
+                requests.incrementAndGet();
+            }
+        });
+        // ...and perform the request again => 407 + 302 + 204.
+        ContentResponse response2 = client.newRequest(serverHost, serverPort)
+                .scheme(scheme)
+                .path("/proxy")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(status, response2.getStatus());
+        Assert.assertEquals(3, requests.get());
+
+        // Now the authentication result is cached => 204.
+        requests.set(0);
+        ContentResponse response3 = client.newRequest(serverHost, serverPort)
+                .scheme(scheme)
+                .path("/server")
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
