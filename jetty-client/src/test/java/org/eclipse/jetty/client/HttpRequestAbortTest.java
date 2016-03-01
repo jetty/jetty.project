@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -45,6 +46,33 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     public HttpRequestAbortTest(SslContextFactory sslContextFactory)
     {
         super(sslContextFactory);
+    }
+
+    @Test
+    public void testAbortBeforeQueued() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        Exception failure = new Exception("oops");
+        try
+        {
+            Request request = client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .timeout(5, TimeUnit.SECONDS);
+            request.abort(failure);
+            request.send();
+            Assert.fail();
+        }
+        catch (ExecutionException x)
+        {
+            Assert.assertSame(failure, x.getCause());
+            // Make sure the pool is in a sane state.
+            HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
+            ConnectionPool connectionPool = destination.getConnectionPool();
+            Assert.assertEquals(1, connectionPool.getConnectionCount());
+            Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+            Assert.assertEquals(1, connectionPool.getIdleConnections().size());
+        }
     }
 
     @Test
