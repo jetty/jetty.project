@@ -313,6 +313,9 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Aborted before processing {}: {}", exchange, cause);
+                // Won't use this connection, release it back.
+                if (!connectionPool.release(connection))
+                    connection.close();
                 // It may happen that the request is aborted before the exchange
                 // is created. Aborting the exchange a second time will result in
                 // a no-operation, so we just abort here to cover that edge case.
