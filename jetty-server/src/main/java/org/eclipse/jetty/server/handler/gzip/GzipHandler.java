@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -68,13 +68,14 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
     private boolean _checkGzExists = true;
+    private boolean _syncFlush = false;
     
     // non-static, as other GzipHandler instances may have different configurations
     private final ThreadLocal<Deflater> _deflater = new ThreadLocal<Deflater>();
 
     private final IncludeExclude<String> _agentPatterns=new IncludeExclude<>(RegexSet.class);
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
-    private final IncludeExclude<String> _paths = new IncludeExclude<String>(PathSpecSet.class);
+    private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
     
     private HttpField _vary;
@@ -191,6 +192,27 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         for (String m : methods)
             _methods.include(m);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if {@link Deflater#SYNC_FLUSH} is used, else {@link Deflater#NO_FLUSH}
+     */
+    public boolean isSyncFlush()
+    {
+        return _syncFlush;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * <p>Set the {@link Deflater} flush mode to use.  {@link Deflater#SYNC_FLUSH}
+     * should be used if the application wishes to stream the data, but this may
+     * hurt compression performance.
+     * @param syncFlush True if {@link Deflater#SYNC_FLUSH} is used, else {@link Deflater#NO_FLUSH}
+     */
+    public void setSyncFlush(boolean syncFlush)
+    {
+        _syncFlush = syncFlush;
     }
 
     /* ------------------------------------------------------------ */
@@ -465,7 +487,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // install interceptor and handle
-        out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,baseRequest.getHttpChannel(),out.getInterceptor()));
+        out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,baseRequest.getHttpChannel(),out.getInterceptor(),_syncFlush));
         if (_handler!=null)
             _handler.handle(target,baseRequest, request, response);
     }

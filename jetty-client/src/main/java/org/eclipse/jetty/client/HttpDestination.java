@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -313,6 +313,9 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Aborted before processing {}: {}", exchange, cause);
+                // Won't use this connection, release it back.
+                if (!connectionPool.release(connection))
+                    connection.close();
                 // It may happen that the request is aborted before the exchange
                 // is created. Aborting the exchange a second time will result in
                 // a no-operation, so we just abort here to cover that edge case.
@@ -320,13 +323,25 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             }
             else
             {
-                send(connection, exchange);
+                SendFailure result = send(connection, exchange);
+                if (result != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Send failed {} for {}", result, exchange);
+                    if (result.retry)
+                    {
+                        if (enqueue(getHttpExchanges(), exchange))
+                            return true;
+                    }
+
+                    request.abort(result.failure);
+                }
             }
             return getHttpExchanges().peek() != null;
         }
     }
 
-    protected abstract void send(Connection connection, HttpExchange exchange);
+    protected abstract SendFailure send(Connection connection, HttpExchange exchange);
 
     public void newConnection(Promise<Connection> promise)
     {
@@ -447,7 +462,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @Override
     public String toString()
     {
-        return String.format("%s[%s]%x%s,queue=%d,pool=%s",
+        return String.format("%s[%s]@%x%s,queue=%d,pool=%s",
                 HttpDestination.class.getSimpleName(),
                 asString(),
                 hashCode(),

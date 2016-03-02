@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import java.nio.channels.SelectionKey;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ExecutionStrategy.Rejectable;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -57,7 +58,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
      */
     protected int _desiredInterestOps;
 
-    
+
     private abstract class RunnableTask  implements Runnable
     {
         final String _operation;
@@ -65,14 +66,35 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         {
             _operation=op;
         }
-        
+
         @Override
         public String toString()
         {
             return ChannelEndPoint.this.toString()+":"+_operation;
         }
     }
-    
+
+    private abstract class RejectableRunnable extends RunnableTask implements Rejectable
+    {
+        RejectableRunnable(String op)
+        {
+            super(op);
+        }
+
+        @Override
+        public void reject()
+        {
+            try
+            {
+                close();
+            }
+            catch (Throwable x)
+            {
+                LOG.warn(x);
+            }
+        }
+    }
+
     private final Runnable _runUpdateKey = new RunnableTask("runUpdateKey")
     {
         @Override
@@ -82,7 +104,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     };
 
-    private final Runnable _runFillable = new RunnableTask("runFillable")
+    private final Runnable _runFillable = new RejectableRunnable("runFillable")
     {
         @Override
         public void run()
@@ -91,7 +113,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     };
 
-    private final Runnable _runCompleteWrite = new RunnableTask("runCompleteWrite")
+    private final Runnable _runCompleteWrite = new RejectableRunnable("runCompleteWrite")
     {
         @Override
         public void run()
@@ -100,13 +122,13 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     };
 
-    private final Runnable _runFillableCompleteWrite = new RunnableTask("runFillableCompleteWrite")
+    private final Runnable _runFillableCompleteWrite = new RejectableRunnable("runFillableCompleteWrite")
     {
         @Override
         public void run()
         {
-            getFillInterest().fillable();
             getWriteFlusher().completeWrite();
+            getFillInterest().fillable();
         }
     };
 
@@ -149,7 +171,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             super.doClose();
         }
     }
-    
+
     @Override
     public void onClose()
     {
@@ -163,7 +185,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
                 _selector.onClose(this);
         }
     }
-    
+
 
     @Override
     public int fill(ByteBuffer buffer) throws IOException
@@ -269,7 +291,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         /**
          * This method may run concurrently with {@link #changeInterests(int)}.
          */
-    
+
         int readyOps = _key.readyOps();
         int oldInterestOps;
         int newInterestOps;
@@ -281,15 +303,15 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             newInterestOps = oldInterestOps & ~readyOps;
             _desiredInterestOps = newInterestOps;
         }
-    
-    
+
+
         boolean readable = (readyOps & SelectionKey.OP_READ) != 0;
         boolean writable = (readyOps & SelectionKey.OP_WRITE) != 0;
-    
-    
+
+
         if (LOG.isDebugEnabled())
             LOG.debug("onSelected {}->{} r={} w={} for {}", oldInterestOps, newInterestOps, readable, writable, this);
-        
+
         // Run non-blocking code immediately.
         // This producer knows that this non-blocking code is special
         // and that it must be run in this thread and not fed to the
@@ -309,11 +331,11 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             _runCompleteWrite.run();
             writable = false;
         }
-    
+
         // return task to complete the job
         Runnable task= readable ? (writable ? _runFillableCompleteWrite : _runFillable)
                 : (writable ? _runCompleteWrite : null);
-    
+
         if (LOG.isDebugEnabled())
             LOG.debug("task {}",task);
         return task;
@@ -325,7 +347,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         /**
          * This method may run concurrently with {@link #changeInterests(int)}.
          */
-    
+
         try
         {
             int oldInterestOps;
@@ -341,7 +363,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
                     _key.interestOps(newInterestOps);
                 }
             }
-    
+
             if (LOG.isDebugEnabled())
                 LOG.debug("Key interests updated {} -> {} on {}", oldInterestOps, newInterestOps, this);
         }
@@ -363,7 +385,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
          * This method may run concurrently with
          * {@link #updateKey()} and {@link #onSelected()}.
          */
-    
+
         int oldInterestOps;
         int newInterestOps;
         boolean pending;
@@ -375,14 +397,14 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             if (newInterestOps != oldInterestOps)
                 _desiredInterestOps = newInterestOps;
         }
-    
+
         if (LOG.isDebugEnabled())
             LOG.debug("changeInterests p={} {}->{} for {}", pending, oldInterestOps, newInterestOps, this);
-    
+
         if (!pending && _selector!=null)
             _selector.submit(_runUpdateKey);
     }
-    
+
 
     @Override
     public String toString()
@@ -405,5 +427,5 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             return String.format("%s{io=%s,kio=-2,kro=-2}", super.toString(), _desiredInterestOps);
         }
     }
-    
+
 }

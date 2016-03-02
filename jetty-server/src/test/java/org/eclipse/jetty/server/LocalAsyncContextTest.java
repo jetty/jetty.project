@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,9 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -84,8 +86,8 @@ public class LocalAsyncContextTest
         _handler.setCompleteAfter(-1);
         response=process(null);
         check(response,"TIMEOUT");
-        assertEquals(1,__completed.get());
-        assertEquals(1,__completed1.get());
+        spinAssertEquals(1,__completed::get);
+        spinAssertEquals(1,__completed1::get);
     }
 
     @Test
@@ -218,8 +220,8 @@ public class LocalAsyncContextTest
         _handler.setCompleteAfter2(-1);
         response=process(null);
         check(response,"STARTASYNC","DISPATCHED","startasync","STARTASYNC","DISPATCHED");
-        assertEquals(1,__completed.get());
-        assertEquals(0,__completed1.get());
+        spinAssertEquals(1,__completed::get);
+        spinAssertEquals(0,__completed1::get);
 
     }
 
@@ -596,4 +598,33 @@ public class LocalAsyncContextTest
         }
 
     };
+
+    static <T> void spinAssertEquals(T expected, Supplier<T> actualSupplier)
+    {
+        spinAssertEquals(expected,actualSupplier,10,TimeUnit.SECONDS);
+    }
+    
+    static <T> void spinAssertEquals(T expected, Supplier<T> actualSupplier, long waitFor, TimeUnit units)
+    {
+        long now = System.nanoTime();
+        long end = now+units.toNanos(waitFor);
+        T actual=null;
+        while(now < end)
+        {
+            actual=actualSupplier.get();
+            if (actual==null && expected==null ||
+                actual!=null && actual.equals(expected))
+                break;
+            try
+            {
+                Thread.sleep(10);
+            }
+            catch (InterruptedException e)
+            {
+            }
+            now = System.nanoTime();
+        }
+        
+        assertEquals(expected,actual);
+    }
 }

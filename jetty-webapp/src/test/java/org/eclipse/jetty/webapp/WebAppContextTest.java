@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -68,12 +68,14 @@ public class WebAppContextTest
     {
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
-        Assert.assertThat(Arrays.asList(wac.getConfigurations()).stream().map(Configuration::getClassName).collect(Collectors.toList()),
+        Assert.assertThat(Arrays.asList(wac.getConfigurations()).stream().map(Configuration::getName).collect(Collectors.toList()),
                 Matchers.contains( 
+                        "org.eclipse.jetty.webapp.JmxConfiguration",
                         "org.eclipse.jetty.webapp.WebInfConfiguration",
                         "org.eclipse.jetty.webapp.WebXmlConfiguration",
                         "org.eclipse.jetty.webapp.MetaInfConfiguration",
                         "org.eclipse.jetty.webapp.FragmentConfiguration",
+                        "org.eclipse.jetty.webapp.WebAppConfiguration",
                         "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"));
     }
 

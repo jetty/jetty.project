@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -76,7 +76,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.server.session.AbstractSession;
+import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.IO;
@@ -168,7 +168,7 @@ public class Request implements HttpServletRequest
     private String _pathInfo;
 
     private boolean _secure;
-    private boolean _asyncSupported = true;
+    private String _asyncNotSupportedSource = null;
     private boolean _newContext;
     private boolean _cookiesExtracted = false;
     private boolean _handled = false;
@@ -207,7 +207,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public HttpFields getHttpFields()
     {
-        return _metadata.getFields();
+        return _metadata==null?null:_metadata.getFields();
     }
 
     /* ------------------------------------------------------------ */
@@ -225,7 +225,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public boolean isPushSupported()
     {
-        return getHttpChannel().getHttpTransport().isPushSupported();
+        return !isPush() && getHttpChannel().getHttpTransport().isPushSupported();
     }
 
     /* ------------------------------------------------------------ */
@@ -369,7 +369,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private void extractQueryParameters()
     {
-        if (_metadata.getURI() == null || !_metadata.getURI().hasQuery())
+        if (_metadata == null || _metadata.getURI() == null || !_metadata.getURI().hasQuery())
             _queryParameters=NO_PARAMS;
         else
         {
@@ -656,7 +656,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getContentType()
     {
-        String content_type = _metadata.getFields().get(HttpHeader.CONTENT_TYPE);
+        String content_type = _metadata==null?null:_metadata.getFields().get(HttpHeader.CONTENT_TYPE);
         if (_characterEncoding==null && content_type!=null)
         {
             MimeTypes.Type mime = MimeTypes.CACHE.get(content_type);
@@ -944,7 +944,7 @@ public class Request implements HttpServletRequest
             if (local!=null)
                 return local.getHostString();
         }
-        
+
         try
         {
             String name =InetAddress.getLocalHost().getHostName();
@@ -1142,7 +1142,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getQueryString()
     {
-        return _metadata.getURI().getQuery();
+        return _metadata==null?null:_metadata.getURI().getQuery();
     }
 
     /* ------------------------------------------------------------ */
@@ -1370,7 +1370,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getServerName()
     {
-        String name = _metadata.getURI().getHost();
+        String name = _metadata==null?null:_metadata.getURI().getHost();
 
         // Return already determined host
         if (name != null)
@@ -1383,7 +1383,7 @@ public class Request implements HttpServletRequest
     private String findServerName()
     {
         // Return host from header field
-        HttpField host = _metadata.getFields().getField(HttpHeader.HOST);
+        HttpField host = _metadata==null?null:_metadata.getFields().getField(HttpHeader.HOST);
         if (host!=null)
         {
             // TODO is this needed now?
@@ -1418,8 +1418,8 @@ public class Request implements HttpServletRequest
     @Override
     public int getServerPort()
     {
-        HttpURI uri = _metadata.getURI();
-        int port = (uri.getHost()==null)?findServerPort():uri.getPort();
+        HttpURI uri = _metadata==null?null:_metadata.getURI();
+        int port = (uri == null || uri.getHost()==null)?findServerPort():uri.getPort();
 
         // If no port specified, return the default port for the scheme
         if (port <= 0)
@@ -1437,7 +1437,7 @@ public class Request implements HttpServletRequest
     private int findServerPort()
     {
         // Return host from header field
-        HttpField host = _metadata.getFields().getField(HttpHeader.HOST);
+        HttpField host = _metadata==null?null:_metadata.getFields().getField(HttpHeader.HOST);
         if (host!=null)
         {
             // TODO is this needed now?
@@ -1491,23 +1491,24 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * Add @override when 3.1 api is available
+    /** 
+     * @see javax.servlet.http.HttpServletRequest#changeSessionId()
      */
+    @Override
     public String changeSessionId()
     {
         HttpSession session = getSession(false);
         if (session == null)
             throw new IllegalStateException("No session");
 
-        if (session instanceof AbstractSession)
+        if (session instanceof Session)
         {
-            AbstractSession abstractSession =  ((AbstractSession)session);
-            abstractSession.renewId(this);
+            Session s =  ((Session)session);
+            s.renewId(this);
             if (getRemoteUser() != null)
-                abstractSession.setAttribute(AbstractSession.SESSION_CREATED_SECURE, Boolean.TRUE);
-            if (abstractSession.isIdChanged())
-                _channel.getResponse().addCookie(_sessionManager.getSessionCookie(abstractSession, getContextPath(), isSecure()));
+                s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+            if (s.isIdChanged())
+                _channel.getResponse().addCookie(_sessionManager.getSessionCookie(s, getContextPath(), isSecure()));
         }
 
         return session.getId();
@@ -1667,7 +1668,7 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isAsyncSupported()
     {
-        return _asyncSupported;
+        return _asyncNotSupportedSource==null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1711,7 +1712,7 @@ public class Request implements HttpServletRequest
             return false;
 
         HttpSession session = getSession(false);
-        return (session != null && _sessionManager.getSessionIdManager().getClusterId(_requestedSessionId).equals(_sessionManager.getClusterId(session)));
+        return (session != null && _sessionManager.getSessionIdManager().getId(_requestedSessionId).equals(_sessionManager.getId(session)));
     }
 
     /* ------------------------------------------------------------ */
@@ -1843,7 +1844,7 @@ public class Request implements HttpServletRequest
         if (_async!=null)
             _async.reset();
         _async=null;
-        _asyncSupported = true;
+        _asyncNotSupportedSource = null;
         _handled = false;
         if (_attributes != null)
             _attributes.clearAttributes();
@@ -1913,9 +1914,9 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public void setAsyncSupported(boolean supported)
+    public void setAsyncSupported(boolean supported,String source)
     {
-        _asyncSupported = supported;
+        _asyncNotSupportedSource = supported?null:(source==null?"unknown":source);
     }
 
     /* ------------------------------------------------------------ */
@@ -2235,8 +2236,8 @@ public class Request implements HttpServletRequest
     @Override
     public AsyncContext startAsync() throws IllegalStateException
     {
-        if (!_asyncSupported)
-            throw new IllegalStateException("!asyncSupported");
+        if (_asyncNotSupportedSource!=null)
+            throw new IllegalStateException("!asyncSupported: "+_asyncNotSupportedSource);
         HttpChannelState state = getHttpChannelState();
         if (_async==null)
             _async=new AsyncContextState(state);
@@ -2249,8 +2250,8 @@ public class Request implements HttpServletRequest
     @Override
     public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException
     {
-        if (!_asyncSupported)
-            throw new IllegalStateException("!asyncSupported");
+        if (_asyncNotSupportedSource!=null)
+            throw new IllegalStateException("!asyncSupported: "+_asyncNotSupportedSource);
         HttpChannelState state = getHttpChannelState();
         if (_async==null)
             _async=new AsyncContextState(state);

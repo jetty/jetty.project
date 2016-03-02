@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -74,28 +74,34 @@ public abstract class CompressExtension extends AbstractExtension
 
     private final Queue<FrameEntry> entries = new ConcurrentArrayQueue<>();
     private final IteratingCallback flusher = new Flusher();
-    private final Deflater deflater;
-    private final Inflater inflater;
+    private Deflater deflaterImpl;
+    private Inflater inflaterImpl;
     protected AtomicInteger decompressCount = new AtomicInteger(0);
     private int tailDrop = TAIL_DROP_NEVER;
     private int rsvUse = RSV_USE_ALWAYS;
 
     protected CompressExtension()
     {
-        deflater = new Deflater(Deflater.DEFAULT_COMPRESSION,NOWRAP);
-        inflater = new Inflater(NOWRAP);
         tailDrop = getTailDropMode();
         rsvUse = getRsvUseMode();
     }
 
     public Deflater getDeflater()
     {
-        return deflater;
+        if (deflaterImpl == null)
+        {
+            deflaterImpl = new Deflater(Deflater.DEFAULT_COMPRESSION,NOWRAP);
+        }
+        return deflaterImpl;
     }
 
     public Inflater getInflater()
     {
-        return inflater;
+        if (inflaterImpl == null)
+        {
+            inflaterImpl = new Inflater(NOWRAP);
+        }
+        return inflaterImpl;
     }
 
     /**
@@ -154,6 +160,8 @@ public abstract class CompressExtension extends AbstractExtension
             return;
         }
         byte[] output = new byte[DECOMPRESS_BUF_SIZE];
+        
+        Inflater inflater = getInflater();
         
         while(buf.hasRemaining() && inflater.needsInput())
         {
@@ -346,6 +354,16 @@ public abstract class CompressExtension extends AbstractExtension
         }
         return true;
     }
+    
+    @Override
+    protected void doStop() throws Exception
+    {
+        if(deflaterImpl != null)
+            deflaterImpl.end();
+        if(inflaterImpl != null)
+            inflaterImpl.end();
+        super.doStop();
+    }
 
     @Override
     public String toString()
@@ -407,12 +425,13 @@ public abstract class CompressExtension extends AbstractExtension
         {
             Frame frame = entry.frame;
             BatchMode batchMode = entry.batchMode;
-            if (OpCode.isControlFrame(frame.getOpCode()) || !frame.hasPayload())
+            if (OpCode.isControlFrame(frame.getOpCode()))
             {
+                // Do not deflate control frames
                 nextOutgoingFrame(frame,this,batchMode);
                 return;
             }
-
+            
             compress(entry,true);
         }
 
@@ -428,13 +447,15 @@ public abstract class CompressExtension extends AbstractExtension
                 LOG.debug("Compressing {}: {} bytes in {} bytes chunk",entry,remaining,outputLength);
 
             boolean needsCompress = true;
+            
+            Deflater deflater = getDeflater();
 
             if (deflater.needsInput() && !supplyInput(deflater,data))
             {
                 // no input supplied
                 needsCompress = false;
             }
-
+            
             ByteArrayOutputStream out = new ByteArrayOutputStream();
 
             byte[] output = new byte[outputLength];
@@ -486,7 +507,8 @@ public abstract class CompressExtension extends AbstractExtension
             }
             else if (fin)
             {
-                // Special case: 8.2.3.6.  Generating an Empty Fragment Manually
+                // Special case: 7.2.3.6.  Generating an Empty Fragment Manually
+                // https://tools.ietf.org/html/rfc7692#section-7.2.3.6
                 payload = ByteBuffer.wrap(new byte[] { 0x00 });
             }
 

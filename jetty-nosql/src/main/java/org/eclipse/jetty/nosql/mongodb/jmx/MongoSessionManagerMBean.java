@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,11 +22,11 @@ import org.eclipse.jetty.nosql.mongodb.MongoSessionManager;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.server.session.jmx.AbstractSessionManagerMBean;
+import org.eclipse.jetty.server.session.jmx.SessionManagerMBean;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject("Mongo Session Manager MBean")
-public class MongoSessionManagerMBean extends AbstractSessionManagerMBean
+public class MongoSessionManagerMBean extends SessionManagerMBean
 {
 
     public MongoSessionManagerMBean(Object managedObject)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -89,8 +89,7 @@ public class IncludedGzipTest
         tester.getContext().addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
         
         GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.setHandler(tester.getContext().getHandler());
-        tester.getContext().setHandler(gzipHandler);
+        tester.getContext().insertHandler(gzipHandler);
         tester.start();
     }
 

@@ -1,5 +1,143 @@
 jetty-9.4.0-SNAPSHOT
 
+jetty-9.3.8.RC0 - 25 February 2016
+ + 81 Exception not always thrown in Jetty to application when upload part is
+   too big
+ + 82 Request.getPart() that results in Exception still allows other parts to
+   be fetched
+ + 251 Removing SSLEngine.beginHandshake() calls
+ + 285 PathContentProvider - Use of Direct buffers without pooling
+ + 298 qtp threads spin-locked in MBeanContainer.beanAdded
+ + 342 Reintroducing Response parameter to logExtended
+ + 344 init script does not properly display status of a non running service
+ + 346 HttpParser RFC2616 Compliance mode
+ + 347 Avoid sending request using a connection that is idle timing out
+ + 352 Integrate session idling for MongoSessionManager
+ + 354 Spin loop in case of exception thrown during accept()
+ + 355 Improve close behaviour
+ + 478918 Change javax.servlet.error,forward,include literals to
+   RequestDispatcher constants
+ + 484446 InputStreamResponseListener's InputStream uses default read (3) and
+   blocks early on never-ending response.
+ + 485306 HttpParser (HttpURI) mistaking basic auth password as a port number
+ + 485469 permessage-deflate extension causes protocol error in Firefox/Chrome
+ + 486394 Restore MultiPartFilter behavior with regards to temp file access
+ + 486497 NPE in MappedLoginService
+ + 486511 Server.getURI() returns wrong scheme on SSL/HTTPS
+ + 486530 Handler added to WebAppContext prevents ServletContext initialization
+ + 486589 HttpRequest has a wrong HTTP Version in HTTP/2.
+ + 486604 Add debug logging of ErrorPageErrorHandler logic
+ + 486674 Quickstart path attribute normalization should be based on longest
+   path match
+ + 486829 Cancel stream error after a failed request with the HTTP/2.0 client.
+ + 486877 Google Chrome flagging 'obsolete cipher suite' in Jetty and will soon
+   issue broken padlock
+ + 486930 Selector does not correctly handle rejected execution exception
+ + 487158 Switched SCM URIs to github
+ + 487197 Deflater/Inflater memory leak with WebSocket permessage-deflate
+   extension
+ + 487198 ContextScopeListener should be called on context start and stop
+ + 487277 Introduce http-forwarded module for X-Forwarded support
+ + 487354 Aborted request or response does not send RST_STREAM frame.
+ + 487511 Jetty HTTP won't work on turkish systems.
+ + 487714 Avoid NPE in close race for async write
+ + 487750 HTTP/2 push must not be recursive.
+
+jetty-9.2.15.v20160210 - 10 February 2016
+ + 482042 New API, Allow customization of ServletHandler path mapping
+ + 482243 Fixed GzipHandler for Include.
+ + 482270 Expose upgrade request locales.
+ + 482855 Content-Length omitted for POST requests with empty body
+ + 483620 Servlet annotation mapping to "/" should override webdefault.xml
+   mapping
+ + 483857 jetty-client onComplete isn't called in case of exception in
+   GZIPContentDecoder.
+ + 484349 Promote WebSocket PathMappings / PathSpec to Jetty Http
+ + 484350 Allow GzipHandler path include/exclude to use regex
+ + 484397 Unavoidable NullPointerException in onMessage-Handler for
+   PongMessages
+ + 484603 HashLoginService does not stop its PropertyUserStore
+ + 484612 Restore WebSocket Session.close() sending 1000/Normal status code
+ + 484621 Client hangs till timeout when Authentication.authenticate() throws
+   exception.
+ + 487511 Jetty HTTP won't work on turkish systems.
+ + 485535 jetty.sh results in FAILED when running service restart
+ + 485663 NullPointerException in WebSocketSession during upgrade with DEBUG
+   logging
+ + 485712 Quickstart web.xml is absolute
+
+jetty-9.3.7.v20160115 - 15 January 2016
+ + 471171 Support SYNC_FLUSH in GzipHandler
+ + 485469 permessage-deflate extension causes protocol error in Firefox/Chrome
+ + 485714 Update SSL configuration to mitigate SLOTH vulnerability
+ + 485884 WebAppContext defaults should be same for xml or war deployment
+ + 485969 WebSocket upgrade response should honor HttpConfiguration server
+   version settings
+
+jetty-9.3.7.RC1 - 13 January 2016
+ + 481986 Dead JSR 356 Server Session still being tracked after
+   Session/Connection closure
+ + 484616 Outdated version of javaee_web_services_client_1_2.xsd
+ + 485031 two PathWatcher threads running after automatically restarting webapp
+ + 485063 After stopping JettyWebAppContext, it still contains reference to old
+   WebAppClassLoader via ServerContainer bean
+ + 485064 HashSessionManager leaks ScheduledExecutorScheduler with reference to
+   un-deployed webapp
+ + 485376 Multiple charset attributes in Content-Type
+ + 485535 jetty.sh results in FAILED when running service restart
+ + 485663 NullPointerException in WebSocketSession during upgrade with DEBUG
+   logging
+ + 485712 Quickstart web.xml is absolute
+
+jetty-9.3.7.RC0 - 05 January 2016
+ + 458745 Async ISE in async Echo
+ + 481567 permessage-deflate causing data-dependent ju.zip.DataFormatException:
+   invalid stored block lengths
+ + 482173 Track original Query string in Rewrite RuleContainer too
+ + 482243 Fixed GzipHandler for Include.
+ + 482270 Expose upgrade request locales.
+ + 482272 Fixed relative symlink checking
+ + 482506 HTTP/2 load test with h2load fails.
+ + 482670 HttpURI wrongly parser URI paths starting with /@
+ + 482855 Content-Length omitted for POST requests with empty body
+ + 482959 Local stream count never decrements when closing a stream causing
+   IllegalStateException.
+ + 483009 MultiPartContentProvider may send wrong Content-Length.
+ + 483039 HTTP2 Upgrade case sensitivity on Connection header
+ + 483344 text/csv Mime Type For CSV in mime properties File
+ + 483413 Warn on @Deprecated servlet/filter use
+ + 483422 Empty chunked body in 304 Response
+ + 483620 Servlet annotation mapping to "/" should override webdefault.xml
+   mapping
+ + 483857 jetty-client onComplete isn't called in case of exception in
+   GZIPContentDecoder.
+ + 483878 Parallel requests stuck via the http client transport over HTTP/2.
+ + 484167 GOAWAY frames aren't handling disconnects appropriately on Client.
+ + 484210 HttpClient over HTTP/2 should honor maxConcurrentStreams.
+ + 484262 Race condition between GOAWAY disconnect and ability to make new
+   request.
+ + 484349 Promote WebSocket PathMappings / PathSpec to Jetty Http
+ + 484350 Allow GzipHandler path include/exclude to use regex
+ + 484397 Unavoidable NullPointerException in onMessage-Handler for
+   PongMessages
+ + 484440 Swap WebSocket PathMappings for new jetty-http PathMappings
+ + 484585 Avoid sending request using a connection that is idle timing out.
+ + 484603 HashLoginService does not stop its PropertyUserStore
+ + 484612 Restore WebSocket Session.close() sending 1000/Normal status code
+ + 484621 Client hangs till timeout when Authentication.authenticate() throws
+   exception.
+ + 484622 Improve handling of Direct and Mapped buffers for static content
+ + 484624 Disable CachingWebAppClassLoader
+ + 484657 Support HSTS rfc6797
+ + 484683 FastCGI request idle timeout is handled incorrectly.
+ + 484718 Review idle timeout handling.
+ + 484801 Avoid non-cached memory mapped files
+ + 484818 Expose interesting HTTP/2 attributes and operations via JMX.
+ + 484822 Jetty ThreadMonitor memory leak
+ + 484861 Improve FlowControlStrategy stall handling.
+ + 484876 Make simpler to customize the FlowControlStrategy.
+ + 484878 Make BufferingFlowControlStrategy.bufferRatio configurable via JMX.
+
 jetty-9.3.6.v20151106 - 06 November 2015
  + 419966 Add ContentProvider that submits multipart/form-data.
  + 472675 No main manifest attribute, in jetty-runner regression
@@ -1371,7 +1509,7 @@ jetty-9.1.2.v20140210 - 10 February 2014
  + 423421 remove org.slf4j and org.ow2.asm from jetty-all artifact
  + 424171 Old javax.activation jar interferes with email sending
  + 424562 JDBCSessionManager.setNodeIdInSessionId(true) does not work
- + 425275 
+ + 425275
    org.eclipse.jetty.osgi.annotations.AnnotationConfiguration.BundleParserTask.getStatistic()
    returns null when debug is enabled.
  + 425638 Fixed monitor module/xml typos
@@ -1674,7 +1812,7 @@ jetty-9.0.6.v20130930 - 30 September 2013
    in the value
  + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
  + 415194 Deployer gives management of context to context collection
- + 415302 
+ + 415302
  + 415330 Avoid multiple callbacks at EOF
  + 415401 Add initalizeDefaults call to SpringConfigurationProcessor
  + 415548 migrate ProxyHTTPToSPDYTest to use HttpClient to avoid intermittent
@@ -1814,7 +1952,7 @@ jetty-9.1.0.M0 - 16 September 2013
  + 415131 Avoid autoboxing on debug
  + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
  + 415194 Deployer gives management of context to context collection
- + 415302 
+ + 415302
  + 415314 Jetty should not commit response on output if <
    Response.setBufferSize() bytes are written
  + 415330 Avoid multiple callbacks at EOF

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,12 +33,28 @@ import org.eclipse.jetty.util.component.Container;
  */
 public interface Connection extends Closeable
 {
+    /**
+     * <p>Adds a listener of connection events.</p>
+     *
+     * @param listener the listener to add
+     */
     public void addListener(Listener listener);
 
+    /**
+     * <p>Removes a listener of connection events.</p>
+     *
+     * @param listener the listener to remove
+     */
+    public void removeListener(Listener listener);
+
+    /**
+     * <p>Callback method invoked when this connection is opened.</p>
+     * <p>Creators of the connection implementation are responsible for calling this method.</p>
+     */
     public void onOpen();
 
     /**
-     * <p>Callback method invoked when this {@link Connection} is closed.</p>
+     * <p>Callback method invoked when this connection is closed.</p>
      * <p>Creators of the connection implementation are responsible for calling this method.</p>
      */
     public void onClose();
@@ -57,6 +73,19 @@ public interface Connection extends Closeable
     @Override
     public void close();
 
+    /**
+     * <p>Callback method invoked upon an idle timeout event.</p>
+     * <p>Implementations of this method may return true to indicate that the idle timeout
+     * handling should proceed normally, typically failing the EndPoint and causing it to
+     * be closed.</p>
+     * <p>When false is returned, the handling of the idle timeout event is halted
+     * immediately and the EndPoint left in the state it was before the idle timeout event.</p>
+     *
+     * @return true to let the EndPoint handle the idle timeout,
+     *         false to tell the EndPoint to halt the handling of the idle timeout.
+     */
+    public boolean onIdleExpired();
+
     public int getMessagesIn();
     public int getMessagesOut();
     public long getBytesIn();
@@ -65,10 +94,11 @@ public interface Connection extends Closeable
     
     public interface UpgradeFrom
     {
-        /* ------------------------------------------------------------ */
-        /** Take the input buffer from the connection on upgrade.
+        /**
+         * <p>Takes the input buffer from the connection on upgrade.</p>
          * <p>This method is used to take any unconsumed input from
-         * a connection during an upgrade.
+         * a connection during an upgrade.</p>
+         *
          * @return A buffer of unconsumed input. The caller must return the buffer
          * to the bufferpool when consumed and this connection must not.
          */
@@ -78,7 +108,7 @@ public interface Connection extends Closeable
     public interface UpgradeTo
     {
         /**
-         * <p>Callback method invoked when this {@link Connection} is upgraded.</p>
+         * <p>Callback method invoked when this connection is upgraded.</p>
          * <p>This must be called before {@link #onOpen()}.</p>
          * @param prefilled An optional buffer that can contain prefilled data. Typically this
          * results from an upgrade of one protocol to the other where the old connection has buffered
@@ -88,8 +118,6 @@ public interface Connection extends Closeable
         void onUpgradeTo(ByteBuffer prefilled);
     }
     
-    
-    /* ------------------------------------------------------------ */
     /** 
      * <p>A Listener for connection events.</p>
      * <p>Listeners can be added to a {@link Connection} to get open and close events.

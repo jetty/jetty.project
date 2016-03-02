@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -101,10 +101,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public boolean startRequest(String method, String uri, HttpVersion version)
     {
         _metadata.setMethod(method);
-        if (HttpMethod.CONNECT.is(method))
-            _metadata.getURI().parseConnect(uri);
-        else
-            _metadata.getURI().parse(uri);
+        _metadata.getURI().parseRequestTarget(method,uri);
         _metadata.setHttpVersion(version);
         _unknownExpectation = false;
         _expect100Continue = false;
@@ -263,6 +260,11 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
 
         switch (_metadata.getVersion())
         {
+            case HTTP_0_9:
+            {
+                persistent=false;
+                break;
+            }
             case HTTP_1_0:
             {
                 if (getHttpConfiguration().isPersistentConnectionsEnabled())
@@ -334,12 +336,13 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     return true;
 
                 badMessage(HttpStatus.UPGRADE_REQUIRED_426,null);
+                _httpConnection.getParser().close();
                 return false;
             }
 
             default:
             {
-                throw new IllegalStateException();
+                throw new IllegalStateException("unsupported version "+_metadata.getVersion());
             }
         }
 

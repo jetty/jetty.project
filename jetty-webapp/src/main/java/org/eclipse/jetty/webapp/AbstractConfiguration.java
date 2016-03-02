@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class AbstractConfiguration implements Configuration
 {
+    private final boolean _enabledByDefault;
     private final List<String> _after;
     private final List<String> _before;
     private final List<String> _system;
@@ -32,19 +33,61 @@ public class AbstractConfiguration implements Configuration
     
     protected AbstractConfiguration()
     {
-        _after=Collections.emptyList();
-        _before=Collections.emptyList();
-        _system=Collections.emptyList();
-        _server=Collections.emptyList();
+        this(false,(String[])null,(String[])null,null,null);
     }
 
     protected AbstractConfiguration(String[] before,String[] after)
     {
-        this(before,after,null,null);
+        this(false,before,after,null,null);
     }
     
+    protected AbstractConfiguration(boolean enableByDefault,String[] before,String[] after)
+    {
+        this(enableByDefault,before,after,null,null);
+    }
+    
+    /**
+     * @param before Configurations that come before this configuration
+     * @param after Configuration that come after this configuration
+     * @param systemClasses
+     * @param serverClasses
+     */
     protected AbstractConfiguration(String[] before,String[] after,String[] systemClasses,String[] serverClasses)
     {
+        this (false,before,after,systemClasses,serverClasses);
+    }
+
+    /**
+     * @param enabledByDefault
+     * @param before Configurations that come before this configuration
+     * @param after Configuration that come after this configuration
+     * @param systemClasses
+     * @param serverClasses
+     */
+    protected AbstractConfiguration(
+            boolean enableByDefault,
+            Class<? extends Configuration>[] before,
+            Class<? extends Configuration>[] after,
+            String[] systemClasses,
+            String[] serverClasses)
+    {
+        _enabledByDefault=enableByDefault;
+        _after=Collections.unmodifiableList(after==null?Collections.emptyList():Arrays.asList(after).stream().map(Class::getName).collect(Collectors.toList()));
+        _before=Collections.unmodifiableList(before==null?Collections.emptyList():Arrays.asList(before).stream().map(Class::getName).collect(Collectors.toList()));
+        _system=Collections.unmodifiableList(systemClasses==null?Collections.emptyList():Arrays.asList(systemClasses));
+        _server=Collections.unmodifiableList(serverClasses==null?Collections.emptyList():Arrays.asList(serverClasses));
+    }
+    
+    /**
+     * @param enabledByDefault
+     * @param before Configurations that come before this configuration
+     * @param after Configuration that come after this configuration
+     * @param systemClasses
+     * @param serverClasses
+     */
+    protected AbstractConfiguration(boolean enableByDefault,String[] before,String[] after,String[] systemClasses,String[] serverClasses)
+    {
+        _enabledByDefault=enableByDefault;
         _after=Collections.unmodifiableList(after==null?Collections.emptyList():Arrays.asList(after));
         _before=Collections.unmodifiableList(before==null?Collections.emptyList():Arrays.asList(before));
         _system=Collections.unmodifiableList(systemClasses==null?Collections.emptyList():Arrays.asList(systemClasses));
@@ -97,5 +140,11 @@ public class AbstractConfiguration implements Configuration
 
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
+    }
+
+    @Override
+    public boolean isEnabledByDefault() 
+    { 
+        return _enabledByDefault; 
     }
 }

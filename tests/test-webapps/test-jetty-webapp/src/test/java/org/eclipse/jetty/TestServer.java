@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,7 +44,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.session.HashSessionManager;
+import org.eclipse.jetty.server.session.FileSessionManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -131,8 +131,8 @@ public class TestServer
             sessiondir.delete();
         sessiondir.mkdir();
         sessiondir.deleteOnExit();
-        ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setStoreDirectory(sessiondir);
-        ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setSavePeriod(10);
+        ((FileSessionManager)webapp.getSessionHandler().getSessionManager()).getSessionDataStore().setStoreDir(sessiondir);
+        //((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setSavePeriod(10);
 
         contexts.addHandler(webapp);
 

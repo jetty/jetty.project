@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -56,27 +56,29 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
     private final HttpChannel _channel;
     private final HttpField _vary;
     private final int _bufferSize;
+    private final boolean _syncFlush;
     
     private Deflater _deflater;
     private ByteBuffer _buffer;
 
-    public GzipHttpOutputInterceptor(GzipFactory factory, HttpChannel channel, HttpOutput.Interceptor next)
+    public GzipHttpOutputInterceptor(GzipFactory factory, HttpChannel channel, HttpOutput.Interceptor next,boolean syncFlush)
     {
-        this(factory,VARY_ACCEPT_ENCODING_USER_AGENT,channel.getHttpConfiguration().getOutputBufferSize(),channel,next);
+        this(factory,VARY_ACCEPT_ENCODING_USER_AGENT,channel.getHttpConfiguration().getOutputBufferSize(),channel,next,syncFlush);
     }
     
-    public GzipHttpOutputInterceptor(GzipFactory factory, HttpField vary, HttpChannel channel, HttpOutput.Interceptor next)
+    public GzipHttpOutputInterceptor(GzipFactory factory, HttpField vary, HttpChannel channel, HttpOutput.Interceptor next,boolean syncFlush)
     {
-        this(factory,vary,channel.getHttpConfiguration().getOutputBufferSize(),channel,next);
+        this(factory,vary,channel.getHttpConfiguration().getOutputBufferSize(),channel,next,syncFlush);
     }
     
-    public GzipHttpOutputInterceptor(GzipFactory factory, HttpField vary, int bufferSize, HttpChannel channel, HttpOutput.Interceptor next)
+    public GzipHttpOutputInterceptor(GzipFactory factory, HttpField vary, int bufferSize, HttpChannel channel, HttpOutput.Interceptor next,boolean syncFlush)
     {
         _factory=factory;
         _channel=channel;
         _interceptor=next;
         _vary=vary;
         _bufferSize=bufferSize;
+        _syncFlush=syncFlush;
     }
 
     public HttpOutput.Interceptor getNextInterceptor()
@@ -353,7 +355,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             int len=_buffer.capacity()-_buffer.limit() - (_last?8:0);
             if (len>0)
             {
-                int produced=_deflater.deflate(_buffer.array(),off,len,Deflater.NO_FLUSH);
+                int produced=_deflater.deflate(_buffer.array(),off,len,_syncFlush?Deflater.SYNC_FLUSH:Deflater.NO_FLUSH);
                 _buffer.limit(_buffer.limit()+produced);
             }
             boolean finished=_deflater.finished();

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,6 +51,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.IdentityService;
@@ -583,27 +585,23 @@ public class ServletHandler extends ScopedHandler
         }
 
         // Servlet name filters
-        if (servletHolder != null && _filterNameMappings!=null && _filterNameMappings.size() > 0)
+        if (servletHolder != null && _filterNameMappings!=null && !_filterNameMappings.isEmpty())
         {
-            // Servlet name filters
-            if (_filterNameMappings.size() > 0)
+            Object o= _filterNameMappings.get(servletHolder.getName());
+
+            for (int i=0; i<LazyList.size(o);i++)
             {
-                Object o= _filterNameMappings.get(servletHolder.getName());
+                FilterMapping mapping = LazyList.get(o,i);
+                if (mapping.appliesTo(dispatch))
+                    filters.add(mapping.getFilterHolder());
+            }
 
-                for (int i=0; i<LazyList.size(o);i++)
-                {
-                    FilterMapping mapping = LazyList.get(o,i);
-                    if (mapping.appliesTo(dispatch))
-                        filters.add(mapping.getFilterHolder());
-                }
-
-                o= _filterNameMappings.get("*");
-                for (int i=0; i<LazyList.size(o);i++)
-                {
-                    FilterMapping mapping = LazyList.get(o,i);
-                    if (mapping.appliesTo(dispatch))
-                        filters.add(mapping.getFilterHolder());
-                }
+            o= _filterNameMappings.get("*");
+            for (int i=0; i<LazyList.size(o);i++)
+            {
+                FilterMapping mapping = LazyList.get(o,i);
+                if (mapping.appliesTo(dispatch))
+                    filters.add(mapping.getFilterHolder());
             }
         }
 
@@ -1523,17 +1521,21 @@ public class ServletHandler extends ScopedHandler
                 //if the request already does not support async, then the setting for the filter
                 //is irrelevant. However if the request supports async but this filter does not
                 //temporarily turn it off for the execution of the filter
-                boolean requestAsyncSupported = baseRequest.isAsyncSupported();
-                try
-                {
-                    if (!_filterHolder.isAsyncSupported() && requestAsyncSupported)
-                        baseRequest.setAsyncSupported(false);
+                if (baseRequest.isAsyncSupported() && !_filterHolder.isAsyncSupported())
+                { 
+                    try
+                    {
+                        baseRequest.setAsyncSupported(false,_filterHolder.toString());
+                        filter.doFilter(request, response, _next);
+                    }
+                    finally
+                    {
+                        baseRequest.setAsyncSupported(true,null);
+                    }
+                }
+                else
                     filter.doFilter(request, response, _next);
-                }
-                finally
-                {
-                    baseRequest.setAsyncSupported(requestAsyncSupported);
-                }
+
                 return;
             }
 
@@ -1596,17 +1598,21 @@ public class ServletHandler extends ScopedHandler
                 //if the request already does not support async, then the setting for the filter
                 //is irrelevant. However if the request supports async but this filter does not
                 //temporarily turn it off for the execution of the filter
-                boolean requestAsyncSupported = _baseRequest.isAsyncSupported();
-                try
+                if (!holder.isAsyncSupported() && _baseRequest.isAsyncSupported())
                 {
-                    if (!holder.isAsyncSupported() && requestAsyncSupported)
-                        _baseRequest.setAsyncSupported(false);
+                    try
+                    {
+                        _baseRequest.setAsyncSupported(false,holder.toString());
+                        filter.doFilter(request, response, this);
+                    }
+                    finally
+                    {
+                        _baseRequest.setAsyncSupported(true,null);
+                    }
+                }
+                else
                     filter.doFilter(request, response, this);
-                }
-                finally
-                {
-                    _baseRequest.setAsyncSupported(requestAsyncSupported);
-                }
+
                 return;
             }
 

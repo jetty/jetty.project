@@ -20,10 +20,9 @@ Information regarding source code management, builds, coding standards, and more
 
 - [https://www.eclipse.org/jetty/documentation/current/advanced-contributing.html](https://www.eclipse.org/jetty/documentation/current/advanced-contributing.html)
 
-The canonical Jetty git repository is located at git.eclipse.org and we are unable
-to directly merge pull requests into the GitHub mirrored repository.
-Providing you have completed the contributors agreement mentioned below we will
-endeavor to pull your commit into Jetty proper.
+The canonical Jetty git repository is located at GitHub.  Providing you have
+completed the contributors agreement mentioned below we will endeavor to pull
+your commit into Jetty proper.
 
 Contributor License Agreement
 ------------------------------
@@ -44,12 +43,12 @@ Contact the project developers via the project's "dev" list.
 
 Search for bugs
 ----------------
-This project uses Bugzilla to track ongoing development and issues.
+This project uses GitHub Issues to track ongoing development and issues.
 
-- [https://bugs.eclipse.org/bugs/buglist.cgi?product=Jetty](https://bugs.eclipse.org/bugs/buglist.cgi?product=Jetty)
+- [https://github.com/eclipse/jetty.project/issues](https://github.com/eclipse/jetty.project/issues)
 
 Create a new bug
 -----------------
 Be sure to search for existing bugs before you create another one. Remember that contributions are always welcome!
 
-- [https://bugs.eclipse.org/bugs/enter_bug.cgi?product=Jetty](https://bugs.eclipse.org/bugs/enter_bug.cgi?product=Jetty)
+- [https://github.com/eclipse/jetty.project/issues](https://github.com/eclipse/jetty.project/issues)

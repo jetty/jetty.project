@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,8 +24,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.monitor.thread.ThreadMonitorException;
 import org.eclipse.jetty.monitor.thread.ThreadMonitorInfo;
@@ -321,6 +324,8 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
                 _runner.join();
             }
             catch (InterruptedException ex) {}
+            
+            _monitorInfo.clear();
         }
     }
 
@@ -424,6 +429,8 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
             // retrieving a single thread stack trace.
             Map<Thread,StackTraceElement[]> all = Thread.getAllStackTraces();
             
+            Set<Long> newOrUpdatedIds = new HashSet<Long>();
+            
             for (Map.Entry<Thread,StackTraceElement[]> entry : all.entrySet())
             {
                 Thread thread = entry.getKey();
@@ -490,7 +497,18 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
                         }
                     }
                 }
+                newOrUpdatedIds.add(Long.valueOf(threadId));
             }
+            
+            //clean out threads that no longer exist
+            Iterator<Long> iter = _monitorInfo.keySet().iterator();
+            while (iter.hasNext())
+            {
+                Long id = iter.next();
+                if (!newOrUpdatedIds.contains(id))
+                    iter.remove();
+            }
+            newOrUpdatedIds.clear();
         }
         catch (Exception ex)
         {

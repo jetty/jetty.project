@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -250,14 +250,10 @@ public class SslContextFactory extends AbstractLifeCycle
         setTrustAll(trustAll);
         addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
         setExcludeCipherSuites(
-                "SSL_RSA_WITH_DES_CBC_SHA",
-                "SSL_DHE_RSA_WITH_DES_CBC_SHA",
+                "^.*_RSA_.*_(MD5|SHA|SHA1)$",
                 "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-                "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
-                "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-}
+    }
 
     /**
      * Construct an instance of SslContextFactory
@@ -757,12 +753,12 @@ public class SslContextFactory extends AbstractLifeCycle
         if (password==null)
         {
             if (_keyStoreResource!=null)
-                _keyStorePassword=Password.getPassword(PASSWORD_PROPERTY,null,null);
+                _keyStorePassword= getPassword(PASSWORD_PROPERTY);
             else
                 _keyStorePassword=null;
         }
         else
-            _keyStorePassword = new Password(password);
+            _keyStorePassword = newPassword(password);
     }
 
     /**
@@ -778,12 +774,12 @@ public class SslContextFactory extends AbstractLifeCycle
         if (password==null)
         {
             if (System.getProperty(KEYPASSWORD_PROPERTY)!=null)
-                _keyManagerPassword = Password.getPassword(KEYPASSWORD_PROPERTY,null,null);
+                _keyManagerPassword = getPassword(KEYPASSWORD_PROPERTY);
             else
                 _keyManagerPassword = null;
         }
         else
-            _keyManagerPassword = new Password(password);
+            _keyManagerPassword = newPassword(password);
     }
 
     /**
@@ -801,12 +797,12 @@ public class SslContextFactory extends AbstractLifeCycle
         {
             // Do we need a truststore password?
             if (_trustStoreResource!=null && !_trustStoreResource.equals(_keyStoreResource))
-                _trustStorePassword = Password.getPassword(PASSWORD_PROPERTY,null,null);
+                _trustStorePassword = getPassword(PASSWORD_PROPERTY);
             else
                 _trustStorePassword = null;
         }
         else
-            _trustStorePassword=new Password(password);
+            _trustStorePassword=newPassword(password);
     }
 
     /**
@@ -836,6 +832,16 @@ public class SslContextFactory extends AbstractLifeCycle
     public String getProtocol()
     {
         return _sslProtocol;
+    }
+    
+    /**
+     * Get the password object for the realm
+     * @param realm the realm
+     * @return the Password object
+     */
+    protected Password getPassword(String realm)
+    {
+        return Password.getPassword(realm, null, null);
     }
 
     /**
@@ -1443,7 +1449,16 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         _sslSessionTimeout = sslSessionTimeout;
     }
-
+    
+    /**
+     * Create a new Password object
+     * @param password the password string
+     * @return the new Password object
+     */
+    public Password newPassword(String password)
+    {
+        return new Password(password);
+    }
 
     public SSLServerSocket newSslServerSocket(String host,int port,int backlog) throws IOException
     {

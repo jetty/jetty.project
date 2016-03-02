@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -79,6 +79,7 @@ public abstract class AbstractSessionRenewTest
             Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=renew");
             request.header("Cookie", sessionCookie);
             ContentResponse renewResponse = request.send();
+
             assertEquals(HttpServletResponse.SC_OK,renewResponse.getStatus());
             String renewSessionCookie = renewResponse.getHeaders().get("Set-Cookie");
             assertNotNull(renewSessionCookie);
@@ -131,8 +132,7 @@ public abstract class AbstractSessionRenewTest
                 assertTrue(beforeSession != null);
                 String beforeSessionId = beforeSession.getId();
 
-
-                ((AbstractSession)beforeSession).renewId(request);
+                ((Session)beforeSession).renewId(request);
 
                 HttpSession afterSession = request.getSession(false);
                 assertTrue(afterSession != null);
@@ -141,18 +141,18 @@ public abstract class AbstractSessionRenewTest
                 assertTrue(beforeSession==afterSession);
                 assertFalse(beforeSessionId.equals(afterSessionId));
 
-                AbstractSessionManager sessionManager = (AbstractSessionManager)((AbstractSession)afterSession).getSessionManager();
+                SessionManager sessionManager = ((Session)afterSession).getSessionManager();
                 AbstractSessionIdManager sessionIdManager = (AbstractSessionIdManager)sessionManager.getSessionIdManager();
 
-                assertTrue(sessionIdManager.idInUse(afterSessionId));
-                assertFalse(sessionIdManager.idInUse(beforeSessionId));
+                assertTrue(sessionIdManager.isIdInUse(afterSessionId));
+                assertFalse(sessionIdManager.isIdInUse(beforeSessionId));
 
                 HttpSession session = sessionManager.getSession(afterSessionId);
                 assertNotNull(session);
                 session = sessionManager.getSession(beforeSessionId);
                 assertNull(session);
 
-                if (((AbstractSession)afterSession).isIdChanged())
+                if (((Session)afterSession).isIdChanged())
                 {
                     ((org.eclipse.jetty.server.Response)response).addCookie(sessionManager.getSessionCookie(afterSession, request.getContextPath(), request.isSecure()));
                 }

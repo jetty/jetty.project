@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,6 +42,7 @@ public abstract class AbstractTestServer
     protected final int _scavengePeriod;
     protected final ContextHandlerCollection _contexts;
     protected SessionIdManager _sessionIdManager;
+    private PeriodicSessionInspector _scavenger;
 
   
     
@@ -81,6 +82,10 @@ public abstract class AbstractTestServer
         _contexts = new ContextHandlerCollection();
         _sessionIdManager = newSessionIdManager(sessionIdMgrConfig);
         _server.setSessionIdManager(_sessionIdManager);
+        ((AbstractSessionIdManager) _sessionIdManager).setServer(_server);
+        _scavenger = new PeriodicSessionInspector();
+        _scavenger.setIntervalSec(scavengePeriod);
+        ((AbstractSessionIdManager)_sessionIdManager).setSessionScavenger(_scavenger);
     }
     
     

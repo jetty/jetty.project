@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,7 +43,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -284,7 +283,8 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         });
 
         MultiPartContentProvider multiPart = new MultiPartContentProvider();
-        ContentProvider content = new PathContentProvider(contentType, tmpPath);
+        PathContentProvider content = new PathContentProvider(contentType, tmpPath);
+        content.setByteBufferPool(client.getByteBufferPool());
         multiPart.addFilePart(name, tmpPath.getFileName().toString(), content, null);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())

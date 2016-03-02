@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -115,16 +115,46 @@ public class HttpParserTest
     }
 
     @Test
+    public void testLineParse1_RFC2616() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("GET /999\015\012");
+        
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler,HttpCompliance.RFC2616);
+        parseAll(parser,buffer);
+
+        assertNull(_bad);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/999", _uriOrStatus);
+        assertEquals("HTTP/0.9", _versionOrReason);
+        assertEquals(-1, _headers);
+    }
+    
+    @Test
     public void testLineParse1() throws Exception
     {
         ByteBuffer buffer= BufferUtil.toBuffer("GET /999\015\012");
 
-        _versionOrReason= null;
         HttpParser.RequestHandler handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parseAll(parser,buffer);
-        
         assertEquals("HTTP/0.9 not supported", _bad);
+    }
+
+    @Test
+    public void testLineParse2_RFC2616() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("POST /222  \015\012");
+
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler,HttpCompliance.RFC2616);
+        parseAll(parser,buffer);
+
+        assertNull(_bad);
+        assertEquals("POST", _methodOrVersion);
+        assertEquals("/222", _uriOrStatus);
+        assertEquals("HTTP/0.9", _versionOrReason);
+        assertEquals(-1, _headers);
     }
 
     @Test
@@ -136,7 +166,7 @@ public class HttpParserTest
         HttpParser.RequestHandler handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parseAll(parser,buffer);
-        assertEquals("HTTP/0.9 not supported", _bad);
+        assertEquals("HTTP/0.9 not supported", _bad);        
     }
 
     @Test
@@ -218,6 +248,28 @@ public class HttpParserTest
         assertEquals("close", _val[1]);
         assertEquals(1, _headers);
     }
+
+    @Test
+    public void test2616Continuations() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012" +
+                "Host: localhost\015\012" +
+                "Name: value\015\012" +
+                " extra\015\012" +
+                "\015\012");
+        
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler,4096,HttpCompliance.RFC2616);
+        parseAll(parser,buffer);
+
+        Assert.assertThat(_bad,Matchers.nullValue());
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Name", _hdr[1]);
+        assertEquals("value extra", _val[1]);
+        assertEquals(1, _headers);
+    }
     
     @Test
     public void test7230NoContinuations() throws Exception
@@ -230,13 +282,12 @@ public class HttpParserTest
                 "\015\012");
         
         HttpParser.RequestHandler handler  = new Handler();
-        HttpParser parser= new HttpParser(handler);
+        HttpParser parser= new HttpParser(handler,4096,HttpCompliance.RFC7230);
         parseAll(parser,buffer);
 
         Assert.assertThat(_bad,Matchers.notNullValue());
         Assert.assertThat(_bad,Matchers.containsString("Bad Continuation"));
     }
-
     
     @Test
     public void test7230NoWhiteSpaceInName() throws Exception
@@ -581,9 +632,9 @@ public class HttpParserTest
                 "cOnNeCtIoN: ClOsE\015\012"+
                 "\015\012");
         HttpParser.RequestHandler handler  = new Handler();
-        HttpParser parser= new HttpParser(handler,-1,false);
+        HttpParser parser= new HttpParser(handler,-1,HttpCompliance.RFC7230);
         parseAll(parser,buffer);
-
+        assertNull(_bad);
         assertEquals("GET", _methodOrVersion);
         assertEquals("/", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
@@ -603,9 +654,9 @@ public class HttpParserTest
                 "cOnNeCtIoN: ClOsE\015\012"+
                 "\015\012");
         HttpParser.RequestHandler handler  = new Handler();
-        HttpParser parser= new HttpParser(handler,-1,true);
+        HttpParser parser= new HttpParser(handler,-1,HttpCompliance.LEGACY);
         parseAll(parser,buffer);
-
+        assertNull(_bad);
         assertEquals("gEt", _methodOrVersion);
         assertEquals("/", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
@@ -1562,26 +1613,6 @@ public class HttpParserTest
         assertTrue(field==_fields.get(0));
         
     }
-
-    @Test
-    public void testFolded() throws Exception
-    {
-        ByteBuffer buffer= BufferUtil.toBuffer(
-                "GET / HTTP/1.0\015\012" +
-                "Host: localhost\015\012" +
-                "Connection: close\015\012" +
-                "Content-Type: application/soap+xml; charset=utf-8; \015\012"+
-                "\taction=\"xxx\" \015\012" +
-                "\015\012");
-        
-        HttpParser.RequestHandler handler  = new Handler();
-        HttpParser parser= new HttpParser(handler);
-        parseAll(parser,buffer);
-
-        assertFalse(_headerCompleted);
-        assertEquals(_bad, "Bad Continuation");
-    }
-
     
     @Test
     public void testParseRequest() throws Exception

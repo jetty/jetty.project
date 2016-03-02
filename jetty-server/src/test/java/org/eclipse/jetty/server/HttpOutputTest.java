@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
@@ -36,8 +38,12 @@ import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.HttpOutput.Interceptor;
+import org.eclipse.jetty.server.HttpOutputTest.ChainedInterceptor;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -53,6 +59,7 @@ public class HttpOutputTest
     private Server _server;
     private LocalConnector _connector;
     private ContentHandler _handler;
+    private HotSwapHandler _swap;
 
     @Before
     public void init() throws Exception
@@ -66,8 +73,10 @@ public class HttpOutputTest
         
         _connector = new LocalConnector(_server,http,null);
         _server.addConnector(_connector);
+        _swap=new HotSwapHandler();
         _handler=new ContentHandler();
-        _server.setHandler(_handler);
+        _swap.setHandler(_handler);
+        _server.setHandler(_swap);
         _server.start();
     }
 
@@ -598,6 +607,55 @@ public class HttpOutputTest
         assertThat(response,Matchers.not(containsString("simple text")));
     }
     
+
+    @Test
+    public void testWriteInterception() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[1024];
+        _handler._interceptor = new ChainedInterceptor()
+        {
+            Interceptor _next;
+            @Override
+            public void write(ByteBuffer content, boolean complete, Callback callback)
+            {
+                String s = BufferUtil.toString(content).toUpperCase().replaceAll("BIG","BIGGER");
+                _next.write(BufferUtil.toBuffer(s),complete,callback);
+            }
+            
+            @Override
+            public boolean isOptimizedForDirectBuffers()
+            {
+                return _next.isOptimizedForDirectBuffers();
+            }
+            
+            @Override
+            public Interceptor getNextInterceptor()
+            {
+                return _next;
+            }
+            
+            @Override
+            public void setNext(Interceptor interceptor)
+            {
+                _next=interceptor;
+            }
+        };
+           
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tTHIS IS A BIGGER FILE"));
+    }
+    
+    interface ChainedInterceptor extends HttpOutput.Interceptor 
+    {
+        default void init(Request baseRequest) {};
+        void setNext(Interceptor interceptor);
+    }
+    
     static class ContentHandler extends AbstractHandler
     {
         AtomicInteger _owp = new AtomicInteger();
@@ -608,11 +666,19 @@ public class HttpOutputTest
         InputStream _contentInputStream;
         ReadableByteChannel _contentChannel;
         ByteBuffer _content;
+        ChainedInterceptor _interceptor;
         
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
+            if (_interceptor!=null)
+            {
+                _interceptor.init(baseRequest);
+                _interceptor.setNext(baseRequest.getResponse().getHttpOutput().getInterceptor());
+                baseRequest.getResponse().getHttpOutput().setInterceptor(_interceptor);
+            }
+            
             response.setContentType("text/plain");
             
             final HttpOutput out = (HttpOutput) response.getOutputStream();

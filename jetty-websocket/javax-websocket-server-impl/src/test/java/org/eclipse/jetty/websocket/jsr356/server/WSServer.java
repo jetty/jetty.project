@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -112,17 +112,8 @@ public class WSServer
         context.setBaseResource(Resource.newResource(this.contextDir));
         context.setAttribute("org.eclipse.jetty.websocket.jsr356",Boolean.TRUE);
 
-        // @formatter:off
-        context.setConfigurations(new Configuration[] {
-                new AnnotationConfiguration(),
-                new WebXmlConfiguration(),
-                new WebInfConfiguration(),
-                new PlusConfiguration(), 
-                new MetaInfConfiguration(),
-                new FragmentConfiguration(), 
-                new EnvConfiguration()});
-        // @formatter:on
-
+        context.addConfiguration(new AnnotationConfiguration(),new PlusConfiguration(),new EnvConfiguration());
+        
         return context;
     }
 

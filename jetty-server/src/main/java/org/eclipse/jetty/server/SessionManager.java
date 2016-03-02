@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -194,13 +194,7 @@ public interface SessionManager extends LifeCycle
      */
     public SessionIdManager getSessionIdManager();
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return the cross context session id manager.
-     * @deprecated use {@link #getSessionIdManager()}
-     */
-    @Deprecated
-    public SessionIdManager getMetaManager();
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -222,17 +216,17 @@ public interface SessionManager extends LifeCycle
     /**
      * @param session the session object
      * @return the unique id of the session within the cluster, extended with an optional node id.
-     * @see #getClusterId(HttpSession)
+     * @see #getId(HttpSession)
      */
-    public String getNodeId(HttpSession session);
+    public String getExtendedId(HttpSession session);
 
     /* ------------------------------------------------------------ */
     /**
      * @param session the session object
      * @return the unique id of the session within the cluster (without a node id extension)
-     * @see #getNodeId(HttpSession)
+     * @see #getExtendedId(HttpSession)
      */
-    public String getClusterId(HttpSession session);
+    public String getId(HttpSession session);
 
     /* ------------------------------------------------------------ */
     /**
@@ -308,10 +302,10 @@ public interface SessionManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /** Change the existing session id.
     * 
-    * @param oldClusterId the old cluster id
-    * @param oldNodeId the old node id
-    * @param newClusterId the new cluster id
-    * @param newNodeId the new node id
+    * @param oldId the old session id
+    * @param oldExtendedId the session id including worker suffix
+    * @param newId the new session id
+    * @param newExtendedId the new session id including worker suffix
     */
-    public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId);  
+    public void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId);  
 }

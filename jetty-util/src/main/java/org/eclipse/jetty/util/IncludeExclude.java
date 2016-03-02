@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -35,8 +36,8 @@ import java.util.function.Predicate;
 public class IncludeExclude<ITEM> 
 {
     private final Set<ITEM> _includes;
-    private final Set<ITEM> _excludes;
     private final Predicate<ITEM> _includePredicate;
+    private final Set<ITEM> _excludes;
     private final Predicate<ITEM> _excludePredicate;
     
     private static class SetContainsPredicate<ITEM> implements Predicate<ITEM>
@@ -58,27 +59,34 @@ public class IncludeExclude<ITEM>
     /**
      * Default constructor over {@link HashSet}
      */
+    @SuppressWarnings("unchecked")
     public IncludeExclude()
     {
         this(HashSet.class);
     }
     
     /**
-     * Construct an IncludeExclude
+     * Construct an IncludeExclude.
+     * <p>
+     * If the {@link Set} class also implements {@link Predicate}, then that Predicate is
+     * used to match against the set, otherwise a simple {@link Set#contains(Object)} test is used.
      * @param setClass The type of {@link Set} to using internally
-     * @param predicate A predicate function to test if a passed ITEM is matched by the passed SET}
+     * @param <SET> the {@link Set} type
      */
+    @SuppressWarnings("unchecked")
     public <SET extends Set<ITEM>> IncludeExclude(Class<SET> setClass)
     {
         try
         {
             _includes = setClass.newInstance();
             _excludes = setClass.newInstance();
+            
             if(_includes instanceof Predicate) {
                 _includePredicate = (Predicate<ITEM>)_includes;
             } else {
                 _includePredicate = new SetContainsPredicate<>(_includes);
             }
+            
             if(_excludes instanceof Predicate) {
                 _excludePredicate = (Predicate<ITEM>)_excludes;
             } else {
@@ -95,12 +103,18 @@ public class IncludeExclude<ITEM>
      * Construct an IncludeExclude
      * 
      * @param includeSet the Set of items that represent the included space 
-     * @param includePredicate the Predicate for included item testing (null for simple {@link Set#contains(Object)} test)
+     * @param includePredicate the Predicate for included item testing
      * @param excludeSet the Set of items that represent the excluded space
-     * @param excludePredicate the Predicate for excluded item testing (null for simple {@link Set#contains(Object)} test)
+     * @param excludePredicate the Predicate for excluded item testing
+     * @param <SET> the {@link Set} type
      */
     public <SET extends Set<ITEM>> IncludeExclude(Set<ITEM> includeSet, Predicate<ITEM> includePredicate, Set<ITEM> excludeSet, Predicate<ITEM> excludePredicate)
     {
+        Objects.requireNonNull(includeSet,"Include Set");
+        Objects.requireNonNull(includePredicate,"Include Predicate");
+        Objects.requireNonNull(excludeSet,"Exclude Set");
+        Objects.requireNonNull(excludePredicate,"Exclude Predicate");
+        
         _includes = includeSet;
         _includePredicate = includePredicate;
         _excludes = excludeSet;
@@ -112,7 +126,7 @@ public class IncludeExclude<ITEM>
         _includes.add(element);
     }
     
-    public void include(ITEM... element)
+    public void include(@SuppressWarnings("unchecked") ITEM... element)
     {
         for (ITEM e: element)
             _includes.add(e);
@@ -123,7 +137,7 @@ public class IncludeExclude<ITEM>
         _excludes.add(element);
     }
     
-    public void exclude(ITEM... element)
+    public void exclude(@SuppressWarnings("unchecked") ITEM... element)
     {
         for (ITEM e: element)
             _excludes.add(e);

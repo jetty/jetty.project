@@ -73,29 +73,6 @@ public class AntWebAppContext extends WebAppContext
 {
     private static final Logger LOG = Log.getLogger(WebAppContext.class);
     
-    public final AntWebInfConfiguration antWebInfConfiguration = new AntWebInfConfiguration();
-    public final WebXmlConfiguration webXmlConfiguration = new WebXmlConfiguration();
-    public final MetaInfConfiguration metaInfConfiguration = new MetaInfConfiguration();
-    public final FragmentConfiguration fragmentConfiguration = new FragmentConfiguration();
-    public final EnvConfiguration envConfiguration = new EnvConfiguration();
-    public final PlusConfiguration plusConfiguration = new PlusConfiguration();
-    public final AnnotationConfiguration annotationConfiguration = new AnnotationConfiguration();
-    public final JettyWebXmlConfiguration jettyWebXmlConfiguration = new JettyWebXmlConfiguration();
-
-
-    public final Configuration[] DEFAULT_CONFIGURATIONS = 
-        { 
-         antWebInfConfiguration,
-         webXmlConfiguration,
-         metaInfConfiguration,
-         fragmentConfiguration,
-         envConfiguration,
-         plusConfiguration,
-         annotationConfiguration,
-         jettyWebXmlConfiguration
-        };
-    
-
     public final static String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN =
     ".*/.*jsp-api-[^/]*\\.jar$|.*/.*jsp-[^/]*\\.jar$|.*/.*taglibs[^/]*\\.jar$|.*/.*jstl[^/]*\\.jar$|.*/.*jsf-impl-[^/]*\\.jar$|.*/.*javax.faces-[^/]*\\.jar$|.*/.*myfaces-impl-[^/]*\\.jar$";
 
@@ -432,7 +409,6 @@ public class AntWebAppContext extends WebAppContext
     {
         super();
         this.project = project;
-        setConfigurations(DEFAULT_CONFIGURATIONS);
         setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN);
         setParentLoaderPriority(true);
     }
@@ -632,8 +608,10 @@ public class AntWebAppContext extends WebAppContext
         try
         {
             TaskLog.logWithTimestamp("Starting web application "+this.getDescriptor());
+            addConfiguration(new AntWebInfConfiguration(),new AntWebXmlConfiguration());
+            
             if (jettyEnvXml != null && jettyEnvXml.exists())
-                envConfiguration.setJettyEnvXml(Resource.toURL(jettyEnvXml));
+                getConfiguration(EnvConfiguration.class).setJettyEnvXml(Resource.toURL(jettyEnvXml));
             
             ClassLoader parentLoader = this.getClass().getClassLoader();
             if (parentLoader instanceof AntClassLoader)

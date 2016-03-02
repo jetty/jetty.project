@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -77,9 +77,6 @@ public abstract class AbstractSessionValueSavingTest
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-                    // Perform some request to server2 using the session cookie from the previous request
-                    // This should migrate the session from server1 to server2, and leave server1's
-                    // session in a very stale state, while server2 has a very fresh session.
                     // We want to test that optimizations done to the saving of the shared lastAccessTime
                     // do not break the correct working
                     int requestInterval = 500;
@@ -130,13 +127,10 @@ public abstract class AbstractSessionValueSavingTest
             else
             {
                 HttpSession session = request.getSession(false);
-                System.out.println("not init call " + session);
                 if (session!=null)
                 {
-                        long value = System.currentTimeMillis();
-                        System.out.println("Setting test to : " + value);
+                    long value = System.currentTimeMillis();
                     session.setAttribute("test", value);
-
                 }
 
                 sendResult(session, httpServletResponse.getWriter());

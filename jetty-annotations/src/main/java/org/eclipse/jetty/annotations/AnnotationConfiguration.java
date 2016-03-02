@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -98,7 +98,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     public AnnotationConfiguration()
     {
-        super(new String[]{WebXmlConfiguration.class.getName(),MetaInfConfiguration.class.getName(),FragmentConfiguration.class.getName(),PlusConfiguration.class.getName()},
+        super(false,
+              new String[]{WebXmlConfiguration.class.getName(),MetaInfConfiguration.class.getName(),FragmentConfiguration.class.getName(),PlusConfiguration.class.getName()},
               new String[]{JettyWebXmlConfiguration.class.getName()},
               new String[]{"org.eclipse.jetty.util.annotation."},
               new String[]{"-org.eclipse.jetty.util.annotation.","org.objectweb.asm."});

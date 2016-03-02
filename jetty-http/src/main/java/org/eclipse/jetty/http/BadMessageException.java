@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,12 @@
 package org.eclipse.jetty.http;
 
 /* ------------------------------------------------------------------------------- */
+/** 
+ * <p>Exception thrown to indicate a Bad HTTP Message has either been received
+ * or attempted to be generated.  Typically these are handled with either 400
+ * or 500 responses.</p>
+ */
+@SuppressWarnings("serial")
 public class BadMessageException extends RuntimeException
 {
     final int _code;

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,9 +53,11 @@ import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
-import org.eclipse.jetty.server.session.HashedSession;
+import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
@@ -85,7 +87,7 @@ public class ResponseTest
         _channel = new HttpChannel(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             private Throwable _channelError;
-            
+
             @Override
             public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
             {
@@ -100,12 +102,12 @@ public class ResponseTest
             {
                 return false;
             }
-            
+
             @Override
             public void push(org.eclipse.jetty.http.MetaData.Request request)
-            {   
+            {
             }
-            
+
             @Override
             public void onCompleted()
             {
@@ -189,7 +191,7 @@ public class ResponseTest
         response.setContentType("text/json");
         response.getWriter();
         assertEquals("text/json", response.getContentType());
-        
+
         response.recycle();
         response.setContentType("text/json");
         response.setCharacterEncoding("UTF-8");
@@ -230,12 +232,25 @@ public class ResponseTest
         response.recycle();
         response.addHeader("Content-Type","text/something");
         assertEquals("text/something",response.getContentType());
-        
+
         response.recycle();
         response.addHeader("Content-Type","application/json");
         response.getWriter();
         assertEquals("application/json",response.getContentType());
+    }
 
+    @Test
+    public void testStrangeContentType() throws Exception
+    {
+        Response response = newResponse();
+
+        assertEquals(null, response.getContentType());
+
+        response.recycle();
+        response.setContentType("text/html;charset=utf-8;charset=UTF-8");
+        response.getWriter();
+        assertEquals("text/html;charset=utf-8;charset=UTF-8",response.getContentType());
+        assertEquals("utf-8",response.getCharacterEncoding().toLowerCase(Locale.ENGLISH));
     }
 
     @Test
@@ -424,6 +439,37 @@ public class ResponseTest
         assertEquals("Super Nanny", response.getReason());
         assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
     }
+    
+    @Test
+    public void testStatusCodesNoErrorHandler() throws Exception
+    {
+        _server.removeBean(_server.getBean(ErrorHandler.class));
+        Response response = newResponse();
+
+        response.sendError(404);
+        assertEquals(404, response.getStatus());
+        assertEquals("Not Found", response.getReason());
+
+        response = newResponse();
+
+        response.sendError(500, "Database Error");
+        assertEquals(500, response.getStatus());
+        assertEquals("Database Error", response.getReason());
+        assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()),Matchers.nullValue());
+
+        response = newResponse();
+
+        response.setStatus(200);
+        assertEquals(200, response.getStatus());
+        assertEquals(null, response.getReason());
+
+        response = newResponse();
+
+        response.sendError(406, "Super Nanny");
+        assertEquals(406, response.getStatus());
+        assertEquals("Super Nanny", response.getReason());
+        assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()),Matchers.nullValue());
+    }
 
     @Test
     public void testWriteRuntimeIOException() throws Exception
@@ -434,7 +480,7 @@ public class ResponseTest
         writer.println("test");
         writer.flush();
         Assert.assertFalse(writer.checkError());
-        
+
         Throwable cause = new IOException("problem at mill");
         _channel.abort(cause);
         writer.println("test");
@@ -448,7 +494,7 @@ public class ResponseTest
         {
             Assert.assertEquals(cause,e.getCause());
         }
-        
+
     }
 
     @Test
@@ -465,9 +511,11 @@ public class ResponseTest
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
         HashSessionManager manager = new HashSessionManager();
-        manager.setSessionIdManager(new HashSessionIdManager());
+        manager.setSessionIdManager(new HashSessionIdManager(_server));
         request.setSessionManager(manager);
-        request.setSession(new TestSession(manager, "12345"));
+        TestSession tsession = new TestSession(manager, "12345");
+        tsession.setExtendedId(manager.getSessionIdManager().getExtendedId("12345", null));
+        request.setSession(tsession);
 
         manager.setCheckingRemoteSessionIdEncoding(false);
 
@@ -540,7 +588,7 @@ public class ResponseTest
                     request.setRequestedSessionId("12345");
                     request.setRequestedSessionIdFromCookie(i>2);
                     HashSessionManager manager = new HashSessionManager();
-                    manager.setSessionIdManager(new HashSessionIdManager());
+                    manager.setSessionIdManager(new HashSessionIdManager(_server));
                     request.setSessionManager(manager);
                     request.setSession(new TestSession(manager, "12345"));
                     manager.setCheckingRemoteSessionIdEncoding(false);
@@ -720,7 +768,7 @@ public class ResponseTest
         assertEquals("null=",fields.get("Set-Cookie"));
 
         fields.clear();
-        
+
         response.addSetCookie("minimal","value",null,null,-1,null,false,false,-1);
         assertEquals("minimal=value",fields.get("Set-Cookie"));
 
@@ -735,7 +783,7 @@ public class ResponseTest
         assertFalse(e.hasMoreElements());
         assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.get("Expires"));
         assertFalse(e.hasMoreElements());
-        
+
         //test cookies with same name, different domain
         fields.clear();
         response.addSetCookie("everything","other","domain1","path",0,"blah",true,true,0);
@@ -746,7 +794,7 @@ public class ResponseTest
         assertTrue(e.hasMoreElements());
         assertEquals("everything=value;Version=1;Path=path;Domain=domain2;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
-        
+
         //test cookies with same name, same path, one with domain, one without
         fields.clear();
         response.addSetCookie("everything","other","domain1","path",0,"blah",true,true,0);
@@ -757,8 +805,8 @@ public class ResponseTest
         assertTrue(e.hasMoreElements());
         assertEquals("everything=value;Version=1;Path=path;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
-        
-        
+
+
         //test cookies with same name, different path
         fields.clear();
         response.addSetCookie("everything","other","domain1","path1",0,"blah",true,true,0);
@@ -769,7 +817,7 @@ public class ResponseTest
         assertTrue(e.hasMoreElements());
         assertEquals("everything=value;Version=1;Path=path2;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
-        
+
         //test cookies with same name, same domain, one with path, one without
         fields.clear();
         response.addSetCookie("everything","other","domain1","path1",0,"blah",true,true,0);
@@ -780,7 +828,7 @@ public class ResponseTest
         assertTrue(e.hasMoreElements());
         assertEquals("everything=value;Version=1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
-        
+
         //test cookies same name only, no path, no domain
         fields.clear();
         response.addSetCookie("everything","other","","",0,"blah",true,true,0);
@@ -828,7 +876,7 @@ public class ResponseTest
         assertEquals("name=value%=",setCookie);
 
     }
-    
+
     private Response newResponse()
     {
         _channel.recycle();
@@ -836,11 +884,12 @@ public class ResponseTest
         return new Response(_channel, _channel.getResponse().getHttpOutput());
     }
 
-    private static class TestSession extends HashedSession
+    private static class TestSession extends Session
     {
         protected TestSession(HashSessionManager hashSessionManager, String id)
         {
-            super(hashSessionManager, 0L, 0L, id);
+            super(new SessionData(id, "", "0.0.0.0", 0, 0, 0, 300));
+            setSessionManager(hashSessionManager);
         }
     }
 }

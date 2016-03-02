@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
@@ -50,7 +50,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public static final String SESSION_LISTENER_CONTEXT_KEY = "http2.client.sessionListener";
     public static final String SESSION_PROMISE_CONTEXT_KEY = "http2.client.sessionPromise";
 
-    private int initialSessionRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+    private final Connection.Listener connectionListener = new ConnectionListener();
 
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
@@ -64,25 +64,12 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
         Generator generator = new Generator(byteBufferPool);
-        FlowControlStrategy flowControl = newFlowControlStrategy();
+        FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
-        return new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, 8192, promise, listener);
-    }
-
-    protected FlowControlStrategy newFlowControlStrategy()
-    {
-        return new BufferingFlowControlStrategy(0.5F);
-    }
-
-    public int getInitialSessionRecvWindow()
-    {
-        return initialSessionRecvWindow;
-    }
-
-    public void setInitialSessionRecvWindow(int initialSessionRecvWindow)
-    {
-        this.initialSessionRecvWindow = initialSessionRecvWindow;
+        HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, client.getInputBufferSize(), promise, listener);
+        connection.addListener(connectionListener);
+        return connection;
     }
 
     private class HTTP2ClientConnection extends HTTP2Connection implements Callback
@@ -108,8 +95,10 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);
+
             ISession session = getSession();
-            int windowDelta = getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+
+            int windowDelta = client.getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
             if (windowDelta > 0)
             {
                 session.updateRecvWindow(windowDelta);
@@ -136,6 +125,23 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         {
             close();
             promise.failed(x);
+        }
+    }
+
+    private class ConnectionListener implements Connection.Listener
+    {
+        @Override
+        public void onOpened(Connection connection)
+        {
+            HTTP2ClientConnection http2Connection = (HTTP2ClientConnection)connection;
+            http2Connection.client.addManaged((LifeCycle)http2Connection.getSession());
+        }
+
+        @Override
+        public void onClosed(Connection connection)
+        {
+            HTTP2ClientConnection http2Connection = (HTTP2ClientConnection)connection;
+            http2Connection.client.removeBean(http2Connection.getSession());
         }
     }
 }

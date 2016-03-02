@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,12 +24,14 @@ import static org.junit.Assert.assertTrue;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.Server;
 import org.junit.Test;
 
 /**
@@ -37,137 +39,120 @@ import org.junit.Test;
  */
 public class SessionCookieTest
 {
-    public class MockSession extends AbstractSession
+   
+    
+    
+    public class MockSessionStore extends AbstractSessionStore
     {
-        protected MockSession(AbstractSessionManager abstractSessionManager, long created, long accessed, String clusterId)
-        {
-            super(abstractSessionManager, created, accessed, clusterId);
-        }
 
         /** 
-         * @see javax.servlet.http.HttpSession#getAttribute(java.lang.String)
+         * @see org.eclipse.jetty.server.session.SessionStore#newSession(org.eclipse.jetty.server.session.SessionKey, long, long, long, long)
          */
         @Override
-        public Object getAttribute(String name)
+        public Session newSession(HttpServletRequest request, String key, long time, long maxInactiveMs)
         {
+            // TODO Auto-generated method stub
             return null;
         }
 
         /** 
-         * @see javax.servlet.http.HttpSession#getAttributeNames()
+         * @see org.eclipse.jetty.server.session.SessionStore#shutdown()
          */
         @Override
-        public Enumeration<String> getAttributeNames()
+        public void shutdown()
         {
-            return null;
-        }
-
-        @Override
-        public String[] getValueNames()
-        {
-            return null;
-        }
-
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSession#getAttributeMap()
-         */
-        @Override
-        public Map<String, Object> getAttributeMap()
-        {
-            return null;
-        }
-
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSession#getAttributes()
-         */
-        @Override
-        public int getAttributes()
-        {
-            return 0;
-        }
-
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSession#getNames()
-         */
-        @Override
-        public Set<String> getNames()
-        {
-            return null;
-        }
-
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSession#clearAttributes()
-         */
-        @Override
-        public void clearAttributes()
-        {
+            // TODO Auto-generated method stub
             
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSession#doPutOrRemove(java.lang.String, java.lang.Object)
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#newSession(org.eclipse.jetty.server.session.SessionData)
          */
         @Override
-        public Object doPutOrRemove(String name, Object value)
+        public Session newSession(SessionData data)
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doGet(org.eclipse.jetty.server.session.SessionKey)
+         */
+        @Override
+        public Session doGet(String key)
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doPutIfAbsent(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.Session)
+         */
+        @Override
+        public Session doPutIfAbsent(String key, Session session)
         {
             return null;
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSession#doGet(java.lang.String)
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doExists(org.eclipse.jetty.server.session.SessionKey)
          */
         @Override
-        public Object doGet(String name)
+        public boolean doExists(String key)
+        {
+            // TODO Auto-generated method stub
+            return false;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(org.eclipse.jetty.server.session.SessionKey)
+         */
+        @Override
+        public Session doDelete(String key)
         {
             return null;
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSession#doGetAttributeNames()
+         * @see org.eclipse.jetty.server.session.SessionStore#getStream()
          */
         @Override
-        public Enumeration<String> doGetAttributeNames()
+        public Stream<Session> getStream()
         {
+            // TODO Auto-generated method stub
             return null;
         }
 
+   
     }
 
+    
+    
     public class MockSessionIdManager extends AbstractSessionIdManager
     {
 
         /**
-         * @see org.eclipse.jetty.server.SessionIdManager#idInUse(java.lang.String)
+         * @param server
+         */
+        public MockSessionIdManager(Server server)
+        {
+            super(server);
+        }
+
+        /**
+         * @see org.eclipse.jetty.server.SessionIdManager#isIdInUse(java.lang.String)
          */
         @Override
-        public boolean idInUse(String id)
+        public boolean isIdInUse(String id)
         {
             return false;
         }
 
         /**
-         * @see org.eclipse.jetty.server.SessionIdManager#addSession(javax.servlet.http.HttpSession)
+         * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
          */
         @Override
-        public void addSession(HttpSession session)
-        {
-
-        }
-
-        /**
-         * @see org.eclipse.jetty.server.SessionIdManager#removeSession(javax.servlet.http.HttpSession)
-         */
-        @Override
-        public void removeSession(HttpSession session)
-        {
-
-        }
-
-        /**
-         * @see org.eclipse.jetty.server.SessionIdManager#invalidateAll(java.lang.String)
-         */
-        @Override
-        public void invalidateAll(String id)
+        public void expireAll(String id)
         {
 
         }
@@ -179,73 +164,49 @@ public class SessionCookieTest
             
         }
 
-    }
-
-    public class MockSessionManager extends AbstractSessionManager
-    {
-
-        /**
-         * @see org.eclipse.jetty.server.session.AbstractSessionManager#addSession(org.eclipse.jetty.server.session.AbstractSession)
+        /** 
+         * @see org.eclipse.jetty.server.SessionIdManager#useId(java.lang.String)
          */
         @Override
-        protected void addSession(AbstractSession session)
-        {
-
-        }
-
-        /**
-         * @see org.eclipse.jetty.server.session.AbstractSessionManager#getSession(java.lang.String)
-         */
-        @Override
-        public AbstractSession getSession(String idInCluster)
-        {
-            return null;
-        }
-
-        /**
-         * @see org.eclipse.jetty.server.session.AbstractSessionManager#shutdownSessions()
-         */
-        @Override
-        protected void shutdownSessions() throws Exception
-        {
-
-        }
-
-        /**
-         * @see org.eclipse.jetty.server.session.AbstractSessionManager#newSession(javax.servlet.http.HttpServletRequest)
-         */
-        @Override
-        protected AbstractSession newSession(HttpServletRequest request)
-        {
-            return null;
-        }
-
-        /**
-         * @see org.eclipse.jetty.server.session.AbstractSessionManager#removeSession(java.lang.String)
-         */
-        @Override
-        protected boolean removeSession(String idInCluster)
-        {
-            return false;
-        }
-
-        @Override
-        public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId)
+        public void useId(Session session)
         {
             // TODO Auto-generated method stub
             
         }
 
+        /** 
+         * @see org.eclipse.jetty.server.SessionIdManager#removeId(java.lang.String)
+         */
+        @Override
+        public boolean removeId(String id)
+        {
+            return true;
+        }
     }
+    
+    public class MockSessionManager extends SessionManager
+    {
+        public MockSessionManager()
+        {
+            _sessionStore = new MockSessionStore();
+            ((AbstractSessionStore)_sessionStore).setSessionDataStore(new NullSessionDataStore());
+        }
+    }
+
+  
 
     @Test
     public void testSecureSessionCookie () throws Exception
     {
-        MockSessionIdManager idMgr = new MockSessionIdManager();
+        Server server = new Server();
+        MockSessionIdManager idMgr = new MockSessionIdManager(server);
         idMgr.setWorkerName("node1");
         MockSessionManager mgr = new MockSessionManager();
         mgr.setSessionIdManager(idMgr);
-        MockSession session = new MockSession(mgr, System.currentTimeMillis(), System.currentTimeMillis(), "node1123"); //clusterId
+        
+        long now = System.currentTimeMillis();
+        
+        Session session = new Session(new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30)); 
 
         SessionCookieConfig sessionCookieConfig = mgr.getSessionCookieConfig();
         sessionCookieConfig.setSecure(true);

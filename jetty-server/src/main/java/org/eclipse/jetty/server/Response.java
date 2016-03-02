@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -448,7 +448,7 @@ public class Response implements HttpServletResponse
         if (!sessionManager.isValid(session))
             return url;
 
-        String id = sessionManager.getNodeId(session);
+        String id = sessionManager.getExtendedId(session);
 
         if (uri == null)
             uri = new HttpURI(url);
@@ -564,12 +564,15 @@ public class Response implements HttpServletResponse
         {
             ContextHandler.Context context = request.getContext();
             ContextHandler contextHandler = context == null ? _channel.getState().getContextHandler() : context.getContextHandler();
-            ErrorHandler error_handler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
             request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
             request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
             request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
             request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME, request.getServletName());
-            error_handler.handle(null, request, request, this);
+            ErrorHandler error_handler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
+            if (error_handler!=null)
+                error_handler.handle(null, request, request, this);
+            else
+                _out.close();
         }
     }
 

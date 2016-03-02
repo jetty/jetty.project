@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,9 +24,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 /**
  * Configures and Starts a Jetty server from an XML declaration.
  * <p>
- * See <a href=
- * "http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/examples/embedded/src/main/resources/exampleserver.xml"
- * >exampleserver.xml</a>
+ * See <a href="https://raw.githubusercontent.com/eclipse/jetty.project/master/examples/embedded/src/main/resources/exampleserver.xml">exampleserver.xml</a>
  * </p>
  */
 public class ExampleServerXml

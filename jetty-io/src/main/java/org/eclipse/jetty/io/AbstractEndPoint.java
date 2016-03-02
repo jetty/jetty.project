@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -370,6 +370,10 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     protected void onIdleExpired(TimeoutException timeout)
     {
+        Connection connection = _connection;
+        if (connection != null && !connection.onIdleExpired())
+            return;
+
         boolean output_shutdown=isOutputShutdown();
         boolean input_shutdown=isInputShutdown();
         boolean fillFailed = _fillInterest.onFail(timeout);

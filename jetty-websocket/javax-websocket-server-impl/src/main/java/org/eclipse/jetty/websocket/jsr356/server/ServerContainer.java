@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,15 +27,16 @@ import javax.websocket.Endpoint;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
-import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
 import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 
@@ -56,7 +57,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         EventDriverFactory eventDriverFactory = this.webSocketServerFactory.getEventDriverFactory();
         eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
         eventDriverFactory.addImplementation(new JsrServerExtendsEndpointImpl());
-        this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this,this));
+        this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this));
         addBean(webSocketServerFactory);
     }
     
@@ -99,7 +100,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     private void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
     {
         JsrCreator creator = new JsrCreator(this,metadata,webSocketServerFactory.getExtensionFactory());
-        mappedCreator.addMapping(new WebSocketPathSpec(metadata.getPath()),creator);
+        mappedCreator.addMapping(new UriTemplatePathSpec(metadata.getPath()),creator);
     }
 
     @Override
@@ -239,5 +240,17 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         webSocketServerFactory.getPolicy().setMaxTextMessageSize(max);
         // incoming streaming buffer size
         webSocketServerFactory.getPolicy().setMaxTextMessageBufferSize(max);
+    }
+
+    @Override
+    public void onSessionClosed(WebSocketSession session)
+    {
+        webSocketServerFactory.onSessionClosed(session);
+    }
+
+    @Override
+    public void onSessionOpened(WebSocketSession session)
+    {
+        webSocketServerFactory.onSessionOpened(session);
     }
 }

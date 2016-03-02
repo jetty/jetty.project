@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -58,7 +58,7 @@ public class Generator
             int length = Math.min(MAX_CONTENT_LENGTH, contentLength);
             buffer.putShort((short)length);
             buffer.putShort((short)0);
-            buffer.flip();
+            BufferUtil.flipToFlush(buffer, 0);
 
             if (contentLength == 0)
                 break;

@@ -1,31 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
-<!--
- Copyright (c) 2009-2011 Intalio, Inc.
-
- All rights reserved. This program and the accompanying materials
- are made available under the terms of the Eclipse Public License v1.0
- and Apache License v2.0 which accompanies this distribution.
- The Eclipse Public License is available at
- http://www.eclipse.org/legal/epl-v10.html
- The Apache License v2.0 is available at
- http://www.opensource.org/licenses/apache2.0.php
- You may elect to redistribute this code under either of these licenses.
- Contributors:
-    Hugues Malphettes - initial API and implementation
--->
 <Configure class="org.eclipse.jetty.servlet.ServletContextHandler">
-<!-- this configures the servlet session manager -->
+  <!-- this configures the servlet session manager -->
   <Set name="SessionHandler">
     <New class="org.eclipse.jetty.server.session.SessionHandler"/>
   </Set>
-<!-- this servlet provides the OSGi HTTP Service once it is initialized -->
+  <!-- this servlet provides the OSGi HTTP Service once it is initialized -->
   <Call name="addServlet">
     <Arg>org.eclipse.equinox.http.servlet.HttpServiceServlet</Arg>
     <Arg>/*</Arg>
     <Set name="InitOrder">1</Set>
   </Call>
-<!-- custom pluggable error handler -->
+  <!-- custom pluggable error handler -->
   <Set name="ErrorHandler">
     <New class="org.eclipse.jetty.osgi.httpservice.HttpServiceErrorPageErrorHandler"/>
   </Set>

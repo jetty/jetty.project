@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -55,6 +55,7 @@ public class InfinispanTestSessionServer extends AbstractTestServer
         InfinispanSessionIdManager idManager = new InfinispanSessionIdManager(getServer());
         idManager.setWorkerName("w"+(__workers++));
         idManager.setCache((BasicCache)config);
+        idManager.setInfinispanIdleTimeoutSec(0);
         return idManager;
     }
 
@@ -63,10 +64,10 @@ public class InfinispanTestSessionServer extends AbstractTestServer
     {
         InfinispanSessionManager sessionManager = new InfinispanSessionManager();
         sessionManager.setSessionIdManager((InfinispanSessionIdManager)_sessionIdManager);
-        sessionManager.setCache(((InfinispanSessionIdManager)_sessionIdManager).getCache());
-        sessionManager.setStaleIntervalSec(1);
-        sessionManager.setScavengeInterval(_scavengePeriod);
-        
+        sessionManager.getSessionDataStore().setCache(((InfinispanSessionIdManager)_sessionIdManager).getCache());
+        StalePeriodStrategy staleStrategy = new StalePeriodStrategy();
+        staleStrategy.setStaleSec(1);
+       ((AbstractSessionStore)sessionManager.getSessionStore()).setStaleStrategy(staleStrategy);
         return sessionManager;
     }
 

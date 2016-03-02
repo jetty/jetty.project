@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 
 /**
@@ -62,14 +63,16 @@ public abstract class AbstractLocalSessionScavengingTest
         int inactivePeriod = 1;
         int scavengePeriod = 2;
         AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
-        server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+        ServletContextHandler context1 = server1.addContext(contextPath);
+        context1.addServlet(TestServlet.class, servletMapping);
 
         try
         {
             server1.start();
             int port1 = server1.getPort();
             AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod * 3);
-            server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+            ServletContextHandler context2 = server2.addContext(contextPath);
+            context2.addServlet(TestServlet.class, servletMapping);
 
             try
             {
@@ -90,28 +93,33 @@ public abstract class AbstractLocalSessionScavengingTest
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+                    org.eclipse.jetty.server.session.SessionManager m1 = (org.eclipse.jetty.server.session.SessionManager)context1.getSessionHandler().getSessionManager();
+                    assertEquals(1,  m1.getSessionsCreated());
 
                     // Be sure the session is also present in node2
                     org.eclipse.jetty.client.api.Request request = client.newRequest(urls[1] + "?action=test");
                     request.header("Cookie", sessionCookie);
                     ContentResponse response2 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-
+                    org.eclipse.jetty.server.session.SessionManager m2 = (org.eclipse.jetty.server.session.SessionManager)context2.getSessionHandler().getSessionManager();
 
                     // Wait for the scavenger to run on node1, waiting 2.5 times the scavenger period
                     pause(scavengePeriod);
+
+                    assertEquals(1,  m1.getSessionsCreated());
 
                     // Check that node1 does not have any local session cached
                     request = client.newRequest(urls[0] + "?action=check");
                     request.header("Cookie", sessionCookie);
                     response1 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
-
+                    
+                    assertEquals(1,  m1.getSessionsCreated());
 
                     // Wait for the scavenger to run on node2, waiting 2 times the scavenger period
                     // This ensures that the scavenger on node2 runs at least once.
                     pause(scavengePeriod);
-
+                    
                     // Check that node2 does not have any local session cached
                     request = client.newRequest(urls[1] + "?action=check");
                     request.header("Cookie", sessionCookie);

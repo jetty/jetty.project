@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -61,7 +61,7 @@ public abstract class AbstractRemoveSessionTest
         context.addServlet(TestServlet.class, servletMapping);
         TestEventListener testListener = new TestEventListener();
         context.getSessionHandler().addEventListener(testListener);
-        AbstractSessionManager m = (AbstractSessionManager)context.getSessionHandler().getSessionManager();
+        SessionManager m = (SessionManager) context.getSessionHandler().getSessionManager();
         try
         {
             server.start();
@@ -79,9 +79,9 @@ public abstract class AbstractRemoveSessionTest
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
                 //ensure sessionCreated listener is called
                 assertTrue (testListener.isCreated());
-                assertEquals(1, m.getSessions());
-                assertEquals(1, m.getSessionsMax());
-                assertEquals(1, m.getSessionsTotal());
+                assertEquals(1, m.getSessionsCreated());
+                assertEquals(1, ((MemorySessionStore)m.getSessionStore()).getSessionsMax());
+                assertEquals(1, ((MemorySessionStore)m.getSessionStore()).getSessionsTotal());
                 
                 //now delete the session
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=delete");
@@ -90,18 +90,18 @@ public abstract class AbstractRemoveSessionTest
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 //ensure sessionDestroyed listener is called
                 assertTrue(testListener.isDestroyed());
-                assertEquals(0, m.getSessions());
-                assertEquals(1, m.getSessionsMax());
-                assertEquals(1, m.getSessionsTotal());
+                assertEquals(0, ((MemorySessionStore)m.getSessionStore()).getSessions());
+                assertEquals(1, ((MemorySessionStore)m.getSessionStore()).getSessionsMax());
+                assertEquals(1, ((MemorySessionStore)m.getSessionStore()).getSessionsTotal());
 
                 // The session is not there anymore, even if we present an old cookie
                 request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=check");
                 request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                assertEquals(0, m.getSessions());
-                assertEquals(1, m.getSessionsMax());
-                assertEquals(1, m.getSessionsTotal());
+                assertEquals(0, ((MemorySessionStore)m.getSessionStore()).getSessions());
+                assertEquals(1,  ((MemorySessionStore)m.getSessionStore()).getSessionsMax());
+                assertEquals(1, ((MemorySessionStore)m.getSessionStore()).getSessionsTotal());
             }
             finally
             {

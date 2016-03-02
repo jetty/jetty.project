@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -164,15 +164,17 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public Runnable requestContent(DataFrame frame, final Callback callback)
     {
         // We must copy the data since we do not know when the
-        // application will consume its bytes (we queue them by
-        // calling onContent()), and we cannot stop the parsing
-        // since there may be frames for other streams.
+        // application will consume the bytes (we queue them by
+        // calling onContent()), and the parsing will continue
+        // as soon as this method returns, eventually leading
+        // to reusing the underlying buffer for more reads.
         final ByteBufferPool byteBufferPool = getByteBufferPool();
         ByteBuffer original = frame.getData();
         int length = original.remaining();
         final ByteBuffer copy = byteBufferPool.acquire(length, original.isDirect());
         BufferUtil.clearToFill(copy);
-        copy.put(original).flip();
+        copy.put(original);
+        BufferUtil.flipToFlush(copy, 0);
 
         boolean handle = onContent(new HttpInput.Content(copy)
         {

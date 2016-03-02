@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,13 +51,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
     public JettyWebXmlConfiguration()
     {
-        super(new String[]{WebXmlConfiguration.class.getName(),FragmentConfiguration.class.getName(),MetaInfConfiguration.class.getName()},null);
-    }
-    
-    @Override
-    public boolean isEnabledByDefault()
-    {
-        return true;
+        super(true,new String[]{WebXmlConfiguration.class.getName(),FragmentConfiguration.class.getName(),MetaInfConfiguration.class.getName()},null);
     }
     
     /**

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,8 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.*;
 
 import java.io.UnsupportedEncodingException;
@@ -55,6 +57,52 @@ public class HttpURITest
         }
     }
 
+    @Test
+    public void testParse()
+    {
+        HttpURI uri = new HttpURI();
+
+        uri.parse("*");
+        assertThat(uri.getHost(),nullValue());
+        assertThat(uri.getPath(),is("*"));
+        
+        uri.parse("/foo/bar");
+        assertThat(uri.getHost(),nullValue());
+        assertThat(uri.getPath(),is("/foo/bar"));
+        
+        uri.parse("//foo/bar");
+        assertThat(uri.getHost(),is("foo"));
+        assertThat(uri.getPath(),is("/bar"));
+        
+        uri.parse("http://foo/bar");
+        assertThat(uri.getHost(),is("foo"));
+        assertThat(uri.getPath(),is("/bar"));
+    }
+
+    @Test
+    public void testParseRequestTarget()
+    {
+        HttpURI uri = new HttpURI();
+
+        uri.parseRequestTarget("GET","*");
+        assertThat(uri.getHost(),nullValue());
+        assertThat(uri.getPath(),is("*"));
+        
+        uri.parseRequestTarget("GET","/foo/bar");
+        assertThat(uri.getHost(),nullValue());
+        assertThat(uri.getPath(),is("/foo/bar"));
+        
+        uri.parseRequestTarget("GET","//foo/bar");
+        assertThat(uri.getHost(),nullValue());
+        assertThat(uri.getPath(),is("//foo/bar"));
+        
+        uri.parseRequestTarget("GET","http://foo/bar");
+        assertThat(uri.getHost(),is("foo"));
+        assertThat(uri.getPath(),is("/bar"));
+    }
+    
+    
+    
     @Test
     public void testUnicodeErrors() throws UnsupportedEncodingException
     {
@@ -192,5 +240,14 @@ public class HttpURITest
         uri.setAuthority(null,0);
         assertEquals("http:/path/info",uri.toString());
         
+    }
+    
+    @Test
+    public void testBasicAuthCredentials() throws Exception
+    {
+        HttpURI uri = new HttpURI("http://user:password@example.com:8888/blah");
+        assertEquals("http://user:password@example.com:8888/blah", uri.toString());
+        assertEquals(uri.getAuthority(), "example.com:8888");
+        assertEquals(uri.getUser(), "user:password");
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -56,6 +56,7 @@ import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -63,6 +64,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static org.eclipse.jetty.util.log.Log.getLogger;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -125,6 +127,9 @@ public class AsyncServletTest
         _servletHandler.addServletWithMapping(holder,"/path2/*");
         _servletHandler.addServletWithMapping(holder,"/p th3/*");
         _servletHandler.addServletWithMapping(new ServletHolder(new FwdServlet()),"/fwd/*");
+        ServletHolder holder2=new ServletHolder("NoAsync",_servlet);
+        holder2.setAsyncSupported(false);
+        _servletHandler.addServletWithMapping(holder2,"/noasync/*");
         _server.start();
         _port=_connector.getLocalPort();
         __history.clear();
@@ -176,7 +181,45 @@ public class AsyncServletTest
 
         assertContains("NORMAL",response);
     }
+
+    @Test
+    public void testAsyncNotSupportedNoAsync() throws Exception
+    {
+        _expectedCode="200 ";
+        String response=process("noasync","",null);
+        Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
+        assertThat(__history,contains(
+            "REQUEST /ctx/noasync/info",
+            "initial"
+            ));
+
+        assertContains("NORMAL",response);
+    }
     
+    @Test
+    public void testAsyncNotSupportedAsync() throws Exception
+    {
+        ((StdErrLog)getLogger(ServletHandler.class)).setHideStacks(true);
+        try
+        {
+            _expectedCode="500 ";
+            String response=process("noasync","start=200",null);
+            Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 500 "));
+            assertThat(__history,contains(
+                    "REQUEST /ctx/noasync/info",
+                    "initial"
+                    ));
+
+            assertContains("HTTP ERROR: 500",response);
+            assertContains("!asyncSupported",response);
+            assertContains("AsyncServletTest$AsyncServlet",response);
+        }
+        finally
+        {
+            ((StdErrLog)getLogger(ServletHandler.class)).setHideStacks(false); 
+        }
+    }
+
     @Test
     public void testStart() throws Exception
     {
@@ -486,10 +529,8 @@ public class AsyncServletTest
             "onStartAsync",
             "start",
             "onTimeout",
-            "ERROR /ctx/path/error",
-            "!initial",
-            "onComplete"));
-        assertContains("ERROR DISPATCH: /ctx/path/error",response);
+            "onComplete")); // Error Page Loop!
+        assertContains("HTTP ERROR 500",response);
     }
 
     @Test

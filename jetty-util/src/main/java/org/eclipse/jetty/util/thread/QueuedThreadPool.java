@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -350,7 +350,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @return true if delegating to named or anonymous pool
      * @see Thread#setDaemon(boolean)
      */
-    @ManagedAttribute("thead pool using a daemon thread")
+    @ManagedAttribute("thread pool using a daemon thread")
     public boolean isDaemon()
     {
         return _daemon;

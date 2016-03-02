@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -47,7 +47,8 @@ public class Configurations extends AbstractList<Configuration>
     {
         ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
         for (Configuration configuration : configs)
-            __known.put(configuration.getClassName(),configuration);
+            __known.put(configuration.getName(),configuration);
+        
         LOG.debug("Known Configurations {}",__known.keySet());
     }
 
@@ -164,7 +165,7 @@ public class Configurations extends AbstractList<Configuration>
     public void add(Configuration... configurations)
     {   
         for (Configuration configuration : configurations)
-            add(configuration.getClassName(),configuration);
+            add(configuration.getName(),configuration);
     }
     
     public void add(@Name("configClass")String... configClass)
@@ -182,7 +183,7 @@ public class Configurations extends AbstractList<Configuration>
     {   
         clear();
         for (Configuration configuration : configurations)
-            add(configuration.getClassName(),configuration);
+            add(configuration.getName(),configuration);
     }
     
     public void set(@Name("configClass")String... configClass)
@@ -194,11 +195,11 @@ public class Configurations extends AbstractList<Configuration>
 
     public void remove(Configuration... configurations)
     {
-        List<String> names = Arrays.asList(configurations).stream().map(Configuration::getClassName).collect(Collectors.toList());
+        List<String> names = Arrays.asList(configurations).stream().map(Configuration::getName).collect(Collectors.toList());
         for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
         {
             Configuration configuration=i.next();
-            if (names.contains(configuration.getClassName()))
+            if (names.contains(configuration.getName()))
                 i.remove();
         }
     }
@@ -209,7 +210,7 @@ public class Configurations extends AbstractList<Configuration>
         for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
         {
             Configuration configuration=i.next();
-            if (names.contains(configuration.getClassName()))
+            if (names.contains(configuration.getName()))
                 i.remove();
         }
     }
@@ -221,7 +222,7 @@ public class Configurations extends AbstractList<Configuration>
 
     public String[] toArray()
     {
-        return _configurations.stream().map(Configuration::getClassName).toArray(String[]::new);
+        return _configurations.stream().map(Configuration::getName).toArray(String[]::new);
     }
 
     public void sort()
@@ -231,7 +232,7 @@ public class Configurations extends AbstractList<Configuration>
         TopologicalSort<Configuration> sort = new TopologicalSort<>();
 
         for (Configuration c:_configurations)
-            map.put(c.getClassName(),c);
+            map.put(c.getName(),c);
         for (Configuration c:_configurations)
         {
             for (String b:c.getBeforeThis())
@@ -282,7 +283,7 @@ public class Configurations extends AbstractList<Configuration>
         {
             for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
             {
-                if (i.next().getClassName().equals(replaces.getName()))
+                if (i.next().getName().equals(replaces.getName()))
                 {
                     i.set(configuration);
                     return;
@@ -293,7 +294,7 @@ public class Configurations extends AbstractList<Configuration>
             return;
         }
 
-        if (!_configurations.stream().map(Configuration::getClassName).anyMatch(n->{return name.equals(n);}))
+        if (!_configurations.stream().map(Configuration::getName).anyMatch(n->{return name.equals(n);}))
             _configurations.add(configuration);
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,6 +34,17 @@ public enum PathSpecGroup
 {
     // NOTE: Order of enums determines order of Groups.
 
+    /**
+     * The root spec for accessing the Root behavior.
+     * 
+     * <pre>
+     *   ""           - servlet spec       (Root Servlet)
+     *   null         - servlet spec       (Root Servlet)
+     * </pre>
+     * 
+     * Note: there is no known uri-template spec variant of this kind of path spec
+     */
+    ROOT,
     /**
      * For exactly defined path specs, no glob.
      */
@@ -74,17 +85,6 @@ public enum PathSpecGroup
      * Note: there is no known uri-template spec variant of this kind of path spec
      */
     SUFFIX_GLOB,
-    /**
-     * The root spec for accessing the Root behavior.
-     * 
-     * <pre>
-     *   ""           - servlet spec       (Root Servlet)
-     *   null         - servlet spec       (Root Servlet)
-     * </pre>
-     * 
-     * Note: there is no known uri-template spec variant of this kind of path spec
-     */
-    ROOT,
     /**
      * The default spec for accessing the Default path behavior.
      * 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -80,8 +80,8 @@ public class Generator
         generators[frame.getType().getType()].generate(lease, frame);
     }
 
-    public void data(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
+    public int data(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
     {
-        dataGenerator.generate(lease, frame, maxLength);
+        return dataGenerator.generate(lease, frame, maxLength);
     }
 }

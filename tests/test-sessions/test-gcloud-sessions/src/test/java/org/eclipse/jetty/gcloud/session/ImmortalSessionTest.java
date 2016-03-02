@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -55,7 +55,7 @@ public class ImmortalSessionTest extends AbstractImmortalSessionTest
     @Override
     public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs)
     {
-       return new GCloudTestServer(port, port, scavengeMs, _testSupport.getConfiguration());
+       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, _testSupport.getConfiguration());
     }
 
     @Test

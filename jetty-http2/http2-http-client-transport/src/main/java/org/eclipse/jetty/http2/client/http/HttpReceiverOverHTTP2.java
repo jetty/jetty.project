@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,8 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Locale;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
@@ -33,6 +35,8 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listener
@@ -89,9 +93,47 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
+        {
+            callback.failed(new IOException("terminated"));
             return;
+        }
 
-        if (responseContent(exchange, frame.getData(), callback))
+        // We must copy the data since we do not know when the
+        // application will consume the bytes and the parsing
+        // will continue as soon as this method returns, eventually
+        // leading to reusing the underlying buffer for more reads.
+        ByteBufferPool byteBufferPool = getHttpDestination().getHttpClient().getByteBufferPool();
+        ByteBuffer original = frame.getData();
+        int length = original.remaining();
+        final ByteBuffer copy = byteBufferPool.acquire(length, original.isDirect());
+        BufferUtil.clearToFill(copy);
+        copy.put(original);
+        BufferUtil.flipToFlush(copy, 0);
+
+        Callback delegate = new Callback()
+        {
+            @Override
+            public boolean isNonBlocking()
+            {
+                return callback.isNonBlocking();
+            }
+
+            @Override
+            public void succeeded()
+            {
+                byteBufferPool.release(copy);
+                callback.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                byteBufferPool.release(copy);
+                callback.failed(x);
+            }
+        };
+
+        if (responseContent(exchange, copy, delegate))
         {
             if (frame.isEndStream())
                 responseSuccess(exchange);
@@ -106,7 +148,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             return;
 
         ErrorCode error = ErrorCode.from(frame.getError());
-        String reason = error == null ? "reset" : error.name().toLowerCase();
+        String reason = error == null ? "reset" : error.name().toLowerCase(Locale.ENGLISH);
         exchange.getRequest().abort(new IOException(reason));
     }
 

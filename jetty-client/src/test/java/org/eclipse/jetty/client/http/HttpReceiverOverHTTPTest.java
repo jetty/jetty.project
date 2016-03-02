@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -170,8 +170,10 @@ public class HttpReceiverOverHTTPTest
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         connection.getHttpChannel().receive();
-        // Simulate an idle timeout
-        connection.onReadTimeout();
+        // ByteArrayEndPoint has an idle timeout of 0 by default,
+        // so to simulate an idle timeout is enough to wait a bit.
+        Thread.sleep(100);
+        connection.onIdleExpired();
 
         try
         {

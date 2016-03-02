@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,7 +53,7 @@ public class ReloadedSessionMissingClassTest
     @Test
     public void testSessionReloadWithMissingClass() throws Exception
     {
-        ((StdErrLog)Log.getLogger(org.eclipse.jetty.server.session.JDBCSessionManager.class)).setHideStacks(true);
+        ((StdErrLog)Log.getLogger("org.eclipse.jetty.server.session")).setHideStacks(true);
         Resource.setDefaultUseCaches(false);
         String contextPath = "/foo";
 

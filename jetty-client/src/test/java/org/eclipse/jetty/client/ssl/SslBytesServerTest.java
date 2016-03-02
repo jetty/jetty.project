@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,6 +53,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.ssl.SslBytesTest.TLSRecord.Type;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
@@ -111,12 +112,12 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint)
+                return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint,getHttpCompliance())
                 {
                     @Override
-                    protected HttpParser newHttpParser()
+                    protected HttpParser newHttpParser(HttpCompliance compliance)
                     {
-                        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize())
+                        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(),compliance)
                         {
                             @Override
                             public boolean parseNext(ByteBuffer buffer)

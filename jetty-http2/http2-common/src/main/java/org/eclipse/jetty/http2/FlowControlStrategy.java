@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,7 +42,8 @@ public interface FlowControlStrategy
 
     public void onDataSent(IStream stream, int length);
 
-    public void onSessionStalled(ISession session);
-
-    public void onStreamStalled(IStream stream);
+    public interface Factory
+    {
+        public FlowControlStrategy newFlowControlStrategy();
+    }
 }

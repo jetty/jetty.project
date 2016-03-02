@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.security.cert.X509Certificate;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -26,11 +27,15 @@ import javax.net.ssl.SSLSession;
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
@@ -52,16 +57,104 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     public static final String CACHED_INFO_ATTR = CachedInfo.class.getName();
 
     private boolean _sniHostCheck;
-
+    private long _stsMaxAge=-1;
+    private boolean _stsIncludeSubDomains;
+    private HttpField _stsField;
 
     public SecureRequestCustomizer()
     {
         this(true);
     }
 
-    public SecureRequestCustomizer(boolean sniHostCheck)
+    public SecureRequestCustomizer(@Name("sniHostCheck")boolean sniHostCheck)
+    {
+        this(sniHostCheck,-1,false);
+    }
+    
+    /**
+     * @param sniHostCheck True if the SNI Host name must match.
+     * @param stsMaxAgeSeconds The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
+     * @param stsIncludeSubdomains If true, a include subdomain property is sent with any Strict-Transport-Security header
+     */
+    public SecureRequestCustomizer(
+            @Name("sniHostCheck")boolean sniHostCheck,
+            @Name("stsMaxAgeSeconds")long stsMaxAgeSeconds,
+            @Name("stsIncludeSubdomains")boolean stsIncludeSubdomains)
     {
         _sniHostCheck=sniHostCheck;
+        _stsMaxAge=stsMaxAgeSeconds;
+        _stsIncludeSubDomains=stsIncludeSubdomains;
+        formatSTS();
+    }
+
+    /**
+     * @return True if the SNI Host name must match.
+     */
+    public boolean isSniHostCheck()
+    {
+        return _sniHostCheck;
+    }
+
+    /**
+     * @param sniHostCheck  True if the SNI Host name must match. 
+     */
+    public void setSniHostCheck(boolean sniHostCheck)
+    {
+        _sniHostCheck = sniHostCheck;
+    }
+
+    /**
+     * @return The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
+     */
+    public long getStsMaxAge()
+    {
+        return _stsMaxAge;
+    }
+
+    /**
+     * Set the Strict-Transport-Security max age.
+     * @param stsMaxAgeSeconds The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
+     */
+    public void setStsMaxAge(long stsMaxAgeSeconds)
+    {
+        _stsMaxAge = stsMaxAgeSeconds;
+        formatSTS();
+    }
+
+    /**
+     * Convenience method to call {@link #setStsMaxAge(long)}
+     * @param period The period in units
+     * @param units The {@link TimeUnit} of the period
+     */
+    public void setStsMaxAge(long period,TimeUnit units)
+    {
+        _stsMaxAge = units.toSeconds(period);
+        formatSTS();
+    }
+
+    /**
+     * @return true if a include subdomain property is sent with any Strict-Transport-Security header
+     */
+    public boolean isStsIncludeSubDomains()
+    {
+        return _stsIncludeSubDomains;
+    }
+
+    /**
+     * @param stsIncludeSubDomains If true, a include subdomain property is sent with any Strict-Transport-Security header
+     */
+    public void setStsIncludeSubDomains(boolean stsIncludeSubDomains)
+    {
+        _stsIncludeSubDomains = stsIncludeSubDomains;
+        formatSTS();
+    }
+
+    private void formatSTS()
+    {
+        if (_stsMaxAge<0)
+            _stsField=null;
+        else
+            _stsField=new PreEncodedHttpField(HttpHeader.STRICT_TRANSPORT_SECURITY,String.format("max-age=%d%s",_stsMaxAge,_stsIncludeSubDomains?"; includeSubDomains":""));
     }
 
     @Override
@@ -86,9 +179,26 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         if (HttpScheme.HTTPS.is(request.getScheme()))
-            request.setSecure(true);
+            customizeSecure(request);
     }
 
+
+    /**
+     * Customizes the request attributes for general secure settings.
+     * The default impl calls {@link Request#setSecure(boolean)} with true
+     * and sets a response header if the Strict-Transport-Security options 
+     * are set.
+     * @param request the request being customized
+     */
+    protected void customizeSecure(Request request)
+    {
+        request.setSecure(true);
+        
+        if (_stsField!=null)
+            request.getResponse().getHttpFields().add(_stsField);
+    }
+    
+    
     /**
      * <p>
      * Customizes the request attributes to be set for SSL requests.
@@ -111,7 +221,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      * @param request
      *            HttpRequest to be customized.
      */
-    public void customize(SSLEngine sslEngine, Request request)
+    protected void customize(SSLEngine sslEngine, Request request)
     {
         SSLSession sslSession = sslEngine.getSession();
 

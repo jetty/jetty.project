@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,9 +37,12 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -49,9 +52,11 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class SelectChannelEndPointTest
@@ -124,10 +129,18 @@ public class SelectChannelEndPointTest
         ByteBuffer _in = BufferUtil.allocate(32 * 1024);
         ByteBuffer _out = BufferUtil.allocate(32 * 1024);
         long _last = -1;
+        final CountDownLatch _latch;
 
         public TestConnection(EndPoint endp)
         {
             super(endp, _threadPool);
+            _latch=null;
+        }
+        
+        public TestConnection(EndPoint endp,CountDownLatch latch)
+        {
+            super(endp, _threadPool);
+            _latch=latch;
         }
 
         @Override
@@ -153,6 +166,18 @@ public class SelectChannelEndPointTest
         @Override
         public void onFillable()
         {
+            if (_latch!=null)
+            {
+                try
+                {
+                    _latch.await();
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            
             Callback blocking = _blockingRead;
             if (blocking!=null)
             {
@@ -670,5 +695,134 @@ public class SelectChannelEndPointTest
                 break;
         }
         assertFalse(server.isOpen());
+    }
+    
+
+    // TODO make this test reliable
+    @Test
+    @Ignore
+    public void testRejectedExecution() throws Exception
+    {
+        _manager.stop();
+        _threadPool.stop();
+        
+        final CountDownLatch latch = new CountDownLatch(1);
+        
+        BlockingQueue<Runnable> q = new ArrayBlockingQueue<>(4);
+        _threadPool = new QueuedThreadPool(4,4,60000,q);
+        _manager = new SelectorManager(_threadPool, _scheduler, 1)
+        {
+
+            @Override
+            protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
+            {
+                SocketChannelEndPoint endp = new SocketChannelEndPoint(channel,selector,selectionKey,getScheduler());
+                _lastEndPoint = endp;
+                _lastEndPointLatch.countDown();
+                return endp;
+            }
+
+            @Override
+            public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
+            {
+                return new TestConnection(endpoint,latch);
+            }
+        };
+        
+        _threadPool.start();
+        _manager.start();
+        
+        AtomicInteger timeout = new AtomicInteger();
+        AtomicInteger rejections = new AtomicInteger();
+        AtomicInteger echoed = new AtomicInteger();
+        
+        CountDownLatch closed = new CountDownLatch(20);
+        for (int i=0;i<20;i++)
+        {
+            new Thread()
+            {
+                public void run()
+                {
+                    try(Socket client = newClient();)
+                    {
+                        client.setSoTimeout(5000);
+
+                        SocketChannel server = _connector.accept();
+                        server.configureBlocking(false);
+
+                        _manager.accept(server);
+
+                        // Write client to server
+                        client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
+                        client.getOutputStream().flush();
+                        client.shutdownOutput();
+
+                        // Verify echo server to client
+                        for (char c : "HelloWorld".toCharArray())
+                        {
+                            int b = client.getInputStream().read();
+                            assertTrue(b > 0);
+                            assertEquals(c, (char)b);
+                        }
+                        assertEquals(-1,client.getInputStream().read());
+                        echoed.incrementAndGet();
+                    }
+                    catch(SocketTimeoutException x)
+                    {
+                        x.printStackTrace();
+                        timeout.incrementAndGet();
+                    }
+                    catch(Throwable x)
+                    {
+                        rejections.incrementAndGet();
+                    }
+                    finally
+                    {
+                        closed.countDown();
+                    }
+                }
+            }.start();
+        }
+
+        // unblock the handling
+        latch.countDown();
+        
+        // wait for all clients to complete or fail
+        closed.await();
+        
+        // assert some clients must have been rejected
+        Assert.assertThat(rejections.get(),Matchers.greaterThan(0));
+        // but not all of them
+        Assert.assertThat(rejections.get(),Matchers.lessThan(20));
+        // none should have timed out
+        Assert.assertThat(timeout.get(),Matchers.equalTo(0));
+        // and the rest should have worked
+        Assert.assertThat(echoed.get(),Matchers.equalTo(20-rejections.get())); 
+        
+        // and the selector is still working for new requests
+        try(Socket client = newClient();)
+        {
+            client.setSoTimeout(5000);
+
+            SocketChannel server = _connector.accept();
+            server.configureBlocking(false);
+
+            _manager.accept(server);
+
+            // Write client to server
+            client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
+            client.getOutputStream().flush();
+            client.shutdownOutput();
+
+            // Verify echo server to client
+            for (char c : "HelloWorld".toCharArray())
+            {
+                int b = client.getInputStream().read();
+                assertTrue(b > 0);
+                assertEquals(c, (char)b);
+            }
+            assertEquals(-1,client.getInputStream().read());
+        }
+        
     }
 }

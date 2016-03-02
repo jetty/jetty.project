@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -518,7 +518,8 @@ public class HttpChannelState
                         }
                         catch(Throwable x)
                         {
-                            LOG.debug("Exception while invoking listener " + listener,x);
+                            LOG.warn(x+" while invoking onTimeout listener " + listener);
+                            LOG.debug(x);
                             if (error.get()==null)
                                 error.set(x);
                             else
@@ -721,7 +722,8 @@ public class HttpChannelState
                         }
                         catch (Throwable x)
                         {
-                            LOG.info("Exception while invoking listener " + listener,x);
+                            LOG.warn(x+" while invoking onError listener " + listener);
+                            LOG.debug(x);
                         }
                     }
                 }
@@ -815,7 +817,8 @@ public class HttpChannelState
                             }
                             catch(Exception e)
                             {
-                                LOG.warn("Exception while invoking listener " + listener,e);
+                                LOG.warn(e+" while invoking onComplete listener " + listener);
+                                LOG.debug(e);
                             }
                         }
                     }    

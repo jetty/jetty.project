@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
@@ -33,7 +32,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.Set;
 
 import javax.servlet.ServletContext;
@@ -60,9 +58,7 @@ import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -103,57 +99,28 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public static final String[] DEFAULT_CONFIGURATION_CLASSES = 
             Configurations.getKnown().stream()
-            .filter(c->{return c.isEnabledByDefault();})
-            .map(c->{return c.getClass().getName();})
+            .filter(Configuration::isEnabledByDefault)
+            .map(c->c.getClass().getName())
             .toArray(String[]::new);
     
     // System classes are classes that cannot be replaced by
     // the web application, and they are *always* loaded via
     // system classloader.
-    // TODO This centrally managed list of features that are exposed/hidden needs to be replaced
-    // with a more automatic distributed mechanism
     public final static String[] __dftSystemClasses =
     {
         "java.",                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
         "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
-        "org.xml.",                         // needed by javax.xml
-        "org.w3c.",                         // needed by javax.xml
-        
-        
-        "org.eclipse.jetty.jmx.",           // webapp cannot change jmx classes
-        "org.eclipse.jetty.continuation.",  // webapp cannot change continuation classes
-        "org.eclipse.jetty.jaas.",          // webapp cannot change jaas classes
-        "org.eclipse.jetty.websocket.",     // webapp cannot change / replace websocket classes
-        "org.eclipse.jetty.util.log.",      // webapp should use server log
-        "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
-        "org.eclipse.jetty.jsp.JettyJspServlet", //webapp cannot change jetty jsp servlet
-        "org.eclipse.jetty.servlets.PushCacheFilter", //must be loaded by container classpath
-        "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath
+        "org.xml.",                         // javax.xml
+        "org.w3c.",                         // javax.xml
     } ;
 
     // Server classes are classes that are hidden from being
     // loaded by the web application using system classloader,
     // so if web application needs to load any of such classes,
     // it has to include them in its distribution.
-    // TODO This centrally managed list of features that are exposed/hidden needs to be replaced
-    // with a more automatic distributed mechanism
     public final static String[] __dftServerClasses =
     {
-        "-org.eclipse.jetty.jmx.",          // don't hide jmx classes
-        "-org.eclipse.jetty.continuation.", // don't hide continuation classes
-        "-org.eclipse.jetty.jaas.",         // don't hide jaas classes
-        "-org.eclipse.jetty.servlets.",     // don't hide jetty servlets
-        "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
-        "-org.eclipse.jetty.servlet.NoJspServlet", // don't hide noJspServlet servlet
-        "-org.eclipse.jetty.jsp.",          //don't hide jsp servlet
-        "-org.eclipse.jetty.servlet.listener.", // don't hide useful listeners
-        "-org.eclipse.jetty.websocket.",    // don't hide websocket classes from webapps (allow webapp to use ones from system classloader)
-        "-org.eclipse.jetty.apache.",       // don't hide jetty apache impls
-        "-org.eclipse.jetty.util.log.",     // don't hide server log 
-        "-org.eclipse.jetty.alpn.",         // don't hide ALPN
-        "org.eclipse.jdt.",                 // hide jdt used by jetty
-        
-        "org.eclipse.jetty."                // hide other jetty classes
+        "org.eclipse.jetty."                // hide jetty classes
     } ;
 
     private final Configurations _configurations = new Configurations();
@@ -988,6 +955,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         loadConfigurations();
         _configurations.add(configuration);
     }
+
+    /* ------------------------------------------------------------ */
+    public <T> T getConfiguration(Class<? extends T> configClass)
+    {
+        loadConfigurations();
+        for (Configuration configuration : _configurations)
+            if (configClass.isAssignableFrom(configuration.getClass()) && configuration.getName().equals(configClass.getName()))
+                return (T)configuration;
+        return null;
+    }
     
     /* ------------------------------------------------------------ */
     /**
@@ -1165,7 +1142,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * 
      * @param contextWhiteList the whitelist of contexts for {@link org.eclipse.jetty.servlet.ServletContextHandler.Context#getContext(String)} 
      */
-    public void setContextWhiteList(String[] contextWhiteList)
+    public void setContextWhiteList(String... contextWhiteList)
     {
         _contextWhiteList = contextWhiteList;
     }
@@ -1180,7 +1157,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * A {@link ClasspathPattern} is used to match the server classes.
      * @param serverClasses The serverClasses to set.
      */
-    public void setServerClasses(String[] serverClasses)
+    public void setServerClasses(String... serverClasses)
     {
         _serverClasses = new ClasspathPattern(serverClasses);
     }
@@ -1195,7 +1172,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * A {@link ClasspathPattern} is used to match the system classes.
      * @param systemClasses The systemClasses to set.
      */
-    public void setSystemClasses(String[] systemClasses)
+    public void setSystemClasses(String... systemClasses)
     {
         _systemClasses = new ClasspathPattern(systemClasses);
     }
@@ -1334,7 +1311,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         throws Exception
     {
         configure();
-
+        
         //resolve the metadata
         _metadata.resolve(this);
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -160,6 +160,21 @@ public class JdbcLoginServiceTest
              stopClient();
          }
      }
+     
+     @Test
+     public void testGetNonExistantUser () throws Exception
+     {
+         try
+         {
+             startClient("foo", "bar");
+             ContentResponse response = _client.GET(_baseUri.resolve("input.txt"));
+             assertEquals(HttpServletResponse.SC_UNAUTHORIZED,response.getStatus());
+         }
+         finally
+         {
+             stopClient();
+         }
+     }
 
      //Head requests to jetty-client are not working: see https://bugs.eclipse.org/bugs/show_bug.cgi?id=394552
      @Ignore
@@ -201,7 +216,7 @@ public class JdbcLoginServiceTest
          }
      }
 
-     protected void startClient()
+     protected void startClient(String user, String pwd)
          throws Exception
      {
          _client = new HttpClient();
@@ -209,9 +224,16 @@ public class JdbcLoginServiceTest
          executor.setName(executor.getName() + "-client");
          _client.setExecutor(executor);
          AuthenticationStore authStore = _client.getAuthenticationStore();
-         authStore.addAuthentication(new BasicAuthentication(_baseUri, __realm, "jetty", "jetty"));
+         authStore.addAuthentication(new BasicAuthentication(_baseUri, __realm, user, pwd));
          _client.start();
      }
+
+     protected void startClient()
+         throws Exception
+     {
+         startClient("jetty", "jetty");
+     }
+
 
      protected void stopClient()
          throws Exception

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,14 +52,5 @@ public class LastAccessTimeTest extends AbstractLastAccessTimeTest
     {
         super.testLastAccessTime();
     }
-
-    @Override
-    public void assertAfterScavenge(AbstractSessionManager manager)
-    {
-        //The infinispan session manager will remove a session from its local memory that was a candidate to be scavenged if
-        //it checks with the cluster and discovers that another node is managing it, so the count is 0
-        assertSessionCounts(0, 1, 1, manager);
-    }
-
     
 }

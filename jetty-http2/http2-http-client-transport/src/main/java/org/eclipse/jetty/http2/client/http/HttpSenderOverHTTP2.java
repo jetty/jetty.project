@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,8 +33,6 @@ import org.eclipse.jetty.util.Promise;
 
 public class HttpSenderOverHTTP2 extends HttpSender
 {
-    private Stream stream;
-
     public HttpSenderOverHTTP2(HttpChannelOverHTTP2 channel)
     {
         super(channel);
@@ -59,7 +57,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
             @Override
             public void succeeded(Stream stream)
             {
-                HttpSenderOverHTTP2.this.stream = stream;
+                getHttpChannel().setStream(stream);
                 stream.setIdleTimeout(request.getIdleTimeout());
 
                 if (content.hasContent() && !expects100Continue(request))
@@ -95,15 +93,9 @@ public class HttpSenderOverHTTP2 extends HttpSender
         }
         else
         {
+            Stream stream = getHttpChannel().getStream();
             DataFrame frame = new DataFrame(stream.getId(), content.getByteBuffer(), content.isLast());
             stream.data(frame, callback);
         }
-    }
-
-    @Override
-    protected void reset()
-    {
-        super.reset();
-        stream = null;
     }
 }

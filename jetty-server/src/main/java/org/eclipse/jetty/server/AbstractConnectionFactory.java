@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,22 +26,25 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-
-/* ------------------------------------------------------------ */
 /**
- * Abstract ConnectionFactory
- * <p>Provides the common handling for {@link ConnectionFactory} implementations including:<ul>
- * <li>Protocol identification
- * <li>Configuration of new Connections:<ul>
- *     <li>Setting inputbuffer size
- *     <li>Calling {@link Connection#addListener(Connection.Listener)} for all 
- *     Connection.Listener instances found as beans on the {@link Connector} and this {@link ConnectionFactory}
- * </ul>
+ * <p>Provides the common handling for {@link ConnectionFactory} implementations including:</p>
+ * <ul>
+ * <li>Protocol identification</li>
+ * <li>Configuration of new Connections:
+ *     <ul>
+ *     <li>Setting inputbuffer size</li>
+ *     <li>Calling {@link Connection#addListener(Connection.Listener)} for all
+ *     Connection.Listener instances found as beans on the {@link Connector}
+ *     and this {@link ConnectionFactory}</li>
+ *     </ul>
  * </ul>
  */
+@ManagedObject
 public abstract class AbstractConnectionFactory extends ContainerLifeCycle implements ConnectionFactory
 {
     private final String _protocol;
@@ -53,7 +56,7 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
         _protocol=protocol;
         _protocols=Collections.unmodifiableList(Arrays.asList(new String[]{protocol}));
     }
-    
+
     protected AbstractConnectionFactory(String... protocols)
     {
         _protocol=protocols[0];
@@ -61,6 +64,7 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
     }
 
     @Override
+    @ManagedAttribute(value = "The protocol name", readonly = true)
     public String getProtocol()
     {
         return _protocol;
@@ -72,6 +76,7 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
         return _protocols;
     }
 
+    @ManagedAttribute("The buffer size used to read from the network")
     public int getInputBufferSize()
     {
         return _inputbufferSize;
@@ -96,7 +101,7 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
         // Add Connection.Listeners from this factory
         for (Connection.Listener listener : getBeans(Connection.Listener.class))
             connection.addListener(listener);
-        
+
         return connection;
     }
 

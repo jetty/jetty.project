@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -126,6 +126,7 @@ public abstract class AbstractForwardedSessionTest
    
             HttpSession sess = request.getSession(false);
             assertNotNull(sess);
+            assertNotNull(sess.getAttribute("servlet3"));
             sess.setAttribute("servlet1", "servlet1");
         }
     }
@@ -144,6 +145,7 @@ public abstract class AbstractForwardedSessionTest
             //the session should exist after the forward
             HttpSession sess = request.getSession(false);
             assertNotNull(sess);
+            assertNotNull(sess.getAttribute("servlet3"));
         }
     }
 

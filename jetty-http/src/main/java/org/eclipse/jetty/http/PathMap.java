@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,11 +26,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.RegexSet;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -73,8 +72,10 @@ import org.eclipse.jetty.util.URIUtil;
  * This class is not synchronized.  If concurrent modifications are
  * possible then it should be synchronized at a higher level.
  * 
- * @param <O> the Map.Entry value type 
+ * @param <O> the Map.Entry value type
+ * @deprecated replaced with {@link org.eclipse.jetty.http.pathmap.PathMappings} (this class will be removed in Jetty 10) 
  */
+@Deprecated
 public class PathMap<O> extends HashMap<String,O>
 {
     /* ------------------------------------------------------------ */

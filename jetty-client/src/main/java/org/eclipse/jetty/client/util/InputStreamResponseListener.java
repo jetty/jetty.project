@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,19 +23,18 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -63,8 +62,6 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * The {@link HttpClient} implementation (the producer) will feed the input stream
  * asynchronously while the application (the consumer) is reading from it.
- * Chunks of content are maintained in a queue, and it is possible to specify a
- * maximum buffer size for the bytes held in the queue, by default 16384 bytes.
  * <p>
  * If the consumer is faster than the producer, then the consumer will block
  * with the typical {@link InputStream#read()} semantic.
@@ -74,137 +71,125 @@ import org.eclipse.jetty.util.log.Logger;
 public class InputStreamResponseListener extends Listener.Adapter
 {
     private static final Logger LOG = Log.getLogger(InputStreamResponseListener.class);
-    private static final byte[] EOF = new byte[0];
-    private static final byte[] CLOSED = new byte[0];
-    private static final byte[] FAILURE = new byte[0];
-    private final BlockingQueue<byte[]> queue = new LinkedBlockingQueue<>();
-    private final AtomicLong length = new AtomicLong();
+    private static final DeferredContentProvider.Chunk EOF = new DeferredContentProvider.Chunk(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+    private final Object lock = this;
     private final CountDownLatch responseLatch = new CountDownLatch(1);
     private final CountDownLatch resultLatch = new CountDownLatch(1);
     private final AtomicReference<InputStream> stream = new AtomicReference<>();
-    private final long maxBufferSize;
     private Response response;
     private Result result;
-    private volatile Throwable failure;
-    private volatile boolean closed;
+    private Throwable failure;
+    private boolean closed;
+    private DeferredContentProvider.Chunk chunk;
 
     public InputStreamResponseListener()
     {
-        this(16 * 1024L);
-    }
-
-    public InputStreamResponseListener(long maxBufferSize)
-    {
-        this.maxBufferSize = maxBufferSize;
     }
 
     @Override
     public void onHeaders(Response response)
     {
-        this.response = response;
-        responseLatch.countDown();
+        synchronized (lock)
+        {
+            this.response = response;
+            responseLatch.countDown();
+        }
     }
 
     @Override
-    public void onContent(Response response, ByteBuffer content)
+    public void onContent(Response response, ByteBuffer content, Callback callback)
     {
-        if (!closed)
+        if (content.remaining() == 0)
         {
-            int remaining = content.remaining();
-            if (remaining > 0)
-            {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Skipped empty content {}", content);
+            callback.succeeded();
+            return;
+        }
 
-                byte[] bytes = new byte[remaining];
-                content.get(bytes);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Queuing {}/{} bytes", bytes, remaining);
-                queue.offer(bytes);
-
-                long newLength = length.addAndGet(remaining);
-                while (newLength >= maxBufferSize)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Queued bytes limit {}/{} exceeded, waiting", newLength, maxBufferSize);
-                    // Block to avoid infinite buffering
-                    if (!await())
-                        break;
-                    newLength = length.get();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Queued bytes limit {}/{} exceeded, woken up", newLength, maxBufferSize);
-                }
-            }
-            else
+        boolean closed;
+        synchronized (lock)
+        {
+            closed = this.closed;
+            if (!closed)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Queuing skipped, empty content {}", content);
+                chunk = new DeferredContentProvider.Chunk(content, callback);
+                lock.notifyAll();
             }
         }
-        else
+
+        if (closed)
         {
-            LOG.debug("Queuing skipped, stream already closed");
+            if (LOG.isDebugEnabled())
+                LOG.debug("InputStream closed, ignored content {}", content);
+            callback.failed(new AsynchronousCloseException());
         }
     }
 
     @Override
     public void onSuccess(Response response)
     {
+        synchronized (lock)
+        {
+            chunk = EOF;
+            lock.notifyAll();
+        }
+
         if (LOG.isDebugEnabled())
-            LOG.debug("Queuing end of content {}{}", EOF, "");
-        queue.offer(EOF);
-        signal();
+            LOG.debug("End of content");
     }
 
     @Override
     public void onFailure(Response response, Throwable failure)
     {
-        fail(failure);
-        signal();
+        Callback callback = null;
+        synchronized (lock)
+        {
+            if (this.failure != null)
+                return;
+            this.failure = failure;
+            if (chunk != null)
+                callback = chunk.callback;
+            lock.notifyAll();
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Content failure", failure);
+
+        if (callback != null)
+            callback.failed(failure);
     }
 
     @Override
     public void onComplete(Result result)
     {
-        if (result.isFailed() && failure == null)
-            fail(result.getFailure());
-        this.result = result;
-        resultLatch.countDown();
-        signal();
-    }
-
-    private void fail(Throwable failure)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Queuing failure {} {}", FAILURE, failure);
-        queue.offer(FAILURE);
-        this.failure = failure;
-        responseLatch.countDown();
-    }
-
-    protected boolean await()
-    {
-        try
+        Throwable failure = result.getFailure();
+        Callback callback = null;
+        synchronized (lock)
         {
-            synchronized (this)
+            this.result = result;
+            if (result.isFailed() && this.failure == null)
             {
-                while (length.get() >= maxBufferSize && failure == null && !closed)
-                    wait();
-                // Re-read the values as they may have changed while waiting.
-                return failure == null && !closed;
+                this.failure = failure;
+                if (chunk != null)
+                    callback = chunk.callback;
             }
+            // Notify the response latch in case of request failures.
+            responseLatch.countDown();
+            resultLatch.countDown();
+            lock.notifyAll();
         }
-        catch (InterruptedException x)
-        {
-            Thread.currentThread().interrupt();
-            return false;
-        }
-    }
 
-    protected void signal()
-    {
-        synchronized (this)
+        if (LOG.isDebugEnabled())
         {
-            notifyAll();
+            if (failure == null)
+                LOG.debug("Result success");
+            else
+                LOG.debug("Result failure", failure);
         }
+
+        if (callback != null)
+            callback.failed(failure);
     }
 
     /**
@@ -225,9 +210,13 @@ public class InputStreamResponseListener extends Listener.Adapter
         boolean expired = !responseLatch.await(timeout, unit);
         if (expired)
             throw new TimeoutException();
-        if (failure != null)
-            throw new ExecutionException(failure);
-        return response;
+        synchronized (lock)
+        {
+            // If the request failed there is no response.
+            if (response == null)
+                throw new ExecutionException(failure);
+            return response;
+        }
     }
 
     /**
@@ -247,7 +236,10 @@ public class InputStreamResponseListener extends Listener.Adapter
         boolean expired = !resultLatch.await(timeout, unit);
         if (expired)
             throw new TimeoutException();
-        return result;
+        synchronized (lock)
+        {
+            return result;
+        }
     }
 
     /**
@@ -267,65 +259,50 @@ public class InputStreamResponseListener extends Listener.Adapter
 
     private class Input extends InputStream
     {
-        private byte[] bytes;
-        private int index;
-
         @Override
         public int read() throws IOException
         {
-            while (true)
-            {
-                if (bytes == EOF)
-                {
-                    // Mark the fact that we saw -1,
-                    // so that in the close case we don't throw
-                    index = -1;
-                    return -1;
-                }
-                else if (bytes == FAILURE)
-                {
-                    throw failure();
-                }
-                else if (bytes == CLOSED)
-                {
-                    if (index < 0)
-                        return -1;
-                    throw new AsynchronousCloseException();
-                }
-                else if (bytes != null)
-                {
-                    int result = bytes[index] & 0xFF;
-                    if (++index == bytes.length)
-                    {
-                        length.addAndGet(-index);
-                        bytes = null;
-                        index = 0;
-                        signal();
-                    }
-                    return result;
-                }
-                else
-                {
-                    bytes = take();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Dequeued {}/{} bytes", bytes, bytes.length);
-                }
-            }
+            byte[] tmp = new byte[1];
+            int read = read(tmp);
+            if (read < 0)
+                return read;
+            return tmp[0] & 0xFF;
         }
 
-        private IOException failure()
-        {
-            if (failure instanceof IOException)
-                return (IOException)failure;
-            else
-                return new IOException(failure);
-        }
-
-        private byte[] take() throws IOException
+        @Override
+        public int read(byte[] b, int offset, int length) throws IOException
         {
             try
             {
-                return queue.take();
+                int result;
+                Callback callback = null;
+                synchronized (lock)
+                {
+                    while (true)
+                    {
+                        if (failure != null)
+                            throw toIOException(failure);
+                        if (chunk == EOF)
+                            return -1;
+                        if (closed)
+                            throw new AsynchronousCloseException();
+                        if (chunk != null)
+                            break;
+                        lock.wait();
+                    }
+
+                    ByteBuffer buffer = chunk.buffer;
+                    result = Math.min(buffer.remaining(), length);
+                    buffer.get(b, offset, result);
+                    if (!buffer.hasRemaining())
+                    {
+                        callback = chunk.callback;
+                        chunk = null;
+                    }
+                }
+                if (callback != null)
+                    callback.succeeded();
+                return result;
             }
             catch (InterruptedException x)
             {
@@ -333,18 +310,35 @@ public class InputStreamResponseListener extends Listener.Adapter
             }
         }
 
+        private IOException toIOException(Throwable failure)
+        {
+            if (failure instanceof IOException)
+                return (IOException)failure;
+            else
+                return new IOException(failure);
+        }
+
         @Override
         public void close() throws IOException
         {
-            if (!closed)
+            Callback callback = null;
+            synchronized (lock)
             {
-                super.close();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Queuing close {}{}", CLOSED, "");
-                queue.offer(CLOSED);
+                if (closed)
+                    return;
                 closed = true;
-                signal();
+                if (chunk != null)
+                    callback = chunk.callback;
+                lock.notifyAll();
             }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("InputStream close");
+
+            if (callback != null)
+                callback.failed(new AsynchronousCloseException());
+
+            super.close();
         }
     }
 }
