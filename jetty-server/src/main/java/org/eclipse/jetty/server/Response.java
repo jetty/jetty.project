@@ -1091,7 +1091,7 @@ public class Response implements HttpServletResponse
     public void setBufferSize(int size)
     {
         if (isCommitted() || getContentCount() > 0)
-            throw new IllegalStateException("Committed or content written");
+            throw new IllegalStateException("cannot set buffer size on committed response");
         if (size <= 0)
             size = __MIN_BUFFER_SIZE;
         _out.setBufferSize(size);
@@ -1175,7 +1175,7 @@ public class Response implements HttpServletResponse
     public void resetBuffer()
     {
         if (isCommitted())
-            throw new IllegalStateException("Committed");
+            throw new IllegalStateException("cannot reset buffer on committed response");
 
         _out.resetBuffer();
     }

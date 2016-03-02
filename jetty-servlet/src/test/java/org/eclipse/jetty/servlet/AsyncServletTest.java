@@ -34,6 +34,7 @@ import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponseWrapper;
@@ -45,6 +46,8 @@ import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.DebugListener;
+import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -116,7 +119,6 @@ public class AsyncServletTest
         _errorHandler = new ErrorPageErrorHandler();
         context.setErrorHandler(_errorHandler);
         _errorHandler.addErrorPage(300,599,"/error/custom");
-        
 
         _servletHandler=context.getServletHandler();
         ServletHolder holder=new ServletHolder(_servlet);
@@ -199,7 +201,7 @@ public class AsyncServletTest
     @Test
     public void testAsyncNotSupportedAsync() throws Exception
     {
-        ((StdErrLog)getLogger(ServletHandler.class)).setHideStacks(true);
+        ((StdErrLog)getLogger(HttpChannel.class)).setHideStacks(true);
         try
         {
             _expectedCode="500 ";
@@ -207,16 +209,18 @@ public class AsyncServletTest
             Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 500 "));
             assertThat(__history,contains(
                     "REQUEST /ctx/noasync/info",
-                    "initial"
+                    "initial",
+                    "ERROR /ctx/error/custom",
+                    "!initial"
                     ));
 
-            assertContains("HTTP ERROR: 500",response);
+            assertContains("500",response);
             assertContains("!asyncSupported",response);
             assertContains("AsyncServletTest$AsyncServlet",response);
         }
         finally
         {
-            ((StdErrLog)getLogger(ServletHandler.class)).setHideStacks(false); 
+            ((StdErrLog)getLogger(HttpChannel.class)).setHideStacks(false); 
         }
     }
 
@@ -1003,6 +1007,8 @@ public class AsyncServletTest
                 else if(request.getDispatcherType()==DispatcherType.ERROR)
                 {
                     response.getOutputStream().println("ERROR DISPATCH: "+request.getContextPath()+request.getServletPath()+request.getPathInfo());
+                    response.getOutputStream().println(""+request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE));
+                    response.getOutputStream().println(""+request.getAttribute(RequestDispatcher.ERROR_MESSAGE));
                 }
                 else
                 {
