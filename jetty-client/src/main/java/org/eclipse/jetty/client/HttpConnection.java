@@ -153,14 +153,9 @@ public abstract class HttpConnection implements Connection
                 request.header(HttpHeader.COOKIE.asString(), cookies.toString());
         }
 
-        // Authorization
-        URI authenticationURI = proxy != null ? proxy.getURI() : request.getURI();
-        if (authenticationURI != null)
-        {
-            Authentication.Result authnResult = getHttpClient().getAuthenticationStore().findAuthenticationResult(authenticationURI);
-            if (authnResult != null)
-                authnResult.apply(request);
-        }
+        // Authentication
+        applyAuthentication(request, proxy != null ? proxy.getURI() : null);
+        applyAuthentication(request, request.getURI());
     }
 
     private StringBuilder convertCookies(List<HttpCookie> cookies, StringBuilder builder)
@@ -175,6 +170,16 @@ public abstract class HttpConnection implements Connection
             builder.append(cookie.getName()).append("=").append(cookie.getValue());
         }
         return builder;
+    }
+
+    private void applyAuthentication(Request request, URI uri)
+    {
+        if (uri != null)
+        {
+            Authentication.Result result = getHttpClient().getAuthenticationStore().findAuthenticationResult(uri);
+            if (result != null)
+                result.apply(request);
+        }
     }
 
     protected SendFailure send(HttpChannel channel, HttpExchange exchange)

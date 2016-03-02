@@ -40,7 +40,6 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
     private static final Pattern AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+realm=\"([^\"]+)\"(.*)", Pattern.CASE_INSENSITIVE);
-    private static final String AUTHENTICATION_ATTRIBUTE = AuthenticationProtocolHandler.class.getName() + ".authentication";
 
     private final HttpClient client;
     private final int maxContentLength;
@@ -63,6 +62,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     protected abstract HttpHeader getAuthorizationHeader();
 
     protected abstract URI getAuthenticationURI(Request request);
+
+    protected abstract String getAuthenticationAttribute();
 
     @Override
     public Response.Listener getResponseListener()
@@ -92,8 +93,9 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
+            String authenticationAttribute = getAuthenticationAttribute();
             HttpConversation conversation = request.getConversation();
-            if (conversation.getAttribute(AUTHENTICATION_ATTRIBUTE) != null)
+            if (conversation.getAttribute(authenticationAttribute) != null)
             {
                 // We have already tried to authenticate, but we failed again
                 if (LOG.isDebugEnabled())
@@ -146,18 +148,12 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                     return;
                 }
 
-                conversation.setAttribute(AUTHENTICATION_ATTRIBUTE, true);
+                conversation.setAttribute(authenticationAttribute, true);
 
                 Request newRequest = client.copyRequest(request, request.getURI());
                 authnResult.apply(newRequest);
-                newRequest.onResponseSuccess(new Response.SuccessListener()
-                {
-                    @Override
-                    public void onSuccess(Response response)
-                    {
-                        client.getAuthenticationStore().addAuthenticationResult(authnResult);
-                    }
-                }).send(null);
+                newRequest.onResponseSuccess(r -> client.getAuthenticationStore().addAuthenticationResult(authnResult))
+                        .send(null);
             }
             catch (Throwable x)
             {
