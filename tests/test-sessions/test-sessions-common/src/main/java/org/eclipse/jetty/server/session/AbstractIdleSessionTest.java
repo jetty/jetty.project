@@ -21,7 +21,7 @@ package org.eclipse.jetty.server.session;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.assertFalse;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,41 +53,48 @@ import org.junit.Test;
  *
  *
  */
-public class IdleSessionTest
+public abstract class AbstractIdleSessionTest
 {
+
+    protected TestServlet _servlet = new TestServlet();
+    protected AbstractTestServer _server1 = null;
     
-    public class IdleHashTestServer extends HashTestServer
-    {
-        private int _idlePeriod;
-        private File _storeDir;
+    
+    /**
+     * @param port
+     * @param max
+     * @param scavenge
+     * @param idleSec
+     * @return
+     */
+    public  abstract AbstractTestServer createServer (int port, int max, int scavenge, int idleSec);
+ 
 
-        public IdleHashTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePeriod, File storeDir)
-        {
-            super(port, maxInactivePeriod, scavengePeriod);
-            _idlePeriod = idlePeriod;
-            _storeDir = storeDir;
-        }
-
-        @Override
-        public SessionManager newSessionManager()
-        {
-            FileSessionManager manager = new FileSessionManager();
-            manager.getSessionStore().setIdlePassivationTimeoutSec(_idlePeriod);
-            manager.getSessionDataStore().setStoreDir(_storeDir);
-            return manager;
-        }
+    /**
+     * @param sessionDir
+     * @param sessionId
+     */
+    public abstract void checkSessionIdled (String sessionId);
 
 
 
-    }
+    /**
+     * @param sessionId
+     */
+    public abstract void checkSessionDeIdled (String sessionId);
+    
+    
+ 
+    
+    /**
+     * @param sessionId
+     */
+    public abstract void deleteSessionData (String sessionId);
 
-    public  HashTestServer createServer(int port, int max, int scavenge, int idle, File storeDir)
-    {
-        return new IdleHashTestServer(port, max, scavenge, idle, storeDir);
-    }
 
-
-
+    /**
+     * @param sec
+     */
     public void pause (int sec)
     {
         try
@@ -100,26 +107,27 @@ public class IdleSessionTest
         }
     }
 
+    /**
+     * @throws Exception
+     */
     @Test
     public void testSessionIdle() throws Exception
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 200;
+        int inactivePeriod = 20;
         int scavengePeriod = 3;
         int idlePeriod = 5;
         ((StdErrLog)Log.getLogger("org.eclipse.jetty.server.session")).setHideStacks(true);
         System.setProperty("org.eclipse.jetty.STACKS", "false");
-        File storeDir = new File (System.getProperty("java.io.tmpdir"), "idle-test");
-        storeDir.deleteOnExit();
 
-        HashTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, idlePeriod, storeDir);
-        TestServlet servlet = new TestServlet();
-        ServletHolder holder = new ServletHolder(servlet);
-        ServletContextHandler contextHandler = server1.addContext(contextPath);
+
+        _server1 = createServer(0, inactivePeriod, scavengePeriod, idlePeriod);
+        ServletHolder holder = new ServletHolder(_servlet);
+        ServletContextHandler contextHandler = _server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        server1.start();
-        int port1 = server1.getPort();
+        _server1.start();
+        int port1 = _server1.getPort();
 
         try
         {
@@ -137,9 +145,10 @@ public class IdleSessionTest
 
             //and wait until the session should be idled out
             pause(idlePeriod * 2);
+
             
-            //check that the file exists
-            checkSessionIdled(storeDir, HashTestServer.extractSessionId(sessionCookie));
+            //check that the session has been idled
+            checkSessionIdled(AbstractTestServer.extractSessionId(sessionCookie));
 
             //make another request to de-idle the session
             Request request = client.newRequest(url + "?action=test");
@@ -148,21 +157,48 @@ public class IdleSessionTest
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
             //check session de-idled
-            checkSessionDeIdled(storeDir);
+            checkSessionDeIdled(AbstractTestServer.extractSessionId(sessionCookie));
 
             //wait again for the session to be idled
             pause(idlePeriod * 2);
             
             //check that it is
-            checkSessionIdled(storeDir, HashTestServer.extractSessionId(sessionCookie));
+            checkSessionIdled(AbstractTestServer.extractSessionId(sessionCookie));
             
-          
-            //delete the file
-            File idleFile = getIdleFile(storeDir, HashTestServer.extractSessionId(sessionCookie));
-            assertTrue(idleFile.exists());
-            assertTrue(idleFile.delete());
+            //While idle, take some action to ensure that a deidle won't work, like
+            //deleting all sessions in mongo
+            deleteSessionData(AbstractTestServer.extractSessionId(sessionCookie));
             
             //make a request
+            request = client.newRequest(url + "?action=testfail");
+            request.getHeaders().add("Cookie", sessionCookie);
+            response2 = request.send();
+            assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+            
+            //Test trying to de-idle an expired session (ie before the scavenger can get to it)
+
+            //make a request to set up a session on the server
+            response = client.GET(url + "?action=init");
+            assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+            sessionCookie = response.getHeaders().get("Set-Cookie");
+            assertTrue(sessionCookie != null);
+            // Mangle the cookie, replacing Path with $Path, etc.
+            sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+
+            //and wait until the session should be idled out
+            pause(idlePeriod * 2);
+
+            //stop the scavenger
+            if (_server1.getInspector() != null)
+                _server1.getInspector().stop();
+            
+            //check that the session is idle
+            checkSessionIdled(AbstractTestServer.extractSessionId(sessionCookie));
+
+            //wait until the session should be expired
+            pause (inactivePeriod + (inactivePeriod/2));
+
+            //make another request to de-idle the session
             request = client.newRequest(url + "?action=testfail");
             request.getHeaders().add("Cookie", sessionCookie);
             response2 = request.send();
@@ -170,57 +206,18 @@ public class IdleSessionTest
         }
         finally
         {
-            server1.stop();
-            IO.delete(storeDir);
+            _server1.stop();
         }
     }
 
 
-    /**
-     * @param sessionDir
-     * @param sessionId
-     */
-    public void checkSessionIdled (File sessionDir, String sessionId)
-    {
-        assertNotNull(sessionDir);
-        assertTrue(sessionDir.exists());
-        String[] files = sessionDir.list();
-        assertNotNull(files);
-        assertEquals(1, files.length);
-        assertTrue(files[0].contains(sessionId));
-    }
-
-
-    /**
-     * @param sessionDir
-     */
-    public void checkSessionDeIdled (File sessionDir)
-    {
-        assertNotNull(sessionDir);
-        assertTrue(sessionDir.exists());
-        String[] files = sessionDir.list();
-        assertNotNull(files);
-        assertEquals(0, files.length);
-    }
     
-    /**
-     * @param sessionDir
-     * @param sessionId
-     * @return
-     */
-    public File getIdleFile (File sessionDir, String sessionId)
-    {
-        assertNotNull(sessionDir);
-        assertTrue(sessionDir.exists());
-        String[] files = sessionDir.list();
-        assertNotNull(files);      
-        return new File(sessionDir, files[0]);
-    }
-
+ 
 
     public static class TestServlet extends HttpServlet
     {
         public String originalId = null;
+        public HttpSession _session = null;
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
@@ -229,25 +226,35 @@ public class IdleSessionTest
             if ("init".equals(action))
             {
                 HttpSession session = request.getSession(true);
-                session.setAttribute("test", "test");
+                session.setAttribute("value", new Integer(1));
                 originalId = session.getId();
                 Session s = (Session)session;
                 try (Lock lock = s.lock())
                 {
                     assertTrue(!s.isPassivated());
                 }
+                _session = s;
             }
             else if ("test".equals(action))
             {
                 HttpSession session = request.getSession(false);
                 assertTrue(session != null);
                 assertTrue(originalId.equals(session.getId()));
-                assertEquals("test", session.getAttribute("test"));
+                Session s = (Session)session;
+                try (Lock lock = s.lock();)
+                {
+                   assertTrue(s.isActive());
+                   assertFalse(s.isPassivated());
+                }
+                Integer v = (Integer)session.getAttribute("value");
+                session.setAttribute("value", new Integer(v.intValue()+1));
+                _session = session;
             }
             else if ("testfail".equals(action))
             {
                 HttpSession session = request.getSession(false);
                 assertTrue(session == null);
+                _session = session;
             }
         }
     }

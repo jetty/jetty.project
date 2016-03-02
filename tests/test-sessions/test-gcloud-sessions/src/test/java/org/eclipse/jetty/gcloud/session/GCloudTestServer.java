@@ -37,7 +37,6 @@ import com.google.gcloud.datastore.DatastoreFactory;
 public class GCloudTestServer extends AbstractTestServer
 {
     static int __workers=0;
-    public static int STALE_INTERVAL_SEC = 1;
 
  
 
@@ -82,9 +81,6 @@ public class GCloudTestServer extends AbstractTestServer
         GCloudSessionManager sessionManager = new GCloudSessionManager();
         sessionManager.setSessionIdManager((GCloudSessionIdManager)_sessionIdManager);
         sessionManager.getSessionDataStore().setGCloudConfiguration(((GCloudSessionIdManager)_sessionIdManager).getConfig());
-        StalePeriodStrategy staleStrategy = new StalePeriodStrategy();
-        staleStrategy.setStaleSec(STALE_INTERVAL_SEC);
-       ((AbstractSessionStore)sessionManager.getSessionStore()).setStaleStrategy(staleStrategy);
         return sessionManager;
         
     }

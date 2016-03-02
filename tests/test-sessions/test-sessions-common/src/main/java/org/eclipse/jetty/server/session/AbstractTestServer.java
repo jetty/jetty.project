@@ -35,14 +35,14 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public abstract class AbstractTestServer
 {
     public static int DEFAULT_MAX_INACTIVE = 30;
-    public static int DEFAULT_SCAVENGE = 10;
+    public static int DEFAULT_INSPECTION_SEC = 10;
     
     protected final Server _server;
     protected final int _maxInactivePeriod;
-    protected final int _scavengePeriod;
+    protected final int _inspectionPeriod;
     protected final ContextHandlerCollection _contexts;
     protected SessionIdManager _sessionIdManager;
-    private PeriodicSessionInspector _scavenger;
+    private PeriodicSessionInspector _inspector;
 
   
     
@@ -66,7 +66,7 @@ public abstract class AbstractTestServer
     
     public AbstractTestServer(int port)
     {
-        this(port, DEFAULT_MAX_INACTIVE, DEFAULT_SCAVENGE);
+        this(port, DEFAULT_MAX_INACTIVE, DEFAULT_INSPECTION_SEC);
     }
 
     public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod)
@@ -78,14 +78,14 @@ public abstract class AbstractTestServer
     {
         _server = new Server(port);
         _maxInactivePeriod = maxInactivePeriod;
-        _scavengePeriod = scavengePeriod;
+        _inspectionPeriod = scavengePeriod;
         _contexts = new ContextHandlerCollection();
         _sessionIdManager = newSessionIdManager(sessionIdMgrConfig);
         _server.setSessionIdManager(_sessionIdManager);
         ((AbstractSessionIdManager) _sessionIdManager).setServer(_server);
-        _scavenger = new PeriodicSessionInspector();
-        _scavenger.setIntervalSec(scavengePeriod);
-        ((AbstractSessionIdManager)_sessionIdManager).setSessionScavenger(_scavenger);
+        _inspector = new PeriodicSessionInspector();
+        _inspector.setIntervalSec(scavengePeriod);
+        ((AbstractSessionIdManager)_sessionIdManager).setSessionScavenger(_inspector);
     }
     
     
@@ -100,6 +100,11 @@ public abstract class AbstractTestServer
         // server -> contexts collection -> context handler -> session handler -> servlet handler
         _server.setHandler(_contexts);
         _server.start();
+    }
+    
+    public PeriodicSessionInspector getInspector()
+    {
+        return _inspector;
     }
     
     public int getPort()

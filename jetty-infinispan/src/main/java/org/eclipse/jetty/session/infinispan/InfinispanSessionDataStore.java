@@ -208,7 +208,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         try 
         {
            Class<?> remoteClass = Thread.currentThread().getContextClassLoader().loadClass("org.infinispan.client.hotrod.RemoteCache");
-           if (_cache.getClass().isAssignableFrom(remoteClass))
+           if (remoteClass.isAssignableFrom(_cache.getClass()))
            {
                return true;
            }
