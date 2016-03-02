@@ -167,7 +167,7 @@ public class Request implements HttpServletRequest
     private String _pathInfo;
 
     private boolean _secure;
-    private boolean _asyncSupported = true;
+    private String _asyncNotSupportedSource = null;
     private boolean _newContext;
     private boolean _cookiesExtracted = false;
     private boolean _handled = false;
@@ -1653,7 +1653,7 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isAsyncSupported()
     {
-        return _asyncSupported;
+        return _asyncNotSupportedSource==null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1828,7 +1828,7 @@ public class Request implements HttpServletRequest
         if (_async!=null)
             _async.reset();
         _async=null;
-        _asyncSupported = true;
+        _asyncNotSupportedSource = null;
         _handled = false;
         if (_attributes != null)
             _attributes.clearAttributes();
@@ -1898,9 +1898,9 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public void setAsyncSupported(boolean supported)
+    public void setAsyncSupported(boolean supported,String source)
     {
-        _asyncSupported = supported;
+        _asyncNotSupportedSource = supported?null:(source==null?"unknown":source);
     }
 
     /* ------------------------------------------------------------ */
@@ -2220,8 +2220,8 @@ public class Request implements HttpServletRequest
     @Override
     public AsyncContext startAsync() throws IllegalStateException
     {
-        if (!_asyncSupported)
-            throw new IllegalStateException("!asyncSupported");
+        if (_asyncNotSupportedSource!=null)
+            throw new IllegalStateException("!asyncSupported: "+_asyncNotSupportedSource);
         HttpChannelState state = getHttpChannelState();
         if (_async==null)
             _async=new AsyncContextState(state);
@@ -2234,8 +2234,8 @@ public class Request implements HttpServletRequest
     @Override
     public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException
     {
-        if (!_asyncSupported)
-            throw new IllegalStateException("!asyncSupported");
+        if (_asyncNotSupportedSource!=null)
+            throw new IllegalStateException("!asyncSupported: "+_asyncNotSupportedSource);
         HttpChannelState state = getHttpChannelState();
         if (_async==null)
             _async=new AsyncContextState(state);
