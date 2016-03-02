@@ -1,5 +1,48 @@
 jetty-9.4.0-SNAPSHOT
 
+jetty-9.3.8.RC0 - 25 February 2016
+ + 81 Exception not always thrown in Jetty to application when upload part is
+   too big
+ + 82 Request.getPart() that results in Exception still allows other parts to
+   be fetched
+ + 251 Removing SSLEngine.beginHandshake() calls
+ + 285 PathContentProvider - Use of Direct buffers without pooling
+ + 298 qtp threads spin-locked in MBeanContainer.beanAdded
+ + 342 Reintroducing Response parameter to logExtended
+ + 344 init script does not properly display status of a non running service
+ + 346 HttpParser RFC2616 Compliance mode
+ + 347 Avoid sending request using a connection that is idle timing out
+ + 352 Integrate session idling for MongoSessionManager
+ + 354 Spin loop in case of exception thrown during accept()
+ + 355 Improve close behaviour
+ + 478918 Change javax.servlet.error,forward,include literals to
+   RequestDispatcher constants
+ + 484446 InputStreamResponseListener's InputStream uses default read (3) and
+   blocks early on never-ending response.
+ + 485306 HttpParser (HttpURI) mistaking basic auth password as a port number
+ + 485469 permessage-deflate extension causes protocol error in Firefox/Chrome
+ + 486394 Restore MultiPartFilter behavior with regards to temp file access
+ + 486497 NPE in MappedLoginService
+ + 486511 Server.getURI() returns wrong scheme on SSL/HTTPS
+ + 486530 Handler added to WebAppContext prevents ServletContext initialization
+ + 486589 HttpRequest has a wrong HTTP Version in HTTP/2.
+ + 486604 Add debug logging of ErrorPageErrorHandler logic
+ + 486674 Quickstart path attribute normalization should be based on longest
+   path match
+ + 486829 Cancel stream error after a failed request with the HTTP/2.0 client.
+ + 486877 Google Chrome flagging 'obsolete cipher suite' in Jetty and will soon
+   issue broken padlock
+ + 486930 Selector does not correctly handle rejected execution exception
+ + 487158 Switched SCM URIs to github
+ + 487197 Deflater/Inflater memory leak with WebSocket permessage-deflate
+   extension
+ + 487198 ContextScopeListener should be called on context start and stop
+ + 487277 Introduce http-forwarded module for X-Forwarded support
+ + 487354 Aborted request or response does not send RST_STREAM frame.
+ + 487511 Jetty HTTP won't work on turkish systems.
+ + 487714 Avoid NPE in close race for async write
+ + 487750 HTTP/2 push must not be recursive.
+
 jetty-9.2.15.v20160210 - 10 February 2016
  + 482042 New API, Allow customization of ServletHandler path mapping
  + 482243 Fixed GzipHandler for Include.
@@ -21,7 +64,7 @@ jetty-9.2.15.v20160210 - 10 February 2016
  + 485535 jetty.sh results in FAILED when running service restart
  + 485663 NullPointerException in WebSocketSession during upgrade with DEBUG
    logging
- + 485712 Quickstart web.xml is absolute 
+ + 485712 Quickstart web.xml is absolute
 
 jetty-9.3.7.v20160115 - 15 January 2016
  + 471171 Support SYNC_FLUSH in GzipHandler
@@ -1466,7 +1509,7 @@ jetty-9.1.2.v20140210 - 10 February 2014
  + 423421 remove org.slf4j and org.ow2.asm from jetty-all artifact
  + 424171 Old javax.activation jar interferes with email sending
  + 424562 JDBCSessionManager.setNodeIdInSessionId(true) does not work
- + 425275 
+ + 425275
    org.eclipse.jetty.osgi.annotations.AnnotationConfiguration.BundleParserTask.getStatistic()
    returns null when debug is enabled.
  + 425638 Fixed monitor module/xml typos
@@ -1769,7 +1812,7 @@ jetty-9.0.6.v20130930 - 30 September 2013
    in the value
  + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
  + 415194 Deployer gives management of context to context collection
- + 415302 
+ + 415302
  + 415330 Avoid multiple callbacks at EOF
  + 415401 Add initalizeDefaults call to SpringConfigurationProcessor
  + 415548 migrate ProxyHTTPToSPDYTest to use HttpClient to avoid intermittent
@@ -1909,7 +1952,7 @@ jetty-9.1.0.M0 - 16 September 2013
  + 415131 Avoid autoboxing on debug
  + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
  + 415194 Deployer gives management of context to context collection
- + 415302 
+ + 415302
  + 415314 Jetty should not commit response on output if <
    Response.setBufferSize() bytes are written
  + 415330 Avoid multiple callbacks at EOF

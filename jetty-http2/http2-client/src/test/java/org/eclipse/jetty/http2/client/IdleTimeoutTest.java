@@ -357,6 +357,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
+                callback.succeeded();
                 dataLatch.countDown();
             }
 

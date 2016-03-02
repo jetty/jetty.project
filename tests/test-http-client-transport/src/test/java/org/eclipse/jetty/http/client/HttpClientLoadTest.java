@@ -71,6 +71,7 @@ import static org.junit.Assert.assertThat;
 public class HttpClientLoadTest extends AbstractTest
 {
     private final Logger logger = Log.getLogger(HttpClientLoadTest.class);
+    private final AtomicLong requestCount = new AtomicLong();
     private final AtomicLong connectionLeaks = new AtomicLong();
 
     public HttpClientLoadTest(Transport transport)
@@ -236,7 +237,7 @@ public class HttpClientLoadTest extends AbstractTest
         logger.info("{} requests in {} ms, {} req/s", iterations, elapsed, elapsed > 0 ? iterations * 1000 / elapsed : -1);
 
         for (String failure : failures)
-            System.err.println("FAILED: "+failure);
+            logger.info("FAILED: {}", failure);
 
         Assert.assertTrue(failures.toString(), failures.isEmpty());
     }
@@ -267,8 +268,10 @@ public class HttpClientLoadTest extends AbstractTest
 
     private void test(String scheme, String host, String method, boolean clientClose, boolean serverClose, int contentLength, final boolean checkContentLength, final CountDownLatch latch, final List<String> failures)
     {
+        long requestId = requestCount.incrementAndGet();
         Request request = client.newRequest(host, connector.getLocalPort())
                 .scheme(scheme)
+                .path("/" + requestId)
                 .method(method);
 
         if (clientClose)
@@ -326,7 +329,8 @@ public class HttpClientLoadTest extends AbstractTest
                 latch.countDown();
             }
         });
-        await(requestLatch, 5, TimeUnit.SECONDS);
+        if (!await(requestLatch, 5, TimeUnit.SECONDS))
+            logger.warn("Request {} took too long", requestId);
     }
 
     private boolean await(CountDownLatch latch, long time, TimeUnit unit)

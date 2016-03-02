@@ -55,7 +55,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     protected String _workerAttr;
     protected long _reseed=100000L;
     protected Server _server;
-    protected SessionScavenger _scavenger;
+    protected PeriodicSessionInspector _scavenger;
 
     /* ------------------------------------------------------------ */
     /**
@@ -102,7 +102,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     /**
      * @param scavenger a SessionScavenger 
      */
-    public void setSessionScavenger (SessionScavenger scavenger)
+    public void setSessionScavenger (PeriodicSessionInspector scavenger)
     {
         _scavenger = scavenger;
         _scavenger.setSessionIdManager(this);
@@ -285,7 +285,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
        if (_scavenger == null)
        {
            LOG.warn("No SessionScavenger set, using defaults");
-           _scavenger = new SessionScavenger();
+           _scavenger = new PeriodicSessionInspector();
            _scavenger.setSessionIdManager(this);
        }
        
@@ -388,17 +388,14 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         //session data store, AND have listeners called on them.
         //BUT want to avoid loading into memory sessions that this node is not managing (eg have 3 nodes all running session mgrs,
         //all 3 find the expired session and load it into memory and expire it
-        if (removeId(id))
+        removeId(id);
+
+        //tell all contexts that may have a session object with this id to
+        //get rid of them
+        for (SessionManager manager:getSessionManagers())
         {
-            //tell all contexts that may have a session object with this id to
-            //get rid of them
-            for (SessionManager manager:getSessionManagers())
-            {
-                manager.invalidate(id);
-            }
+            manager.invalidate(id);
         }
-        else if (LOG.isDebugEnabled())
-            LOG.debug("Not present in idmgr: {}", id);
     }
 
     /* ------------------------------------------------------------ */
@@ -408,17 +405,16 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     public void invalidateAll (String id)
     {
         //take the id out of the list of known sessionids for this node
-        if (removeId(id))
-        {
-            //tell all contexts that may have a session object with this id to
-            //get rid of them
-            for (SessionManager manager:getSessionManagers())
-            {         
-                manager.invalidate(id);
-            } 
-        }
+        removeId(id);
+        
+        //tell all contexts that may have a session object with this id to
+        //get rid of them
+        for (SessionManager manager:getSessionManagers())
+        {         
+            manager.invalidate(id);
+        } 
     }
-    
+
     
     /* ------------------------------------------------------------ */
     /** Generate a new id for a session and update across

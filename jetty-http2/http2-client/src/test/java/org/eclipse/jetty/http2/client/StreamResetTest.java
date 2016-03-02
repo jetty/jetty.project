@@ -181,6 +181,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
+                callback.succeeded();
                 stream1DataLatch.countDown();
             }
         });
@@ -196,6 +197,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
+                callback.succeeded();
                 stream2DataLatch.countDown();
             }
         });

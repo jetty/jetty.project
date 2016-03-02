@@ -27,7 +27,7 @@
       <Arg>
         <Ref id="Server"/>
       </Arg>
-      <Set name="workerName"><Property name="jetty.gcloudSession.workerName" default="node1"/></Set>
+      <Set name="workerName"><Property name="jetty.gcloudSession.workerName"><Default>node<Env name="GAE_MODULE_INSTANCE" default="0"/></Default></Property></Set>
       <Set name="config"><Ref id="gconf"/></Set>
     </New>
   </Set>

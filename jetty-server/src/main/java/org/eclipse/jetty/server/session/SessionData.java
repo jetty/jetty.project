@@ -83,6 +83,36 @@ public class SessionData implements Serializable
         _maxInactiveMs = maxInactiveMs;
     }
     
+    
+    /**
+     * Copy the info from the given sessiondata
+     * 
+     * @param data the sessiondata to be copied
+     */
+    public void copy (SessionData data)
+    {
+        if (data == null)
+            return; //don't copy if no data
+
+        if (data.getId() == null || !(getId().equals(data.getId())))
+            throw new IllegalStateException ("Can only copy data for same session id");
+
+        if (data == this)
+            return; //don't copy ourself
+        
+        setLastNode(data.getLastNode());
+        setContextPath(data.getContextPath());
+        setVhost(data.getVhost());
+        setCookieSet(data.getCookieSet());
+        setCreated(data.getCreated());
+        setAccessed(data.getAccessed());
+        setLastAccessed(data.getLastAccessed());
+        setMaxInactiveMs(data.getMaxInactiveMs());
+        setExpiry(data.getExpiry());
+        setLastSaved(data.getLastSaved());
+        clearAllAttributes();
+        putAllAttributes(data.getAllAttributes());
+    }
 
     /**
      * @return time at which session was last written out
@@ -168,6 +198,14 @@ public class SessionData implements Serializable
     public void putAllAttributes (Map<String,Object> attributes)
     {
         _attributes.putAll(attributes);
+    }
+    
+    /**
+     * Remove all attributes
+     */
+    public void clearAllAttributes ()
+    {
+        _attributes.clear();
     }
     
     /**
@@ -322,12 +360,6 @@ public class SessionData implements Serializable
         _lastAccessed = lastAccessed;
     }
 
-   /* public boolean isInvalid()
-    {
-        return _invalid;
-    }
-*/
- 
 
     /**
      * @return

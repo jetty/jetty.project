@@ -35,25 +35,26 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * There is 1 session scavenger per SessionIdManager/Server instance.
  *
  */
-public class SessionScavenger extends AbstractLifeCycle
+public class PeriodicSessionInspector extends AbstractLifeCycle
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
-    public static final long DEFAULT_SCAVENGE_MS = 1000L * 60 * 10;
+    public static final long DEFAULT_PERIOD_MS = 1000L * 60 * 10;
     protected SessionIdManager _sessionIdManager;
     protected Scheduler _scheduler;
     protected Scheduler.Task _task; //scavenge task
-    protected ScavengerRunner _runner;
+    protected Runner _runner;
     protected boolean _ownScheduler = false;
-    private long _scavengeIntervalMs =  DEFAULT_SCAVENGE_MS;
+    private long _intervalMs =  DEFAULT_PERIOD_MS;
+    private long _lastTime = 0L;
     
-    
+   
     
     /**
-     * ScavengerRunner
+     * Runner
      *
      */
-    protected class ScavengerRunner implements Runnable
+    protected class Runner implements Runnable
     {
 
         @Override
@@ -61,12 +62,12 @@ public class SessionScavenger extends AbstractLifeCycle
         {
            try
            {
-               scavenge();
+               inspect();
            }
            finally
            {
                if (_scheduler != null && _scheduler.isRunning())
-                   _task = _scheduler.schedule(this, _scavengeIntervalMs, TimeUnit.MILLISECONDS);
+                   _task = _scheduler.schedule(this, _intervalMs, TimeUnit.MILLISECONDS);
            }
         }
     }
@@ -96,6 +97,7 @@ public class SessionScavenger extends AbstractLifeCycle
         if (!(_sessionIdManager instanceof AbstractSessionIdManager))
             throw new IllegalStateException ("SessionIdManager is not an AbstractSessionIdManager");
 
+        _lastTime = System.currentTimeMillis(); //set it to a non zero value
 
         //try and use a common scheduler, fallback to own
         _scheduler = ((AbstractSessionIdManager)_sessionIdManager).getServer().getBean(Scheduler.class);
@@ -109,7 +111,7 @@ public class SessionScavenger extends AbstractLifeCycle
         else if (!_scheduler.isStarted())
             throw new IllegalStateException("Shared scheduler not started");
 
-        setScavengeIntervalSec(getScavengeIntervalSec());
+        setIntervalSec(getIntervalSec());
         
         super.doStart();
     }
@@ -138,24 +140,24 @@ public class SessionScavenger extends AbstractLifeCycle
      * Set the period between scavenge cycles
      * @param sec
      */
-    public void setScavengeIntervalSec (long sec)
+    public void setIntervalSec (long sec)
     {
         if (sec<=0)
             sec=60;
 
-        long old_period=_scavengeIntervalMs;
+        long old_period=_intervalMs;
         long period=sec*1000L;
 
-        _scavengeIntervalMs=period;
+        _intervalMs=period;
 
         //add a bit of variability into the scavenge time so that not all
         //nodes with the same scavenge interval sync up
-        long tenPercent = _scavengeIntervalMs/10;
+        long tenPercent = _intervalMs/10;
         if ((System.currentTimeMillis()%2) == 0)
-            _scavengeIntervalMs += tenPercent;
+            _intervalMs += tenPercent;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Scavenging every "+_scavengeIntervalMs+" ms");
+            LOG.debug("Inspecting every "+_intervalMs+" ms");
         
         synchronized (this)
         {
@@ -164,8 +166,8 @@ public class SessionScavenger extends AbstractLifeCycle
                 if (_task!=null)
                     _task.cancel();
                 if (_runner == null)
-                    _runner = new ScavengerRunner();
-                _task = _scheduler.schedule(_runner,_scavengeIntervalMs,TimeUnit.MILLISECONDS);
+                    _runner = new Runner();
+                _task = _scheduler.schedule(_runner,_intervalMs,TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -173,13 +175,13 @@ public class SessionScavenger extends AbstractLifeCycle
     
     
     /**
-     * Get the period between scavenge cycles.
+     * Get the period between inspection cycles.
      * 
      * @return
      */
-    public long getScavengeIntervalSec ()
+    public long getIntervalSec ()
     {
-        return _scavengeIntervalMs/1000;
+        return _intervalMs/1000;
     }
     
     
@@ -189,26 +191,33 @@ public class SessionScavenger extends AbstractLifeCycle
      *   ask all SessionManagers to find sessions they think have expired and then make
      *   sure that a session sharing the same id is expired on all contexts
      */
-    public void scavenge ()
+    public void inspect ()
     {
         //don't attempt to scavenge if we are shutting down
         if (isStopping() || isStopped())
             return;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Scavenging sessions");
+            LOG.debug("Inspecting sessions");
 
+        long now = System.currentTimeMillis();
+        
         //find the session managers
         for (SessionManager manager:((AbstractSessionIdManager)_sessionIdManager).getSessionManagers())
         {
             if (manager != null)
             {
+                manager.inspect();
+
+                /*   
                 //call scavenge on each manager to find keys for sessions that have expired
                 Set<String> expiredKeys = manager.scavenge();
 
                 //for each expired session, tell the session id manager to invalidate its key on all contexts
                 for (String key:expiredKeys)
                 {
+                    
+                    // if it recently expired
                     try
                     {
                         ((AbstractSessionIdManager)_sessionIdManager).expireAll(key);
@@ -217,7 +226,7 @@ public class SessionScavenger extends AbstractLifeCycle
                     {
                         LOG.warn(e);
                     }
-                }
+                }*/
             }
         }
     }
@@ -229,7 +238,7 @@ public class SessionScavenger extends AbstractLifeCycle
     @Override
     public String toString()
     {
-        return super.toString()+"[interval="+_scavengeIntervalMs+", ownscheduler="+_ownScheduler+"]";
+        return super.toString()+"[interval="+_intervalMs+", ownscheduler="+_ownScheduler+"]";
     }
 
 }

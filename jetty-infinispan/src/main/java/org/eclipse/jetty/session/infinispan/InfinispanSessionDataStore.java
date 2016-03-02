@@ -97,6 +97,9 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
                 try
                 {
 
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Loading session {} from infinispan", id);
+     
                     SessionData sd = (SessionData)_cache.get(getCacheKey(id, _context));
                     reference.set(sd);
                 }
@@ -201,8 +204,23 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public boolean isPassivating()
     {
-        return true;
+        //TODO run in the _context to ensure classloader is set
+        try 
+        {
+           Class<?> remoteClass = Thread.currentThread().getContextClassLoader().loadClass("org.infinispan.client.hotrod.RemoteCache");
+           if (_cache.getClass().isAssignableFrom(remoteClass))
+           {
+               return true;
+           }
+           return false;
+        }
+        catch (ClassNotFoundException e)
+        {
+            return false;
+        }
     }
+    
+    
     
     public void setInfinispanIdleTimeoutSec (int sec)
     {

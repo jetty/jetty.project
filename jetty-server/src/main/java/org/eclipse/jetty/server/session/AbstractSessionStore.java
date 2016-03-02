@@ -20,10 +20,14 @@
 package org.eclipse.jetty.server.session;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -43,8 +47,9 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     protected StalenessStrategy _staleStrategy;
     protected SessionManager _manager;
     protected SessionContext _context;
-
-
+    protected int _idlePassivationTimeoutSec;
+    private IdleInspector _idleInspector;
+    private ExpiryInspector _expiryInspector;
     
 
     /**
@@ -91,16 +96,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * @return true if removed false otherwise
      */
     public abstract Session doDelete (String id);
-    
-    
-    
-    
-    /**
-     * Get a list of keys for sessions that the store thinks has expired
-     * @return ids of all Session objects that might have expired
-     */
-    public abstract Set<String> doGetExpiredCandidates();
-    
+
     
     
     
@@ -127,7 +123,6 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     {
         return _manager;
     }
-    
     
 
     /** 
@@ -158,6 +153,8 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         _sessionDataStore.initialize(_context);
         _sessionDataStore.start();
         
+        _expiryInspector = new ExpiryInspector(this, _manager.getSessionIdManager());
+        
         super.doStart();
     }
 
@@ -168,6 +165,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     protected void doStop() throws Exception
     {
         _sessionDataStore.stop();
+        _expiryInspector = null;
         super.doStop();
     }
 
@@ -205,6 +203,30 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
 
     /** 
+     * @see org.eclipse.jetty.server.session.SessionStore#getIdlePassivationTimeoutSec()
+     */
+    public int getIdlePassivationTimeoutSec()
+    {
+        return _idlePassivationTimeoutSec;
+    }
+
+
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionStore#setIdlePassivationTimeoutSec(int)
+     */
+    public void setIdlePassivationTimeoutSec(int idleTimeoutSec)
+    {
+        _idlePassivationTimeoutSec = idleTimeoutSec;
+        if (_idlePassivationTimeoutSec == 0)
+            _idleInspector = null;
+        else if (_idleInspector == null)
+            _idleInspector = new IdleInspector(this);
+    }
+
+
+
+    /** 
      *  Get a session object.
      * 
      * If the session object is not in this session store, try getting
@@ -219,28 +241,47 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         //look locally
         Session session = doGet(id);
         
-        
-        if (staleCheck && isStale(session))
-        {
-            //delete from session store so should reload from session data store
-            doDelete(id);
-            session = null;
-        }
-        
-        //not in session store, load the data for the session if possible
-        if (session == null && _sessionDataStore != null)
+        //TODO also check that session is only written out if only the access time changes infrequently    
+
+        //session is either not in session store, or it is stale, or its been passivated, load the data for the session if possible
+        if (session == null || (staleCheck && isStale(session)) || session.isPassivated() && _sessionDataStore != null)
         {
             SessionData data = _sessionDataStore.load(id);
-            if (data != null)
+  
+            //session wasn't in session store
+            if (session == null)
             {
-                session = newSession(data);
-                session.setSessionManager(_manager);
-                Session existing = doPutIfAbsent(id, session);
-                if (existing != null)
+                if (data != null)
                 {
-                    //some other thread has got in first and added the session
-                    //so use it
-                    session = existing;
+                    session = newSession(data);
+                    session.setSessionManager(_manager);
+                    Session existing = doPutIfAbsent(id, session);
+                    if (existing != null)
+                    {
+                        //some other thread has got in first and added the session
+                        //so use it
+                        session = existing;
+                    }
+                }
+                //else session not in store and not in data store either, so doesn't exist
+            }
+            else
+            {
+                //session was already in session store, refresh it if its still stale/passivated
+                try (Lock lock = session.lock())
+                {   
+                    if (session.isPassivated() || staleCheck && isStale(session))
+                    {
+                        //if we were able to load it, then update our session object
+                        if (data != null)
+                        {
+                            session.setPassivated(false);
+                            session.getSessionData().copy(data);
+                            session.didActivate();
+                        }
+                        else
+                            session = null; //TODO rely on the expiry mechanism to get rid of it?
+                    }
                 }
             }
         }
@@ -303,11 +344,39 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     /** 
      * Remove a session object from this store and from any backing store.
      * 
+     * If session has been passivated, may need to reload it before it can
+     * be properly deleted
+     * 
      * @see org.eclipse.jetty.server.session.SessionStore#delete(java.lang.String)
      */
     @Override
     public Session delete(String id) throws Exception
     {
+        //Ensure that the session object is not passivated so that its attributes
+        //are valid
+        Session session = doGet(id);
+        
+        //TODO if (session == null) do we want to load it to delete it?
+        if (session != null)
+        {
+            try (Lock lock = session.lock())
+            {
+                //TODO don't check stale on deletion?
+                if (session.isPassivated() && _sessionDataStore != null)
+                {
+                    session.setPassivated(false);
+                    SessionData data = _sessionDataStore.load(id);
+                    if (data != null)
+                    {
+                        session.getSessionData().copy(data);
+                        session.didActivate();
+                    }
+                }
+            }
+        }
+            
+        
+        //Always delete it from the data store
         if (_sessionDataStore != null)
         {
             boolean dsdel = _sessionDataStore.delete(id);
@@ -331,19 +400,93 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     
 
 
+
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#getExpired()
+     * @see org.eclipse.jetty.server.session.SessionStore#checkExpiry(java.util.Set)
      */
     @Override
-    public Set<String> getExpired()
+    public Set<String> checkExpiration(Set<String> candidates)
     {
        if (!isStarted())
            return Collections.emptySet();
-       Set<String> candidates = doGetExpiredCandidates();
+       
+       if (LOG.isDebugEnabled())
+           LOG.debug("SessionStore checking expiration on {}", candidates);
        return _sessionDataStore.getExpired(candidates);
     }
 
+    
+    
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionStore#inspect()
+     */
+    public void inspect ()
+    {      
+        Stream<Session> stream = getStream();
+        try
+        {
+            _expiryInspector.preInspection();
+            if (_idleInspector != null)
+                _idleInspector.preInspection();
+            stream.forEach(s->{_expiryInspector.inspect(s); if (_idleInspector != null) _idleInspector.inspect(s);});
+            _expiryInspector.postInspection();
+            _idleInspector.postInspection();
+        }
+        finally 
+        {
+            stream.close();
+        }
+    }
+    
+   
+    
 
+    
+    /**
+     * If the SessionDataStore supports passivation, passivate any
+     * sessions that have not be accessed for longer than x sec
+     * 
+     * @param id identity of session to passivate
+     */
+    public void passivateIdleSession(String id)
+    {
+        if (!isStarted())
+            return;
+        
+        if (_sessionDataStore == null)
+            return; //no data store to passivate
+        
+        if (!_sessionDataStore.isPassivating()) 
+            return; //doesn't support passivation
+ 
+
+        //get the session locally
+        Session s = doGet(id);
+        
+        if (s == null)
+        {
+            LOG.warn("Session {} not in this session store", s);
+            return;
+        }
+
+
+        try (Lock lock = s.lock())
+        {
+            //check the session is still idle first
+            if (s.isValid() && s.isIdleLongerThan(_idlePassivationTimeoutSec))
+            {
+                s.willPassivate();
+                _sessionDataStore.store(id, s.getSessionData());
+                s.getSessionData().clearAllAttributes();
+                s.getSessionData().setDirty(false);
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Passivation of idle session {} failed", id, e);
+            //  TODO should do session.invalidate(); ???
+        }
+    }
 
 
 
@@ -355,5 +498,4 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     {
         return null;
     }
-
 }

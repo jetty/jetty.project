@@ -22,6 +22,7 @@ package org.eclipse.jetty.server.session;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -150,7 +151,7 @@ public class MemorySessionStore extends AbstractSessionStore
     }
     
     
-
+/*
 
     @Override
     public Set<String> doGetExpiredCandidates()
@@ -167,7 +168,7 @@ public class MemorySessionStore extends AbstractSessionStore
         }
         return candidates;
     }
-
+*/
 
 
 
@@ -239,6 +240,16 @@ public class MemorySessionStore extends AbstractSessionStore
     {
         MemorySession s = new MemorySession (data);
         return s;
+    }
+
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionStore#getStream()
+     */
+    @Override
+    public Stream<Session> getStream()
+    {
+        return _sessions.values().stream();
     }
 
 

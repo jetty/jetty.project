@@ -89,7 +89,7 @@ public class ClientGenerator extends Generator
         beginRequestBuffer.putInt(0x00_08_00_00);
         // Hardcode RESPONDER role and KEEP_ALIVE flag
         beginRequestBuffer.putLong(0x00_01_01_00_00_00_00_00L);
-        beginRequestBuffer.flip();
+        BufferUtil.flipToFlush(beginRequestBuffer, 0);
 
         int index = 0;
         while (fieldsLength > 0)
@@ -129,7 +129,7 @@ public class ClientGenerator extends Generator
             }
 
             buffer.putShort(4, (short)length);
-            buffer.flip();
+            BufferUtil.flipToFlush(buffer, 0);
         }
 
 
@@ -140,7 +140,7 @@ public class ClientGenerator extends Generator
         // Generate the last FCGI_PARAMS frame
         lastParamsBuffer.putInt(0x01_04_00_00 + request);
         lastParamsBuffer.putInt(0x00_00_00_00);
-        lastParamsBuffer.flip();
+        BufferUtil.flipToFlush(lastParamsBuffer, 0);
 
         return result;
     }

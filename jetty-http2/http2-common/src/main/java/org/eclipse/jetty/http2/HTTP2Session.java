@@ -1048,22 +1048,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             super(frame, stream, callback);
         }
 
-        public Throwable generate(ByteBufferPool.Lease lease)
+        protected boolean generate(ByteBufferPool.Lease lease)
         {
-            try
-            {
-                generator.control(lease, frame);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Generated {}", frame);
-                prepare();
-                return null;
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Failure generating frame " + frame, x);
-                return x;
-            }
+            generator.control(lease, frame);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Generated {}", frame);
+            prepare();
+            return true;
         }
 
         /**
@@ -1154,71 +1145,58 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     private class DataEntry extends HTTP2Flusher.Entry
     {
-        private int length;
+        private int remaining;
+        private int generated;
 
         private DataEntry(DataFrame frame, IStream stream, Callback callback)
         {
             super(frame, stream, callback);
-        }
-
-        @Override
-        public int dataRemaining()
-        {
             // We don't do any padding, so the flow control length is
             // always the data remaining. This simplifies the handling
             // of data frames that cannot be completely written due to
             // the flow control window exhausting, since in that case
             // we would have to count the padding only once.
-            return ((DataFrame)frame).remaining();
+            remaining = frame.remaining();
         }
 
-        public Throwable generate(ByteBufferPool.Lease lease)
+        @Override
+        public int dataRemaining()
         {
-            try
-            {
-                int flowControlLength = dataRemaining();
+            return remaining;
+        }
 
-                int sessionSendWindow = getSendWindow();
-                if (sessionSendWindow < 0)
-                    throw new IllegalStateException();
+        protected boolean generate(ByteBufferPool.Lease lease)
+        {
+            int toWrite = dataRemaining();
 
-                int streamSendWindow = stream.updateSendWindow(0);
-                if (streamSendWindow < 0)
-                    throw new IllegalStateException();
+            int sessionSendWindow = getSendWindow();
+            int streamSendWindow = stream.updateSendWindow(0);
+            int window = Math.min(streamSendWindow, sessionSendWindow);
+            if (window <= 0 && toWrite > 0)
+                return false;
 
-                int window = Math.min(streamSendWindow, sessionSendWindow);
+            int length = Math.min(toWrite, window);
 
-                int length = this.length = Math.min(flowControlLength, window);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Generated {}, length/window={}/{}", frame, length, window);
+            int generated = generator.data(lease, (DataFrame)frame, length);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Generated {}, length/window/data={}/{}/{}", frame, generated, window, toWrite);
 
-                generator.data(lease, (DataFrame)frame, length);
-                flowControl.onDataSending(stream, length);
-                return null;
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Failure generating frame " + frame, x);
-                return x;
-            }
+            this.generated += generated;
+            this.remaining -= generated;
+
+            flowControl.onDataSending(stream, generated);
+
+            return true;
         }
 
         @Override
         public void succeeded()
         {
-            flowControl.onDataSent(stream, length);
+            flowControl.onDataSent(stream, generated);
+            generated = 0;
             // Do we have more to send ?
             DataFrame dataFrame = (DataFrame)frame;
-            if (dataFrame.remaining() > 0)
-            {
-                // We have written part of the frame, but there is more to write.
-                // The API will not allow to send two data frames for the same
-                // stream so we append the unfinished frame at the end to allow
-                // better interleaving with other streams.
-                flusher.append(this);
-            }
-            else
+            if (dataRemaining() == 0)
             {
                 // Only now we can update the close state
                 // and eventually remove the stream.

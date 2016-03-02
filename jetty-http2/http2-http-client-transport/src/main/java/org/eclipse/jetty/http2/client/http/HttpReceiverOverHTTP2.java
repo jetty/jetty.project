@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Locale;
 
 import org.eclipse.jetty.client.HttpChannel;
@@ -34,6 +35,8 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listener
@@ -95,7 +98,42 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             return;
         }
 
-        if (responseContent(exchange, frame.getData(), callback))
+        // We must copy the data since we do not know when the
+        // application will consume the bytes and the parsing
+        // will continue as soon as this method returns, eventually
+        // leading to reusing the underlying buffer for more reads.
+        ByteBufferPool byteBufferPool = getHttpDestination().getHttpClient().getByteBufferPool();
+        ByteBuffer original = frame.getData();
+        int length = original.remaining();
+        final ByteBuffer copy = byteBufferPool.acquire(length, original.isDirect());
+        BufferUtil.clearToFill(copy);
+        copy.put(original);
+        BufferUtil.flipToFlush(copy, 0);
+
+        Callback delegate = new Callback()
+        {
+            @Override
+            public boolean isNonBlocking()
+            {
+                return callback.isNonBlocking();
+            }
+
+            @Override
+            public void succeeded()
+            {
+                byteBufferPool.release(copy);
+                callback.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                byteBufferPool.release(copy);
+                callback.failed(x);
+            }
+        };
+
+        if (responseContent(exchange, copy, delegate))
         {
             if (frame.isEndStream())
                 responseSuccess(exchange);

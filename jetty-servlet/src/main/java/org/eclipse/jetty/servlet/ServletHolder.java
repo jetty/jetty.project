@@ -822,10 +822,20 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             if (_identityService!=null)
                 old_run_as=_identityService.setRunAs(baseRequest.getResolvedUserIdentity(),_runAsToken);
 
-            if (!isAsyncSupported())
-                baseRequest.setAsyncSupported(false);
-
-            servlet.service(request,response);
+            if (baseRequest.isAsyncSupported() && !isAsyncSupported())
+            {
+                try
+                {
+                    baseRequest.setAsyncSupported(false,this.toString());
+                    servlet.service(request,response);
+                }
+                finally
+                {
+                    baseRequest.setAsyncSupported(true,null);
+                }
+            }
+            else
+                servlet.service(request,response);
         }
         catch(UnavailableException e)
         {
@@ -834,8 +844,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
         finally
         {
-            baseRequest.setAsyncSupported(suspendable);
-
             // Pop run-as role.
             if (_identityService!=null)
                 _identityService.unsetRunAs(old_run_as);
