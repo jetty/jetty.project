@@ -739,7 +739,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
         if (_channel.isCommitted())
         {
-            callback.failed(new IOException("committed"));
+            callback.failed(new IOException("cannot sendContent(), output already committed"));
             return;
         }
 

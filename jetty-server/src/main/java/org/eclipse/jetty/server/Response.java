@@ -53,7 +53,6 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
-import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -537,7 +536,7 @@ public class Response implements HttpServletResponse
         }
 
         if (isCommitted())
-            LOG.warn("Committed before "+code+" "+message);
+            LOG.warn("cannot sendError("+code+", "+message+") response already committed");
 
         resetBuffer();
         _characterEncoding=null;
@@ -1136,7 +1135,7 @@ public class Response implements HttpServletResponse
     public void setBufferSize(int size)
     {
         if (isCommitted() || getContentCount() > 0)
-            throw new IllegalStateException("Committed or content written");
+            throw new IllegalStateException("cannot set buffer size on committed response");
         if (size <= 0)
             size = __MIN_BUFFER_SIZE;
         _out.setBufferSize(size);
@@ -1220,7 +1219,7 @@ public class Response implements HttpServletResponse
     public void resetBuffer()
     {
         if (isCommitted())
-            throw new IllegalStateException("Committed");
+            throw new IllegalStateException("cannot reset buffer on committed response");
 
         _out.resetBuffer();
     }
