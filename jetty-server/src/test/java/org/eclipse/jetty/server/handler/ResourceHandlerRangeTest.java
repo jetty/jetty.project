@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.Matchers.is;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStream;
@@ -38,7 +36,9 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore("Unfixed range bug")
+import static org.hamcrest.Matchers.is;
+
+@Ignore("Unfixed range bug - Issue #107")
 public class ResourceHandlerRangeTest
 {
     private static Server server;
