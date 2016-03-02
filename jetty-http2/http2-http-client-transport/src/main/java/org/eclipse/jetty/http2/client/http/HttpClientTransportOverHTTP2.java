@@ -171,7 +171,7 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         @Override
         public void onClose(Session session, GoAwayFrame frame)
         {
-            connection.close();
+            connection.close(new AsynchronousCloseExceptionOverHTTP2(frame.getPayload()));
         }
 
         @Override
