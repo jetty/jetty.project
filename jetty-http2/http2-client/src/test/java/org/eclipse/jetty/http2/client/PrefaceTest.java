@@ -53,6 +53,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.util.ArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
@@ -168,12 +169,12 @@ public class PrefaceTest extends AbstractTest
             ByteBuffer buffer = byteBufferPool.acquire(1024, true);
             while (true)
             {
+                BufferUtil.clearToFill(buffer);
                 int read = socket.read(buffer);
-                buffer.flip();
+                BufferUtil.flipToFlush(buffer, 0);
                 if (read < 0)
                     break;
                 parser.parse(buffer);
-                buffer.clear();
             }
 
             Assert.assertEquals(2, settings.size());
@@ -248,9 +249,9 @@ public class PrefaceTest extends AbstractTest
             ByteBuffer buffer = byteBufferPool.acquire(1024, true);
             http1: while (true)
             {
-                buffer.clear();
+                BufferUtil.clearToFill(buffer);
                 int read = socket.read(buffer);
-                buffer.flip();
+                BufferUtil.flipToFlush(buffer, 0);
                 if (read < 0)
                     Assert.fail();
 
@@ -314,9 +315,9 @@ public class PrefaceTest extends AbstractTest
                 if (responded.get())
                     break;
 
-                buffer.clear();
+                BufferUtil.clearToFill(buffer);
                 int read = socket.read(buffer);
-                buffer.flip();
+                BufferUtil.flipToFlush(buffer, 0);
                 if (read < 0)
                     Assert.fail();
             }

@@ -907,7 +907,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 {
                     if (closed.compareAndSet(current, CloseState.CLOSED))
                     {
-                        flusher.close();
+                        flusher.terminate();
                         for (IStream stream : streams.values())
                             stream.close();
                         streams.clear();

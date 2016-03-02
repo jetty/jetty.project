@@ -68,10 +68,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             return SelectChannelEndPoint.this.toString()+":runUpdateKey";
         }
     };
-    
+
     private abstract class RejectableRunnable implements Runnable,Rejectable
     {
-        @Override 
+        @Override
         public void reject()
         {
             try
@@ -84,7 +84,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             }
         }
     }
-    
+
     private final Runnable _runFillable = new RejectableRunnable()
     {
         @Override
@@ -118,8 +118,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         @Override
         public void run()
         {
-            getFillInterest().fillable();
             getWriteFlusher().completeWrite();
+            getFillInterest().fillable();
         }
 
         @Override
@@ -175,7 +175,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
 
         if (LOG.isDebugEnabled())
             LOG.debug("onSelected {}->{} r={} w={} for {}", oldInterestOps, newInterestOps, readable, writable, this);
-        
+
         // Run non-blocking code immediately.
         // This producer knows that this non-blocking code is special
         // and that it must be run in this thread and not fed to the
