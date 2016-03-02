@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.HttpStatus;
 public class WWWAuthenticationProtocolHandler extends AuthenticationProtocolHandler
 {
     public static final String NAME = "www-authenticate";
+    private static final String ATTRIBUTE = WWWAuthenticationProtocolHandler.class.getName() + ".attribute";
 
     public WWWAuthenticationProtocolHandler(HttpClient client)
     {
@@ -73,5 +74,11 @@ public class WWWAuthenticationProtocolHandler extends AuthenticationProtocolHand
     protected URI getAuthenticationURI(Request request)
     {
         return request.getURI();
+    }
+
+    @Override
+    protected String getAuthenticationAttribute()
+    {
+        return ATTRIBUTE;
     }
 }
