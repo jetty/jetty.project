@@ -52,7 +52,8 @@ https://github.com/GoogleCloudPlatform/gcloud-java
 http://www.apache.org/licenses/LICENSE-2.0.html
 
 [ini-template]
-## Unique identifier for this node in the cluster
+## Unique identifier to force the workername for this node in the cluster
+## If not set, will default to the string "node" plus the Env variable $GAE_MODULE_INSTANCE
 # jetty.gcloudSession.workerName=node1
 
 
