@@ -104,7 +104,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .onRequestCommit(request -> request.abort(new Exception("explicitly_aborted_by_test")))
-                    .send(); 
+                    .send();
             Assert.fail();
         }
         catch (ExecutionException x)
