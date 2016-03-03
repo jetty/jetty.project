@@ -31,6 +31,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -152,6 +153,10 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
                 Request newRequest = client.copyRequest(request, request.getURI());
                 authnResult.apply(newRequest);
+                // Copy existing, explicitly set, authorization headers.
+                copyIfAbsent(request, newRequest, HttpHeader.AUTHORIZATION);
+                copyIfAbsent(request, newRequest, HttpHeader.PROXY_AUTHORIZATION);
+
                 newRequest.onResponseSuccess(r -> client.getAuthenticationStore().addAuthenticationResult(authnResult))
                         .send(null);
             }
@@ -161,6 +166,13 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                     LOG.debug("Authentication failed", x);
                 forwardFailureComplete(request, null, response, x);
             }
+        }
+
+        private void copyIfAbsent(HttpRequest oldRequest, Request newRequest, HttpHeader header)
+        {
+            HttpField field = oldRequest.getHeaders().getField(header);
+            if (field != null && !newRequest.getHeaders().contains(header))
+                newRequest.getHeaders().put(field);
         }
 
         private void forwardSuccessComplete(HttpRequest request, Response response)

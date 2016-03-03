@@ -326,4 +326,76 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         Assert.assertEquals(status, response2.getStatus());
         Assert.assertEquals(1, requests.get());
     }
+
+    @Test
+    public void testProxyAuthenticationWithExplicitAuthorizationHeader() throws Exception
+    {
+        String proxyRealm = "proxyRealm";
+        String serverRealm = "serverRealm";
+        int status = HttpStatus.NO_CONTENT_204;
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                if (authorization == null)
+                {
+                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + proxyRealm + "\"");
+                }
+                else
+                {
+                    authorization = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+                    if (authorization == null)
+                    {
+                        response.setStatus(HttpStatus.UNAUTHORIZED_401);
+                        response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Basic realm=\"" + serverRealm + "\"");
+                    }
+                    else
+                    {
+                        response.setStatus(status);
+                    }
+                }
+            }
+        });
+
+        String proxyHost = "localhost";
+        int proxyPort = connector.getLocalPort();
+        String serverHost = "server";
+        int serverPort = proxyPort + 1;
+        URI proxyURI = URI.create(scheme + "://" + proxyHost + ":" + proxyPort);
+        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(proxyURI, proxyRealm, "proxyUser", "proxyPassword"));
+        client.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
+        final AtomicInteger requests = new AtomicInteger();
+        client.getRequestListeners().add(new Request.Listener.Adapter()
+        {
+            @Override
+            public void onSuccess(Request request)
+            {
+                requests.incrementAndGet();
+            }
+        });
+        // Make a request, expect 407 + 204.
+        ContentResponse response1 = client.newRequest(serverHost, serverPort)
+                .scheme(scheme)
+                .header(HttpHeader.AUTHORIZATION, "Basic foobar")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(status, response1.getStatus());
+        Assert.assertEquals(2, requests.get());
+
+        // Make again the request, authentication is cached, expect 204.
+        requests.set(0);
+        ContentResponse response2 = client.newRequest(serverHost, serverPort)
+                .scheme(scheme)
+                .header(HttpHeader.AUTHORIZATION, "Basic foobar")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(status, response2.getStatus());
+        Assert.assertEquals(1, requests.get());
+    }
 }
