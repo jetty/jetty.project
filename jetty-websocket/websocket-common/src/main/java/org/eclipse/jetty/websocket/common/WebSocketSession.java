@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -59,7 +61,7 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 
 @ManagedObject("A Jetty WebSocket Session")
-public class WebSocketSession extends ContainerLifeCycle implements Session, WebSocketSessionScope, IncomingFrames, Connection.Listener, ConnectionStateListener
+public class WebSocketSession extends ContainerLifeCycle implements Session, RemoteEndpointFactory, WebSocketSessionScope, IncomingFrames, Connection.Listener, ConnectionStateListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private static final Logger LOG_OPEN = Log.getLogger(WebSocketSession.class.getName() + "_OPEN");
@@ -70,6 +72,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     private final Executor executor;
     private ClassLoader classLoader;
     private ExtensionFactory extensionFactory;
+    private RemoteEndpointFactory remoteEndpointFactory;
     private String protocolVersion;
     private Map<String, String[]> parameterMap = new HashMap<>();
     private WebSocketRemoteEndpoint remote;
@@ -140,6 +143,16 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     {
         if(LOG.isDebugEnabled())
             LOG.debug("starting - {}",this);
+
+        Iterator<RemoteEndpointFactory> iter = ServiceLoader.load(RemoteEndpointFactory.class).iterator();
+        if (iter.hasNext())
+            remoteEndpointFactory = iter.next();
+
+        if (remoteEndpointFactory == null)
+            remoteEndpointFactory = this;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Using RemoteEndpointFactory: {}", remoteEndpointFactory);
 
         super.doStart();
     }
@@ -460,6 +473,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
                 break;
         }
     }
+
+    public WebSocketRemoteEndpoint newRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoingFrames, BatchMode batchMode)
+    {
+        return new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
+    }
     
     /**
      * Open/Activate the session
@@ -481,7 +499,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
             connection.getIOState().onConnected();
     
             // Connect remote
-            remote = new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
+            remote = remoteEndpointFactory.newRemoteEndpoint(connection,outgoingHandler,getBatchMode());
             if(LOG_OPEN.isDebugEnabled())
                 LOG_OPEN.debug("[{}] {}.open() remote={}",policy.getBehavior(),this.getClass().getSimpleName(),remote);
             
