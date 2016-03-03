@@ -31,14 +31,18 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.Frame;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.server.Request;
@@ -100,7 +104,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .onRequestCommit(request -> request.abort(new Exception("explicitly_aborted_by_test")))
-                    .send();
+                    .send(); 
             Assert.fail();
         }
         catch (ExecutionException x)
@@ -149,6 +153,43 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         }
         catch (ExecutionException x)
         {
+            Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    public void testResponseAbortSendsGoAwayFrame() throws Exception
+    {
+        final String expectedContent = "{\"reason\":\"BadCertificateEnvironment\"}";
+        final CountDownLatch resetLatch = new CountDownLatch(1);
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                return new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        ((HTTP2Session)stream.getSession())
+                                .frames(null, callback, new GoAwayFrame(stream.getId(), 0, expectedContent.getBytes()), Frame.EMPTY_ARRAY);
+                        resetLatch.countDown();
+                    }
+                };
+            }
+        });
+
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .content(new StringContentProvider("hello, jetty"))
+                    .send();
+            Assert.fail();
+        }
+        catch (ExecutionException x)
+        {
+            Assert.assertEquals(expectedContent, ((AsynchronousCloseExceptionOverHTTP2)x.getCause()).getContentToString());
             Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
         }
     }
