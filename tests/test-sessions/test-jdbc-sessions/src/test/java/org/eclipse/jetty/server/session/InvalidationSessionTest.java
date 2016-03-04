@@ -29,24 +29,9 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
 {
     public static final int IDLE_PASSIVATE_SEC = 3;
     
-    public AbstractTestServer createServer(int port, int maxInactive, int inspectInterval)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int inspectInterval, int idlePassivateInterval)
     {
-        JdbcTestServer server = new JdbcTestServer(port, maxInactive, inspectInterval)
-        {
-
-            /** 
-             * @see org.eclipse.jetty.server.session.JdbcTestServer#newSessionManager()
-             */
-            @Override
-            public SessionManager newSessionManager()
-            {
-                JDBCSessionManager manager = (JDBCSessionManager)super.newSessionManager();
-                manager.getSessionStore().setIdlePassivationTimeoutSec(IDLE_PASSIVATE_SEC);
-                return manager;
-            }
-
-        };
-        return server;
+        return new JdbcTestServer(port, maxInactive, scavengeInterval, inspectInterval, idlePassivateInterval);
     }
     
     public void pause()

@@ -43,15 +43,26 @@ public class SessionRenewTest extends AbstractSessionRenewTest
     }
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge,int inspectionPeriod, int idlePassivatePeriod)
     {
-        return new FileTestServer(port, max, scavenge);
+        return new FileTestServer(port, max, scavenge,inspectionPeriod,idlePassivatePeriod);
     }
 
     @Test
     public void testSessionRenewal() throws Exception
     {
         super.testSessionRenewal();
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
+     */
+    @Override
+    public boolean verifyChange(String oldSessionId, String newSessionId)
+    {
+        ((FileTestServer)_server).assertFileExists(oldSessionId, false);
+        ((FileTestServer)_server).assertFileExists(newSessionId, true);
+        return true;
     }
 
     

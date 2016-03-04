@@ -37,10 +37,10 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
      * 
      * @param id identity of session to store
      * @param data info of the session
-     * @param isNew has session been written out before or not
+     * @param lastSaveTime time of previous save or 0 if never saved
      * @throws Exception
      */
-    public abstract void doStore(String id, SessionData data, boolean isNew) throws Exception;
+    public abstract void doStore(String id, SessionData data, long lastSaveTime) throws Exception;
 
    
 
@@ -63,19 +63,19 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
     {
         long lastSave = data.getLastSaved();
         
+        //set the last saved time to now
         data.setLastSaved(System.currentTimeMillis());
         try
         {
-            doStore(id, data, (lastSave<=0));
+            //call the specific store method, passing in previous save time
+            doStore(id, data, lastSave);
+            data.setDirty(false); //only undo the dirty setting if we saved it
         }
         catch (Exception e)
         {
-            //reset last save time
+            //reset last save time if save failed
             data.setLastSaved(lastSave);
-        }
-        finally
-        {
-            data.setDirty(false);
+            throw e;
         }
     }
     

@@ -48,25 +48,9 @@ public class IdleSessionTest extends AbstractIdleSessionTest
      * @see org.eclipse.jetty.server.session.AbstractIdleSessionTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int idleSec)
+    public AbstractTestServer createServer(final int port, final int max, final int scavenge, int inspectPeriod, final int idleSec)
     {
-        FileTestServer server = new FileTestServer(port,max,scavenge) 
-        {
-
-            /** 
-             * @see org.eclipse.jetty.server.session.FileTestServer#newSessionManager()
-             */
-            @Override
-            public SessionManager newSessionManager()
-            {
-                FileSessionManager manager = (FileSessionManager)super.newSessionManager();
-                manager.getSessionStore().setIdlePassivationTimeoutSec(idleSec);
-                return manager;
-            }
-            
-        };
-        
-        return server;
+       return new FileTestServer(port,max,scavenge, inspectPeriod, idleSec);
     }
 
     

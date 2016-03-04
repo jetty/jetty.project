@@ -37,14 +37,14 @@ public class InfinispanTestSessionServer extends AbstractTestServer
     
     public InfinispanTestSessionServer(int port, BasicCache config)
     {
-        this(port, 30, 10, config);
+        this(port, 30, 10, 1, 2, config);
     }
     
   
     
-    public InfinispanTestSessionServer(int port, int maxInactivePeriod, int scavengePeriod, BasicCache config)
+    public InfinispanTestSessionServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectPeriod, int idlePassivatePeriod, BasicCache config)
     {
-        super(port, maxInactivePeriod, scavengePeriod, config);
+        super(port, maxInactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod, config);
     }
     
     
@@ -79,7 +79,7 @@ public class InfinispanTestSessionServer extends AbstractTestServer
         BasicCache cache = ((InfinispanSessionIdManager)_sessionIdManager).getCache();
         if (cache != null)
         {
-            return cache.containsKey(id);      
+            return cache.containsKey(((InfinispanSessionIdManager)_sessionIdManager).makeKey(id));      
         }
         
         return false;
@@ -90,7 +90,7 @@ public class InfinispanTestSessionServer extends AbstractTestServer
         BasicCache cache = ((InfinispanSessionIdManager)_sessionIdManager).getCache();
         if (cache != null)
         {
-            return cache.get(id);      
+            return cache.get(((InfinispanSessionIdManager)_sessionIdManager).makeKey(id));      
         }
         
         return null;

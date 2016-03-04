@@ -29,6 +29,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.server.session.SessionStore;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /* --------------------------------------------------------------------- */
@@ -308,4 +309,13 @@ public interface SessionManager extends LifeCycle
     * @param newExtendedId the new session id including worker suffix
     */
     public void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId);  
+   
+    
+    /**
+     * Get the session store for this manager
+     * @return
+     */
+    public SessionStore getSessionStore();
+    
+    
 }

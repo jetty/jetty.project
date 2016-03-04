@@ -31,11 +31,11 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * Checks if a session is idle
  */
-public class IdleInspector implements SessionInspector
+public class IdleInspector extends AbstractSessionInspector
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
-    protected Set<String> _idleCandidates;
+    protected Set<String> _idleCandidates = new HashSet<String>();;
     protected AbstractSessionStore _sessionStore;
     
     /**
@@ -72,21 +72,22 @@ public class IdleInspector implements SessionInspector
     {
         return _idleCandidates;
     }
-    
-    
+
+
     /** 
      * @see org.eclipse.jetty.server.session.SessionInspector#preInspection()
      */
     @Override
-    public void preInspection()
+    public boolean preInspection()
     {
-        _idleCandidates = new HashSet<String>();
+        boolean shouldInspect = super.preInspection();
         if (LOG.isDebugEnabled())
-            LOG.debug("IdleInspector preinspection");
+            LOG.debug("IdleInspector will inspect:{}", shouldInspect);
+        return shouldInspect;
     }
-    
-    
-    
+
+
+
     /** 
      * @see org.eclipse.jetty.server.session.SessionInspector#postInspection()
      */
@@ -108,6 +109,6 @@ public class IdleInspector implements SessionInspector
             }
         }
 
-        _idleCandidates = null;
+        _idleCandidates.clear();
     }
 }

@@ -143,7 +143,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
             Long expiry = (Long)o.get(MongoSessionDataStore.__EXPIRY);
             if (expiry < System.currentTimeMillis())
                 return false;
-            
             return valid;
         }
         

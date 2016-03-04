@@ -61,8 +61,8 @@ public class MaxInactiveMigrationTest
 
     @Before
     public void setUp() throws Exception {
-        testServer1 = new JdbcTestServer(0, -1, 2);
-        testServer2 = new JdbcTestServer(0, -1, 2);
+        testServer1 = new JdbcTestServer(0, -1, 2, 1, -1);
+        testServer2 = new JdbcTestServer(0, -1, 2, 1, -1);
         ServletContextHandler context = testServer1.addContext("");
         context.addServlet(TestServlet.class, "/test");
         ServletContextHandler context2 = testServer2.addContext("");

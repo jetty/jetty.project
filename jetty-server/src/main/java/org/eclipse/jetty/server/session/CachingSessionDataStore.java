@@ -127,14 +127,14 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, boolean)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
      */
     @Override
-    public void doStore(String id, SessionData data, boolean isNew) throws Exception
+    public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         //write to the SessionDataStore first
         if (_delegateDataStore instanceof AbstractSessionDataStore)
-            ((AbstractSessionDataStore)_delegateDataStore).doStore(id, data, isNew);
+            ((AbstractSessionDataStore)_delegateDataStore).doStore(id, data, lastSaveTime);
 
         //else??????
         

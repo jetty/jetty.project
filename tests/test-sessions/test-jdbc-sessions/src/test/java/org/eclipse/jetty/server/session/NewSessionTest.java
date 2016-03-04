@@ -29,9 +29,9 @@ public class NewSessionTest extends AbstractNewSessionTest
     /** 
      * @see org.eclipse.jetty.server.session.AbstractNewSessionTest#createServer(int, int, int)
      */
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspect, int idlePassivate)
     {
-        return new JdbcTestServer(port,max,scavenge);
+        return new JdbcTestServer(port,max,scavenge, inspect, idlePassivate);
     }
 
     @Test

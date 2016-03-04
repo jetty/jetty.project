@@ -28,12 +28,19 @@ package org.eclipse.jetty.server.session;
 public class HashSessionManager extends SessionManager
 {
     protected NullSessionDataStore _sessionDataStore = new NullSessionDataStore();
+    
 
-
+    /**
+     * 
+     */
+    public HashSessionManager ()
+    {
+        _sessionStore = new MemorySessionStore();
+    }
+    
     @Override
     public void doStart() throws Exception
     {
-        _sessionStore = new MemorySessionStore();
         ((AbstractSessionStore)_sessionStore).setSessionDataStore(_sessionDataStore);
         
         super.doStart();

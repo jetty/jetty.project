@@ -43,7 +43,7 @@ import org.junit.Test;
  */
 public abstract class AbstractInvalidationSessionTest
 {
-    public abstract AbstractTestServer createServer(int port, int maxInactive, int inspectInterval);
+    public abstract AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int inspectInterval, int idlePassivatePeriod);
     public abstract void pause();
 
     @Test
@@ -51,7 +51,7 @@ public abstract class AbstractInvalidationSessionTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        AbstractTestServer server1 = createServer(0, 30, 1);
+        AbstractTestServer server1 = createServer(0, 30, 1, 1, 1);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
 
@@ -59,7 +59,7 @@ public abstract class AbstractInvalidationSessionTest
         {
             server1.start();
             int port1 = server1.getPort();
-            AbstractTestServer server2 = createServer(0, 30, 1);
+            AbstractTestServer server2 = createServer(0, 30, 1, 1, 1);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
             try

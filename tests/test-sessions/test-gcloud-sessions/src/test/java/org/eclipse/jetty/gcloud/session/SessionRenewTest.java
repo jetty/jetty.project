@@ -19,8 +19,11 @@
 
 package org.eclipse.jetty.gcloud.session;
 
+import java.util.Set;
+
 import org.eclipse.jetty.server.session.AbstractSessionRenewTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import static org.junit.Assert.fail;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -51,9 +54,9 @@ public class SessionRenewTest extends AbstractSessionRenewTest
      * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivationPeriod)
     {
-        return  new GCloudTestServer(port,max, scavenge, _testSupport.getConfiguration());
+        return  new GCloudTestServer(port,max, scavenge, inspectionPeriod, idlePassivationPeriod,_testSupport.getConfiguration());
     }
 
     @Test
@@ -61,6 +64,25 @@ public class SessionRenewTest extends AbstractSessionRenewTest
     public void testSessionRenewal() throws Exception
     {
         super.testSessionRenewal();
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
+     */
+    @Override
+    public boolean verifyChange(String oldSessionId, String newSessionId)
+    {
+        try
+        {
+            Set<String> ids = _testSupport.getSessionIds();
+            return (!ids.contains(oldSessionId) && ids.contains(newSessionId));
+        }
+        catch (Exception e)
+        {
+            fail(e.getMessage());
+            return false;
+        }
+
     }
 
     

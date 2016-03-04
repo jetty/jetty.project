@@ -26,9 +26,9 @@ import org.junit.Test;
  */
 public class OrphanedSessionTest extends AbstractOrphanedSessionTest
 {
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspect, int idlePassivate)
     {
-        return new JdbcTestServer(port,max,scavenge);
+        return new JdbcTestServer(port,max,scavenge,inspect, idlePassivate);
     }
 
     @Test

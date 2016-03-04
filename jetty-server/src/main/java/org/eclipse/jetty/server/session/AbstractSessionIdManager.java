@@ -55,7 +55,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     protected String _workerAttr;
     protected long _reseed=100000L;
     protected Server _server;
-    protected PeriodicSessionInspector _scavenger;
+    protected PeriodicSessionInspector _inspector;
 
     /* ------------------------------------------------------------ */
     /**
@@ -100,12 +100,12 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     
     /* ------------------------------------------------------------ */
     /**
-     * @param scavenger a SessionScavenger 
+     * @param period inspector of sessions 
      */
-    public void setSessionScavenger (PeriodicSessionInspector scavenger)
+    public void setSessionInspector (PeriodicSessionInspector inspector)
     {
-        _scavenger = scavenger;
-        _scavenger.setSessionIdManager(this);
+        _inspector = inspector;
+        _inspector.setSessionIdManager(this);
     }
    
     
@@ -282,14 +282,14 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
        initRandom();
        _workerAttr=(_workerName!=null && _workerName.startsWith("$"))?_workerName.substring(1):null;
        
-       if (_scavenger == null)
+       if (_inspector == null)
        {
            LOG.warn("No SessionScavenger set, using defaults");
-           _scavenger = new PeriodicSessionInspector();
-           _scavenger.setSessionIdManager(this);
+           _inspector = new PeriodicSessionInspector();
+           _inspector.setSessionIdManager(this);
        }
        
-       _scavenger.start();
+       _inspector.start();
     }
 
     /* ------------------------------------------------------------ */
@@ -299,7 +299,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     @Override
     protected void doStop() throws Exception
     {
-        _scavenger.stop();
+        _inspector.stop();
     }
 
     /* ------------------------------------------------------------ */

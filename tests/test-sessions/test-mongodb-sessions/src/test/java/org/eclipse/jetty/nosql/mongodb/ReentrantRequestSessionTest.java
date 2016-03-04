@@ -44,15 +44,20 @@ public class ReentrantRequestSessionTest extends AbstractReentrantRequestSession
     }
     
     
-    public AbstractTestServer createServer(int port)
-    {
-        return new MongoTestServer(port);
-    }
 
     @Test
     public void testReentrantRequestSession() throws Exception
     {
         super.testReentrantRequestSession();
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractReentrantRequestSessionTest#createServer(int, int, int, int, int)
+     */
+    @Override
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivatePeriod)
+    {
+        return new MongoTestServer(port, max, scavenge, inspectionPeriod, idlePassivatePeriod);
     }
 
 }

@@ -58,24 +58,9 @@ public class RemoteInvalidationSessionTest extends AbstractInvalidationSessionTe
      * @see org.eclipse.jetty.server.session.AbstractInvalidationSessionTest#createServer(int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int maxInterval, int inspectInterval)
+    public AbstractTestServer createServer(int port, int maxInterval, int scavengeInterval, int inspectInterval, int idlePassivateInterval)
     {
-        InfinispanTestSessionServer server =  new InfinispanTestSessionServer(port, maxInterval, inspectInterval, __testSupport.getCache())
-        {
-
-            /** 
-             * @see org.eclipse.jetty.server.session.InfinispanTestSessionServer#newSessionManager()
-             */
-            @Override
-            public SessionManager newSessionManager()
-            {
-               InfinispanSessionManager mgr = (InfinispanSessionManager)super.newSessionManager();
-               mgr.getSessionStore().setIdlePassivationTimeoutSec(IDLE_PASSIVATE_SEC);
-               return mgr;
-            }
-
-        };
-        return server;
+        return new InfinispanTestSessionServer(port, maxInterval, scavengeInterval, inspectInterval, idlePassivateInterval,__testSupport.getCache());
     }
 
     

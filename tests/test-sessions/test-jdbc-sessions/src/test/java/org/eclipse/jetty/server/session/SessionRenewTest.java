@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import org.junit.After;
 import org.junit.Test;
 
@@ -25,10 +28,35 @@ public class SessionRenewTest extends AbstractSessionRenewTest
 {
 
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspect, int idlePassivate)
     {
-        return new JdbcTestServer(port, max, scavenge);
+        return new JdbcTestServer(port, max, scavenge, inspect, idlePassivate);
     }
+    
+    
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
+     */
+    @Override
+    public boolean verifyChange(String oldSessionId, String newSessionId)
+    {
+        try
+        {
+            //assert the new one exists
+            assertTrue(((JdbcTestServer)_server).existsInSessionTable(newSessionId, false));
+            assertFalse(((JdbcTestServer)_server).existsInSessionTable(oldSessionId, false));
+            return true;
+        }
+        catch (Exception e)
+        {
+            fail(e.getMessage());
+        }
+        
+        return false;
+    }
+
+
 
     @Test
     public void testSessionRenewal() throws Exception

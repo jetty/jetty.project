@@ -40,9 +40,10 @@ public class ReentrantRequestSessionTest extends AbstractReentrantRequestSession
        FileTestServer.teardown();
     }
     
-    public AbstractTestServer createServer(int port)
+
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivatePeriod)
     {
-        return new FileTestServer(port);
+        return new FileTestServer(port, max, scavenge, inspectionPeriod, idlePassivatePeriod);
     }
 
     @Test

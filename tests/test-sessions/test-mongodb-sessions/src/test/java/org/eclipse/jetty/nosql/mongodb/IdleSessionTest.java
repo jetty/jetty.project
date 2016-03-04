@@ -43,24 +43,9 @@ public class IdleSessionTest extends AbstractIdleSessionTest
      * @see org.eclipse.jetty.server.session.AbstractIdleSessionTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int idleSec)
+    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int inspectSec, final int idleSec)
     {
-        MongoTestServer server =  new MongoTestServer(port,max,scavenge)
-                {
-
-                    /** 
-                     * @see org.eclipse.jetty.nosql.mongodb.MongoTestServer#newSessionManager()
-                     */
-                    @Override
-                    public SessionManager newSessionManager()
-                    {
-                        MongoSessionManager manager = (MongoSessionManager)super.newSessionManager();
-                        manager.getSessionStore().setIdlePassivationTimeoutSec(idleSec);
-                        return manager;
-                    }
-            
-                };
-        return server;
+        return  new MongoTestServer(port,max,scavenge, inspectSec, idleSec);
     }
 
     /** 

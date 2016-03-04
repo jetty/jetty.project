@@ -125,6 +125,8 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public boolean delete(String id) throws Exception
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Deleting session with id {} from infinispan", id);
         return (_cache.remove(getCacheKey(id, _context)) != null);
     }
 
@@ -166,10 +168,10 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData, boolean)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData, long)
      */
     @Override
-    public void doStore(String id, SessionData data, boolean isNew) throws Exception
+    public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         //Put an idle timeout on the cache entry if the session is not immortal - 
         //if no requests arrive at any node before this timeout occurs, or no node 

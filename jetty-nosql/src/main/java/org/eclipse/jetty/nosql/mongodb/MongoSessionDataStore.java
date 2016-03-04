@@ -397,10 +397,10 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData, boolean)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData, long)
      */
     @Override
-    public void doStore(String id, SessionData data, boolean isNew) throws Exception
+    public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         NoSqlSessionData nsqd = (NoSqlSessionData)data;
         
@@ -416,7 +416,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         Object version = ((NoSqlSessionData)data).getVersion();
         
         // New session
-        if (isNew)
+        if (lastSaveTime <= 0)
         {
             upsert = true;
             version = new Long(1);
@@ -455,7 +455,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
         Set<String> names = nsqd.takeDirtyAttributes();
 
-        if (isNew)
+        if (lastSaveTime <= 0)
         {
             names.addAll(nsqd.getAllAttributeNames()); // note dirty may include removed names
         }

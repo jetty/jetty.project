@@ -47,7 +47,7 @@ import org.junit.Test;
  */
 public abstract class AbstractSessionExpiryTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivationPeriod);
 
     public void pause(int scavengePeriod)
     {
@@ -83,9 +83,11 @@ public abstract class AbstractSessionExpiryTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 10;
+        int inactivePeriod = 20;
         int scavengePeriod = 10;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
+        int inspectPeriod = 1;
+        int idlePassivatePeriod = 8;
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         server1.addContext(contextPath).addServlet(holder, servletMapping);
@@ -140,7 +142,8 @@ public abstract class AbstractSessionExpiryTest
         String servletMapping = "/server";
         int inactivePeriod = 2;
         int scavengePeriod = 1;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
+        int inspectPeriod = 1;
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, inspectPeriod, -1);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);

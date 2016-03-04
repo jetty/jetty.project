@@ -57,11 +57,13 @@ public class DirtyAttributeTest
     public static String THE_NAME = "__theName";
     public static int INACTIVE = 4;
     public static int SCAVENGE = 1;
+    public static int INSPECT = 1;
+    public static int IDLE_PASSIVATE = 3;
 
     @Test
     public void testDirtyWrite() throws Exception
     {
-        AbstractTestServer server = new JdbcTestServer(0,INACTIVE,SCAVENGE);
+        AbstractTestServer server = new JdbcTestServer(0,INACTIVE,SCAVENGE, INSPECT, IDLE_PASSIVATE);
         
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestDirtyServlet.class, "/test");
