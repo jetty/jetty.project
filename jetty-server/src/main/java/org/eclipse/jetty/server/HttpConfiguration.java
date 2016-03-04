@@ -64,6 +64,7 @@ public class HttpConfiguration
     private boolean _delayDispatchUntilContent = true;
     private boolean _persistentConnectionsEnabled = true;
     private int _maxErrorDispatches = 10;
+    private boolean _useDirectByteBuffers = false;
 
     /* ------------------------------------------------------------ */
     /** 
@@ -305,6 +306,22 @@ public class HttpConfiguration
     public boolean isDelayDispatchUntilContent()
     {
         return _delayDispatchUntilContent;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param delay if true, use direct byte buffers for requests
+     */
+    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
+    {
+        _useDirectByteBuffers = useDirectByteBuffers;
+    }
+
+    /* ------------------------------------------------------------ */
+    @ManagedAttribute("if true, use direct byte buffers for requests")
+    public boolean isUseDirectByteBuffers()
+    {
+        return _useDirectByteBuffers;
     }
 
     /* ------------------------------------------------------------ */
