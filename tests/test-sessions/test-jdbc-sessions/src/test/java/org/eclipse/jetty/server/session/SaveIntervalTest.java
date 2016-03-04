@@ -67,9 +67,9 @@ public class SaveIntervalTest
         holder.setServlet(servlet);
         ctxA.addServlet(holder, "/test");
 
-        StalePeriodStrategy strategy = new StalePeriodStrategy();
-        strategy.setStaleSec(SAVE);
-       ((AbstractSessionStore)((JDBCSessionManager)ctxA.getSessionHandler().getSessionManager()).getSessionStore()).setStaleStrategy(strategy);
+
+        //TODO set up the intermittent save
+
         server.start();
         int port=server.getPort();
         try

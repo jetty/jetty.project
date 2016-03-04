@@ -124,7 +124,7 @@ public class MemorySessionStore extends AbstractSessionStore
     public Session doPutIfAbsent(String id, Session session)
     {
         Session s = _sessions.putIfAbsent(id, session);
-        if (s == null)
+        if (s == null && !(session instanceof PlaceHolderSession))
             _stats.increment();
        return s;
     }
@@ -145,31 +145,11 @@ public class MemorySessionStore extends AbstractSessionStore
     public Session doDelete(String id)
     {
         Session s = _sessions.remove(id);
-        if (s != null)
+        if (s != null && !(s instanceof PlaceHolderSession))
             _stats.decrement();
         return  s;
     }
     
-    
-/*
-
-    @Override
-    public Set<String> doGetExpiredCandidates()
-    {
-        Set<String> candidates = new HashSet<String>();
-        long now = System.currentTimeMillis();
-        
-        for (Session s:_sessions.values())
-        {
-            if (s.isExpiredAt(now))
-            {
-                candidates.add(s.getId());
-            }
-        }
-        return candidates;
-    }
-*/
-
 
 
 
@@ -250,6 +230,19 @@ public class MemorySessionStore extends AbstractSessionStore
     public Stream<Session> getStream()
     {
         return _sessions.values().stream();
+    }
+
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
+     */
+    @Override
+    public boolean doReplace(String id, Session oldValue, Session newValue)
+    {
+        boolean result = _sessions.replace(id,  oldValue, newValue);
+        if (result && (oldValue instanceof PlaceHolderSession))
+            _stats.increment();
+        return result;
     }
 
 

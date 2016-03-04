@@ -137,7 +137,7 @@ public class JdbcTestServer extends AbstractTestServer
         JDBCSessionManager manager =  new JDBCSessionManager();
         manager.setSessionIdManager((JDBCSessionIdManager)_sessionIdManager);
         JDBCSessionDataStore ds = manager.getSessionDataStore();
-        ds.setGracePeriodSec(_scavengePeriod);
+        ds.setGracePeriodSec(_inspectionPeriod);
         manager.getDatabaseAdaptor().setDriverInfo(DRIVER_CLASS, DEFAULT_CONNECTION_URL);
         JDBCSessionDataStore.SessionTableSchema sessionTableSchema = new JDBCSessionDataStore.SessionTableSchema();
         sessionTableSchema.setTableName(TABLE);
@@ -153,9 +153,6 @@ public class JdbcTestServer extends AbstractTestServer
         sessionTableSchema.setMapColumn(MAP_COL);
         sessionTableSchema.setMaxIntervalColumn(MAX_IDLE_COL);       
         ds.setSessionTableSchema(sessionTableSchema);
-        StalePeriodStrategy staleStrategy = new StalePeriodStrategy();
-        staleStrategy.setStaleSec(STALE_INTERVAL);
-       ((AbstractSessionStore)manager.getSessionStore()).setStaleStrategy(staleStrategy);
         return manager;
     }
 

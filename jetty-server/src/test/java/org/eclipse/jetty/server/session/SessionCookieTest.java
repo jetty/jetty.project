@@ -123,6 +123,16 @@ public class SessionCookieTest
             return null;
         }
 
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
+         */
+        @Override
+        public boolean doReplace(String id, Session oldValue, Session newValue)
+        {
+            // TODO Auto-generated method stub
+            return false;
+        }
+
    
     }
 

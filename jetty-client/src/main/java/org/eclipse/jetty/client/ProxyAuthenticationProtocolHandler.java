@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.HttpStatus;
 public class ProxyAuthenticationProtocolHandler extends AuthenticationProtocolHandler
 {
     public static final String NAME = "proxy-authenticate";
+    private static final String ATTRIBUTE = ProxyAuthenticationProtocolHandler.class.getName() + ".attribute";
 
     public ProxyAuthenticationProtocolHandler(HttpClient client)
     {
@@ -75,5 +76,11 @@ public class ProxyAuthenticationProtocolHandler extends AuthenticationProtocolHa
         HttpDestination destination = getHttpClient().destinationFor(request.getScheme(), request.getHost(), request.getPort());
         ProxyConfiguration.Proxy proxy = destination.getProxy();
         return proxy != null ? proxy.getURI() : request.getURI();
+    }
+
+    @Override
+    protected String getAuthenticationAttribute()
+    {
+        return ATTRIBUTE;
     }
 }

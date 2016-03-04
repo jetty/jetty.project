@@ -1113,6 +1113,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             code=Integer.valueOf(error);
 
         String location = node.getString("location", false, true);
+        if (!location.startsWith("/"))
+            throw new IllegalStateException("Missing leading '/' for location: " + location);
         ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
         String originName = "error."+error;
         switch (context.getMetaData().getOrigin(originName))

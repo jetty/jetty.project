@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
+import org.eclipse.jetty.util.thread.Locker.Lock;
 
 
 
@@ -221,11 +222,11 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     public void complete(HttpSession session)
     {
         Session s = ((SessionIf)session).getSession();
-        s.complete();
+    
         try
         {
-            if (s.isValid())
-                _sessionStore.put(s.getId(), s);
+            s.complete();
+            _sessionStore.put(s.getId(), s);
         }
         catch (Exception e)
         {
@@ -574,6 +575,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     @Override
     public HttpSession newHttpSession(HttpServletRequest request)
     {
+
         long created=System.currentTimeMillis();
         String id =_sessionIdManager.newSessionId(request,created);      
         Session session = _sessionStore.newSession(request, id, created,  (_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000L:-1));
@@ -583,7 +585,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         session.getSessionData().setExpiry(_dftMaxIdleSecs <= 0 ? 0 : (created + _dftMaxIdleSecs*1000L));
         if (request.isSecure())
             session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-
         try
         {
             _sessionStore.put(id, session);

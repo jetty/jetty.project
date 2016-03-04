@@ -26,6 +26,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Assert;
+
 
 /**
  * SessionExpiryTest
@@ -76,21 +78,21 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     public void testSessionExpiry() throws Exception
     {
         super.testSessionExpiry();
-        _testSupport.assertSessions(0);
+        try{_testSupport.assertSessions(0);}catch(Exception e){ Assert.fail(e.getMessage());}
     }
 
     @Override
     public void verifySessionCreated(TestHttpSessionListener listener, String sessionId)
     {
         super.verifySessionCreated(listener, sessionId);
-        try{ _testSupport.listSessions(); _testSupport.assertSessions(1);}catch(Exception e) {e.printStackTrace();} 
+        try {_testSupport.assertSessions(1);}catch(Exception e){ Assert.fail(e.getMessage());}
     }
 
     @Override
     public void verifySessionDestroyed(TestHttpSessionListener listener, String sessionId)
     {
         super.verifySessionDestroyed(listener, sessionId);
-        try{ _testSupport.listSessions(); _testSupport.assertSessions(0);}catch(Exception e) {e.printStackTrace();}
+        try{_testSupport.assertSessions(0);}catch(Exception e){ Assert.fail(e.getMessage());}
     }
 
     

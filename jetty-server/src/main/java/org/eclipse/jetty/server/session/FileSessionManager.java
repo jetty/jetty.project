@@ -27,13 +27,20 @@ package org.eclipse.jetty.server.session;
  */
 public class FileSessionManager extends SessionManager
 {
-    protected FileSessionDataStore _sessionDataStore = new FileSessionDataStore();
+    protected FileSessionDataStore _sessionDataStore;
 
+    /**
+     * 
+     */
+    public FileSessionManager ()
+    {
+        _sessionStore = new MemorySessionStore();
+        _sessionDataStore = new FileSessionDataStore();
+    }
 
     @Override
     public void doStart() throws Exception
     {
-        _sessionStore = new MemorySessionStore();
         ((AbstractSessionStore)_sessionStore).setSessionDataStore(_sessionDataStore);
         
         super.doStart();

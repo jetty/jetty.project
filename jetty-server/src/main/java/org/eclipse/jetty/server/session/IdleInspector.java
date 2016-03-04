@@ -81,6 +81,8 @@ public class IdleInspector implements SessionInspector
     public void preInspection()
     {
         _idleCandidates = new HashSet<String>();
+        if (LOG.isDebugEnabled())
+            LOG.debug("IdleInspector preinspection");
     }
     
     
@@ -91,6 +93,9 @@ public class IdleInspector implements SessionInspector
     @Override
     public void postInspection()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("IdleInspector postinspection");
+        
         for (String id:_idleCandidates)
         {
             try

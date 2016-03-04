@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -125,8 +126,10 @@ public class ReloadedSessionMissingClassTest
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String afterStopSessionId = (String)webApp.getServletContext().getAttribute("foo.session");
-                
+                Boolean fooPresent = (Boolean)webApp.getServletContext().getAttribute("foo.present");
+                assertFalse(fooPresent);
                 assertNotNull(afterStopSessionId);
+                assertFalse(fooPresent);
                 assertTrue(!afterStopSessionId.equals(sessionId));  
 
             }

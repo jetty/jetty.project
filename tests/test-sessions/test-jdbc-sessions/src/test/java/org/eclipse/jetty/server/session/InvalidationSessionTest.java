@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.server.SessionManager;
 import org.junit.After;
 import org.junit.Test;
 
@@ -26,9 +27,26 @@ import org.junit.Test;
  */
 public class InvalidationSessionTest extends AbstractInvalidationSessionTest
 {
-    public AbstractTestServer createServer(int port)
+    public static final int IDLE_PASSIVATE_SEC = 3;
+    
+    public AbstractTestServer createServer(int port, int maxInactive, int inspectInterval)
     {
-        return new JdbcTestServer(port);
+        JdbcTestServer server = new JdbcTestServer(port, maxInactive, inspectInterval)
+        {
+
+            /** 
+             * @see org.eclipse.jetty.server.session.JdbcTestServer#newSessionManager()
+             */
+            @Override
+            public SessionManager newSessionManager()
+            {
+                JDBCSessionManager manager = (JDBCSessionManager)super.newSessionManager();
+                manager.getSessionStore().setIdlePassivationTimeoutSec(IDLE_PASSIVATE_SEC);
+                return manager;
+            }
+
+        };
+        return server;
     }
     
     public void pause()
@@ -40,7 +58,7 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
         //that the node will re-load the session from the database and discover that it has gone.
         try
         {
-            Thread.sleep(2 * JdbcTestServer.STALE_INTERVAL * 1000);
+            Thread.sleep(2 * IDLE_PASSIVATE_SEC * 1000);
         }
         catch (InterruptedException e)
         {

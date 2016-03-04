@@ -44,7 +44,6 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
     protected SessionDataStore _sessionDataStore;
-    protected StalenessStrategy _staleStrategy;
     protected SessionManager _manager;
     protected SessionContext _context;
     protected int _idlePassivationTimeoutSec;
@@ -80,6 +79,16 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     public abstract Session doPutIfAbsent (String id, Session session);
     
     
+    /**
+     * Replace the mapping from id to oldValue with newValue
+     * @param id
+     * @param oldValue
+     * @param newValue
+     * @return true if replacement was done
+     */
+    public abstract boolean doReplace (String id, Session oldValue, Session newValue);
+    
+    
     
     /**
      * Check to see if the session exists in the store
@@ -97,6 +106,24 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      */
     public abstract Session doDelete (String id);
 
+    
+    
+    /**
+     * PlaceHolder
+     *
+     *
+     */
+    protected class PlaceHolderSession extends Session
+    {
+
+        /**
+         * @param data
+         */
+        public PlaceHolderSession(SessionData data)
+        {
+            super(data);
+        }
+    }
     
     
     
@@ -185,22 +212,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         _sessionDataStore = sessionDataStore;
     }
     
-    /**
-     * @return the strategy for detecting stale sessions or null if there isn't one
-     */
-    public StalenessStrategy getStaleStrategy()
-    {
-        return _staleStrategy;
-    }
-
-    /**
-     * @param staleStrategy
-     */
-    public void setStaleStrategy(StalenessStrategy staleStrategy)
-    {
-        _staleStrategy = staleStrategy;
-    }
-
+  
 
     /** 
      * @see org.eclipse.jetty.server.session.SessionStore#getIdlePassivationTimeoutSec()
@@ -238,53 +250,132 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     @Override
     public Session get(String id, boolean staleCheck) throws Exception
     {
-        //look locally
-        Session session = doGet(id);
+        Session session = null;
+        Exception ex = null;
         
-        //TODO also check that session is only written out if only the access time changes infrequently    
-
-        //session is either not in session store, or it is stale, or its been passivated, load the data for the session if possible
-        if (session == null || (staleCheck && isStale(session)) || session.isPassivated() && _sessionDataStore != null)
+        while (true)
         {
-            SessionData data = _sessionDataStore.load(id);
-  
-            //session wasn't in session store
+            session = doGet(id);
+            
+            if (_sessionDataStore == null)
+                break; //can't load any session data so just return null or the session object
+            
             if (session == null)
             {
-                if (data != null)
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Session not found locally, attempting to load");
+                
+                //didn't get a session, try and create one and put in a placeholder for it
+                PlaceHolderSession phs = new PlaceHolderSession (new SessionData(id, null, null,0,0,0,0));
+                Lock phsLock = phs.lock();
+                Session s = doPutIfAbsent(id, phs);
+                if (s == null)
                 {
-                    session = newSession(data);
-                    session.setSessionManager(_manager);
-                    Session existing = doPutIfAbsent(id, session);
-                    if (existing != null)
+                    //My placeholder won, go ahead and load the full session data
+                    try
                     {
-                        //some other thread has got in first and added the session
-                        //so use it
-                        session = existing;
+                        session = loadSession(id);
+                        if (session == null)
+                        {
+                            //session does not exist, remove the placeholder
+                            doDelete(id);
+                            phsLock.close();
+                            break;
+                        }
+                        
+                        try (Lock lock = session.lock())
+                        {
+                            //swap it in instead of the placeholder
+                            boolean success = doReplace(id, phs, session);
+                            if (!success)
+                            {
+                                //something has gone wrong, it should have been our placeholder
+                                doDelete(id);
+                                session = null;
+                                LOG.warn("Replacement of placeholder for session {} failed", id);
+                                phsLock.close();
+                                break;
+                            }
+
+                            //successfully swapped in the session
+                            phsLock.close();
+                            break;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        ex = e; //remember a problem happened loading the session
+                        LOG.warn(e);
+                        doDelete(id); //remove the placeholder
+                        phsLock.close();
+                        session = null;
+                        break;
                     }
                 }
-                //else session not in store and not in data store either, so doesn't exist
+                else
+                {
+                    //my placeholder didn't win, check the session returned
+                    phsLock.close();
+                    try (Lock lock = s.lock())
+                    {
+                        //is it a placeholder? or is it passivated? In both cases, chuck it away and start again
+                        if (s.isPassivated() || s instanceof PlaceHolderSession)
+                        {
+                            session = null;
+                            continue;
+                        }
+                        session = s;
+                        break;
+                    }
+                }
+                
             }
             else
             {
-                //session was already in session store, refresh it if its still stale/passivated
+                //check the session returned
                 try (Lock lock = session.lock())
-                {   
-                    if (session.isPassivated() || staleCheck && isStale(session))
+                {
+                    //is it a placeholder? or is it passivated? In both cases, chuck it away and start again
+                    if (session.isPassivated() || session instanceof PlaceHolderSession)
                     {
-                        //if we were able to load it, then update our session object
-                        if (data != null)
-                        {
-                            session.setPassivated(false);
-                            session.getSessionData().copy(data);
-                            session.didActivate();
-                        }
-                        else
-                            session = null; //TODO rely on the expiry mechanism to get rid of it?
+                        session = null;
+                        continue;
                     }
+                    
+                    //got the session
+                    break;
                 }
             }
         }
+
+        if (ex != null)
+            throw ex;
+        return session;
+    }
+
+    /**
+     * Load the info for the session from the session data store
+     * 
+     * @param id
+     * @return a Session object filled with data or null if the session doesn't exist
+     * @throws Exception
+     */
+    private Session loadSession (String id)
+    throws Exception
+    {
+        SessionData data = null;
+        Session session = null;
+
+        if (_sessionDataStore == null)
+            return null; //can't load it
+        
+        data =_sessionDataStore.load(id);
+
+        if (data == null) //session doesn't exist
+            return null;
+
+        session = newSession(data);
+        session.setSessionManager(_manager);
         return session;
     }
 
@@ -300,13 +391,21 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     {
         if (id == null || session == null)
             throw new IllegalArgumentException ("Put key="+id+" session="+(session==null?"null":session.getId()));
-        
-        session.setSessionManager(_manager);
+       
+
 
         //if the session is new, the data has changed, or the cache is considered stale, write it to any backing store
         try (Lock lock = session.lock())
         {
-            if ((session.isNew() || session.getSessionData().isDirty() || isStale(session)) && _sessionDataStore != null)
+            session.setSessionManager(_manager);
+            
+            if (session.isPassivated())
+                throw new IllegalStateException ("Session "+id+" is passivated and cannot be saved");
+            
+            if (!session.isValid())
+                return;
+            
+            if ((session.isNew() || session.getSessionData().isDirty()) && _sessionDataStore != null)
             {
                 if (_sessionDataStore.isPassivating())
                 {
@@ -322,11 +421,11 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
                 }
                 else
                     _sessionDataStore.store(id, session.getSessionData());
+
+
             }
-
+            doPutIfAbsent(id,session);
         }
-
-        doPutIfAbsent(id,session);
     }
 
     /** 
@@ -344,60 +443,28 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     /** 
      * Remove a session object from this store and from any backing store.
      * 
-     * If session has been passivated, may need to reload it before it can
-     * be properly deleted
      * 
      * @see org.eclipse.jetty.server.session.SessionStore#delete(java.lang.String)
      */
     @Override
     public Session delete(String id) throws Exception
-    {
-        //Ensure that the session object is not passivated so that its attributes
-        //are valid
-        Session session = doGet(id);
-        
-        //TODO if (session == null) do we want to load it to delete it?
-        if (session != null)
-        {
-            try (Lock lock = session.lock())
-            {
-                //TODO don't check stale on deletion?
-                if (session.isPassivated() && _sessionDataStore != null)
-                {
-                    session.setPassivated(false);
-                    SessionData data = _sessionDataStore.load(id);
-                    if (data != null)
-                    {
-                        session.getSessionData().copy(data);
-                        session.didActivate();
-                    }
-                }
-            }
-        }
-            
-        
-        //Always delete it from the data store
+    {   
+        //get the session, if its not in memory, this will load it
+        Session session = get(id, false); 
+
+        //Always delete it from the backing data store
         if (_sessionDataStore != null)
         {
             boolean dsdel = _sessionDataStore.delete(id);
             if (LOG.isDebugEnabled()) LOG.debug("Session {} deleted in db {}",id, dsdel);                   
         }
+        
+        //delete it from the session object store
         return doDelete(id);
     }
 
     
-    
-    /**
-     * @param session
-     * @return true or false according to the StaleStrategy
-     */
-    public boolean isStale (Session session)
-    {
-        if (_staleStrategy != null)
-            return _staleStrategy.isStale(session);
-        return false;
-    }
-    
+   
 
 
 
@@ -443,8 +510,8 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
     
     /**
-     * If the SessionDataStore supports passivation, passivate any
-     * sessions that have not be accessed for longer than x sec
+     * If the SessionDataStore supports passivation, 
+     * write the session to the backing data store.
      * 
      * @param id identity of session to passivate
      */
@@ -453,12 +520,8 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         if (!isStarted())
             return;
         
-        if (_sessionDataStore == null)
-            return; //no data store to passivate
-        
-        if (!_sessionDataStore.isPassivating()) 
-            return; //doesn't support passivation
- 
+        if (_sessionDataStore == null || !_sessionDataStore.isPassivating())
+            return; //no data store to passivate or it doesn't passivate 
 
         //get the session locally
         Session s = doGet(id);
@@ -470,22 +533,34 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         }
 
 
+        //lock the session during passivation
         try (Lock lock = s.lock())
         {
-            //check the session is still idle first
-            if (s.isValid() && s.isIdleLongerThan(_idlePassivationTimeoutSec))
+            //check the session is still idle and that it doesn't have requests using it
+            if (s.isValid() && s.isIdleLongerThan(_idlePassivationTimeoutSec) && s.isActive() && (s.getRequests() <= 0))
             {
-                s.willPassivate();
-                _sessionDataStore.store(id, s.getSessionData());
-                s.getSessionData().clearAllAttributes();
-                s.getSessionData().setDirty(false);
+                //TODO - do we need to check that the session exists in the session data store
+                //before we passivate it? If it doesn't exist, we can assume another node 
+                //invalidated it. If the session was new, it shouldn't have been idle passivated.
+                try
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Passivating idle session {}", id);
+                    s.willPassivate();
+                    _sessionDataStore.store(id, s.getSessionData());
+                    s.getSessionData().setDirty(false);
+                    s.setPassivated();
+                    doDelete(id); //Take the session object of this session store
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Passivation of idle session {} failed", id, e);
+                    s.setPassivated(); //set it as passivated so it can't be used
+                    doDelete(id); //detach it
+                }
             }
         }
-        catch (Exception e)
-        {
-            LOG.warn("Passivation of idle session {} failed", id, e);
-            //  TODO should do session.invalidate(); ???
-        }
+       
     }
 
 

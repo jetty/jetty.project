@@ -22,10 +22,8 @@ import java.net.UnknownHostException;
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
-import org.eclipse.jetty.server.session.AbstractSessionStore;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.server.session.StalePeriodStrategy;
 
 import com.mongodb.DBCollection;
 import com.mongodb.Mongo;
@@ -37,7 +35,6 @@ import com.mongodb.MongoException;
  */
 public class MongoTestServer extends AbstractTestServer
 {
-    public static final int STALE_INTERVAL = 1;
     static int __workers=0;
     
     
@@ -98,10 +95,7 @@ public class MongoTestServer extends AbstractTestServer
         try
         {
             manager = new MongoSessionManager();
-            manager.getSessionDataStore().setGracePeriodSec(_scavengePeriod);
-            StalePeriodStrategy staleStrategy = new StalePeriodStrategy();
-            staleStrategy.setStaleSec(STALE_INTERVAL);
-           ((AbstractSessionStore)manager.getSessionStore()).setStaleStrategy(staleStrategy);
+            manager.getSessionDataStore().setGracePeriodSec(_inspectionPeriod);
         }
         catch (Exception e)
         {

@@ -51,11 +51,27 @@ public class Session implements SessionManager.SessionIf
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
     
+    /**
+     * 
+     */
     public final static String SESSION_CREATED_SECURE="org.eclipse.jetty.security.sessionCreatedSecure";
     
     
+    /**
+     * State
+     *
+     * Validity states of a session
+     */
     public enum State {VALID, INVALID, INVALIDATING};
-        
+    
+    
+    /**
+     * PassivationState
+     *
+     * States of a session - either active in memory or passivated to persistent store
+     */
+    public enum PassivationState {PASSIVATED, ACTIVE};
+
     
     protected SessionData _sessionData;
     protected SessionManager _manager;
@@ -66,22 +82,50 @@ public class Session implements SessionManager.SessionIf
     private State _state = State.VALID; //state of the session:valid,invalid or being invalidated
     private Locker _lock = new Locker();
 
+    private PassivationState _passivationState = PassivationState.ACTIVE;
 
-    private boolean _isPassivated;
+
+
     
+    /**
+     * Create a new session
+     * 
+     * @param request
+     * @param data
+     */
     public Session (HttpServletRequest request, SessionData data)
     {
         _sessionData = data;
         _newSession = true;
-        _requests = 1;
+        _requests = 1; //access will not be called on this new session, but we are obviously in a request
     }
     
     
+    
+    /**
+     * Re-create an existing session
+     * @param data
+     */
     public Session (SessionData data)
     {
         _sessionData = data;
-        _requests = 1;
     }
+    
+    
+    /**
+     * Should call this method with a lock held if you want to
+     * make decision on what to do with the session
+     * 
+     * @return
+     */
+    public long getRequests()
+    {
+        try (Lock lock = _lock.lockIfNotHeld())
+        {
+            return _requests;
+        }
+    }
+    
     
     
     public void setSessionManager (SessionManager manager)
@@ -98,7 +142,7 @@ public class Session implements SessionManager.SessionIf
     /* ------------------------------------------------------------- */
     protected void cookieSet()
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
            _sessionData.setCookieSet(_sessionData.getAccessed());
         }
@@ -106,7 +150,7 @@ public class Session implements SessionManager.SessionIf
     /* ------------------------------------------------------------ */
     protected boolean access(long time)
     {
-        try (Lock lock=lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             if (!isValid())
                 return false;
@@ -129,7 +173,7 @@ public class Session implements SessionManager.SessionIf
     /* ------------------------------------------------------------ */
     protected void complete()
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             _requests--;
         }
@@ -363,7 +407,7 @@ public class Session implements SessionManager.SessionIf
     @Override
     public void setMaxInactiveInterval(int secs)
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             _sessionData.setMaxInactiveMs((long)secs*1000L);  
             _sessionData.setExpiry(_sessionData.getMaxInactiveMs() <= 0 ? 0 : (System.currentTimeMillis() + _sessionData.getMaxInactiveMs()*1000L));
@@ -407,11 +451,13 @@ public class Session implements SessionManager.SessionIf
      */
     protected void checkValidForWrite() throws IllegalStateException
     {    
-        if (!_lock.isLocked())
-            throw new IllegalStateException();
+        checkLocked();
 
         if (_state != State.VALID)
             throw new IllegalStateException();
+        
+        if (_passivationState == PassivationState.PASSIVATED)
+            throw new IllegalStateException("Passivated");
     }
     
     
@@ -422,14 +468,26 @@ public class Session implements SessionManager.SessionIf
      */
     protected void checkValidForRead () throws IllegalStateException
     {
-        if (!_lock.isLocked())
-            throw new IllegalStateException();
+        checkLocked();
+        
         if (_state == State.INVALID)
-            throw new IllegalStateException();
+            throw new IllegalStateException("Invalid");
+        
+        if (_passivationState == PassivationState.PASSIVATED)
+            throw new IllegalStateException("Passivated");
     }
     
     
-
+    /* ------------------------------------------------------------- */
+    /**
+     * @throws IllegalStateException
+     */
+    protected void checkLocked ()
+    throws IllegalStateException
+    {
+        if (!_lock.isLocked())
+            throw new IllegalStateException("Session not locked");
+    }
 
     /** 
      * @see javax.servlet.http.HttpSession#getAttribute(java.lang.String)
@@ -750,7 +808,7 @@ public class Session implements SessionManager.SessionIf
     /* ------------------------------------------------------------- */
     public void setIdChanged(boolean changed)
     {
-        try (Lock lock = lock())
+        try (Lock lock = _lock.lockIfNotHeld())
         {
             _idChanged=changed;
         }
@@ -784,25 +842,46 @@ public class Session implements SessionManager.SessionIf
         return _sessionData;
     }
 
+
+
+
     
-    /* ------------------------------------------------------------- */
+    /**
+     * 
+     */
+    public void setPassivated ()
+    {
+        checkLocked();
+        _passivationState = PassivationState.PASSIVATED;
+    }
+
+    /**
+     * 
+     */
+    public void setActive ()
+    {
+        checkLocked();
+        _passivationState = PassivationState.ACTIVE;
+    }
+
+
     /**
      * @return
      */
-    public boolean isPassivated()
+    public boolean isActive ()
     {
-        return _isPassivated;
+        checkLocked();
+        return _passivationState == PassivationState.ACTIVE;
     }
 
-    /* ------------------------------------------------------------- */
+
+
     /**
-     * @param isPassivated
+     * @return
      */
-    public void setPassivated(boolean isPassivated)
+    public boolean isPassivated ()
     {
-        _isPassivated = isPassivated;
+        checkLocked();
+        return _passivationState == PassivationState.PASSIVATED;
     }
-    
-    
-    
 }

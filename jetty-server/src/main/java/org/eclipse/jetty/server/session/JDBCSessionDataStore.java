@@ -717,7 +717,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
         //ensure this runs with context classloader set
         _context.run(r);
-
         if (exception.get() != null)
             throw exception.get();
 

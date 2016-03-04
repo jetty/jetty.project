@@ -65,9 +65,6 @@ public class InfinispanTestSessionServer extends AbstractTestServer
         InfinispanSessionManager sessionManager = new InfinispanSessionManager();
         sessionManager.setSessionIdManager((InfinispanSessionIdManager)_sessionIdManager);
         sessionManager.getSessionDataStore().setCache(((InfinispanSessionIdManager)_sessionIdManager).getCache());
-        StalePeriodStrategy staleStrategy = new StalePeriodStrategy();
-        staleStrategy.setStaleSec(1);
-       ((AbstractSessionStore)sessionManager.getSessionStore()).setStaleStrategy(staleStrategy);
         return sessionManager;
     }
 

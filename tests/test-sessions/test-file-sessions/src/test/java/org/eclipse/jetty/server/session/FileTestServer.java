@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+
 import java.io.File;
 
 import org.eclipse.jetty.server.SessionIdManager;
@@ -49,6 +54,70 @@ public class FileTestServer extends AbstractTestServer
         _tmpDir = null;
     }
     
+    
+    public static void assertStoreDirEmpty (boolean isEmpty)
+    {
+        assertNotNull(_tmpDir);
+        assertTrue(_tmpDir.exists());
+        String[] files = _tmpDir.list();
+        if (isEmpty)
+        {
+            if (files != null)
+                assertEquals(0, files.length);
+        }
+        else
+        {
+            assertNotNull(files);
+            assertFalse(files.length==0);
+        }
+    }
+    
+    
+    public static void assertFileExists (String sessionId, boolean exists)
+    {
+        assertNotNull(_tmpDir);
+        assertTrue(_tmpDir.exists());
+        String[] files = _tmpDir.list();
+        assertNotNull(files);
+        assertFalse(files.length == 0);
+        boolean found = false;
+        for (String name:files)
+        {
+            if (name.contains(sessionId))
+            {
+                found = true;
+                break;
+            }
+        }
+        if (exists)
+            assertTrue(found);
+        else
+            assertFalse(found);
+    }
+    
+    
+    public static void deleteFile (String sessionId)
+    {
+        assertNotNull(_tmpDir);
+        assertTrue(_tmpDir.exists());
+        String[] files = _tmpDir.list();
+        assertNotNull(files);
+        assertFalse(files.length == 0);
+        String filename = null;
+        for (String name:files)
+        {
+            if (name.contains(sessionId))
+            {
+                filename = name;
+                break;
+            }
+        }
+        if (filename != null)
+        {
+            File f = new File (_tmpDir, filename);
+            assertTrue(f.delete());
+        }
+    }
     
     
     public FileTestServer(int port)
