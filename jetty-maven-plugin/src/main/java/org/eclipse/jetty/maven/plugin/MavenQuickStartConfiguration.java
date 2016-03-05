@@ -73,7 +73,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
 
 
     @Override
-    public void configure(WebAppContext context) throws Exception
+    public boolean configure(WebAppContext context) throws Exception
     {
         
        JettyWebAppContext jwac = (JettyWebAppContext)context;
@@ -88,7 +88,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         }
         
         //Set up the quickstart environment for the context
-        super.configure(context);
+        boolean configured = super.configure(context);
         
         // knock out environmental maven and plexus classes from webAppContext
         String[] existingServerClasses = context.getServerClasses();
@@ -103,6 +103,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
                 LOG.debug(newServerClasses[i]);
         }
         context.setServerClasses( newServerClasses ); 
+        return configured;
     }
     
     @Override

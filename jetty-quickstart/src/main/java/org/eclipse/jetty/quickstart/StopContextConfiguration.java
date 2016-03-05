@@ -16,31 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.quickstart;
 
-public class CloneConfiguration extends AbstractConfiguration
+import org.eclipse.jetty.webapp.AbstractConfiguration;
+import org.eclipse.jetty.webapp.WebAppContext;
+
+public class StopContextConfiguration extends AbstractConfiguration
 {
-    final WebAppContext _template;
-    
-    CloneConfiguration(WebAppContext template)
-    {
-        _template=template;
-    }
-    
     @Override
     public boolean configure(WebAppContext context) throws Exception
     {
-        for (Configuration configuration : _template.getConfigurations())
-            configuration.cloneConfigure(_template,context);
-        
-        return true;
-    }
-
-
-    @Override
-    public void deconfigure(WebAppContext context) throws Exception
-    {
-        for (Configuration configuration : _template.getConfigurations())
-            configuration.deconfigure(context);
+        return false;
     }
 }

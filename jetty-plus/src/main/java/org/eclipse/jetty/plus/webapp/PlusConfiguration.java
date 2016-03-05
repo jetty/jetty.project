@@ -68,12 +68,14 @@ public class PlusConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public void configure (WebAppContext context)
+    public boolean configure (WebAppContext context)
     throws Exception
     {
         bindUserTransaction(context);
 
         context.getMetaData().addDescriptorProcessor(new PlusDescriptorProcessor());
+        
+        return true;
     }
 
     @Override

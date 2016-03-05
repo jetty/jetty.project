@@ -21,7 +21,6 @@ package org.eclipse.jetty.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -29,7 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -66,7 +65,7 @@ public class WebInfConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public boolean isEnabledByDefault()
+    public boolean isAddedByDefault()
     {
         return true;
     }
@@ -80,74 +79,49 @@ public class WebInfConfiguration extends AbstractConfiguration
         //Extract webapp if necessary
         unpack (context);
 
-
-        //Apply an initial ordering to the jars which governs which will be scanned for META-INF
-        //info and annotations. The ordering is based on inclusion patterns.
-        String tmp = (String)context.getAttribute(WEBINF_JAR_PATTERN);
-        Pattern webInfPattern = (tmp==null?null:Pattern.compile(tmp));
-        tmp = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
-        Pattern containerPattern = (tmp==null?null:Pattern.compile(tmp));
-
-        //Apply ordering to container jars - if no pattern is specified, we won't
-        //match any of the container jars
-        PatternMatcher containerJarNameMatcher = new PatternMatcher ()
-        {
-            public void matched(URI uri) throws Exception
-            {
-                context.getMetaData().addContainerResource(Resource.newResource(uri));
-            }
-        };
-        ClassLoader loader = null;
+        // discover matching container jars
         if (context.getClassLoader() != null)
-            loader = context.getClassLoader().getParent();
-
-        while (loader != null && (loader instanceof URLClassLoader))
         {
-            URL[] urls = ((URLClassLoader)loader).getURLs();
-            if (urls != null)
+            ClassLoader loader = context.getClassLoader().getParent();
+            List<URI> uris = new ArrayList<>();
+            while (loader != null && (loader instanceof URLClassLoader))
             {
-                URI[] containerUris = new URI[urls.length];
-                int i=0;
-                for (URL u : urls)
+                URL[] urls = ((URLClassLoader)loader).getURLs();
+                if (urls != null)
+                    for(URL url:urls)
+                        uris.add(new URI(url.toString().replaceAll(" ","%20")));
+                loader = loader.getParent();
+            }
+
+            new PatternMatcher ()
+            {
+                public void matched(URI uri) throws Exception
                 {
-                    try
-                    {
-                        containerUris[i] = u.toURI();
-                    }
-                    catch (URISyntaxException e)
-                    {
-                        containerUris[i] = new URI(u.toString().replaceAll(" ", "%20"));
-                    }
-                    i++;
+                    context.getMetaData().addContainerResource(Resource.newResource(uri));
                 }
-                containerJarNameMatcher.match(containerPattern, containerUris, false);
-            }
-            loader = loader.getParent();
+            }.match((String)context.getAttribute(CONTAINER_JAR_PATTERN), 
+                    uris.toArray(new URI[uris.size()]), 
+                    false);
         }
+        
 
-        //Apply ordering to WEB-INF/lib jars
-        PatternMatcher webInfJarNameMatcher = new PatternMatcher ()
-        {
-            @Override
-            public void matched(URI uri) throws Exception
-            {
-                context.getMetaData().addWebInfJar(Resource.newResource(uri));
-            }
-        };
+        //Discover matcghing WEB-INF/lib jars
         List<Resource> jars = findJars(context);
-
-        //Convert to uris for matching
-        URI[] uris = null;
-        if (jars != null)
+        if (jars!=null)
         {
-            uris = new URI[jars.size()];
-            int i=0;
-            for (Resource r: jars)
+            List<URI> uris = jars.stream().map(Resource::getURI).collect(Collectors.toList());
+            
+            new PatternMatcher ()
             {
-                uris[i++] = r.getURI();
-            }
-        }
-        webInfJarNameMatcher.match(webInfPattern, uris, true); //null is inclusive, no pattern == all jars match
+                @Override
+                public void matched(URI uri) throws Exception
+                {
+                    context.getMetaData().addWebInfJar(Resource.newResource(uri));
+                }
+            }.match((String)context.getAttribute(WEBINF_JAR_PATTERN), 
+                    uris.toArray(new URI[uris.size()]), 
+                    true);
+        }        
        
         //No pattern to appy to classes, just add to metadata
         context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
@@ -155,16 +129,8 @@ public class WebInfConfiguration extends AbstractConfiguration
 
 
     @Override
-    public void configure(WebAppContext context) throws Exception
+    public boolean configure(WebAppContext context) throws Exception
     {
-        //cannot configure if the context is already started
-        if (context.isStarted())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Cannot configure webapp "+context+" after it is started");
-            return;
-        }
-
         Resource web_inf = context.getWebInf();
 
         // Add WEB-INF classes and lib classpaths
@@ -193,6 +159,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 collection[i++]=resource;
             context.setBaseResource(new ResourceCollection(collection));
         }
+        return true;
     }
 
     @Override
@@ -623,8 +590,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 // Set dir or WAR
                 resource = context.newResource(context.getWar());
             }
-
-            String tmp = URIUtil.decodePath(resource.getURL().getPath());
+            String tmp = URIUtil.decodePath(resource.getURI().getPath());
             if (tmp.endsWith("/"))
                 tmp = tmp.substring(0, tmp.length()-1);
             if (tmp.endsWith("!"))

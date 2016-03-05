@@ -95,13 +95,13 @@ public class AbstractConfiguration implements Configuration
     }
     
     @Override
-    public List<String> getAfterThis()
+    public List<String> getConfigurationsAfterThis()
     {
         return _after;
     }
 
     @Override
-    public List<String> getBeforeThis()
+    public List<String> getConfigurationsBeforeThis()
     {
         return _before;
     }
@@ -122,8 +122,9 @@ public class AbstractConfiguration implements Configuration
     {
     }
 
-    public void configure(WebAppContext context) throws Exception
+    public boolean configure(WebAppContext context) throws Exception
     {
+        return true;
     }
 
     public void postConfigure(WebAppContext context) throws Exception
@@ -143,7 +144,7 @@ public class AbstractConfiguration implements Configuration
     }
 
     @Override
-    public boolean isEnabledByDefault() 
+    public boolean isAddedByDefault() 
     { 
         return _enabledByDefault; 
     }

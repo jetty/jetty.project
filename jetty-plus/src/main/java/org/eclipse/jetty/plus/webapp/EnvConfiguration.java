@@ -81,7 +81,7 @@ public class EnvConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public void configure (WebAppContext context) throws Exception
+    public boolean configure (WebAppContext context) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Created java:comp/env for webapp "+context.getContextPath());
@@ -138,6 +138,8 @@ public class EnvConfiguration extends AbstractConfiguration
 
         //add java:comp/env entries for any EnvEntries that have been defined so far
         bindEnvEntries(context);
+        
+        return true;
     }
 
 

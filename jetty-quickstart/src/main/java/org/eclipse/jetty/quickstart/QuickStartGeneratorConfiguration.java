@@ -20,11 +20,9 @@
 package org.eclipse.jetty.quickstart;
 
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
@@ -60,6 +58,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.MetaData.OriginInfo;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
@@ -72,25 +71,25 @@ import org.eclipse.jetty.xml.XmlAppendable;
  * Generate an effective web.xml from a WebAppContext, including all components 
  * from web.xml, web-fragment.xmls annotations etc.
  */
-public class QuickStartDescriptorGenerator
+public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(QuickStartDescriptorGenerator.class);
-    
-    public static final String DEFAULT_QUICKSTART_DESCRIPTOR_NAME = "quickstart-web.xml";
-    
-    protected WebAppContext _webApp;
-    protected String _extraXML;
-  
-    
+    private static final Logger LOG = Log.getLogger(QuickStartGeneratorConfiguration.class);
+        
+    private WebAppContext _webApp;
+    private ExtraXmlDescriptorProcessor _extraXmlProcessor;
+    private Resource _quickStartWebXml;
     
     /**
-     * @param w the source WebAppContext
+     * @param context the source WebAppContext
+     * @param quickStartWebXml 
      * @param extraXML any extra xml snippet to append
      */
-    public QuickStartDescriptorGenerator (WebAppContext w,  String extraXML)
+    public QuickStartGeneratorConfiguration (WebAppContext context, Resource quickStartWebXml)
     {
-        _webApp = w;
-        _extraXML = extraXML;
+        _webApp = context;
+        _extraXmlProcessor = new ExtraXmlDescriptorProcessor();
+        _quickStartWebXml=quickStartWebXml;
+        context.getMetaData().addDescriptorProcessor(_extraXmlProcessor);
     }
     
     
@@ -505,8 +504,7 @@ public class QuickStartDescriptorGenerator
             }
         }
 
-        out.literal(_extraXML);
-
+        out.literal(_extraXmlProcessor.getXML());
         out.closeTag();
     }
 
@@ -704,5 +702,21 @@ public class QuickStartDescriptorGenerator
             return Collections.emptyMap();
         return Collections.singletonMap("origin",origin.toString());
     }
-     
+    
+    @Override
+    public boolean configure(WebAppContext context) throws Exception
+    {
+        MetaData metadata = context.getMetaData();
+        metadata.resolve(context);
+        
+        if (!_quickStartWebXml.exists())
+            _quickStartWebXml.getFile().createNewFile();
+        try (FileOutputStream fos = new FileOutputStream(_quickStartWebXml.getFile()))
+        {
+            generateQuickStartWebXml(fos);
+        }
+        return true;
+    }
+
+
 }

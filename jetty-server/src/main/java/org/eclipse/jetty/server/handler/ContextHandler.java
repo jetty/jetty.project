@@ -752,6 +752,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         _attributes.setAttribute("org.eclipse.jetty.server.Executor",getServer().getThreadPool());
 
+        if (_mimeTypes == null)
+            _mimeTypes = new MimeTypes();
+
         try
         {
             // Set the classloader
@@ -761,13 +764,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 old_classloader = current_thread.getContextClassLoader();
                 current_thread.setContextClassLoader(_classLoader);
             }
-
-            if (_mimeTypes == null)
-                _mimeTypes = new MimeTypes();
-
             old_context = __context.get();
             __context.set(_scontext);
-
             enterScope(null, getState());
 
             // defers the calling of super.doStart()
@@ -778,8 +776,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         finally
         {
+            exitScope(null);
             __context.set(old_context);
-
             // reset the classloader
             if (_classLoader != null && current_thread!=null)
                 current_thread.setContextClassLoader(old_classloader);

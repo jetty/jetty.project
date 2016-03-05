@@ -43,6 +43,7 @@ import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -51,8 +52,10 @@ import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.handler.ManagedAttributeListener;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -78,6 +81,72 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  * The handlers are configured by pluggable configuration classes, with
  * the default being  {@link org.eclipse.jetty.webapp.WebXmlConfiguration} and
  * {@link org.eclipse.jetty.webapp.JettyWebXmlConfiguration}.
+ * 
+ * 
+ * <p>
+ * The Start/Configuration of a WebAppContext is rather complex so as to allow
+ * pluggable behaviour to be added in almost arbitrary ordering.  The
+ * sequence of a WebappContext start is as follows:
+ * <blockquote>
+ * {@link #doStart()}:
+ *   <ul>
+ *     <li>{@link #preConfigure()}</li>
+ *       <ul>
+ *         <li>{@link #loadSystemClasses()}</li>
+ *         <li>{@link #loadServerClasses()}</li>
+ *         <li>Add all Server class inclusions from known {@link Configurations}</li>
+ *         <li>{@link #loadConfigurations()} and sort</li>
+ *         <li>Add all Server class exclusions from enabled {@link Configurations}</li>
+ *         <li>Add all System classes for enabled {@link Configurations}</li>
+ *         <li>{@link Configuration#preConfigure(WebAppContext)} for enabled {@link Configurations}</li>
+ *       </ul>
+ *     </li>
+ *     <li>{@link ServletContextHandler#doStart()}
+ *       <ul>
+ *         <li>{@link ContextHandler#doStart()}
+ *           <ul>
+ *             <li>Init {@link MimeTypes}</li>
+ *             <li>enterScope
+ *               <ul>
+ *                 <li>{@link #startContext()}
+ *                   <ul>
+ *                     <li>{@link #configure()}
+ *                       <ul>
+ *                         <li>Call {@link Configuration#configure(WebAppContext)} on enabled {@link Configurations}</li>
+ *                       </ul>
+ *                     </li>
+ *                     <li>{@link MetaData#resolve(WebAppContext)}</li>
+ *                     <li>{@link #startWebapp()}
+ *                       <li>QuickStart may generate here and/or abort start</li>
+ *                       <ul>
+ *                         <li>{@link ServletContextHandler#startContext}
+ *                           <ul>
+ *                             <li>Decorate listeners</li>
+ *                             <li>{@link ContextHandler#startContext}
+ *                               <ul>
+ *                                 <li>add {@link ManagedAttributeListener}</li>
+ *                                 <li>{@link AbstractHandler#doStart}</li>
+ *                                 <li>{@link #callContextInitialized(javax.servlet.ServletContextListener, javax.servlet.ServletContextEvent)}</li>
+ *                               </ul>
+ *                             </li>
+ *                             <li>{@links ServletHandler#initialize()}</li>
+ *                           </ul>
+ *                         </li>
+ *                       </ul>
+ *                     </li>
+ *                   </ul>
+ *                 </li>
+ *               </ul>
+ *             </li>
+ *             <li>exitScope</li>
+ *           </ul>
+ *         </li>
+ *       </ul>
+ *     </li>
+ *     <li>{@link #postConfigure()}</li>
+ *   </ul>
+ *   
+ * </blockquote>
  *
  */
 @ManagedObject("Web Application ContextHandler")
@@ -99,7 +168,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public static final String[] DEFAULT_CONFIGURATION_CLASSES = 
             Configurations.getKnown().stream()
-            .filter(Configuration::isEnabledByDefault)
+            .filter(Configuration::isAddedByDefault)
             .map(c->c.getClass().getName())
             .toArray(String[]::new);
     
@@ -458,34 +527,19 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
         }
 
-        // Prepare for configuration
-        for (Configuration configuration : _configurations)
-        {
-            LOG.debug("preConfigure {} with {}",this,configuration);
-            configuration.preConfigure(this);
-        }
+        _configurations.preConfigure(this);
     }
 
     /* ------------------------------------------------------------ */
-    public void configure() throws Exception
+    public boolean configure() throws Exception
     {
-        // Configure webapp
-        for (Configuration configuration : _configurations)
-        {
-            LOG.debug("configure {} with {}",this,configuration);
-            configuration.configure(this);
-        }
+        return _configurations.configure(this);
     }
 
     /* ------------------------------------------------------------ */
     public void postConfigure() throws Exception
     {
-        // Clean up after configuration
-        for (Configuration configuration : _configurations)
-        {
-            LOG.debug("postConfigure {} with {}",this,configuration);
-            configuration.postConfigure(this);
-        }
+        _configurations.postConfigure(this);
     }
 
     /* ------------------------------------------------------------ */
@@ -1310,12 +1364,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     protected void startContext()
         throws Exception
     {
-        configure();
-        
-        //resolve the metadata
-        _metadata.resolve(this);
-
-        startWebapp();
+        if (configure())
+        {
+            //resolve the metadata
+            _metadata.resolve(this);
+            super.startContext();
+        }
     }
     
     
@@ -1323,7 +1377,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     protected void stopContext() throws Exception
     {
-        stopWebapp();
+        super.stopContext();
         try
         {                
             for (int i=_configurations.size();i-->0;)
@@ -1348,19 +1402,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             _unavailableException=null;
         }
     }
-
-    /* ------------------------------------------------------------ */
-    protected void startWebapp()
-        throws Exception
-    {
-        super.startContext();
-    }
     
-    /* ------------------------------------------------------------ */
-    protected void stopWebapp() throws Exception
-    {
-        super.stopContext();
-    }
     /* ------------------------------------------------------------ */    
     @Override
     public Set<String> setServletSecurity(Dynamic registration, ServletSecurityElement servletSecurityElement)

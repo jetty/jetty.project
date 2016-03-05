@@ -156,7 +156,7 @@ public class AntWebInfConfiguration extends WebInfConfiguration
      *
      * @see WebXmlConfiguration#configure(WebAppContext)
      */
-    public void configure(WebAppContext context) throws Exception
+    public boolean configure(WebAppContext context) throws Exception
     {
         if (context instanceof AntWebAppContext)
         {
@@ -173,5 +173,7 @@ public class AntWebInfConfiguration extends WebInfConfiguration
             }
         }
         super.configure(context);
+        
+        return true;
     }
 }

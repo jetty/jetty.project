@@ -438,7 +438,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
      */
     @Override
-    public void configure(WebAppContext context) throws Exception
+    public boolean configure(WebAppContext context) throws Exception
     {
        context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
 
@@ -473,6 +473,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
            for (ContainerInitializer i : initializers)
                    i.resolveClasses(context,map);
        }
+       
+       return true;
     }
 
 

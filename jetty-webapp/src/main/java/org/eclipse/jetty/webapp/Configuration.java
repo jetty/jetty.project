@@ -47,14 +47,14 @@ public interface Configuration
      * @return The names of Configurations that {@link TopologicalSort} must order 
      * before this configuration.
      */
-    public default List<String> getBeforeThis() { return Collections.emptyList(); }
+    public default List<String> getConfigurationsBeforeThis() { return Collections.emptyList(); }
 
     /* ------------------------------------------------------------------------------- */
     /** Get known Configuration Dependents.
      * @return The names of Configurations that {@link TopologicalSort} must order 
      * after this configuration.
      */
-    public default List<String> getAfterThis(){ return Collections.emptyList(); }
+    public default List<String> getConfigurationsAfterThis(){ return Collections.emptyList(); }
 
     /* ------------------------------------------------------------------------------- */
     /** Get the system classes associated with this Configuration.
@@ -71,14 +71,17 @@ public interface Configuration
     public default List<String> getServerClasses() { return Collections.emptyList();  }
     
     /**
-     * @return true if the Configuration should be enabled by default by being on server classpath
+     * @return true if the Configuration should be added to a Context by default 
      */
-    public default boolean isEnabledByDefault() { return false; }
+    public default boolean isAddedByDefault() { return false; }
     
     /* ------------------------------------------------------------------------------- */
     /** Set up for configuration.
      * <p>
-     * Typically this step discovers configuration resources
+     * Typically this step discovers configuration resources.
+     * Calls to preConfigure may alter the Configurations configured on the
+     * WebAppContext, so long as configurations prior to this configuration
+     * are not altered.
      * @param context The context to configure
      * @throws Exception if unable to pre configure
      */
@@ -91,9 +94,10 @@ public interface Configuration
      * Typically this step applies the discovered configuration resources to
      * either the {@link WebAppContext} or the associated {@link MetaData}.
      * @param context The context to configure
+     * @return True if configuration is successful or false if context should not be started.
      * @throws Exception if unable to configure
      */
-    public void configure (WebAppContext context) throws Exception;
+    public boolean configure (WebAppContext context) throws Exception;
     
     
     /* ------------------------------------------------------------------------------- */

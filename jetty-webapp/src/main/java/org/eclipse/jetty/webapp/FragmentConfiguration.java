@@ -38,7 +38,7 @@ public class FragmentConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public boolean isEnabledByDefault()
+    public boolean isAddedByDefault()
     {
         return true;
     }

@@ -60,15 +60,8 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
      * @see Configuration#configure(WebAppContext)
      */
     @Override
-    public void configure (WebAppContext context) throws Exception
+    public boolean configure (WebAppContext context) throws Exception
     {
-        //cannot configure if the _context is already started
-        if (context.isStarted())
-        {
-            LOG.debug("Cannot configure webapp after it is started");
-            return;
-        }
-
         LOG.debug("Configuring web-jetty.xml");
 
         Resource web_inf = context.getWebInf();
@@ -120,6 +113,8 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 }
             }
         }
+
+        return true;
     }
 
     /**

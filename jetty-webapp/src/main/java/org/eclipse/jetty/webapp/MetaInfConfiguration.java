@@ -78,7 +78,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     /* ------------------------------------------------------------------------------- */
     @Override
-    public boolean isEnabledByDefault()
+    public boolean isAddedByDefault()
     {
         return true;
     }

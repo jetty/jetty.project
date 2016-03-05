@@ -44,7 +44,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
 
     /* ------------------------------------------------------------------------------- */
     @Override
-    public boolean isEnabledByDefault()
+    public boolean isAddedByDefault()
     {
         return true;
     }
@@ -94,16 +94,10 @@ public class WebXmlConfiguration extends AbstractConfiguration
      * 
      */
     @Override
-    public void configure (WebAppContext context) throws Exception
+    public boolean configure (WebAppContext context) throws Exception
     {
-        // cannot configure if the context is already started
-        if (context.isStarted())
-        {
-            LOG.debug("Cannot configure webapp after it is started");
-            return;
-        }
-
         context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
+        return true;
     }
     
     /* ------------------------------------------------------------------------------- */

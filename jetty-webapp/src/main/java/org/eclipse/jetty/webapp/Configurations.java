@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -240,13 +241,13 @@ public class Configurations extends AbstractList<Configuration>
             map.put(c.getName(),c);
         for (Configuration c:_configurations)
         {
-            for (String b:c.getBeforeThis())
+            for (String b:c.getConfigurationsBeforeThis())
             {
                 Configuration before=map.get(b);
                 if (before!=null)
                     sort.addBeforeAfter(before,c);
             }
-            for (String a:c.getAfterThis())
+            for (String a:c.getConfigurationsAfterThis())
             {
                 Configuration after=map.get(a);
                 if (after!=null)
@@ -283,7 +284,7 @@ public class Configurations extends AbstractList<Configuration>
     {
         // Is this configuration known?
         if (!__known.containsKey(name))
-            LOG.info("Unknown configuration {}",name);            
+            LOG.warn("Unknown configuration {}. Not declared for ServiceLoader!",name);            
 
         // Do we need to replace any existing configuration?
         Class<? extends Configuration> replaces = configuration.replaces();
@@ -312,4 +313,42 @@ public class Configurations extends AbstractList<Configuration>
         return getConfigurations().toString();
     }
 
+    public void preConfigure(WebAppContext webapp) throws Exception
+    {
+        // Configure webapp
+        // iterate with index to allows changes to the Configurations
+        // during calls to preConfiguration.
+        for (int i=0; i<_configurations.size() ;i++)
+        {
+            Configuration configuration=_configurations.get(i);
+            LOG.debug("preConfigure {} with {}",this,configuration);
+            configuration.preConfigure(webapp);
+            
+            if (_configurations.get(i)!=configuration)
+                throw new ConcurrentModificationException("Cannot change prior configuration");
+        }
+    }
+    
+    public boolean configure(WebAppContext webapp) throws Exception
+    {
+        // Configure webapp
+        for (Configuration configuration : _configurations)
+        {
+            LOG.debug("configure {} with {}",this,configuration);
+            if (!configuration.configure(webapp))
+                return false;
+        }
+        return true;
+    }
+
+
+    public void postConfigure(WebAppContext webapp) throws Exception
+    {
+        // Configure webapp
+        for (Configuration configuration : _configurations)
+        {
+            LOG.debug("postConfigure {} with {}",this,configuration);
+            configuration.postConfigure(webapp);
+        }
+    }
 }
