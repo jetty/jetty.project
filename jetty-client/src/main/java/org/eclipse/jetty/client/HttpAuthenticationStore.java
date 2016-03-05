@@ -26,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
+import org.eclipse.jetty.client.util.AbstractAuthentication;
 
 public class HttpAuthenticationStore implements AuthenticationStore
 {
@@ -85,7 +86,7 @@ public class HttpAuthenticationStore implements AuthenticationStore
         // TODO: I should match the longest URI
         for (Map.Entry<URI, Authentication.Result> entry : results.entrySet())
         {
-            if (uri.toString().startsWith(entry.getKey().toString()))
+            if (AbstractAuthentication.matchesURI(entry.getKey(), uri))
                 return entry.getValue();
         }
         return null;

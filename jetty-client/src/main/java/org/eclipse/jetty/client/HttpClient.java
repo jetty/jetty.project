@@ -1038,7 +1038,7 @@ public class HttpClient extends ContainerLifeCycle
         return host;
     }
 
-    protected int normalizePort(String scheme, int port)
+    public static int normalizePort(String scheme, int port)
     {
         return port > 0 ? port : HttpScheme.HTTPS.is(scheme) ? 443 : 80;
     }
