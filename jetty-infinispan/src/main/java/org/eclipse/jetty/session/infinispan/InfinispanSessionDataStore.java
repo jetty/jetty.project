@@ -134,7 +134,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
      */
     @Override
-    public Set<String> getExpired(Set<String> candidates)
+    public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
     {
        if (candidates == null  || candidates.isEmpty())
            return candidates;
@@ -142,6 +142,9 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
        long now = System.currentTimeMillis();
        
        Set<String> expired = new HashSet<String>();
+       
+       //TODO if there is NOT an idle timeout set, need to check other sessions that
+       //might have expired
        
        for (String candidate:candidates)
        {
@@ -151,12 +154,43 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
            {
                SessionData sd = load(candidate);
 
-               if (sd == null || sd.isExpiredAt(now)) 
+               //if the session no longer exists
+               if (sd == null)
                {
                    expired.add(candidate);
                    if (LOG.isDebugEnabled())
-                       LOG.debug("Is null {} is expired {}", (sd==null), (sd !=null));
-               }    
+                       LOG.debug("Session {} does not exist in infinispan", candidate);
+               }
+               else
+               {
+                   if (_context.getWorkerName().equals(sd.getLastNode()))
+                   {
+                       //we are its manager, add it to the expired set if it is expired now
+                       if ((sd.getExpiry() > 0 ) && sd.getExpiry() <= now)
+                       {
+                           expired.add(candidate);
+                           if (LOG.isDebugEnabled())
+                               LOG.debug("Session {} managed by {} is expired", candidate, _context.getWorkerName());
+                       }
+                   }
+                   else
+                   {
+                       //if we are not the session's manager, only expire it iff:
+                       // this is our first expiryCheck and the session expired a long time ago
+                       //or
+                       //the session expired at least one graceperiod ago
+                       if (_lastExpiryCheckTime <=0)
+                       {
+                           if ((sd.getExpiry() > 0 ) && sd.getExpiry() < (now - (1000L * (3 * _gracePeriodSec))))
+                               expired.add(candidate);
+                       }
+                       else
+                       {
+                           if ((sd.getExpiry() > 0 ) && sd.getExpiry() < (now - (1000L * _gracePeriodSec)))
+                               expired.add(candidate);
+                       }
+                   }
+               }
            }
            catch (Exception e)
            {
@@ -193,6 +227,11 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     }
     
     
+    /**
+     * @param id
+     * @param context
+     * @return
+     */
     public static String getCacheKey (String id, SessionContext context)
     {
         return context.getCanonicalContextPath()+"_"+context.getVhost()+"_"+id;
@@ -224,11 +263,17 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     
     
     
+    /**
+     * @param sec the infinispan-specific idle timeout in sec or 0 if not set
+     */
     public void setInfinispanIdleTimeoutSec (int sec)
     {
         _infinispanIdleTimeoutSec = sec;
     }
     
+    /**
+     * @return
+     */
     public int getInfinispanIdleTimeoutSec ()
     {
         return _infinispanIdleTimeoutSec;

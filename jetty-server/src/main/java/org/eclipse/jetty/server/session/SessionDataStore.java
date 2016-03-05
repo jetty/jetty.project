@@ -95,7 +95,7 @@ public interface SessionDataStore extends LifeCycle
      * SessionDataStore
      * @return set of session ids
      */
-    public Set<String> getExpired (Set<String> candidates);
+    public Set<String> getExpired (Set<String> candidates, int scavengePeriodSec);
     
     
     

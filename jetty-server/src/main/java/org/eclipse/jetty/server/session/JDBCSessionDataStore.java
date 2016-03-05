@@ -58,8 +58,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
     private int _attempts = -1; // <= 0 means unlimited attempts to load a session
     private boolean _deleteUnloadables = false; //true means if attempts exhausted delete the session
-    private long _gracePeriodMs = 1000L * 60 * 60; //default grace period is 1hr
-
+    
     /**
      * SessionTableSchema
      *
@@ -285,7 +284,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         }
 
       
-        public PreparedStatement getMyExpiredSessionsStatement (Connection connection, String canonicalContextPath, String vhost, long expiry)
+        public PreparedStatement getExpiredSessionsStatement (Connection connection, String canonicalContextPath, String vhost, long expiry)
         throws SQLException
         {
             if (_dbAdaptor == null)
@@ -317,6 +316,42 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             return statement;
         }
       
+        
+        public PreparedStatement getMyExpiredSessionsStatement (Connection connection, SessionContext sessionContext, long expiry)
+        throws SQLException
+        {
+            if (_dbAdaptor == null)
+                throw new IllegalStateException("No DB adaptor");
+
+            if (sessionContext.getCanonicalContextPath() == null || "".equals(sessionContext.getCanonicalContextPath()))
+            {
+                if (_dbAdaptor.isEmptyStringNull())
+                {
+                    PreparedStatement statement = connection.prepareStatement("select "+getIdColumn()+", "+getExpiryTimeColumn()+
+                                                                              " from "+getTableName()+" where "+
+                                                                              getLastNodeColumn() + " = ?  and "+
+                                                                              getContextPathColumn()+" is null and "+
+                                                                              getVirtualHostColumn()+" = ? and "+getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?");
+                    statement.setString(1, sessionContext.getWorkerName());
+                    statement.setString(2, sessionContext.getVhost());
+                    statement.setLong(3, expiry);
+                    return statement;
+                }
+            }
+
+            PreparedStatement statement = connection.prepareStatement("select "+getIdColumn()+", "+getExpiryTimeColumn()+
+                                                                      " from "+getTableName()+" where "+
+                                                                      getLastNodeColumn()+" = ? and "+
+                                                                      getContextPathColumn()+" = ? and "+
+                                                                      getVirtualHostColumn()+" = ? and "+
+                                                                      getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?");
+
+            statement.setString(1, sessionContext.getWorkerName());
+            statement.setString(2, sessionContext.getCanonicalContextPath());
+            statement.setString(3,  sessionContext.getVhost());
+            statement.setLong(4, expiry);
+            return statement;
+        }
     
         
         public PreparedStatement getAllAncientExpiredSessionsStatement (Connection connection)
@@ -804,6 +839,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         }
     }
 
+    
     private void doUpdate (String id, SessionData data)
             throws Exception
     {
@@ -854,13 +890,12 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
      */
     @Override
-    public Set<String> getExpired(Set<String> candidates)
+    public Set<String> doGetExpired(Set<String> candidates, int scavengeIntervalSec)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Getting expired sessions "+System.currentTimeMillis());
 
         long now = System.currentTimeMillis();
-        
         
         Set<String> expiredSessionKeys = new HashSet<>();
         try (Connection connection = _dbAdaptor.getConnection())
@@ -868,13 +903,13 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             connection.setAutoCommit(true);
             
             /*
-             * 1. Select sessions for our context that have expired
+             * 1. Select sessions managed by this node for our context that have expired
              */
             long upperBound = now;
             if (LOG.isDebugEnabled())
-                LOG.debug ("{}- Pass 1: Searching for sessions for context {} expired before {}", _context.getWorkerName(), _context.getCanonicalContextPath(), upperBound);
+                LOG.debug ("{}- Pass 1: Searching for sessions for context {} managed by me {} and expired before {}",  _context.getCanonicalContextPath(), _context.getWorkerName(), upperBound);
 
-            try (PreparedStatement statement = _sessionTableSchema.getMyExpiredSessionsStatement(connection, _context.getCanonicalContextPath(), _context.getVhost(), upperBound))
+            try (PreparedStatement statement = _sessionTableSchema.getExpiredSessionsStatement(connection, _context.getCanonicalContextPath(), _context.getVhost(), upperBound))
             {
                 try (ResultSet result = statement.executeQuery())
                 {
@@ -889,30 +924,33 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             }
 
             /*
-             *  2. Select sessions for any node or context that have expired a long time ago (ie at least 3 grace periods ago)
+             *  2. Select sessions for any node or context that have expired 
+             *  at least 1 graceperiod since the last expiry check. If we haven't done previous expiry checks, then check
+             *  those that have expired at least 3 graceperiod ago.
              */
             try (PreparedStatement selectExpiredSessions = _sessionTableSchema.getAllAncientExpiredSessionsStatement(connection))
             {
-                upperBound = now - (3 * _gracePeriodMs);
-                if (upperBound > 0)
-                {
-                    if (LOG.isDebugEnabled()) LOG.debug("{}- Pass 2: Searching for sessions expired before {}",_context.getWorkerName(), upperBound);
+                if (_lastExpiryCheckTime <= 0)
+                    upperBound = (now - (3*(1000L * _gracePeriodSec)));
+                else
+                    upperBound =  _lastExpiryCheckTime - (1000L * _gracePeriodSec);
 
-                    selectExpiredSessions.setLong(1, upperBound);
-                    try (ResultSet result = selectExpiredSessions.executeQuery())
+                if (LOG.isDebugEnabled()) LOG.debug("{}- Pass 2: Searching for sessions expired before {}",_context.getWorkerName(), upperBound);
+
+                selectExpiredSessions.setLong(1, upperBound);
+                try (ResultSet result = selectExpiredSessions.executeQuery())
+                {
+                    while (result.next())
                     {
-                        while (result.next())
-                        {
-                            String sessionId = result.getString(_sessionTableSchema.getIdColumn());
-                            String ctxtpth = result.getString(_sessionTableSchema.getContextPathColumn());
-                            String vh = result.getString(_sessionTableSchema.getVirtualHostColumn());
-                            expiredSessionKeys.add(sessionId);
-                            if (LOG.isDebugEnabled()) LOG.debug ("{}- Found expired sessionId=",_context.getWorkerName(), sessionId);
-                        }
+                        String sessionId = result.getString(_sessionTableSchema.getIdColumn());
+                        String ctxtpth = result.getString(_sessionTableSchema.getContextPathColumn());
+                        String vh = result.getString(_sessionTableSchema.getVirtualHostColumn());
+                        expiredSessionKeys.add(sessionId);
+                        if (LOG.isDebugEnabled()) LOG.debug ("{}- Found expired sessionId=",_context.getWorkerName(), sessionId);
                     }
                 }
             }
-            
+
 
             Set<String> notExpiredInDB = new HashSet<>();
             for (String k: candidates)
@@ -958,44 +996,48 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             LOG.warn(e);
             return expiredSessionKeys; //return whatever we got
         } 
-       
-    }
-    public int getGracePeriodSec ()
-    {
-        return (int)(_gracePeriodMs == 0L? 0 : _gracePeriodMs/1000L);
     }
     
-    public void setGracePeriodSec (int sec)
-    {
-        if (sec < 0)
-            _gracePeriodMs = 0;
-        else
-            _gracePeriodMs = sec * 1000L;
-    }
     
+    /**
+     * @param dbAdaptor
+     */
     public void setDatabaseAdaptor (DatabaseAdaptor dbAdaptor)
     {
         checkStarted();
         _dbAdaptor = dbAdaptor;
     }
     
+    /**
+     * @param schema
+     */
     public void setSessionTableSchema (SessionTableSchema schema)
     {
         checkStarted();
         _sessionTableSchema = schema;
     }
 
+    /**
+     * @param attempts
+     */
     public void setLoadAttempts (int attempts)
     {
         checkStarted();
         _attempts = attempts;
     }
 
+    /**
+     * @return
+     */
     public int getLoadAttempts ()
     {
         return _attempts;
     }
     
+    /**
+     * @param id
+     * @return
+     */
     public boolean loadAttemptsExhausted (String id)
     {
         AtomicInteger i = _unloadables.get(id);
@@ -1004,18 +1046,27 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         return (i.get() >= _attempts);
     }
     
+    /**
+     * @param delete
+     */
     public void setDeleteUnloadableSessions (boolean delete)
     {
         checkStarted();
         _deleteUnloadables = delete;
     }
     
+    /**
+     * @return true if we should delete data for sessions that we cant reconstitute
+     */
     public boolean isDeleteUnloadableSessions ()
     {
         return _deleteUnloadables;
     }
     
     
+    /**
+     * @param id
+     */
     protected void incLoadAttempt (String id)
     {
         AtomicInteger i = new AtomicInteger(0);
@@ -1027,6 +1078,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     
   
     
+    /**
+     * @param id
+     * @return number of attempts to load the given id
+     */
     public int getLoadAttempts (String id)
     {
         AtomicInteger i = _unloadables.get(id);
@@ -1035,15 +1090,21 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         return i.get();
     }
     
+    /**
+     * @return how many sessions we've failed to load
+     */
     public Set<String> getUnloadableSessions ()
     {
         return new HashSet<String>(_unloadables.keySet());
     }
-    
-   public void clearUnloadableSessions()
-   {
-       _unloadables.clear();
-   }
+
+    /**
+     * 
+     */
+    public void clearUnloadableSessions()
+    {
+        _unloadables.clear();
+    }
 
 
 

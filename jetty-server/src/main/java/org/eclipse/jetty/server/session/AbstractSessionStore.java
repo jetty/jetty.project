@@ -565,7 +565,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
        
        if (LOG.isDebugEnabled())
            LOG.debug("SessionStore checking expiration on {}", candidates);
-       return _sessionDataStore.getExpired(candidates);
+       return _sessionDataStore.getExpired(candidates, _expiryTimeoutSec);
     }
 
     
