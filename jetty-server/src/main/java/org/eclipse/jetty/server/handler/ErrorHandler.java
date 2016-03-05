@@ -29,6 +29,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -110,16 +111,22 @@ public class ErrorHandler extends AbstractHandler
         }
         
         baseRequest.setHandled(true);
-        response.setContentType(MimeTypes.Type.TEXT_HTML_8859_1.asString());    
-        if (_cacheControl!=null)
-            response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
-        ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(4096);
-        String reason=(response instanceof Response)?((Response)response).getReason():null;
-        handleErrorPage(request, writer, response.getStatus(), reason);
-        writer.flush();
-        response.setContentLength(writer.size());
-        writer.writeTo(response.getOutputStream());
-        writer.destroy();
+
+        // Issue #124 - Don't produce text/html if the request doesn't accept it
+        HttpField accept = baseRequest.getHttpFields().getField(HttpHeader.ACCEPT);
+        if (accept == null || accept.contains("text/html") || accept.contains("*/*"))
+        {
+            response.setContentType(MimeTypes.Type.TEXT_HTML_8859_1.asString());
+            if (_cacheControl != null)
+                response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
+            ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(4096);
+            String reason = (response instanceof Response) ? ((Response) response).getReason() : null;
+            handleErrorPage(request, writer, response.getStatus(), reason);
+            writer.flush();
+            response.setContentLength(writer.size());
+            writer.writeTo(response.getOutputStream());
+            writer.destroy();
+        }
     }
 
     /* ------------------------------------------------------------ */
