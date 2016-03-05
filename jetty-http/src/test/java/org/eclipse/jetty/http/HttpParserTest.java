@@ -388,9 +388,13 @@ public class HttpParserTest
         assertEquals("HTTP/1.0", _versionOrReason);
         assertEquals("Host", _hdr[0]);
         assertEquals("localhost", _val[0]);
-        assertEquals("Connection", _hdr[1]);
-        assertEquals("close", _val[1]);
-        assertEquals(1, _headers);
+        assertEquals("Name0", _hdr[1]);
+        assertEquals(null, _val[1]);
+        assertEquals("Name1", _hdr[2]);
+        assertEquals(null, _val[2]);
+        assertEquals("Connection", _hdr[3]);
+        assertEquals("close", _val[3]);
+        assertEquals(3, _headers);
     }
 
     @Test
