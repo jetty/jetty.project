@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.omg.CosNaming._NamingContextExtStub;
 
 import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
 import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
@@ -1174,8 +1175,12 @@ public class HttpParser
                     {
                         _value=null;
                         _string.setLength(0);
-                        _valueString=_compliance.ordinal()<=HttpCompliance.RFC2616.ordinal()?"":null;
+                        _valueString=null;
                         _length=-1;
+                        if (_compliance.ordinal()<=HttpCompliance.RFC2616.ordinal())
+                            _valueString="";
+                        else
+                            _headerString=null;
 
                         setState(State.HEADER);
                         break;

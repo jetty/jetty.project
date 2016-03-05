@@ -236,7 +236,7 @@ public class PrefaceTest extends AbstractTest
                     "Host: localhost\r\n" +
                     "Connection: Upgrade, HTTP2-Settings\r\n" +
                     "Upgrade: h2c\r\n" +
-                    "HTTP2-Settings: \r\n" +
+                    "HTTP2-Settings: ==\r\n" +
                     "\r\n";
             ByteBuffer upgradeBuffer = ByteBuffer.wrap(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
             socket.write(upgradeBuffer);
