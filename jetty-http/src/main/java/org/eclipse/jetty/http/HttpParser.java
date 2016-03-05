@@ -1174,7 +1174,7 @@ public class HttpParser
                     {
                         _value=null;
                         _string.setLength(0);
-                        _valueString=null;
+                        _valueString=_compliance.ordinal()<=HttpCompliance.RFC2616.ordinal()?"":null;
                         _length=-1;
 
                         setState(State.HEADER);
