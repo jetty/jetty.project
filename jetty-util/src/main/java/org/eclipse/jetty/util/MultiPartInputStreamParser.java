@@ -764,11 +764,15 @@ public class MultiPartInputStreamParser
                 }
                 finally
                 {
-
                     part.close();
                 }
             }
-            if (!lastPart)
+            if (lastPart)
+            {
+                while(line!=null)
+                    line=((ReadLineInputStream)_in).readLine();
+            }
+            else
                 throw new IOException("Incomplete parts");
         }
         catch (Exception e)
