@@ -48,7 +48,12 @@ public class Configurations extends AbstractList<Configuration>
         ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
         for (Configuration configuration : configs)
             __known.put(configuration.getName(),configuration);
-        
+
+        if (LOG.isDebugEnabled())
+        {
+            for (Map.Entry<String, Configuration> e: __known.entrySet())
+                LOG.debug("known {}",e);
+        }
         LOG.debug("Known Configurations {}",__known.keySet());
     }
 
@@ -251,7 +256,10 @@ public class Configurations extends AbstractList<Configuration>
         
         sort.sort(_configurations);
         if (LOG.isDebugEnabled())
-            LOG.debug("sorted {}",_configurations);
+        {
+            for (Configuration c: _configurations)
+                LOG.debug("sorted {}",c);
+        }
     }
     
     public List<Configuration> getConfigurations()

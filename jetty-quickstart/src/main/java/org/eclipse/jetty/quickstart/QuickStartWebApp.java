@@ -19,12 +19,20 @@
 package org.eclipse.jetty.quickstart;
 
 import java.io.FileOutputStream;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -33,35 +41,26 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class QuickStartWebApp extends WebAppContext
 {
     private static final Logger LOG = Log.getLogger(QuickStartWebApp.class);
-    
-    public static final String[] __configurationClasses = new String[] 
-            {
-                org.eclipse.jetty.quickstart.QuickStartConfiguration.class.getCanonicalName(),
-                org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
-                org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
-                org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName()
-            };
-    
+        
     private boolean _preconfigure=false;
     private boolean _autoPreconfigure=false;
     private boolean _startWebapp=false;
     private PreconfigureDescriptorProcessor _preconfigProcessor;
     
-    public static final String[] __preconfigurationClasses = new String[]
+    public static final Set<String> __replaceconfigurationClasses = new HashSet<>(
+            Arrays.asList(new String[]
     { 
         org.eclipse.jetty.webapp.WebInfConfiguration.class.getCanonicalName(), 
         org.eclipse.jetty.webapp.WebXmlConfiguration.class.getCanonicalName(),
         org.eclipse.jetty.webapp.MetaInfConfiguration.class.getCanonicalName(), 
         org.eclipse.jetty.webapp.FragmentConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(), 
-        org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
         org.eclipse.jetty.annotations.AnnotationConfiguration.class.getCanonicalName(),
-    };
+    }));
     
     public QuickStartWebApp()
     {
         super();
-        setConfigurationClasses(__preconfigurationClasses);
+        addConfiguration(new EnvConfiguration(),new PlusConfiguration(),new AnnotationConfiguration());
         setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",".*\\.jar");
     }
 
@@ -152,7 +151,10 @@ public class QuickStartWebApp extends WebAppContext
         }
         else if (qswebxml.exists())
         {
-            setConfigurationClasses(__configurationClasses);
+            setConfigurations(Arrays.stream(getConfigurations())
+                    .filter(c->!__replaceconfigurationClasses.contains(c.getName()))
+                    .collect(Collectors.toList()).toArray(new Configuration[]{}));
+            addConfiguration(new QuickStartConfiguration());
             _startWebapp=true;
         }
         else if (_autoPreconfigure)
