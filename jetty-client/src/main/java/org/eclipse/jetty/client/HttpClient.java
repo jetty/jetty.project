@@ -1035,7 +1035,7 @@ public class HttpClient extends ContainerLifeCycle
         return host;
     }
 
-    protected int normalizePort(String scheme, int port)
+    public static int normalizePort(String scheme, int port)
     {
         if (port > 0)
             return port;
