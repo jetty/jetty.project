@@ -28,7 +28,9 @@ package org.eclipse.jetty.server.session;
  */
 public interface SessionInspector
 {
-    public void preInspection();
+    public int getTimeoutSec();
+    public void setTimeoutSet(int sec);
+    public boolean preInspection();
     public void inspect(Session s);
     public void postInspection (); //on completion
 }

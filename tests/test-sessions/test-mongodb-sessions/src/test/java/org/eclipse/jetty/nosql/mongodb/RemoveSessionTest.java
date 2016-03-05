@@ -41,9 +41,9 @@ public class RemoveSessionTest extends AbstractRemoveSessionTest
         MongoTestServer.dropCollection();
     }
     
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspect, int idlePassivate)
     {
-        return new MongoTestServer(port,max,scavenge);
+        return new MongoTestServer(port,max,scavenge, inspect, idlePassivate);
     }
     
     @Test

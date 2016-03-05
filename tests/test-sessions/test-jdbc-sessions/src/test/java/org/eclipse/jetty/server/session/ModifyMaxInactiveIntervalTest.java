@@ -45,15 +45,17 @@ import org.junit.Test;
  */
 public class ModifyMaxInactiveIntervalTest
 {
-    
-        public static int inactive = 4;
-        public static int newMaxInactive = 20;
-        public static int scavenge = 1;
+
+    public static int __inactive = 4;
+    public static int newMaxInactive = 20;
+    public static int __scavenge = 1;
+    public static int __inspect = 1;
+    public static int __idlePassivate = -1;
         
     @Test
     public void testSessionExpiryAfterModifiedMaxInactiveInterval() throws Exception
     {
-        AbstractTestServer server = new JdbcTestServer(0,inactive,scavenge);
+        AbstractTestServer server = new JdbcTestServer(0,__inactive,__scavenge, __inspect, __idlePassivate);
         
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");

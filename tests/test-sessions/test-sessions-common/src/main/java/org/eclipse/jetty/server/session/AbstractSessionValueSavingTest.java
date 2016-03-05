@@ -41,7 +41,7 @@ import org.junit.Test;
  */
 public abstract class AbstractSessionValueSavingTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectPeriod, int idlePassivatePeriod);
 
     @Test
     public void testSessionValueSaving() throws Exception
@@ -50,7 +50,9 @@ public abstract class AbstractSessionValueSavingTest
         String servletMapping = "/server";
         int maxInactivePeriod = 10000;
         int scavengePeriod = 20000;
-        AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod);
+        int inspectPeriod = 5;
+        int idlePassivatePeriod = -1;
+        AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
  
         try

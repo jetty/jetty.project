@@ -49,9 +49,9 @@ public class ReentrantRequestSessionTest extends AbstractReentrantRequestSession
      * @see org.eclipse.jetty.server.session.AbstractReentrantRequestSessionTest#createServer(int)
      */
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port,int maxInactive, int scavenge, int inspectInterval, int idlePassivateInterval)
     {
-       return new InfinispanTestSessionServer(port, __testSupport.getCache());
+       return new InfinispanTestSessionServer(port, maxInactive, scavenge, inspectInterval, idlePassivateInterval,__testSupport.getCache());
     }
 
     @Override

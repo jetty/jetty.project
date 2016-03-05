@@ -46,7 +46,7 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
     protected Runner _runner;
     protected boolean _ownScheduler = false;
     private long _intervalMs =  DEFAULT_PERIOD_MS;
-    private long _lastTime = 0L;
+   
     
    
     
@@ -97,7 +97,6 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
         if (!(_sessionIdManager instanceof AbstractSessionIdManager))
             throw new IllegalStateException ("SessionIdManager is not an AbstractSessionIdManager");
 
-        _lastTime = System.currentTimeMillis(); //set it to a non zero value
 
         //try and use a common scheduler, fallback to own
         _scheduler = ((AbstractSessionIdManager)_sessionIdManager).getServer().getBean(Scheduler.class);
@@ -199,8 +198,6 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
 
         if (LOG.isDebugEnabled())
             LOG.debug("Inspecting sessions");
-
-        long now = System.currentTimeMillis();
         
         //find the session managers
         for (SessionManager manager:((AbstractSessionIdManager)_sessionIdManager).getSessionManagers())
@@ -208,25 +205,6 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
             if (manager != null)
             {
                 manager.inspect();
-
-                /*   
-                //call scavenge on each manager to find keys for sessions that have expired
-                Set<String> expiredKeys = manager.scavenge();
-
-                //for each expired session, tell the session id manager to invalidate its key on all contexts
-                for (String key:expiredKeys)
-                {
-                    
-                    // if it recently expired
-                    try
-                    {
-                        ((AbstractSessionIdManager)_sessionIdManager).expireAll(key);
-                    }
-                    catch (Exception e)
-                    {
-                        LOG.warn(e);
-                    }
-                }*/
             }
         }
     }

@@ -31,11 +31,11 @@ import org.eclipse.jetty.util.log.Logger;
  *
  *
  */
-public class ExpiryInspector implements SessionInspector
+public class ExpiryInspector extends AbstractSessionInspector
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
-    protected Set<String> _expiryCandidates;
+    protected Set<String> _expiryCandidates = new HashSet<String>();
     protected SessionIdManager _idManager;
     protected AbstractSessionStore _sessionStore;
     
@@ -78,11 +78,16 @@ public class ExpiryInspector implements SessionInspector
      * @see org.eclipse.jetty.server.session.SessionInspector#preInspection()
      */
     @Override
-    public void preInspection()
+    public boolean preInspection()
     {
+        _expiryCandidates.clear();
+        
+        boolean shouldInspect = super.preInspection();
+
         if (LOG.isDebugEnabled())
-            LOG.debug("PreInspection");
-        _expiryCandidates = new HashSet<String>();
+            LOG.debug("ExpiryInspector, will inspect:{}", shouldInspect);
+        
+        return shouldInspect;
     }
 
     /** 
@@ -108,7 +113,7 @@ public class ExpiryInspector implements SessionInspector
         }
         finally
         {
-            _expiryCandidates = null;
+            _expiryCandidates.clear();
         }
     }
 }

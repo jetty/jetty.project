@@ -44,24 +44,9 @@ public class InvalidateSessionTest extends AbstractInvalidationSessionTest
     }
 
     @Override
-    public AbstractTestServer createServer(int port, int maxInterval, int inspectInterval)
+    public AbstractTestServer createServer(int port, int maxInterval, int scavengeInterval, int inspectInterval, int idleInterval)
     {
-        MongoTestServer server = new MongoTestServer(port, maxInterval, inspectInterval)
-        {
-
-            /** 
-             * @see org.eclipse.jetty.nosql.mongodb.MongoTestServer#newSessionManager()
-             */
-            @Override
-            public SessionManager newSessionManager()
-            {
-                MongoSessionManager manager = (MongoSessionManager)super.newSessionManager();
-                manager.getSessionStore().setIdlePassivationTimeoutSec(IDLE_PASSIVATE_SEC);
-                return manager;
-            }
-
-        };
-        return server;
+        return new MongoTestServer(port, maxInterval, scavengeInterval, inspectInterval, idleInterval);
     }
 
     @Override

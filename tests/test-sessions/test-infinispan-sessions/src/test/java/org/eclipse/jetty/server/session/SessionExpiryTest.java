@@ -42,9 +42,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     }
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectInterval, int idlePassivateInterval)
     {
-       InfinispanTestSessionServer server =  new InfinispanTestSessionServer(port, max, scavenge, __testSupport.getCache());
+       InfinispanTestSessionServer server =  new InfinispanTestSessionServer(port, max, scavenge, inspectInterval, idlePassivateInterval, __testSupport.getCache());
        return server;
     }
 

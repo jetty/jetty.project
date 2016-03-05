@@ -19,15 +19,15 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -43,12 +43,15 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
+    protected ArrayList<SessionInspector> _inspectors = new ArrayList<SessionInspector>();
     protected SessionDataStore _sessionDataStore;
     protected SessionManager _manager;
     protected SessionContext _context;
     protected int _idlePassivationTimeoutSec;
+    protected int _expiryTimeoutSec;
     private IdleInspector _idleInspector;
     private ExpiryInspector _expiryInspector;
+    private boolean _passivateOnComplete;
     
 
     /**
@@ -176,11 +179,19 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         
         if (_context == null)
             throw new IllegalStateException ("No ContextId");
-        
+
         _sessionDataStore.initialize(_context);
         _sessionDataStore.start();
-        
-        _expiryInspector = new ExpiryInspector(this, _manager.getSessionIdManager());
+
+        if (_expiryTimeoutSec >= 0)
+        {
+            synchronized (_inspectors)
+            {
+                _expiryInspector = new ExpiryInspector(this, _manager.getSessionIdManager());
+                _expiryInspector.setTimeoutSet(_expiryTimeoutSec);
+                _inspectors.add(0, _expiryInspector);
+            }
+        }
         
         super.doStart();
     }
@@ -229,11 +240,46 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      */
     public void setIdlePassivationTimeoutSec(int idleTimeoutSec)
     {
-        _idlePassivationTimeoutSec = idleTimeoutSec;
-        if (_idlePassivationTimeoutSec == 0)
-            _idleInspector = null;
-        else if (_idleInspector == null)
-            _idleInspector = new IdleInspector(this);
+        synchronized (_inspectors)
+        {
+            _idlePassivationTimeoutSec = idleTimeoutSec;
+            if (_idlePassivationTimeoutSec == 0)
+            {
+                if (_idleInspector  != null)
+                    _inspectors.remove(_idleInspector);
+                _idleInspector = null;
+            }
+            else 
+            {
+                if (_idleInspector == null)
+                {
+                    _idleInspector = new IdleInspector(this);
+                    _inspectors.add(_idleInspector);
+                }
+
+                _idleInspector.setTimeoutSet(_idlePassivationTimeoutSec);
+            }
+        }
+    }
+
+
+
+    /**
+     * @return the expiryTimeoutSec
+     */
+    public int getExpiryTimeoutSec()
+    {
+        return _expiryTimeoutSec;
+    }
+
+
+
+    /**
+     * @param expiryTimeoutSec the expiryTimeoutSec to set
+     */
+    public void setExpiryTimeoutSec(int expiryTimeoutSec)
+    {
+        _expiryTimeoutSec = expiryTimeoutSec;
     }
 
 
@@ -245,10 +291,10 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * the data for it from a SessionDataStore associated with the 
      * session manager.
      * 
-     * @see org.eclipse.jetty.server.session.SessionStore#get(java.lang.String, boolean)
+     * @see org.eclipse.jetty.server.session.SessionStore#get(java.lang.String)
      */
     @Override
-    public Session get(String id, boolean staleCheck) throws Exception
+    public Session get(String id) throws Exception
     {
         Session session = null;
         Exception ex = null;
@@ -380,7 +426,10 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     }
 
     /** 
-     * Put the Session object into the session store. 
+     * Put the Session object back into the session store. 
+     * 
+     * This should be called by Session.complete when a request exists the session.
+     * 
      * If the session manager supports a session data store, write the
      * session data through to the session data store.
      * 
@@ -394,7 +443,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
        
 
 
-        //if the session is new, the data has changed, or the cache is considered stale, write it to any backing store
+        //if the session is new or data has changed write it to any backing store
         try (Lock lock = session.lock())
         {
             session.setSessionManager(_manager);
@@ -405,7 +454,45 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
             if (!session.isValid())
                 return;
             
-            if ((session.isNew() || session.getSessionData().isDirty()) && _sessionDataStore != null)
+            if (_sessionDataStore == null)
+            {
+                doPutIfAbsent(id, session); //ensure it is in our map
+                return;
+            }
+
+            if ((session.getRequests() <= 0))
+            {
+                //only save if all requests have finished
+                if (!_sessionDataStore.isPassivating())
+                {
+                    //if our backing datastore isn't the passivating kind, just save the session
+                    _sessionDataStore.store(id, session.getSessionData());
+                }
+                else
+                {
+                    //backing store supports passivation
+                    session.willPassivate();
+                    _sessionDataStore.store(id, session.getSessionData());
+                    session.setPassivated();
+                    if (isPassivateOnComplete())
+                    {
+                        //throw out the passivated session object from the map
+                        doDelete(id);
+                    }
+                    else
+                    {
+                        //reactivate the session
+                        session.setActive();
+                        session.didActivate();
+
+                    }
+                }
+            }
+            
+            doPutIfAbsent(id,session); //ensure it is in our map         
+        }
+            
+      /*      if ((session.isNew() || session.getSessionData().isDirty()) && _sessionDataStore != null)
             {
                 if (_sessionDataStore.isPassivating())
                 {
@@ -424,8 +511,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
 
             }
-            doPutIfAbsent(id,session);
-        }
+            doPutIfAbsent(id,session);*/
     }
 
     /** 
@@ -450,7 +536,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     public Session delete(String id) throws Exception
     {   
         //get the session, if its not in memory, this will load it
-        Session session = get(id, false); 
+        Session session = get(id); 
 
         //Always delete it from the backing data store
         if (_sessionDataStore != null)
@@ -490,18 +576,30 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     public void inspect ()
     {      
         Stream<Session> stream = getStream();
-        try
+
+        synchronized (_inspectors)
         {
-            _expiryInspector.preInspection();
-            if (_idleInspector != null)
-                _idleInspector.preInspection();
-            stream.forEach(s->{_expiryInspector.inspect(s); if (_idleInspector != null) _idleInspector.inspect(s);});
-            _expiryInspector.postInspection();
-            _idleInspector.postInspection();
-        }
-        finally 
-        {
-            stream.close();
+            try
+            {
+                final ArrayList<Boolean> wantInspect = new ArrayList<Boolean>();
+                for (SessionInspector i:_inspectors)
+                    wantInspect.add(Boolean.valueOf(i.preInspection()));
+
+                stream.forEach(s->{for (int i=0;i<_inspectors.size(); i++) { if (wantInspect.get(i)) _inspectors.get(i).inspect(s);}});
+            }
+            finally 
+            {
+                try
+                {
+                    for (SessionInspector i:_inspectors)
+                        i.postInspection();
+                }
+                catch (Exception e)
+                {
+                    LOG.warn(e);
+                }
+                stream.close();
+            }
         }
     }
     
@@ -548,7 +646,6 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
                         LOG.debug("Passivating idle session {}", id);
                     s.willPassivate();
                     _sessionDataStore.store(id, s.getSessionData());
-                    s.getSessionData().setDirty(false);
                     s.setPassivated();
                     doDelete(id); //Take the session object of this session store
                 }
@@ -564,6 +661,57 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     }
 
 
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionStore#renewSessionId(java.lang.String, java.lang.String)
+     */
+    public Session renewSessionId (String oldId, String newId)
+    throws Exception
+    {
+        if (StringUtil.isBlank(oldId))
+            throw new IllegalArgumentException ("Old session id is null");
+        if (StringUtil.isBlank(newId))
+            throw new IllegalArgumentException ("New session id is null");
+
+        Session session = get(oldId);
+        if (session == null)
+            return null;
+
+        try (Lock lock = session.lock())
+        {
+            session.checkValidForWrite(); //can't change id on invalid session
+            session.getSessionData().setId(newId);
+            session.getSessionData().setLastSaved(0); //pretend that the session has never been saved before to get a full save
+            session.getSessionData().setDirty(true);  //ensure we will try to write the session out
+            doPutIfAbsent(newId, session); //put the new id into our map
+            doDelete (oldId); //take old out of map
+            if (_sessionDataStore != null)
+            {
+                _sessionDataStore.delete(oldId);  //delete the session data with the old id
+                _sessionDataStore.store(newId, session.getSessionData()); //save the session data with the new id
+            }
+            LOG.info("Session id {} swapped for new id {}", oldId, newId);
+            return session;
+        }
+    }
+    
+    
+    /**
+     * @param passivateOnComplete
+     */
+    public void setPassivateOnComplete (boolean passivateOnComplete)
+    {
+        _passivateOnComplete = passivateOnComplete;
+    }
+    
+    
+    /**
+     * @return
+     */
+    public boolean isPassivateOnComplete ()
+    {
+        return _passivateOnComplete;
+    }
+    
 
     /** 
      * @see org.eclipse.jetty.server.session.SessionStore#newSession(javax.servlet.http.HttpServletRequest, java.lang.String, long, long)

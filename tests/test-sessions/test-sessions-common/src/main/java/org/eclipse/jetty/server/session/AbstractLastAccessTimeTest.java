@@ -54,7 +54,7 @@ import org.junit.Test;
 public abstract class AbstractLastAccessTimeTest
 {
     
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivatePeriod);
  
    
 
@@ -64,8 +64,10 @@ public abstract class AbstractLastAccessTimeTest
         String contextPath = "";
         String servletMapping = "/server";
         int maxInactivePeriod = 8; //session will timeout after 8 seconds
+        int inspectionPeriod = 2; //periodic inspections every 2 sec
         int scavengePeriod = 2; //scavenging occurs every 2 seconds
-        AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod);
+        int idlePassivatePeriod = -1; //dont check for idle sessions to passivate
+        AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod, inspectionPeriod, idlePassivatePeriod);
         TestServlet servlet1 = new TestServlet();
         ServletHolder holder1 = new ServletHolder(servlet1);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -79,11 +81,12 @@ public abstract class AbstractLastAccessTimeTest
         {
             server1.start();
             int port1=server1.getPort();
-            AbstractTestServer server2 = createServer(0, maxInactivePeriod, scavengePeriod);
+            AbstractTestServer server2 = createServer(0, maxInactivePeriod, scavengePeriod, inspectionPeriod, idlePassivatePeriod);
             ServletContextHandler context2 = server2.addContext(contextPath);
             context2.addServlet(TestServlet.class, servletMapping);
             SessionManager m2 = (SessionManager)context2.getSessionHandler().getSessionManager();
 
+            
             try
             {
                 server2.start();
@@ -129,7 +132,7 @@ public abstract class AbstractLastAccessTimeTest
                     // At this point, session1 should be eligible for expiration.
                     // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                     Thread.sleep(scavengePeriod * 2500L);
-
+                    
                     //check that the session was not scavenged over on server1 by ensuring that the SessionListener destroy method wasn't called
                     assertFalse(listener1._destroys.contains(AbstractTestServer.extractSessionId(sessionCookie)));
                     assertAfterScavenge(m1);

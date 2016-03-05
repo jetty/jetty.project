@@ -264,7 +264,7 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
      * @param id the session id
      * @return unique cache id
      */
-    protected String makeKey (String id)
+    public String makeKey (String id)
     {
         return ID_KEY+id;
     }

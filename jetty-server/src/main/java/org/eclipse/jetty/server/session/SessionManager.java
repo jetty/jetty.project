@@ -588,9 +588,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         try
         {
             _sessionStore.put(id, session);
-            
-            _sessionsCreatedStats.increment();
-            
+            _sessionsCreatedStats.increment();         
             _sessionIdManager.useId(session);
             
             if (_sessionListeners!=null)
@@ -714,7 +712,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     {
         try
         {
-            Session session =  _sessionStore.get(id, true);
+            Session session =  _sessionStore.get(id);
             if (session != null)
             {
                 //If the session we got back has expired
@@ -951,20 +949,9 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     {
         try
         {
-            Session session =_sessionStore.delete(oldId);
-            if (session == null)
-            {
-                LOG.warn("Unable to renew id to "+newId+" for non-existant session "+oldId);
-                return;
-            }
-            
-            //swap the ids
-            session.renewId(oldId, oldExtendedId, newId, newExtendedId);
-            
-            _sessionStore.put(newId, session);
-            
-            //tell session id manager the id is in use
-            _sessionIdManager.useId(session);
+            Session session = _sessionStore.renewSessionId (oldId, newId); //swap the id over
+            session.setExtendedId(newExtendedId); //remember the extended id
+            _sessionIdManager.useId(session); //tell id manager new id is in use
 
             //inform the listeners
             if (!_sessionIdListeners.isEmpty())
@@ -975,6 +962,36 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                     l.sessionIdChanged(event, oldId);
                 }
             }
+
+     /*       Session session =_sessionStore.get(oldId);
+            if (session == null)
+            {
+                LOG.warn("Unable to renew id to "+newId+" for non-existant session "+oldId);
+                return;
+            }
+            
+            try (Lock lock = session.lock())
+            {
+                //swap the ids
+                session.renewId(oldId, oldExtendedId, newId, newExtendedId);
+
+                _sessionStore.put(newId, session);
+
+                //tell session id manager the id is in use
+                _sessionIdManager.useId(session);
+
+                //inform the listeners
+                if (!_sessionIdListeners.isEmpty())
+                {
+                    HttpSessionEvent event = new HttpSessionEvent(session);
+                    for (HttpSessionIdListener l:_sessionIdListeners)
+                    {
+                        l.sessionIdChanged(event, oldId);
+                    }
+                }
+                
+                
+            }*/
         }
         catch (Exception e)
         {
@@ -1025,7 +1042,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             return;
 
          _sessionStore.inspect();
-        //return _sessionStore.getExpired();
     }
     
   

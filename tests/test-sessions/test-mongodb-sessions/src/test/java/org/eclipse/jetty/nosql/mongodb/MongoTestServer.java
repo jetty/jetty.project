@@ -56,22 +56,27 @@ public class MongoTestServer extends AbstractTestServer
         return new Mongo().getDB("HttpSessions").getCollection("testsessions");
     }
     
-
     
     public MongoTestServer(int port)
     {
-        super(port, 30, 10);
+        super(port);
     }
 
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod)
+    
+    public MongoTestServer(int port, int inspectionPeriod, int idlePassivatePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod);
+        super(port, 30, 10, inspectionPeriod, idlePassivatePeriod);
+    }
+
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectionPeriod, int idlePassivatePeriod)
+    {
+        super(port, maxInactivePeriod, scavengePeriod, inspectionPeriod, idlePassivatePeriod);
     }
     
     
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, boolean saveAllAttributes)
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectionPeriod, int idlePassivatePeriod, boolean saveAllAttributes)
     {
-        super(port, maxInactivePeriod, scavengePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, inspectionPeriod, idlePassivatePeriod);
     }
 
     public SessionIdManager newSessionIdManager(Object config)

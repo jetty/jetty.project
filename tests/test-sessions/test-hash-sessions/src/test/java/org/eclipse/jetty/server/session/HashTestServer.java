@@ -30,12 +30,12 @@ public class HashTestServer extends AbstractTestServer
     
     public HashTestServer(int port)
     {
-        super(port, 30, 10);
+        super(port, 30, 10, 1, 2);
     }
 
-    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod)
+    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectPeriod, int idlePassivatePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod);
     }
 
 

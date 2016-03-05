@@ -37,10 +37,12 @@ import org.junit.Test;
 
 /**
  * AbstractSessionMigrationTest
+ * 
+ * Check that a session that is active on node 1 can be accessed on node2.
  */
 public abstract class AbstractSessionMigrationTest
 {
-    public abstract AbstractTestServer createServer (int port);
+    public abstract AbstractTestServer createServer(int port);
 
     @Test
     public void testSessionMigration() throws Exception

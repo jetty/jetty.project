@@ -36,17 +36,20 @@ import org.junit.Test;
 
 /**
  * AbstractReentrantRequestSessionTest
+ * 
+ * While a request is still active in a context, make another 
+ * request to it to ensure both share same session.
  */
 public abstract class AbstractReentrantRequestSessionTest
 {
-    public abstract AbstractTestServer createServer(int port);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivatePeriod);
 
     @Test
     public void testReentrantRequestSession() throws Exception
     {
         String contextPath = "";
         String servletMapping = "/server";
-        AbstractTestServer server = createServer(0);
+        AbstractTestServer server = createServer(0, 100, 400, 2, 10);
         server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         try
         {

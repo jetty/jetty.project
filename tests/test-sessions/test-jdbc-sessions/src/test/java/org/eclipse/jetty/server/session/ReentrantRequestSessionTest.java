@@ -28,9 +28,9 @@ import org.junit.Test;
 public class ReentrantRequestSessionTest extends AbstractReentrantRequestSessionTest
 {
 
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivatePeriod)
     {
-       return new JdbcTestServer(port);
+       return new JdbcTestServer(port,max,scavenge,inspectionPeriod,idlePassivatePeriod);
     }
 
     @Test

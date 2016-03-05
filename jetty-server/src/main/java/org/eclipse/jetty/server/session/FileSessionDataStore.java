@@ -179,10 +179,10 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, boolean)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
      */
     @Override
-    public void doStore(String id, SessionData data, boolean isNew) throws Exception
+    public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         File file = null;
         if (_storeDir != null)

@@ -67,7 +67,7 @@ public abstract class AbstractIdleSessionTest
      * @param idleSec
      * @return
      */
-    public  abstract AbstractTestServer createServer (int port, int max, int scavenge, int idleSec);
+    public  abstract AbstractTestServer createServer (int port, int max, int scavenge, int inspectPeriod, int idleSec);
  
 
     /**
@@ -118,11 +118,12 @@ public abstract class AbstractIdleSessionTest
         int inactivePeriod = 20;
         int scavengePeriod = 3;
         int idlePeriod = 5;
+        int inspectPeriod = 1;
         ((StdErrLog)Log.getLogger("org.eclipse.jetty.server.session")).setHideStacks(true);
         System.setProperty("org.eclipse.jetty.STACKS", "false");
 
 
-        _server1 = createServer(0, inactivePeriod, scavengePeriod, idlePeriod);
+        _server1 = createServer(0, inactivePeriod, scavengePeriod, inspectPeriod, idlePeriod);
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);

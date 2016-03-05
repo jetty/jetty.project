@@ -30,15 +30,24 @@ public class SessionRenewTest extends AbstractSessionRenewTest
 {
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivationPeriod)
     {
-        return new HashTestServer(port, max, scavenge);
+        return new HashTestServer(port, max, scavenge,inspectionPeriod, idlePassivationPeriod);
     }
 
     @Test
     public void testSessionRenewal() throws Exception
     {
         super.testSessionRenewal();
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
+     */
+    @Override
+    public boolean verifyChange(String oldSessionId, String newSessionId)
+    {
+        return true; //no other tests possible, sessions only in memory
     }
 
     

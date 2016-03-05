@@ -37,6 +37,11 @@ import com.google.gcloud.datastore.DatastoreFactory;
 public class GCloudTestServer extends AbstractTestServer
 {
     static int __workers=0;
+    
+    static protected int __maxInactivePeriod = 30;
+    static protected int __scavengePeriod = 10;
+    static protected int __inspectPeriod = 1;
+    static protected int __idlePeriod = 2;
 
  
 
@@ -46,9 +51,9 @@ public class GCloudTestServer extends AbstractTestServer
      * @param scavengePeriod
      * @param sessionIdMgrConfig
      */
-    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod, GCloudConfiguration config)
+    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectPeriod, int idlePassivatePeriod, GCloudConfiguration config)
     {
-        super(port, maxInactivePeriod, scavengePeriod, config);
+        super(port, maxInactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod, config);
     }
 
     /**
@@ -57,7 +62,7 @@ public class GCloudTestServer extends AbstractTestServer
      */
     public GCloudTestServer(int port, GCloudConfiguration configuration)
     {
-        super(port, 30,10, configuration);
+        super(port, 30,10, __inspectPeriod, __idlePeriod, configuration);
     }
 
     /** 

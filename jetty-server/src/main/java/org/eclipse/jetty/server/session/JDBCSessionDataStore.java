@@ -750,12 +750,12 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, boolean)
      */
     @Override
-    public void doStore(String id, SessionData data, boolean isNew) throws Exception
+    public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         if (data==null || id==null)
             return;
 
-        if (isNew)
+        if (lastSaveTime <= 0)
         {     
             doInsert(id, data);
         }
@@ -807,6 +807,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     private void doUpdate (String id, SessionData data)
             throws Exception
     {
+         //TODO check if it is actually dirty && try to optimize the writing of lastAccessTime and expiryTime
         try (Connection connection = _dbAdaptor.getConnection())        
         {
             connection.setAutoCommit(true);

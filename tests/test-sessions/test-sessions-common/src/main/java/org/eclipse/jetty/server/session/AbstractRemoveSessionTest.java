@@ -47,7 +47,7 @@ import org.junit.Test;
  */
 public abstract class AbstractRemoveSessionTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivationPeriod);
 
 
     @Test
@@ -56,7 +56,8 @@ public abstract class AbstractRemoveSessionTest
         String contextPath = "";
         String servletMapping = "/server";
         int scavengePeriod = 3;
-        AbstractTestServer server = createServer(0, 1, scavengePeriod);
+        int inspectionPeriod = 1;
+        AbstractTestServer server = createServer(0, 1, scavengePeriod, inspectionPeriod, -1);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
         TestEventListener testListener = new TestEventListener();

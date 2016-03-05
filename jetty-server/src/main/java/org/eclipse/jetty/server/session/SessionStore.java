@@ -19,7 +19,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -40,7 +39,8 @@ public interface SessionStore extends LifeCycle
 {
     void initialize(SessionContext context);
     Session newSession (HttpServletRequest request, String id,  long time, long maxInactiveMs);
-    Session get(String id, boolean staleCheck) throws Exception;
+    Session renewSessionId (String oldId, String newId) throws Exception;
+    Session get(String id) throws Exception;
     void put(String id, Session session) throws Exception;
     boolean exists (String id) throws Exception;
     Session delete (String id) throws Exception;
@@ -49,5 +49,7 @@ public interface SessionStore extends LifeCycle
     void inspect();
     void setIdlePassivationTimeoutSec(int sec);
     int getIdlePassivationTimeoutSec();
+    int getExpiryTimeoutSec();
+    void setExpiryTimeoutSec(int sec);
     Stream<Session> getStream();
 }

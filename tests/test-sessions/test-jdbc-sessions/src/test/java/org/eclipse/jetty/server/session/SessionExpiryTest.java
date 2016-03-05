@@ -34,9 +34,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
      * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspect, int idlePassivate)
     {
-        return new JdbcTestServer(port,max,scavenge);
+        return new JdbcTestServer(port,max,scavenge, inspect, idlePassivate);
     }
 
     @Test

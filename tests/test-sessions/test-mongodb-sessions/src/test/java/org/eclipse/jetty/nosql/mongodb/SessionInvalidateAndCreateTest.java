@@ -42,9 +42,9 @@ public class SessionInvalidateAndCreateTest extends AbstractSessionInvalidateAnd
     }
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspect, int idlePassivate)
     {
-        return new MongoTestServer(port,max,scavenge);
+        return new MongoTestServer(port,max,scavenge, inspect, idlePassivate);
     }
     
 

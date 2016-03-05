@@ -52,9 +52,9 @@ public class SessionValueSavingTest extends AbstractSessionValueSavingTest
      * @see org.eclipse.jetty.server.session.AbstractSessionValueSavingTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivationPeriod)
     {
-        return  new GCloudTestServer(port, max, scavenge, _testSupport.getConfiguration());
+        return  new GCloudTestServer(port, max, scavenge, inspectionPeriod, idlePassivationPeriod,_testSupport.getConfiguration());
     }
 
     @Test

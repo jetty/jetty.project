@@ -671,7 +671,7 @@ public class Session implements SessionManager.SessionIf
      * @param newId
      * @param newExtendedId
      */
-    public void renewId (String oldId, String oldExtendedId, String newId, String newExtendedId)
+   /* public void renewId (String oldId, String oldExtendedId, String newId, String newExtendedId)
     {
         try (Lock lock = _lock.lockIfNotHeld())
         {
@@ -680,13 +680,12 @@ public class Session implements SessionManager.SessionIf
             if (!oldId.equals(getId()))
                 throw new IllegalStateException("Id clash detected on renewal: was "+oldId+" but is "+ getId());
             
-            //save session with new id
             _sessionData.setId(newId);
             setExtendedId(newExtendedId);
             _sessionData.setLastSaved(0); //forces an insert
             _sessionData.setDirty(true);  //forces an insert
         }
-    }
+    }*/
 
     /* ------------------------------------------------------------- */
     /** Called by users to invalidate a session, or called by the
