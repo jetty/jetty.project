@@ -126,7 +126,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public boolean isSecure()
     {
-        return client.isSchemeSecure(getScheme());
+        return HttpClient.isSchemeSecure(getScheme());
     }
 
     public HttpClient getHttpClient()

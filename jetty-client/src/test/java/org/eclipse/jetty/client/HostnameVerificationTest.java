@@ -125,7 +125,7 @@ public class HostnameVerificationTest
             if (cause instanceof SSLHandshakeException)
                 Assert.assertThat(cause.getCause().getCause(), Matchers.instanceOf(CertificateException.class));
             else
-                Assert.assertThat(cause.getCause(), Matchers.instanceOf(ClosedChannelException.class));
+                Assert.assertThat(cause, Matchers.instanceOf(ClosedChannelException.class));
         }
     }
 

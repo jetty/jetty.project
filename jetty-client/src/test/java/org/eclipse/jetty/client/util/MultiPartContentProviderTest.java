@@ -185,11 +185,9 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
                 .content(multiPart)
                 .send(result ->
                 {
-                    if (result.isSucceeded())
-                    {
-                        Assert.assertEquals(200, result.getResponse().getStatus());
-                        responseLatch.countDown();
-                    }
+                    Assert.assertTrue(String.valueOf(result.getFailure()), result.isSucceeded());
+                    Assert.assertEquals(200, result.getResponse().getStatus());
+                    responseLatch.countDown();
                 });
 
         // Wait until the request has been sent.
@@ -408,11 +406,9 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
                 .content(multiPart)
                 .send(result ->
                 {
-                    if (result.isSucceeded())
-                    {
-                        Assert.assertEquals(200, result.getResponse().getStatus());
-                        responseLatch.countDown();
-                    }
+                    Assert.assertTrue(String.valueOf(result.getFailure()), result.isSucceeded());
+                    Assert.assertEquals(200, result.getResponse().getStatus());
+                    responseLatch.countDown();
                 });
 
         // Wait until the request has been sent.

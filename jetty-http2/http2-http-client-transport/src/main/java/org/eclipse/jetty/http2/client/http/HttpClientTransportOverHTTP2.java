@@ -138,6 +138,11 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         return new HttpConnectionOverHTTP2(destination, session);
     }
 
+    protected void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
+    {
+        connection.close();
+    }
+
     private class SessionListenerPromise extends Session.Listener.Adapter implements Promise<Session>
     {
         private final HttpDestinationOverHTTP2 destination;
@@ -182,7 +187,7 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         @Override
         public void onClose(Session session, GoAwayFrame frame)
         {
-            connection.close();
+            HttpClientTransportOverHTTP2.this.onClose(connection, frame);
         }
 
         @Override
