@@ -62,14 +62,14 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
     private final static boolean __submitKeyUpdates = Boolean.valueOf(System.getProperty(SUBMIT_KEY_UPDATES, "true"));
-    
+
     private final Executor executor;
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private long _selectorIndex;
     private int _priorityDelta;
-    
+
     protected SelectorManager(Executor executor, Scheduler scheduler)
     {
         this(executor, scheduler, (Runtime.getRuntime().availableProcessors() + 1) / 2);
@@ -149,7 +149,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
         }
     }
-    
+
     /**
      * Executes the given task in a different thread.
      *
@@ -217,13 +217,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         final ManagedSelector selector = chooseSelector();
         selector.submit(selector.new Accept(channel, attachment));
     }
-    
+
     /**
      * <p>Registers a server channel for accept operations.
      * When a {@link SocketChannel} is accepted from the given {@link ServerSocketChannel}
      * then the {@link #accepted(SocketChannel)} method is called, which must be
      * overridden by a derivation of this class to handle the accepted channel
-     * 
+     *
      * @param server the server channel to register
      */
     public void acceptor(ServerSocketChannel server)
@@ -231,7 +231,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         final ManagedSelector selector = chooseSelector();
         selector.submit(selector.new Acceptor(server));
     }
-    
+
     /**
      * Callback method when a channel is accepted from the {@link ServerSocketChannel}
      * passed to {@link #acceptor(ServerSocketChannel)}.
@@ -315,6 +315,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 LOG.warn("Exception while notifying connection " + connection, x);
             else
                 LOG.debug("Exception while notifying connection " + connection, x);
+            throw x;
         }
     }
 
@@ -439,8 +440,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         /**
          * Submit a task to update a selector key.  If the System property {@link SelectorManager#SUBMIT_KEY_UPDATES}
-         * is set true (default is false), the task is passed to {@link #submit(Runnable)}.   Otherwise it is run immediately and the selector 
-         * woken up if need be.   
+         * is set true (default is false), the task is passed to {@link #submit(Runnable)}.   Otherwise it is run immediately and the selector
+         * woken up if need be.
          * @param update the update to a key
          */
         public void updateKey(Runnable update)
@@ -460,7 +461,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                    wakeup();
             }
         }
-        
+
         /**
          * <p>Submits a change to be executed in the selector thread.</p>
          * <p>Changes may be submitted from any thread, and the selector thread woken up
@@ -587,7 +588,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             _state.set(State.CHANGES);
                             continue;
                         default:
-                            throw new IllegalStateException();    
+                            throw new IllegalStateException();
                     }
                 }
                 // Must check first for SELECT and *then* for WAKEUP
@@ -696,7 +697,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 connect.failed(x);
             }
         }
-        
+
         private void processAccept(SelectionKey key)
         {
             ServerSocketChannel server = (ServerSocketChannel)key.channel();
