@@ -154,7 +154,7 @@ public abstract class AbstractTest
         return result.toArray(new ConnectionFactory[result.size()]);
     }
 
-    private HttpClientTransport provideClientTransport(Transport transport)
+    protected HttpClientTransport provideClientTransport(Transport transport)
     {
         switch (transport)
         {
