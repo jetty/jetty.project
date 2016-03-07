@@ -20,6 +20,7 @@ package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.util.EnumSet;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +40,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class HttpClientTest extends AbstractTest
@@ -283,6 +287,33 @@ public class HttpClientTest extends AbstractTest
         request.send(listener);
         response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertEquals(response.getStatus(), 200);
+    }
+
+    @Test(expected = ExecutionException.class)
+    public void testClientCannotValidateServerCertificate() throws Exception
+    {
+        // Only run this test for transports over TLS.
+        Assume.assumeTrue(EnumSet.of(Transport.HTTPS, Transport.H2).contains(transport));
+
+        startServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+            }
+        });
+
+        // Use a default SslContextFactory, requests should fail because the server certificate is unknown.
+        client = newHttpClient(provideClientTransport(transport), new SslContextFactory());
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        client.setExecutor(clientThreads);
+        client.start();
+
+        client.newRequest(newURI())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
     }
 
     private void sleep(long time) throws IOException
