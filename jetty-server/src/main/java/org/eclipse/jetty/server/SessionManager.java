@@ -32,15 +32,9 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.server.session.SessionStore;
 import org.eclipse.jetty.util.component.LifeCycle;
 
-/* --------------------------------------------------------------------- */
 /**
  * Session Manager.
  * The API required to manage sessions for a servlet context.
- *
- */
-
-/* ------------------------------------------------------------ */
-/**
  */
 public interface SessionManager extends LifeCycle
 {
@@ -313,7 +307,7 @@ public interface SessionManager extends LifeCycle
     
     /**
      * Get the session store for this manager
-     * @return
+     * @return the session store
      */
     public SessionStore getSessionStore();
     

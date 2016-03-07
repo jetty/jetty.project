@@ -54,7 +54,7 @@ public class FileSessionManager extends SessionManager
     
     /**
      * Get the SessionDataStore to configure it
-     * @return
+     * @return the session datastore
      */
     public FileSessionDataStore getSessionDataStore()
     {

@@ -78,7 +78,7 @@ public class SessionContext
     /**
      * Run a runnable in the context (with context classloader set) if
      * there is one, otherwise just run it.
-     * @param r
+     * @param r the runnable
      */
     public void run (Runnable r)
     {
@@ -120,8 +120,8 @@ public class SessionContext
     /**
      * Make an acceptable name from a context path.
      *
-     * @param path
-     * @return
+     * @param path the path to normalize/fix
+     * @return the clean/acceptable form of the path
      */
     private String canonicalize (String path)
     {

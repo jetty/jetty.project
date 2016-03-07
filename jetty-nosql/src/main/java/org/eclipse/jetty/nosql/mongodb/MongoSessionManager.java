@@ -18,20 +18,19 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
+import com.mongodb.DBCollection;
+import com.mongodb.MongoException;
+
 import java.net.UnknownHostException;
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.session.AbstractSessionStore;
 import org.eclipse.jetty.server.session.MemorySessionStore;
-import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionManager;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import com.mongodb.DBCollection;
-import com.mongodb.MongoException;
 
 
 /**
@@ -116,9 +115,6 @@ public class MongoSessionManager extends SessionManager
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionManager#setSessionIdManager(org.eclipse.jetty.server.SessionIdManager)
-     */
     @Override
     public void setSessionIdManager(SessionIdManager metaManager)
     {

@@ -40,15 +40,6 @@ public abstract class NoSqlSessionDataStore extends AbstractSessionDataStore
         private Set<String> _dirtyAttributes = new HashSet<String>();
         
 
-        /**
-         * @param id
-         * @param cpath
-         * @param vhost
-         * @param created
-         * @param accessed
-         * @param lastAccessed
-         * @param maxInactiveMs
-         */
         public NoSqlSessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
         {
             super(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);

@@ -42,8 +42,8 @@ public class ExpiryInspector extends AbstractSessionInspector
     
     
     /**
-     * @param sessionStore
-     * @param idManager
+     * @param sessionStore the session store
+     * @param idManager the session id manager
      */
     public ExpiryInspector (AbstractSessionStore sessionStore, SessionIdManager idManager)
     {
@@ -52,7 +52,7 @@ public class ExpiryInspector extends AbstractSessionInspector
     }
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionInspector#inspect(org.eclipse.jetty.server.session.SessionStore, org.eclipse.jetty.server.session.Session)
+     * @see org.eclipse.jetty.server.session.SessionInspector#inspect(Session)
      */
     @Override
     public void inspect(Session s)

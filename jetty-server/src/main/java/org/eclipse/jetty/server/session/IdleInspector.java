@@ -39,7 +39,7 @@ public class IdleInspector extends AbstractSessionInspector
     protected AbstractSessionStore _sessionStore;
     
     /**
-     * @param sessionStore
+     * @param sessionStore the session store
      */
     public IdleInspector (AbstractSessionStore sessionStore)
     {

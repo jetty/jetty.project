@@ -90,8 +90,8 @@ public class Session implements SessionManager.SessionIf
     /**
      * Create a new session
      * 
-     * @param request
-     * @param data
+     * @param request the request the session should be based on
+     * @param data the session data
      */
     public Session (HttpServletRequest request, SessionData data)
     {
@@ -104,7 +104,7 @@ public class Session implements SessionManager.SessionIf
     
     /**
      * Re-create an existing session
-     * @param data
+     * @param data the session data
      */
     public Session (SessionData data)
     {
@@ -116,7 +116,7 @@ public class Session implements SessionManager.SessionIf
      * Should call this method with a lock held if you want to
      * make decision on what to do with the session
      * 
-     * @return
+     * @return the number of active requests for this session
      */
     public long getRequests()
     {
@@ -206,18 +206,12 @@ public class Session implements SessionManager.SessionIf
     
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param nodename
-     */
     public void setLastNode (String nodename)
     {
         _sessionData.setLastNode(nodename);
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
     public String getLastNode ()
     {
         return _sessionData.getLastNode();
@@ -479,9 +473,6 @@ public class Session implements SessionManager.SessionIf
     
     
     /* ------------------------------------------------------------- */
-    /**
-     * @throws IllegalStateException
-     */
     protected void checkLocked ()
     throws IllegalStateException
     {
@@ -640,9 +631,6 @@ public class Session implements SessionManager.SessionIf
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param request
-     */
     public void renewId(HttpServletRequest request)
     {
         if (_manager == null)
@@ -663,7 +651,7 @@ public class Session implements SessionManager.SessionIf
        
     
     /* ------------------------------------------------------------- */
-    /** Swap the id on a session from old to new, keeping the object
+    /* * Swap the id on a session from old to new, keeping the object
      * the same.
      * 
      * @param oldId
@@ -739,21 +727,15 @@ public class Session implements SessionManager.SessionIf
             LOG.warn(e);
         }
     }
-    
- 
-    
+
     /* ------------------------------------------------------------- */
     /** Grab the lock on the session
-     * @return
+     * @return the lock
      */
     public Lock lock ()
     {
         return _lock.lock();
     }
-
-
-
-
 
     /* ------------------------------------------------------------- */
     protected void doInvalidate() throws IllegalStateException
@@ -863,21 +845,12 @@ public class Session implements SessionManager.SessionIf
         _passivationState = PassivationState.ACTIVE;
     }
 
-
-    /**
-     * @return
-     */
     public boolean isActive ()
     {
         checkLocked();
         return _passivationState == PassivationState.ACTIVE;
     }
 
-
-
-    /**
-     * @return
-     */
     public boolean isPassivated ()
     {
         checkLocked();

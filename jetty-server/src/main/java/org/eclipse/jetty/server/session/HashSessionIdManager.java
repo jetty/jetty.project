@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 public class HashSessionIdManager extends AbstractSessionIdManager
 {
     /**
-     * @param server
+     * @param server the server
      */
     public HashSessionIdManager(Server server)
     {

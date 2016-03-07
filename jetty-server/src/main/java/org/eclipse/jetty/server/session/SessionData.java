@@ -62,16 +62,6 @@ public class SessionData implements Serializable
     protected boolean _dirty;
     protected long _lastSaved; //time in msec since last save
     
-
-    /**
-     * @param id
-     * @param cpath
-     * @param vhost
-     * @param created
-     * @param accessed
-     * @param lastAccessed
-     * @param maxInactiveMs
-     */
     public SessionData (String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
         _id = id;
@@ -123,10 +113,6 @@ public class SessionData implements Serializable
     }
 
 
-
-    /**
-     * @param lastSaved
-     */
     public void setLastSaved(long lastSaved)
     {
         _lastSaved = lastSaved;
@@ -141,16 +127,13 @@ public class SessionData implements Serializable
         return _dirty;
     }
 
-    /**
-     * @param dirty
-     */
     public void setDirty(boolean dirty)
     {
         _dirty = dirty;
     }
     
     /**
-     * @param name
+     * @param name the name of the attribute
      * @return the value of the attribute named
      */
     public Object getAttribute (String name)
@@ -166,11 +149,6 @@ public class SessionData implements Serializable
         return _attributes.keySet();
     }
     
-    /**
-     * @param name
-     * @param value
-     * @return
-     */
     public Object setAttribute (String name, Object value)
     {
         Object old = (value==null?_attributes.remove(name):_attributes.put(name,value));
@@ -181,20 +159,11 @@ public class SessionData implements Serializable
        return old;
     }
     
-    
-    /**
-     * @param name
-     */
     public void setDirty (String name)
     {
         setDirty (true);
     }
     
-    
-    
-    /**
-     * @param attributes
-     */
     public void putAllAttributes (Map<String,Object> attributes)
     {
         _attributes.putAll(attributes);
@@ -224,9 +193,6 @@ public class SessionData implements Serializable
         return _id;
     }
 
-    /**
-     * @param id
-     */
     public void setId(String id)
     {
         _id = id;
@@ -240,9 +206,6 @@ public class SessionData implements Serializable
         return _contextPath;
     }
 
-    /**
-     * @param contextPath
-     */
     public void setContextPath(String contextPath)
     {
         _contextPath = contextPath;
@@ -256,9 +219,6 @@ public class SessionData implements Serializable
         return _vhost;
     }
 
-    /**
-     * @param vhost
-     */
     public void setVhost(String vhost)
     {
         _vhost = vhost;
@@ -272,9 +232,6 @@ public class SessionData implements Serializable
         return _lastNode;
     }
 
-    /**
-     * @param lastNode
-     */
     public void setLastNode(String lastNode)
     {
         _lastNode = lastNode;
@@ -288,25 +245,16 @@ public class SessionData implements Serializable
         return _expiry;
     }
 
-    /**
-     * @param expiry
-     */
     public void setExpiry(long expiry)
     {
         _expiry = expiry;
     }
 
-    /**
-     * @return
-     */
     public long getCreated()
     {
         return _created;
     }
 
-    /**
-     * @param created
-     */
     public void setCreated(long created)
     {
         _created = created;
@@ -320,9 +268,6 @@ public class SessionData implements Serializable
         return _cookieSet;
     }
 
-    /**
-     * @param cookieSet
-     */
     public void setCookieSet(long cookieSet)
     {
         _cookieSet = cookieSet;
@@ -336,9 +281,6 @@ public class SessionData implements Serializable
         return _accessed;
     }
 
-    /**
-     * @param accessed
-     */
     public void setAccessed(long accessed)
     {
         _accessed = accessed;
@@ -352,35 +294,21 @@ public class SessionData implements Serializable
         return _lastAccessed;
     }
 
-    /**
-     * @param lastAccessed
-     */
     public void setLastAccessed(long lastAccessed)
     {
         _lastAccessed = lastAccessed;
     }
 
-
-    /**
-     * @return
-     */
     public long getMaxInactiveMs()
     {
         return _maxInactiveMs;
     }
 
-    /**
-     * @param maxInactive
-     */
     public void setMaxInactiveMs(long maxInactive)
     {
         _maxInactiveMs = maxInactive;
     }
 
-    /**
-     * @param out
-     * @throws IOException
-     */
     private void writeObject(java.io.ObjectOutputStream out) throws IOException
     {  
         out.writeUTF(_id); //session id
@@ -398,11 +326,6 @@ public class SessionData implements Serializable
         out.writeObject(_attributes);
     }
     
-    /**
-     * @param in
-     * @throws IOException
-     * @throws ClassNotFoundException
-     */
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
     {
         _id = in.readUTF();
@@ -419,11 +342,6 @@ public class SessionData implements Serializable
         _attributes = (ConcurrentHashMap<String,Object>)in.readObject();
     }
     
-    
-    /**
-     * @param time
-     * @return
-     */
     public boolean isExpiredAt (long time)
     {
         if (LOG.isDebugEnabled())

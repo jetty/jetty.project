@@ -55,7 +55,7 @@ public class JDBCSessionManager extends SessionManager
     
     /**
      * Get the db adaptor to configure jdbc settings
-     * @return
+     * @return the database adaptor
      */
     public DatabaseAdaptor getDatabaseAdaptor()
     {
@@ -64,7 +64,7 @@ public class JDBCSessionManager extends SessionManager
     
     /**
      * Get the SessionDataStore to configure it
-     * @return
+     * @return the session data store
      */
     public JDBCSessionDataStore getSessionDataStore ()
     {

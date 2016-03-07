@@ -46,18 +46,18 @@ public interface SessionDataStore extends LifeCycle
      * Read in session data from storage
      * @param id identity of session to load
      * @return the SessionData matching the id
-     * @throws Exception
+     * @throws Exception if unable to load session data
      */
     public SessionData load (String id) throws Exception;
     
     
     /**
      * Create a new SessionData 
-     * @param id
-     * @param created
-     * @param accessed
-     * @param lastAccessed
-     * @param maxInactiveMs
+     * @param id the id
+     * @param created the timestamp when created
+     * @param accessed the timestamp when accessed
+     * @param lastAccessed the timestamp when last accessed
+     * @param maxInactiveMs the max inactive time in milliseconds
      * @return  a new SessionData object
      */
     public SessionData newSessionData (String id, long created, long accessed, long lastAccessed, long maxInactiveMs);
@@ -69,7 +69,7 @@ public interface SessionDataStore extends LifeCycle
      * Write out session data to storage
      * @param id identity of session to store
      * @param data info of session to store
-     * @throws Exception
+     * @throws Exception if unable to write session data
      */
     public void store (String id, SessionData data) throws Exception;
     
@@ -79,7 +79,7 @@ public interface SessionDataStore extends LifeCycle
      * Delete session data from storage
      * @param id identity of session to delete
      * @return true if the session was deleted from the permanent store
-     * @throws Exception
+     * @throws Exception if unable to delete session data
      */
     public boolean delete (String id) throws Exception;
     
@@ -93,6 +93,7 @@ public interface SessionDataStore extends LifeCycle
      * @param candidates if provided, these are keys of sessions that
      * the SessionStore thinks has expired and should be verified by the
      * SessionDataStore
+     * @param scavengePeriodSec the time to attempt scavenge (in seconds)
      * @return set of session ids
      */
     public Set<String> getExpired (Set<String> candidates, int scavengePeriodSec);

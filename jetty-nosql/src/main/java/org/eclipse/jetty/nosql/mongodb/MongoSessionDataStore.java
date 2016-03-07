@@ -19,6 +19,12 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.WriteConcern;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -35,13 +41,6 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.WriteConcern;
-import com.mongodb.WriteResult;
 
 /**
  * MongoSessionDataStore
@@ -159,9 +158,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
     
     
-    /**
-     * @return
-     */
     public DBCollection getDBCollection ()
     {
         return _dbSessions;
@@ -170,7 +166,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
   
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(org.eclipse.jetty.server.session.SessionKey)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#load(String)
      */
     @Override
     public SessionData load(String id) throws Exception
@@ -262,7 +258,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(org.eclipse.jetty.server.session.SessionKey)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(String)
      */
     @Override
     public boolean delete(String id) throws Exception
@@ -320,7 +316,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
@@ -384,7 +380,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData, long)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long) 
      */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception

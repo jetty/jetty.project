@@ -19,21 +19,6 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.eclipse.jetty.server.session.AbstractSessionDataStore;
-import org.eclipse.jetty.server.session.SessionContext;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
 import com.google.gcloud.datastore.Blob;
 import com.google.gcloud.datastore.Datastore;
 import com.google.gcloud.datastore.DatastoreFactory;
@@ -49,6 +34,21 @@ import com.google.gcloud.datastore.StructuredQuery.KeyQueryBuilder;
 import com.google.gcloud.datastore.StructuredQuery.Projection;
 import com.google.gcloud.datastore.StructuredQuery.ProjectionEntityQueryBuilder;
 import com.google.gcloud.datastore.StructuredQuery.PropertyFilter;
+
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.eclipse.jetty.server.session.AbstractSessionDataStore;
+import org.eclipse.jetty.server.session.SessionContext;
+import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * GCloudSessionDataStore
@@ -182,7 +182,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
@@ -296,8 +296,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      * </ol>
      * 
      *
-     * @param session
-     * @return
+     * @param id the id
+     * @param context the session context
+     * @return the key
      */
     private Key makeKey (String id, SessionContext context)
     {
@@ -308,9 +309,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     
     /**
      * Generate a gcloud datastore Entity from SessionData
-     * @param session
-     * @param key
-     * @return
+     * @param session the session data
+     * @param key the key
+     * @return the entity
      * @throws Exception
      */
     private Entity entityFromSession (SessionData session, Key key) throws Exception

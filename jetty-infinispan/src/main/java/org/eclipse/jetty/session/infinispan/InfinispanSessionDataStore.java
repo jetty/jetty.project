@@ -82,7 +82,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(org.eclipse.jetty.server.session.SessionKey)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#load(String)
      */
     @Override
     public SessionData load(String id) throws Exception
@@ -120,7 +120,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(org.eclipse.jetty.server.session.SessionKey)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(String)
      */
     @Override
     public boolean delete(String id) throws Exception
@@ -131,7 +131,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
@@ -202,7 +202,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData, long)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long)
      */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception

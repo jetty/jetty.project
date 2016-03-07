@@ -19,7 +19,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.SessionIdManager;
@@ -77,7 +76,7 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
     
     /**
      * SessionIdManager associated with this scavenger
-     * @param sessionIdManager
+     * @param sessionIdManager the session id manager
      */
     public void setSessionIdManager (SessionIdManager sessionIdManager)
     {
@@ -137,7 +136,7 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
     
     /**
      * Set the period between scavenge cycles
-     * @param sec
+     * @param sec the interval (in seconds)
      */
     public void setIntervalSec (long sec)
     {
@@ -176,7 +175,7 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
     /**
      * Get the period between inspection cycles.
      * 
-     * @return
+     * @return the interval (in seconds)
      */
     public long getIntervalSec ()
     {

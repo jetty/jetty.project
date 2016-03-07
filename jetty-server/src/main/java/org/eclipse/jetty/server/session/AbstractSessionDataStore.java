@@ -42,7 +42,7 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
      * @param id identity of session to store
      * @param data info of the session
      * @param lastSaveTime time of previous save or 0 if never saved
-     * @throws Exception
+     * @throws Exception if unable to store data
      */
     public abstract void doStore(String id, SessionData data, long lastSaveTime) throws Exception;
 
@@ -54,7 +54,6 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
      * @param candidates the ids of sessions the SessionStore thinks has expired
      * @param scavengePeriodSec the period in sec of the scavenge cycle checks
      * @return the reconciled set of session ids that this node should attempt to expire
-     * @throws Exception
      */
     public abstract Set<String> doGetExpired (Set<String> candidates, int scavengePeriodSec);
 
@@ -123,17 +122,11 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
         return new SessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
  
-    /**
-     * @throws IllegalStateException
-     */
     protected void checkStarted () throws IllegalStateException
     {
         if (isStarted())
             throw new IllegalStateException("Already started");
     }
-
-
-
 
     @Override
     protected void doStart() throws Exception
@@ -144,28 +137,13 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
         super.doStart();
     }
 
-
-
-
-    /**
-     * @return
-     */
     public int getGracePeriodSec()
     {
         return _gracePeriodSec;
     }
 
-
-
-
-    /**
-     * @param sec
-     */
     public void setGracePeriodSec(int sec)
     {
         _gracePeriodSec = sec;
     }
-
-    
-    
 }

@@ -111,7 +111,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
@@ -258,7 +258,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
     /**
      * @param id identity of session
-     * @return
+     * @return the filename of the session data store
      */
     private String getFileName (String id)
     {
@@ -268,7 +268,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
     /**
      * @param is inputstream containing session data
-     * @return
+     * @return the session data
      * @throws Exception
      */
     private SessionData load (InputStream is)

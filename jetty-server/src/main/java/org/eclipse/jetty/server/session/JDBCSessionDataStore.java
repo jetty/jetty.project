@@ -518,10 +518,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         
         /**
          * Set up the tables in the database
-         * @throws SQLException
-         */
-        /**
-         * @throws SQLException
+         * @throws SQLException if unable to prepare tables
          */
         public void prepareTables()
         throws SQLException
@@ -782,7 +779,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, boolean)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long)
      */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
@@ -887,7 +884,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates, int scavengeIntervalSec)
@@ -999,45 +996,29 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
     
     
-    /**
-     * @param dbAdaptor
-     */
     public void setDatabaseAdaptor (DatabaseAdaptor dbAdaptor)
     {
         checkStarted();
         _dbAdaptor = dbAdaptor;
     }
     
-    /**
-     * @param schema
-     */
     public void setSessionTableSchema (SessionTableSchema schema)
     {
         checkStarted();
         _sessionTableSchema = schema;
     }
 
-    /**
-     * @param attempts
-     */
     public void setLoadAttempts (int attempts)
     {
         checkStarted();
         _attempts = attempts;
     }
 
-    /**
-     * @return
-     */
     public int getLoadAttempts ()
     {
         return _attempts;
     }
     
-    /**
-     * @param id
-     * @return
-     */
     public boolean loadAttemptsExhausted (String id)
     {
         AtomicInteger i = _unloadables.get(id);
@@ -1046,9 +1027,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         return (i.get() >= _attempts);
     }
     
-    /**
-     * @param delete
-     */
     public void setDeleteUnloadableSessions (boolean delete)
     {
         checkStarted();
@@ -1064,9 +1042,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
     
     
-    /**
-     * @param id
-     */
     protected void incLoadAttempt (String id)
     {
         AtomicInteger i = new AtomicInteger(0);
@@ -1079,7 +1054,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
   
     
     /**
-     * @param id
+     * @param id the id
      * @return number of attempts to load the given id
      */
     public int getLoadAttempts (String id)
@@ -1105,9 +1080,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     {
         _unloadables.clear();
     }
-
-
-
 
 
    /** 

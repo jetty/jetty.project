@@ -21,17 +21,9 @@ package org.eclipse.jetty.session.infinispan;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.AbstractSessionIdManager;
 import org.eclipse.jetty.server.session.Session;
-import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.server.session.SessionManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.infinispan.commons.api.BasicCache;
@@ -270,7 +262,7 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     }
 
     /** 
-     * @see org.eclipse.jetty.server.SessionIdManager#useId(java.lang.String)
+     * @see org.eclipse.jetty.server.SessionIdManager#useId(Session)
      */
     @Override
     public void useId(Session session)

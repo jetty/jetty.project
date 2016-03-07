@@ -100,7 +100,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     
     /* ------------------------------------------------------------ */
     /**
-     * @param period inspector of sessions 
+     * @param inspector inspector of sessions
      */
     public void setSessionInspector (PeriodicSessionInspector inspector)
     {
@@ -219,7 +219,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
 
     /* ------------------------------------------------------------ */
     /**
-     * @param seedTerm
+     * @param seedTerm the seed for RNG
      * @return a new unique session id
      */
     public String newSessionId(long seedTerm)
@@ -399,9 +399,6 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param id
-     */
     public void invalidateAll (String id)
     {
         //take the id out of the list of known sessionids for this node
