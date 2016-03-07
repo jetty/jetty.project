@@ -199,7 +199,9 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         @Override
         public void onFailure(Session session, Throwable failure)
         {
-            connection.close(failure);
+            HttpConnectionOverHTTP2 c = connection;
+            if (c != null)
+                c.close(failure);
         }
     }
 }
