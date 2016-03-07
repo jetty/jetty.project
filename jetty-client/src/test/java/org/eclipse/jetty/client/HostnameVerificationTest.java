@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
+
 import javax.net.ssl.SSLHandshakeException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -124,7 +125,7 @@ public class HostnameVerificationTest
             if (cause instanceof SSLHandshakeException)
                 Assert.assertThat(cause.getCause().getCause(), Matchers.instanceOf(CertificateException.class));
             else
-                Assert.assertThat(cause.getCause(), Matchers.instanceOf(ClosedChannelException.class));
+                Assert.assertThat(cause, Matchers.instanceOf(ClosedChannelException.class));
         }
     }
 
