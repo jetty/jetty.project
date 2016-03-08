@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs;
+import org.eclipse.jetty.websocket.common.util.DynamicArgs.Arg;
 import org.eclipse.jetty.websocket.common.util.ExactSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
@@ -37,25 +38,25 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 public class OnByteArrayFunction implements Function<byte[], Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
-    private static final int SESSION = 1;
-    private static final int BUFFER = 2;
-    private static final int OFFSET = 3;
-    private static final int LENGTH = 4;
+    private static final Arg SESSION = new Arg(1,Session.class);
+    private static final Arg BUFFER = new Arg(2,byte[].class);
+    private static final Arg OFFSET = new Arg(3,int.class);
+    private static final Arg LENGTH = new Arg(4,int.class);
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(byte[].class).indexedAs(BUFFER));
-        ARGBUILDER.addSignature(new ExactSignature(byte[].class,int.class,int.class).indexedAs(BUFFER,OFFSET,LENGTH));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,byte[].class).indexedAs(SESSION,BUFFER));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,byte[].class,int.class,int.class).indexedAs(SESSION,BUFFER,OFFSET,LENGTH));
+        ARGBUILDER.addSignature(new ExactSignature(byte[].class));
+        ARGBUILDER.addSignature(new ExactSignature(byte[].class,int.class,int.class));
+        ARGBUILDER.addSignature(new ExactSignature(Session.class,byte[].class));
+        ARGBUILDER.addSignature(new ExactSignature(Session.class,byte[].class,int.class,int.class));
     }
-    
+
     public static DynamicArgs.Builder getDynamicArgsBuilder()
     {
         return ARGBUILDER;
     }
-    
+
     public static boolean hasMatchingSignature(Method method)
     {
         return ARGBUILDER.hasMatchingSignature(method);
@@ -76,21 +77,19 @@ public class OnByteArrayFunction implements Function<byte[], Void>
         ReflectUtils.assertIsPublicNonStatic(method);
         ReflectUtils.assertIsReturn(method,Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method);
+        this.callable = ARGBUILDER.build(method,SESSION,BUFFER,OFFSET,LENGTH);
         if (this.callable == null)
         {
             throw InvalidSignatureException.build(method,OnWebSocketMessage.class,ARGBUILDER);
         }
-        this.callable.setArgReferences(SESSION,BUFFER,OFFSET,LENGTH);
     }
 
     @Override
     public Void apply(byte[] bin)
     {
-        Object args[] = this.callable.toArgs(session,bin,0,bin.length);
         try
         {
-            method.invoke(endpoint,args);
+            this.callable.invoke(endpoint,bin,0,bin.length);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {

@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.functions;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.function.Function;
-
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -29,8 +25,13 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs;
+import org.eclipse.jetty.websocket.common.util.DynamicArgs.Arg;
 import org.eclipse.jetty.websocket.common.util.ExactSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.function.Function;
 
 /**
  * Jetty {@link WebSocket} {@link OnWebSocketClose} method {@link Function}
@@ -38,17 +39,17 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 public class OnCloseFunction implements Function<CloseInfo, Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
-    private static final int SESSION = 1;
-    private static final int STATUS_CODE = 2;
-    private static final int REASON = 3;
+    private static final Arg SESSION = new Arg(1,Session.class);
+    private static final Arg STATUS_CODE = new Arg(2,int.class);
+    private static final Arg REASON = new Arg(3,String.class);
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature().indexedAs());
-        ARGBUILDER.addSignature(new ExactSignature(Session.class).indexedAs(SESSION));
-        ARGBUILDER.addSignature(new ExactSignature(int.class,String.class).indexedAs(STATUS_CODE,REASON));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,int.class,String.class).indexedAs(SESSION,STATUS_CODE,REASON));
+        ARGBUILDER.addSignature(new ExactSignature());
+        ARGBUILDER.addSignature(new ExactSignature(Session.class));
+        ARGBUILDER.addSignature(new ExactSignature(int.class,String.class));
+        ARGBUILDER.addSignature(new ExactSignature(Session.class,int.class,String.class));
     }
 
     private final Session session;
@@ -62,25 +63,23 @@ public class OnCloseFunction implements Function<CloseInfo, Void>
         this.endpoint = endpoint;
         this.method = method;
 
-        ReflectUtils.assertIsAnnotated(method,OnWebSocketClose.class);
+        ReflectUtils.assertIsAnnotated(method, OnWebSocketClose.class);
         ReflectUtils.assertIsPublicNonStatic(method);
-        ReflectUtils.assertIsReturn(method,Void.TYPE);
+        ReflectUtils.assertIsReturn(method, Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method);
+        this.callable = ARGBUILDER.build(method, SESSION, STATUS_CODE, REASON);
         if (this.callable == null)
         {
             throw InvalidSignatureException.build(method,OnWebSocketClose.class,ARGBUILDER);
         }
-        this.callable.setArgReferences(SESSION,STATUS_CODE,REASON);
     }
 
     @Override
     public Void apply(CloseInfo closeinfo)
     {
-        Object args[] = this.callable.toArgs(session,closeinfo.getStatusCode(),closeinfo.getReason());
         try
         {
-            method.invoke(endpoint,args);
+            this.callable.invoke(endpoint,session,closeinfo.getStatusCode(),closeinfo.getReason());
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
