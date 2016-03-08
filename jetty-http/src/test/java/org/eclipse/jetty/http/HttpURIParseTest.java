@@ -19,21 +19,23 @@
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.jetty.util.URIUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeNoException;
+import static org.junit.Assume.assumeNotNull;
 
 
 @RunWith(Parameterized.class)
@@ -69,7 +71,8 @@ public class HttpURIParseTest
         {"/path/info;param#fragment",null,null,null,"/path/info;param","param",null,"fragment"},
         {"/path/info;param?query",null,null,null,"/path/info;param","param","query",null},
         {"/path/info;param?query#fragment",null,null,null,"/path/info;param","param","query","fragment"},
-        
+        // FIXME: {"/path/info;a=b/foo;c=d",null,null,null,"/data/info;a=b/foo;c=d","foo=bar1",null,null},
+
         // Protocol Less (aka scheme-less) URIs
         {"//host/path/info",null,"host",null,"/path/info",null,null,null},
         {"//user@host/path/info",null,"host",null,"/path/info",null,null,null},
@@ -151,14 +154,14 @@ public class HttpURIParseTest
         // Interpreted as relative path of "*" (no host/port/scheme/query/fragment)
         {"*",null,null,null,"*",null, null,null},
 
-        // Path detection Tests (seen from JSP/JSTL and <c:url> use
+        // Path detection Tests (seen from JSP/JSTL and <c:url> use)
         {"http://host:8080/path/info?q1=v1&q2=v2","http","host","8080","/path/info",null,"q1=v1&q2=v2",null},
         {"/path/info?q1=v1&q2=v2",null,null,null,"/path/info",null,"q1=v1&q2=v2",null},
         {"/info?q1=v1&q2=v2",null,null,null,"/info",null,"q1=v1&q2=v2",null},
         {"info?q1=v1&q2=v2",null,null,null,"info",null,"q1=v1&q2=v2",null},
         {"info;q1=v1?q2=v2",null,null,null,"info;q1=v1","q1=v1","q2=v2",null},
         
-        // Path-less, query only (seen from JSP/JSTL and <c:url> use
+        // Path-less, query only (seen from JSP/JSTL and <c:url> use)
         {"?q1=v1&q2=v2",null,null,null,"",null,"q1=v1&q2=v2",null}
         };
         
