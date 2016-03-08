@@ -21,28 +21,45 @@ package org.eclipse.jetty.websocket.common.util;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.websocket.common.util.DynamicArgs.Arg;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs.Signature;
 
-public class ExactSignature implements Signature, Predicate<Class<?>[]>
+public class ExactSignature implements Signature, BiPredicate<Method,Class<?>[]>
 {
     private final Arg[] params;
+
+    public ExactSignature()
+    {
+        this.params = new Arg[0];
+    }
 
     public ExactSignature(Arg... params)
     {
         this.params = params;
     }
 
+    public ExactSignature(Class<?>... parameters)
+    {
+        int len = parameters.length;
+
+        this.params = new Arg[len];
+        for(int i=0; i<len; i++)
+        {
+            this.params[i] = new Arg(i, parameters[i]);
+        }
+    }
+
     @Override
-    public Predicate<Class<?>[]> getPredicate()
+    public BiPredicate<Method,Class<?>[]> getPredicate()
     {
         return this;
     }
 
     @Override
-    public boolean test(Class<?>[] types)
+    public boolean test(Method method, Class<?>[] types)
     {
         if (types.length != params.length)
             return false;

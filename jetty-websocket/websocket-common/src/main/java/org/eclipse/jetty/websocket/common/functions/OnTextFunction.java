@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs;
+import org.eclipse.jetty.websocket.common.util.DynamicArgs.Arg;
 import org.eclipse.jetty.websocket.common.util.ExactSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
@@ -37,21 +38,21 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 public class OnTextFunction implements Function<String, Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
-    private static final int SESSION = 1;
-    private static final int TEXT = 2;
+    private static final Arg SESSION = new Arg(1,Session.class);
+    private static final Arg TEXT = new Arg(2,String.class);
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(String.class).indexedAs(TEXT));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,String.class).indexedAs(SESSION,TEXT));
+        ARGBUILDER.addSignature(new ExactSignature(String.class));
+        ARGBUILDER.addSignature(new ExactSignature(Session.class,String.class));
     }
-    
+
     public static DynamicArgs.Builder getDynamicArgsBuilder()
     {
         return ARGBUILDER;
     }
-    
+
     public static boolean hasMatchingSignature(Method method)
     {
         return ARGBUILDER.hasMatchingSignature(method);
@@ -72,21 +73,19 @@ public class OnTextFunction implements Function<String, Void>
         ReflectUtils.assertIsPublicNonStatic(method);
         ReflectUtils.assertIsReturn(method,Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method);
+        this.callable = ARGBUILDER.build(method,SESSION,TEXT);
         if (this.callable == null)
         {
             throw InvalidSignatureException.build(method,OnWebSocketMessage.class,ARGBUILDER);
         }
-        this.callable.setArgReferences(SESSION,TEXT);
     }
 
     @Override
     public Void apply(String text)
     {
-        Object args[] = this.callable.toArgs(session,text);
         try
         {
-            method.invoke(endpoint,args);
+            this.callable.invoke(endpoint,session,text);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {

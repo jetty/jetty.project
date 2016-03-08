@@ -18,12 +18,16 @@
 
 package org.eclipse.jetty.websocket.common.util;
 
+import org.eclipse.jetty.util.annotation.Name;
+
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceLoader;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 /**
  * Provide argument utilities for working with methods that
@@ -41,16 +45,16 @@ public class DynamicArgs
     {
         /**
          * Predicate to test if signature matches
-         * 
+         *
          * @return the predicate to test if signature matches
          */
-        public Predicate<Class<?>[]> getPredicate();
+        public BiPredicate<Method, Class<?>[]> getPredicate();
 
         /**
          * BiFunction to use to invoke method
          * against give object, with provided (potential) arguments,
          * returning appropriate result from invocation.
-         * 
+         *
          * @param method
          *            the method to base BiFunction off of.
          * @param callArgs
@@ -65,20 +69,58 @@ public class DynamicArgs
 
     public static class Arg
     {
+        public final Class<?> type;
+        public Method method;
+        public int index;
+        public Object tag;
+
+        public Arg(Class<?> type)
+        {
+            this.type = type;
+        }
+
         public Arg(int idx, Class<?> type)
         {
             this.index = idx;
             this.type = type;
         }
-        
-        public int index;
-        public Class<?> type;
-        public Object tag;
-        
+
+        public Arg(Method method, int idx, Class<?> type)
+        {
+            this.method = method;
+            this.index = idx;
+            this.type = type;
+        }
+
+        public Arg setTag(String tag)
+        {
+            this.tag = tag;
+            return this;
+        }
+
         @Override
         public String toString()
         {
             return String.format("%s[%d%s]",type.getSimpleName(),index,tag == null ? "" : "/" + tag);
+        }
+
+        public <T extends Annotation> T getAnnotation(Class<T> annoClass)
+        {
+            if(method == null)
+                return null;
+
+            Annotation annos[] = method.getParameterAnnotations()[index];
+            if(annos != null || (annos.length > 0))
+            {
+                for(Annotation anno: annos)
+                {
+                    if(anno.annotationType().equals(annoClass))
+                    {
+                        return (T) anno;
+                    }
+                }
+            }
+            return null;
         }
     }
 
@@ -88,16 +130,40 @@ public class DynamicArgs
 
         public DynamicArgs build(Method method, Arg... callArgs)
         {
+            // FIXME: add DynamicArgs build cache (key = method+callargs)
+
             Class<?> paramTypes[] = method.getParameterTypes();
             for (Signature sig : signatures)
             {
-                if (sig.getPredicate().test(paramTypes))
+                if (sig.getPredicate().test(method, paramTypes))
                 {
                     return new DynamicArgs(sig.getInvoker(method,callArgs));
                 }
             }
 
             return null;
+        }
+
+        /**
+         * Used to identify a possible method signature match.
+         *
+         * @param method the method to test
+         * @return true if it is a match
+         */
+        public boolean hasMatchingSignature(Method method)
+        {
+            // FIXME: add match cache (key = method)
+
+            Class<?> paramTypes[] = method.getParameterTypes();
+            for (Signature sig : signatures)
+            {
+                if (sig.getPredicate().test(method, paramTypes))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public Builder addSignature(Signature sig)
@@ -116,6 +182,23 @@ public class DynamicArgs
         }
     }
 
+    private static List<ArgIdentifier> argIdentifiers;
+
+    public static List<ArgIdentifier> lookupArgIdentifiers()
+    {
+        if (argIdentifiers == null)
+        {
+            ServiceLoader<ArgIdentifier> loader = ServiceLoader.load(ArgIdentifier.class);
+            argIdentifiers = new ArrayList<>();
+            for (ArgIdentifier argId : loader)
+            {
+                argIdentifiers.add(argId);
+            }
+        }
+
+        return argIdentifiers;
+    }
+
     private final BiFunction<Object, Object[], Object> invoker;
 
     private DynamicArgs(BiFunction<Object, Object[], Object> invoker)
@@ -125,7 +208,7 @@ public class DynamicArgs
 
     /**
      * Invoke the signature / method with the provided potential args.
-     * 
+     *
      * @param o
      *            the object to call method on
      * @param potentialArgs

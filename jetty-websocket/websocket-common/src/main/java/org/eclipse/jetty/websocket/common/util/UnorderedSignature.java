@@ -22,13 +22,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceLoader;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.websocket.common.util.DynamicArgs.Arg;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs.Signature;
 
-public class UnorderedSignature implements Signature, Predicate<Class<?>[]>
+public class UnorderedSignature implements Signature, BiPredicate<Method, Class<?>[]>
 {
     private final Arg[] params;
 
@@ -36,31 +38,56 @@ public class UnorderedSignature implements Signature, Predicate<Class<?>[]>
     {
         this.params = args;
     }
-    
+
     @Override
-    public Predicate<Class<?>[]> getPredicate()
+    public BiPredicate<Method, Class<?>[]> getPredicate()
     {
         return this;
     }
-    
+
     @Override
-    public boolean test(Class<?>[] types)
+    public boolean test(Method method, Class<?>[] types)
     {
         // Matches if the provided types
         // match the valid params in any order
 
-        int len = types.length;
-        for (int i = 0; i < len; i++)
+        // Figure out mapping of calling args to method args
+        Class<?> paramTypes[] = method.getParameterTypes();
+        int paramTypesLength = paramTypes.length;
+
+        // Method argument array pointing to index in calling array
+        int callArgsLen = params.length;
+
+        List<ArgIdentifier> argIdentifiers = DynamicArgs.lookupArgIdentifiers();
+
+        for (int mi = 0; mi < paramTypesLength; mi++)
         {
-            UnorderedSignature.Param p = findParam(types[i]);
-            if (p == null)
+            DynamicArgs.Arg methodArg = new DynamicArgs.Arg(method, mi, paramTypes[mi]);
+
+            for (ArgIdentifier argId : argIdentifiers)
+                methodArg = argId.apply(methodArg);
+
+            int ref = -1;
+            // Find reference to argument in callArgs
+            for (int ci = 0; ci < callArgsLen; ci++)
+            {
+                if (methodArg.tag != null && methodArg.tag.equals(params[ci].tag))
+                {
+                    ref = ci;
+                }
+                else if (methodArg.type == params[ci].type)
+                {
+                    ref = ci;
+                }
+            }
+            if (ref < 0)
             {
                 return false;
             }
         }
+
         return true;
     }
-    
 
     public void appendDescription(StringBuilder str)
     {
@@ -82,7 +109,7 @@ public class UnorderedSignature implements Signature, Predicate<Class<?>[]>
         }
         str.append(')');
     }
-    
+
     @Override
     public BiFunction<Object, Object[], Object> getInvoker(Method method, Arg... callArgs)
     {
@@ -94,17 +121,24 @@ public class UnorderedSignature implements Signature, Predicate<Class<?>[]>
         int argMapping[] = new int[paramTypesLength];
         int callArgsLen = callArgs.length;
 
+        List<ArgIdentifier> argIdentifiers = DynamicArgs.lookupArgIdentifiers();
+
         for (int mi = 0; mi < paramTypesLength; mi++)
         {
-            // TODO: ask optional ArgFunction to populate method.paramTypes[i] Arg 
-            // TODO: perhaps have this be loaded via ServiceLoader
-            // TODO: jsr356 impl can find @PathParam and populate the Arg.tag entry
-            
+            DynamicArgs.Arg methodArg = new DynamicArgs.Arg(method, mi, paramTypes[mi]);
+
+            for (ArgIdentifier argId : argIdentifiers)
+                methodArg = argId.apply(methodArg);
+
             int ref = -1;
             // Find reference to argument in callArgs
             for (int ci = 0; ci < callArgsLen; ci++)
             {
-                if (callArgs[ci].index == params[mi].index)
+                if (methodArg.tag != null && methodArg.tag.equals(callArgs[ci].tag))
+                {
+                    ref = ci;
+                }
+                else if (methodArg.index == callArgs[ci].index)
                 {
                     ref = ci;
                 }

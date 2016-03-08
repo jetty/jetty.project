@@ -30,6 +30,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs;
+import org.eclipse.jetty.websocket.common.util.DynamicArgs.Arg;
 import org.eclipse.jetty.websocket.common.util.ExactSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
@@ -39,14 +40,14 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 public class OnFrameFunction implements Function<Frame, Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
-    private static final int SESSION = 1;
-    private static final int FRAME = 2;
+    private static final Arg SESSION = new Arg(1,Session.class);
+    private static final Arg FRAME = new Arg(2,Frame.class);
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(Frame.class).indexedAs(FRAME));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,Frame.class).indexedAs(SESSION,FRAME));
+        ARGBUILDER.addSignature(new ExactSignature(Frame.class));
+        ARGBUILDER.addSignature(new ExactSignature(Session.class,Frame.class));
     }
 
     private final Session session;
@@ -64,22 +65,20 @@ public class OnFrameFunction implements Function<Frame, Void>
         ReflectUtils.assertIsPublicNonStatic(method);
         ReflectUtils.assertIsReturn(method,Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method);
+        this.callable = ARGBUILDER.build(method,SESSION,FRAME);
         if (this.callable == null)
         {
             throw InvalidSignatureException.build(method,OnWebSocketFrame.class,ARGBUILDER);
         }
-        this.callable.setArgReferences(SESSION,FRAME);
     }
 
     @Override
     public Void apply(Frame frame)
     {
         WebSocketFrame copy = WebSocketFrame.copy(frame);
-        Object args[] = this.callable.toArgs(session,copy);
         try
         {
-            method.invoke(endpoint,args);
+            this.callable.invoke(endpoint,session,copy);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
