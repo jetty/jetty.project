@@ -28,7 +28,6 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -49,16 +48,16 @@ public abstract class SslBytesTest
 
     public static class TLSRecord
     {
-        private final SslBytesServerTest.TLSRecord.Type type;
+        private final Type type;
         private final byte[] bytes;
 
-        public TLSRecord(SslBytesServerTest.TLSRecord.Type type, byte[] bytes)
+        public TLSRecord(Type type, byte[] bytes)
         {
             this.type = type;
             this.bytes = bytes;
         }
 
-        public SslBytesServerTest.TLSRecord.Type getType()
+        public Type getType()
         {
             return type;
         }
@@ -80,15 +79,15 @@ public abstract class SslBytesTest
 
             private int code;
 
-            private Type(int code)
+            Type(int code)
             {
                 this.code = code;
-                SslBytesServerTest.TLSRecord.Type.Mapper.codes.put(this.code, this);
+                Mapper.codes.put(this.code, this);
             }
 
-            public static SslBytesServerTest.TLSRecord.Type from(int code)
+            public static Type from(int code)
             {
-                SslBytesServerTest.TLSRecord.Type result = SslBytesServerTest.TLSRecord.Type.Mapper.codes.get(code);
+                Type result = Mapper.codes.get(code);
                 if (result == null)
                     throw new IllegalArgumentException("Invalid TLSRecord.Type " + code);
                 return result;
@@ -96,7 +95,7 @@ public abstract class SslBytesTest
 
             private static class Mapper
             {
-                private static final Map<Integer, SslBytesServerTest.TLSRecord.Type> codes = new HashMap<>();
+                private static final Map<Integer, Type> codes = new HashMap<>();
             }
         }
     }
@@ -218,7 +217,7 @@ public abstract class SslBytesTest
             }
         }
 
-        private TLSRecord read(SslBytesServerTest.TLSRecord.Type type, InputStream input, byte[] bytes, int offset, int length) throws IOException
+        private TLSRecord read(TLSRecord.Type type, InputStream input, byte[] bytes, int offset, int length) throws IOException
         {
             while (length > 0)
             {
@@ -291,56 +290,50 @@ public abstract class SslBytesTest
             }
         }
 
-        public SslBytesServerTest.SimpleProxy.AutomaticFlow startAutomaticFlow() throws InterruptedException
+        public SslBytesTest.SimpleProxy.AutomaticFlow startAutomaticFlow() throws InterruptedException
         {
             final CountDownLatch startLatch = new CountDownLatch(2);
             final CountDownLatch stopLatch = new CountDownLatch(2);
-            Future<Object> clientToServer = threadPool.submit(new Callable<Object>()
+            Future<Object> clientToServer = threadPool.submit(() ->
             {
-                public Object call() throws Exception
+                startLatch.countDown();
+                logger.debug("Automatic flow C --> S started");
+                try
                 {
-                    startLatch.countDown();
-                    logger.debug("Automatic flow C --> S started");
-                    try
+                    while (true)
                     {
-                        while (true)
-                        {
-                            flushToServer(readFromClient(), 0);
-                        }
-                    }
-                    catch (InterruptedIOException x)
-                    {
-                        return null;
-                    }
-                    finally
-                    {
-                        stopLatch.countDown();
-                        logger.debug("Automatic flow C --> S finished");
+                        flushToServer(readFromClient(), 0);
                     }
                 }
-            });
-            Future<Object> serverToClient = threadPool.submit(new Callable<Object>()
-            {
-                public Object call() throws Exception
+                catch (InterruptedIOException x)
                 {
-                    startLatch.countDown();
-                    logger.debug("Automatic flow C <-- S started");
-                    try
+                    return null;
+                }
+                finally
+                {
+                    stopLatch.countDown();
+                    logger.debug("Automatic flow C --> S finished");
+                }
+            });
+            Future<Object> serverToClient = threadPool.submit(() ->
+            {
+                startLatch.countDown();
+                logger.debug("Automatic flow C <-- S started");
+                try
+                {
+                    while (true)
                     {
-                        while (true)
-                        {
-                            flushToClient(readFromServer());
-                        }
+                        flushToClient(readFromServer());
                     }
-                    catch (InterruptedIOException x)
-                    {
-                        return null;
-                    }
-                    finally
-                    {
-                        stopLatch.countDown();
-                        logger.debug("Automatic flow C <-- S finished");
-                    }
+                }
+                catch (InterruptedIOException x)
+                {
+                    return null;
+                }
+                finally
+                {
+                    stopLatch.countDown();
+                    logger.debug("Automatic flow C <-- S finished");
                 }
             });
             Assert.assertTrue(startLatch.await(5, TimeUnit.SECONDS));
