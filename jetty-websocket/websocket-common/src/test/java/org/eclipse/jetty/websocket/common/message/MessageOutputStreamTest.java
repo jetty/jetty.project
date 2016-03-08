@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 
@@ -33,7 +28,6 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
-import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
@@ -44,6 +38,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 public class MessageOutputStreamTest
 {
@@ -83,6 +81,7 @@ public class MessageOutputStreamTest
         remoteSocket = new TrackingSocket("remote");
         WebSocketSession remoteSession = new LocalWebSocketSession(containerScope,testname,remoteSocket);
         OutgoingFrames socketPipe = FramePipes.to(remoteSession);
+        remoteSession.open();
 
         // Local Session
         TrackingSocket localSocket = new TrackingSocket("local");
