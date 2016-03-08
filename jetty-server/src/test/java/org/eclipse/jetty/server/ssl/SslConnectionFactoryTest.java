@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.ssl;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -59,11 +60,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class SslConnectionFactoryTest
-{        
+{
     Server _server;
     ServerConnector _connector;
     int _port;
-    
+
     @Before
     public void before() throws Exception
     {
@@ -83,7 +84,7 @@ public class SslConnectionFactoryTest
         HttpConfiguration https_config = new HttpConfiguration(http_config);
         https_config.addCustomizer(new SecureRequestCustomizer());
 
-        
+
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
@@ -96,7 +97,7 @@ public class SslConnectionFactoryTest
         https.setIdleTimeout(30000);
 
         _server.addConnector(https);
-        
+
         _server.setHandler(new AbstractHandler()
         {
             @Override
@@ -107,30 +108,30 @@ public class SslConnectionFactoryTest
                 response.flushBuffer();
             }
         });
-        
+
         _server.start();
-        _port=https.getLocalPort();   
+        _port=https.getLocalPort();
     }
-    
+
     @After
     public void after() throws Exception
     {
         _server.stop();
         _server=null;
     }
-    
+
     @Test
     public void testConnect() throws Exception
     {
-        String response= getResponse("127.0.0.1",null);        
+        String response= getResponse("127.0.0.1",null);
         Assert.assertThat(response,Matchers.containsString("host=127.0.0.1"));
     }
-    
+
     @Test
     public void testSNIConnect() throws Exception
     {
         String response;
-        
+
         response= getResponse("localhost","localhost","jetty.eclipse.org");
         Assert.assertThat(response,Matchers.containsString("host=localhost"));
     }
@@ -151,22 +152,32 @@ public class SslConnectionFactoryTest
         {
             out.write("Rubbish".getBytes());
             out.flush();
-            
-            Assert.assertThat(socket.getInputStream().read(),Matchers.equalTo(-1));
+
+            socket.setSoTimeout(1000);
+            InputStream input = socket.getInputStream();
+            int read = input.read();
+            // TLS Alert message type == 21.
+            Assert.assertThat(read, Matchers.equalTo(21));
+            int reads = 0;
+            while (read >= 0)
+            {
+                read = input.read();
+                ++reads;
+            }
+            Assert.assertThat(reads, Matchers.lessThan(32));
         }
-        
     }
-    
+
     private String getResponse(String sniHost,String reqHost, String cn) throws Exception
     {
         SslContextFactory clientContextFactory = new SslContextFactory(true);
         clientContextFactory.start();
         SSLSocketFactory factory = clientContextFactory.getSslContext().getSocketFactory();
-        
+
         SSLSocket sslSocket = (SSLSocket)factory.createSocket("127.0.0.1", _port);
 
         if (cn!=null)
-        {        
+        {
             SNIHostName serverName = new SNIHostName(sniHost);
             List<SNIServerName> serverNames = new ArrayList<>();
             serverNames.add(serverName);
@@ -177,35 +188,35 @@ public class SslConnectionFactoryTest
         }
         sslSocket.startHandshake();
 
-        
+
         if (cn!=null)
-        {                                        
+        {
             X509Certificate cert = ((X509Certificate)sslSocket.getSession().getPeerCertificates()[0]);
-            
+
             Assert.assertThat(cert.getSubjectX500Principal().getName("CANONICAL"), Matchers.startsWith("cn="+cn));
         }
 
         sslSocket.getOutputStream().write(("GET /ctx/path HTTP/1.0\r\nHost: "+reqHost+":"+_port+"\r\n\r\n").getBytes(StandardCharsets.ISO_8859_1));
         String response = IO.toString(sslSocket.getInputStream());
-        
+
         sslSocket.close();
         clientContextFactory.stop();
         return response;
     }
-    
+
 
     @Test
     public void testSocketCustomization() throws Exception
     {
         final Queue<String> history = new ConcurrentArrayQueue<>();
-        
+
         _connector.addBean(new SocketCustomizationListener()
         {
             @Override
             protected void customize(Socket socket, Class<? extends Connection> connection, boolean ssl)
             {
                 history.add("customize connector "+connection+","+ssl);
-            }            
+            }
         });
 
         _connector.getBean(SslConnectionFactory.class).addBean(new SocketCustomizationListener()
@@ -214,26 +225,26 @@ public class SslConnectionFactoryTest
             protected void customize(Socket socket, Class<? extends Connection> connection, boolean ssl)
             {
                 history.add("customize ssl "+connection+","+ssl);
-            }            
+            }
         });
-        
+
         _connector.getBean(HttpConnectionFactory.class).addBean(new SocketCustomizationListener()
         {
             @Override
             protected void customize(Socket socket, Class<? extends Connection> connection, boolean ssl)
             {
                 history.add("customize http "+connection+","+ssl);
-            }            
+            }
         });
 
-        String response= getResponse("127.0.0.1",null);        
+        String response= getResponse("127.0.0.1",null);
         Assert.assertThat(response,Matchers.containsString("host=127.0.0.1"));
-        
+
         Assert.assertEquals("customize connector class org.eclipse.jetty.io.ssl.SslConnection,false",history.poll());
         Assert.assertEquals("customize ssl class org.eclipse.jetty.io.ssl.SslConnection,false",history.poll());
         Assert.assertEquals("customize connector class org.eclipse.jetty.server.HttpConnection,true",history.poll());
         Assert.assertEquals("customize http class org.eclipse.jetty.server.HttpConnection,true",history.poll());
         Assert.assertEquals(0,history.size());
     }
-    
+
 }
