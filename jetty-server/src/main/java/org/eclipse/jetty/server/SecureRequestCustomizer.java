@@ -56,6 +56,8 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      */
     public static final String CACHED_INFO_ATTR = CachedInfo.class.getName();
 
+    private String sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session";
+
     private boolean _sniHostCheck;
     private long _stsMaxAge=-1;
     private boolean _stsIncludeSubDomains;
@@ -270,11 +272,22 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             request.setAttribute("javax.servlet.request.cipher_suite",cipherSuite);
             request.setAttribute("javax.servlet.request.key_size",keySize);
             request.setAttribute("javax.servlet.request.ssl_session_id", idStr);
+            request.setAttribute(getSslSessionAttribute(), sslSession);
         }
         catch (Exception e)
         {
             LOG.warn(Log.EXCEPTION,e);
         }
+    }
+    
+    public void setSslSessionAttribute(String attribute)
+    {
+        this.sslSessionAttribute = attribute;
+    }
+
+    public String getSslSessionAttribute()
+    {
+        return sslSessionAttribute;
     }
 
     @Override

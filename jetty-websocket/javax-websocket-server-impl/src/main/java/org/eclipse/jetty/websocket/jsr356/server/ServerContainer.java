@@ -245,12 +245,14 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
+        super.onSessionClosed(session);
         webSocketServerFactory.onSessionClosed(session);
     }
 
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
+        super.onSessionOpened(session);
         webSocketServerFactory.onSessionOpened(session);
     }
 }
