@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,26 +20,36 @@ package com.acme;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 
-@ManagedObject(value = "Managed Object")
-public class Managed
+@ManagedObject(value = "Test the mbean extended stuff")
+public class DerivedExtended extends Derived
 {
-    String managed = "foo";
 
-    @ManagedAttribute("Managed Attribute")
-    public String getManaged()
+    private String doodle4 = "doodle4";
+
+    @ManagedAttribute(value = "The doodle4 name of something", name = "doodle4", setter = "setDoodle4")
+    public String getDoodle4()
     {
-        return managed;
+        throw new IllegalAccessError();
     }
 
-    public void setManaged(String managed)
+    public void setDoodle4(String doodle4)
     {
-        this.managed = managed;
+        this.doodle4 = doodle4;
     }
 
-    public String bad()
+    @ManagedOperation("Doodle2 something")
+    private void doodle2()
     {
-        return "bad";
+        System.err.println("doodle2");
+        // this is just for a test case perspective
     }
 
+    @ManagedOperation("Doodle1 something")
+    public void doodle1()
+    {
+        // this is just for a test case perspective
+        throw new IllegalAccessError();
+    }
 }

@@ -23,16 +23,16 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 
-@ManagedObject(value="Test the mbean stuff")
+@ManagedObject(value = "Test the mbean stuff")
 public class Derived extends Base implements Signature
 {
-    String fname="Full Name";
+    String fname = "Full Name";
 
     Managed managedInstance = new Managed();
-    
+
     SuperManaged superManagedInstance = new SuperManaged();
-    
-    @ManagedAttribute(value="The full name of something", name="fname", setter="setFullName")
+
+    @ManagedAttribute(value = "The full name of something", name = "fname", setter = "setFullName")
     public String getFullName()
     {
         return fname;
@@ -40,7 +40,7 @@ public class Derived extends Base implements Signature
 
     public void setFullName(String name)
     {
-        fname=name;
+        fname = name;
     }
 
     @ManagedOperation("publish something")
@@ -48,11 +48,11 @@ public class Derived extends Base implements Signature
     {
         System.err.println("publish");
     }
-    
+
     @ManagedOperation("Doodle something")
-    public void doodle(@Name(value="doodle", description="A description of the argument") String doodle)
+    public void doodle(@Name(value = "doodle", description = "A description of the argument") String doodle)
     {
-        System.err.println("doodle "+doodle);
+        System.err.println("doodle " + doodle);
     }
 
     public String bad()
@@ -70,8 +70,7 @@ public class Derived extends Base implements Signature
     {
         this.managedInstance = managedInstance;
     }
-    
-    
+
     @ManagedAttribute("sample super managed object")
     public SuperManaged getSuperManagedInstance()
     {
