@@ -33,6 +33,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -75,6 +76,45 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
     }
 
     @Test
+    public void test_CookieOfRequestIsStored() throws Exception
+    {
+        final String name = "foo";
+        final String value = "bar";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.addCookie(new Cookie(name, value));
+                baseRequest.setHandled(true);
+            }
+        });
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        String path = "/path";
+        String uri = scheme + "://" + host + ":" + port + path;
+
+        org.eclipse.jetty.client.api.Request request = client.newRequest(uri);
+        HttpCookieStore cookieStore = new HttpCookieStore();
+        request.setCookieStore(cookieStore);
+
+        Response response = request.send();
+        Assert.assertEquals(200, response.getStatus());
+
+        List<HttpCookie> sharedCookies = client.getCookieStore().get(URI.create(uri));
+        Assert.assertNotNull(sharedCookies);
+        Assert.assertEquals(0, sharedCookies.size());
+
+        List<HttpCookie> requestCookies = request.getCookieStore().get(URI.create(uri));
+        Assert.assertNotNull(requestCookies);
+        Assert.assertEquals(1, requestCookies.size());
+        HttpCookie cookie = requestCookies.get(0);
+        Assert.assertEquals(name, cookie.getName());
+        Assert.assertEquals(value, cookie.getValue());
+    }
+
+    @Test
     public void test_CookieIsSent() throws Exception
     {
         final String name = "foo";
@@ -102,6 +142,43 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         client.getCookieStore().add(URI.create(uri), cookie);
 
         Response response = client.GET(scheme + "://" + host + ":" + port + path);
+        Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void test_CookieOfRequestIsSent() throws Exception
+    {
+        final String name = "foo";
+        final String value = "bar";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                Cookie[] cookies = request.getCookies();
+                Assert.assertNotNull(cookies);
+                Assert.assertEquals(1, cookies.length);
+                Cookie cookie = cookies[0];
+                Assert.assertEquals(name, cookie.getName());
+                Assert.assertEquals(value, cookie.getValue());
+            }
+        });
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        String path = "/path";
+        String uri = scheme + "://" + host + ":" + port;
+        HttpCookie sharedCookie = new HttpCookie("foo2", "bar2");
+        client.getCookieStore().add(URI.create(uri), sharedCookie);
+
+        org.eclipse.jetty.client.api.Request request = client.newRequest(scheme + "://" + host + ":" + port + path);
+        HttpCookieStore cookieStore = new HttpCookieStore();
+        request.setCookieStore(cookieStore);
+        HttpCookie requestCookie = new HttpCookie(name, value);
+        request.getCookieStore().add(URI.create(uri), requestCookie);
+
+        Response response = request.send();
         Assert.assertEquals(200, response.getStatus());
     }
 

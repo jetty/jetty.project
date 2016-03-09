@@ -438,6 +438,10 @@ public class HttpClient extends ContainerLifeCycle
                 .idleTimeout(oldRequest.getIdleTimeout(), TimeUnit.MILLISECONDS)
                 .timeout(oldRequest.getTimeout(), TimeUnit.MILLISECONDS)
                 .followRedirects(oldRequest.isFollowRedirects());
+        if (oldRequest.hasCookieManager())
+        {
+            newRequest.setCookieManager(oldRequest.getCookieManager());
+        }
         for (HttpField field : oldRequest.getHeaders())
         {
             HttpHeader header = field.getHeader();
