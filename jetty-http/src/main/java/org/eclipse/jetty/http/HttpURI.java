@@ -177,9 +177,10 @@ public class HttpURI
     }
 
     /* ------------------------------------------------------------ */
-    /** Parse according to https://tools.ietf.org/html/rfc7230#section-5.3
-     * @param method
-     * @param uri
+    /**
+     * Parse according to https://tools.ietf.org/html/rfc7230#section-5.3
+     * @param method the request method
+     * @param uri the request uri
      */
     public void parseRequestTarget(String method,String uri)
     {

@@ -1035,7 +1035,7 @@ public class HttpClient extends ContainerLifeCycle
         return host;
     }
 
-    protected int normalizePort(String scheme, int port)
+    public static int normalizePort(String scheme, int port)
     {
         if (port > 0)
             return port;
@@ -1053,7 +1053,7 @@ public class HttpClient extends ContainerLifeCycle
             return port == 80;
     }
 
-    public boolean isSchemeSecure(String scheme)
+    static boolean isSchemeSecure(String scheme)
     {
         return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
     }

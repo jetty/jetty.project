@@ -754,10 +754,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (_mimeTypes == null)
             _mimeTypes = new MimeTypes();
-
+        
         try
         {
-            // Set the classloader
+            // Set the classloader, context and enter scope
             if (_classLoader != null)
             {
                 current_thread = Thread.currentThread();

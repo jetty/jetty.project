@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client.ssl;
 
-import static org.hamcrest.Matchers.nullValue;
-
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
@@ -368,7 +366,7 @@ public class SslBytesServerTest extends SslBytesTest
         System.arraycopy(doneBytes, 0, chunk, recordBytes.length, doneBytes.length);
         System.arraycopy(closeRecordBytes, 0, chunk, recordBytes.length + doneBytes.length, closeRecordBytes.length);
         proxy.flushToServer(0, chunk);
-        
+
         // Close the raw socket
         proxy.flushToServer(null);
 
@@ -380,7 +378,7 @@ public class SslBytesServerTest extends SslBytesTest
             Assert.assertEquals(Type.ALERT,record.getType());
             record = proxy.readFromServer();
         }
-        
+
         Assert.assertNull(record);
 
         // Check that we did not spin
@@ -488,7 +486,7 @@ public class SslBytesServerTest extends SslBytesTest
         if (record!=null)
         {
             Assert.assertEquals(record.getType(),Type.ALERT);
-            
+
             // Now should be a raw close
             record = proxy.readFromServer();
             Assert.assertNull(String.valueOf(record), record);
@@ -784,7 +782,7 @@ public class SslBytesServerTest extends SslBytesTest
         if (record!=null)
         {
             Assert.assertEquals(record.getType(),Type.ALERT);
-            
+
             // Now should be a raw close
             record = proxy.readFromServer();
             Assert.assertNull(String.valueOf(record), record);
@@ -846,7 +844,7 @@ public class SslBytesServerTest extends SslBytesTest
         if (record!=null)
         {
             Assert.assertEquals(record.getType(),Type.ALERT);
-            
+
             // Now should be a raw close
             record = proxy.readFromServer();
             Assert.assertNull(String.valueOf(record), record);
@@ -921,7 +919,7 @@ public class SslBytesServerTest extends SslBytesTest
         if (record!=null)
         {
             Assert.assertEquals(record.getType(),Type.ALERT);
-            
+
             // Now should be a raw close
             record = proxy.readFromServer();
             Assert.assertNull(String.valueOf(record), record);
@@ -983,7 +981,7 @@ public class SslBytesServerTest extends SslBytesTest
         if (record!=null)
         {
             Assert.assertEquals(record.getType(),Type.ALERT);
-            
+
             // Now should be a raw close
             record = proxy.readFromServer();
             Assert.assertNull(String.valueOf(record), record);
@@ -1040,7 +1038,7 @@ public class SslBytesServerTest extends SslBytesTest
         if (record!=null)
         {
             Assert.assertEquals(record.getType(),Type.ALERT);
-            
+
             // Now should be a raw close
             record = proxy.readFromServer();
             Assert.assertNull(String.valueOf(record), record);
@@ -1060,7 +1058,7 @@ public class SslBytesServerTest extends SslBytesTest
     {
         // Don't run on Windows (buggy JVM)
         Assume.assumeTrue(!OS.IS_WINDOWS);
-        
+
         final SSLSocket client = newClient();
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
@@ -1121,7 +1119,7 @@ public class SslBytesServerTest extends SslBytesTest
     {
         // Don't run on Windows (buggy JVM)
         Assume.assumeTrue(!OS.IS_WINDOWS);
-        
+
         final SSLSocket client = newClient();
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
@@ -1247,7 +1245,7 @@ public class SslBytesServerTest extends SslBytesTest
         if (record!=null)
         {
             Assert.assertEquals(record.getType(),Type.ALERT);
-            
+
             // Now should be a raw close
             record = proxy.readFromServer();
             Assert.assertNull(String.valueOf(record), record);
@@ -1862,8 +1860,11 @@ public class SslBytesServerTest extends SslBytesTest
         // Instead of passing the Client Hello, we simulate plain text was passed in
         proxy.flushToServer(0, "GET / HTTP/1.1\r\n".getBytes(StandardCharsets.UTF_8));
 
-        // We expect that the server closes the connection immediately
+        // We expect that the server sends an alert message and closes.
         TLSRecord record = proxy.readFromServer();
+        Assert.assertNotNull(record);
+        Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
+        record = proxy.readFromServer();
         Assert.assertNull(String.valueOf(record), record);
 
         // Check that we did not spin
@@ -1982,6 +1983,6 @@ public class SslBytesServerTest extends SslBytesTest
             Assert.assertEquals(record.getType(),Type.ALERT);
             record = proxy.readFromServer();
         }
-        Assert.assertThat(record,nullValue());
+        Assert.assertThat(record, Matchers.nullValue());
     }
 }

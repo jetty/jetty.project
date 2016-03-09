@@ -139,7 +139,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 assertTrue(listener.destroys.contains("session1"));
                 assertTrue(listener.destroys.contains("session2"));
                 //session2's HttpSessionBindingListener should have been called when it was scavenged
-                assertTrue(servlet.unbound);
+                assertTrue(servlet.listener.unbound);
             }
             finally
             {
@@ -151,24 +151,33 @@ public abstract class AbstractSessionInvalidateAndCreateTest
             server.stop();
         }
     }
+    
+    public static class Foo implements Serializable
+    {
+        public boolean bar = false;
+        
+        public boolean getBar() { return bar;};
+    }
 
-    public static class TestServlet extends HttpServlet
+    public static class MySessionBindingListener implements HttpSessionBindingListener, Serializable
     {
         private boolean unbound = false;
         
-        public class MySessionBindingListener implements HttpSessionBindingListener, Serializable
+        public void valueUnbound(HttpSessionBindingEvent event)
+        {
+            unbound = true;
+        }
+
+        public void valueBound(HttpSessionBindingEvent event)
         {
 
-            public void valueUnbound(HttpSessionBindingEvent event)
-            {
-                unbound = true;
-            }
-
-            public void valueBound(HttpSessionBindingEvent event)
-            {
-
-            }
         }
+    }
+    
+    public static class TestServlet extends HttpServlet
+    {
+        public MySessionBindingListener listener = new MySessionBindingListener();
+       
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
@@ -190,7 +199,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                     //now make a new session
                     session = request.getSession(true);
                     session.setAttribute("identity", "session2");
-                    session.setAttribute("listener", new MySessionBindingListener());
+                    session.setAttribute("listener", listener);
                 }
                 else
                     fail("Session already missing");

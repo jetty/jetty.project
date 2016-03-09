@@ -19,6 +19,12 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.WriteConcern;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -35,13 +41,6 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.WriteConcern;
-import com.mongodb.WriteResult;
 
 /**
  * MongoSessionDataStore
@@ -153,43 +152,21 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     private DBCollection _dbSessions;
     
     
-    private long _gracePeriodMs = 1000L * 60 * 60; //default grace period is 1hr
-    
     public void setDBCollection (DBCollection collection)
     {
         _dbSessions = collection;
     }
     
     
-    /**
-     * @return
-     */
     public DBCollection getDBCollection ()
     {
         return _dbSessions;
     }
     
-    /**
-     * @return
-     */
-    public int getGracePeriodSec ()
-    {
-        return (int)(_gracePeriodMs == 0L? 0 : _gracePeriodMs/1000L);
-    }
-    
-    /**
-     * @param sec
-     */
-    public void setGracePeriodSec (int sec)
-    {
-        if (sec < 0)
-            _gracePeriodMs = 0;
-        else
-            _gracePeriodMs = sec * 1000L;
-    }
+  
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(org.eclipse.jetty.server.session.SessionKey)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#load(String)
      */
     @Override
     public SessionData load(String id) throws Exception
@@ -281,7 +258,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(org.eclipse.jetty.server.session.SessionKey)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(String)
      */
     @Override
     public boolean delete(String id) throws Exception
@@ -339,15 +316,17 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
      */
     @Override
-    public Set<String> getExpired(Set<String> candidates)
+    public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
     {
-        long upperBound = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
+        long upperBound = now;
         Set<String> expiredSessions = new HashSet<>();
         
-        //firstly ask mongo to verify if these candidate ids have expired
+        //firstly ask mongo to verify if these candidate ids have expired - all of
+        //these candidates will be for our node
         BasicDBObject query = new BasicDBObject();     
         query.put(__ID,new BasicDBObject("$in", candidates));
         query.put(__EXPIRY, new BasicDBObject("$gt", 0));
@@ -369,9 +348,13 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             if (verifiedExpiredSessions != null) verifiedExpiredSessions.close();
         }
 
-
-        //now ask mongo to find sessions that expired a while ago    
-        upperBound = upperBound - (3 * _gracePeriodMs);
+        //now ask mongo to find sessions last managed by other nodes that expired a while ago 
+        //if this is our first expiry check, make sure that we only grab really old sessions
+        if (_lastExpiryCheckTime <= 0)
+            upperBound = (now - (3*(1000L * _gracePeriodSec)));
+        else
+            upperBound =  _lastExpiryCheckTime - (1000L * _gracePeriodSec);
+        
         query.clear();
         query.put(__EXPIRY, new BasicDBObject("$gt", 0));
         query.put(__EXPIRY, new BasicDBObject("$lt", upperBound));
@@ -397,7 +380,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.SessionData, long)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long) 
      */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception

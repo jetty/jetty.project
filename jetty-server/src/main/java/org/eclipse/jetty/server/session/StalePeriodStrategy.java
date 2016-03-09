@@ -55,10 +55,6 @@ public class StalePeriodStrategy implements StalenessStrategy
             
     }
     
-    
-    /**
-     * @return
-     */
     public long getStaleSec ()
     {
         return (_staleMs<=0?0L:_staleMs/1000L);
@@ -67,7 +63,7 @@ public class StalePeriodStrategy implements StalenessStrategy
     /**
      * The amount of time in seconds that a session can be held
      * in memory without being refreshed from the cluster.
-     * @param sec
+     * @param sec the time in seconds
      */
     public void setStaleSec (long sec)
     {

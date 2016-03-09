@@ -20,7 +20,7 @@
           <!-- DO NOT DEPLOY (or Release) -->
           <skip>true</skip>
         </configuration>
-      </plugin>    
+      </plugin>
     </plugins>
   </build>
   <modules>

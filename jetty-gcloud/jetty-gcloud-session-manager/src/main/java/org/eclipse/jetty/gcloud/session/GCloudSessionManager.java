@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.eclipse.jetty.server.session.AbstractSessionStore;
 import org.eclipse.jetty.server.session.MemorySessionStore;
 import org.eclipse.jetty.server.session.SessionManager;
@@ -49,9 +44,7 @@ public class GCloudSessionManager extends SessionManager
 
 
     
-/*
-    
-    *//**
+    /* *
      * Session
      *
      * Representation of a session in local memory.
@@ -75,7 +68,8 @@ public class GCloudSessionManager extends SessionManager
         
         
     
-        *//** 
+        */
+        /* *
          * Called on entry to the session.
          * 
          * @see org.eclipse.jetty.server.session.AbstractSession#access(long)
@@ -122,7 +116,7 @@ public class GCloudSessionManager extends SessionManager
         }
 
 
-        *//**
+        *//* *
          * Exit from session
          * @see org.eclipse.jetty.server.session.AbstractSession#complete()
          *//*
@@ -174,7 +168,7 @@ public class GCloudSessionManager extends SessionManager
             }
         }
         
-        *//** Test if the session is stale
+        *//* * Test if the session is stale
          * @param atTime
          * @return
          *//*
@@ -184,7 +178,7 @@ public class GCloudSessionManager extends SessionManager
         }
       
         
-        *//**
+        *//* *
          * Reload the session from the cluster. If the node that
          * last managed the session from the cluster is ourself,
          * then the session does not need refreshing.
@@ -295,7 +289,7 @@ public class GCloudSessionManager extends SessionManager
     /**
      * Start the session manager.
      *
-     * @see org.eclipse.jetty.server.session.AbstractSessionManager#doStart()
+     * @see org.eclipse.jetty.server.session.SessionManager#doStart()
      */
     @Override
     public void doStart() throws Exception
@@ -308,7 +302,7 @@ public class GCloudSessionManager extends SessionManager
     /**
      * Stop the session manager.
      *
-     * @see org.eclipse.jetty.server.session.AbstractSessionManager#doStop()
+     * @see org.eclipse.jetty.server.session.SessionManager#doStop()
      */
     @Override
     public void doStop() throws Exception

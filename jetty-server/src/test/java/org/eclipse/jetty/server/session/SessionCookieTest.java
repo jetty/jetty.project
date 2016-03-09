@@ -18,21 +18,17 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Enumeration;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Server;
 import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * SessionCookieTest
@@ -46,7 +42,7 @@ public class SessionCookieTest
     {
 
         /** 
-         * @see org.eclipse.jetty.server.session.SessionStore#newSession(org.eclipse.jetty.server.session.SessionKey, long, long, long, long)
+         * @see org.eclipse.jetty.server.session.SessionStore#newSession(HttpServletRequest, String, long, long)
          */
         @Override
         public Session newSession(HttpServletRequest request, String key, long time, long maxInactiveMs)
@@ -76,7 +72,7 @@ public class SessionCookieTest
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doGet(org.eclipse.jetty.server.session.SessionKey)
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doGet(String)
          */
         @Override
         public Session doGet(String key)
@@ -86,7 +82,7 @@ public class SessionCookieTest
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doPutIfAbsent(org.eclipse.jetty.server.session.SessionKey, org.eclipse.jetty.server.session.Session)
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doPutIfAbsent(String, Session)
          */
         @Override
         public Session doPutIfAbsent(String key, Session session)
@@ -95,7 +91,7 @@ public class SessionCookieTest
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doExists(org.eclipse.jetty.server.session.SessionKey)
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doExists(String)
          */
         @Override
         public boolean doExists(String key)
@@ -105,7 +101,7 @@ public class SessionCookieTest
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(org.eclipse.jetty.server.session.SessionKey)
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(String)
          */
         @Override
         public Session doDelete(String key)
@@ -140,10 +136,6 @@ public class SessionCookieTest
     
     public class MockSessionIdManager extends AbstractSessionIdManager
     {
-
-        /**
-         * @param server
-         */
         public MockSessionIdManager(Server server)
         {
             super(server);
@@ -175,7 +167,7 @@ public class SessionCookieTest
         }
 
         /** 
-         * @see org.eclipse.jetty.server.SessionIdManager#useId(java.lang.String)
+         * @see org.eclipse.jetty.server.SessionIdManager#useId(Session)
          */
         @Override
         public void useId(Session session)

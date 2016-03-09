@@ -21,15 +21,15 @@ package org.eclipse.jetty.server.session;
 
 /**
  * AbstractInspector
- *
- *
  */
 public abstract class AbstractSessionInspector implements SessionInspector
 {
     /**
-     * <0 means never inspect
-     * 0 means always inspect
-     * >0 means inspect at that interval
+     * <ul>
+     *     <li>&lt;0 means never inspect</li>
+     *     <li>0 means always inspect</li>
+     *     <li>&gt;0 means inspect at that interval</li>
+     * </ul>
      */
     protected int _timeoutSec = -1;
     

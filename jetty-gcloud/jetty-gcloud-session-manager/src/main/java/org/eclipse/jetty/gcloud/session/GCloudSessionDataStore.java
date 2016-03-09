@@ -19,20 +19,6 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.eclipse.jetty.server.session.AbstractSessionDataStore;
-import org.eclipse.jetty.server.session.SessionContext;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
 import com.google.gcloud.datastore.Blob;
 import com.google.gcloud.datastore.Datastore;
 import com.google.gcloud.datastore.DatastoreFactory;
@@ -48,6 +34,21 @@ import com.google.gcloud.datastore.StructuredQuery.KeyQueryBuilder;
 import com.google.gcloud.datastore.StructuredQuery.Projection;
 import com.google.gcloud.datastore.StructuredQuery.ProjectionEntityQueryBuilder;
 import com.google.gcloud.datastore.StructuredQuery.PropertyFilter;
+
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.eclipse.jetty.server.session.AbstractSessionDataStore;
+import org.eclipse.jetty.server.session.SessionContext;
+import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * GCloudSessionDataStore
@@ -77,11 +78,6 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     private Datastore _datastore;
     private KeyFactory _keyFactory;
     private int _maxResults = DEFAULT_MAX_QUERY_RESULTS;
-    
-
-    
-    
-    
     
     
     
@@ -186,60 +182,93 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
      */
     @Override
-    public Set<String> getExpired(Set<String> candidates)
+    public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
     {
-       long now = System.currentTimeMillis();
-       Set<String> expired = new HashSet<String>();
-        
-       //get up to maxResult number of sessions that have expired
-       ProjectionEntityQueryBuilder pbuilder = Query.projectionEntityQueryBuilder();
-       pbuilder.addProjection(Projection.property(ID));
-       pbuilder.filter(CompositeFilter.and(PropertyFilter.gt(EXPIRY, 0), PropertyFilter.le(EXPIRY, now)));
-       pbuilder.limit(_maxResults);
-       pbuilder.kind(KIND);
-       StructuredQuery<ProjectionEntity> pquery = pbuilder.build();
-       QueryResults<ProjectionEntity> presults = _datastore.run(pquery);
-       
-       while (presults.hasNext())
-       {
-           ProjectionEntity pe = presults.next();
-           String id = pe.getString(ID);
-           expired.add(id);
-       }
-      
-       //reconcile against ids that the SessionStore thinks are expired
-       Set<String> tmp = new HashSet<String>(candidates);
-       tmp.removeAll(expired);       
-       if (!tmp.isEmpty())
-       {
-           //sessionstore thinks these are expired, but they are either no
-           //longer in the db or not expired in the db, or we exceeded the
-           //number of records retrieved by the expiry query, so check them
-           //individually
-           for (String s:tmp)
-           {
-               try
-               {
-                   KeyQueryBuilder kbuilder = Query.keyQueryBuilder();
-                   kbuilder.filter(PropertyFilter.eq(ID, s));
-                   kbuilder.kind(KIND);
-                   StructuredQuery<Key> kq = kbuilder.build();
-                   QueryResults<Key> kresults = _datastore.run(kq);
-                   if (!kresults.hasNext())
-                       expired.add(s); //not in db, can be expired
-               }
-               catch (Exception e)
-               {
-                   LOG.warn(e);
-               }
-           }
-       }
-       
-       return expired;
-        
+        long now = System.currentTimeMillis();
+        Set<String> expired = new HashSet<String>();
+
+        try
+        {        
+            //get up to maxResult number of sessions that have expired
+            ProjectionEntityQueryBuilder pbuilder = Query.projectionEntityQueryBuilder();
+            pbuilder.addProjection(Projection.property(ID), Projection.property(LASTNODE), Projection.property(EXPIRY));
+            pbuilder.filter(CompositeFilter.and(PropertyFilter.gt(EXPIRY, 0), PropertyFilter.le(EXPIRY, now)));
+            pbuilder.limit(_maxResults);
+            pbuilder.kind(KIND);
+            StructuredQuery<ProjectionEntity> pquery = pbuilder.build();
+            QueryResults<ProjectionEntity> presults = _datastore.run(pquery);
+
+            while (presults.hasNext())
+            {
+                ProjectionEntity pe = presults.next();
+                String id = pe.getString(ID);
+                String lastNode = pe.getString(LASTNODE);
+                long expiry = pe.getLong(EXPIRY);
+
+                if (StringUtil.isBlank(lastNode))
+                    expired.add(id); //nobody managing it
+                else
+                {
+                    if (_context.getWorkerName().equals(lastNode))
+                        expired.add(id); //we're managing it, we can expire it
+                    else
+                    {
+                        if (_lastExpiryCheckTime <= 0)
+                        {
+                            //our first check, just look for sessions that we managed by another node that
+                            //expired at least 3 graceperiods ago
+                            if (expiry < (now - (1000L * (3 * _gracePeriodSec))))
+                                expired.add(id);
+                        }
+                        else
+                        {
+                            //another node was last managing it, only expire it if it expired a graceperiod ago
+                            if (expiry < (now - (1000L * _gracePeriodSec)))
+                                expired.add(id);
+                        }
+                    }
+                }
+            }
+
+            //reconcile against ids that the SessionStore thinks are expired
+            Set<String> tmp = new HashSet<String>(candidates);
+            tmp.removeAll(expired);       
+            if (!tmp.isEmpty())
+            {
+                //sessionstore thinks these are expired, but they are either no
+                //longer in the db or not expired in the db, or we exceeded the
+                //number of records retrieved by the expiry query, so check them
+                //individually
+                for (String s:tmp)
+                {
+                    try
+                    {
+                        KeyQueryBuilder kbuilder = Query.keyQueryBuilder();
+                        kbuilder.filter(PropertyFilter.eq(ID, s));
+                        kbuilder.kind(KIND);
+                        StructuredQuery<Key> kq = kbuilder.build();
+                        QueryResults<Key> kresults = _datastore.run(kq);
+                        if (!kresults.hasNext())
+                            expired.add(s); //not in db, can be expired
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.warn(e);
+                    }
+                }
+            }
+
+            return expired;
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+            return expired; //return what we got
+        }
+
     }
 
  
@@ -267,8 +296,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      * </ol>
      * 
      *
-     * @param session
-     * @return
+     * @param id the id
+     * @param context the session context
+     * @return the key
      */
     private Key makeKey (String id, SessionContext context)
     {
@@ -279,9 +309,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     
     /**
      * Generate a gcloud datastore Entity from SessionData
-     * @param session
-     * @param key
-     * @return
+     * @param session the session data
+     * @param key the key
+     * @return the entity
      * @throws Exception
      */
     private Entity entityFromSession (SessionData session, Key key) throws Exception
@@ -297,6 +327,8 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         oos.writeObject(session.getAllAttributes());
         oos.flush();
         
+        try
+        {
         //turn a session into an entity
         entity = Entity.builder(key)
                 .set(ID, session.getId())
@@ -310,6 +342,12 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 .set(EXPIRY, session.getExpiry())
                 .set(MAXINACTIVE, session.getMaxInactiveMs())
                 .set(ATTRIBUTES, Blob.copyFrom(baos.toByteArray())).build();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            throw e;
+        }
                  
         return entity;
     }

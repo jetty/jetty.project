@@ -138,7 +138,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     private ManagedSelector chooseSelector(SelectableChannel channel)
     {
         // Ideally we would like to have all connections from the same client end
-        // up on the same selector (to try to avoid smearing the data from a single 
+        // up on the same selector (to try to avoid smearing the data from a single
         // client over all cores), but because of proxies, the remote address may not
         // really be the client - so we have to hedge our bets to ensure that all
         // channels don't end up on the one selector for a proxy.
@@ -316,6 +316,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 LOG.warn("Exception while notifying connection " + connection, x);
             else
                 LOG.debug("Exception while notifying connection " + connection, x);
+            throw x;
         }
     }
 

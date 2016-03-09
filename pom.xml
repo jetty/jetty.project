@@ -368,15 +368,16 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.8</version>
           <configuration>
             <docfilessubdirs>true</docfilessubdirs>
-            <detectLinks>false</detectLinks>
+            <detectLinks>true</detectLinks>
             <detectJavaApiLink>true</detectJavaApiLink>
+            <show>protected</show>
             <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
             <links>
               <link>http://docs.oracle.com/javase/8/docs/api/</link>
               <link>http://docs.oracle.com/javaee/7/api/</link>
-              <link>http://junit.org/javadoc/latest/</link>
               <link>http://download.eclipse.org/jetty/stable-9/apidocs/</link>
             </links>
             <tags>

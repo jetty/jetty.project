@@ -2036,7 +2036,7 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @return True if this is the first call of {@link #takeNewContext()} since the last
+     * @return True if this is the first call of <code>takeNewContext()</code> since the last
      *         {@link #setContext(org.eclipse.jetty.server.handler.ContextHandler.Context)} call.
      */
     public boolean takeNewContext()

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import static org.eclipse.jetty.http.GzipHttpContent.ETAG_GZIP_QUOTE;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
@@ -47,7 +45,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
 /**
  * A Handler that can dynamically GZIP compress responses.   Unlike 
  * previous and 3rd party GzipFilters, this mechanism works with asynchronously
@@ -71,7 +68,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private boolean _syncFlush = false;
     
     // non-static, as other GzipHandler instances may have different configurations
-    private final ThreadLocal<Deflater> _deflater = new ThreadLocal<Deflater>();
+    private final ThreadLocal<Deflater> _deflater = new ThreadLocal<>();
 
     private final IncludeExclude<String> _agentPatterns=new IncludeExclude<>(RegexSet.class);
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
@@ -398,6 +395,11 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         return _minGzipSize;
     }
 
+    protected HttpField getVaryField()
+    {
+        return _vary;
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
@@ -474,20 +476,21 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         String etag = baseRequest.getHttpFields().get(HttpHeader.IF_NONE_MATCH); 
         if (etag!=null)
         {
-            int i=etag.indexOf(ETAG_GZIP_QUOTE);
+            int i=etag.indexOf(GzipHttpContent.ETAG_GZIP_QUOTE);
             if (i>0)
             {
                 while (i>=0)
                 {
                     etag=etag.substring(0,i)+etag.substring(i+GzipHttpContent.ETAG_GZIP.length());
-                    i=etag.indexOf(ETAG_GZIP_QUOTE,i);
+                    i=etag.indexOf(GzipHttpContent.ETAG_GZIP_QUOTE,i);
                 }
                 baseRequest.getHttpFields().put(new HttpField(HttpHeader.IF_NONE_MATCH,etag));
             }
         }
 
         // install interceptor and handle
-        out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,baseRequest.getHttpChannel(),out.getInterceptor(),_syncFlush));
+        out.setInterceptor(new GzipHttpOutputInterceptor(this,getVaryField(),baseRequest.getHttpChannel(),out.getInterceptor(),isSyncFlush()));
+
         if (_handler!=null)
             _handler.handle(target,baseRequest, request, response);
     }

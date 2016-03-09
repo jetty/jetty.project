@@ -19,8 +19,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import static java.lang.Math.round;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -53,7 +51,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
-import org.eclipse.jetty.util.thread.Locker.Lock;
+
+import static java.lang.Math.round;
 
 
 
@@ -766,7 +765,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the session store
      */
     public SessionStore getSessionStore ()
     {
@@ -1006,7 +1005,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
      * Called either when a session has expired, or the app has
      * invalidated it.
      * 
-     * @param id
+     * @param id the id to invalidate
      */
     public void invalidate (String id)
     {
@@ -1032,9 +1031,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     
     /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
     public void inspect ()
     {
         //don't attempt to scavenge if we are shutting down

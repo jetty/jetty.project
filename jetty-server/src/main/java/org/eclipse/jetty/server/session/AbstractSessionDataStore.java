@@ -20,6 +20,8 @@
 package org.eclipse.jetty.server.session;
 
 
+import java.util.Set;
+
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /**
@@ -30,6 +32,8 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 public abstract class AbstractSessionDataStore extends AbstractLifeCycle implements SessionDataStore
 {
     protected SessionContext _context; //context associated with this session data store
+    protected int _gracePeriodSec = 60 * 60; //default of 1hr 
+    protected long _lastExpiryCheckTime = 0; //last time in ms that getExpired was called
 
 
     /**
@@ -38,11 +42,20 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
      * @param id identity of session to store
      * @param data info of the session
      * @param lastSaveTime time of previous save or 0 if never saved
-     * @throws Exception
+     * @throws Exception if unable to store data
      */
     public abstract void doStore(String id, SessionData data, long lastSaveTime) throws Exception;
 
    
+    /**
+     * Implemented by subclasses to resolve which sessions this node
+     * should attempt to expire.
+     * 
+     * @param candidates the ids of sessions the SessionStore thinks has expired
+     * @param scavengePeriodSec the period in sec of the scavenge cycle checks
+     * @return the reconciled set of session ids that this node should attempt to expire
+     */
+    public abstract Set<String> doGetExpired (Set<String> candidates, int scavengePeriodSec);
 
     
     /** 
@@ -82,6 +95,25 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
 
 
     /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set, int)
+     */
+    @Override
+    public Set<String> getExpired(Set<String> candidates, int scavengePeriodSec)
+    {
+        try
+        {
+            return doGetExpired (candidates, scavengePeriodSec);
+        }
+        finally
+        {
+            _lastExpiryCheckTime = System.currentTimeMillis();
+        }
+    }
+
+
+
+
+    /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(java.lang.String, long, long, long, long)
      */
     @Override
@@ -90,17 +122,11 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
         return new SessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
  
-    /**
-     * @throws IllegalStateException
-     */
     protected void checkStarted () throws IllegalStateException
     {
         if (isStarted())
             throw new IllegalStateException("Already started");
     }
-
-
-
 
     @Override
     protected void doStart() throws Exception
@@ -110,7 +136,14 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
         
         super.doStart();
     }
-    
-    
-    
+
+    public int getGracePeriodSec()
+    {
+        return _gracePeriodSec;
+    }
+
+    public void setGracePeriodSec(int sec)
+    {
+        _gracePeriodSec = sec;
+    }
 }

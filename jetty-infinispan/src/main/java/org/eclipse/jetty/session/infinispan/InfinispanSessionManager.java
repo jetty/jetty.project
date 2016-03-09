@@ -51,7 +51,7 @@ public class InfinispanSessionManager extends SessionManager
     /**
      * Start the session manager.
      *
-     * @see org.eclipse.jetty.server.session.AbstractSessionManager#doStart()
+     * @see org.eclipse.jetty.server.session.SessionManager#doStart()
      */
     @Override
     public void doStart() throws Exception
@@ -69,7 +69,7 @@ public class InfinispanSessionManager extends SessionManager
     /**
      * Stop the session manager.
      *
-     * @see org.eclipse.jetty.server.session.AbstractSessionManager#doStop()
+     * @see org.eclipse.jetty.server.session.SessionManager#doStop()
      */
     @Override
     public void doStop() throws Exception

@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.session;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -56,7 +55,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
     /**
      * Create a new Session object from session data
-     * @param data
+     * @param data the session data
      * @return a new Session object
      */
     public abstract Session newSession (SessionData data);
@@ -84,9 +83,9 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     
     /**
      * Replace the mapping from id to oldValue with newValue
-     * @param id
-     * @param oldValue
-     * @param newValue
+     * @param id the id
+     * @param oldValue the old value
+     * @param newValue the new value
      * @return true if replacement was done
      */
     public abstract boolean doReplace (String id, Session oldValue, Session newValue);
@@ -95,7 +94,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     
     /**
      * Check to see if the session exists in the store
-     * @param id
+     * @param id the id
      * @return true if the Session object exists in the session store
      */
     public abstract boolean doExists (String id);
@@ -104,7 +103,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     
     /**
      * Remove the session with this identity from the store
-     * @param id
+     * @param id the id
      * @return true if removed false otherwise
      */
     public abstract Session doDelete (String id);
@@ -113,14 +112,12 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     
     /**
      * PlaceHolder
-     *
-     *
      */
     protected class PlaceHolderSession extends Session
     {
 
         /**
-         * @param data
+         * @param data the session data
          */
         public PlaceHolderSession(SessionData data)
         {
@@ -139,7 +136,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     
     
     /**
-     * @param manager
+     * @param manager the SessionManager
      */
     public void setSessionManager (SessionManager manager)
     {
@@ -216,7 +213,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     }
 
     /**
-     * @param sessionDataStore
+     * @param sessionDataStore the session datastore
      */
     public void setSessionDataStore(SessionDataStore sessionDataStore)
     {
@@ -402,7 +399,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     /**
      * Load the info for the session from the session data store
      * 
-     * @param id
+     * @param id the id
      * @return a Session object filled with data or null if the session doesn't exist
      * @throws Exception
      */
@@ -555,7 +552,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#checkExpiry(java.util.Set)
+     * @see org.eclipse.jetty.server.session.SessionStore#checkExpiration(Set)
      */
     @Override
     public Set<String> checkExpiration(Set<String> candidates)
@@ -565,7 +562,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
        
        if (LOG.isDebugEnabled())
            LOG.debug("SessionStore checking expiration on {}", candidates);
-       return _sessionDataStore.getExpired(candidates);
+       return _sessionDataStore.getExpired(candidates, _expiryTimeoutSec);
     }
 
     
@@ -695,23 +692,16 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     }
     
     
-    /**
-     * @param passivateOnComplete
-     */
     public void setPassivateOnComplete (boolean passivateOnComplete)
     {
         _passivateOnComplete = passivateOnComplete;
     }
     
     
-    /**
-     * @return
-     */
     public boolean isPassivateOnComplete ()
     {
         return _passivateOnComplete;
     }
-    
 
     /** 
      * @see org.eclipse.jetty.server.session.SessionStore#newSession(javax.servlet.http.HttpServletRequest, java.lang.String, long, long)
