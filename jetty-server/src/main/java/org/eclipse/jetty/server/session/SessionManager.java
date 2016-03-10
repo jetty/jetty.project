@@ -76,6 +76,13 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     /* ------------------------------------------------------------ */
     public final static int __distantFuture=60*60*24*7*52*20;
 
+    /**
+     * Web.xml session-timeout is set in minutes, but is stored as an int in seconds by HttpSession and
+     * the sessionmanager. Thus MAX_INT is the max number of seconds that can be set, and MAX_INT/60 is the
+     * max number of minutes that you can set.
+     */
+    public final static java.math.BigDecimal MAX_INACTIVE_MINUTES = new java.math.BigDecimal(Integer.MAX_VALUE/60);
+
     static final HttpSessionContext __nullSessionContext=new HttpSessionContext()
     {
         @Override
@@ -656,6 +663,9 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     public void setMaxInactiveInterval(int seconds)
     {
         _dftMaxIdleSecs=seconds;
+        if (_dftMaxIdleSecs < 0)
+            LOG.warn("Sessions created by this manager are immortal (default maxInactiveInterval={})"+_dftMaxIdleSecs);
+
     }
 
     /* ------------------------------------------------------------ */
