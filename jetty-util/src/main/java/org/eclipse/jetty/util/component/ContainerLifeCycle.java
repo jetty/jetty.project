@@ -538,9 +538,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             {
                 try
                 {
-                    LifeCycle lc=(LifeCycle)bean._bean;
-                    if (lc.isRunning())
-                        stop(lc);
+                    stop((LifeCycle)bean._bean);
                 }
                 catch(RuntimeException | Error e)
                 {
