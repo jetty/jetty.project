@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -88,7 +89,6 @@ public abstract class HttpConnection implements Connection
 
     protected void normalizeRequest(Request request)
     {
-        String method = request.getMethod();
         HttpVersion version = request.getVersion();
         HttpFields headers = request.getHeaders();
         ContentProvider content = request.getContent();
@@ -104,7 +104,7 @@ public abstract class HttpConnection implements Connection
 
         URI uri = request.getURI();
 
-        if (proxy != null && uri != null)
+        if (proxy != null && !HttpScheme.HTTPS.is(request.getScheme()) && uri != null)
         {
             path = uri.toString();
             request.path(path);
