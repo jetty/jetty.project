@@ -117,12 +117,12 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
             Authentication authentication = null;
             Authentication.HeaderInfo headerInfo = null;
-            URI uri = getAuthenticationURI(request);
-            if (uri != null)
+            URI authURI = getAuthenticationURI(request);
+            if (authURI != null)
             {
                 for (Authentication.HeaderInfo element : headerInfos)
                 {
-                    authentication = client.getAuthenticationStore().findAuthentication(element.getType(), uri, element.getRealm());
+                    authentication = client.getAuthenticationStore().findAuthentication(element.getType(), authURI, element.getRealm());
                     if (authentication != null)
                     {
                         headerInfo = element;
@@ -151,7 +151,21 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
                 conversation.setAttribute(authenticationAttribute, true);
 
-                Request newRequest = client.copyRequest(request, request.getURI());
+                URI requestURI = request.getURI();
+                String path = null;
+                if (requestURI == null)
+                {
+                    String uri = request.getScheme() + "://" + request.getHost();
+                    int port = request.getPort();
+                    if (port > 0)
+                        uri += ":" + port;
+                    requestURI = URI.create(uri);
+                    path = request.getPath();
+                }
+                Request newRequest = client.copyRequest(request, requestURI);
+                if (path != null)
+                    newRequest.path(path);
+
                 authnResult.apply(newRequest);
                 // Copy existing, explicitly set, authorization headers.
                 copyIfAbsent(request, newRequest, HttpHeader.AUTHORIZATION);

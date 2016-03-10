@@ -92,6 +92,7 @@ public class HttpRequest implements Request
         path = uri.getRawPath();
         query = uri.getRawQuery();
         extractParams(query);
+
         followRedirects(client.isFollowRedirects());
         idleTimeout = client.getIdleTimeout();
         HttpField acceptEncodingField = client.getAcceptEncodingField();
@@ -797,12 +798,15 @@ public class HttpRequest implements Request
     {
         try
         {
+            // Handle specially the "OPTIONS *" case, since it is possible to create a URI from "*" (!).
+            if ("*".equals(uri))
+                return null;
             return new URI(uri);
         }
         catch (URISyntaxException x)
         {
             // The "path" of a HTTP request may not be a URI,
-            // for example for CONNECT 127.0.0.1:8080 or OPTIONS *.
+            // for example for CONNECT 127.0.0.1:8080.
             return null;
         }
     }
