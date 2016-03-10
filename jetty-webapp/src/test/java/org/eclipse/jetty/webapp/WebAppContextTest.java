@@ -257,7 +257,6 @@ public class WebAppContextTest
                 ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         context.setResourceBase(System.getProperty("java.io.tmpdir"));
-        swap.setHandler(context);
 
         final List<String> history=new ArrayList<>();
 
@@ -322,6 +321,7 @@ public class WebAppContextTest
         
         try
         {
+            swap.setHandler(context);
             context.start();
         }
         catch(Exception e)
@@ -332,19 +332,19 @@ public class WebAppContextTest
         {
             try
             {
-                context.stop();
+                swap.setHandler(null);
             }
             catch(Exception e)
             {
+                while(e.getCause() instanceof Exception)
+                    e=(Exception)e.getCause();
                 history.add(e.getMessage());
             }
             finally
             {
-                swap.setHandler(null);
             }
         }
          
-        System.err.println(history);
         Assert.assertThat(history,Matchers.contains("I0","I1","I2","Listener2 init broken","D1","D0","Listener1 destroy broken"));
         
         server.stop();
