@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
@@ -54,6 +55,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -61,34 +63,39 @@ import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertEquals;
 
-public class ProxyTunnellingTest
+@RunWith(Parameterized.class)
+public class ForwardProxyTLSServerTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
+    @Parameterized.Parameters
+    public static Object[] parameters()
+    {
+        return new Object[]{null, newSslContextFactory()};
+    }
 
-    private SslContextFactory sslContextFactory;
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+    private final SslContextFactory proxySslContextFactory;
     private Server server;
     private ServerConnector serverConnector;
     private Server proxy;
     private ServerConnector proxyConnector;
 
-    protected int proxyPort()
+    public ForwardProxyTLSServerTest(SslContextFactory proxySslContextFactory)
     {
-        return proxyConnector.getLocalPort();
+        this.proxySslContextFactory = proxySslContextFactory;
     }
 
-    protected void startSSLServer(Handler handler) throws Exception
+    protected void startTLSServer(Handler handler) throws Exception
     {
-        sslContextFactory = new SslContextFactory();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        sslContextFactory.setKeyStorePath(keyStorePath);
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-        server = new Server();
-        serverConnector = new ServerConnector(server, sslContextFactory);
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
+        serverConnector = new ServerConnector(server, newSslContextFactory());
         server.addConnector(serverConnector);
         server.setHandler(handler);
         server.start();
@@ -101,14 +108,31 @@ public class ProxyTunnellingTest
 
     protected void startProxy(ConnectHandler connectHandler) throws Exception
     {
-        proxy = new Server();
-        proxyConnector = new ServerConnector(proxy);
+        QueuedThreadPool proxyThreads = new QueuedThreadPool();
+        proxyThreads.setName("proxy");
+        proxy = new Server(proxyThreads);
+        proxyConnector = new ServerConnector(proxy, proxySslContextFactory);
         proxy.addConnector(proxyConnector);
         // Under Windows, it takes a while to detect that a connection
         // attempt fails, so use an explicit timeout
         connectHandler.setConnectTimeout(1000);
         proxy.setHandler(connectHandler);
         proxy.start();
+    }
+
+    protected HttpProxy newHttpProxy()
+    {
+        return new HttpProxy(new Origin.Address("localhost", proxyConnector.getLocalPort()), proxySslContextFactory != null);
+    }
+
+    private static SslContextFactory newSslContextFactory()
+    {
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
+        sslContextFactory.setKeyStorePath(keyStorePath);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+        return sslContextFactory;
     }
 
     @After
@@ -137,13 +161,13 @@ public class ProxyTunnellingTest
     }
 
     @Test
-    public void testOneExchangeViaSSL() throws Exception
+    public void testOneExchange() throws Exception
     {
-        startSSLServer(new ServerHandler());
+        startTLSServer(new ServerHandler());
         startProxy();
 
-        HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
+        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 
         try
@@ -168,13 +192,13 @@ public class ProxyTunnellingTest
     }
 
     @Test
-    public void testTwoExchangesViaSSL() throws Exception
+    public void testTwoExchanges() throws Exception
     {
-        startSSLServer(new ServerHandler());
+        startTLSServer(new ServerHandler());
         startProxy();
 
-        HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
+        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 
         try
@@ -211,13 +235,13 @@ public class ProxyTunnellingTest
     }
 
     @Test
-    public void testTwoConcurrentExchangesViaSSL() throws Exception
+    public void testTwoConcurrentExchanges() throws Exception
     {
-        startSSLServer(new ServerHandler());
+        startTLSServer(new ServerHandler());
         startProxy();
 
-        final HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
+        final HttpClient httpClient = new HttpClient(newSslContextFactory());
+        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 
         try
@@ -229,22 +253,18 @@ public class ProxyTunnellingTest
                     .scheme(HttpScheme.HTTPS.asString())
                     .method(HttpMethod.GET)
                     .path("/echo?body=" + URLEncoder.encode(body1, "UTF-8"))
-                    .onRequestCommit(new org.eclipse.jetty.client.api.Request.CommitListener()
+                    .onRequestCommit(request ->
                     {
-                        @Override
-                        public void onCommit(org.eclipse.jetty.client.api.Request request)
+                        Destination destination = httpClient.getDestination(HttpScheme.HTTPS.asString(), "localhost", serverConnector.getLocalPort());
+                        destination.newConnection(new Promise.Adapter<Connection>()
                         {
-                            Destination destination = httpClient.getDestination(HttpScheme.HTTPS.asString(), "localhost", serverConnector.getLocalPort());
-                            destination.newConnection(new Promise.Adapter<Connection>()
+                            @Override
+                            public void succeeded(Connection result)
                             {
-                                @Override
-                                public void succeeded(Connection result)
-                                {
-                                    connection.set(result);
-                                    connectionLatch.countDown();
-                                }
-                            });
-                        }
+                                connection.set(result);
+                                connectionLatch.countDown();
+                            }
+                        });
                     })
                     .send();
 
@@ -284,7 +304,7 @@ public class ProxyTunnellingTest
         // Short idle timeout for HttpClient.
         long idleTimeout = 500;
 
-        startSSLServer(new ServerHandler());
+        startTLSServer(new ServerHandler());
         startProxy(new ConnectHandler()
         {
             @Override
@@ -303,8 +323,8 @@ public class ProxyTunnellingTest
             }
         });
 
-        HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
+        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         // Short idle timeout for HttpClient.
         httpClient.setIdleTimeout(idleTimeout);
         httpClient.start();
@@ -334,13 +354,13 @@ public class ProxyTunnellingTest
     @Test
     public void testProxyDown() throws Exception
     {
-        startSSLServer(new ServerHandler());
+        startTLSServer(new ServerHandler());
         startProxy();
-        int proxyPort = proxyPort();
+        int proxyPort = proxyConnector.getLocalPort();
         stopProxy();
 
-        HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort));
+        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(new Origin.Address("localhost", proxyPort), proxySslContextFactory != null));
         httpClient.start();
 
         try
@@ -366,13 +386,13 @@ public class ProxyTunnellingTest
     @Test
     public void testServerDown() throws Exception
     {
-        startSSLServer(new ServerHandler());
+        startTLSServer(new ServerHandler());
         int serverPort = serverConnector.getLocalPort();
         stopServer();
         startProxy();
 
-        HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
+        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 
         try
@@ -398,7 +418,7 @@ public class ProxyTunnellingTest
     @Test
     public void testProxyClosesConnection() throws Exception
     {
-        startSSLServer(new ServerHandler());
+        startTLSServer(new ServerHandler());
         startProxy(new ConnectHandler()
         {
             @Override
@@ -408,8 +428,8 @@ public class ProxyTunnellingTest
             }
         });
 
-        HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
+        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 
         try
@@ -448,7 +468,7 @@ public class ProxyTunnellingTest
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.start();
 
-        HttpClient httpClient = new HttpClient(sslContextFactory);
+        HttpClient httpClient = new HttpClient(newSslContextFactory());
         httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
         httpClient.start();
 

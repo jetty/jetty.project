@@ -63,7 +63,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         return URI.create(new Origin(scheme, getAddress()).asString());
     }
 
-    public static class HttpProxyClientConnectionFactory implements ClientConnectionFactory
+    private static class HttpProxyClientConnectionFactory implements ClientConnectionFactory
     {
         private static final Logger LOG = Log.getLogger(HttpProxyClientConnectionFactory.class);
         private final ClientConnectionFactory connectionFactory;
@@ -140,7 +140,6 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                 HttpClient httpClient = destination.getHttpClient();
                 long connectTimeout = httpClient.getConnectTimeout();
                 Request connect = httpClient.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
-                        .scheme(HttpScheme.HTTP.asString())
                         .method(HttpMethod.CONNECT)
                         .path(target)
                         .header(HttpHeader.HOST, target)
