@@ -66,8 +66,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.junit.Assert.assertEquals;
-
 @RunWith(Parameterized.class)
 public class ForwardProxyTLSServerTest
 {
@@ -173,6 +171,8 @@ public class ForwardProxyTLSServerTest
         try
         {
             // Use a numeric host to test the URI of the CONNECT request.
+            // URIs such as host:80 may interpret "host" as the scheme,
+            // but when the host is numeric it is not a valid URI.
             String host = "127.0.0.1";
             String body = "BODY";
             ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
@@ -181,9 +181,9 @@ public class ForwardProxyTLSServerTest
                     .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
                     .send();
 
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
-            assertEquals(body, content);
+            Assert.assertEquals(body, content);
         }
         finally
         {
@@ -210,9 +210,9 @@ public class ForwardProxyTLSServerTest
                     .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
                     .send();
 
-            assertEquals(HttpStatus.OK_200, response1.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response1.getStatus());
             String content = response1.getContentAsString();
-            assertEquals(body, content);
+            Assert.assertEquals(body, content);
 
             content = "body=" + body;
             ContentResponse response2 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
@@ -224,9 +224,9 @@ public class ForwardProxyTLSServerTest
                     .content(new StringContentProvider(content))
                     .send();
 
-            assertEquals(HttpStatus.OK_200, response2.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response2.getStatus());
             content = response2.getContentAsString();
-            assertEquals(body, content);
+            Assert.assertEquals(body, content);
         }
         finally
         {
@@ -268,9 +268,9 @@ public class ForwardProxyTLSServerTest
                     })
                     .send();
 
-            assertEquals(HttpStatus.OK_200, response1.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response1.getStatus());
             String content = response1.getContentAsString();
-            assertEquals(body1, content);
+            Assert.assertEquals(body1, content);
 
             Assert.assertTrue(connectionLatch.await(5, TimeUnit.SECONDS));
 
@@ -288,9 +288,9 @@ public class ForwardProxyTLSServerTest
             connection.get().send(request2, listener2);
             ContentResponse response2 = listener2.get(5, TimeUnit.SECONDS);
 
-            assertEquals(HttpStatus.OK_200, response2.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response2.getStatus());
             String content2 = response1.getContentAsString();
-            assertEquals(body1, content2);
+            Assert.assertEquals(body1, content2);
         }
         finally
         {
@@ -341,9 +341,9 @@ public class ForwardProxyTLSServerTest
                     .idleTimeout(10 * idleTimeout, TimeUnit.MILLISECONDS)
                     .send();
 
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
-            assertEquals(body, content);
+            Assert.assertEquals(body, content);
         }
         finally
         {
@@ -478,7 +478,7 @@ public class ForwardProxyTLSServerTest
                     // Use a longer timeout, sometimes the proxy takes a while to answer
                     .timeout(20, TimeUnit.SECONDS)
                     .send();
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
         }
         finally
         {
