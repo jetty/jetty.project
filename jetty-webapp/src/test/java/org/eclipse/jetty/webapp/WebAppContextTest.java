@@ -27,11 +27,15 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import java.util.List;
 
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -40,6 +44,8 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.HotSwapHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.hamcrest.Matchers;
@@ -224,5 +230,110 @@ public class WebAppContextTest
         {
             this.getServletContext().getContext("/B/s");
         }
+    }
+    
+    @Test
+    public void testServletContextListener() throws Exception
+    {
+        Server server = new Server();
+        HotSwapHandler swap = new HotSwapHandler();
+        server.setHandler(swap);
+        server.start();
+        
+        ServletContextHandler context = new ServletContextHandler(
+                ServletContextHandler.SESSIONS);
+        context.setContextPath("/");
+        context.setResourceBase(System.getProperty("java.io.tmpdir"));
+
+        final List<String> history=new ArrayList<>();
+
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent servletContextEvent)
+            {
+                history.add("I0");
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent servletContextEvent)
+            {
+                history.add("D0");
+            }
+        });
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent servletContextEvent)
+            {
+                history.add("I1");
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent servletContextEvent)
+            {
+                history.add("D1");
+                throw new RuntimeException("Listener1 destroy broken");
+            }
+        });
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent servletContextEvent)
+            {
+                history.add("I2");
+                throw new RuntimeException("Listener2 init broken");
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent servletContextEvent)
+            {
+                history.add("D2");
+            }
+        });
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent servletContextEvent)
+            {
+                history.add("I3");
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent servletContextEvent)
+            {
+                history.add("D3");
+            }
+        });
+        
+        try
+        {
+            swap.setHandler(context);
+            context.start();
+        }
+        catch(Exception e)
+        {
+            history.add(e.getMessage());
+        }
+        finally
+        {
+            try
+            {
+                swap.setHandler(null);
+            }
+            catch(Exception e)
+            {
+                while(e.getCause() instanceof Exception)
+                    e=(Exception)e.getCause();
+                history.add(e.getMessage());
+            }
+            finally
+            {
+            }
+        }
+         
+        Assert.assertThat(history,Matchers.contains("I0","I1","I2","Listener2 init broken","D1","D0","Listener1 destroy broken"));
+        
+        server.stop();
     }
 }
