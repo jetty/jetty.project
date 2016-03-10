@@ -21,6 +21,7 @@ package org.eclipse.jetty.proxy;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
@@ -442,6 +444,54 @@ public class ForwardProxyTLSServerTest
         catch (ExecutionException x)
         {
             // Expected
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
+    public void testProxyAuthentication() throws Exception
+    {
+        startTLSServer(new ServerHandler());
+        String proxyRealm = "ProxyRealm";
+        startProxy(new ConnectHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                String proxyAuth = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                if (proxyAuth == null)
+                {
+                    baseRequest.setHandled(true);
+                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + proxyRealm + "\"");
+                    return;
+                }
+                super.handle(target, baseRequest, request, response);
+            }
+        });
+
+        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        URI proxyURI = URI.create("https://localhost:" + proxyConnector.getLocalPort());
+        httpClient.getAuthenticationStore().addAuthentication(new BasicAuthentication(proxyURI, proxyRealm, "proxyUser", "proxyPassword"));
+        httpClient.start();
+
+        try
+        {
+            String body = "BODY";
+            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+                    .scheme(HttpScheme.HTTPS.asString())
+                    .method(HttpMethod.GET)
+                    .path("/echo")
+                    .param("body", body)
+                    .send();
+
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = response.getContentAsString();
+            Assert.assertEquals(body, content);
         }
         finally
         {

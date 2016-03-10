@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.Fields;
 public class HttpRequest implements Request
 {
     private static final URI NULL_URI = URI.create("null:0");
+    static final String CONNECTION_ATTRIBUTE = HttpRequest.class.getName() + ".connection";
 
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields(true);
@@ -171,8 +172,6 @@ public class HttpRequest implements Request
         else
         {
             String rawPath = uri.getRawPath();
-            if (uri.isOpaque())
-                rawPath = path;
             if (rawPath == null)
                 rawPath = "";
             this.path = rawPath;
@@ -789,7 +788,7 @@ public class HttpRequest implements Request
         URI result = newURI(path);
         if (result == null)
             return NULL_URI;
-        if (!result.isAbsolute() && !result.isOpaque())
+        if (!result.isAbsolute())
             result = URI.create(new Origin(getScheme(), getHost(), getPort()).asString() + path);
         return result;
     }
@@ -801,7 +800,8 @@ public class HttpRequest implements Request
             // Handle specially the "OPTIONS *" case, since it is possible to create a URI from "*" (!).
             if ("*".equals(uri))
                 return null;
-            return new URI(uri);
+            URI result = new URI(uri);
+            return result.isOpaque() ? null : result;
         }
         catch (URISyntaxException x)
         {

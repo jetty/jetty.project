@@ -26,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -171,8 +172,13 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 copyIfAbsent(request, newRequest, HttpHeader.AUTHORIZATION);
                 copyIfAbsent(request, newRequest, HttpHeader.PROXY_AUTHORIZATION);
 
-                newRequest.onResponseSuccess(r -> client.getAuthenticationStore().addAuthenticationResult(authnResult))
-                        .send(null);
+                newRequest.onResponseSuccess(r -> client.getAuthenticationStore().addAuthenticationResult(authnResult));
+
+                Connection connection = (Connection)request.getAttributes().get(HttpRequest.CONNECTION_ATTRIBUTE);
+                if (connection != null)
+                    connection.send(newRequest, null);
+                else
+                    newRequest.send(null);
             }
             catch (Throwable x)
             {
