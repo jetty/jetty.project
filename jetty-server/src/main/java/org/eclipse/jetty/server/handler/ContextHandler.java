@@ -776,6 +776,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         finally
         {
+            if (_availability==Availability.STARTING)
+                _availability=Availability.UNAVAILABLE;
             exitScope(null);
             __context.set(old_context);
             // reset the classloader

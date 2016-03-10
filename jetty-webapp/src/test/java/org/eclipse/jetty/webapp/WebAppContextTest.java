@@ -25,10 +25,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -37,9 +41,11 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -236,5 +242,81 @@ public class WebAppContextTest
         {
             this.getServletContext().getContext("/B/s");
         }
+    }
+    
+    @Test
+    public void testServletContextListener() throws Exception
+    {
+        Server server = new Server();
+        ServletContextHandler context = new ServletContextHandler(
+                ServletContextHandler.SESSIONS);
+        context.setContextPath("/");
+        context.setResourceBase(System.getProperty("java.io.tmpdir"));
+        server.setHandler(context);
+
+        final List<String> history=new ArrayList<>();
+        
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent servletContextEvent)
+            {
+                history.add("I1");
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent servletContextEvent)
+            {
+                history.add("D1");
+            }
+        });
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent servletContextEvent)
+            {
+                history.add("I2");
+                throw new RuntimeException("Listener2 broken");
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent servletContextEvent)
+            {
+                history.add("D2");
+            }
+        });
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent servletContextEvent)
+            {
+                history.add("I3");
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent servletContextEvent)
+            {
+                history.add("D3");
+            }
+        });
+        
+        try
+        {
+            server.start();
+        }
+        catch(Exception e)
+        {
+            // System.err.println(e);
+        }
+        finally
+        {
+            server.stop();
+        }
+          
+        // TODO should be either:
+        // Assert.assertThat(history,Matchers.contains("I1","I2","D1"));
+        // or
+        // Assert.assertThat(history,Matchers.contains("I1","I2","D3","D3","D1"));
+        Assert.assertThat(history,Matchers.contains("I1","I2","D3","D2","D1"));
     }
 }
