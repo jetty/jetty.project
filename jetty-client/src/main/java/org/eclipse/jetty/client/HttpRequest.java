@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.Fields;
 public class HttpRequest implements Request
 {
     private static final URI NULL_URI = URI.create("null:0");
+    static final String CONNECTION_ATTRIBUTE = HttpRequest.class.getName() + ".connection";
 
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields(true);
@@ -92,6 +93,7 @@ public class HttpRequest implements Request
         path = uri.getRawPath();
         query = uri.getRawQuery();
         extractParams(query);
+
         followRedirects(client.isFollowRedirects());
         idleTimeout = client.getIdleTimeout();
         HttpField acceptEncodingField = client.getAcceptEncodingField();
@@ -170,8 +172,6 @@ public class HttpRequest implements Request
         else
         {
             String rawPath = uri.getRawPath();
-            if (uri.isOpaque())
-                rawPath = path;
             if (rawPath == null)
                 rawPath = "";
             this.path = rawPath;
@@ -788,7 +788,7 @@ public class HttpRequest implements Request
         URI result = newURI(path);
         if (result == null)
             return NULL_URI;
-        if (!result.isAbsolute() && !result.isOpaque())
+        if (!result.isAbsolute())
             result = URI.create(new Origin(getScheme(), getHost(), getPort()).asString() + path);
         return result;
     }
@@ -797,12 +797,16 @@ public class HttpRequest implements Request
     {
         try
         {
-            return new URI(uri);
+            // Handle specially the "OPTIONS *" case, since it is possible to create a URI from "*" (!).
+            if ("*".equals(uri))
+                return null;
+            URI result = new URI(uri);
+            return result.isOpaque() ? null : result;
         }
         catch (URISyntaxException x)
         {
             // The "path" of a HTTP request may not be a URI,
-            // for example for CONNECT 127.0.0.1:8080 or OPTIONS *.
+            // for example for CONNECT 127.0.0.1:8080.
             return null;
         }
     }

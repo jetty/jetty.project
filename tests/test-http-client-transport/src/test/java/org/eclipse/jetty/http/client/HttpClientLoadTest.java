@@ -263,7 +263,7 @@ public class HttpClientLoadTest extends AbstractTest
         int maxContentLength = 64 * 1024;
         int contentLength = random.nextInt(maxContentLength) + 1;
 
-        test(ssl ? "https" : "http", host, method.asString(), clientClose, serverClose, contentLength, true, latch, failures);
+        test(getScheme(), host, method.asString(), clientClose, serverClose, contentLength, true, latch, failures);
     }
 
     private void test(String scheme, String host, String method, boolean clientClose, boolean serverClose, int contentLength, final boolean checkContentLength, final CountDownLatch latch, final List<String> failures)

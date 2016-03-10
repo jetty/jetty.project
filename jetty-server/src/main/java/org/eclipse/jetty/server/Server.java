@@ -440,7 +440,7 @@ public class Server extends HandlerWrapper implements Attributes
 
         if (LOG.isDebugEnabled())
             LOG.debug("doStop {}",this);
-        
+
         MultiException mex=new MultiException();
 
         // list if graceful futures
@@ -529,7 +529,8 @@ public class Server extends HandlerWrapper implements Attributes
         final Response response=connection.getResponse();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} on {}{}",request.getDispatcherType(),connection,"\n"+request.getMethod()+" "+request.getHttpURI()+"\n"+request.getHttpFields());
+            LOG.debug("{} on {}{}{} {} {}{}{}", request.getDispatcherType(), connection, System.lineSeparator(),
+                    request.getMethod(), target, request.getProtocol(), System.lineSeparator(), request.getHttpFields());
 
         if (HttpMethod.OPTIONS.is(request.getMethod()) || "*".equals(target))
         {
@@ -543,7 +544,8 @@ public class Server extends HandlerWrapper implements Attributes
             handle(target, request, request, response);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("RESPONSE for {} h={}{}",target,request.isHandled(),"\n"+response.getStatus()+" "+response.getReason()+"\n"+response.getHttpFields());
+            LOG.debug("RESPONSE for {} h={}{}{} {}{}{}", target, request.isHandled(), System.lineSeparator(),
+                    response.getStatus(), response.getReason(), System.lineSeparator(), response.getHttpFields());
     }
 
     /* ------------------------------------------------------------ */

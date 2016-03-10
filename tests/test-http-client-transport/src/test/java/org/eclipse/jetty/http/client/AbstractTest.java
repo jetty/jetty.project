@@ -199,20 +199,14 @@ public abstract class AbstractTest
         return http2Client;
     }
 
+    protected String getScheme()
+    {
+        return isTransportSecure() ? "https" : "http";
+    }
+
     protected String newURI()
     {
-        switch (transport)
-        {
-            case HTTP:
-            case H2C:
-            case FCGI:
-                return "http://localhost:" + connector.getLocalPort();
-            case HTTPS:
-            case H2:
-                return "https://localhost:" + connector.getLocalPort();
-            default:
-                throw new IllegalArgumentException();
-        }
+        return getScheme() + "://localhost:" + connector.getLocalPort();
     }
 
     protected boolean isTransportSecure()

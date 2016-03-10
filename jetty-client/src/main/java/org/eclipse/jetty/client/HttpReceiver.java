@@ -184,7 +184,9 @@ public abstract class HttpReceiver
                     case SET_COOKIE:
                     case SET_COOKIE2:
                     {
-                        storeCookie(exchange.getRequest().getURI(), field);
+                        URI uri = exchange.getRequest().getURI();
+                        if (uri != null)
+                            storeCookie(uri, field);
                         break;
                     }
                     default:

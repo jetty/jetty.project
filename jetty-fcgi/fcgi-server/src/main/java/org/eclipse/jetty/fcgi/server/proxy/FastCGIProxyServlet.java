@@ -188,8 +188,8 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             fastCGIHeaders.put(FCGI.Headers.HTTPS, "on");
 
         URI proxyRequestURI = proxyRequest.getURI();
-        String rawPath = proxyRequestURI.getRawPath();
-        String rawQuery = proxyRequestURI.getRawQuery();
+        String rawPath = proxyRequestURI == null ? proxyRequest.getPath() : proxyRequestURI.getRawPath();
+        String rawQuery = proxyRequestURI == null ? null : proxyRequestURI.getRawQuery();
 
         String requestURI = (String)proxyRequest.getAttributes().get(REQUEST_URI_ATTRIBUTE);
         if (requestURI == null)
