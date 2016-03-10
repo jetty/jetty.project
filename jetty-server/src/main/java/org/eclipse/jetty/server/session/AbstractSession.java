@@ -77,7 +77,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         _requests=1;
         _maxIdleMs=_manager._dftMaxIdleSecs>0?_manager._dftMaxIdleSecs*1000L:-1;
         if (LOG.isDebugEnabled())
-            LOG.debug("new session & id "+_nodeId+" "+_clusterId);
+            LOG.debug("New session & id "+_nodeId+" "+_clusterId);
     }
 
     /* ------------------------------------------------------------- */
@@ -92,7 +92,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         _requests=1;
         _maxIdleMs=_manager._dftMaxIdleSecs>0?_manager._dftMaxIdleSecs*1000L:-1;
         if (LOG.isDebugEnabled())
-            LOG.debug("new session "+_nodeId+" "+_clusterId);
+            LOG.debug("Restored session "+_nodeId+" "+_clusterId);
     }
 
     /* ------------------------------------------------------------- */
@@ -557,6 +557,8 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     @Override
     public void setMaxInactiveInterval(int secs)
     {
+        if (secs < 0)
+            LOG.warn("Session {} is now immortal (maxInactiveInterval={})", _clusterId, secs);
         _maxIdleMs=(long)secs*1000L;
     }
 

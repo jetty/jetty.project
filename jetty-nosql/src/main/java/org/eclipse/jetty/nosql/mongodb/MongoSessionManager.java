@@ -73,17 +73,17 @@ import com.mongodb.WriteConcern;
  * { "_id"       : ObjectId("52845534a40b66410f228f23"), 
  *    "accessed" :  NumberLong("1384818548903"), 
  *    "maxIdle"  : 1,
+ *    "created"  : NumberLong("1384818548903"),
+ *    "expiry"   : NumberLong("1384818549903"),
+ *    "id"       : "w01ijx2vnalgv1sqrpjwuirprp7", 
+ *    "valid"    : true 
  *    "context"  : { "::/contextA" : { "A"            : "A", 
  *                                     "__metadata__" : { "version" : NumberLong(2) } 
  *                                   },
  *                   "::/contextB" : { "B"            : "B", 
  *                                     "__metadata__" : { "version" : NumberLong(1) } 
  *                                   } 
- *                 }, 
- *    "created"  : NumberLong("1384818548903"),
- *    "expiry"   : NumberLong("1384818549903"),
- *    "id"       : "w01ijx2vnalgv1sqrpjwuirprp7", 
- *    "valid"    : true 
+ *                 } 
  * }
  * </pre>
  * <p>
@@ -220,7 +220,8 @@ public class MongoSessionManager extends NoSqlSessionManager
     {
         try
         {
-            __log.debug("MongoSessionManager:save session {}", session.getClusterId());
+            if (__log.isDebugEnabled())
+                __log.debug("MongoSessionManager:save session {}", session.getClusterId());
             session.willPassivate();
 
             // Form query for upsert
@@ -236,9 +237,8 @@ public class MongoSessionManager extends NoSqlSessionManager
             // handle valid or invalid
             if (session.isValid())
             {
-                long expiry = (session.getMaxInactiveInterval() > 0?(session.getAccessed()+(1000L*getMaxInactiveInterval())):0);
-                __log.debug("MongoSessionManager: calculated expiry {} for session {}", expiry, session.getId());
-                
+                long expiry = (session.getMaxInactiveInterval() > 0?(session.getAccessed()+(1000L*session.getMaxInactiveInterval())):0);
+ 
                 // handle new or existing
                 if (version == null)
                 {
@@ -249,11 +249,12 @@ public class MongoSessionManager extends NoSqlSessionManager
                     sets.put(__VALID,true);
                    
                     sets.put(getContextAttributeKey(__VERSION),version);
-                    sets.put(__MAX_IDLE, getMaxInactiveInterval());
-                    sets.put(__EXPIRY, expiry);
+                    sets.put(__MAX_IDLE, session.getMaxInactiveInterval());  //seconds
+                    sets.put(__EXPIRY, expiry); //milliseconds
                 }
                 else
                 {
+                   
                     version = new Long(((Number)version).longValue() + 1);
                     update.put("$inc",_version_1); 
                     //if max idle time and/or expiry is smaller for this context, then choose that for the whole session doc
@@ -263,15 +264,22 @@ public class MongoSessionManager extends NoSqlSessionManager
                     DBObject o = _dbSessions.findOne(new BasicDBObject("id",session.getClusterId()), fields);
                     if (o != null)
                     {
-                        Integer currentMaxIdle = (Integer)o.get(__MAX_IDLE);
-                        Long currentExpiry = (Long)o.get(__EXPIRY);
-                        if (currentMaxIdle != null && getMaxInactiveInterval() > 0 && getMaxInactiveInterval() < currentMaxIdle)
-                            sets.put(__MAX_IDLE, getMaxInactiveInterval());
-                        if (currentExpiry != null && expiry > 0 && expiry != currentExpiry)
+                       Integer tmpInt = (Integer)o.get(__MAX_IDLE);
+                        int currentMaxIdle = (tmpInt == null? 0:tmpInt.intValue());
+                        Long tmpLong = (Long)o.get(__EXPIRY);
+                        long currentExpiry = (tmpLong == null? 0 : tmpLong.longValue()); 
+                        
+                
+                       
+                        if (currentMaxIdle != session.getMaxInactiveInterval())
+                            sets.put(__MAX_IDLE, session.getMaxInactiveInterval());
+
+                        if (currentExpiry != expiry)
                             sets.put(__EXPIRY, expiry);
+                       
                     }
                 }
-                
+            
                 sets.put(__ACCESSED,session.getAccessed());
                 Set<String> names = session.takeDirty();
                 if (isSaveAllAttributes() || upsert)
@@ -371,6 +379,9 @@ public class MongoSessionManager extends NoSqlSessionManager
         session.willPassivate();
         try
         {     
+            //replace the maxInactiveInterval with the saved value
+            session.setMaxInactiveInterval((Integer)o.get(__MAX_IDLE));
+            
             DBObject attrs = (DBObject)getNestedValue(o,getContextKey());    
             //if disk version now has no attributes, get rid of them
             if (attrs == null || attrs.keySet().size() == 0)
@@ -467,6 +478,7 @@ public class MongoSessionManager extends NoSqlSessionManager
             Object version = o.get(getContextAttributeKey(__VERSION));
             Long created = (Long)o.get(__CREATED);
             Long accessed = (Long)o.get(__ACCESSED);
+            Integer maxIdle = (Integer)o.get(__MAX_IDLE);
           
             NoSqlSession session = null;
 
@@ -480,6 +492,7 @@ public class MongoSessionManager extends NoSqlSessionManager
                     __log.debug("MongoSessionManager: session {} present for context {}", clusterId, getContextKey());
                 //only load a session if it exists for this context
                 session = new NoSqlSession(this,created,accessed,clusterId,version);
+                session.setMaxInactiveInterval(maxIdle); //setup the saved maxInactiveInterval for the session
                 
                 for (String name : attrs.keySet())
                 {
