@@ -19,6 +19,7 @@
 
 package org.eclipse.jetty.quickstart;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -75,22 +76,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(QuickStartGeneratorConfiguration.class);
         
-    private WebAppContext _webApp;
-    private ExtraXmlDescriptorProcessor _extraXmlProcessor;
-    private Resource _quickStartWebXml;
-    
-    /**
-     * @param context the source WebAppContext
-     * @param quickStartWebXml 
-     * @param extraXML any extra xml snippet to append
-     */
-    public QuickStartGeneratorConfiguration (WebAppContext context, Resource quickStartWebXml)
+    public QuickStartGeneratorConfiguration()
     {
-        _webApp = context;
-        _extraXmlProcessor = new ExtraXmlDescriptorProcessor();
-        _quickStartWebXml=quickStartWebXml;
-        context.getMetaData().addDescriptorProcessor(_extraXmlProcessor);
     }
+
     
     
     /**
@@ -99,64 +88,64 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
      * @throws IOException if unable to generate the quickstart-web.xml
      * @throws FileNotFoundException if unable to find the file 
      */
-    public void generateQuickStartWebXml (OutputStream stream) throws FileNotFoundException, IOException 
+    public void generateQuickStartWebXml (WebAppContext context,OutputStream stream) throws FileNotFoundException, IOException 
     {   
-        if (_webApp == null)
+        if (context == null)
             throw new IllegalStateException("No webapp for quickstart generation");
         if (stream == null)
             throw new IllegalStateException("No output for quickstart generation");
         
-        _webApp.getMetaData().getOrigins();
+        context.getMetaData().getOrigins();
 
-        if (_webApp.getBaseResource()==null)
+        if (context.getBaseResource()==null)
             throw new IllegalArgumentException("No base resource for "+this);
 
         LOG.info("Quickstart generating");
 
         XmlAppendable out = new XmlAppendable(stream,"UTF-8");
 
-        MetaData md = _webApp.getMetaData();
+        MetaData md = context.getMetaData();
 
         Map<String, String> webappAttr = new HashMap<>();
         webappAttr.put("xmlns","http://xmlns.jcp.org/xml/ns/javaee");
         webappAttr.put("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
         webappAttr.put("xsi:schemaLocation","http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd");
         webappAttr.put("metadata-complete","true");
-        webappAttr.put("version",_webApp.getServletContext().getEffectiveMajorVersion()+"."+_webApp.getServletContext().getEffectiveMinorVersion());        
+        webappAttr.put("version",context.getServletContext().getEffectiveMajorVersion()+"."+context.getServletContext().getEffectiveMinorVersion());        
 
         out.openTag("web-app",webappAttr);
-        if (_webApp.getDisplayName() != null)
-            out.tag("display-name",_webApp.getDisplayName());
+        if (context.getDisplayName() != null)
+            out.tag("display-name",context.getDisplayName());
         
         // Set some special context parameters
 
         // The location of the war file on disk
-        AttributeNormalizer normalizer = new AttributeNormalizer(_webApp.getBaseResource());
+        AttributeNormalizer normalizer = new AttributeNormalizer(context.getBaseResource());
 
         // The library order
-        addContextParamFromAttribute(out,ServletContext.ORDERED_LIBS);
+        addContextParamFromAttribute(context,out,ServletContext.ORDERED_LIBS);
         //the servlet container initializers
-        addContextParamFromAttribute(out,AnnotationConfiguration.CONTAINER_INITIALIZERS);
+        addContextParamFromAttribute(context,out,AnnotationConfiguration.CONTAINER_INITIALIZERS);
         //the tlds discovered
-        addContextParamFromAttribute(out,MetaInfConfiguration.METAINF_TLDS,normalizer);
+        addContextParamFromAttribute(context,out,MetaInfConfiguration.METAINF_TLDS,normalizer);
         //the META-INF/resources discovered
-        addContextParamFromAttribute(out,MetaInfConfiguration.METAINF_RESOURCES,normalizer);
+        addContextParamFromAttribute(context,out,MetaInfConfiguration.METAINF_RESOURCES,normalizer);
 
 
         // init params
-        for (String p : _webApp.getInitParams().keySet())
+        for (String p : context.getInitParams().keySet())
             out.openTag("context-param",origin(md,"context-param." + p))
             .tag("param-name",p)
-            .tag("param-value",_webApp.getInitParameter(p))
+            .tag("param-value",context.getInitParameter(p))
             .closeTag();
 
-        if (_webApp.getEventListeners() != null)
-            for (EventListener e : _webApp.getEventListeners())
+        if (context.getEventListeners() != null)
+            for (EventListener e : context.getEventListeners())
                 out.openTag("listener",origin(md,e.getClass().getCanonicalName() + ".listener"))
                 .tag("listener-class",e.getClass().getCanonicalName())
                 .closeTag();
 
-        ServletHandler servlets = _webApp.getServletHandler();
+        ServletHandler servlets = context.getServletHandler();
 
         if (servlets.getFilters() != null)
         {
@@ -214,7 +203,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         // Security elements
-        SecurityHandler security =_webApp. getSecurityHandler();
+        SecurityHandler security =context. getSecurityHandler();
 
         if (security!=null && (security.getRealmName()!=null || security.getAuthMethod()!=null))
         {
@@ -303,17 +292,17 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             }
         }
 
-        if (_webApp.getWelcomeFiles() != null)
+        if (context.getWelcomeFiles() != null)
         {
             out.openTag("welcome-file-list");
-            for (String welcomeFile:_webApp.getWelcomeFiles())
+            for (String welcomeFile:context.getWelcomeFiles())
             {
                 out.tag("welcome-file", welcomeFile);
             }
             out.closeTag();
         }
 
-        Map<String,String> localeEncodings = _webApp.getLocaleEncodings();
+        Map<String,String> localeEncodings = context.getLocaleEncodings();
         if (localeEncodings != null && !localeEncodings.isEmpty())
         {
             out.openTag("locale-encoding-mapping-list");
@@ -328,15 +317,15 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //session-config
-        if (_webApp.getSessionHandler().getSessionManager() != null)
+        if (context.getSessionHandler().getSessionManager() != null)
         {
             out.openTag("session-config");
-            int maxInactiveSec = _webApp.getSessionHandler().getSessionManager().getMaxInactiveInterval();
+            int maxInactiveSec = context.getSessionHandler().getSessionManager().getMaxInactiveInterval();
             out.tag("session-timeout", (maxInactiveSec==0?"0":Integer.toString(maxInactiveSec/60)));
 
 
             //cookie-config
-            SessionCookieConfig cookieConfig = _webApp.getSessionHandler().getSessionManager().getSessionCookieConfig();
+            SessionCookieConfig cookieConfig = context.getSessionHandler().getSessionManager().getSessionCookieConfig();
             if (cookieConfig != null)
             {
                 out.openTag("cookie-config");
@@ -359,7 +348,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             }
             
             // tracking-modes
-            Set<SessionTrackingMode> modes =_webApp. getSessionHandler().getSessionManager().getEffectiveSessionTrackingModes();
+            Set<SessionTrackingMode> modes =context. getSessionHandler().getSessionManager().getEffectiveSessionTrackingModes();
             if (modes != null)
             {
                 for (SessionTrackingMode mode:modes)
@@ -370,7 +359,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //error-pages
-        Map<String,String> errorPages = ((ErrorPageErrorHandler)_webApp.getErrorHandler()).getErrorPages();
+        Map<String,String> errorPages = ((ErrorPageErrorHandler)context.getErrorHandler()).getErrorPages();
         if (errorPages != null)
         {
             for (Map.Entry<String, String> entry:errorPages.entrySet())
@@ -390,7 +379,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //mime-types
-        MimeTypes mimeTypes = _webApp.getMimeTypes();
+        MimeTypes mimeTypes = context.getMimeTypes();
         if (mimeTypes != null)
         {
             for (Map.Entry<String, String> entry:mimeTypes.getMimeMap().entrySet())
@@ -403,7 +392,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //jsp-config
-        JspConfig jspConfig = (JspConfig)_webApp.getServletContext().getJspConfigDescriptor();
+        JspConfig jspConfig = (JspConfig)context.getServletContext().getJspConfigDescriptor();
         if (jspConfig != null)
         {
             out.openTag("jsp-config");
@@ -481,7 +470,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //lifecycle: post-construct, pre-destroy
-        LifeCycleCallbackCollection lifecycles = ((LifeCycleCallbackCollection)_webApp.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION));
+        LifeCycleCallbackCollection lifecycles = ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION));
         if (lifecycles != null)
         {
             Collection<LifeCycleCallback> tmp = lifecycles.getPostConstructCallbacks();
@@ -504,7 +493,8 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             }
         }
 
-        out.literal(_extraXmlProcessor.getXML());
+        ExtraXmlDescriptorProcessor extraXmlProcessor = (ExtraXmlDescriptorProcessor)context.getAttribute(ExtraXmlDescriptorProcessor.class.getName());
+        out.literal(extraXmlProcessor.getXML());
         out.closeTag();
     }
 
@@ -515,9 +505,9 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
      * @param attribute
      * @throws IOException
      */
-    private void addContextParamFromAttribute(XmlAppendable out, String attribute) throws IOException
+    private void addContextParamFromAttribute(WebAppContext context, XmlAppendable out, String attribute) throws IOException
     {
-        Object o = _webApp.getAttribute(attribute);
+        Object o = context.getAttribute(attribute);
         if (o == null)
             return;
                 
@@ -548,9 +538,9 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
      * @param resourceBase
      * @throws IOException
      */
-    private void addContextParamFromAttribute(XmlAppendable out, String attribute, AttributeNormalizer normalizer) throws IOException
+    private void addContextParamFromAttribute(WebAppContext context, XmlAppendable out, String attribute, AttributeNormalizer normalizer) throws IOException
     {
-        Object o = _webApp.getAttribute(attribute);
+        Object o = context.getAttribute(attribute);
         if (o == null)
             return;
                 
@@ -703,17 +693,28 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         return Collections.singletonMap("origin",origin.toString());
     }
     
+    
+    @Override
+    public void preConfigure(WebAppContext context) throws Exception
+    {
+        ExtraXmlDescriptorProcessor extraXmlProcessor = new ExtraXmlDescriptorProcessor();
+        context.getMetaData().addDescriptorProcessor(extraXmlProcessor);
+        context.setAttribute(ExtraXmlDescriptorProcessor.class.getName(),extraXmlProcessor);
+        super.preConfigure(context);
+    }
+
     @Override
     public boolean configure(WebAppContext context) throws Exception
     {
         MetaData metadata = context.getMetaData();
         metadata.resolve(context);
-        
-        if (!_quickStartWebXml.exists())
-            _quickStartWebXml.getFile().createNewFile();
-        try (FileOutputStream fos = new FileOutputStream(_quickStartWebXml.getFile()))
+
+        Resource quickStartWebXml = context.getResource("/WEB-INF/quickstart-web.xml");
+        if (!quickStartWebXml.exists())
+            quickStartWebXml.getFile().createNewFile();
+        try (FileOutputStream fos = new FileOutputStream(quickStartWebXml.getFile()))
         {
-            generateQuickStartWebXml(fos);
+            generateQuickStartWebXml(context,fos);
         }
         return true;
     }

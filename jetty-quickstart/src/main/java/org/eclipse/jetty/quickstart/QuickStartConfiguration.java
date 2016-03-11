@@ -109,7 +109,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 
             case GENERATE:
                 super.preConfigure(context);     
-                context.addConfiguration(new QuickStartGeneratorConfiguration(context,quickStartWebXml));
+                context.addConfiguration(new QuickStartGeneratorConfiguration());
                 context.addConfiguration(new StopContextConfiguration());
                 break;
                 
@@ -119,7 +119,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 else
                 {
                     super.preConfigure(context);
-                    context.addConfiguration(new QuickStartGeneratorConfiguration(context,quickStartWebXml));
+                    context.addConfiguration(new QuickStartGeneratorConfiguration());
                 }
                 break;
                 
