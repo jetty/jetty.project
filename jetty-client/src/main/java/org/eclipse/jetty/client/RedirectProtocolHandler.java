@@ -21,6 +21,8 @@ package org.eclipse.jetty.client;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 
 /**
  * <p>A protocol handler that handles redirect status codes 301, 302, 303, 307 and 308.</p>
@@ -52,6 +54,14 @@ public class RedirectProtocolHandler extends Response.Listener.Adapter implement
     public Response.Listener getResponseListener()
     {
         return this;
+    }
+
+    @Override
+    public boolean onHeader(Response response, HttpField field)
+    {
+        // Avoid that the content is decoded, which could generate
+        // errors, since we are discarding the content anyway.
+        return field.getHeader() != HttpHeader.CONTENT_ENCODING;
     }
 
     @Override
