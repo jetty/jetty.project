@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.JarURLConnection;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -98,7 +99,29 @@ public class MetaInfConfiguration extends AbstractConfiguration
     {
         return true;
     }
-
+    
+    /* ------------------------------------------------------------------------------- */
+    protected  List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException
+    {
+        List<URI> uris = new ArrayList<>();
+        if (context.getClassLoader() != null)
+        {
+            ClassLoader loader = context.getClassLoader().getParent();
+            while (loader != null)
+            {
+                if (loader instanceof URLClassLoader)
+                {
+                    URL[] urls = ((URLClassLoader)loader).getURLs();
+                    if (urls != null)
+                        for(URL url:urls)
+                            uris.add(new URI(url.toString().replaceAll(" ","%20")));
+                }
+                loader = loader.getParent();
+            }
+        }
+        return uris;
+    }
+    
     /* ------------------------------------------------------------------------------- */
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
@@ -106,16 +129,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         // discover matching container jars
         if (context.getClassLoader() != null)
         {
-            ClassLoader loader = context.getClassLoader().getParent();
-            List<URI> uris = new ArrayList<>();
-            while (loader != null && (loader instanceof URLClassLoader))
-            {
-                URL[] urls = ((URLClassLoader)loader).getURLs();
-                if (urls != null)
-                    for(URL url:urls)
-                        uris.add(new URI(url.toString().replaceAll(" ","%20")));
-                loader = loader.getParent();
-            }
+            List<URI> uris = getAllContainerJars(context);
 
             new PatternMatcher ()
             {

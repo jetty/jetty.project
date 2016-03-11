@@ -163,15 +163,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private String[] __dftProtectedTargets = {"/web-inf", "/meta-inf"};
 
-    /* 
-     * default configurations.
-     */
-    public static final String[] DEFAULT_CONFIGURATION_CLASSES = 
-            Configurations.getKnown().stream()
-            .filter(Configuration::isAddedByDefault)
-            .map(c->c.getClass().getName())
-            .toArray(String[]::new);
-    
     // System classes are classes that cannot be replaced by
     // the web application, and they are *always* loaded via
     // system classloader.
@@ -914,25 +905,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _parentLoaderPriority;
     }
 
-
-    /* ------------------------------------------------------------ */
-    public static String[] getDefaultConfigurationClasses ()
-    {
-        return DEFAULT_CONFIGURATION_CLASSES;
-    }
-
-    /* ------------------------------------------------------------ */
-    public String[] getDefaultServerClasses ()
-    {
-        return __dftServerClasses;
-    }
-
-    /* ------------------------------------------------------------ */
-    public String[] getDefaultSystemClasses ()
-    {
-        return __dftSystemClasses;
-    }
-
     /* ------------------------------------------------------------ */
     protected void loadConfigurations()
     {
@@ -941,7 +913,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             return;
         
         _configurations.add(Configurations.serverDefault(getServer()).toArray());
-        _configurations.sort();
     }
 
     /* ------------------------------------------------------------ */
@@ -985,6 +956,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _configurations.set(configurations);
     }
 
+    /* ------------------------------------------------------------ */
     public void setConfigurationClasses(List<String> configurations)
     {
         setConfigurationClasses(configurations.toArray(new String[configurations.size()]));

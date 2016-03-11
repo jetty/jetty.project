@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -50,7 +51,7 @@ public class ServerSupport
     
     public static void configureDefaultConfigurationClasses (Server server)
     {
-        server.setAttribute(Configuration.ATTR, JettyWebAppContext.DEFAULT_CONFIGURATION_CLASSES);
+        Configurations.setServerDefault(server);
     }
     
     

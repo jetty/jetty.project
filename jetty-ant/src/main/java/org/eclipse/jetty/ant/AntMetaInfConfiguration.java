@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -30,44 +31,54 @@ import org.apache.tools.ant.AntClassLoader;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
-public class AntWebInfConfiguration extends WebInfConfiguration
+public class AntMetaInfConfiguration extends MetaInfConfiguration
 {
 
     @Override
     public Class<? extends Configuration> replaces()
     {
-        return WebInfConfiguration.class;
+        return MetaInfConfiguration.class;
     }
-    
-    /**
-     * Adds classpath files into web application classloader, and
-     * sets web.xml and base directory for the configured web application.
-     *
-     * @see WebXmlConfiguration#configure(WebAppContext)
-     */
-    public boolean configure(WebAppContext context) throws Exception
+
+    /* ------------------------------------------------------------------------------- */
+    @Override
+    protected  List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException
     {
-        if (context instanceof AntWebAppContext)
+        List<URI> uris = new ArrayList<>();
+        if (context.getClassLoader() != null)
         {
-            List<File> classPathFiles = ((AntWebAppContext)context).getClassPathFiles();
-            if (classPathFiles != null)
+            ClassLoader loader = context.getClassLoader().getParent();
+            while (loader != null)
             {
-                for (File cpFile:classPathFiles)
+                if (loader instanceof URLClassLoader)
                 {
-                    if (cpFile.exists())
+                    URL[] urls = ((URLClassLoader)loader).getURLs();
+                    if (urls != null)
+                        for(URL url:urls)
+                            uris.add(new URI(url.toString().replaceAll(" ","%20")));
+                }
+                else if (loader instanceof AntClassLoader)
+                {
+                    AntClassLoader antLoader = (AntClassLoader)loader;     
+                    String[] paths = antLoader.getClasspath().split(new String(new char[]{File.pathSeparatorChar}));
+                    if (paths != null)
                     {
-                        ((WebAppClassLoader) context.getClassLoader()).addClassPath(cpFile.getCanonicalPath());
+                        for (String p:paths)
+                        {
+                            File f = new File(p);
+                            uris.add(f.toURI());
+                        }
                     }
                 }
+                loader = loader.getParent();
             }
         }
-        super.configure(context);
-        
-        return true;
+        return uris;
     }
 }

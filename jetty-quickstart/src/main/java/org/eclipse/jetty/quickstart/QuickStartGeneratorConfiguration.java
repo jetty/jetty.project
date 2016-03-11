@@ -122,7 +122,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         webappAttr.put("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
         webappAttr.put("xsi:schemaLocation","http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd");
         webappAttr.put("metadata-complete","true");
-        webappAttr.put("version","3.1");
+        webappAttr.put("version",_webApp.getServletContext().getEffectiveMajorVersion()+"."+_webApp.getServletContext().getEffectiveMinorVersion());        
 
         out.openTag("web-app",webappAttr);
         if (_webApp.getDisplayName() != null)

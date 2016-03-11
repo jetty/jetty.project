@@ -38,7 +38,14 @@ public class WebInfConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(WebInfConfiguration.class);
 
     public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
-
+    
+    @Deprecated
+    public static final String CONTAINER_JAR_PATTERN = MetaInfConfiguration.CONTAINER_JAR_PATTERN;
+    @Deprecated
+    public static final String WEBINF_JAR_PATTERN = MetaInfConfiguration.WEBINF_JAR_PATTERN;
+    @Deprecated
+    public static final String RESOURCE_DIRS = MetaInfConfiguration.RESOURCE_DIRS;
+    
     protected Resource _preUnpackBaseResource;
     
     public WebInfConfiguration()

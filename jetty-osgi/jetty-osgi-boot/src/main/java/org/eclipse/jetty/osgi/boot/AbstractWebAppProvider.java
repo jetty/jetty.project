@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
@@ -291,9 +290,15 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             // Set up what has been configured on the provider
             _webApp.setParentLoaderPriority(isParentLoaderPriority());
             _webApp.setExtractWAR(isExtract());
-            _webApp.setConfigurationClasses(getConfigurationClasses());
 
+            _webApp.addConfiguration(new OSGiWebInfConfiguration(),new OSGiMetaInfConfiguration());
+            if (annotationsAvailable())
+                _webApp.addConfiguration(new AnnotationConfiguration());
 
+            //add in EnvConfiguration and PlusConfiguration just after FragmentConfiguration
+            if (jndiAvailable())
+                _webApp.addConfiguration(new EnvConfiguration(),new PlusConfiguration());
+            
             if (getDefaultsDescriptor() != null)
                 _webApp.setDefaultsDescriptor(getDefaultsDescriptor());
 
@@ -566,36 +571,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     public String getTldBundles()
     {
         return _tldBundles;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param configurations The configuration class names.
-     */
-    public void setConfigurationClasses(String[] configurations)
-    {
-        _configurationClasses = configurations == null ? null : (String[]) configurations.clone();
-    }
-
-    /* ------------------------------------------------------------ */
-    public String[] getConfigurationClasses()
-    {
-        if (_configurationClasses != null)
-            return _configurationClasses;
-
-        Configurations defaults = Configurations.serverDefault(_serverWrapper.getServer());
-
-        //add before JettyWebXmlConfiguration
-        if (annotationsAvailable())
-            defaults.add(AnnotationConfiguration.class.getName());
-
-        //add in EnvConfiguration and PlusConfiguration just after FragmentConfiguration
-        if (jndiAvailable())
-            defaults.add(
-                    EnvConfiguration.class.getName(),
-                    PlusConfiguration.class.getName());
-       String[] asArray = new String[defaults.size()];
-       return defaults.toArray(asArray);
     }
     
 

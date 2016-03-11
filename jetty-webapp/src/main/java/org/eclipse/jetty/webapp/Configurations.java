@@ -21,7 +21,6 @@ package org.eclipse.jetty.webapp;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
@@ -43,24 +42,27 @@ public class Configurations extends AbstractList<Configuration>
 {        
     private static final Logger LOG = Log.getLogger(Configurations.class);
     
-    private static final Map<String,Configuration> __known = new HashMap<>();
+    private static final List<Configuration> __known = new ArrayList<>();
+    private static final Map<String,Configuration> __knownByClassName = new HashMap<>();
     static
     {
         ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
         for (Configuration configuration : configs)
-            __known.put(configuration.getName(),configuration);
-
+            __knownByClassName.put(configuration.getName(),configuration);
+        __known.addAll(__knownByClassName.values());
+        sort(__known);
         if (LOG.isDebugEnabled())
         {
-            for (Map.Entry<String, Configuration> e: __known.entrySet())
-                LOG.debug("known {}",e);
+            for (Configuration c: __known)
+                LOG.debug("known {}",c);
         }
-        LOG.debug("Known Configurations {}",__known.keySet());
+        
+        LOG.debug("Known Configurations {}",__knownByClassName.keySet());
     }
 
-    public static Collection<Configuration> getKnown()
+    public static List<Configuration> getKnown()
     {
-        return Collections.unmodifiableCollection(__known.values());
+        return __known;
     }
     
     /* ------------------------------------------------------------ */
@@ -73,7 +75,7 @@ public class Configurations extends AbstractList<Configuration>
      * @param server The server the default is for
      * @return the server default ClassList instance of the configuration classes for this server. Changes to this list will change the server default instance.
      */
-    public static Configurations setServerDefault(Server server) throws ClassNotFoundException, InstantiationException, IllegalAccessException
+    public static Configurations setServerDefault(Server server)
     {
         Configurations configurations=server.getBean(Configurations.class);
         if (configurations!=null)
@@ -94,10 +96,8 @@ public class Configurations extends AbstractList<Configuration>
      */
     public static Configurations serverDefault(Server server)
     {
-        Configurations configurations;
-        if (server==null)
-            configurations=new Configurations(WebAppContext.DEFAULT_CONFIGURATION_CLASSES);
-        else
+        Configurations configurations=null;
+        if (server!=null)
         {
             configurations= server.getBean(Configurations.class);
             if (configurations!=null)
@@ -110,11 +110,15 @@ public class Configurations extends AbstractList<Configuration>
                     configurations = new Configurations((Configurations)attr);
                 else if (attr instanceof String[])
                     configurations = new Configurations((String[])attr);
-                else 
-                    configurations=new Configurations(WebAppContext.DEFAULT_CONFIGURATION_CLASSES);
             }
-        }
-            
+        }    
+        
+        if (configurations==null)
+            configurations=new Configurations(Configurations.getKnown().stream()
+                    .filter(Configuration::isAddedByDefault)
+                    .map(c->c.getClass().getName())
+                    .toArray(String[]::new));
+
         if (LOG.isDebugEnabled())
             LOG.debug("default configurations for {}: {}",server,configurations);
         
@@ -134,7 +138,7 @@ public class Configurations extends AbstractList<Configuration>
 
     protected static Configuration getConfiguration(String classname)
     {
-        Configuration configuration = __known.get(classname);
+        Configuration configuration = __knownByClassName.get(classname);
         if (configuration==null)
         {
             try
@@ -165,7 +169,9 @@ public class Configurations extends AbstractList<Configuration>
 
     public Configurations(Configurations classlist)
     {
-        _configurations.addAll(classlist._configurations);
+        this(classlist._configurations.stream()
+             .map(c->c.getClass().getName())
+             .toArray(String[]::new));
     }
 
     public void add(Configuration... configurations)
@@ -233,13 +239,23 @@ public class Configurations extends AbstractList<Configuration>
 
     public void sort()
     {
+        sort(_configurations);
+        if (LOG.isDebugEnabled())
+        {
+            for (Configuration c: _configurations)
+                LOG.debug("sorted {}",c);
+        }
+    }
+    
+    public static void sort(List<Configuration> configurations)
+    {
         // Sort the configurations
         Map<String,Configuration> map = new HashMap<>();
         TopologicalSort<Configuration> sort = new TopologicalSort<>();
 
-        for (Configuration c:_configurations)
+        for (Configuration c:configurations)
             map.put(c.getName(),c);
-        for (Configuration c:_configurations)
+        for (Configuration c:configurations)
         {
             for (String b:c.getConfigurationsBeforeThis())
             {
@@ -255,12 +271,7 @@ public class Configurations extends AbstractList<Configuration>
             }
         }
         
-        sort.sort(_configurations);
-        if (LOG.isDebugEnabled())
-        {
-            for (Configuration c: _configurations)
-                LOG.debug("sorted {}",c);
-        }
+        sort.sort(configurations);
     }
     
     public List<Configuration> getConfigurations()
@@ -283,7 +294,7 @@ public class Configurations extends AbstractList<Configuration>
     private void add(String name,Configuration configuration)
     {
         // Is this configuration known?
-        if (!__known.containsKey(name))
+        if (!__knownByClassName.containsKey(name))
             LOG.warn("Unknown configuration {}. Not declared for ServiceLoader!",name);            
 
         // Do we need to replace any existing configuration?
@@ -321,7 +332,7 @@ public class Configurations extends AbstractList<Configuration>
         for (int i=0; i<_configurations.size() ;i++)
         {
             Configuration configuration=_configurations.get(i);
-            LOG.debug("preConfigure {} with {}",this,configuration);
+            LOG.debug("preConfigure with {}",configuration);
             configuration.preConfigure(webapp);
             
             if (_configurations.get(i)!=configuration)
@@ -334,7 +345,7 @@ public class Configurations extends AbstractList<Configuration>
         // Configure webapp
         for (Configuration configuration : _configurations)
         {
-            LOG.debug("configure {} with {}",this,configuration);
+            LOG.debug("configure {}",configuration);
             if (!configuration.configure(webapp))
                 return false;
         }
@@ -347,7 +358,7 @@ public class Configurations extends AbstractList<Configuration>
         // Configure webapp
         for (Configuration configuration : _configurations)
         {
-            LOG.debug("postConfigure {} with {}",this,configuration);
+            LOG.debug("postConfigure {}",configuration);
             configuration.postConfigure(webapp);
         }
     }

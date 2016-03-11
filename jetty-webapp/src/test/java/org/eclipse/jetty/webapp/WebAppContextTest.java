@@ -57,10 +57,16 @@ public class WebAppContextTest
     @Test
     public void testConfigurationClassesFromDefault ()
     {
+        String[] known_and_enabled=Configurations.getKnown().stream()
+        .filter(Configuration::isAddedByDefault)
+        .map(c->c.getClass().getName())
+        .toArray(String[]::new);
+        
         Server server = new Server();
+        
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        assertThat(Arrays.asList(wac.getConfigurations()).stream().map(c->{return c.getClass().getName();}).collect(Collectors.toList()),Matchers.containsInAnyOrder(WebAppContext.DEFAULT_CONFIGURATION_CLASSES));
+        assertThat(Arrays.asList(wac.getConfigurations()).stream().map(c->{return c.getClass().getName();}).collect(Collectors.toList()),Matchers.containsInAnyOrder(known_and_enabled));
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 

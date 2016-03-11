@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -74,8 +75,8 @@ public class AbstractConfiguration implements Configuration
         _enabledByDefault=enableByDefault;
         _after=Collections.unmodifiableList(after==null?Collections.emptyList():Arrays.asList(after).stream().map(Class::getName).collect(Collectors.toList()));
         _before=Collections.unmodifiableList(before==null?Collections.emptyList():Arrays.asList(before).stream().map(Class::getName).collect(Collectors.toList()));
-        _system=Collections.unmodifiableList(systemClasses==null?Collections.emptyList():Arrays.asList(systemClasses));
-        _server=Collections.unmodifiableList(serverClasses==null?Collections.emptyList():Arrays.asList(serverClasses));
+        _system=new ArrayList<>(systemClasses==null?Collections.emptyList():Arrays.asList(systemClasses));
+        _server=new ArrayList<>(serverClasses==null?Collections.emptyList():Arrays.asList(serverClasses));
     }
     
     /**
@@ -90,8 +91,20 @@ public class AbstractConfiguration implements Configuration
         _enabledByDefault=enableByDefault;
         _after=Collections.unmodifiableList(after==null?Collections.emptyList():Arrays.asList(after));
         _before=Collections.unmodifiableList(before==null?Collections.emptyList():Arrays.asList(before));
-        _system=Collections.unmodifiableList(systemClasses==null?Collections.emptyList():Arrays.asList(systemClasses));
-        _server=Collections.unmodifiableList(serverClasses==null?Collections.emptyList():Arrays.asList(serverClasses));
+        _system=new ArrayList<>(systemClasses==null?Collections.emptyList():Arrays.asList(systemClasses));
+        _server=new ArrayList<>(serverClasses==null?Collections.emptyList():Arrays.asList(serverClasses));
+    }
+    
+    protected void addSystemClass(String... systemClass)
+    {
+        for (String s:systemClass)
+            _system.add(s);
+    }
+    
+    protected void addServerClass(String... serverClass)
+    {
+        for (String s:serverClass)
+            _system.add(s);
     }
     
     @Override
