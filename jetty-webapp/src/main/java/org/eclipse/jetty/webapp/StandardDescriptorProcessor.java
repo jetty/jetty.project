@@ -649,9 +649,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         XmlParser.Node tNode = node.get("session-timeout");
         if (tNode != null)
-        {
-            int timeout = Integer.parseInt(tNode.toString(false, true));
-            context.getSessionHandler().getSessionManager().setMaxInactiveInterval(timeout * 60);
+        { 
+            java.math.BigDecimal asDecimal = new java.math.BigDecimal(tNode.toString(false, true));
+            if (asDecimal.compareTo(org.eclipse.jetty.server.session.SessionManager.MAX_INACTIVE_MINUTES) > 0)
+                throw new IllegalStateException ("Max session-timeout in minutes is "+org.eclipse.jetty.server.session.SessionManager.MAX_INACTIVE_MINUTES);
+
+            context.getSessionHandler().getSessionManager().setMaxInactiveInterval(asDecimal.intValueExact() * 60);
         }
 
         //Servlet Spec 3.0

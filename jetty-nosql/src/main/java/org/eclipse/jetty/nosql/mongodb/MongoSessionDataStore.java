@@ -423,11 +423,15 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             DBObject o = _dbSessions.findOne(new BasicDBObject("id", id), fields);
             if (o != null)
             {
-                Long currentMaxIdle = (Long)o.get(__MAX_IDLE);
-                Long currentExpiry = (Long)o.get(__EXPIRY);
-                if (currentMaxIdle != null && nsqd.getMaxInactiveMs() > 0 && nsqd.getMaxInactiveMs() < currentMaxIdle)
+                Long tmpLong = (Long)o.get(__MAX_IDLE);
+                long currentMaxIdle = (tmpLong == null? 0:tmpLong.longValue());
+                tmpLong = (Long)o.get(__EXPIRY);
+                long currentExpiry = (tmpLong == null? 0 : tmpLong.longValue()); 
+
+                if (currentMaxIdle != nsqd.getMaxInactiveMs())
                     sets.put(__MAX_IDLE, nsqd.getMaxInactiveMs());
-                if (currentExpiry != null && nsqd.getExpiry() > 0 && nsqd.getExpiry() != currentExpiry)
+
+                if (currentExpiry != nsqd.getExpiry())
                     sets.put(__EXPIRY, nsqd.getExpiry());
             }
             else

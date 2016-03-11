@@ -408,9 +408,9 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * Creates a new request with the specified URI.
+     * Creates a new request with the specified absolute URI in string format.
      *
-     * @param uri the URI to request
+     * @param uri the request absolute URI
      * @return the request just created
      */
     public Request newRequest(String uri)
@@ -419,9 +419,9 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * Creates a new request with the specified URI.
+     * Creates a new request with the specified absolute URI.
      *
-     * @param uri the URI to request
+     * @param uri the request absolute URI
      * @return the request just created
      */
     public Request newRequest(URI uri)

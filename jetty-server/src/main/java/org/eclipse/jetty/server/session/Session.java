@@ -404,8 +404,10 @@ public class Session implements SessionManager.SessionIf
         try (Lock lock = _lock.lockIfNotHeld())
         {
             _sessionData.setMaxInactiveMs((long)secs*1000L);  
-            _sessionData.setExpiry(_sessionData.getMaxInactiveMs() <= 0 ? 0 : (System.currentTimeMillis() + _sessionData.getMaxInactiveMs()*1000L));
+            _sessionData.setExpiry(_sessionData.getMaxInactiveMs() <= 0 ? 0 : (System.currentTimeMillis() + _sessionData.getMaxInactiveMs()));
             _sessionData.setDirty(true);
+            if (secs <= 0)
+                LOG.warn("Session {} is now immortal (maxInactiveInterval={})", _sessionData.getId(), secs);
         }
     }
 

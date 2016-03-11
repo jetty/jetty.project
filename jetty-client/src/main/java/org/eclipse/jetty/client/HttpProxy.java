@@ -63,7 +63,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         return URI.create(new Origin(scheme, getAddress()).asString());
     }
 
-    public static class HttpProxyClientConnectionFactory implements ClientConnectionFactory
+    private static class HttpProxyClientConnectionFactory implements ClientConnectionFactory
     {
         private static final Logger LOG = Log.getLogger(HttpProxyClientConnectionFactory.class);
         private final ClientConnectionFactory connectionFactory;
@@ -140,12 +140,18 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                 HttpClient httpClient = destination.getHttpClient();
                 long connectTimeout = httpClient.getConnectTimeout();
                 Request connect = httpClient.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
-                        .scheme(HttpScheme.HTTP.asString())
                         .method(HttpMethod.CONNECT)
                         .path(target)
                         .header(HttpHeader.HOST, target)
                         .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS)
                         .timeout(connectTimeout, TimeUnit.MILLISECONDS);
+
+                // In case the proxy replies with a 407, we want
+                // to use the same connection for resending the
+                // request (this time with the Proxy-Authorization
+                // header), so we save it as an attribute to be
+                // used to send the next request.
+                connect.attribute(HttpRequest.CONNECTION_ATTRIBUTE, connection);
 
                 connection.send(connect, result ->
                 {
