@@ -78,8 +78,8 @@ import static org.eclipse.jetty.http.HttpTokens.TAB;
  * <dl>
  * <dt>RFC7230</dt><dd>(default) Compliance with RFC7230</dd>
  * <dt>RFC2616</dt><dd>Wrapped headers and HTTP/0.9 supported</dd>
- * <dt>LEGACY</dt><dd>(aka STRICT) Adherence to Servlet Specification requirement for 
- * exact case of header names, bypassing the header caches, which are case insensitive, 
+ * <dt>LEGACY</dt><dd>(aka STRICT) Adherence to Servlet Specification requirement for
+ * exact case of header names, bypassing the header caches, which are case insensitive,
  * otherwise equivalent to RFC2616</dd>
  * </dl>
  * @see <a href="http://tools.ietf.org/html/rfc7230">RFC 7230</a>
@@ -221,10 +221,10 @@ public class HttpParser
         CACHE.put(new HttpField(HttpHeader.AUTHORIZATION,(String)null));
         CACHE.put(new HttpField(HttpHeader.COOKIE,(String)null));
     }
-    
+
     private static HttpCompliance compliance()
     {
-        Boolean strict = Boolean.getBoolean(__STRICT);        
+        Boolean strict = Boolean.getBoolean(__STRICT);
         return strict?HttpCompliance.LEGACY:HttpCompliance.RFC7230;
     }
 
@@ -258,7 +258,7 @@ public class HttpParser
     {
         this(handler,maxHeaderBytes,strict?HttpCompliance.LEGACY:compliance());
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     @Deprecated
     public HttpParser(ResponseHandler handler,int maxHeaderBytes,boolean strict)
@@ -271,7 +271,7 @@ public class HttpParser
     {
         this(handler,-1,compliance);
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     public HttpParser(RequestHandler handler,int maxHeaderBytes,HttpCompliance compliance)
     {
@@ -841,17 +841,13 @@ public class HttpParser
                 switch (_header)
                 {
                     case CONTENT_LENGTH:
-                        if (_endOfContent != EndOfContent.CHUNKED_CONTENT)
+                        if (_endOfContent == EndOfContent.CONTENT_LENGTH)
                         {
-                            try
-                            {
-                                _contentLength=Long.parseLong(_valueString);
-                            }
-                            catch(NumberFormatException e)
-                            {
-                                LOG.ignore(e);
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Content-Length");
-                            }
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Duplicate Content-Length");
+                        }
+                        else if (_endOfContent != EndOfContent.CHUNKED_CONTENT)
+                        {
+                            _contentLength=convertContentLength(_valueString);
                             if (_contentLength <= 0)
                                 _endOfContent=EndOfContent.NO_CONTENT;
                             else
@@ -861,15 +857,16 @@ public class HttpParser
 
                     case TRANSFER_ENCODING:
                         if (_value==HttpHeaderValue.CHUNKED)
+                        {
                             _endOfContent=EndOfContent.CHUNKED_CONTENT;
+                            _contentLength=-1;
+                        }
                         else
                         {
                             if (_valueString.endsWith(HttpHeaderValue.CHUNKED.toString()))
                                 _endOfContent=EndOfContent.CHUNKED_CONTENT;
                             else if (_valueString.contains(HttpHeaderValue.CHUNKED.toString()))
-                            {
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad chunking");
-                            }
                         }
                         break;
 
@@ -919,6 +916,18 @@ public class HttpParser
         _field=null;
     }
 
+    private long convertContentLength(String valueString)
+    {
+        try
+        {
+            return Long.parseLong(valueString);
+        }
+        catch(NumberFormatException e)
+        {
+            LOG.ignore(e);
+            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Invalid Content-Length Value");
+        }
+    }
 
     /* ------------------------------------------------------------------------------- */
     /*
@@ -970,12 +979,12 @@ public class HttpParser
                             setState(State.HEADER_VALUE);
                             break;
                         }
-                        
+
                         case HttpTokens.LINE_FEED:
                         {
                             // process previous header
                             parsedHeader();
-                            
+
                             _contentPosition=0;
 
                             // End of headers!
@@ -1039,7 +1048,7 @@ public class HttpParser
 
                             // process previous header
                             parsedHeader();
-                            
+
                             // handle new header
                             if (buffer.hasRemaining())
                             {
