@@ -191,6 +191,55 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     }
     
     
+    @Test
+    public void testChangeNewSessionTimeout () throws Exception
+    {
+        String contextPath = "";
+        String servletMapping = "/server";
+        int inactivePeriod = 10;
+        int scavengePeriod = 1;
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
+        ImmediateChangeTimeoutServlet servlet = new ImmediateChangeTimeoutServlet();
+        ServletHolder holder = new ServletHolder(servlet);
+        ServletContextHandler context = server1.addContext(contextPath);
+        context.addServlet(holder, servletMapping);
+        TestHttpSessionListener listener = new TestHttpSessionListener();
+        
+        context.getSessionHandler().addEventListener(listener);
+        
+        server1.start();
+        int port1 = server1.getPort();
+
+        try
+        {
+            HttpClient client = new HttpClient();
+            client.start();
+            String url = "http://localhost:" + port1 + contextPath + servletMapping;
+
+            inactivePeriod = 5; //change from the sessionmanager configured default
+            
+            //make a request to set up a session on the server and change its inactive setting straight away
+            ContentResponse response1 = client.GET(url + "?action=init&val="+inactivePeriod);
+            assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+            String sessionCookie = response1.getHeaders().get("Set-Cookie");
+            assertTrue(sessionCookie != null);
+            // Mangle the cookie, replacing Path with $Path, etc.
+            sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+            
+            String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
+            
+            DBCollection sessions = ((MongoSessionIdManager)((MongoTestServer)server1).getServer().getSessionIdManager()).getSessions();
+            verifySessionCreated(listener,sessionId);
+            //verify that the session timeout is the new value and not the default
+            verifySessionTimeout(sessions, sessionId, inactivePeriod);             
+        }
+        finally
+        {
+            server1.stop();
+        }     
+    }
+    
+    
     public void verifySessionTimeout (DBCollection sessions, String id, int sec) throws Exception
     {
         assertNotNull(sessions);
@@ -257,6 +306,32 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             {
                 HttpSession session = request.getSession(true);
                 session.setAttribute("test", "test");
+            }
+            else if ("change".equals(action))
+            {
+                String tmp = request.getParameter("val");
+                int val = (StringUtil.isBlank(tmp)?0:Integer.valueOf(tmp.trim()));
+                HttpSession session = request.getSession(false);
+                assertNotNull(session);
+                session.setMaxInactiveInterval(val);
+            }
+        }
+    }
+    
+    public static class ImmediateChangeTimeoutServlet extends HttpServlet
+    {
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+        {
+            String action = request.getParameter("action");
+            if ("init".equals(action))
+            {
+                HttpSession session = request.getSession(true);
+                assertNotNull(session);
+                String tmp = request.getParameter("val");
+                int val = (StringUtil.isBlank(tmp)?0:Integer.valueOf(tmp.trim()));
+                session.setMaxInactiveInterval(val);
             }
             else if ("change".equals(action))
             {

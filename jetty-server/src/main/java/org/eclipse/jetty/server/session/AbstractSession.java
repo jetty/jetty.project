@@ -557,8 +557,10 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     @Override
     public void setMaxInactiveInterval(int secs)
     {
-        if (secs < 0)
+        if (secs <= 0)
             LOG.warn("Session {} is now immortal (maxInactiveInterval={})", _clusterId, secs);
+        else if (LOG.isDebugEnabled())
+            LOG.debug("Session {} maxInactiveInterval={}", _clusterId, secs);
         _maxIdleMs=(long)secs*1000L;
     }
 
