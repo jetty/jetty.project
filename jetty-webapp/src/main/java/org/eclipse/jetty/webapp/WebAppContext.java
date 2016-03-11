@@ -628,7 +628,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public Configuration[] getConfigurations()
     {
-        loadConfigurations();
+        if (_configurations.size()==0)
+            loadConfigurations();
         return _configurations.getConfigurations().toArray(new Configuration[_configurations.size()]);
     }
 
