@@ -988,7 +988,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         loadConfigurations();
         for (Configuration configuration : _configurations)
-            if (configClass.isAssignableFrom(configuration.getClass()) && configuration.getName().equals(configClass.getName()))
+            if (configClass.isAssignableFrom(configuration.getClass()))
                 return (T)configuration;
         return null;
     }

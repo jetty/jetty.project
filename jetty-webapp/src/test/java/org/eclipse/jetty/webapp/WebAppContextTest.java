@@ -19,7 +19,6 @@
 package org.eclipse.jetty.webapp;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -29,8 +28,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.stream.Collectors;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletContext;
@@ -80,7 +79,7 @@ public class WebAppContextTest
     {
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
-        Assert.assertThat(Arrays.asList(wac.getConfigurations()).stream().map(Configuration::getName).collect(Collectors.toList()),
+        Assert.assertThat(Arrays.asList(wac.getConfigurations()).stream().map(c->c.getClass().getName()).collect(Collectors.toList()),
                 Matchers.contains( 
                         "org.eclipse.jetty.webapp.JmxConfiguration",
                         "org.eclipse.jetty.webapp.WebInfConfiguration",

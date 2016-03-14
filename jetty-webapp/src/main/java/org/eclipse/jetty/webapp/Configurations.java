@@ -48,7 +48,7 @@ public class Configurations extends AbstractList<Configuration>
     {
         ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
         for (Configuration configuration : configs)
-            __knownByClassName.put(configuration.getName(),configuration);
+            __knownByClassName.put(configuration.getClass().getName(),configuration);
         __known.addAll(__knownByClassName.values());
         sort(__known);
         if (LOG.isDebugEnabled())
@@ -177,13 +177,13 @@ public class Configurations extends AbstractList<Configuration>
     public void add(Configuration... configurations)
     {   
         for (Configuration configuration : configurations)
-            add(configuration.getName(),configuration);
+            addConfiguration(configuration);
     }
     
     public void add(@Name("configClass")String... configClass)
     {   
         for (String name : configClass)
-            add(name,getConfiguration(name));
+            addConfiguration(getConfiguration(name));
     }
     
     public void clear()
@@ -194,24 +194,22 @@ public class Configurations extends AbstractList<Configuration>
     public void set(Configuration... configurations)
     {   
         clear();
-        for (Configuration configuration : configurations)
-            add(configuration.getName(),configuration);
+        add(configurations);
     }
     
     public void set(@Name("configClass")String... configClass)
     {   
         clear();
-        for (String name : configClass)
-            add(name,getConfiguration(name));
+        add(configClass);
     }
 
     public void remove(Configuration... configurations)
     {
-        List<String> names = Arrays.asList(configurations).stream().map(Configuration::getName).collect(Collectors.toList());
+        List<String> names = Arrays.asList(configurations).stream().map(c->c.getClass().getName()).collect(Collectors.toList());
         for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
         {
             Configuration configuration=i.next();
-            if (names.contains(configuration.getName()))
+            if (names.contains(configuration.getClass().getName()))
                 i.remove();
         }
     }
@@ -222,7 +220,7 @@ public class Configurations extends AbstractList<Configuration>
         for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
         {
             Configuration configuration=i.next();
-            if (names.contains(configuration.getName()))
+            if (names.contains(configuration.getClass().getName()))
                 i.remove();
         }
     }
@@ -234,7 +232,7 @@ public class Configurations extends AbstractList<Configuration>
 
     public String[] toArray()
     {
-        return _configurations.stream().map(Configuration::getName).toArray(String[]::new);
+        return _configurations.stream().map(c->c.getClass().getName()).toArray(String[]::new);
     }
 
     public void sort()
@@ -254,7 +252,7 @@ public class Configurations extends AbstractList<Configuration>
         TopologicalSort<Configuration> sort = new TopologicalSort<>();
 
         for (Configuration c:configurations)
-            map.put(c.getName(),c);
+            map.put(c.getClass().getName(),c);
         for (Configuration c:configurations)
         {
             for (String b:c.getConfigurationsBeforeThis())
@@ -291,8 +289,9 @@ public class Configurations extends AbstractList<Configuration>
         return getConfigurations().iterator();
     }
 
-    private void add(String name,Configuration configuration)
+    private void addConfiguration(Configuration configuration)
     {
+        String name=configuration.getClass().getName();
         // Is this configuration known?
         if (!__knownByClassName.containsKey(name))
             LOG.warn("Unknown configuration {}. Not declared for ServiceLoader!",name);            
@@ -303,7 +302,7 @@ public class Configurations extends AbstractList<Configuration>
         {
             for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
             {
-                if (i.next().getName().equals(replaces.getName()))
+                if (i.next().getClass().getName().equals(replaces.getName()))
                 {
                     i.set(configuration);
                     return;
@@ -314,7 +313,7 @@ public class Configurations extends AbstractList<Configuration>
             return;
         }
 
-        if (!_configurations.stream().map(Configuration::getName).anyMatch(n->{return name.equals(n);}))
+        if (!_configurations.stream().map(c->c.getClass().getName()).anyMatch(n->{return name.equals(n);}))
             _configurations.add(configuration);
     }
 

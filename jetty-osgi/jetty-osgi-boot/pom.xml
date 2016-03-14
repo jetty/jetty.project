@@ -117,6 +117,12 @@
  org.xml.sax.helpers,
  *
                         </Import-Package>
+              <Require-Capability>
+                osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
+              </Require-Capability>
+              <Provide-Capability>
+                osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
+              </Provide-Capability>
                         <_nouses>true</_nouses>
                     </instructions>
                 </configuration>

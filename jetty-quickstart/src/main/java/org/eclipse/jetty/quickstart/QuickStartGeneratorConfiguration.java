@@ -709,10 +709,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         MetaData metadata = context.getMetaData();
         metadata.resolve(context);
 
-        Resource quickStartWebXml = context.getResource("/WEB-INF/quickstart-web.xml");
+        Resource quickStartWebXml = context.getBaseResource().addPath("/WEB-INF/quickstart-web.xml");
         if (!quickStartWebXml.exists())
             quickStartWebXml.getFile().createNewFile();
-        try (FileOutputStream fos = new FileOutputStream(quickStartWebXml.getFile()))
+        try (FileOutputStream fos = new FileOutputStream(quickStartWebXml.getFile(),false))
         {
             generateQuickStartWebXml(context,fos);
         }
