@@ -1,3 +1,5 @@
+jetty-9.3.9-SNAPSHOT
+
 jetty-9.3.8.v20160314 - 14 March 2016
  + 107 ResourceHandler range support testcase
  + 124 Don't produce text/html if the request doesn't accept it
