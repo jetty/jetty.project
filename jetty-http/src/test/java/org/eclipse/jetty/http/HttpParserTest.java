@@ -1732,6 +1732,44 @@ public class HttpParserTest
         Assert.assertEquals(null, _bad);
     }
 
+    @Test(expected = BadMessageException.class)
+    public void test7230HeaderValueWithNewLine() throws Exception
+    {
+        testHeaderValueWithNewLine(HttpCompliance.RFC7230);
+    }
+
+    @Test
+    public void test2616HeaderValueWithNewLine() throws Exception
+    {
+        testHeaderValueWithNewLine(HttpCompliance.RFC2616);
+    }
+
+    private void testHeaderValueWithNewLine(HttpCompliance compliance) throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Header: va\r\n\tlue\r\n"+
+                        "\r\n");
+
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler,compliance);
+        parseAll(parser,buffer);
+
+        if (_bad != null)
+            throw new BadMessageException(_bad);
+
+        Assert.assertTrue(_headerCompleted);
+        Assert.assertTrue(_messageCompleted);
+        Assert.assertEquals("GET", _methodOrVersion);
+        Assert.assertEquals("/", _uriOrStatus);
+        Assert.assertEquals("HTTP/1.1", _versionOrReason);
+        Assert.assertEquals("Host",_hdr[0]);
+        Assert.assertEquals("localhost",_val[0]);
+        Assert.assertEquals("Header",_hdr[1]);
+        Assert.assertEquals("va lue",_val[1]);
+    }
+
     @Before
     public void init()
     {
