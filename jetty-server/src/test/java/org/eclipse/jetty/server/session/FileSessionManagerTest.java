@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.File;
+import java.io.FilenameFilter;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -153,9 +154,22 @@ public class FileSessionManagerTest
         manager.setMaxInactiveInterval(30); // change max inactive interval for *new* sessions
         manager.stop();
         
-        String expectedFilename = "_0.0.0.0_"+session.getId();
-        Assert.assertTrue("File should exist!", new File(testDir, expectedFilename).exists());
+        final String expectedFilename = "_0.0.0.0_"+session.getId();
+    
+        File[] files = testDir.listFiles(new FilenameFilter(){
+
+            @Override
+            public boolean accept(File dir, String name)
+            {
+               return name.contains(expectedFilename);
+            }
+            
+        });
+        Assert.assertNotNull(files);
+        Assert.assertEquals(1, files.length);
+        Assert.assertTrue("File should exist!", files[0].exists());
         
+       
         
         manager.start();
         

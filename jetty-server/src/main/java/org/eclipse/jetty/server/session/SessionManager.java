@@ -663,9 +663,10 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     public void setMaxInactiveInterval(int seconds)
     {
         _dftMaxIdleSecs=seconds;
-        if (_dftMaxIdleSecs < 0)
+        if (_dftMaxIdleSecs <= 0)
             LOG.warn("Sessions created by this manager are immortal (default maxInactiveInterval={})"+_dftMaxIdleSecs);
-
+        else if (LOG.isDebugEnabled())
+            LOG.debug("SessionManager default maxInactiveInterval={}", _dftMaxIdleSecs);
     }
 
     /* ------------------------------------------------------------ */

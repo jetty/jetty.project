@@ -24,12 +24,14 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -98,11 +100,10 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         File file = null;
         if (_storeDir != null)
         {
-            file = new File(_storeDir, getFileName(id));
-            if (file.exists() && file.getParentFile().equals(_storeDir))
+            file = getFile(_storeDir, id);
+            if (file != null && file.exists() && file.getParentFile().equals(_storeDir))
             {
-                file.delete();
-                return true;
+                return file.delete();
             }
         }
          
@@ -114,12 +115,55 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
      */
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
+    public Set<String> doGetExpired(final Set<String> candidates, final int expiryTimeoutSec)
     {
         //we don't want to open up each file and check, so just leave it up to the SessionStore
         //TODO as the session manager is likely to be a lazy loader, if a session is never requested, its
         //file will stay forever after a restart
-        return candidates;
+        final long now = System.currentTimeMillis();
+        HashSet<String> expired = new HashSet<String>();
+        
+        File[] files = _storeDir.listFiles(new FilenameFilter() 
+        {
+
+            @Override
+            public boolean accept(File dir, String name)
+            {
+                if (dir != _storeDir)
+                    return false;
+                
+                String s = name.substring(0, name.indexOf('_'));
+                long expiry = (s==null?0:Long.parseLong(s));
+                    
+                if (expiry > 0 && expiry < now)
+                    return true;
+                else
+                    return false;
+            }
+        });
+        
+        if (files != null)
+        {
+            for (File f:files)
+            {
+                expired.add(getIdFromFile(f));
+            }
+        }
+        
+        //check candidates that were not found to be expired, perhaps they no
+        //longer exist and they should be expired
+        for (String c:candidates)
+        {
+            if (!expired.contains(c))
+            {
+                //check if the file exists
+                File f = getFile(_storeDir, c);
+                if (f == null || !f.exists())
+                    expired.add(c);
+            }
+        }
+        
+        return expired;
     }
 
 
@@ -136,9 +180,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         {
             public void run ()
             {
-                File file = new File(_storeDir,getFileName(id));
+                File file = getFile(_storeDir,id);
 
-                if (!file.exists())
+                if (file == null || !file.exists())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("No file: {}",file);
@@ -187,9 +231,13 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         File file = null;
         if (_storeDir != null)
         {
-            file = new File(_storeDir, getFileName(id));
-            if (file.exists())
+            //remove any existing file for the session
+            file = getFile(_storeDir, id);
+            if (file != null && file.exists())
                 file.delete();
+            
+            //make a fresh file using the latest session expiry
+            file = new File(_storeDir, getFileNameWithExpiry(data));
 
             try(FileOutputStream fos = new FileOutputStream(file,false))
             {
@@ -264,7 +312,50 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     {
         return _context.getCanonicalContextPath()+"_"+_context.getVhost()+"_"+id;
     }
+    
+    private String getFileNameWithExpiry (SessionData data)
+    {
+        return ""+data.getExpiry()+"_"+getFileName(data.getId());
+    }
+    
+    private String getIdFromFile (File file)
+    {
+        if (file == null)
+            return null;
+        String name = file.getName();
+        
+        return name.substring(name.lastIndexOf('_')+1);
+    }
 
+    
+    /**
+     * Find a File for the session id for the current context.
+     * 
+     * @param storeDir
+     * @param id
+     * @return
+     */
+    private File getFile (final File storeDir, final String id)
+    {
+        File[] files = storeDir.listFiles (new FilenameFilter() {
+
+            /** 
+             * @see java.io.FilenameFilter#accept(java.io.File, java.lang.String)
+             */
+            @Override
+            public boolean accept(File dir, String name)
+            {
+                if (dir != storeDir)
+                    return false;
+                return (name.contains(getFileName(id)));
+            }
+            
+        });
+        
+        if (files == null || files.length < 1)
+            return null;
+        return files[0];
+    }
 
     /**
      * @param is inputstream containing session data

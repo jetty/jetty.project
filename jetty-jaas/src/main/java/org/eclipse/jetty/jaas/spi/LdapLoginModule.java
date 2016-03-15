@@ -415,32 +415,35 @@ public class LdapLoginModule extends AbstractLoginModule
                 return isAuthenticated();
             }
 
+            boolean authed = false;
+
             if (_forceBindingLogin)
             {
-                return bindingLogin(webUserName, webCredential);
+                authed = bindingLogin(webUserName, webCredential);
             }
-
-            // This sets read and the credential
-            UserInfo userInfo = getUserInfo(webUserName);
-
-            if (userInfo == null)
-            {
-                setAuthenticated(false);
-                return false;
-            }
-
-            setCurrentUser(new JAASUserInfo(userInfo));
-
-            boolean authed = false;            
-            if (webCredential instanceof String)
-                authed = credentialLogin(Credential.getCredential((String) webCredential));
             else
-                authed = credentialLogin(webCredential);
-            
+            {
+                // This sets read and the credential
+                UserInfo userInfo = getUserInfo(webUserName);
+
+                if (userInfo == null)
+                {
+                    setAuthenticated(false);
+                    return false;
+                }
+
+                setCurrentUser(new JAASUserInfo(userInfo));
+
+                if (webCredential instanceof String)
+                    authed = credentialLogin(Credential.getCredential((String) webCredential));
+                else
+                    authed = credentialLogin(webCredential);
+            }
+
             //only fetch roles if authenticated
             if (authed)
                 getCurrentUser().fetchRoles();
-            
+
             return authed;
         }
         catch (UnsupportedCallbackException e)

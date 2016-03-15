@@ -408,6 +408,8 @@ public class Session implements SessionManager.SessionIf
             _sessionData.setDirty(true);
             if (secs <= 0)
                 LOG.warn("Session {} is now immortal (maxInactiveInterval={})", _sessionData.getId(), secs);
+            else if (LOG.isDebugEnabled())
+                LOG.debug("Session {} maxInactiveInterval={}", _sessionData.getId(), secs);
         }
     }
 
