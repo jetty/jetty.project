@@ -300,23 +300,16 @@ public class HttpSenderOverHTTP extends HttpSender
         }
     }
 
-    private class ByteBufferRecyclerCallback implements Callback
+    private class ByteBufferRecyclerCallback extends Callback.Nested
     {
-        private final Callback callback;
         private final ByteBufferPool pool;
         private final ByteBuffer[] buffers;
 
         private ByteBufferRecyclerCallback(Callback callback, ByteBufferPool pool, ByteBuffer... buffers)
         {
-            this.callback = callback;
+            super(callback);
             this.pool = pool;
             this.buffers = buffers;
-        }
-
-        @Override
-        public boolean isNonBlocking()
-        {
-            return callback.isNonBlocking();
         }
 
         @Override
@@ -327,7 +320,7 @@ public class HttpSenderOverHTTP extends HttpSender
                 assert !buffer.hasRemaining();
                 pool.release(buffer);
             }
-            callback.succeeded();
+            super.succeeded();
         }
 
         @Override
@@ -335,7 +328,7 @@ public class HttpSenderOverHTTP extends HttpSender
         {
             for (ByteBuffer buffer : buffers)
                 pool.release(buffer);
-            callback.failed(x);
+            super.failed(x);
         }
     }
 }

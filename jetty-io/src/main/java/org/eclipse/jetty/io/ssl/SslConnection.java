@@ -305,18 +305,12 @@ public class SslConnection extends AbstractConnection
                 failedCallback(new Callback()
                 {
                     @Override
-                    public void succeeded()
-                    {
-                    }
-
-                    @Override
                     public void failed(Throwable x)
                     {
                         if (filler_failed)
                             getFillInterest().onFail(x);
                         getWriteFlusher().onFail(x);
                     }
-
                 },x);
             }
         };
