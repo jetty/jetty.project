@@ -1148,7 +1148,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     break;
                 }
             }
-            callback.succeeded();
+            super.succeeded();
         }
     }
 
@@ -1223,7 +1223,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 // and eventually remove the stream.
                 if (stream.updateClose(dataFrame.isEndStream(), true))
                     removeStream(stream);
-                callback.succeeded();
+                super.succeeded();
             }
         }
     }

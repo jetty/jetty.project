@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -318,7 +317,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         _request.setHandled(false);
                         _response.getHttpOutput().reopen();
-                        
+
                         try
                         {
                             _request.setDispatcherType(DispatcherType.ASYNC);
@@ -386,7 +385,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 _state.getAsyncContextEvent().setDispatchPath(error_page);
                         }
 
-                        
+
                         try
                         {
                             _request.setDispatcherType(DispatcherType.ERROR);
@@ -758,25 +757,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _transport.abort(failure);
     }
 
-    private class CommitCallback implements Callback
+    private class CommitCallback extends Callback.Nested
     {
-        private final Callback _callback;
-
         private CommitCallback(Callback callback)
         {
-            _callback = callback;
-        }
-
-        @Override
-        public boolean isNonBlocking()
-        {
-            return _callback.isNonBlocking();
-        }
-
-        @Override
-        public void succeeded()
-        {
-            _callback.succeeded();
+            super(callback);
         }
 
         @Override
@@ -787,12 +772,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
             if (x instanceof BadMessageException)
             {
-                _transport.send(HttpGenerator.RESPONSE_500_INFO, false, null, true, new Callback()
+                _transport.send(HttpGenerator.RESPONSE_500_INFO, false, null, true, new Callback.Nested(this)
                 {
                     @Override
                     public void succeeded()
                     {
-                        _callback.failed(x);
+                        super.failed(x);
                         _response.getHttpOutput().closed();
                     }
 
@@ -800,14 +785,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     public void failed(Throwable th)
                     {
                         _transport.abort(x);
-                        _callback.failed(x);
+                        super.failed(x);
                     }
                 });
             }
             else
             {
                 _transport.abort(x);
-                _callback.failed(x);
+                super.failed(x);
             }
         }
     }

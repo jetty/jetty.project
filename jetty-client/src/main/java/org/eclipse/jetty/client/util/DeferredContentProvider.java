@@ -218,11 +218,6 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
     }
 
     @Override
-    public void succeeded()
-    {
-    }
-
-    @Override
     public void failed(Throwable failure)
     {
         iterator.failed(failure);
