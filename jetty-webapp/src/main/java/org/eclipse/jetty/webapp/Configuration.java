@@ -153,7 +153,7 @@ public interface Configuration
                     if (afterClass.equals(c.getClass().getName()) || afterClass.equals(c.replaces().getName()))
                     {
                         for (String cc: configClass)
-                            iter.add(getConfiguration(cc));
+                            iter.add(newConfiguration(cc));
                         return;
                     }
                 }
@@ -175,7 +175,7 @@ public interface Configuration
                     {
                         iter.previous();
                         for (String cc: configClass)
-                            iter.add(getConfiguration(cc));
+                            iter.add(newConfiguration(cc));
                         return;
                     }
                 }

@@ -913,7 +913,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_configurations.size()>0)
             return;
         
-        _configurations.add(Configurations.serverDefault(getServer()).toArray());
+        _configurations.add(Configurations.getServerDefault(getServer()).toArray());
     }
 
     /* ------------------------------------------------------------ */

@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -93,12 +94,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
     protected CounterStatistic _webInfLibStats;
     protected CounterStatistic _webInfClassesStats;
     protected Pattern _sciExcludePattern;
-    protected ServiceLoader<ServletContainerInitializer> _loadedInitializers = null;
-    
+    protected List<ServletContainerInitializer> _initializers;    
 
     public AnnotationConfiguration()
     {
-        super(false,
+        super(true,
               new String[]{WebXmlConfiguration.class.getName(),MetaInfConfiguration.class.getName(),FragmentConfiguration.class.getName(),PlusConfiguration.class.getName()},
               new String[]{JettyWebXmlConfiguration.class.getName()},
               new String[]{"org.eclipse.jetty.util.annotation."},
@@ -430,8 +430,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
             context.removeAttribute(CONTAINER_INITIALIZER_STARTER);
         }
         
-        if (_loadedInitializers != null)
-            _loadedInitializers.reload();
+        if (_initializers != null)
+            _initializers.clear();
     }
     
     /** 
@@ -454,7 +454,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                _discoverableAnnotationHandlers.add(new WebListenerAnnotationHandler(context));
            }
        }
-
+       
        //Regardless of metadata, if there are any ServletContainerInitializers with @HandlesTypes, then we need to scan all the
        //classes so we can call their onStartup() methods correctly
        createServletContainerInitializerAnnotationHandlers(context, getNonExcludedInitializers(context));
@@ -857,32 +857,32 @@ public class AnnotationConfiguration extends AbstractConfiguration
       
         //We use the ServiceLoader mechanism to find the ServletContainerInitializer classes to inspect
         long start = 0;
-
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-       
-        try
-        {        
-            if (LOG.isDebugEnabled())
-                start = System.nanoTime();
-            Thread.currentThread().setContextClassLoader(context.getClassLoader());
-            _loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class);
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader(old);
-        }
-        
+        if (LOG.isDebugEnabled())
+            start = System.nanoTime();
+        ServiceLoader<ServletContainerInitializer> loader = ServiceLoader.load(ServletContainerInitializer.class);
         if (LOG.isDebugEnabled())
             LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime()-start), TimeUnit.NANOSECONDS)));
-     
         
         Map<ServletContainerInitializer,Resource> sciResourceMap = new HashMap<ServletContainerInitializer,Resource>();
         ServletContainerInitializerOrdering initializerOrdering = getInitializerOrdering(context);
 
         //Get initial set of SCIs that aren't from excluded jars or excluded by the containerExclusionPattern, or excluded
         //because containerInitializerOrdering omits it
-        for (ServletContainerInitializer sci:_loadedInitializers)
+        Iterator<ServletContainerInitializer> iter = loader.iterator();
+        while(iter.hasNext())
         { 
+            ServletContainerInitializer sci;
+            try
+            {
+                sci=iter.next();
+            }
+            catch(Error e)
+            {
+                // Probably a SCI discovered on the system classpath that is hidden by the context classloader
+                LOG.info("Error: "+e.getMessage()+" for "+context);
+                LOG.debug(e);
+                continue;
+            }
             
             if (matchesExclusionPattern(sci)) 
             {

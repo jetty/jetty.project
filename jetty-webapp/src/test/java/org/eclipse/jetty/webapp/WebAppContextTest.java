@@ -79,6 +79,7 @@ public class WebAppContextTest
     {
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
+        System.err.println(Arrays.asList(wac.getConfigurations()));
         Assert.assertThat(Arrays.asList(wac.getConfigurations()).stream().map(c->c.getClass().getName()).collect(Collectors.toList()),
                 Matchers.contains( 
                         "org.eclipse.jetty.webapp.JmxConfiguration",

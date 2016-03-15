@@ -31,7 +31,7 @@ public class WebAppConfiguration extends AbstractConfiguration
     {
         super(true,
                 new String[]{WebXmlConfiguration.class.getName(),MetaInfConfiguration.class.getName(),WebInfConfiguration.class.getName()},
-                null,
+                new String[]{JettyWebXmlConfiguration.class.getName()},
                 new String[]{
                         "org.eclipse.jetty.util.log.",
                         "org.eclipse.jetty.servlet.DefaultServlet", 

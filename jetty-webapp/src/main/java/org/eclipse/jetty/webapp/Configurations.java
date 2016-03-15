@@ -24,11 +24,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.Server;
@@ -43,13 +45,15 @@ public class Configurations extends AbstractList<Configuration>
     private static final Logger LOG = Log.getLogger(Configurations.class);
     
     private static final List<Configuration> __known = new ArrayList<>();
-    private static final Map<String,Configuration> __knownByClassName = new HashMap<>();
+    private static final Set<String> __knownByClassName = new HashSet<>();
     static
     {
         ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
         for (Configuration configuration : configs)
-            __knownByClassName.put(configuration.getClass().getName(),configuration);
-        __known.addAll(__knownByClassName.values());
+        {
+            __known.add(configuration);
+            __knownByClassName.add(configuration.getClass().getName());
+        }
         sort(__known);
         if (LOG.isDebugEnabled())
         {
@@ -57,7 +61,7 @@ public class Configurations extends AbstractList<Configuration>
                 LOG.debug("known {}",c);
         }
         
-        LOG.debug("Known Configurations {}",__knownByClassName.keySet());
+        LOG.debug("Known Configurations {}",__knownByClassName);
     }
 
     public static List<Configuration> getKnown()
@@ -80,12 +84,19 @@ public class Configurations extends AbstractList<Configuration>
         Configurations configurations=server.getBean(Configurations.class);
         if (configurations!=null)
             return configurations;
-        configurations=serverDefault(server);
+        configurations=getServerDefault(server);
         server.addBean(configurations);
         server.setAttribute(Configuration.ATTR,null);
         return configurations;
     }
 
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public static Configurations serverDefault(Server server)
+    {
+        return getServerDefault(server);
+    }
+    
     /* ------------------------------------------------------------ */
     /** Get/Create the server default Configuration ClassList.
      * <p>Get the class list from: a Server bean; or the attribute (which can
@@ -94,7 +105,7 @@ public class Configurations extends AbstractList<Configuration>
      * @param server The server the default is for
      * @return A copy of the server default ClassList instance of the configuration classes for this server. Changes to the returned list will not change the server default.
      */
-    public static Configurations serverDefault(Server server)
+    public static Configurations getServerDefault(Server server)
     {
         Configurations configurations=null;
         if (server!=null)
@@ -136,25 +147,21 @@ public class Configurations extends AbstractList<Configuration>
     {
     }
 
-    protected static Configuration getConfiguration(String classname)
+    protected static Configuration newConfiguration(String classname)
     {
-        Configuration configuration = __knownByClassName.get(classname);
-        if (configuration==null)
+        if (!__knownByClassName.contains(classname))
+            LOG.warn("Unknown configuration {}. Not declared for ServiceLoader!",classname);  
+        
+        try
         {
-            try
-            {
-                @SuppressWarnings("unchecked")
-                Class<Configuration> clazz = Loader.loadClass(classname);
-                configuration = clazz.newInstance();
-            }
-            catch (ClassNotFoundException | InstantiationException | IllegalAccessException e)
-            {
-                throw new RuntimeException(e);
-            }
-            
-            LOG.info("Unknown configuration {}",classname);
+            @SuppressWarnings("unchecked")
+            Class<Configuration> clazz = Loader.loadClass(classname);
+            return clazz.newInstance();
         }
-        return configuration;
+        catch (ClassNotFoundException | InstantiationException | IllegalAccessException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
     
     public Configurations(String... classes)
@@ -183,7 +190,7 @@ public class Configurations extends AbstractList<Configuration>
     public void add(@Name("configClass")String... configClass)
     {   
         for (String name : configClass)
-            addConfiguration(getConfiguration(name));
+            addConfiguration(newConfiguration(name));
     }
     
     public void clear()
@@ -293,7 +300,7 @@ public class Configurations extends AbstractList<Configuration>
     {
         String name=configuration.getClass().getName();
         // Is this configuration known?
-        if (!__knownByClassName.containsKey(name))
+        if (!__knownByClassName.contains(name))
             LOG.warn("Unknown configuration {}. Not declared for ServiceLoader!",name);            
 
         // Do we need to replace any existing configuration?

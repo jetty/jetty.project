@@ -71,7 +71,6 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         context.getMetaData().setWebXml(quickStartWebXml);
     }
 
-
     @Override
     public boolean configure(WebAppContext context) throws Exception
     {
@@ -89,20 +88,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         
         //Set up the quickstart environment for the context
         boolean configured = super.configure(context);
-        
-        // knock out environmental maven and plexus classes from webAppContext
-        String[] existingServerClasses = context.getServerClasses();
-        String[] newServerClasses = new String[2+(existingServerClasses==null?0:existingServerClasses.length)];
-        newServerClasses[0] = "org.apache.maven.";
-        newServerClasses[1] = "org.codehaus.plexus.";
-        System.arraycopy( existingServerClasses, 0, newServerClasses, 2, existingServerClasses.length );
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Server classes:");
-            for (int i=0;i<newServerClasses.length;i++)
-                LOG.debug(newServerClasses[i]);
-        }
-        context.setServerClasses( newServerClasses ); 
+                
         return configured;
     }
     

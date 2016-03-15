@@ -157,9 +157,9 @@ public class LikeJettyXml
 
         // === jetty-deploy.xml ===
         DeploymentManager deployer = new DeploymentManager();
-        DebugListener debug = new DebugListener(System.out,true,true,true);
-        server.addBean(debug);        
-        deployer.addLifeCycleBinding(new DebugListenerBinding(debug));
+        //DebugListener debug = new DebugListener(System.out,true,true,true);
+        // server.addBean(debug);        
+        // deployer.addLifeCycleBinding(new DebugListenerBinding(debug));
         deployer.setContexts(contexts);
         deployer.setContextAttribute(
                 "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
@@ -218,6 +218,7 @@ public class LikeJettyXml
         
         // Start the server
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 }

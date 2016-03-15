@@ -40,7 +40,6 @@ import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
@@ -98,7 +97,7 @@ public class EnvConfiguration extends AbstractConfiguration
                 org.eclipse.jetty.util.resource.Resource jettyEnv = web_inf.addPath("jetty-env.xml");
                 if(jettyEnv.exists())
                 {
-                    jettyEnvXmlUrl = jettyEnv.getURL();
+                    jettyEnvXmlUrl = jettyEnv.getURI().toURL();
                 }
             }
         }
