@@ -278,7 +278,6 @@ public class HttpClientTest extends AbstractTest
         catch (ExecutionException x)
         {
             // Buffering capacity exceeded.
-            x.printStackTrace();
         }
 
         // Verify that we can make another request.
