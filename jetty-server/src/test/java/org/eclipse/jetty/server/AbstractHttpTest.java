@@ -107,7 +107,6 @@ public abstract class AbstractHttpTest
                         "it should contain connection:close", response.getHeaders().get("connection"), is("close"));
             return response;
         }
-        }
     }
 
     protected void assertResponseBody(SimpleHttpResponse response, String expectedResponseBody)

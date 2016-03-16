@@ -264,10 +264,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             String response = readResponse(client);
             assertThat(response,Matchers.containsString(" 500 "));
         }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
-        }
     }
     
     @Test
@@ -288,9 +284,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         OutputStream os = client.getOutputStream();
 
-        try
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         { 
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
             Log.getLogger(HttpChannel.class).info("Expecting ServletException: TEST handler exception...");
             os.write(request.toString().getBytes());
             os.flush();
