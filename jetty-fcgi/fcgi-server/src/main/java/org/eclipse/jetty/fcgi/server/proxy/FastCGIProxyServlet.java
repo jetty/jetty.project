@@ -71,6 +71,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     public static final String SCRIPT_ROOT_INIT_PARAM = "scriptRoot";
     public static final String SCRIPT_PATTERN_INIT_PARAM = "scriptPattern";
     public static final String ORIGINAL_URI_ATTRIBUTE_INIT_PARAM = "originalURIAttribute";
+    public static final String ORIGINAL_QUERY_ATTRIBUTE_INIT_PARAM = "originalQueryAttribute";
     public static final String FASTCGI_HTTPS_INIT_PARAM = "fastCGI.HTTPS";
 
     private static final String REMOTE_ADDR_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".remoteAddr";
@@ -80,9 +81,11 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     private static final String SERVER_PORT_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".serverPort";
     private static final String SCHEME_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".scheme";
     private static final String REQUEST_URI_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".requestURI";
+    private static final String REQUEST_QUERY_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".requestQuery";
 
     private Pattern scriptPattern;
     private String originalURIAttribute;
+    private String originalQueryAttribute;
     private boolean fcgiHTTPS;
 
     @Override
@@ -96,6 +99,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         scriptPattern = Pattern.compile(value);
 
         originalURIAttribute = getInitParameter(ORIGINAL_URI_ATTRIBUTE_INIT_PARAM);
+        originalQueryAttribute = getInitParameter(ORIGINAL_QUERY_ATTRIBUTE_INIT_PARAM);
 
         fcgiHTTPS = Boolean.parseBoolean(getInitParameter(FASTCGI_HTTPS_INIT_PARAM));
     }
@@ -122,14 +126,21 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
 
         // Has the original URI been rewritten ?
         String originalURI = null;
+        String originalQuery = null;
         if (originalURIAttribute != null)
             originalURI = (String)request.getAttribute(originalURIAttribute);
+        if (originalURI != null && originalQueryAttribute != null)
+        {
+            originalQuery = (String)request.getAttribute(originalQueryAttribute);
+            if (originalQuery != null)
+                originalURI += "?" + originalQuery;
+        }
 
         if (originalURI == null)
         {
             // If we are forwarded or included, retain the original request URI.
             String originalPath = (String)request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
-            String originalQuery = (String)request.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING);
+            originalQuery = (String)request.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING);
             if (originalPath == null)
             {
                 originalPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI);
@@ -145,6 +156,8 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
 
         if (originalURI != null)
             proxyRequest.attribute(REQUEST_URI_ATTRIBUTE, originalURI);
+        if (originalQuery != null)
+            proxyRequest.attribute(REQUEST_QUERY_ATTRIBUTE, originalQuery);
 
         // If the Host header is missing, add it.
         if (!proxyRequest.getHeaders().containsKey(HttpHeader.HOST.asString()))
@@ -199,6 +212,10 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
                 requestURI += "?" + rawQuery;
         }
         fastCGIHeaders.put(FCGI.Headers.REQUEST_URI, requestURI);
+
+        String requestQuery = (String)proxyRequest.getAttributes().get(REQUEST_QUERY_ATTRIBUTE);
+        if (requestQuery != null)
+            fastCGIHeaders.put(FCGI.Headers.QUERY_STRING, requestQuery);
 
         String scriptName = rawPath;
         Matcher matcher = scriptPattern.matcher(rawPath);
