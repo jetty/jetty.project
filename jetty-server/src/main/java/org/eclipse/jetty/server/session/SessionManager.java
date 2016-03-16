@@ -960,6 +960,12 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         try
         {
             Session session = _sessionStore.renewSessionId (oldId, newId); //swap the id over
+            if (session == null)
+            {
+                //session doesn't exist on this context
+                return;
+            }
+            
             session.setExtendedId(newExtendedId); //remember the extended id
             _sessionIdManager.useId(session); //tell id manager new id is in use
 
