@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.util.log;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * A try-with-resources compatible layer for {@link StdErrLog#setHideStacks(boolean) hiding stacktraces} within the scope of the <code>try</code> block when
  * logging with {@link StdErrLog} implementation.
@@ -35,35 +38,47 @@ package org.eclipse.jetty.util.log;
  */
 public class StacklessLogging implements AutoCloseable
 {
-    private final Class<?> clazzes[];
+    private final Set<StdErrLog> squelched = new HashSet<>();
 
     public StacklessLogging(Class<?>... classesToSquelch)
     {
-        this.clazzes = classesToSquelch;
-        hideStacks(true);
+        for (Class<?> clazz : classesToSquelch)
+        {
+            Logger log = Log.getLogger(clazz); 
+            // only operate on loggers that are of type StdErrLog
+            if (log instanceof StdErrLog)
+            {
+                StdErrLog stdErrLog=((StdErrLog)log);
+                if (!stdErrLog.isHideStacks())
+                {
+                    stdErrLog.setHideStacks(true);
+                    squelched.add(stdErrLog);
+                }
+            }
+        }
+    }
+
+    public StacklessLogging(Logger... logs)
+    {
+        for (Logger log : logs)
+        {
+            // only operate on loggers that are of type StdErrLog
+            if (log instanceof StdErrLog)
+            {
+                StdErrLog stdErrLog=((StdErrLog)log);
+                if (!stdErrLog.isHideStacks())
+                {
+                    stdErrLog.setHideStacks(true);
+                    squelched.add(stdErrLog);
+                }
+            }
+        }
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
-        hideStacks(false);
-    }
-
-    private void hideStacks(boolean hide)
-    {
-        for (Class<?> clazz : clazzes)
-        {
-            Logger log = Log.getLogger(clazz);
-            if (log == null)
-            {
-                // not interested in classes without loggers
-                continue;
-            }
-            if (log instanceof StdErrLog)
-            {
-                // only operate on loggers that are of type StdErrLog
-                ((StdErrLog)log).setHideStacks(hide);
-            }
-        }
+        for (StdErrLog log : squelched)
+            log.setHideStacks(false);
     }
 }

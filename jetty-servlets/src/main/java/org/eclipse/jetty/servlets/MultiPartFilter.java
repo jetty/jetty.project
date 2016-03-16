@@ -177,6 +177,8 @@ public class MultiPartFilter implements Filter
                 while (itor.hasNext() && params.size() < _maxFormKeys)
                 {
                     Part p = itor.next();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{}",p);
                     MultiPartInputStreamParser.MultiPart mp = (MultiPartInputStreamParser.MultiPart)p;
                     if (mp.getFile() != null)
                     {

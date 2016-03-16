@@ -24,6 +24,10 @@
  */
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -46,16 +50,12 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class HttpConnectionTest
 {
@@ -349,11 +349,14 @@ public class HttpConnectionTest
         Log.getLogger(HttpParser.class).info("badMessage: bad encoding expected ...");
         String response;
 
-        response=connector.getResponses("GET /bad/encoding%1 HTTP/1.1\r\n"+
-            "Host: localhost\r\n"+
-            "Connection: close\r\n"+
-            "\r\n");
-        checkContains(response,0,"HTTP/1.1 400");
+        try(StacklessLogging stackless = new StacklessLogging(HttpParser.class))
+        {
+            response=connector.getResponses("GET /bad/encoding%1 HTTP/1.1\r\n"+
+                    "Host: localhost\r\n"+
+                    "Connection: close\r\n"+
+                    "\r\n");
+            checkContains(response,0,"HTTP/1.1 400");
+        }
     }
 
     @Test
@@ -633,18 +636,13 @@ public class HttpConnectionTest
         "abcdefghij\r\n";
 
         Logger logger = Log.getLogger(HttpChannel.class);
-        try
+        try (StacklessLogging stackless = new StacklessLogging(logger))
         {
             logger.info("EXPECTING: java.lang.IllegalStateException...");
-            ((StdErrLog)logger).setHideStacks(true);
             String response = connector.getResponses(requests);
             offset = checkContains(response,offset,"HTTP/1.1 500");
             offset = checkContains(response,offset,"Connection: close");
             checkNotContained(response,offset,"HTTP/1.1 200");
-        }
-        finally
-        {
-            ((StdErrLog)logger).setHideStacks(false);
         }
     }
 
@@ -756,11 +754,9 @@ public class HttpConnectionTest
         server.start();
 
         Logger logger = Log.getLogger(HttpChannel.class);
-        try
+        try (StacklessLogging stackless = new StacklessLogging(logger))
         {
             logger.info("Expect IOException: Response header too large...");
-            ((StdErrLog)logger).setHideStacks(true);
-
             response = connector.getResponses("GET / HTTP/1.1\r\n"+
                 "Host: localhost\r\n" +
                 "\r\n"
@@ -775,19 +771,14 @@ public class HttpConnectionTest
                 System.err.println(response);
             throw e;
         }
-        finally
-        {
-            ((StdErrLog)logger).setHideStacks(false);
-        }
     }
 
     @Test
     public void testAsterisk() throws Exception
     {
         String response = null;
-        try
+        try (StacklessLogging stackless = new StacklessLogging(HttpParser.LOG))
         {
-            ((StdErrLog)HttpParser.LOG).setHideStacks(true);
             int offset=0;
 
             response=connector.getResponses("OPTIONS * HTTP/1.1\r\n"+
@@ -833,10 +824,6 @@ public class HttpConnectionTest
             if(response != null)
                 System.err.println(response);
             throw e;
-        }
-        finally
-        {
-            ((StdErrLog)HttpParser.LOG).setHideStacks(false);
         }
     }
 

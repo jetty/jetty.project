@@ -39,8 +39,7 @@ import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.Locker.Lock;
 import org.junit.Test;
 
@@ -120,7 +119,6 @@ public abstract class AbstractIdleSessionTest
         int idlePeriod = 5;
         int inspectPeriod = 1;
         ((StdErrLog)Log.getLogger("org.eclipse.jetty.server.session")).setHideStacks(true);
-        System.setProperty("org.eclipse.jetty.STACKS", "false");
 
 
         _server1 = createServer(0, inactivePeriod, scavengePeriod, inspectPeriod, idlePeriod);
@@ -130,8 +128,8 @@ public abstract class AbstractIdleSessionTest
         _server1.start();
         int port1 = _server1.getPort();
 
-        try
-        {
+            try (StacklessLogging stackless = new StacklessLogging(HashedSession.class))
+            {
             HttpClient client = new HttpClient();
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping;

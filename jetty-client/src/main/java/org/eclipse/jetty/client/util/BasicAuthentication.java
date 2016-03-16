@@ -63,25 +63,41 @@ public class BasicAuthentication extends AbstractAuthentication
     @Override
     public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
     {
-        String value = "Basic " + B64Code.encode(user + ":" + password, StandardCharsets.ISO_8859_1);
-        return new BasicResult(headerInfo.getHeader(), value);
+        return new BasicResult(getURI(), headerInfo.getHeader(), user, password);
     }
 
-    private class BasicResult implements Result
+    /**
+     * Basic authentication result.
+     * <p>
+     * Application may utilize this class directly via
+     * {@link AuthenticationStore#addAuthenticationResult(Result)}
+     * to perform preemptive authentication, that is immediately
+     * sending the authorization header based on the fact that the
+     * URI is known to require authentication and that username
+     * and password are known a priori.
+     */
+    public static class BasicResult implements Result
     {
+        private final URI uri;
         private final HttpHeader header;
         private final String value;
 
-        public BasicResult(HttpHeader header, String value)
+        public BasicResult(URI uri, String user, String password)
         {
+            this(uri, HttpHeader.AUTHORIZATION, user, password);
+        }
+
+        public BasicResult(URI uri, HttpHeader header, String user, String password)
+        {
+            this.uri = uri;
             this.header = header;
-            this.value = value;
+            this.value = "Basic " + B64Code.encode(user + ":" + password, StandardCharsets.ISO_8859_1);
         }
 
         @Override
         public URI getURI()
         {
-            return BasicAuthentication.this.getURI();
+            return uri;
         }
 
         @Override

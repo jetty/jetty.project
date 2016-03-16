@@ -29,8 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -271,9 +270,8 @@ public class QueuedThreadPoolTest
         tp.setMaxThreads(10);
         tp.setIdleTimeout(1000);
         tp.start();
-        try
+        try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
         {
-            ((StdErrLog)Log.getLogger(QueuedThreadPool.class)).setHideStacks(true);
             tp.execute(new Runnable(){ public void run () { throw new IllegalStateException(); } });
             tp.execute(new Runnable(){ public void run () { throw new Error(); } });
             tp.execute(new Runnable(){ public void run () { throw new RuntimeException(); } });
@@ -281,10 +279,6 @@ public class QueuedThreadPoolTest
             
             Thread.sleep(100);
             assertThat(tp.getThreads(),greaterThanOrEqualTo(5));
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(QueuedThreadPool.class)).setHideStacks(false);
         }
     }
 

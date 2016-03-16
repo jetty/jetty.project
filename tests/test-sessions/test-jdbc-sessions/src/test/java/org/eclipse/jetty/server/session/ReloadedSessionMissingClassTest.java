@@ -35,8 +35,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.After;
@@ -54,7 +53,7 @@ public class ReloadedSessionMissingClassTest
     @Test
     public void testSessionReloadWithMissingClass() throws Exception
     {
-        ((StdErrLog)Log.getLogger("org.eclipse.jetty.server.session")).setHideStacks(true);
+        ((StdErrLog)Log.getLogger(org.eclipse.jetty.server.session.JDBCSessionManager.class)).setHideStacks(true);
         Resource.setDefaultUseCaches(false);
         String contextPath = "/foo";
 
@@ -96,7 +95,7 @@ public class ReloadedSessionMissingClassTest
         webApp.addServlet("Bar", "/bar");
         server1.start();
         int port1 = server1.getPort();
-        try
+        try (StacklessLogging stackless = new StacklessLogging(JDBCSessionManager.class))
         {
             HttpClient client = new HttpClient();
             client.start();

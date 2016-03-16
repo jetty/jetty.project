@@ -39,9 +39,12 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
@@ -277,7 +280,7 @@ public class HttpClientTest extends AbstractTest
         }
         catch (ExecutionException x)
         {
-            // Buffering capacity exceeded.
+            Assert.assertThat(x.getMessage(),Matchers.containsString("Buffering capacity exceeded"));
         }
 
         // Verify that we can make another request.

@@ -161,41 +161,42 @@ public class StdErrLogTest
 
     /**
      * Test to make sure that using a Null parameter on parameterized messages does not result in a NPE
-     * @throws NullPointerException failed test
+     * @throws Exception failed test
      */
     @Test
-    public void testParameterizedMessage_NullValues() throws NullPointerException
+    public void testParameterizedMessage_NullValues() throws Exception
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
         log.setLevel(StdErrLog.LEVEL_DEBUG);
-        log.setHideStacks(true);
+        try (StacklessLogging stackless = new StacklessLogging(log))
+        {
+            log.info("Testing info(msg,null,null) - {} {}","arg0","arg1");
+            log.info("Testing info(msg,null,null) - {} {}",null,null);
+            log.info("Testing info(msg,null,null) - {}",null,null);
+            log.info("Testing info(msg,null,null)",null,null);
+            log.info(null,"Testing","info(null,arg0,arg1)");
+            log.info(null,null,null);
 
-        log.info("Testing info(msg,null,null) - {} {}","arg0","arg1");
-        log.info("Testing info(msg,null,null) - {} {}",null,null);
-        log.info("Testing info(msg,null,null) - {}",null,null);
-        log.info("Testing info(msg,null,null)",null,null);
-        log.info(null,"Testing","info(null,arg0,arg1)");
-        log.info(null,null,null);
+            log.debug("Testing debug(msg,null,null) - {} {}","arg0","arg1");
+            log.debug("Testing debug(msg,null,null) - {} {}",null,null);
+            log.debug("Testing debug(msg,null,null) - {}",null,null);
+            log.debug("Testing debug(msg,null,null)",null,null);
+            log.debug(null,"Testing","debug(null,arg0,arg1)");
+            log.debug(null,null,null);
 
-        log.debug("Testing debug(msg,null,null) - {} {}","arg0","arg1");
-        log.debug("Testing debug(msg,null,null) - {} {}",null,null);
-        log.debug("Testing debug(msg,null,null) - {}",null,null);
-        log.debug("Testing debug(msg,null,null)",null,null);
-        log.debug(null,"Testing","debug(null,arg0,arg1)");
-        log.debug(null,null,null);
+            log.debug("Testing debug(msg,null)");
+            log.debug(null,new Throwable("Testing debug(null,thrw)").fillInStackTrace());
 
-        log.debug("Testing debug(msg,null)");
-        log.debug(null,new Throwable("Testing debug(null,thrw)").fillInStackTrace());
+            log.warn("Testing warn(msg,null,null) - {} {}","arg0","arg1");
+            log.warn("Testing warn(msg,null,null) - {} {}",null,null);
+            log.warn("Testing warn(msg,null,null) - {}",null,null);
+            log.warn("Testing warn(msg,null,null)",null,null);
+            log.warn(null,"Testing","warn(msg,arg0,arg1)");
+            log.warn(null,null,null);
 
-        log.warn("Testing warn(msg,null,null) - {} {}","arg0","arg1");
-        log.warn("Testing warn(msg,null,null) - {} {}",null,null);
-        log.warn("Testing warn(msg,null,null) - {}",null,null);
-        log.warn("Testing warn(msg,null,null)",null,null);
-        log.warn(null,"Testing","warn(msg,arg0,arg1)");
-        log.warn(null,null,null);
-
-        log.warn("Testing warn(msg,null)");
-        log.warn(null,new Throwable("Testing warn(msg,thrw)").fillInStackTrace());
+            log.warn("Testing warn(msg,null)");
+            log.warn(null,new Throwable("Testing warn(msg,thrw)").fillInStackTrace());
+        }
     }
 
     @Test
@@ -314,232 +315,241 @@ public class StdErrLogTest
     public void testWarnFiltering() throws UnsupportedEncodingException
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
-        log.setHideStacks(false);
+        try (StacklessLogging stackless = new StacklessLogging(log))
+        {
+            StdErrCapture output = new StdErrCapture(log);
 
-        StdErrCapture output = new StdErrCapture(log);
+            // Start with default level
+            log.warn("See Me");
 
-        // Start with default level
-        log.warn("See Me");
+            // Set to debug level
+            log.setLevel(StdErrLog.LEVEL_DEBUG);
+            log.warn("Hear Me");
 
-        // Set to debug level
-        log.setLevel(StdErrLog.LEVEL_DEBUG);
-        log.warn("Hear Me");
+            // Set to warn level
+            log.setLevel(StdErrLog.LEVEL_WARN);
+            log.warn("Cheer Me");
 
-        // Set to warn level
-        log.setLevel(StdErrLog.LEVEL_WARN);
-        log.warn("Cheer Me");
+            log.warn("<zoom>", new Throwable("out of focus"));
+            log.warn(new Throwable("scene lost"));
 
-        log.warn("<zoom>", new Throwable("out of focus"));
-        log.warn(new Throwable("scene lost"));
+            // Validate Output
+            // System.err.print(output);
+            output.assertContains("See Me");
+            output.assertContains("Hear Me");
+            output.assertContains("Cheer Me");
 
-        // Validate Output
-        // System.err.print(output);
-        output.assertContains("See Me");
-        output.assertContains("Hear Me");
-        output.assertContains("Cheer Me");
-
-        // Validate Stack Traces
-        output.assertContains(".StdErrLogTest:tname: <zoom>");
-        output.assertContains("java.lang.Throwable: out of focus");
-        output.assertContains("java.lang.Throwable: scene lost");
+            // Validate Stack Traces
+            output.assertContains(".StdErrLogTest:tname: <zoom>");
+            output.assertContains("java.lang.Throwable: out of focus");
+            output.assertContains("java.lang.Throwable: scene lost");
+        }
     }
 
     /**
      * Tests StdErrLog.info() methods with level filtering.
      * <p>
      * Should only see INFO level messages when level is set to {@link StdErrLog#LEVEL_INFO} and below.
-     * @throws UnsupportedEncodingException failed test
+     * @throws Exception failed test
      */
     @Test
-    public void testInfoFiltering() throws UnsupportedEncodingException
+    public void testInfoFiltering() throws Exception
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
-        log.setHideStacks(false);
+        try (StacklessLogging stackless = new StacklessLogging(log))
+        {
+            StdErrCapture output = new StdErrCapture(log);
 
-        StdErrCapture output = new StdErrCapture(log);
+            // Normal/Default behavior
+            log.info("I will not buy");
 
-        // Normal/Default behavior
-        log.info("I will not buy");
+            // Level Debug
+            log.setLevel(StdErrLog.LEVEL_DEBUG);
+            log.info("this record");
 
-        // Level Debug
-        log.setLevel(StdErrLog.LEVEL_DEBUG);
-        log.info("this record");
+            // Level All
+            log.setLevel(StdErrLog.LEVEL_ALL);
+            log.info("it is scratched.");
 
-        // Level All
-        log.setLevel(StdErrLog.LEVEL_ALL);
-        log.info("it is scratched.");
+            log.info("<zoom>", new Throwable("out of focus"));
+            log.info(new Throwable("scene lost"));
 
-        log.info("<zoom>", new Throwable("out of focus"));
-        log.info(new Throwable("scene lost"));
+            // Level Warn
+            log.setLevel(StdErrLog.LEVEL_WARN);
+            log.info("sorry?");
+            log.info("<spoken line>", new Throwable("on editing room floor"));
 
-        // Level Warn
-        log.setLevel(StdErrLog.LEVEL_WARN);
-        log.info("sorry?");
-        log.info("<spoken line>", new Throwable("on editing room floor"));
+            // Validate Output
+            output.assertContains("I will not buy");
+            output.assertContains("this record");
+            output.assertContains("it is scratched.");
+            output.assertNotContains("sorry?");
 
-        // Validate Output
-        output.assertContains("I will not buy");
-        output.assertContains("this record");
-        output.assertContains("it is scratched.");
-        output.assertNotContains("sorry?");
+            // Validate Stack Traces
+            output.assertNotContains("<spoken line>");
+            output.assertNotContains("on editing room floor");
 
-        // Validate Stack Traces
-        output.assertNotContains("<spoken line>");
-        output.assertNotContains("on editing room floor");
-
-        output.assertContains(".StdErrLogTest:tname: <zoom>");
-        output.assertContains("java.lang.Throwable: out of focus");
-        output.assertContains("java.lang.Throwable: scene lost");
+            output.assertContains(".StdErrLogTest:tname: <zoom>");
+            output.assertContains("java.lang.Throwable: out of focus");
+            output.assertContains("java.lang.Throwable: scene lost");
+        }
     }
 
     /**
      * Tests {@link StdErrLog#LEVEL_OFF} filtering.
-     * @throws UnsupportedEncodingException failed test
+     * @throws Exception failed test
      */
     @Test
-    public void testOffFiltering() throws UnsupportedEncodingException
+    public void testOffFiltering() throws Exception
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
-        log.setHideStacks(false);
-        log.setLevel(StdErrLog.LEVEL_OFF);
+        try (StacklessLogging stackless = new StacklessLogging(log))
+        {
+            log.setLevel(StdErrLog.LEVEL_OFF);
 
-        StdErrCapture output = new StdErrCapture(log);
+            StdErrCapture output = new StdErrCapture(log);
 
-        // Various logging events
-        log.debug("Squelch");
-        log.debug("Squelch", new RuntimeException("Squelch"));
-        log.info("Squelch");
-        log.info("Squelch", new IllegalStateException("Squelch"));
-        log.warn("Squelch");
-        log.warn("Squelch", new Exception("Squelch"));
-        log.ignore(new Throwable("Squelch"));
+            // Various logging events
+            log.debug("Squelch");
+            log.debug("Squelch", new RuntimeException("Squelch"));
+            log.info("Squelch");
+            log.info("Squelch", new IllegalStateException("Squelch"));
+            log.warn("Squelch");
+            log.warn("Squelch", new Exception("Squelch"));
+            log.ignore(new Throwable("Squelch"));
 
-        // Validate Output
-        output.assertNotContains("Squelch");
+            // Validate Output
+            output.assertNotContains("Squelch");
+        }
     }
 
     /**
      * Tests StdErrLog.debug() methods with level filtering.
      * <p>
      * Should only see DEBUG level messages when level is set to {@link StdErrLog#LEVEL_DEBUG} and below.
-     * @throws UnsupportedEncodingException failed test
+     * @throws Exception failed test
      */
     @Test
-    public void testDebugFiltering() throws UnsupportedEncodingException
+    public void testDebugFiltering() throws Exception
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
-        log.setHideStacks(true);
+        try(StacklessLogging stackless = new StacklessLogging(log))
+        {
+            StdErrCapture output = new StdErrCapture(log);
 
-        StdErrCapture output = new StdErrCapture(log);
+            // Normal/Default behavior
+            log.debug("Tobacconist");
+            log.debug("<spoken line>", new Throwable("on editing room floor"));
 
-        // Normal/Default behavior
-        log.debug("Tobacconist");
-        log.debug("<spoken line>", new Throwable("on editing room floor"));
+            // Level Debug
+            log.setLevel(StdErrLog.LEVEL_DEBUG);
+            log.debug("my hovercraft is");
 
-        // Level Debug
-        log.setLevel(StdErrLog.LEVEL_DEBUG);
-        log.debug("my hovercraft is");
+            log.debug("<zoom>", new Throwable("out of focus"));
+            log.debug(new Throwable("scene lost"));
 
-        log.debug("<zoom>", new Throwable("out of focus"));
-        log.debug(new Throwable("scene lost"));
+            // Level All
+            log.setLevel(StdErrLog.LEVEL_ALL);
+            log.debug("full of eels.");
 
-        // Level All
-        log.setLevel(StdErrLog.LEVEL_ALL);
-        log.debug("full of eels.");
+            // Level Warn
+            log.setLevel(StdErrLog.LEVEL_WARN);
+            log.debug("what?");
 
-        // Level Warn
-        log.setLevel(StdErrLog.LEVEL_WARN);
-        log.debug("what?");
+            // Validate Output
+            // System.err.print(output);
+            output.assertNotContains("Tobacconist");
+            output.assertContains("my hovercraft is");
+            output.assertContains("full of eels.");
+            output.assertNotContains("what?");
 
-        // Validate Output
-        // System.err.print(output);
-        output.assertNotContains("Tobacconist");
-        output.assertContains("my hovercraft is");
-        output.assertContains("full of eels.");
-        output.assertNotContains("what?");
+            // Validate Stack Traces
+            output.assertNotContains("<spoken line>");
+            output.assertNotContains("on editing room floor");
 
-        // Validate Stack Traces
-        output.assertNotContains("<spoken line>");
-        output.assertNotContains("on editing room floor");
-
-        output.assertContains(".StdErrLogTest:tname: <zoom>");
-        output.assertContains("java.lang.Throwable: out of focus");
-        output.assertContains("java.lang.Throwable: scene lost");
+            output.assertContains(".StdErrLogTest:tname: <zoom>");
+            output.assertContains("java.lang.Throwable: out of focus");
+            output.assertContains("java.lang.Throwable: scene lost");
+        }
     }
 
     /**
      * Tests StdErrLog with {@link Logger#ignore(Throwable)} use.
      * <p>
      * Should only see IGNORED level messages when level is set to {@link StdErrLog#LEVEL_ALL}.
-     * @throws UnsupportedEncodingException failed test
+     * @throws Exception failed test
      */
     @Test
-    public void testIgnores() throws UnsupportedEncodingException
+    public void testIgnores() throws Exception
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
-        log.setHideStacks(true);
+        try (StacklessLogging stackless = new StacklessLogging(log))
+        {
+            StdErrCapture output = new StdErrCapture(log);
 
-        StdErrCapture output = new StdErrCapture(log);
+            // Normal/Default behavior
+            log.ignore(new Throwable("IGNORE ME"));
 
-        // Normal/Default behavior
-        log.ignore(new Throwable("IGNORE ME"));
+            // Show Ignored
+            log.setLevel(StdErrLog.LEVEL_ALL);
+            log.ignore(new Throwable("Don't ignore me"));
 
-        // Show Ignored
-        log.setLevel(StdErrLog.LEVEL_ALL);
-        log.ignore(new Throwable("Don't ignore me"));
+            // Set to Debug level
+            log.setLevel(StdErrLog.LEVEL_DEBUG);
+            log.ignore(new Throwable("Debug me"));
 
-        // Set to Debug level
-        log.setLevel(StdErrLog.LEVEL_DEBUG);
-        log.ignore(new Throwable("Debug me"));
-
-        // Validate Output
-        // System.err.print(output);
-        output.assertNotContains("IGNORE ME");
-        output.assertContains("Don't ignore me");
-        output.assertNotContains("Debug me");
+            // Validate Output
+            // System.err.print(output);
+            output.assertNotContains("IGNORE ME");
+            output.assertContains("Don't ignore me");
+            output.assertNotContains("Debug me");
+        }
     }
 
     @Test
-    public void testIsDebugEnabled() {
+    public void testIsDebugEnabled() throws Exception
+    {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
-        log.setHideStacks(true);
+        try (StacklessLogging stackless = new StacklessLogging(log))
+        {
+            log.setLevel(StdErrLog.LEVEL_ALL);
+            Assert.assertThat("log.level(all).isDebugEnabled", log.isDebugEnabled(), is(true));
 
-        log.setLevel(StdErrLog.LEVEL_ALL);
-        Assert.assertThat("log.level(all).isDebugEnabled", log.isDebugEnabled(), is(true));
+            log.setLevel(StdErrLog.LEVEL_DEBUG);
+            Assert.assertThat("log.level(debug).isDebugEnabled", log.isDebugEnabled(), is(true));
 
-        log.setLevel(StdErrLog.LEVEL_DEBUG);
-        Assert.assertThat("log.level(debug).isDebugEnabled", log.isDebugEnabled(), is(true));
+            log.setLevel(StdErrLog.LEVEL_INFO);
+            Assert.assertThat("log.level(info).isDebugEnabled", log.isDebugEnabled(), is(false));
 
-        log.setLevel(StdErrLog.LEVEL_INFO);
-        Assert.assertThat("log.level(info).isDebugEnabled", log.isDebugEnabled(), is(false));
+            log.setLevel(StdErrLog.LEVEL_WARN);
+            Assert.assertThat("log.level(warn).isDebugEnabled", log.isDebugEnabled(), is(false));
 
-        log.setLevel(StdErrLog.LEVEL_WARN);
-        Assert.assertThat("log.level(warn).isDebugEnabled", log.isDebugEnabled(), is(false));
-
-        log.setLevel(StdErrLog.LEVEL_OFF);
-        Assert.assertThat("log.level(off).isDebugEnabled", log.isDebugEnabled(), is(false));
+            log.setLevel(StdErrLog.LEVEL_OFF);
+            Assert.assertThat("log.level(off).isDebugEnabled", log.isDebugEnabled(), is(false));
+        }
     }
 
     @Test
     public void testSetGetLevel()
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
-        log.setHideStacks(true);
+        try (StacklessLogging stackless = new StacklessLogging(log))
+        {
+            log.setLevel(StdErrLog.LEVEL_ALL);
+            Assert.assertThat("log.level(all).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_ALL));
 
-        log.setLevel(StdErrLog.LEVEL_ALL);
-        Assert.assertThat("log.level(all).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_ALL));
+            log.setLevel(StdErrLog.LEVEL_DEBUG);
+            Assert.assertThat("log.level(debug).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_DEBUG));
 
-        log.setLevel(StdErrLog.LEVEL_DEBUG);
-        Assert.assertThat("log.level(debug).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_DEBUG));
+            log.setLevel(StdErrLog.LEVEL_INFO);
+            Assert.assertThat("log.level(info).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_INFO));
 
-        log.setLevel(StdErrLog.LEVEL_INFO);
-        Assert.assertThat("log.level(info).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_INFO));
+            log.setLevel(StdErrLog.LEVEL_WARN);
+            Assert.assertThat("log.level(warn).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_WARN));
 
-        log.setLevel(StdErrLog.LEVEL_WARN);
-        Assert.assertThat("log.level(warn).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_WARN));
-
-        log.setLevel(StdErrLog.LEVEL_OFF);
-        Assert.assertThat("log.level(off).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_OFF));
+            log.setLevel(StdErrLog.LEVEL_OFF);
+            Assert.assertThat("log.level(off).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_OFF));
+        }
     }
 
     @Test
@@ -547,12 +557,13 @@ public class StdErrLogTest
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName,new Properties());
-        log.setHideStacks(true);
+        try (StacklessLogging stackless = new StacklessLogging(log))
+        {
+            Assert.assertThat("Logger.name", log.getName(), is("jetty"));
 
-        Assert.assertThat("Logger.name", log.getName(), is("jetty"));
-
-        Logger log2 = log.getLogger("child");
-        Assert.assertThat("Logger.child.name", log2.getName(), is("jetty.child"));
+            Logger log2 = log.getLogger("child");
+            Assert.assertThat("Logger.child.name", log2.getName(), is("jetty.child"));
+        }
     }
 
     @Test
@@ -560,12 +571,13 @@ public class StdErrLogTest
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName,new Properties());
-        log.setHideStacks(true);
+        try (StacklessLogging stackless = new StacklessLogging(log))
+        {
+            Assert.assertThat("Logger.name", log.getName(), is("jetty"));
 
-        Assert.assertThat("Logger.name", log.getName(), is("jetty"));
-
-        Logger log2 = log.getLogger("child.of.the.sixties");
-        Assert.assertThat("Logger.child.name", log2.getName(), is("jetty.child.of.the.sixties"));
+            Logger log2 = log.getLogger("child.of.the.sixties");
+            Assert.assertThat("Logger.child.name", log2.getName(), is("jetty.child.of.the.sixties"));
+        }
     }
 
     @Test
@@ -573,14 +585,15 @@ public class StdErrLogTest
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName,new Properties());
-        log.setHideStacks(true);
+        try (StacklessLogging stackless = new StacklessLogging(log))
+        {
+            Assert.assertThat("Logger.name", log.getName(), is("jetty"));
 
-        Assert.assertThat("Logger.name", log.getName(), is("jetty"));
-
-        // Pass null as child reference, should return parent logger
-        Logger log2 = log.getLogger((String)null);
-        Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
-        Assert.assertSame("Should have returned same logger", log2, log);
+            // Pass null as child reference, should return parent logger
+            Logger log2 = log.getLogger((String)null);
+            Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
+            Assert.assertSame("Should have returned same logger", log2, log);
+        }
     }
 
     @Test
@@ -588,14 +601,15 @@ public class StdErrLogTest
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName,new Properties());
-        log.setHideStacks(true);
+        try (StacklessLogging stackless = new StacklessLogging(log))
+        {
+            Assert.assertThat("Logger.name", log.getName(), is("jetty"));
 
-        Assert.assertThat("Logger.name", log.getName(), is("jetty"));
-
-        // Pass empty name as child reference, should return parent logger
-        Logger log2 = log.getLogger("");
-        Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
-        Assert.assertSame("Should have returned same logger", log2, log);
+            // Pass empty name as child reference, should return parent logger
+            Logger log2 = log.getLogger("");
+            Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
+            Assert.assertSame("Should have returned same logger", log2, log);
+        }
     }
 
     @Test
@@ -603,14 +617,15 @@ public class StdErrLogTest
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName,new Properties());
-        log.setHideStacks(true);
+        try (StacklessLogging stackless = new StacklessLogging(log))
+        {
+            Assert.assertThat("Logger.name", log.getName(), is("jetty"));
 
-        Assert.assertThat("Logger.name", log.getName(), is("jetty"));
-
-        // Pass empty name as child reference, should return parent logger
-        Logger log2 = log.getLogger("      ");
-        Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
-        Assert.assertSame("Should have returned same logger", log2, log);
+            // Pass empty name as child reference, should return parent logger
+            Logger log2 = log.getLogger("      ");
+            Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
+            Assert.assertSame("Should have returned same logger", log2, log);
+        }
     }
 
     @Test
