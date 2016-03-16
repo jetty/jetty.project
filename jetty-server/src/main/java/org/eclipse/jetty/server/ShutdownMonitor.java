@@ -64,6 +64,11 @@ public class ShutdownMonitor
         return Holder.instance;
     }
 
+    protected static void reset()
+    {
+        Holder.instance = new ShutdownMonitor();
+    }
+    
     public static void register(LifeCycle... lifeCycles)
     {
         getInstance().addLifeCycles(lifeCycles);
