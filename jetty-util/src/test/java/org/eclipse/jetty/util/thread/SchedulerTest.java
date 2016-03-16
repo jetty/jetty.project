@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -171,31 +172,34 @@ public class SchedulerTest
     @Test
     public void testTaskThrowsException() throws Exception
     {
-        long delay = 500;
-        _scheduler.schedule(new Runnable()
+        try (StacklessLogging stackless = new StacklessLogging(TimerScheduler.class))
         {
-            @Override
-            public void run()
+            long delay = 500;
+            _scheduler.schedule(new Runnable()
             {
-                throw new RuntimeException("Thrown by testTaskThrowsException");
-            }
-        }, delay, TimeUnit.MILLISECONDS);
+                @Override
+                public void run()
+                {
+                    throw new RuntimeException("Thrown by testTaskThrowsException");
+                }
+            }, delay, TimeUnit.MILLISECONDS);
 
-        TimeUnit.MILLISECONDS.sleep(2 * delay);
+            TimeUnit.MILLISECONDS.sleep(2 * delay);
 
-        // Check whether after a task throwing an exception, the scheduler is still working
+            // Check whether after a task throwing an exception, the scheduler is still working
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        _scheduler.schedule(new Runnable()
-        {
-            @Override
-            public void run()
+            final CountDownLatch latch = new CountDownLatch(1);
+            _scheduler.schedule(new Runnable()
             {
-                latch.countDown();
-            }
-        }, delay, TimeUnit.MILLISECONDS);
+                @Override
+                public void run()
+                {
+                    latch.countDown();
+                }
+            }, delay, TimeUnit.MILLISECONDS);
 
-        Assert.assertTrue(latch.await(2 * delay, TimeUnit.MILLISECONDS));
+            Assert.assertTrue(latch.await(2 * delay, TimeUnit.MILLISECONDS));
+        }
     }
 
     @Test

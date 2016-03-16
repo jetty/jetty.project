@@ -87,6 +87,11 @@ public class MultiPartInputStreamParser
             _filename = filename;
         }
 
+        @Override
+        public String toString()
+        {
+            return String.format("Part{n=%s,fn=%s,ct=%s,s=%d,t=%b,f=%s}",_name,_filename,_contentType,_size,_temporary,_file);
+        }
         protected void setContentType (String contentType)
         {
             _contentType = contentType;

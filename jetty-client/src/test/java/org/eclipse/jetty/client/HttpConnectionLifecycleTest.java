@@ -42,7 +42,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -399,9 +399,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @Test
     public void test_BigRequestContent_ResponseWithConnectionCloseHeader_RemovesConnection() throws Exception
     {
-        StdErrLog logger = StdErrLog.getLogger(org.eclipse.jetty.server.HttpConnection.class);
-        logger.setHideStacks(true);
-        try
+        try (StacklessLogging stackless = new StacklessLogging(HttpConnection.class))
         {
             start(new AbstractHandler()
             {
@@ -451,10 +449,6 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             Assert.assertEquals(0, activeConnections.size());
 
             server.stop();
-        }
-        finally
-        {
-            logger.setHideStacks(false);
         }
     }
 

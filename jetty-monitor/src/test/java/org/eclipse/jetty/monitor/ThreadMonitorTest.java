@@ -25,8 +25,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.Test;
 
 
@@ -40,61 +39,62 @@ public class ThreadMonitorTest
     @Test
     public void monitorTest() throws Exception
     {
-        ((StdErrLog)Log.getLogger(ThreadMonitor.class.getName())).setHideStacks(true);
-        ((StdErrLog)Log.getLogger(ThreadMonitor.class.getName())).setSource(false);
-        
-        final AtomicInteger countLogs=new AtomicInteger(0);
-        final AtomicInteger countSpin=new AtomicInteger(0);
-        
-        ThreadMonitor monitor = new ThreadMonitor(1000,50,1,1)
+        try(StacklessLogging stackless=new StacklessLogging(ThreadMonitor.class))
         {
-            @Override
-            protected void logThreadInfo(boolean logAll)
+
+            final AtomicInteger countLogs=new AtomicInteger(0);
+            final AtomicInteger countSpin=new AtomicInteger(0);
+
+            ThreadMonitor monitor = new ThreadMonitor(1000,50,1,1)
             {
-                if (logAll)
-                    countLogs.incrementAndGet();
-                else
-                    countSpin.incrementAndGet();
-                super.logThreadInfo(logAll);
-            }
-        };
-        monitor.setDumpable(new Dumpable()
-        {
-            public void dump(Appendable out, String indent) throws IOException
+                @Override
+                protected void logThreadInfo(boolean logAll)
+                {
+                    if (logAll)
+                        countLogs.incrementAndGet();
+                    else
+                        countSpin.incrementAndGet();
+                    super.logThreadInfo(logAll);
+                }
+            };
+            monitor.setDumpable(new Dumpable()
             {
-                out.append(dump());
-            }
-            
-            public String dump()
+                public void dump(Appendable out, String indent) throws IOException
+                {
+                    out.append(dump());
+                }
+
+                public String dump()
+                {
+                    return "Dump Spinning";
+                }
+            });
+
+            monitor.logCpuUsage(2000,0);
+            monitor.start();
+
+            Random rnd = new Random();
+            for (long cnt=0; cnt<100; cnt++)
             {
-                return "Dump Spinning";
+                long value = rnd.nextLong() % 50 + 50;
+                Sleeper sleeper = new Sleeper(value);
+                Thread runner = new Thread(sleeper);
+                runner.setDaemon(true);
+                runner.start();
             }
-        });
-        
-        monitor.logCpuUsage(2000,0);
-        monitor.start();
-        
-        Random rnd = new Random();
-        for (long cnt=0; cnt<100; cnt++)
-        {
-            long value = rnd.nextLong() % 50 + 50;
-            Sleeper sleeper = new Sleeper(value);
-            Thread runner = new Thread(sleeper);
-            runner.setDaemon(true);
+
+            Spinner spinner = new Spinner();
+            Thread runner = new Thread(spinner);
             runner.start();
+
+            Thread.sleep(DURATION);
+
+            spinner.setDone();
+            monitor.stop();
+
+            assertTrue(countLogs.get() >= 1);
+            assertTrue(countSpin.get() >= 2);
         }
-        
-        Spinner spinner = new Spinner();
-        Thread runner = new Thread(spinner);
-        runner.start();
-        
-        Thread.sleep(DURATION);
-                
-        spinner.setDone();
-        monitor.stop();
-        
-        assertTrue(countLogs.get() >= 1);
-        assertTrue(countSpin.get() >= 2);
     }
 
 

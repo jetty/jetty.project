@@ -42,6 +42,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 /**
@@ -628,7 +629,7 @@ public class MultiPartInputStreamTest
 
     }
     
-    
+    @Test
     public void testCharsetEncoding () throws Exception
     {
         String contentType = "multipart/form-data; boundary=TheBoundary; charset=ISO-8859-1";

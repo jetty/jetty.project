@@ -77,7 +77,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
@@ -94,6 +94,7 @@ public class AsyncMiddleManServletTest
     private ServerConnector proxyConnector;
     private Server server;
     private ServerConnector serverConnector;
+    private StacklessLogging stackless;
 
     private void startServer(HttpServlet servlet) throws Exception
     {
@@ -136,8 +137,8 @@ public class AsyncMiddleManServletTest
         proxyContext.addServlet(proxyServletHolder, "/*");
 
         proxy.start();
-
-        ((StdErrLog)proxyServlet._log).setHideStacks(true);
+        
+        stackless=new StacklessLogging(proxyServlet._log);
     }
 
     private void startClient() throws Exception
@@ -156,6 +157,7 @@ public class AsyncMiddleManServletTest
         client.stop();
         proxy.stop();
         server.stop();
+        stackless.close();
     }
 
     @Test

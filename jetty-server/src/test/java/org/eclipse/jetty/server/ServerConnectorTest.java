@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
@@ -242,21 +243,21 @@ public class ServerConnectorTest
     public void testExceptionWhileAccepting() throws Exception
     {
         Server server = new Server();
-        AtomicLong spins = new AtomicLong();
-        ServerConnector connector = new ServerConnector(server)
+        try (StacklessLogging stackless = new StacklessLogging(AbstractConnector.class))
         {
-            @Override
-            public void accept(int acceptorID) throws IOException
+            AtomicLong spins = new AtomicLong();
+            ServerConnector connector = new ServerConnector(server)
             {
-                spins.incrementAndGet();
-                throw new IOException("explicitly_thrown_by_test");
-            }
-        };
-        server.addConnector(connector);
-        server.start();
+                @Override
+                public void accept(int acceptorID) throws IOException
+                {
+                    spins.incrementAndGet();
+                    throw new IOException("explicitly_thrown_by_test");
+                }
+            };
+            server.addConnector(connector);
+            server.start();
 
-        try
-        {
             Thread.sleep(1000);
             assertThat(spins.get(), Matchers.lessThan(5L));
         }

@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -34,10 +34,8 @@ import java.util.Arrays;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.toolchain.test.JDK;
-import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -157,9 +155,8 @@ public class SslContextFactoryTest
         cf.setKeyManagerPassword("wrong_keypwd");
         cf.setTrustStorePassword("storepwd");
 
-        try
+        try (StacklessLogging stackless = new StacklessLogging(AbstractLifeCycle.class))
         {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
             cf.start();
             Assert.fail();
         }
@@ -181,9 +178,8 @@ public class SslContextFactoryTest
         cf.setKeyManagerPassword("keypwd");
         cf.setTrustStorePassword("wrong_storepwd");
 
-        try
+        try (StacklessLogging stackless = new StacklessLogging(AbstractLifeCycle.class))
         {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
             cf.start();
             Assert.fail();
         }
@@ -196,9 +192,8 @@ public class SslContextFactoryTest
     @Test
     public void testNoKeyConfig() throws Exception
     {
-        try
+        try (StacklessLogging stackless = new StacklessLogging(AbstractLifeCycle.class))
         {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
             cf.setTrustStorePath("/foo");
             cf.start();
             Assert.fail();

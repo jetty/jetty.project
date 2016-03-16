@@ -60,7 +60,7 @@ import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -331,9 +331,12 @@ public class RequestTest
         "\r\n"+
         multipart;
 
-        String responses=_connector.getResponses(request);
-        //System.err.println(responses);
-        assertTrue(responses.startsWith("HTTP/1.1 500"));
+        try(StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        {
+            String responses=_connector.getResponses(request);
+            //System.err.println(responses);
+            assertTrue(responses.startsWith("HTTP/1.1 500"));
+        }
     }
 
 
@@ -1285,110 +1288,100 @@ public class RequestTest
     @Test
     public void testHashDOSKeys() throws Exception
     {
-        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
-        LOG.info("Expecting maxFormKeys limit and Closing HttpParser exceptions...");
-        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",-1);
-        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
-
-
-        StringBuilder buf = new StringBuilder(4000000);
-        buf.append("a=b");
-
-        // The evil keys file is not distributed - as it is dangerous
-        File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
-        if (evil_keys.exists())
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            LOG.info("Using real evil keys!");
-            try (BufferedReader in = new BufferedReader(new FileReader(evil_keys)))
+            LOG.info("Expecting maxFormKeys limit and Closing HttpParser exceptions...");
+            _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",-1);
+            _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
+
+
+            StringBuilder buf = new StringBuilder(4000000);
+            buf.append("a=b");
+
+            // The evil keys file is not distributed - as it is dangerous
+            File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
+            if (evil_keys.exists())
             {
-                String key=null;
-                while((key=in.readLine())!=null)
-                    buf.append("&").append(key).append("=").append("x");
+                LOG.info("Using real evil keys!");
+                try (BufferedReader in = new BufferedReader(new FileReader(evil_keys)))
+                {
+                    String key=null;
+                    while((key=in.readLine())!=null)
+                        buf.append("&").append(key).append("=").append("x");
+                }
             }
-        }
-        else
-        {
-            // we will just create a lot of keys and make sure the limit is applied
-            for (int i=0;i<2000;i++)
-                buf.append("&").append("K").append(i).append("=").append("x");
-        }
-        buf.append("&c=d");
-
-
-        _handler._checker = new RequestTester()
-        {
-            @Override
-            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            else
             {
-                return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
+                // we will just create a lot of keys and make sure the limit is applied
+                for (int i=0;i<2000;i++)
+                    buf.append("&").append("K").append(i).append("=").append("x");
             }
-        };
+            buf.append("&c=d");
 
-        String request="POST / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n"+
-        "Content-Length: "+buf.length()+"\r\n"+
-        "Connection: close\r\n"+
-        "\r\n"+
-        buf;
 
-        try
-        {
+            _handler._checker = new RequestTester()
+            {
+                @Override
+                public boolean check(HttpServletRequest request,HttpServletResponse response)
+                {
+                    return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
+                }
+            };
+
+            String request="POST / HTTP/1.1\r\n"+
+                    "Host: whatever\r\n"+
+                    "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n"+
+                    "Content-Length: "+buf.length()+"\r\n"+
+                    "Connection: close\r\n"+
+                    "\r\n"+
+                    buf;
+
             long start=System.currentTimeMillis();
             String response = _connector.getResponses(request);
             assertThat(response,Matchers.containsString("IllegalStateException"));
             long now=System.currentTimeMillis();
             assertTrue((now-start)<5000);
         }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
-        }
     }
-    
+
     @Test
     public void testHashDOSSize() throws Exception
-    {
-        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
-        LOG.info("Expecting maxFormSize limit and too much data exceptions...");
-        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",3396);
-        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
-
-        StringBuilder buf = new StringBuilder(4000000);
-        buf.append("a=b");
-        // we will just create a lot of keys and make sure the limit is applied
-        for (int i=0;i<500;i++)
-            buf.append("&").append("K").append(i).append("=").append("x");
-        buf.append("&c=d");
-
-        _handler._checker = new RequestTester()
+    {        
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            @Override
-            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            LOG.info("Expecting maxFormSize limit and too much data exceptions...");
+            _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",3396);
+            _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
+
+            StringBuilder buf = new StringBuilder(4000000);
+            buf.append("a=b");
+            // we will just create a lot of keys and make sure the limit is applied
+            for (int i=0;i<500;i++)
+                buf.append("&").append("K").append(i).append("=").append("x");
+            buf.append("&c=d");
+
+            _handler._checker = new RequestTester()
             {
-                return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
-            }
-        };
+                @Override
+                public boolean check(HttpServletRequest request,HttpServletResponse response)
+                {
+                    return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
+                }
+            };
 
-        String request="POST / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n"+
-        "Content-Length: "+buf.length()+"\r\n"+
-        "Connection: close\r\n"+
-        "\r\n"+
-        buf;
+            String request="POST / HTTP/1.1\r\n"+
+                    "Host: whatever\r\n"+
+                    "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n"+
+                    "Content-Length: "+buf.length()+"\r\n"+
+                    "Connection: close\r\n"+
+                    "\r\n"+
+                    buf;
 
-        try
-        {
             long start=System.currentTimeMillis();
             String response = _connector.getResponses(request);
             assertTrue(response.contains("IllegalStateException"));
             long now=System.currentTimeMillis();
             assertTrue((now-start)<5000);
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         }
     }
 

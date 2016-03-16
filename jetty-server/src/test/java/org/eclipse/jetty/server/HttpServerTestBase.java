@@ -57,7 +57,7 @@ import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.AbstractLogger;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -185,10 +185,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new HelloWorldHandler());
 
-        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
+             StacklessLogging stackless = new StacklessLogging(HttpConnection.class))
         {
             client.setSoTimeout(10000);
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             ((AbstractLogger) Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
@@ -203,10 +203,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             Assert.assertThat(response, Matchers.containsString("HTTP/1.1 413 "));
         }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
-        }
     }
 
     /*
@@ -217,9 +213,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new HelloWorldHandler());
 
-        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
+             StacklessLogging stackless = new StacklessLogging(HttpConnection.class))
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             ((AbstractLogger)Log.getLogger(HttpConnection.class)).info("expect URI is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
@@ -238,10 +234,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             String response = readResponse(client);
 
             Assert.assertThat(response, Matchers.containsString("HTTP/1.1 414 "));
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
         }
     }
 
@@ -263,19 +255,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         OutputStream os = client.getOutputStream();
 
-        try
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         { 
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
             Log.getLogger(HttpChannel.class).info("Expecting ServletException: TEST handler exception...");
             os.write(request.toString().getBytes());
             os.flush();
 
             String response = readResponse(client);
             assertThat("response code is 500", response.contains("500"), is(true));
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         }
     }
 
@@ -337,10 +324,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         configureServer(new HelloWorldHandler());
 
-        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
+             StacklessLogging stackless = new StacklessLogging(HttpConnection.class))
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
-            ((AbstractLogger)Log.getLogger(HttpConnection.class)).info("expect header is too large, then ISE extra data ...");
+            Log.getLogger(HttpConnection.class).info("expect header is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -370,10 +357,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             String response = readResponse(client);
 
             Assert.assertThat(response, Matchers.containsString("HTTP/1.1 413 "));
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
         }
     }
 
@@ -1178,10 +1161,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         CommittedErrorHandler handler = new CommittedErrorHandler();
         configureServer(handler);
 
-        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
-        try
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
+             StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
             ((AbstractLogger)Log.getLogger(HttpChannel.class)).info("Expecting exception after commit then could not send 500....");
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
@@ -1208,13 +1190,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             Thread.sleep(200);
 
             assertTrue(!handler._endp.isOpen());
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
-
-            if (!client.isClosed())
-                client.close();
         }
     }
 

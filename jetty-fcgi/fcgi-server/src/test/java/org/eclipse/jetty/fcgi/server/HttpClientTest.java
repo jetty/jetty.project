@@ -50,6 +50,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -603,7 +604,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        try
+        try (StacklessLogging stackless = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
