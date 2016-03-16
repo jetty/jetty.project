@@ -86,6 +86,7 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -481,24 +482,27 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         client.setMaxConnectionsPerDestination(1);
 
-        final CountDownLatch latch = new CountDownLatch(2);
-        client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .path("/one")
-                .onResponseFailure((response, failure) -> latch.countDown())
-                .send(null);
+        try (StacklessLogging stackless = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
+        {
+            final CountDownLatch latch = new CountDownLatch(2);
+            client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scheme)
+            .path("/one")
+            .onResponseFailure((response, failure) -> latch.countDown())
+            .send(null);
 
-        client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .path("/two")
-                .onResponseSuccess(response ->
-                {
-                    Assert.assertEquals(200, response.getStatus());
-                    latch.countDown();
-                })
-                .send(null);
+            client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scheme)
+            .path("/two")
+            .onResponseSuccess(response ->
+            {
+                Assert.assertEquals(200, response.getStatus());
+                latch.countDown();
+            })
+            .send(null);
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
     }
 
     @Test
