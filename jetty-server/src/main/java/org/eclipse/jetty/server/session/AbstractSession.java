@@ -103,7 +103,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     protected void checkValid() throws IllegalStateException
     {
         if (_invalid)
-            throw new IllegalStateException();
+            throw new IllegalStateException("id="+_clusterId+" created="+_created+" accessed="+_accessed+" lastaccessed="+_lastAccessed+" maxInactiveMs="+_maxIdleMs);
     }
     
     /* ------------------------------------------------------------- */

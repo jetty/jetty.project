@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -185,6 +186,18 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 {
                     //invalidate existing session
                     session.invalidate();
+
+                    //now try to access the invalid session
+                    try
+                    {
+                        session.getAttribute("identity");
+                        fail("Session should be invalid");
+                    }
+                    catch (IllegalStateException e)
+                    {
+                        assertNotNull(e.getMessage());
+                        assertTrue(e.getMessage().contains("id"));
+                    }
 
                     //now make a new session
                     session = request.getSession(true);
