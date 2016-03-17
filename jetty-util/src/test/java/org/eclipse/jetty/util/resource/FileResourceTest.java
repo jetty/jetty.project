@@ -22,9 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 public class FileResourceTest extends AbstractFSResourceTest
 {
     @Override
@@ -37,17 +34,5 @@ public class FileResourceTest extends AbstractFSResourceTest
     public Resource newResource(File file) throws IOException
     {
         return new FileResource(file);
-    }
-    
-    @Ignore("Cannot get null to be seen by FileResource")
-    @Test
-    public void testExist_BadNull() throws Exception
-    {
-    }
-
-    @Ignore("Validation shouldn't be done in FileResource")
-    @Test
-    public void testExist_BadNullX() throws Exception
-    {
     }
 }

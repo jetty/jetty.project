@@ -38,6 +38,8 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -48,6 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class PathResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(PathResource.class);
+    private static final Pattern CNTRL_PATTERN = Pattern.compile("\\p{Cntrl}");
 
     private final Path path;
     private final URI uri;
@@ -61,6 +64,7 @@ public class PathResource extends Resource
     public PathResource(Path path)
     {
         this.path = path;
+        assertValidPath(path);
         this.uri = this.path.toUri();
     }
 
@@ -108,6 +112,15 @@ public class PathResource extends Resource
     public Resource addPath(String apath) throws IOException, MalformedURLException
     {
         return new PathResource(this.path.getFileSystem().getPath(path.toString(), apath));
+    }
+
+    private void assertValidPath(Path path)
+    {
+        Matcher mat = CNTRL_PATTERN.matcher(path.toString());
+        if(mat.find())
+        {
+            throw new InvalidPathException(path.toString(), "Invalid Character at index " + mat.start());
+        }
     }
 
     @Override
