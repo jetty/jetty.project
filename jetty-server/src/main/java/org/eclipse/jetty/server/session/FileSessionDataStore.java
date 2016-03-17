@@ -117,9 +117,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     @Override
     public Set<String> doGetExpired(final Set<String> candidates, final int expiryTimeoutSec)
     {
-        //we don't want to open up each file and check, so just leave it up to the SessionStore
-        //TODO as the session manager is likely to be a lazy loader, if a session is never requested, its
-        //file will stay forever after a restart
         final long now = System.currentTimeMillis();
         HashSet<String> expired = new HashSet<String>();
         
@@ -273,6 +270,27 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         return true;
     }
     
+    
+    
+    
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
+     */
+    @Override
+    public boolean exists(String id) throws Exception
+    {
+       File sessionFile = getFile(_storeDir, id);
+       if (sessionFile == null || !sessionFile.exists())
+           return false;
+       
+       //check the expiry
+       long expiry = getExpiryFromFile(sessionFile);
+       if (expiry <= 0)
+           return true; //never expires
+       else
+           return (expiry > System.currentTimeMillis()); //hasn't yet expired
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @param os the output stream to save to
@@ -318,6 +336,10 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         return ""+data.getExpiry()+"_"+getFileName(data.getId());
     }
     
+    /**
+     * @param file
+     * @return
+     */
     private String getIdFromFile (File file)
     {
         if (file == null)
@@ -325,6 +347,20 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         String name = file.getName();
         
         return name.substring(name.lastIndexOf('_')+1);
+    }
+    
+    /**
+     * @param file
+     * @return
+     */
+    private long getExpiryFromFile (File file)
+    {
+        if (file == null)
+            return 0;
+        
+        String name = file.getName();
+        String s = name.substring(0, name.indexOf('_'));
+        return (s==null?0:Long.parseLong(s));
     }
 
     

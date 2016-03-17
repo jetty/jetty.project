@@ -22,6 +22,7 @@ import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -43,11 +44,13 @@ import org.eclipse.jetty.util.log.Logger;
  * 
  * There is only 1 session id manager per Server instance.
  */
-public abstract class AbstractSessionIdManager extends AbstractLifeCycle implements SessionIdManager
+public class DefaultSessionIdManager extends AbstractLifeCycle implements SessionIdManager
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
     private final static String __NEW_SESSION_ID="org.eclipse.jetty.server.newSessionId";
+    
+    protected static final AtomicLong COUNTER = new AtomicLong();
 
     protected Random _random;
     protected boolean _weakRandom;
@@ -56,12 +59,13 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     protected long _reseed=100000L;
     protected Server _server;
     protected PeriodicSessionInspector _inspector;
+    
 
     /* ------------------------------------------------------------ */
     /**
      * @param server the server associated with the id manager
      */
-    public AbstractSessionIdManager(Server server)
+    public DefaultSessionIdManager(Server server)
     {
         _server = server;
     }
@@ -71,7 +75,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
      * @param server the server associated with the id manager
      * @param random a random number generator to use for ids
      */
-    public AbstractSessionIdManager(Server server, Random random)
+    public DefaultSessionIdManager(Server server, Random random)
     {
         this(server);
         _random=random;
@@ -226,7 +230,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     {
         // pick a new unique ID!
         String id=null;
-        while (id==null||id.length()==0||isIdInUse(id))
+        while (id==null||id.length()==0)
         {
             long r0=_weakRandom
                     ?(hashCode()^Runtime.getRuntime().freeMemory()^_random.nextInt()^((seedTerm)<<32))
@@ -262,6 +266,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
             //NOTE this is different to the node suffix which denotes which node the request was received on
             if (_workerName!=null)
                 id=_workerName + id;
+            
+            id = id+Long.toString(COUNTER.getAndIncrement());
     
         }
         return id;
@@ -269,7 +275,46 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
 
 
 
+    /* ------------------------------------------------------------ */
+    /** 
+     * @see org.eclipse.jetty.server.SessionIdManager#isIdInUse(java.lang.String)
+     */
+    @Override
+    public boolean isIdInUse(String id)
+    {
+        if (id == null)
+            return false;
+        
+        boolean inUse = false;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Checking {} is in use by at least one context",id);
+
+        try
+        {
+            for (SessionManager manager:getSessionManagers())
+            {
+                if (manager.isIdInUse(id))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Context {} reports id in use", manager.getContext());
+                    inUse = true;
+                    break;
+                }
+            }
+            
+            if (LOG.isDebugEnabled())
+                LOG.debug("Checked {}, in use:", id, inUse);
+            return inUse;
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Problem checking if id {} is in use", e);
+            return false;
+        }
+    }
     
+    
+
     /* ------------------------------------------------------------ */
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
@@ -379,19 +424,6 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         if (LOG.isDebugEnabled())
             LOG.debug("Expiring {}",id);
         
-        //TODO handle cases:
-        //1. infinispan session id manager may not be able to remove id because it has timed out in infinispan but yet
-        //we want to remove a session object from the session store (session data store probably ok because it has same timeout as session id mgr entries)
-        //2. a session id manager may not know all session ids (ie subset in memory only) and therefore won't remove
-        //it, but it should be removed from the session data store (could it be in session store?)
-        //3. old sessions that no node is handling, eg after all restarted, but need to be removed from
-        //session data store, AND have listeners called on them.
-        //BUT want to avoid loading into memory sessions that this node is not managing (eg have 3 nodes all running session mgrs,
-        //all 3 find the expired session and load it into memory and expire it
-        removeId(id);
-
-        //tell all contexts that may have a session object with this id to
-        //get rid of them
         for (SessionManager manager:getSessionManagers())
         {
             manager.invalidate(id);
@@ -399,11 +431,11 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param id
+     */
     public void invalidateAll (String id)
-    {
-        //take the id out of the list of known sessionids for this node
-        removeId(id);
-        
+    {        
         //tell all contexts that may have a session object with this id to
         //get rid of them
         for (SessionManager manager:getSessionManagers())
@@ -425,8 +457,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         //generate a new id
         String newClusterId = newSessionId(request.hashCode());
         
-        removeId(oldClusterId);//remove the old one from the list
-
+        //TODO how to handle request for old id whilst id change is happening?
+        
         //tell all contexts to update the id 
         for (SessionManager manager:getSessionManagers())
         {

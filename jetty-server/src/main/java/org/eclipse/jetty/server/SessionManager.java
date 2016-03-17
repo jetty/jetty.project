@@ -312,4 +312,14 @@ public interface SessionManager extends LifeCycle
     public SessionStore getSessionStore();
     
     
+    /**
+     * Check if id is in use by this manager
+     * 
+     * @param id identity of session to check
+     * 
+     * @return true if this manager knows about this id
+     */
+    public boolean isIdInUse (String id) throws Exception;
+    
+    
 }

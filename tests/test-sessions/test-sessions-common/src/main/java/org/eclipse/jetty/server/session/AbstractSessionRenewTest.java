@@ -52,7 +52,7 @@ public abstract class AbstractSessionRenewTest
     
     public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivationPeriod);
 
-    public abstract boolean verifyChange (String oldSessionId, String newSessionId);
+    public abstract boolean verifyChange (WebAppContext context, String oldSessionId, String newSessionId);
     
     /**
      * @throws Exception
@@ -101,7 +101,7 @@ public abstract class AbstractSessionRenewTest
             assertNotSame(sessionCookie, renewSessionCookie);
             assertTrue(testListener.isCalled());
             
-            assertTrue(verifyChange(AbstractTestServer.extractSessionId(sessionCookie), AbstractTestServer.extractSessionId(renewSessionCookie)));
+            assertTrue(verifyChange(context, AbstractTestServer.extractSessionId(sessionCookie), AbstractTestServer.extractSessionId(renewSessionCookie)));
         }
         finally
         {
@@ -160,7 +160,7 @@ public abstract class AbstractSessionRenewTest
                 assertFalse(beforeSessionId.equals(afterSessionId)); //different id
 
                 SessionManager sessionManager = ((Session)afterSession).getSessionManager();
-                AbstractSessionIdManager sessionIdManager = (AbstractSessionIdManager)sessionManager.getSessionIdManager();
+                DefaultSessionIdManager sessionIdManager = (DefaultSessionIdManager)sessionManager.getSessionIdManager();
 
                 assertTrue(sessionIdManager.isIdInUse(afterSessionId)); //new session id should be in use
                 assertFalse(sessionIdManager.isIdInUse(beforeSessionId));

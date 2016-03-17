@@ -267,7 +267,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                     try
                     {
                         Thread.currentThread().setContextClassLoader(serverLoader);
-                        _sessionIdManager=new HashSessionIdManager(server);
+                        _sessionIdManager=new DefaultSessionIdManager(server);
                         server.setSessionIdManager(_sessionIdManager);
                         server.manage(_sessionIdManager);
                         _sessionIdManager.start();
@@ -595,7 +595,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         {
             _sessionStore.put(id, session);
             _sessionsCreatedStats.increment();         
-            _sessionIdManager.useId(session);
             
             if (_sessionListeners!=null)
             {
@@ -749,9 +748,15 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         catch (UnreadableSessionDataException e)
         {
             LOG.warn(e);
-            //Could not retrieve the session with the given id
-            //Tell the session id manager that the session id is not to be used by any other threads/contexts
-            _sessionIdManager.removeId(id);
+            try
+            {
+                //tell id mgr to remove session from all other contexts
+                getSessionIdManager().invalidateAll(id);
+            }
+            catch (Exception x)
+            {
+                LOG.warn("Error cross-context invalidating unreadable session {}", id, x);
+            }
             return null;
         }
         catch (Exception other)
@@ -967,7 +972,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             }
             
             session.setExtendedId(newExtendedId); //remember the extended id
-            _sessionIdManager.useId(session); //tell id manager new id is in use
 
             //inform the listeners
             if (!_sessionIdListeners.isEmpty())
@@ -978,36 +982,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                     l.sessionIdChanged(event, oldId);
                 }
             }
-
-     /*       Session session =_sessionStore.get(oldId);
-            if (session == null)
-            {
-                LOG.warn("Unable to renew id to "+newId+" for non-existant session "+oldId);
-                return;
-            }
-            
-            try (Lock lock = session.lock())
-            {
-                //swap the ids
-                session.renewId(oldId, oldExtendedId, newId, newExtendedId);
-
-                _sessionStore.put(newId, session);
-
-                //tell session id manager the id is in use
-                _sessionIdManager.useId(session);
-
-                //inform the listeners
-                if (!_sessionIdListeners.isEmpty())
-                {
-                    HttpSessionEvent event = new HttpSessionEvent(session);
-                    for (HttpSessionIdListener l:_sessionIdListeners)
-                    {
-                        l.sessionIdChanged(event, oldId);
-                    }
-                }
-                
-                
-            }*/
         }
         catch (Exception e)
         {
@@ -1048,6 +1022,9 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     
     /* ------------------------------------------------------------ */
+    /**
+     * 
+     */
     public void inspect ()
     {
         //don't attempt to scavenge if we are shutting down
@@ -1057,7 +1034,26 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
          _sessionStore.inspect();
     }
     
-  
+    
+    
+    
+    
+    /* ------------------------------------------------------------ */
+    /** 
+     * @see org.eclipse.jetty.server.SessionManager#isIdInUse(java.lang.String)
+     */
+    @Override
+    public boolean isIdInUse(String id) throws Exception
+    {
+        //Ask the session store
+        return _sessionStore.exists(id);
+    }
+
+
+
+
+
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

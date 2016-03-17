@@ -100,7 +100,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
                     if (LOG.isDebugEnabled())
                         LOG.debug("Loading session {} from infinispan", id);
      
-                    SessionData sd = (SessionData)_cache.get(getCacheKey(id, _context));
+                    SessionData sd = (SessionData)_cache.get(getCacheKey(id));
                     reference.set(sd);
                 }
                 catch (Exception e)
@@ -127,7 +127,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Deleting session with id {} from infinispan", id);
-        return (_cache.remove(getCacheKey(id, _context)) != null);
+        return (_cache.remove(getCacheKey(id)) != null);
     }
 
     /** 
@@ -143,8 +143,8 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
        
        Set<String> expired = new HashSet<String>();
        
-       //TODO if there is NOT an idle timeout set, need to check other sessions that
-       //might have expired
+       //TODO if there is NOT an idle timeout set on entries in infinispan, need to check other sessions
+       //that are not currently in the SessionStore (eg they've been passivated)
        
        for (String candidate:candidates)
        {
@@ -212,18 +212,13 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         //scavenges the session before this timeout occurs, the session will be removed.
         //NOTE: that no session listeners can be called for this.
         if (data.getMaxInactiveMs() > 0 && getInfinispanIdleTimeoutSec() > 0)
-            _cache.put(getCacheKey(id, _context), data, -1, TimeUnit.MILLISECONDS, getInfinispanIdleTimeoutSec(), TimeUnit.SECONDS);
+            _cache.put(getCacheKey(id), data, -1, TimeUnit.MILLISECONDS, getInfinispanIdleTimeoutSec(), TimeUnit.SECONDS);
         else
-            _cache.put(getCacheKey(id, _context), data);
+            _cache.put(getCacheKey(id), data);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Session {} saved to infinispan, expires {} ", id, data.getExpiry());
         
-        //tickle the session id manager to keep the sessionid entry for this session up-to-date
-        if (_idMgr != null && _idMgr instanceof InfinispanSessionIdManager)
-        {
-            ((InfinispanSessionIdManager)_idMgr).touch(id);
-        }
     }
     
     
@@ -232,9 +227,9 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
      * @param context
      * @return
      */
-    public static String getCacheKey (String id, SessionContext context)
+    public String getCacheKey (String id)
     {
-        return context.getCanonicalContextPath()+"_"+context.getVhost()+"_"+id;
+        return _context.getCanonicalContextPath()+"_"+_context.getVhost()+"_"+id;
     }
 
 
@@ -263,6 +258,53 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     
     
     
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
+     */
+    @Override
+    public boolean exists(String id) throws Exception
+    {
+        // TODO find a better way to do this that does not pull into memory the
+        // whole session object
+        final AtomicReference<Boolean> reference = new AtomicReference<Boolean>();
+        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+
+        Runnable load = new Runnable()
+        {
+            public void run ()
+            {
+                try
+                {
+                    SessionData sd = load(id);
+                    if (sd == null)
+                    {
+                        reference.set(Boolean.FALSE);
+                        return;
+                    }
+
+                    if (sd.getExpiry() <= 0)
+                        reference.set(Boolean.TRUE); //never expires
+                    else
+                        reference.set(Boolean.valueOf(sd.getExpiry() > System.currentTimeMillis())); //not expired yet
+                }
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
+            }
+        };
+        
+        //ensure the load runs in the context classloader scope
+        _context.run(load);
+        
+        if (exception.get() != null)
+            throw exception.get();
+        
+        return reference.get();
+    }
+
+
+
     /**
      * @param sec the infinispan-specific idle timeout in sec or 0 if not set
      */

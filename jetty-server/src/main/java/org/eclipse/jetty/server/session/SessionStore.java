@@ -52,4 +52,5 @@ public interface SessionStore extends LifeCycle
     int getExpiryTimeoutSec();
     void setExpiryTimeoutSec(int sec);
     Stream<Session> getStream();
+    SessionDataStore getSessionDataStore();
 }

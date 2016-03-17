@@ -122,12 +122,12 @@ public class ReloadedSessionMissingClassTest
                 Request request = client.newRequest("http://localhost:" + port1 + contextPath + "/bar?action=get");
                 request.header("Cookie", sessionCookie);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());  
+                
                 String afterStopSessionId = (String)webApp.getServletContext().getAttribute("foo.session");
                 Boolean fooPresent = (Boolean)webApp.getServletContext().getAttribute("foo.present");
                 assertFalse(fooPresent);
                 assertNotNull(afterStopSessionId);
-                assertFalse(fooPresent);
                 assertTrue(!afterStopSessionId.equals(sessionId));  
 
             }

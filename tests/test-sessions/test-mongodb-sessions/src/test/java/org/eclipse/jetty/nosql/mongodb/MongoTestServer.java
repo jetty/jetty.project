@@ -79,20 +79,6 @@ public class MongoTestServer extends AbstractTestServer
         super(port, maxInactivePeriod, scavengePeriod, inspectionPeriod, idlePassivatePeriod);
     }
 
-    public SessionIdManager newSessionIdManager(Object config)
-    {
-        try
-        {
-            MongoSessionIdManager idManager = new MongoSessionIdManager(_server, getCollection());
-            idManager.setWorkerName("w"+(__workers++));
-               
-            return idManager;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
 
     public SessionManager newSessionManager()
     {
@@ -100,6 +86,7 @@ public class MongoTestServer extends AbstractTestServer
         try
         {
             manager = new MongoSessionManager();
+            ((MongoSessionManager)manager).getSessionDataStore().setDBCollection(getCollection());
             manager.getSessionDataStore().setGracePeriodSec(_inspectionPeriod);
         }
         catch (Exception e)

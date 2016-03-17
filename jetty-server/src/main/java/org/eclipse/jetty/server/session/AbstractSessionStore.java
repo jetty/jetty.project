@@ -90,16 +90,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      */
     public abstract boolean doReplace (String id, Session oldValue, Session newValue);
     
-    
-    
-    /**
-     * Check to see if the session exists in the store
-     * @param id the id
-     * @return true if the Session object exists in the session store
-     */
-    public abstract boolean doExists (String id);
-    
-    
+
     
     /**
      * Remove the session with this identity from the store
@@ -348,7 +339,6 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
                     catch (Exception e)
                     {
                         ex = e; //remember a problem happened loading the session
-                        LOG.warn(e);
                         doDelete(id); //remove the placeholder
                         phsLock.close();
                         session = null;
@@ -411,15 +401,24 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
         if (_sessionDataStore == null)
             return null; //can't load it
-        
-        data =_sessionDataStore.load(id);
 
-        if (data == null) //session doesn't exist
-            return null;
+        try
+        {
+            data =_sessionDataStore.load(id);
 
-        session = newSession(data);
-        session.setSessionManager(_manager);
-        return session;
+            if (data == null) //session doesn't exist
+                return null;
+
+            session = newSession(data);
+            session.setSessionManager(_manager);
+            return session;
+        }
+        catch (UnreadableSessionDataException e)
+        {
+            //can't load the session, delete it
+            _sessionDataStore.delete(id);
+            throw e;
+        }
     }
 
     /** 
@@ -512,14 +511,31 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     }
 
     /** 
-     * Check to see if the session object exists in this store.
+     * Check to see if a session corresponding to the id exists.
+     * 
+     * This method will first check with the object store. If it
+     * doesn't exist in the object store (might be passivated etc),
+     * it will check with the data store.
+     * @throws Exception 
      * 
      * @see org.eclipse.jetty.server.session.SessionStore#exists(java.lang.String)
      */
     @Override
-    public boolean exists(String id)
+    public boolean exists(String id) throws Exception
     {
-        return doExists(id);
+        //try the object store first
+        Session s = doGet(id);
+        if (s != null)
+        {
+            try (Lock lock = s.lock())
+            {
+                //wait for the lock and check the validity of the session
+                return s.isValid();
+            }
+        }
+        
+        //not there, so find out if session data exists for it
+        return _sessionDataStore.exists (id);
     }
 
 

@@ -39,13 +39,6 @@ public class HashTestServer extends AbstractTestServer
     }
 
 
-    public SessionIdManager newSessionIdManager(Object config)
-    {
-        HashSessionIdManager mgr = new HashSessionIdManager(_server);
-        mgr.setWorkerName("worker"+(__workers++));
-        return mgr;
-    }
-
     public SessionManager newSessionManager()
     {
         HashSessionManager manager = new HashSessionManager();

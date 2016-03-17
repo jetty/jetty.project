@@ -105,26 +105,7 @@ public class JdbcTestServer extends AbstractTestServer
         return new SessionHandler(sessionManager);
     }
 
-    static int __workers=0;
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionIdManager(String)
-     */
-    @Override
-    public  SessionIdManager newSessionIdManager(Object config)
-    {
-        synchronized(JdbcTestServer.class)
-        {
-            JDBCSessionIdManager idManager = new JDBCSessionIdManager(_server);
-            idManager.setWorkerName("w"+(__workers++));
-            idManager.getDatabaseAdaptor().setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:(String)config));
-            JDBCSessionIdManager.SessionIdTableSchema idTableSchema = idManager.getSessionIdTableSchema();
-            idTableSchema.setTableName("mysessionids");
-            idTableSchema.setIdColumn("myid");
-            return idManager;
-        }
-    }
-
+   
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionManager()
      */
@@ -135,10 +116,11 @@ public class JdbcTestServer extends AbstractTestServer
     public SessionManager newSessionManager()
     {
         JDBCSessionManager manager =  new JDBCSessionManager();
-        manager.setSessionIdManager((JDBCSessionIdManager)_sessionIdManager);
         JDBCSessionDataStore ds = manager.getSessionDataStore();
         ds.setGracePeriodSec(_inspectionPeriod);
-        manager.getDatabaseAdaptor().setDriverInfo(DRIVER_CLASS, DEFAULT_CONNECTION_URL);
+        DatabaseAdaptor da = new DatabaseAdaptor();
+        da.setDriverInfo(DRIVER_CLASS, (_config==null?DEFAULT_CONNECTION_URL:(String)_config));
+        ds.setDatabaseAdaptor(da);
         JDBCSessionDataStore.SessionTableSchema sessionTableSchema = new JDBCSessionDataStore.SessionTableSchema();
         sessionTableSchema.setTableName(TABLE);
         sessionTableSchema.setIdColumn(ID_COL);
@@ -156,28 +138,7 @@ public class JdbcTestServer extends AbstractTestServer
         return manager;
     }
 
-    
-    public boolean existsInSessionIdTable(String id)
-    throws Exception
-    {
-        Class.forName(DRIVER_CLASS);
-        Connection con = null;
-        try
-        {
-            con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
-            PreparedStatement statement = con.prepareStatement("select * from "+
-                    ((JDBCSessionIdManager)_sessionIdManager)._sessionIdTableSchema.getTableName()+
-                    " where "+((JDBCSessionIdManager)_sessionIdManager)._sessionIdTableSchema.getIdColumn()+" = ?");
-            statement.setString(1, id);
-            ResultSet result = statement.executeQuery();
-            return result.next();
-        }
-        finally
-        {
-            if (con != null)
-                con.close();
-        }
-    }
+   
     
     
     public boolean existsInSessionTable(String id, boolean verbose)
@@ -223,8 +184,7 @@ public class JdbcTestServer extends AbstractTestServer
         try
         {
             con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
-            PreparedStatement statement = con.prepareStatement("select * from "+((JDBCSessionIdManager)_sessionIdManager)._sessionIdTableSchema.getTableName());
-          
+            PreparedStatement statement = con.prepareStatement("select "+ID_COL+" from "+TABLE);      
             ResultSet result = statement.executeQuery();
             while (result.next())
             {

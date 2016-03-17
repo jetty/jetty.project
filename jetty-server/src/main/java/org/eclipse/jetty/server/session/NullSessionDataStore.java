@@ -87,4 +87,14 @@ public class NullSessionDataStore extends AbstractSessionDataStore
         return false;
     }
 
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
+     */
+    @Override
+    public boolean exists(String id)
+    {
+        return false;
+    }
+
 }

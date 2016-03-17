@@ -129,14 +129,7 @@ public class MemorySessionStore extends AbstractSessionStore
        return s;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doExists(java.lang.String)
-     */
-    @Override
-    public boolean doExists(String id)
-    {
-       return _sessions.containsKey(id);
-    }
+  
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(java.lang.String)

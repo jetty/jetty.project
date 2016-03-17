@@ -20,6 +20,9 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertTrue;
+
+import org.eclipse.jetty.webapp.WebAppContext;
+
 import static org.junit.Assert.assertFalse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -69,11 +72,11 @@ public class SessionRenewTest extends AbstractSessionRenewTest
      * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
      */
     @Override
-    public boolean verifyChange(String oldSessionId, String newSessionId)
+    public boolean verifyChange(WebAppContext context, String oldSessionId, String newSessionId)
     {
-        assertTrue(((InfinispanTestSessionServer)_server).exists(newSessionId));
-        assertFalse(((InfinispanTestSessionServer)_server).exists(oldSessionId));
-       return (!((InfinispanTestSessionServer)_server).exists(oldSessionId)) && ((InfinispanTestSessionServer)_server).exists(newSessionId);
+        assertTrue(((InfinispanTestSessionServer)_server).exists(context, newSessionId));
+        assertFalse(((InfinispanTestSessionServer)_server).exists(context, oldSessionId));
+       return (!((InfinispanTestSessionServer)_server).exists(context, oldSessionId)) && ((InfinispanTestSessionServer)_server).exists(context, newSessionId);
     }
 
     

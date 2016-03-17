@@ -123,7 +123,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             
             String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
             
-            DBCollection sessions = ((MongoSessionIdManager)((MongoTestServer)server1).getServer().getSessionIdManager()).getSessions();
+            DBCollection sessions = MongoTestServer.getCollection();
             verifySessionCreated(listener,sessionId);
             //verify that the session timeout is set in mongo
             verifySessionTimeout(sessions, sessionId, -1); //SessionManager sets -1 if maxInactive < 0
@@ -176,7 +176,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             
             String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
             
-            DBCollection sessions = ((MongoSessionIdManager)((MongoTestServer)server1).getServer().getSessionIdManager()).getSessions();
+            DBCollection sessions = MongoTestServer.getCollection();
             verifySessionCreated(listener,sessionId);
             //verify that the session timeout is set in mongo
             verifySessionTimeout(sessions, sessionId, inactivePeriod);
@@ -254,7 +254,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             
             String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
             
-            DBCollection sessions = ((MongoSessionIdManager)((MongoTestServer)server1).getServer().getSessionIdManager()).getSessions();
+            DBCollection sessions = MongoTestServer.getCollection();
             verifySessionCreated(listener,sessionId);
             //verify that the session timeout is the new value and not the default
             verifySessionTimeout(sessions, sessionId, inactivePeriod);             

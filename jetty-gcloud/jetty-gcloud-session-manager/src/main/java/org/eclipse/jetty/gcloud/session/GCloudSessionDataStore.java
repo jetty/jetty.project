@@ -273,6 +273,34 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
 
  
     
+    
+    
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
+     */
+    @Override
+    public boolean exists(String id) throws Exception
+    {     
+        ProjectionEntityQueryBuilder pbuilder = Query.projectionEntityQueryBuilder();
+        pbuilder.addProjection(Projection.property(EXPIRY));
+        pbuilder.filter(PropertyFilter.eq(ID, id));
+        pbuilder.kind(KIND);
+        StructuredQuery<ProjectionEntity> pquery = pbuilder.build();
+        QueryResults<ProjectionEntity> presults = _datastore.run(pquery);
+
+        if (presults.hasNext())
+        {
+            ProjectionEntity pe = presults.next();
+            long expiry = pe.getLong(EXPIRY);
+            if (expiry <= 0)
+                return true; //never expires
+            else
+                return (expiry > System.currentTimeMillis()); //not expired yet
+        }
+        else
+            return false;
+    }
+
     /** 
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
      */

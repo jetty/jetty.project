@@ -133,7 +133,7 @@ public class FileTestServer extends AbstractTestServer
 
     public SessionIdManager newSessionIdManager(Object config)
     {
-        HashSessionIdManager mgr = new HashSessionIdManager(_server);
+        DefaultSessionIdManager mgr = new DefaultSessionIdManager(_server);
         mgr.setWorkerName("worker"+(__workers++));
         return mgr;
     }

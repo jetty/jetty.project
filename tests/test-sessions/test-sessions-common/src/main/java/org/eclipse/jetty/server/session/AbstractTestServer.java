@@ -39,6 +39,8 @@ public abstract class AbstractTestServer
     public static int DEFAULT_SCAVENGE_SEC = 10;
     public static int DEFAULT_IDLE_PASSIVATE_SEC = 2;
     
+    protected static int __workers=0;
+    
     protected final Server _server;
     protected final int _maxInactivePeriod;
     protected final int _inspectionPeriod;
@@ -47,6 +49,7 @@ public abstract class AbstractTestServer
     protected final ContextHandlerCollection _contexts;
     protected SessionIdManager _sessionIdManager;
     private PeriodicSessionInspector _inspector;
+    protected Object _config;
 
   
     
@@ -78,7 +81,7 @@ public abstract class AbstractTestServer
         this (port, maxInactivePeriod, scavengePeriod, inspectionPeriod, idlePassivatePeriod, null);
     }
     
-    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectionPeriod, int idlePassivatePeriod,  Object sessionIdMgrConfig)
+    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectionPeriod, int idlePassivatePeriod,  Object cfg)
     {
         _server = new Server(port);
         _maxInactivePeriod = maxInactivePeriod;
@@ -86,17 +89,28 @@ public abstract class AbstractTestServer
         _inspectionPeriod = inspectionPeriod;
         _idlePassivatePeriod = idlePassivatePeriod;
         _contexts = new ContextHandlerCollection();
-        _sessionIdManager = newSessionIdManager(sessionIdMgrConfig);
+        _config = cfg;
+        _sessionIdManager = newSessionIdManager();
         _server.setSessionIdManager(_sessionIdManager);
-        ((AbstractSessionIdManager) _sessionIdManager).setServer(_server);
+        ((DefaultSessionIdManager) _sessionIdManager).setServer(_server);
         _inspector = new PeriodicSessionInspector();
         _inspector.setIntervalSec(_inspectionPeriod);
-        ((AbstractSessionIdManager)_sessionIdManager).setSessionInspector(_inspector);
+        ((DefaultSessionIdManager)_sessionIdManager).setSessionInspector(_inspector);
     }
     
-    
 
-    public abstract SessionIdManager newSessionIdManager(Object config);
+
+    /**
+     * @return
+     */
+    public SessionIdManager newSessionIdManager()
+    {
+        DefaultSessionIdManager idManager = new DefaultSessionIdManager(getServer());
+        idManager.setWorkerName("w"+(__workers++));
+        return idManager;
+    }
+
+
     public abstract SessionManager newSessionManager();
     public abstract SessionHandler newSessionHandler(SessionManager sessionManager);
 

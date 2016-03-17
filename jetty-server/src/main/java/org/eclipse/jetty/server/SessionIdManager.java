@@ -34,30 +34,25 @@ public interface SessionIdManager extends LifeCycle
      * @return True if the session ID is in use by at least one context.
      */
     public boolean isIdInUse(String id);
+
     
     /* ------------------------------------------------------------ */
     /**
-     * Notify the sessionid manager that a particular session id is in use
-     * @param session the session whose id is being used
+     * Expire all sessions on all contexts that share the same id.
+     * 
+     * @param id The session ID without any cluster node extension
      */
-    public void useId (Session session);
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Remove id
-     * @param id the plain session id (no workername extension) of the session to remove
-     * @return true if the id was removed, false otherwise
-     */
-    public boolean removeId (String id);
+    public void expireAll(String id);
     
     
     /* ------------------------------------------------------------ */
     /**
      * Invalidate all sessions on all contexts that share the same id.
      * 
-     * @param id The session ID without any cluster node extension
+     * @param id
      */
-    public void expireAll(String id);
+    public void invalidateAll (String id);
+    
     
     /* ------------------------------------------------------------ */
     /**

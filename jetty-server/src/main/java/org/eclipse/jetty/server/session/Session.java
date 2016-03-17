@@ -452,10 +452,10 @@ public class Session implements SessionManager.SessionIf
         checkLocked();
 
         if (_state != State.VALID)
-            throw new IllegalStateException();
+            throw new IllegalStateException("Not valid for write: id="+_sessionData.getId()+" created="+_sessionData.getCreated()+" accessed="+_sessionData.getAccessed()+" lastaccessed="+_sessionData.getLastAccessed()+" maxInactiveMs="+_sessionData.getMaxInactiveMs()+" expiry="+_sessionData.getExpiry());
         
         if (_passivationState == PassivationState.PASSIVATED)
-            throw new IllegalStateException("Passivated");
+            throw new IllegalStateException("Not valid for write: id="+_sessionData.getId()+" passivated");
     }
     
     
@@ -469,10 +469,10 @@ public class Session implements SessionManager.SessionIf
         checkLocked();
         
         if (_state == State.INVALID)
-            throw new IllegalStateException("Invalid");
+            throw new IllegalStateException("Invalid for read: id="+_sessionData.getId()+" created="+_sessionData.getCreated()+" accessed="+_sessionData.getAccessed()+" lastaccessed="+_sessionData.getLastAccessed()+" maxInactiveMs="+_sessionData.getMaxInactiveMs()+" expiry="+_sessionData.getExpiry());
         
         if (_passivationState == PassivationState.PASSIVATED)
-            throw new IllegalStateException("Passivated");
+            throw new IllegalStateException("Invalid for read: id="+_sessionData.getId()+" passivated");
     }
     
     
@@ -723,7 +723,7 @@ public class Session implements SessionManager.SessionIf
             if (result)
             {
                 //tell id mgr to remove session from all other contexts
-                ((AbstractSessionIdManager)_manager.getSessionIdManager()).invalidateAll(_sessionData.getId());
+                ((DefaultSessionIdManager)_manager.getSessionIdManager()).invalidateAll(_sessionData.getId());
             }
         }
         catch (Exception e)

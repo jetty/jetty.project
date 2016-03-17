@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractSessionStore;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.server.session.StalePeriodStrategy;
 
@@ -36,14 +37,12 @@ import com.google.gcloud.datastore.DatastoreFactory;
  */
 public class GCloudTestServer extends AbstractTestServer
 {
-    static int __workers=0;
-    
     static protected int __maxInactivePeriod = 30;
     static protected int __scavengePeriod = 10;
     static protected int __inspectPeriod = 1;
     static protected int __idlePeriod = 2;
 
- 
+    
 
     /**
      * @param port
@@ -65,17 +64,7 @@ public class GCloudTestServer extends AbstractTestServer
         super(port, 30,10, __inspectPeriod, __idlePeriod, configuration);
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionIdManager(java.lang.Object)
-     */
-    @Override
-    public SessionIdManager newSessionIdManager(Object config)
-    {
-        GCloudSessionIdManager idManager = new GCloudSessionIdManager(getServer());
-        idManager.setWorkerName("w"+(__workers++));
-        idManager.setConfig((GCloudConfiguration)config);
-        return idManager;
-    }
+
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionManager()
@@ -84,8 +73,8 @@ public class GCloudTestServer extends AbstractTestServer
     public SessionManager newSessionManager()
     {
         GCloudSessionManager sessionManager = new GCloudSessionManager();
-        sessionManager.setSessionIdManager((GCloudSessionIdManager)_sessionIdManager);
-        sessionManager.getSessionDataStore().setGCloudConfiguration(((GCloudSessionIdManager)_sessionIdManager).getConfig());
+        sessionManager.setSessionIdManager(_sessionIdManager);
+        sessionManager.getSessionDataStore().setGCloudConfiguration((GCloudConfiguration)_config);
         return sessionManager;
         
     }

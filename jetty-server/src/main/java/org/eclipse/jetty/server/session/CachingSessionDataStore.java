@@ -167,6 +167,13 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
        return true;
     }
 
-    
-    
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
+     */
+    @Override
+    public boolean exists(String id) throws Exception
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }

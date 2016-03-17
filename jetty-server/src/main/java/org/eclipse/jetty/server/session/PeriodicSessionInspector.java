@@ -93,12 +93,12 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
         if (_sessionIdManager == null)
             throw new IllegalStateException ("No SessionIdManager for Scavenger");
         
-        if (!(_sessionIdManager instanceof AbstractSessionIdManager))
+        if (!(_sessionIdManager instanceof DefaultSessionIdManager))
             throw new IllegalStateException ("SessionIdManager is not an AbstractSessionIdManager");
 
 
         //try and use a common scheduler, fallback to own
-        _scheduler = ((AbstractSessionIdManager)_sessionIdManager).getServer().getBean(Scheduler.class);
+        _scheduler = ((DefaultSessionIdManager)_sessionIdManager).getServer().getBean(Scheduler.class);
 
         if (_scheduler == null)
         {
@@ -199,7 +199,7 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
             LOG.debug("Inspecting sessions");
         
         //find the session managers
-        for (SessionManager manager:((AbstractSessionIdManager)_sessionIdManager).getSessionManagers())
+        for (SessionManager manager:((DefaultSessionIdManager)_sessionIdManager).getSessionManagers())
         {
             if (manager != null)
             {

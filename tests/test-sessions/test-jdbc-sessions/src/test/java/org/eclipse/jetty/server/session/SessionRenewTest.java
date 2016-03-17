@@ -21,6 +21,8 @@ package org.eclipse.jetty.server.session;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
+
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.After;
 import org.junit.Test;
 
@@ -39,7 +41,7 @@ public class SessionRenewTest extends AbstractSessionRenewTest
      * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
      */
     @Override
-    public boolean verifyChange(String oldSessionId, String newSessionId)
+    public boolean verifyChange(WebAppContext context, String oldSessionId, String newSessionId)
     {
         try
         {

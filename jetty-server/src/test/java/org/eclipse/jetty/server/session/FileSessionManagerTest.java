@@ -61,7 +61,7 @@ public class FileSessionManagerTest
         Server server = new Server();
         SessionHandler handler = new SessionHandler();
         handler.setServer(server);
-        final HashSessionIdManager idmgr = new HashSessionIdManager(server);
+        final DefaultSessionIdManager idmgr = new DefaultSessionIdManager(server);
         idmgr.setServer(server);
         server.setSessionIdManager(idmgr);
         
@@ -94,7 +94,7 @@ public class FileSessionManagerTest
         Server server = new Server();
         SessionHandler handler = new SessionHandler();
         handler.setServer(server);
-        final HashSessionIdManager idmgr = new HashSessionIdManager(server);
+        final DefaultSessionIdManager idmgr = new DefaultSessionIdManager(server);
         idmgr.setServer(server);
         server.setSessionIdManager(idmgr);
         final FileSessionManager manager = new FileSessionManager();
@@ -135,7 +135,7 @@ public class FileSessionManagerTest
         Assert.assertTrue(testDir.canWrite());
         handler.setSessionManager(manager);
         
-        AbstractSessionIdManager idManager = new HashSessionIdManager(server);
+        DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
         idManager.setServer(server);
         idManager.setWorkerName("foo");
         manager.setSessionIdManager(idManager);

@@ -20,6 +20,7 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractSessionRenewTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 import static org.junit.Assert.assertNotNull;
 import org.junit.AfterClass;
@@ -63,7 +64,7 @@ public class SessionRenewTest extends AbstractSessionRenewTest
      * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
      */
     @Override
-    public boolean verifyChange(String oldSessionId, String newSessionId)
+    public boolean verifyChange(WebAppContext context, String oldSessionId, String newSessionId)
     {
         try
         {

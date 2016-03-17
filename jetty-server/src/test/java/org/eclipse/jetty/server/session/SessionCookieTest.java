@@ -90,15 +90,7 @@ public class SessionCookieTest
             return null;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doExists(String)
-         */
-        @Override
-        public boolean doExists(String key)
-        {
-            // TODO Auto-generated method stub
-            return false;
-        }
+      
 
         /** 
          * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(String)
@@ -134,7 +126,7 @@ public class SessionCookieTest
 
     
     
-    public class MockSessionIdManager extends AbstractSessionIdManager
+    public class MockSessionIdManager extends DefaultSessionIdManager
     {
         public MockSessionIdManager(Server server)
         {
@@ -164,25 +156,6 @@ public class SessionCookieTest
         {
             // TODO Auto-generated method stub
             
-        }
-
-        /** 
-         * @see org.eclipse.jetty.server.SessionIdManager#useId(Session)
-         */
-        @Override
-        public void useId(Session session)
-        {
-            // TODO Auto-generated method stub
-            
-        }
-
-        /** 
-         * @see org.eclipse.jetty.server.SessionIdManager#removeId(java.lang.String)
-         */
-        @Override
-        public boolean removeId(String id)
-        {
-            return true;
         }
     }
     

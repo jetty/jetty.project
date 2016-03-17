@@ -54,7 +54,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionData;
@@ -511,7 +511,7 @@ public class ResponseTest
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
         HashSessionManager manager = new HashSessionManager();
-        manager.setSessionIdManager(new HashSessionIdManager(_server));
+        manager.setSessionIdManager(new DefaultSessionIdManager(_server));
         request.setSessionManager(manager);
         TestSession tsession = new TestSession(manager, "12345");
         tsession.setExtendedId(manager.getSessionIdManager().getExtendedId("12345", null));
@@ -588,7 +588,7 @@ public class ResponseTest
                     request.setRequestedSessionId("12345");
                     request.setRequestedSessionIdFromCookie(i>2);
                     HashSessionManager manager = new HashSessionManager();
-                    manager.setSessionIdManager(new HashSessionIdManager(_server));
+                    manager.setSessionIdManager(new DefaultSessionIdManager(_server));
                     request.setSessionManager(manager);
                     request.setSession(new TestSession(manager, "12345"));
                     manager.setCheckingRemoteSessionIdEncoding(false);

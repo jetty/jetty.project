@@ -106,4 +106,15 @@ public interface SessionDataStore extends LifeCycle
      */
     public boolean isPassivating ();
     
+    
+    /**
+     * Test if data exists for a given session id.
+     * 
+     * @param id Identity of session whose existance should be checked
+     * 
+     * @return true if valid, non-expired session exists
+     * @throws Exception if problem checking existance with persistence layer
+     */
+    public boolean exists (String id) throws Exception;
+    
 }

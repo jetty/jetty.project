@@ -110,22 +110,10 @@ public class MongoSessionManager extends SessionManager
     public void doStart() throws Exception
     {    
         ((AbstractSessionStore)_sessionStore).setSessionDataStore(_sessionDataStore);
-        _sessionDataStore.setDBCollection(_dbSessions);
         super.doStart();
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public void setSessionIdManager(SessionIdManager metaManager)
-    {
-        MongoSessionIdManager msim = (MongoSessionIdManager)metaManager;
-        _dbSessions=msim.getSessions();
-        super.setSessionIdManager(metaManager);
-        
-    }
-
-                        {
-                        }
+  
     
     public MongoSessionDataStore getSessionDataStore()
     {

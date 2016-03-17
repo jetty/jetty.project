@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+  <!-- ===================================================================== -->
+  <!-- Configure a SessionIdManager                                          -->
+  <!-- ===================================================================== -->
+  <Set name="sessionIdManager">
+    <New id="idMgr" class="org.eclipse.jetty.server.session.DefaultSessionIdManager">
+      <Arg>
+        <Ref refid="Server"/>
+      </Arg>
+      <Set name="workerName"><Property name="jetty.sessionIdManager.workerName" default="node1"/></Set>
+
+      <!-- ===================================================================== -->
+      <!-- Configure a session inspector to help with scavenging                 -->
+      <!-- ===================================================================== -->
+      <Set name="sessionInspector"> 
+       <New id="idMgr" class="org.eclipse.jetty.server.session.PeriodicSessionInspector">
+           <Set name="intervalSec"><Property name="jetty.sessionInspectionInterval.seconds" default="60"/></Set>
+       </New>
+      </Set>
+   </New>
+  </Set>
+</Configure>
