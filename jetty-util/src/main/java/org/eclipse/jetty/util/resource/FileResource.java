@@ -29,6 +29,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.InvalidPathException;
 import java.nio.file.StandardOpenOption;
 import java.security.Permission;
 
@@ -204,7 +205,7 @@ public class FileResource extends Resource
         }
         catch(final URISyntaxException e)
         {
-            throw new MalformedURLException(){{initCause(e);}};
+            throw new InvalidPathException(path, e.getMessage());
         }
 
         return new FileResource(uri);
