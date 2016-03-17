@@ -29,8 +29,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.InvalidPathException;
 import java.nio.file.StandardOpenOption;
 import java.security.Permission;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
@@ -50,6 +53,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class FileResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(FileResource.class);
+    private static final Pattern CNTRL_PATTERN = Pattern.compile("\\p{Cntrl}");
 
     /* ------------------------------------------------------------ */
     private final File _file;
@@ -65,6 +69,7 @@ public class FileResource extends Resource
         {
             // Try standard API to convert URL to file.
             file =new File(url.toURI());
+            assertValidPath(file.toString());
         }
         catch (URISyntaxException e) 
         {
@@ -108,6 +113,7 @@ public class FileResource extends Resource
         _file=file;
         URI file_uri=_file.toURI();
         _uri=normalizeURI(_file,uri);
+        assertValidPath(file.toString());
 
         // Is it a URI alias?
         if (!URIUtil.equalsIgnoreEncodings(_uri,file_uri.toString()))
@@ -119,6 +125,7 @@ public class FileResource extends Resource
     /* -------------------------------------------------------- */
     FileResource(File file)
     {
+        assertValidPath(file.toString());
         _file=file;
         _uri=normalizeURI(_file,_file.toURI());
         _alias=checkFileAlias(_file);
@@ -179,6 +186,7 @@ public class FileResource extends Resource
     public Resource addPath(String path)
         throws IOException,MalformedURLException
     {
+        assertValidPath(path);
         path = org.eclipse.jetty.util.URIUtil.canonicalPath(path);
 
         if (path==null)
@@ -204,13 +212,21 @@ public class FileResource extends Resource
         }
         catch(final URISyntaxException e)
         {
-            throw new MalformedURLException(){{initCause(e);}};
+            throw new InvalidPathException(path, e.getMessage());
         }
 
         return new FileResource(uri);
     }
-   
-    
+
+    private void assertValidPath(String path)
+    {
+        Matcher mat = CNTRL_PATTERN.matcher(path);
+        if(mat.find())
+        {
+            throw new InvalidPathException(path, "Invalid Character at index " + mat.start());
+        }
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public URI getAlias()
