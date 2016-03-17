@@ -522,7 +522,7 @@ public abstract class AbstractFSResourceTest
     }
     
     @Test
-    public void testExist_BadControlChars() throws Exception
+    public void testExist_BadControlChars_Encoded() throws Exception
     {
         createEmptyFile("a.jsp");
 
@@ -532,7 +532,25 @@ public abstract class AbstractFSResourceTest
             URI ref = testdir.getDir().toURI().resolve("a.jsp%1F%10");
             assertThat("ControlCharacters URI",ref,notNullValue());
 
-            newResource(ref);
+            Resource fileref = newResource(ref);
+            assertThat("File Resource should not exists", fileref.exists(), is(false));
+        }
+        catch (InvalidPathException e)
+        {
+            // Expected path
+        }
+    }
+
+    @Test
+    public void testExist_BadControlChars_Decoded() throws Exception
+    {
+        createEmptyFile("a.jsp");
+
+        try
+        {
+            // request with control characters
+            File badFile = new File(testdir.getDir(), "a.jsp\014\010");
+            newResource(badFile);
             fail("Should have thrown " + InvalidPathException.class);
         }
         catch (InvalidPathException e)
@@ -553,8 +571,9 @@ public abstract class AbstractFSResourceTest
             Resource base = newResource(ref);
             assertThat("Base Resource URI",ref,notNullValue());
 
-            // add path with control characters
-            Resource fileref = base.addPath("/a.jsp\014\010");
+            // add path with control characters (raw/decoded control characters)
+            // This MUST fail
+            base.addPath("/a.jsp\014\010");
             fail("Should have thrown " + InvalidPathException.class);
         }
         catch (InvalidPathException e)
@@ -577,7 +596,7 @@ public abstract class AbstractFSResourceTest
 
             // add path with control characters
             Resource fileref = base.addPath("/a.jsp%14%10");
-            fail("Should have thrown " + InvalidPathException.class);
+            assertThat("File Resource should not exists", fileref.exists(), is(false));
         }
         catch (InvalidPathException e)
         {
