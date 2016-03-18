@@ -26,6 +26,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 
 import org.eclipse.jetty.util.thread.ShutdownThread;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -33,6 +34,12 @@ import static org.junit.Assert.assertTrue;
 
 public class ShutdownMonitorTest
 {
+    @AfterClass
+    public static void afterClass()
+    {
+        ShutdownMonitor.reset();
+    }
+    
     @Test
     public void testShutdownMonitor() throws Exception
     {
