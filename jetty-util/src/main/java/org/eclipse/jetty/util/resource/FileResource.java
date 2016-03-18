@@ -32,10 +32,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.InvalidPathException;
 import java.nio.file.StandardOpenOption;
 import java.security.Permission;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -53,7 +52,6 @@ import org.eclipse.jetty.util.log.Logger;
 public class FileResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(FileResource.class);
-    private static final Pattern CNTRL_PATTERN = Pattern.compile("\\p{Cntrl}");
 
     /* ------------------------------------------------------------ */
     private final File _file;
@@ -220,10 +218,10 @@ public class FileResource extends Resource
 
     private void assertValidPath(String path)
     {
-        Matcher mat = CNTRL_PATTERN.matcher(path);
-        if(mat.find())
+        int idx = StringUtil.indexOfControlChars(path);
+        if (idx >= 0)
         {
-            throw new InvalidPathException(path, "Invalid Character at index " + mat.start());
+            throw new InvalidPathException(path, "Invalid Character at index " + idx);
         }
     }
 
