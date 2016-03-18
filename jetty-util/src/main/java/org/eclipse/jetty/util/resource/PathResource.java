@@ -38,9 +38,8 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -50,7 +49,6 @@ import org.eclipse.jetty.util.log.Logger;
 public class PathResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(PathResource.class);
-    private static final Pattern CNTRL_PATTERN = Pattern.compile("\\p{Cntrl}");
 
     private final Path path;
     private final URI uri;
@@ -116,10 +114,11 @@ public class PathResource extends Resource
 
     private void assertValidPath(Path path)
     {
-        Matcher mat = CNTRL_PATTERN.matcher(path.toString());
-        if(mat.find())
+        String str = path.toString();
+        int idx = StringUtil.indexOfControlChars(str);
+        if(idx >= 0)
         {
-            throw new InvalidPathException(path.toString(), "Invalid Character at index " + mat.start());
+            throw new InvalidPathException(str, "Invalid Character at index " + idx);
         }
     }
 

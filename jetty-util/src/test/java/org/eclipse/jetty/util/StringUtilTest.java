@@ -18,19 +18,19 @@
 
 package org.eclipse.jetty.util;
 
+import java.nio.charset.StandardCharsets;
+
+import org.junit.Assert;
+import org.junit.Test;
+
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import java.nio.charset.StandardCharsets;
-
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
 
 public class StringUtilTest
 {
@@ -203,6 +203,25 @@ public class StringUtilTest
             System.err.println((s2-s1)+", "+(s3-s2)+", "+(s4-s3)+", "+(s5-s4));
         }
         System.err.println(calc);
+    }
+
+    @Test
+    public void testHasControlCharacter()
+    {
+        assertThat(StringUtil.indexOfControlChars("\r\n"), is(0));
+        assertThat(StringUtil.indexOfControlChars("\t"), is(0));
+        assertThat(StringUtil.indexOfControlChars(";\n"), is(1));
+        assertThat(StringUtil.indexOfControlChars("abc\fz"), is(3));
+        assertThat(StringUtil.indexOfControlChars("z\010"), is(1));
+        assertThat(StringUtil.indexOfControlChars(":\u001c"), is(1));
+
+        assertThat(StringUtil.indexOfControlChars(null), is(-1));
+        assertThat(StringUtil.indexOfControlChars(""), is(-1));
+        assertThat(StringUtil.indexOfControlChars("   "), is(-1));
+        assertThat(StringUtil.indexOfControlChars("a"), is(-1));
+        assertThat(StringUtil.indexOfControlChars("."), is(-1));
+        assertThat(StringUtil.indexOfControlChars(";"), is(-1));
+        assertThat(StringUtil.indexOfControlChars("Euro is \u20ac"), is(-1));
     }
 
     @Test
