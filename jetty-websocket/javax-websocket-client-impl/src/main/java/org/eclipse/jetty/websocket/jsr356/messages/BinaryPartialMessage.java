@@ -51,14 +51,16 @@ public class BinaryPartialMessage implements MessageAppender
         // Supported Partial<> Type #1: ByteBuffer
         if (msgWrapper.isMessageType(ByteBuffer.class))
         {
-            partialHandler.onMessage(payload.slice(),isLast);
+            partialHandler.onMessage(payload==null?ByteBuffer.allocate(0):
+                payload.slice(),isLast);
             return;
         }
 
         // Supported Partial<> Type #2: byte[]
         if (msgWrapper.isMessageType(byte[].class))
         {
-            partialHandler.onMessage(BufferUtil.toArray(payload),isLast);
+            partialHandler.onMessage(payload==null?new byte[0]:
+                BufferUtil.toArray(payload),isLast);
             return;
         }
 
