@@ -71,6 +71,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final BlockingReadCallback _blockingReadCallback = new BlockingReadCallback();
     private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
     private final SendCallback _sendCallback = new SendCallback();
+    private boolean _recordHttpComplianceViolations = false;
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -110,6 +111,16 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return _config;
     }
 
+    public boolean isRecordHttpComplianceViolations()
+    {
+        return _recordHttpComplianceViolations;
+    }
+
+    public void setRecordHttpComplianceViolations(boolean recordHttpComplianceViolations)
+    {
+        this._recordHttpComplianceViolations = recordHttpComplianceViolations;
+    }
+
     protected HttpGenerator newHttpGenerator()
     {
         return new HttpGenerator(_config.getSendServerVersion(),_config.getSendXPoweredBy());
@@ -117,7 +128,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     protected HttpChannelOverHttp newHttpChannel()
     {
-        return new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this);
+        HttpChannelOverHttp httpChannel = new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this);
+
+        return httpChannel;
     }
 
     protected HttpParser newHttpParser(HttpCompliance compliance)

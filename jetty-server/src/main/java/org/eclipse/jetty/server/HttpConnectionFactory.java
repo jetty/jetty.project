@@ -33,6 +33,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
 {
     private final HttpConfiguration _config;
     private HttpCompliance _httpCompliance;
+    private boolean _recordHttpComplianceViolations = false;
 
     public HttpConnectionFactory()
     {
@@ -65,6 +66,11 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _httpCompliance;
     }
 
+    public boolean isRecordHttpComplianceViolations()
+    {
+        return _recordHttpComplianceViolations;
+    }
+
     /**
      * @param httpCompliance String value of {@link HttpCompliance}
      */
@@ -76,8 +82,14 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return configure(new HttpConnection(_config, connector, endPoint, _httpCompliance), connector, endPoint);
+        HttpConnection conn = new HttpConnection(_config, connector, endPoint, _httpCompliance);
+        conn.setRecordHttpComplianceViolations(_recordHttpComplianceViolations);
+        return configure(conn, connector, endPoint);
     }
     
     
+    public void setRecordHttpComplianceViolations(boolean recordHttpComplianceViolations)
+    {
+        this._recordHttpComplianceViolations = recordHttpComplianceViolations;
+    }
 }

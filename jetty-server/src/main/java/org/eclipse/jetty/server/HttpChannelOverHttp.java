@@ -21,6 +21,8 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -48,6 +50,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
     private final static HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE,"h2c");
+    private static final String ATTR_COMPLIANCE_VIOLATIONS = "org.eclipse.jetty.http.compliance.violations";
 
     private final HttpFields _fields = new HttpFields();
     private final MetaData.Request _metadata = new MetaData.Request(_fields);
@@ -58,7 +61,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     private boolean _unknownExpectation = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
-
+    private List<String> _complianceViolations;
 
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
     {
@@ -444,6 +447,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean messageComplete()
     {
+        if(_complianceViolations != null)
+            this.getRequest().setAttribute(ATTR_COMPLIANCE_VIOLATIONS, _complianceViolations);
         return onRequestComplete();
     }
 
@@ -456,7 +461,16 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public void onComplianceViolation(HttpCompliance compliance,HttpCompliance required, String reason)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug(compliance+"<="+required+": "+reason+" for "+getHttpTransport());
+        if (_httpConnection.isRecordHttpComplianceViolations())
+        {
+            if (_complianceViolations == null)
+            {
+                _complianceViolations = new ArrayList<>();
+            }
+            String violation = String.format("%s<=%s: %s for %s", compliance, required, reason, getHttpTransport());
+            _complianceViolations.add(violation);
+            if (LOG.isDebugEnabled())
+                LOG.debug(violation);
+        }
     }
 }
