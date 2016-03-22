@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -43,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A HttpChannel customized to be transported over the HTTP/1 protocol
  */
-class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler
+public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ComplianceHandler
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
     private final static HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE,"h2c");
@@ -450,5 +451,12 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public int getHeaderCacheSize()
     {
         return getHttpConfiguration().getHeaderCacheSize();
+    }
+
+    @Override
+    public void onComplianceViolation(HttpCompliance compliance,HttpCompliance required, String reason)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug(compliance+"<="+required+": "+reason+" for "+getHttpTransport());
     }
 }
