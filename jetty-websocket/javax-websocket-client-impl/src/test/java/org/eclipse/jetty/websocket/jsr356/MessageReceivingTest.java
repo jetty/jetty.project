@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.instanceOf;
-
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -45,6 +45,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.instanceOf;
+
 /**
  * This class tests receiving of messages by different types of {@link MessageHandler}
  */
@@ -57,11 +59,9 @@ public class MessageReceivingTest {
     private final String VERY_LONG_STRING;
 
     public MessageReceivingTest() {
-        final StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 1024 * 1024; i++) {
-            sb.append(i & 1);
-        }
-        VERY_LONG_STRING = sb.toString();
+        byte raw[] = new byte[1024 * 1024];
+        Arrays.fill(raw, (byte)'x');
+        VERY_LONG_STRING = new String(raw, StandardCharsets.UTF_8);
     }
 
     @BeforeClass
