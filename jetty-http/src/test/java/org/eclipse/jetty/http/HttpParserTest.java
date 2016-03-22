@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -32,6 +29,9 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 public class HttpParserTest
 {
@@ -351,6 +351,56 @@ public class HttpParserTest
         Assert.assertEquals(2, _headers);
     }
     
+    @Test
+    public void testEmptyQuotedValue2616() throws Exception
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "GET / HTTP/1.0\r\n" +
+                        "Host: localhost\r\n" +
+                        "Name0: \"\"\r\n" +
+                        "\r\n");
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616);
+        parseAll(parser, buffer);
+
+        Assert.assertTrue(_headerCompleted);
+        Assert.assertTrue(_messageCompleted);
+        Assert.assertEquals("GET", _methodOrVersion);
+        Assert.assertEquals("/", _uriOrStatus);
+        Assert.assertEquals("HTTP/1.0", _versionOrReason);
+        Assert.assertEquals("Host", _hdr[0]);
+        Assert.assertEquals("localhost", _val[0]);
+        Assert.assertEquals("Name0", _hdr[1]);
+        Assert.assertEquals("", _val[1]);
+        Assert.assertEquals(2, _headers);
+    }
+
+    @Test
+    public void testEmptyQuotedValue7230() throws Exception
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "GET / HTTP/1.0\r\n" +
+                        "Host: localhost\r\n" +
+                        "Name0: \"\"\r\n" +
+                        "\r\n");
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC7230);
+        parseAll(parser, buffer);
+
+        Assert.assertTrue(_headerCompleted);
+        Assert.assertTrue(_messageCompleted);
+        Assert.assertEquals("GET", _methodOrVersion);
+        Assert.assertEquals("/", _uriOrStatus);
+        Assert.assertEquals("HTTP/1.0", _versionOrReason);
+        Assert.assertEquals("Host", _hdr[0]);
+        Assert.assertEquals("localhost", _val[0]);
+        Assert.assertEquals("Name0", _hdr[1]);
+        Assert.assertEquals("", _val[1]);
+        Assert.assertEquals(2, _headers);
+    }
+
     @Test
     public void testNoColon2616() throws Exception
     {
