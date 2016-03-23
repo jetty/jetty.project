@@ -57,9 +57,9 @@ public class NewSessionTest extends AbstractNewSessionTest
      * @see org.eclipse.jetty.server.session.AbstractNewSessionTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge,int inspectionPeriod, int idlePassivatePeriod)
+    public AbstractTestServer createServer(int port, int max, int scavenge,int idlePassivatePeriod)
     {
-       return new GCloudTestServer(port, max, scavenge, inspectionPeriod, idlePassivatePeriod, _testSupport.getConfiguration());
+       return new GCloudTestServer(port, max, scavenge, idlePassivatePeriod, _testSupport.getConfiguration());
     }
 
     @Test

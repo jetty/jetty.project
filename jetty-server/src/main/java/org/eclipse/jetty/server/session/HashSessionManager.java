@@ -35,7 +35,7 @@ public class HashSessionManager extends SessionManager
      */
     public HashSessionManager ()
     {
-        _sessionStore = new MemorySessionStore();
+        setSessionStore(new MemorySessionStore(this));
     }
     
     @Override

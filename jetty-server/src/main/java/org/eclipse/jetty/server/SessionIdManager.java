@@ -18,12 +18,15 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.Set;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.util.component.LifeCycle;
 
-/** Session ID Manager.
+/** 
+ * Session ID Manager.
  * Manages session IDs across multiple contexts.
  */
 public interface SessionIdManager extends LifeCycle
@@ -104,5 +107,10 @@ public interface SessionIdManager extends LifeCycle
     */
     public void renewSessionId(String oldId, String oldExtendedId, HttpServletRequest request);    
 
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the set of all session managers for this node
+     * @return
+     */
+    public  Set<SessionManager> getSessionManagers();
 }

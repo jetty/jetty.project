@@ -49,9 +49,9 @@ public class SessionRenewTest extends AbstractSessionRenewTest
     }
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int inspect, int idlePassivate)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivate)
     {
-        return new MongoTestServer(port, max, scavenge, inspect, idlePassivate);
+        return new MongoTestServer(port, max, scavenge,  idlePassivate);
     }
 
     @Test

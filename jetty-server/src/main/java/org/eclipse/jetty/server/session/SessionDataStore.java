@@ -93,10 +93,9 @@ public interface SessionDataStore extends LifeCycle
      * @param candidates if provided, these are keys of sessions that
      * the SessionStore thinks has expired and should be verified by the
      * SessionDataStore
-     * @param scavengePeriodSec the time to attempt scavenge (in seconds)
      * @return set of session ids
      */
-    public Set<String> getExpired (Set<String> candidates, int scavengePeriodSec);
+    public Set<String> getExpired (Set<String> candidates);
     
     
     

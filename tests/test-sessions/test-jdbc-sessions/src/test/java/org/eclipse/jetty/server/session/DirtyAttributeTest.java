@@ -63,7 +63,7 @@ public class DirtyAttributeTest
     @Test
     public void testDirtyWrite() throws Exception
     {
-        AbstractTestServer server = new JdbcTestServer(0,INACTIVE,SCAVENGE, INSPECT, IDLE_PASSIVATE);
+        AbstractTestServer server = new JdbcTestServer(0,INACTIVE,SCAVENGE, IDLE_PASSIVATE);
         
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestDirtyServlet.class, "/test");

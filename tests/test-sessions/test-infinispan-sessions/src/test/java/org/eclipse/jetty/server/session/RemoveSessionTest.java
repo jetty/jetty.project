@@ -43,9 +43,9 @@ public class RemoveSessionTest extends AbstractRemoveSessionTest
     
 
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectInterval, int idlePassivateInterval)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivateInterval)
     {
-       InfinispanTestSessionServer s = new InfinispanTestSessionServer(port, max, scavenge, inspectInterval, idlePassivateInterval,__testSupport.getCache());
+       InfinispanTestSessionServer s = new InfinispanTestSessionServer(port, max, scavenge, idlePassivateInterval, __testSupport.getCache());
        return s;
     }
 

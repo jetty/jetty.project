@@ -63,20 +63,20 @@ public class MongoTestServer extends AbstractTestServer
     }
 
     
-    public MongoTestServer(int port, int inspectionPeriod, int idlePassivatePeriod)
+    public MongoTestServer(int port, int idlePassivatePeriod)
     {
-        super(port, 30, 10, inspectionPeriod, idlePassivatePeriod);
+        super(port, 30, 10, idlePassivatePeriod);
     }
 
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectionPeriod, int idlePassivatePeriod)
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod,int idlePassivatePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod, inspectionPeriod, idlePassivatePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }
     
     
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectionPeriod, int idlePassivatePeriod, boolean saveAllAttributes)
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, boolean saveAllAttributes)
     {
-        super(port, maxInactivePeriod, scavengePeriod, inspectionPeriod, idlePassivatePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }
 
 
@@ -87,7 +87,7 @@ public class MongoTestServer extends AbstractTestServer
         {
             manager = new MongoSessionManager();
             ((MongoSessionManager)manager).getSessionDataStore().setDBCollection(getCollection());
-            manager.getSessionDataStore().setGracePeriodSec(_inspectionPeriod);
+            manager.getSessionDataStore().setGracePeriodSec(_scavengePeriod);
         }
         catch (Exception e)
         {

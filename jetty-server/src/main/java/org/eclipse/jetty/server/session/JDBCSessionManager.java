@@ -31,7 +31,7 @@ public class JDBCSessionManager extends SessionManager
     
     public JDBCSessionManager()
     {
-        _sessionStore = new MemorySessionStore();
+       setSessionStore(new MemorySessionStore(this));
         _sessionDataStore = new JDBCSessionDataStore();
     }
 

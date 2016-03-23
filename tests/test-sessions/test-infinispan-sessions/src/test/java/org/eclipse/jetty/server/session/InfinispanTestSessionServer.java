@@ -34,14 +34,14 @@ public class InfinispanTestSessionServer extends AbstractTestServer
     
     public InfinispanTestSessionServer(int port, BasicCache config)
     {
-        this(port, 30, 10, 1, 2, config);
+        this(port, 30, 10, 2, config);
     }
     
   
     
-    public InfinispanTestSessionServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectPeriod, int idlePassivatePeriod, BasicCache config)
+    public InfinispanTestSessionServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, BasicCache config)
     {
-        super(port, maxInactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod, config);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod, config);
     }
     
     

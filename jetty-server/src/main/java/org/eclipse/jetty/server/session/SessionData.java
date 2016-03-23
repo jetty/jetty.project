@@ -44,24 +44,28 @@ public class SessionData implements Serializable
     private static final long serialVersionUID = 1L;
 
     protected String _id;
-
     protected String _contextPath;
     protected String _vhost;
- 
-    
     protected String _lastNode;
-    protected long _expiry;
-
+    protected long _expiry; //precalculated time of expiry in ms since epoch
     protected long _created;
     protected long _cookieSet;
     protected long _accessed;         // the time of the last access
     protected long _lastAccessed;     // the time of the last access excluding this one
-   // protected boolean _invalid;
     protected long _maxInactiveMs;
     protected Map<String,Object> _attributes = new ConcurrentHashMap<String, Object>();
     protected boolean _dirty;
     protected long _lastSaved; //time in msec since last save
     
+    /**
+     * @param id
+     * @param cpath
+     * @param vhost
+     * @param created
+     * @param accessed
+     * @param lastAccessed
+     * @param maxInactiveMs
+     */
     public SessionData (String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
         _id = id;
@@ -71,8 +75,9 @@ public class SessionData implements Serializable
         _accessed = accessed;
         _lastAccessed = lastAccessed;
         _maxInactiveMs = maxInactiveMs;
+        _expiry = calcExpiry();
     }
-    
+
     
     /**
      * Copy the info from the given sessiondata
@@ -248,6 +253,11 @@ public class SessionData implements Serializable
     public void setExpiry(long expiry)
     {
         _expiry = expiry;
+    }
+    
+    public long calcExpiry ()
+    {
+        return (getMaxInactiveMs() <= 0 ? 0 : (System.currentTimeMillis() + getMaxInactiveMs()));
     }
 
     public long getCreated()

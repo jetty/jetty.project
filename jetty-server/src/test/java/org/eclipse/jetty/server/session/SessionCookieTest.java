@@ -41,16 +41,15 @@ public class SessionCookieTest
     public class MockSessionStore extends AbstractSessionStore
     {
 
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionStore#newSession(HttpServletRequest, String, long, long)
+        /**
+         * @param manager
          */
-        @Override
-        public Session newSession(HttpServletRequest request, String key, long time, long maxInactiveMs)
+        public MockSessionStore(SessionManager manager)
         {
-            // TODO Auto-generated method stub
-            return null;
+            super(manager);
         }
 
+      
         /** 
          * @see org.eclipse.jetty.server.session.SessionStore#shutdown()
          */
@@ -101,15 +100,7 @@ public class SessionCookieTest
             return null;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionStore#getStream()
-         */
-        @Override
-        public Stream<Session> getStream()
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
+      
 
         /** 
          * @see org.eclipse.jetty.server.session.AbstractSessionStore#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
@@ -119,6 +110,16 @@ public class SessionCookieTest
         {
             // TODO Auto-generated method stub
             return false;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#newSession(javax.servlet.http.HttpServletRequest, org.eclipse.jetty.server.session.SessionData)
+         */
+        @Override
+        public Session newSession(HttpServletRequest request, SessionData data)
+        {
+            // TODO Auto-generated method stub
+            return null;
         }
 
    
@@ -158,16 +159,7 @@ public class SessionCookieTest
             
         }
     }
-    
-    public class MockSessionManager extends SessionManager
-    {
-        public MockSessionManager()
-        {
-            _sessionStore = new MockSessionStore();
-            ((AbstractSessionStore)_sessionStore).setSessionDataStore(new NullSessionDataStore());
-        }
-    }
-
+  
   
 
     @Test
@@ -176,7 +168,10 @@ public class SessionCookieTest
         Server server = new Server();
         MockSessionIdManager idMgr = new MockSessionIdManager(server);
         idMgr.setWorkerName("node1");
-        MockSessionManager mgr = new MockSessionManager();
+        SessionManager mgr = new SessionManager();
+        MockSessionStore store = new MockSessionStore(mgr);
+        store.setSessionDataStore(new NullSessionDataStore());
+        mgr.setSessionStore(store);
         mgr.setSessionIdManager(idMgr);
         
         long now = System.currentTimeMillis();

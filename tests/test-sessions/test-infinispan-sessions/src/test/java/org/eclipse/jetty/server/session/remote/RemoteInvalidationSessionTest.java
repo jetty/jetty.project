@@ -58,9 +58,9 @@ public class RemoteInvalidationSessionTest extends AbstractInvalidationSessionTe
      * @see org.eclipse.jetty.server.session.AbstractInvalidationSessionTest#createServer(int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int maxInterval, int scavengeInterval, int inspectInterval, int idlePassivateInterval)
+    public AbstractTestServer createServer(int port, int maxInterval, int scavengeInterval, int idlePassivateInterval)
     {
-        return new InfinispanTestSessionServer(port, maxInterval, scavengeInterval, inspectInterval, idlePassivateInterval,__testSupport.getCache());
+        return new InfinispanTestSessionServer(port, maxInterval, scavengeInterval, idlePassivateInterval, __testSupport.getCache());
     }
 
     

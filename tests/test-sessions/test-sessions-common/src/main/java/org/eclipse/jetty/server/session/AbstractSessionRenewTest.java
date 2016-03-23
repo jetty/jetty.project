@@ -50,7 +50,7 @@ public abstract class AbstractSessionRenewTest
 {
     protected AbstractTestServer _server;
     
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivationPeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod);
 
     public abstract boolean verifyChange (WebAppContext context, String oldSessionId, String newSessionId);
     
@@ -65,7 +65,7 @@ public abstract class AbstractSessionRenewTest
         int scavengePeriod = 3;
         int inspectPeriod = 1;
         int idlePassivatePeriod = -1;
-        _server = createServer(0, maxInactive, scavengePeriod, inspectPeriod, idlePassivatePeriod);
+        _server = createServer(0, maxInactive, scavengePeriod, idlePassivatePeriod);
         WebAppContext context = _server.addWebAppContext(".", contextPath);
         context.setParentLoaderPriority(true);
         context.addServlet(TestServlet.class, servletMapping);

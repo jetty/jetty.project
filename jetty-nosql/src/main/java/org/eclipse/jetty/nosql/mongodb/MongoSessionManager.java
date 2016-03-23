@@ -99,7 +99,7 @@ public class MongoSessionManager extends SessionManager
     /* ------------------------------------------------------------ */
     public MongoSessionManager() throws UnknownHostException, MongoException
     {
-        _sessionStore = new MemorySessionStore();
+        setSessionStore(new MemorySessionStore(this));
         _sessionDataStore = new MongoSessionDataStore();
     }
     

@@ -43,6 +43,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -51,6 +52,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
+import org.eclipse.jetty.util.thread.Locker.Lock;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 import static java.lang.Math.round;
 
@@ -135,6 +139,12 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     private boolean _usingURLs;
     private boolean _usingCookies=true;
+    
+    protected ConcurrentHashSet<String> _candidateSessionIdsForExpiry = new ConcurrentHashSet<String>();
+
+    protected Scheduler _scheduler;
+    protected boolean _ownScheduler = false;
+    
 
 
     
@@ -281,6 +291,15 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                 // server session id is never managed by this manager
                 addBean(_sessionIdManager,false);
             }
+
+            _scheduler = server.getBean(Scheduler.class);
+            if (_scheduler == null)
+            {            
+                _scheduler = new ScheduledExecutorScheduler();
+                _ownScheduler = true;
+                _scheduler.start();
+
+            }
         }
         
 
@@ -316,11 +335,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                 _checkingRemoteSessionIdEncoding=Boolean.parseBoolean(tmp);
         }
        
-        _sessionContext = new SessionContext(_sessionIdManager.getWorkerName(), _context);
-
-       if (_sessionStore instanceof AbstractSessionStore)
-           ((AbstractSessionStore)_sessionStore).setSessionManager(this);
-       
+        _sessionContext = new SessionContext(_sessionIdManager.getWorkerName(), _context);       
        
        _sessionStore.initialize(_sessionContext);
        _sessionStore.start();
@@ -334,6 +349,9 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     {
         shutdownSessions();
         _sessionStore.stop();
+        if (_ownScheduler && _scheduler != null)
+            _scheduler.stop();
+        _scheduler = null;
         super.doStop();
         _loader=null;
     }
@@ -581,14 +599,12 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     @Override
     public HttpSession newHttpSession(HttpServletRequest request)
     {
-
         long created=System.currentTimeMillis();
         String id =_sessionIdManager.newSessionId(request,created);      
         Session session = _sessionStore.newSession(request, id, created,  (_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000L:-1));
-        session.setExtendedId(_sessionIdManager.getExtendedId(id,request));
-        session.setSessionManager(this);
-        session.setLastNode(_sessionIdManager.getWorkerName());
-        session.getSessionData().setExpiry(_dftMaxIdleSecs <= 0 ? 0 : (created + _dftMaxIdleSecs*1000L));
+        session.setExtendedId(_sessionIdManager.getExtendedId(id, request));
+        session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());
+        session.setMaxInactiveInterval(_dftMaxIdleSecs>0?_dftMaxIdleSecs:-1); //TODO awkward: needed to kick off timer and calc expiry
         if (request.isSecure())
             session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
         try
@@ -740,8 +756,8 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                     return null;
                 }
                 
-                session.setExtendedId(_sessionIdManager.getExtendedId(id, null)); //TODO not sure if this is OK?
-                session.setLastNode(_sessionIdManager.getWorkerName());  //TODO write through the change of node?
+                session.setExtendedId(_sessionIdManager.getExtendedId(id, null));
+                session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());  //TODO write through the change of node?
             }
             return session;
         }
@@ -786,6 +802,15 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     public SessionStore getSessionStore ()
     {
         return _sessionStore;
+    }
+    
+    
+    /**
+     * @param store
+     */
+    public void setSessionStore (SessionStore store)
+    {
+        _sessionStore = store;
     }
     
     /* ------------------------------------------------------------ */
@@ -1020,21 +1045,80 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         }
     }
 
+
     
-    /* ------------------------------------------------------------ */
-    /**
-     * 
-     */
-    public void inspect ()
+    public void scavenge ()
     {
         //don't attempt to scavenge if we are shutting down
         if (isStopping() || isStopped())
             return;
-
-         _sessionStore.inspect();
+        
+        if (LOG.isDebugEnabled()) LOG.debug("Scavenging sessions");
+        //Get a snapshot of the candidates as they are now. Others that
+        //arrive during this processing will be dealt with on 
+        //subsequent call to scavenge
+        String[] ss = _candidateSessionIdsForExpiry.toArray(new String[0]);
+        Set<String> candidates = new HashSet<String>(Arrays.asList(ss));
+        _candidateSessionIdsForExpiry.removeAll(candidates);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Scavenging session ids {}", candidates);
+        try
+        {
+            candidates = _sessionStore.checkExpiration(candidates);
+            for (String id:candidates)
+            {  
+                try
+                {
+                    getSessionIdManager().expireAll(id);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn(e);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+        }
     }
     
     
+    public void inspect (Session session)
+    {
+        if (session == null)
+            return;
+        
+
+        //check if the session is:
+        //1. valid
+        //2. expired
+        //3. passivatable
+        boolean passivate = false;
+        try (Lock lock = session.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Inspecting session {}, valid={}", session.getId(), session.isValid());
+            
+            if (!session.isValid())
+                return; //do nothing, session is no longer valid
+            
+            if (session.isExpiredAt(System.currentTimeMillis()))
+            {
+                _candidateSessionIdsForExpiry.add(session.getId());
+                if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
+            }
+            else if (_sessionStore.getIdlePassivationTimeoutSec() > 0 && session.isIdleLongerThan(_sessionStore.getIdlePassivationTimeoutSec()))
+            {
+                passivate = true;
+                if (LOG.isDebugEnabled())LOG.debug("Session {} will be passivated", session.getId());
+            }
+        }
+        
+        if (passivate)
+            _sessionStore.passivateIdleSession(session.getId()); //TODO call passivate inside lock
+      
+    }
     
     
     
@@ -1048,6 +1132,33 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         //Ask the session store
         return _sessionStore.exists(id);
     }
+    
+    
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     */
+    public Scheduler getScheduler()
+    {
+       return _scheduler;
+    }
+
+
+
+
+    /** 
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return (_context==null?super.toString():_context.toString());
+    }
+
+
+
 
 
 
@@ -1193,4 +1304,5 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             }
         }
     }
+
 }

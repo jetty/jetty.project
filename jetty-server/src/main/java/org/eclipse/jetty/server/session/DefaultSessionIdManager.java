@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
+import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -58,7 +59,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     protected String _workerAttr;
     protected long _reseed=100000L;
     protected Server _server;
-    protected PeriodicSessionInspector _inspector;
+    protected HouseKeeper _inspector;
     
 
     /* ------------------------------------------------------------ */
@@ -106,7 +107,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     /**
      * @param inspector inspector of sessions
      */
-    public void setSessionInspector (PeriodicSessionInspector inspector)
+    public void setSessionInspector (HouseKeeper inspector)
     {
         _inspector = inspector;
         _inspector.setSessionIdManager(this);
@@ -296,7 +297,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
                 if (manager.isIdInUse(id))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Context {} reports id in use", manager.getContext());
+                        LOG.debug("Context {} reports id in use", manager);
                     inUse = true;
                     break;
                 }
@@ -330,7 +331,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
        if (_inspector == null)
        {
            LOG.warn("No SessionScavenger set, using defaults");
-           _inspector = new PeriodicSessionInspector();
+           _inspector = new HouseKeeper();
            _inspector.setSessionIdManager(this);
        }
        
@@ -473,9 +474,9 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
      * 
      * @return all session managers
      */
-    protected Set<SessionManager> getSessionManagers()
+    public Set<org.eclipse.jetty.server.SessionManager> getSessionManagers()
     {
-        Set<SessionManager> managers = new HashSet<>();
+        Set<org.eclipse.jetty.server.SessionManager> managers = new HashSet<>();
 
         Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
         for (int i=0; contexts!=null && i<contexts.length; i++)

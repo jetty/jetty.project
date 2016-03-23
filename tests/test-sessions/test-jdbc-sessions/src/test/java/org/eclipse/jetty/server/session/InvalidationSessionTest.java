@@ -29,9 +29,9 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
 {
     public static final int IDLE_PASSIVATE_SEC = 3;
     
-    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int inspectInterval, int idlePassivateInterval)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int idlePassivateInterval)
     {
-        return new JdbcTestServer(port, maxInactive, scavengeInterval, inspectInterval, idlePassivateInterval);
+        return new JdbcTestServer(port, maxInactive, scavengeInterval, idlePassivateInterval);
     }
     
     public void pause()

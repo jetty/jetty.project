@@ -69,10 +69,10 @@ public class NullSessionDataStore extends AbstractSessionDataStore
 
  
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
      */
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
+    public Set<String> doGetExpired(Set<String> candidates)
     {
        return candidates; //whatever is suggested we accept
     }

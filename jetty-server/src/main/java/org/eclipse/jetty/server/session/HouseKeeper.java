@@ -22,6 +22,7 @@ package org.eclipse.jetty.server.session;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.SessionIdManager;
+import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -29,12 +30,12 @@ import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
- * SessionScavenger
+ * HouseKeeper
  *
- * There is 1 session scavenger per SessionIdManager/Server instance.
+ * There is 1 session HouseKeeper per SessionIdManager instance.
  *
  */
-public class PeriodicSessionInspector extends AbstractLifeCycle
+public class HouseKeeper extends AbstractLifeCycle
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
@@ -61,7 +62,7 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
         {
            try
            {
-               inspect();
+               scavenge();
            }
            finally
            {
@@ -91,14 +92,14 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
     protected void doStart() throws Exception
     {
         if (_sessionIdManager == null)
-            throw new IllegalStateException ("No SessionIdManager for Scavenger");
+            throw new IllegalStateException ("No SessionIdManager for Housekeeper");
         
-        if (!(_sessionIdManager instanceof DefaultSessionIdManager))
-            throw new IllegalStateException ("SessionIdManager is not an AbstractSessionIdManager");
 
-
-        //try and use a common scheduler, fallback to own
-        _scheduler = ((DefaultSessionIdManager)_sessionIdManager).getServer().getBean(Scheduler.class);
+        if (_sessionIdManager instanceof DefaultSessionIdManager)
+        {
+            //try and use a common scheduler, fallback to own
+            _scheduler = ((DefaultSessionIdManager)_sessionIdManager).getServer().getBean(Scheduler.class);
+        }
 
         if (_scheduler == null)
         {
@@ -185,11 +186,9 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
     
     
     /**
-     * Perform a scavenge cycle:
-     *   ask all SessionManagers to find sessions they think have expired and then make
-     *   sure that a session sharing the same id is expired on all contexts
+     * Periodically do session housekeeping
      */
-    public void inspect ()
+    public void scavenge ()
     {
         //don't attempt to scavenge if we are shutting down
         if (isStopping() || isStopped())
@@ -199,11 +198,18 @@ public class PeriodicSessionInspector extends AbstractLifeCycle
             LOG.debug("Inspecting sessions");
         
         //find the session managers
-        for (SessionManager manager:((DefaultSessionIdManager)_sessionIdManager).getSessionManagers())
+        for (SessionManager manager:_sessionIdManager.getSessionManagers())
         {
             if (manager != null)
             {
-                manager.inspect();
+                try
+                {
+                    manager.scavenge();
+                }
+                catch (Exception e)
+                {
+                    LOG.warn(e);
+                }
             }
         }
     }

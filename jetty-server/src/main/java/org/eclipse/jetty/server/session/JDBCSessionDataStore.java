@@ -884,10 +884,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
      */
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, int scavengeIntervalSec)
+    public Set<String> doGetExpired(Set<String> candidates)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Getting expired sessions "+System.currentTimeMillis());

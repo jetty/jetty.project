@@ -115,7 +115,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
      */
     @Override
-    public Set<String> doGetExpired(final Set<String> candidates, final int expiryTimeoutSec)
+    public Set<String> doGetExpired(final Set<String> candidates)
     {
         final long now = System.currentTimeMillis();
         HashSet<String> expired = new HashSet<String>();

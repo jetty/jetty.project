@@ -134,7 +134,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
      */
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
+    public Set<String> doGetExpired(Set<String> candidates)
     {
        if (candidates == null  || candidates.isEmpty())
            return candidates;

@@ -122,12 +122,12 @@ public class FileTestServer extends AbstractTestServer
     
     public FileTestServer(int port)
     {
-        super(port, 30, 10,1,2);
+        super(port, 30, 10,2);
     }
 
-    public FileTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectPeriod, int idlePassivatePeriod)
+    public FileTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }
 
 

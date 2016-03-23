@@ -38,7 +38,9 @@ import org.eclipse.jetty.util.component.LifeCycle;
 public interface SessionStore extends LifeCycle
 {
     void initialize(SessionContext context);
+    SessionManager getSessionManager();
     Session newSession (HttpServletRequest request, String id,  long time, long maxInactiveMs);
+    Session newSession (SessionData data);
     Session renewSessionId (String oldId, String newId) throws Exception;
     Session get(String id) throws Exception;
     void put(String id, Session session) throws Exception;
@@ -46,11 +48,8 @@ public interface SessionStore extends LifeCycle
     Session delete (String id) throws Exception;
     void shutdown ();
     Set<String> checkExpiration (Set<String> candidates);
-    void inspect();
     void setIdlePassivationTimeoutSec(int sec);
     int getIdlePassivationTimeoutSec();
-    int getExpiryTimeoutSec();
-    void setExpiryTimeoutSec(int sec);
-    Stream<Session> getStream();
     SessionDataStore getSessionDataStore();
+    void passivateIdleSession(String id);
 }

@@ -26,9 +26,9 @@ import org.junit.Test;
  */
 public class LastAccessTimeTest extends AbstractLastAccessTimeTest
 {
-    public AbstractTestServer createServer(int port, int max, int scavenge, int inspect, int idlePassivate)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivate)
     {
-        return new JdbcTestServer(port,max,scavenge, inspect, idlePassivate);
+        return new JdbcTestServer(port,max,scavenge, idlePassivate);
     }
 
     @Test

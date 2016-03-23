@@ -85,14 +85,14 @@ public class JdbcTestServer extends AbstractTestServer
         super(port);
     }
     
-    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectPeriod, int idlePassivatePeriod, String connectionUrl)
+    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, String connectionUrl)
     {
-        super(port, maxInactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod, connectionUrl);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod, connectionUrl);
     }
     
-    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectPeriod, int idlePassivatePeriod)
+    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod, DEFAULT_CONNECTION_URL);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod, DEFAULT_CONNECTION_URL);
     }
     
  
@@ -117,7 +117,7 @@ public class JdbcTestServer extends AbstractTestServer
     {
         JDBCSessionManager manager =  new JDBCSessionManager();
         JDBCSessionDataStore ds = manager.getSessionDataStore();
-        ds.setGracePeriodSec(_inspectionPeriod);
+        ds.setGracePeriodSec(_scavengePeriod);
         DatabaseAdaptor da = new DatabaseAdaptor();
         da.setDriverInfo(DRIVER_CLASS, (_config==null?DEFAULT_CONNECTION_URL:(String)_config));
         ds.setDatabaseAdaptor(da);

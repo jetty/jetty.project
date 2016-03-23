@@ -46,7 +46,7 @@ import org.junit.Test;
  */
 public abstract class AbstractProxySerializationTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int ispectPeriod, int idlePassivatePeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivatePeriod);
     
     public abstract void customizeContext (ServletContextHandler c);
     
@@ -73,7 +73,7 @@ public abstract class AbstractProxySerializationTest
         String contextPath = "";
         String servletMapping = "/server";
         int scavengePeriod = 10;
-        AbstractTestServer server = createServer(0, 20, scavengePeriod, 1, 20);
+        AbstractTestServer server = createServer(0, 20, scavengePeriod, 20);
         ServletContextHandler context = server.addContext(contextPath);
 
         InputStream is = this.getClass().getClassLoader().getResourceAsStream("proxy-serialization.jar");

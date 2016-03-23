@@ -55,7 +55,7 @@ public class ModifyMaxInactiveIntervalTest
     @Test
     public void testSessionExpiryAfterModifiedMaxInactiveInterval() throws Exception
     {
-        AbstractTestServer server = new JdbcTestServer(0,__inactive,__scavenge, __inspect, __idlePassivate);
+        AbstractTestServer server = new JdbcTestServer(0,__inactive,__scavenge, __idlePassivate);
         
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");

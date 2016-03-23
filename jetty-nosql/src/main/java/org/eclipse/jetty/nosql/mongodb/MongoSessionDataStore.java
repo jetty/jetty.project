@@ -348,7 +348,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
      */
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
+    public Set<String> doGetExpired(Set<String> candidates)
     {
         long now = System.currentTimeMillis();
         long upperBound = now;

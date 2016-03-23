@@ -43,7 +43,7 @@ import org.junit.Test;
  */
 public abstract class AbstractImmortalSessionTest
 {
-    public abstract AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs, int inspectPeriod, int idlePassivatePeriod);
+    public abstract AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs, int idlePassivatePeriod);
 
     @Test
     public void testImmortalSession() throws Exception
@@ -51,10 +51,9 @@ public abstract class AbstractImmortalSessionTest
         String contextPath = "";
         String servletMapping = "/server";
         int scavengePeriod = 2;
-        int inspectPeriod = 1;
         int idlePeriod = -1;
         //turn off session expiry by setting maxInactiveInterval to -1
-        AbstractTestServer server = createServer(0, -1, scavengePeriod, inspectPeriod, idlePeriod);
+        AbstractTestServer server = createServer(0, -1, scavengePeriod, idlePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
 

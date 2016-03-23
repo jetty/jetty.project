@@ -43,7 +43,7 @@ import junit.framework.Assert;
  */
 public abstract class AbstractSessionCookieTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectInterval, int idlePassivateInterval);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivateInterval);
 
     public void pause(int scavenge)
     {
@@ -66,7 +66,7 @@ public abstract class AbstractSessionCookieTest
         int scavengePeriod = 3;
         int inspectPeriod = 1;
         int idlePassivatePeriod = 10;
-        AbstractTestServer server = createServer(0, 1, scavengePeriod,inspectPeriod, idlePassivatePeriod);
+        AbstractTestServer server = createServer(0, 1, scavengePeriod,idlePassivatePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
 

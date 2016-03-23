@@ -185,7 +185,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
      */
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
+    public Set<String> doGetExpired(Set<String> candidates)
     {
         long now = System.currentTimeMillis();
         Set<String> expired = new HashSet<String>();

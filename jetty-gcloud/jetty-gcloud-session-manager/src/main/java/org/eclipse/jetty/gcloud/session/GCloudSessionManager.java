@@ -46,7 +46,7 @@ public class GCloudSessionManager extends SessionManager
     public GCloudSessionManager()
     {
         _sessionDataStore = new GCloudSessionDataStore();
-        _sessionStore = new MemorySessionStore();
+        setSessionStore(new MemorySessionStore(this));
     }
 
     

@@ -40,9 +40,9 @@ public class SessionCookieTest extends AbstractSessionCookieTest
     
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge,int inspectionPeriod, int idlePassivatePeriod)
+    public AbstractTestServer createServer(int port, int max, int scavenge,int idlePassivatePeriod)
     {
-        return new FileTestServer(port, max, scavenge,inspectionPeriod,idlePassivatePeriod);
+        return new FileTestServer(port, max, scavenge,idlePassivatePeriod);
     }
 
 }

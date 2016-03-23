@@ -275,6 +275,12 @@ public interface SessionManager extends LifeCycle
      * @return whether the session management is handled via URLs.
      */
     public boolean isUsingURLs();
+    
+    /**
+     * Invalidate the session corresponding to the id
+     * @param id the identity of the session to invalidate
+     */
+    public void invalidate(String id);
 
     public Set<SessionTrackingMode> getDefaultSessionTrackingModes();
 
@@ -320,6 +326,11 @@ public interface SessionManager extends LifeCycle
      * @return true if this manager knows about this id
      */
     public boolean isIdInUse (String id) throws Exception;
+    
+    /**
+     * 
+     */
+    public void scavenge ();
     
     
 }
