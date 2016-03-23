@@ -468,7 +468,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             {
                 _complianceViolations = new ArrayList<>();
             }
-            String violation = String.format("%s<=%s: %s for %s", compliance, required, reason, getHttpTransport());
+            String violation = String.format("%s<%s: %s for %s", compliance, required, reason, getHttpTransport());
             _complianceViolations.add(violation);
             if (LOG.isDebugEnabled())
                 LOG.debug(violation);

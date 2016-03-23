@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 import static org.eclipse.jetty.http.HttpCompliance.LEGACY;
 import static org.eclipse.jetty.http.HttpCompliance.RFC2616;
+import static org.eclipse.jetty.http.HttpCompliance.RFC7230;
 import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
 import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
 import static org.eclipse.jetty.http.HttpTokens.SPACE;
@@ -298,22 +299,27 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    protected boolean checkCompliance(HttpCompliance compliance,String reason)
+    /** Check RFC compliance violation
+     * @param compliance The compliance level violated
+     * @param reason The reason for the violation
+     * @return True if the current compliance level is set so as to Not allow this violation
+     */
+    protected boolean complianceViolation(HttpCompliance compliance,String reason)
     {
         if (_complianceHandler==null)
-            return _compliance.ordinal()<=compliance.ordinal();
-        if (_compliance.ordinal()<=compliance.ordinal())
+            return _compliance.ordinal()>=compliance.ordinal();
+        if (_compliance.ordinal()<compliance.ordinal())
         {
             _complianceHandler.onComplianceViolation(_compliance,compliance,reason);
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     /* ------------------------------------------------------------------------------- */
     protected String legacyString(String orig, String cached)
     {                   
-        return (orig.equals(cached) || !checkCompliance(LEGACY,"case sensitive"))?cached:orig;
+        return (orig.equals(cached) || complianceViolation(RFC2616,"case sensitive"))?cached:orig;
     }
     
     /* ------------------------------------------------------------------------------- */
@@ -711,7 +717,7 @@ public class HttpParser
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
                         // HTTP/0.9
-                        if (!checkCompliance(RFC2616,"HTTP/0.9"))
+                        if (complianceViolation(RFC7230,"HTTP/0.9"))
                             throw new BadMessageException("HTTP/0.9 not supported");
                         handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
                         setState(State.END);
@@ -780,7 +786,7 @@ public class HttpParser
                         else
                         {
                             // HTTP/0.9
-                            if (!checkCompliance(RFC2616,"HTTP/0.9"))
+                            if (complianceViolation(RFC7230,"HTTP/0.9"))
                                 throw new BadMessageException("HTTP/0.9 not supported");
 
                             handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
@@ -983,7 +989,7 @@ public class HttpParser
                         case HttpTokens.SPACE:
                         case HttpTokens.TAB:
                         {
-                            if (!checkCompliance(RFC2616,"header folding"))
+                            if (complianceViolation(RFC7230,"header folding"))
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Header Folding");
 
                             // header value without name - continuation?
@@ -1188,7 +1194,7 @@ public class HttpParser
                         break;
                     }
                     
-                    if (ch==HttpTokens.LINE_FEED && checkCompliance(RFC2616,"name only header"))
+                    if (ch==HttpTokens.LINE_FEED && !complianceViolation(RFC7230,"name only header"))
                     {
                         if (_headerString==null)
                         {
