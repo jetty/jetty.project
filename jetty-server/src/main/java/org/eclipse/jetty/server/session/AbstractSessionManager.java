@@ -627,10 +627,14 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     public void setMaxInactiveInterval(int seconds)
     {
         _dftMaxIdleSecs=seconds;
-        if (_dftMaxIdleSecs <= 0)
-            __log.warn("Sessions created by this manager are immortal (default maxInactiveInterval={})"+_dftMaxIdleSecs);
-        else if (__log.isDebugEnabled())
-            __log.debug("SessionManager default maxInactiveInterval={}", _dftMaxIdleSecs);
+        if (__log.isDebugEnabled())
+        {
+            if (_dftMaxIdleSecs <= 0)
+                __log.debug("Sessions created by this manager are immortal (default maxInactiveInterval={})"+_dftMaxIdleSecs);
+            else
+                __log.debug("SessionManager default maxInactiveInterval={}", _dftMaxIdleSecs);
+        }
+
     }
 
     /* ------------------------------------------------------------ */
