@@ -260,6 +260,9 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean headerComplete()
     {
+        if(_complianceViolations != null)
+            this.getRequest().setAttribute(ATTR_COMPLIANCE_VIOLATIONS, _complianceViolations);
+        
         boolean persistent;
 
         switch (_metadata.getVersion())
@@ -447,8 +450,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean messageComplete()
     {
-        if(_complianceViolations != null)
-            this.getRequest().setAttribute(ATTR_COMPLIANCE_VIOLATIONS, _complianceViolations);
         return onRequestComplete();
     }
 

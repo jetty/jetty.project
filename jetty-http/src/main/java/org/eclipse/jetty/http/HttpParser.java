@@ -313,8 +313,6 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     protected String legacyString(String orig, String cached)
     {                   
-        System.err.printf("o=%s%n",orig);
-        System.err.printf("c=%s%n",cached);
         return (orig.equals(cached) || !checkCompliance(LEGACY,"case sensitive"))?cached:orig;
     }
     
