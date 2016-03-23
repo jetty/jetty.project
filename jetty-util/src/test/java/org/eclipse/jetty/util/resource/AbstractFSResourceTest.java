@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -50,6 +46,14 @@ import org.eclipse.jetty.util.CollectionAssert;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNoException;
 
 public abstract class AbstractFSResourceTest
 {
@@ -517,6 +521,89 @@ public abstract class AbstractFSResourceTest
         }
     }
     
+    @Test
+    public void testExist_BadControlChars_Encoded() throws Exception
+    {
+        createEmptyFile("a.jsp");
+
+        try
+        {
+            // request with control characters
+            URI ref = testdir.getDir().toURI().resolve("a.jsp%1F%10");
+            assertThat("ControlCharacters URI",ref,notNullValue());
+
+            Resource fileref = newResource(ref);
+            assertThat("File Resource should not exists", fileref.exists(), is(false));
+        }
+        catch (InvalidPathException e)
+        {
+            // Expected path
+        }
+    }
+
+    @Test
+    public void testExist_BadControlChars_Decoded() throws Exception
+    {
+        createEmptyFile("a.jsp");
+
+        try
+        {
+            // request with control characters
+            File badFile = new File(testdir.getDir(), "a.jsp\014\010");
+            newResource(badFile);
+            fail("Should have thrown " + InvalidPathException.class);
+        }
+        catch (InvalidPathException e)
+        {
+            // Expected path
+        }
+    }
+
+    @Test
+    public void testExist_AddPath_BadControlChars_Decoded() throws Exception
+    {
+        createEmptyFile("a.jsp");
+
+        try
+        {
+            // base resource
+            URI ref = testdir.getDir().toURI();
+            Resource base = newResource(ref);
+            assertThat("Base Resource URI",ref,notNullValue());
+
+            // add path with control characters (raw/decoded control characters)
+            // This MUST fail
+            base.addPath("/a.jsp\014\010");
+            fail("Should have thrown " + InvalidPathException.class);
+        }
+        catch (InvalidPathException e)
+        {
+            // Expected path
+        }
+    }
+
+    @Test
+    public void testExist_AddPath_BadControlChars_Encoded() throws Exception
+    {
+        createEmptyFile("a.jsp");
+
+        try
+        {
+            // base resource
+            URI ref = testdir.getDir().toURI();
+            Resource base = newResource(ref);
+            assertThat("Base Resource URI",ref,notNullValue());
+
+            // add path with control characters
+            Resource fileref = base.addPath("/a.jsp%14%10");
+            assertThat("File Resource should not exists", fileref.exists(), is(false));
+        }
+        catch (InvalidPathException e)
+        {
+            // Expected path
+        }
+    }
+
     @Test
     public void testUtf8Dir() throws Exception
     {

@@ -39,6 +39,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -61,6 +62,7 @@ public class PathResource extends Resource
     public PathResource(Path path)
     {
         this.path = path;
+        assertValidPath(path);
         this.uri = this.path.toUri();
     }
 
@@ -108,6 +110,16 @@ public class PathResource extends Resource
     public Resource addPath(String apath) throws IOException, MalformedURLException
     {
         return new PathResource(this.path.getFileSystem().getPath(path.toString(), apath));
+    }
+
+    private void assertValidPath(Path path)
+    {
+        String str = path.toString();
+        int idx = StringUtil.indexOfControlChars(str);
+        if(idx >= 0)
+        {
+            throw new InvalidPathException(str, "Invalid Character at index " + idx);
+        }
     }
 
     @Override
