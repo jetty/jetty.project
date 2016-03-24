@@ -458,6 +458,22 @@
           <artifactId>maven-pmd-plugin</artifactId>
           <version>3.4</version>
         </plugin>
+        <plugin>
+          <groupId>org.neo4j.build.plugins</groupId>
+          <artifactId>clirr-maven-plugin</artifactId>
+          <version>1.0.1</version>
+          <configuration>
+            <htmlOutputFile>clirr-report.html</htmlOutputFile>
+            <xmlOutputFile>${project.build.directory}/clirr-report.xml</xmlOutputFile>
+            <failOnError>true</failOnError>
+            <failOnWarning>true</failOnWarning>
+            <failOnInfo>false</failOnInfo>
+            <logResults>true</logResults>
+            <minSeverity>info</minSeverity>
+            <comparisonVersion>9.3.8.v20160314</comparisonVersion>
+            <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -832,31 +848,6 @@
       <modules>
         <module>aggregates/jetty-all-compact3</module>
       </modules>
-    </profile>
-    <profile>
-      <id>api-change</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>clirr-maven-plugin</artifactId>
-            <version>2.5</version>
-            <executions>
-              <execution>
-                <id>compare-api</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>clirr</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <minSeverity>info</minSeverity>
-              <comparisonVersion>9.3.8.v20160314</comparisonVersion>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
     <profile>
       <id>8u00</id>
