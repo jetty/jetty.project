@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -121,17 +122,16 @@ public class AttributeNormalizerPathTest
         if(origUserDir != null) System.setProperty("user.dir",origUserDir);
     }
 
-    @Parameter(0)
     public String key;
-
-    @Parameter(1)
     public String path;
 
     private AttributeNormalizer normalizer;
 
-    public AttributeNormalizerPathTest() throws MalformedURLException
+    public AttributeNormalizerPathTest(String key, String path) throws MalformedURLException
     {
-        normalizer = new AttributeNormalizer(Resource.newResource("/opt/jetty-distro/demo.base/webapps/root"));
+        this.key = key;
+        this.path = AttributeNormalizer.uriSeparators(path);
+        this.normalizer = new AttributeNormalizer(Resource.newResource("/opt/jetty-distro/demo.base/webapps/root"));
     }
 
     @Test

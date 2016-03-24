@@ -24,7 +24,7 @@ import java.net.URI;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 public class AttributeNormalizerTest
@@ -42,5 +42,23 @@ public class AttributeNormalizerTest
 
         result = normalizer.normalize(URI.create(webref + "/deep/ref"));
         assertThat(result, is("${WAR}/deep/ref"));
+    }
+
+    @Test
+    public void testWindowsTLD() throws MalformedURLException {
+        // Setup AttributeNormalizer
+        String webref = "http://localhost/resource/webapps/root";
+        Resource webresource = Resource.newResource(webref);
+        AttributeNormalizer normalizer = new AttributeNormalizer(webresource);
+
+        // Setup example from windows
+        String userhome = AttributeNormalizer.uriSeparators(System.getProperty("user.home"));
+        String path = "jar:file:" + userhome + "/.m2/repository/something/somejar.jar!/META-INF/some.tld";
+
+        String result = normalizer.normalize(path);
+        assertThat(result, is("jar:file:${user.home}/.m2/repository/something/somejar.jar!/META-INF/some.tld"));
+
+        String expanded = normalizer.expand(result);
+        assertThat(expanded, not(anyOf(containsString("\\"), containsString("${"))));
     }
 }
