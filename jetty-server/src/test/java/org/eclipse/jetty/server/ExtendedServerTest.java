@@ -55,7 +55,7 @@ public class ExtendedServerTest extends HttpServerTestBase
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return configure(new ExtendedHttpConnection(getHttpConfiguration(), connector, endPoint,getHttpCompliance()), connector, endPoint);
+                return configure(new ExtendedHttpConnection(getHttpConfiguration(), connector, endPoint), connector, endPoint);
             }
         })
         {
@@ -93,9 +93,9 @@ public class ExtendedServerTest extends HttpServerTestBase
 
     private static class ExtendedHttpConnection extends HttpConnection
     {
-        public ExtendedHttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, HttpCompliance compliance)
+        public ExtendedHttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
         {
-            super(config,connector,endPoint,compliance);
+            super(config,connector,endPoint,HttpCompliance.RFC7230,false);
         }
 
         @Override

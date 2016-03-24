@@ -319,7 +319,7 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     protected String legacyString(String orig, String cached)
     {                   
-        return (orig.equals(cached) || complianceViolation(RFC2616,"case sensitive"))?cached:orig;
+        return (_compliance!=LEGACY || orig.equals(cached) || complianceViolation(RFC2616,"case sensitive"))?cached:orig;
     }
     
     /* ------------------------------------------------------------------------------- */

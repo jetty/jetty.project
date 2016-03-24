@@ -294,7 +294,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint,getHttpCompliance())
+                HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint,getHttpCompliance(),isRecordHttpComplianceViolations())
                 {
                     @Override
                     public void onFillable()

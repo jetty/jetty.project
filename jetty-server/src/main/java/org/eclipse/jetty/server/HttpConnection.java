@@ -71,7 +71,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final BlockingReadCallback _blockingReadCallback = new BlockingReadCallback();
     private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
     private final SendCallback _sendCallback = new SendCallback();
-    private boolean _recordHttpComplianceViolations = false;
+    private final boolean _recordHttpComplianceViolations;
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -92,7 +92,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return last;
     }
 
-    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, HttpCompliance compliance)
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, HttpCompliance compliance, boolean recordComplianceViolations)
     {
         super(endPoint, connector.getExecutor());
         _config = config;
@@ -102,6 +102,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _channel = newHttpChannel();
         _input = _channel.getRequest().getHttpInput();
         _parser = newHttpParser(compliance);
+        _recordHttpComplianceViolations=recordComplianceViolations;
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
     }
@@ -114,11 +115,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public boolean isRecordHttpComplianceViolations()
     {
         return _recordHttpComplianceViolations;
-    }
-
-    public void setRecordHttpComplianceViolations(boolean recordHttpComplianceViolations)
-    {
-        this._recordHttpComplianceViolations = recordHttpComplianceViolations;
     }
 
     protected HttpGenerator newHttpGenerator()
