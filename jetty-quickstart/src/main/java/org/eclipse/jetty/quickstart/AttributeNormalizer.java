@@ -183,6 +183,15 @@ public class AttributeNormalizer
             attributes.add(new PathAttribute("user.dir", "user.dir").weight(6));
             
             Collections.sort(attributes, new PathAttributeComparator());
+
+            if (LOG.isDebugEnabled())
+            {
+                int i = 0;
+                for (PathAttribute attr : attributes)
+                {
+                    LOG.debug(" [{}] {}", i++, attr);
+                }
+            }
         }
         catch (Exception e)
         {
@@ -361,7 +370,8 @@ public class AttributeNormalizer
         {
             if (attr.key.equalsIgnoreCase(property))
             {
-                return attr.path.toUri().toString();
+                // stupid uri abuse to get "file:(scheme-specific-part)"
+                return attr.path.toUri().getRawSchemeSpecificPart();
             }
         }
         

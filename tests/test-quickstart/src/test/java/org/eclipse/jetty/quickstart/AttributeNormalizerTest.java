@@ -18,15 +18,17 @@
 
 package org.eclipse.jetty.quickstart;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
-
-import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
 
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
 
 public class AttributeNormalizerTest
 {
@@ -54,6 +56,8 @@ public class AttributeNormalizerTest
 
         // Setup example from windows
         String userhome = AttributeNormalizer.uriSeparators(System.getProperty("user.home"));
+        System.err.printf("System.getProperty('user.home') = [%s]%n",System.getProperty("user.home"));
+        System.err.printf("userhome = [%s]%n",userhome);
         String path = "jar:file:" + userhome + "/.m2/repository/something/somejar.jar!/META-INF/some.tld";
 
         String result = normalizer.normalize(path);
