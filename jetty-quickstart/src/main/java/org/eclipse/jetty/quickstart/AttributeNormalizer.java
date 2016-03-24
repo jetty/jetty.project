@@ -361,42 +361,25 @@ public class AttributeNormalizer
     {
         if(property == null)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("getString({}) = <null>", property);
             return null;
         }
-
-        String val = null;
 
         // Use war path (if known)
         if("WAR".equalsIgnoreCase(property))
         {
-            val = warURI.toASCIIString();
-            if (LOG.isDebugEnabled()) LOG.debug("getString({})#is(WAR)", property);
+            return warURI.toASCIIString();
         }
         
         // Use known path attributes
-        if (val == null)
+        for (PathAttribute attr : attributes)
         {
-            for (PathAttribute attr : attributes)
+            if (attr.key.equalsIgnoreCase(property))
             {
-                if (attr.key.equalsIgnoreCase(property))
-                {
-                    val = uriSeparators(attr.path.toString());
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("getString({})#isPathAttribute({}) = {}", property, attr, val);
-                    return val;
-                }
+                return uriSeparators(attr.path.toString());
             }
         }
 
-        if(val == null)
-        {
-            // Use system properties next
-            val = System.getProperty(property);
-            if (LOG.isDebugEnabled())
-                LOG.debug("getString({}}#systemProperty = %s", property, val == null ? "<null>" : "\"" + val + "\"");
-        }
-
-        return val;
+        // Use system properties next
+        return System.getProperty(property);
     }
 }

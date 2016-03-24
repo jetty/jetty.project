@@ -60,10 +60,10 @@ public class AttributeNormalizerTest
         AttributeNormalizer normalizer = new AttributeNormalizer(webresource);
 
         // Setup example from windows
-        String userhome = AttributeNormalizer.uriSeparators(System.getProperty("user.home"));
-        LOG.debug("System.getProperty('user.home') = [{}]", System.getProperty("user.home"));
-        LOG.debug("userhome = [{}]", userhome);
-        String path = "jar:file:" + userhome + "/.m2/repository/something/somejar.jar!/META-INF/some.tld";
+        String javaUserHome = System.getProperty("user.home");
+        String realUserHome = AttributeNormalizerPathTest.toSystemPath(javaUserHome);
+        String userHome = AttributeNormalizer.uriSeparators(realUserHome);
+        String path = "jar:file:" + userHome + "/.m2/repository/something/somejar.jar!/META-INF/some.tld";
 
         String result = normalizer.normalize(path);
         assertThat(result, is("jar:file:${user.home}/.m2/repository/something/somejar.jar!/META-INF/some.tld"));
