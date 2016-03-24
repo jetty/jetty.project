@@ -852,7 +852,7 @@
             </executions>
             <configuration>
               <minSeverity>info</minSeverity>
-              <comparisonVersion>9.0.3.v20130506</comparisonVersion>
+              <comparisonVersion>9.3.8.v20160314</comparisonVersion>
             </configuration>
           </plugin>
         </plugins>
