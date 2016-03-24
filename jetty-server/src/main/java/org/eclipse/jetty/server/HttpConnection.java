@@ -71,6 +71,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final BlockingReadCallback _blockingReadCallback = new BlockingReadCallback();
     private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
     private final SendCallback _sendCallback = new SendCallback();
+    private final boolean _recordHttpComplianceViolations;
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -91,7 +92,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return last;
     }
 
-    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, HttpCompliance compliance)
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, HttpCompliance compliance, boolean recordComplianceViolations)
     {
         super(endPoint, connector.getExecutor());
         _config = config;
@@ -101,6 +102,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _channel = newHttpChannel();
         _input = _channel.getRequest().getHttpInput();
         _parser = newHttpParser(compliance);
+        _recordHttpComplianceViolations=recordComplianceViolations;
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
     }
@@ -110,6 +112,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return _config;
     }
 
+    public boolean isRecordHttpComplianceViolations()
+    {
+        return _recordHttpComplianceViolations;
+    }
+
     protected HttpGenerator newHttpGenerator()
     {
         return new HttpGenerator(_config.getSendServerVersion(),_config.getSendXPoweredBy());
@@ -117,7 +124,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     protected HttpChannelOverHttp newHttpChannel()
     {
-        return new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this);
+        HttpChannelOverHttp httpChannel = new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this);
+
+        return httpChannel;
     }
 
     protected HttpParser newHttpParser(HttpCompliance compliance)

@@ -21,9 +21,12 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -43,10 +46,11 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A HttpChannel customized to be transported over the HTTP/1 protocol
  */
-class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler
+public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ComplianceHandler
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
     private final static HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE,"h2c");
+    private static final String ATTR_COMPLIANCE_VIOLATIONS = "org.eclipse.jetty.http.compliance.violations";
 
     private final HttpFields _fields = new HttpFields();
     private final MetaData.Request _metadata = new MetaData.Request(_fields);
@@ -57,7 +61,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     private boolean _unknownExpectation = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
-
+    private List<String> _complianceViolations;
 
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
     {
@@ -256,6 +260,9 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     @Override
     public boolean headerComplete()
     {
+        if(_complianceViolations != null)
+            this.getRequest().setAttribute(ATTR_COMPLIANCE_VIOLATIONS, _complianceViolations);
+        
         boolean persistent;
 
         switch (_metadata.getVersion())
@@ -450,5 +457,21 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public int getHeaderCacheSize()
     {
         return getHttpConfiguration().getHeaderCacheSize();
+    }
+
+    @Override
+    public void onComplianceViolation(HttpCompliance compliance,HttpCompliance required, String reason)
+    {
+        if (_httpConnection.isRecordHttpComplianceViolations())
+        {
+            if (_complianceViolations == null)
+            {
+                _complianceViolations = new ArrayList<>();
+            }
+            String violation = String.format("%s<%s: %s for %s", compliance, required, reason, getHttpTransport());
+            _complianceViolations.add(violation);
+            if (LOG.isDebugEnabled())
+                LOG.debug(violation);
+        }
     }
 }
