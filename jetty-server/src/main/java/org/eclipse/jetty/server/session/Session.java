@@ -466,13 +466,12 @@ public class Session implements SessionManager.SessionIf
             _sessionData.setExpiry(_sessionData.calcExpiry());
             _sessionData.setDirty(true);
             setTimeout();
-            if (secs <= 0)
+            if (LOG.isDebugEnabled())
             {
-                LOG.warn("Session {} is now immortal (maxInactiveInterval={})", _sessionData.getId(), secs);
-            }
-            else if (LOG.isDebugEnabled())
-            {
-                LOG.debug("Session {} maxInactiveInterval={}", _sessionData.getId(), secs);
+                if (secs <= 0)
+                    LOG.debug("Session {} is now immortal (maxInactiveInterval={})", _sessionData.getId(), secs);
+                else
+                    LOG.debug("Session {} maxInactiveInterval={}", _sessionData.getId(), secs);
             }
         }
     }
