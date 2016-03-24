@@ -359,23 +359,44 @@ public class AttributeNormalizer
 
     private String getString(String property)
     {
+        if(property == null)
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("getString({}) = <null>", property);
+            return null;
+        }
+
+        String val = null;
+
         // Use war path (if known)
         if("WAR".equalsIgnoreCase(property))
         {
-            return warURI.toASCIIString();
+            val = warURI.toASCIIString();
+            if (LOG.isDebugEnabled()) LOG.debug("getString({})#is(WAR)", property);
         }
         
         // Use known path attributes
-        for (PathAttribute attr : attributes)
+        if (val == null)
         {
-            if (attr.key.equalsIgnoreCase(property))
+            for (PathAttribute attr : attributes)
             {
-                // stupid uri abuse to get "file:(scheme-specific-part)"
-                return attr.path.toUri().getRawSchemeSpecificPart();
+                if (attr.key.equalsIgnoreCase(property))
+                {
+                    val = uriSeparators(attr.path.toString());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("getString({})#isPathAttribute({}) = {}", property, attr, val);
+                    return val;
+                }
             }
         }
-        
-        // Use system properties next
-        return System.getProperty(property);
+
+        if(val == null)
+        {
+            // Use system properties next
+            val = System.getProperty(property);
+            if (LOG.isDebugEnabled())
+                LOG.debug("getString({}}#systemProperty = %s", property, val == null ? "<null>" : "\"" + val + "\"");
+        }
+
+        return val;
     }
 }
