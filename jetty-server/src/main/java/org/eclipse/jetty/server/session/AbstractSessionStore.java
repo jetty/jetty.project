@@ -19,10 +19,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -60,9 +58,9 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     /**
      * Create a new Session for a request.
      * 
-     * @param request
-     * @param data
-     * @return
+     * @param request the request
+     * @param data the session data
+     * @return the new session
      */
     public abstract Session newSession (HttpServletRequest request, SessionData data);
     

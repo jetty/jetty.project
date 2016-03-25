@@ -110,35 +110,23 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     }
     
     
-    /**
-     * @param cfg
-     */
     public void setGCloudConfiguration (GCloudConfiguration cfg)
     {
         _config = cfg;
     }
     
-    /**
-     * @return
-     */
     public GCloudConfiguration getGCloudConfiguration ()
     {
         return _config;
     }
 
     
-    /**
-     * @return
-     */
     public int getMaxResults()
     {
         return _maxResults;
     }
 
 
-    /**
-     * @param maxResults
-     */
     public void setMaxResults(int maxResults)
     {
         if (_maxResults <= 0)
@@ -182,7 +170,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
@@ -382,9 +370,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     
     /**
      * Generate SessionData from an Entity retrieved from gcloud datastore.
-     * @param entity
-     * @return
-     * @throws Exception
+     * @param entity the entity
+     * @return the session data
+     * @throws Exception if unable to get the entity
      */
     private SessionData sessionFromEntity (Entity entity) throws Exception
     {

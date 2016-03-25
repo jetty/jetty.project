@@ -22,7 +22,6 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /** 
@@ -52,7 +51,7 @@ public interface SessionIdManager extends LifeCycle
     /**
      * Invalidate all sessions on all contexts that share the same id.
      * 
-     * @param id
+     * @param id the session id
      */
     public void invalidateAll (String id);
     
@@ -110,7 +109,7 @@ public interface SessionIdManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /**
      * Get the set of all session managers for this node
-     * @return
+     * @return the set of session managers
      */
     public  Set<SessionManager> getSessionManagers();
 }

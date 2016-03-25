@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.util.stream.Stream;
-
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.http.HttpServletRequest;
 
@@ -41,9 +39,6 @@ public class SessionCookieTest
     public class MockSessionStore extends AbstractSessionStore
     {
 
-        /**
-         * @param manager
-         */
         public MockSessionStore(SessionManager manager)
         {
             super(manager);

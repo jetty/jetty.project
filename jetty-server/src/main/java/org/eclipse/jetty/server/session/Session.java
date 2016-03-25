@@ -36,12 +36,10 @@ import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
 
 import org.eclipse.jetty.io.IdleTimeout;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Locker.Lock;
-import org.eclipse.jetty.util.thread.Scheduler;
 
 
 
@@ -192,9 +190,6 @@ public class Session implements SessionManager.SessionIf
     
 
     /* ------------------------------------------------------------- */
-    /**
-     * @param manager
-     */
     public void setSessionManager (SessionManager manager)
     {
         _manager = manager;
@@ -202,9 +197,6 @@ public class Session implements SessionManager.SessionIf
     
 
     /* ------------------------------------------------------------- */
-    /**
-     * @param extendedId
-     */
     public void setExtendedId (String extendedId)
     {
         _extendedId = extendedId;

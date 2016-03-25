@@ -19,6 +19,9 @@
 
 package org.eclipse.jetty.gcloud.session;
 
+import com.google.gcloud.AuthCredentials;
+import com.google.gcloud.datastore.DatastoreOptions;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,9 +30,6 @@ import java.security.PrivateKey;
 import java.util.Properties;
 
 import org.eclipse.jetty.util.security.Password;
-
-import com.google.gcloud.AuthCredentials;
-import com.google.gcloud.datastore.DatastoreOptions;
 
 
 
@@ -57,9 +57,9 @@ public class GCloudConfiguration
     /**
      * Generate a configuration from a properties file
      * 
-     * @param propsFile
-     * @return
-     * @throws IOException
+     * @param propsFile the properties filename
+     * @return the configuration
+     * @throws IOException if unable to read the properties file
      */
     public static GCloudConfiguration fromFile(String propsFile)
     throws IOException
@@ -163,10 +163,6 @@ public class GCloudConfiguration
         return _options;
     }
 
-    /**
-     * @return
-     * @throws Exception
-     */
     public AuthCredentials getAuthCredentials()
     throws Exception
     {

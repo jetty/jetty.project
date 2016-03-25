@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
-import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -56,7 +55,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     /**
      * Get the clustered cache instance.
      * 
-     * @return
+     * @return the cache
      */
     public BasicCache<String, Object> getCache() 
     {
@@ -68,7 +67,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     /**
      * Set the clustered cache instance.
      * 
-     * @param cache
+     * @param cache the cache
      */
     public void setCache (BasicCache<String, Object> cache) 
     {
@@ -131,7 +130,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
@@ -222,11 +221,6 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     }
     
     
-    /**
-     * @param id
-     * @param context
-     * @return
-     */
     public String getCacheKey (String id)
     {
         return _context.getCanonicalContextPath()+"_"+_context.getVhost()+"_"+id;
@@ -313,9 +307,6 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         _infinispanIdleTimeoutSec = sec;
     }
     
-    /**
-     * @return
-     */
     public int getInfinispanIdleTimeoutSec ()
     {
         return _infinispanIdleTimeoutSec;

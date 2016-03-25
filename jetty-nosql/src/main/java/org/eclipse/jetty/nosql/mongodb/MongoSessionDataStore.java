@@ -345,7 +345,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates)

@@ -112,7 +112,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
      */
     @Override
     public Set<String> doGetExpired(final Set<String> candidates)
@@ -336,10 +336,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         return ""+data.getExpiry()+"_"+getFileName(data.getId());
     }
     
-    /**
-     * @param file
-     * @return
-     */
     private String getIdFromFile (File file)
     {
         if (file == null)
@@ -349,10 +345,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         return name.substring(name.lastIndexOf('_')+1);
     }
     
-    /**
-     * @param file
-     * @return
-     */
     private long getExpiryFromFile (File file)
     {
         if (file == null)
@@ -367,9 +359,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     /**
      * Find a File for the session id for the current context.
      * 
-     * @param storeDir
-     * @param id
-     * @return
+     * @param storeDir the session storage directory
+     * @param id the session id
+     * @return the file
      */
     private File getFile (final File storeDir, final String id)
     {

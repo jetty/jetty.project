@@ -432,9 +432,6 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param id
-     */
     public void invalidateAll (String id)
     {        
         //tell all contexts that may have a session object with this id to

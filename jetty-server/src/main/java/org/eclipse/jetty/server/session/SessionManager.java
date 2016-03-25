@@ -808,9 +808,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
     
     
-    /**
-     * @param store
-     */
     public void setSessionStore (SessionStore store)
     {
         _sessionStore = store;
@@ -1140,9 +1137,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     
     
     /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
     public Scheduler getScheduler()
     {
        return _scheduler;

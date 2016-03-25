@@ -52,9 +52,6 @@ public class GCloudSessionManager extends SessionManager
     
     
 
-    /**
-     * @return
-     */
     public GCloudSessionDataStore getSessionDataStore()
     {
         return _sessionDataStore;

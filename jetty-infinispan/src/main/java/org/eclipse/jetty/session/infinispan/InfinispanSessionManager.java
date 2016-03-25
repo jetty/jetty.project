@@ -80,9 +80,6 @@ public class InfinispanSessionManager extends SessionManager
 
 
 
-    /**
-     * @return
-     */
     public InfinispanSessionDataStore getSessionDataStore()
     {
         return _sessionDataStore;

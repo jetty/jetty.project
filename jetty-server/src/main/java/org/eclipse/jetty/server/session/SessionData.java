@@ -57,15 +57,6 @@ public class SessionData implements Serializable
     protected boolean _dirty;
     protected long _lastSaved; //time in msec since last save
     
-    /**
-     * @param id
-     * @param cpath
-     * @param vhost
-     * @param created
-     * @param accessed
-     * @param lastAccessed
-     * @param maxInactiveMs
-     */
     public SessionData (String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
         _id = id;
