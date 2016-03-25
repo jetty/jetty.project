@@ -183,6 +183,15 @@ public class AttributeNormalizer
             attributes.add(new PathAttribute("user.dir", "user.dir").weight(6));
             
             Collections.sort(attributes, new PathAttributeComparator());
+
+            if (LOG.isDebugEnabled())
+            {
+                int i = 0;
+                for (PathAttribute attr : attributes)
+                {
+                    LOG.debug(" [{}] {}", i++, attr);
+                }
+            }
         }
         catch (Exception e)
         {
@@ -350,6 +359,11 @@ public class AttributeNormalizer
 
     private String getString(String property)
     {
+        if(property == null)
+        {
+            return null;
+        }
+
         // Use war path (if known)
         if("WAR".equalsIgnoreCase(property))
         {
@@ -361,10 +375,10 @@ public class AttributeNormalizer
         {
             if (attr.key.equalsIgnoreCase(property))
             {
-                return attr.path.toUri().toString();
+                return uriSeparators(attr.path.toString());
             }
         }
-        
+
         // Use system properties next
         return System.getProperty(property);
     }

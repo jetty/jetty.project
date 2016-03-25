@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.quickstart;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -32,15 +29,16 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
 public class AttributeNormalizerPathTest
@@ -67,7 +65,7 @@ public class AttributeNormalizerPathTest
      * <p>
      * Eg: on fedora /etc/init.d is a symlink to /etc/rc.d/init.d
      */
-    private static String toSystemPath(String rawpath)
+    public static String toSystemPath(String rawpath)
     {
         Path path = FileSystems.getDefault().getPath(rawpath);
         if (Files.exists(path))
