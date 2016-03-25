@@ -68,6 +68,7 @@ public class MessageReceivingTest {
     public static void startServer() throws Exception {
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
         server.addConnector(connector);
 
         handler = new EchoHandler();
