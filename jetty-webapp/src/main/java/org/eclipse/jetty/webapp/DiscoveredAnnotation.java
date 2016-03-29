@@ -79,7 +79,7 @@ public abstract class DiscoveredAnnotation
         
         try
         {
-            _clazz = Loader.loadClass(null, _className);
+            _clazz = Loader.loadClass(_className);
         }
         catch (Exception e)
         {

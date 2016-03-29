@@ -53,9 +53,9 @@ public class SessionInvalidateAndCreateTest extends AbstractSessionInvalidateAnd
      * @see org.eclipse.jetty.server.session.AbstractSessionInvalidateAndCreateTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod)
     {
-        return  new GCloudTestServer(port, max, scavenge, _testSupport.getConfiguration());
+        return  new GCloudTestServer(port, max, scavenge, idlePassivationPeriod, _testSupport.getConfiguration());
     }
 
     @Test

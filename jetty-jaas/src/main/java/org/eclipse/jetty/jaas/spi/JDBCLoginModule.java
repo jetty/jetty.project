@@ -103,7 +103,7 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
                 dbPassword = "";
 
             if (dbDriver != null)
-                Loader.loadClass(this.getClass(), dbDriver).newInstance();
+                Loader.loadClass(dbDriver).newInstance();
         }
         catch (ClassNotFoundException e)
         {

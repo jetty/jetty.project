@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
@@ -6,7 +7,7 @@
     <version>25</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.3.9-SNAPSHOT</version>
+  <version>9.4.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -294,7 +295,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.18.1</version>
+          <version>2.19</version>
           <configuration>
             <argLine>-showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
@@ -367,15 +368,16 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.8</version>
           <configuration>
             <docfilessubdirs>true</docfilessubdirs>
-            <detectLinks>false</detectLinks>
+            <detectLinks>true</detectLinks>
             <detectJavaApiLink>true</detectJavaApiLink>
+            <show>protected</show>
             <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
             <links>
               <link>http://docs.oracle.com/javase/8/docs/api/</link>
               <link>http://docs.oracle.com/javaee/7/api/</link>
-              <link>http://junit.org/javadoc/latest/</link>
               <link>http://download.eclipse.org/jetty/stable-9/apidocs/</link>
             </links>
             <tags>
@@ -456,6 +458,22 @@
           <artifactId>maven-pmd-plugin</artifactId>
           <version>3.4</version>
         </plugin>
+        <plugin>
+          <groupId>org.neo4j.build.plugins</groupId>
+          <artifactId>clirr-maven-plugin</artifactId>
+          <version>1.0.1</version>
+          <configuration>
+            <htmlOutputFile>clirr-report.html</htmlOutputFile>
+            <xmlOutputFile>${project.build.directory}/clirr-report.xml</xmlOutputFile>
+            <failOnError>true</failOnError>
+            <failOnWarning>true</failOnWarning>
+            <failOnInfo>false</failOnInfo>
+            <logResults>true</logResults>
+            <minSeverity>info</minSeverity>
+            <comparisonVersion>9.3.8.v20160314</comparisonVersion>
+            <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -531,6 +549,7 @@
     <module>jetty-nosql</module>
     <module>jetty-infinispan</module>
     <module>jetty-gcloud</module>
+    <module>jetty-unixsocket</module>
     <module>tests</module>
     <module>examples</module>
     <module>jetty-quickstart</module>
@@ -829,31 +848,6 @@
       <modules>
         <module>aggregates/jetty-all-compact3</module>
       </modules>
-    </profile>
-    <profile>
-      <id>api-change</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>clirr-maven-plugin</artifactId>
-            <version>2.5</version>
-            <executions>
-              <execution>
-                <id>compare-api</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>clirr</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <minSeverity>info</minSeverity>
-              <comparisonVersion>9.0.3.v20130506</comparisonVersion>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
     <profile>
       <id>8u00</id>

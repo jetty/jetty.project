@@ -24,6 +24,7 @@ package org.eclipse.jetty.gcloud.session;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -48,8 +49,7 @@ public class GCloudSessionTester
         config.setPassword(args[2]);
         config.setServiceAccount(args[3]);
 
-        GCloudSessionIdManager idmgr = new GCloudSessionIdManager(server);
-        idmgr.setConfig(config);
+        DefaultSessionIdManager idmgr = new DefaultSessionIdManager(server);
         idmgr.setWorkerName("w1");
         server.setSessionIdManager(idmgr);
 
@@ -59,6 +59,7 @@ public class GCloudSessionTester
         webapp.setWar("../../jetty-distribution/target/distribution/demo-base/webapps/test.war");
         webapp.addAliasCheck(new AllowSymLinkAliasChecker());
         GCloudSessionManager mgr = new GCloudSessionManager();
+        mgr.getSessionDataStore().setGCloudConfiguration(config);
         mgr.setSessionIdManager(idmgr);
         webapp.setSessionHandler(new SessionHandler(mgr));
 

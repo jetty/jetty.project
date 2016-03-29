@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.Executor;
@@ -317,7 +318,7 @@ public class SslConnection extends AbstractConnection
         public DecryptedEndPoint()
         {
             // Disable idle timeout checking: no scheduler and -1 timeout for this instance.
-            super(null, getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
+            super(null);
             super.setIdleTimeout(-1);
         }
 
@@ -337,6 +338,18 @@ public class SslConnection extends AbstractConnection
         public boolean isOpen()
         {
             return getEndPoint().isOpen();
+        }
+
+        @Override
+        public InetSocketAddress getLocalAddress()
+        {
+            return getEndPoint().getLocalAddress();
+        }
+
+        @Override
+        public InetSocketAddress getRemoteAddress()
+        {
+            return getEndPoint().getRemoteAddress();
         }
 
         @Override
@@ -868,12 +881,11 @@ public class SslConnection extends AbstractConnection
         }
 
         @Override
-        public void shutdownOutput()
+        public void doShutdownOutput()
         {
             boolean ishut = isInputShutdown();
-            boolean oshut = isOutputShutdown();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} shutdownOutput: oshut={}, ishut={}", SslConnection.this, oshut, ishut);
+                LOG.debug("{} shutdownOutput: ishut={}", SslConnection.this, ishut);
             if (ishut)
             {
                 // Aggressively close, since inbound close alert has already been processed
@@ -882,7 +894,7 @@ public class SslConnection extends AbstractConnection
                 // reply. If a TLS close reply is sent, most implementations send a RST.
                 getEndPoint().close();
             }
-            else if (!oshut)
+            else
             {
                 try
                 {
@@ -914,12 +926,27 @@ public class SslConnection extends AbstractConnection
         }
 
         @Override
-        public void close()
+        public void doClose()
         {
             // First send the TLS Close Alert, then the FIN
-            shutdownOutput();
+            if (!_sslEngine.isOutboundDone())
+            {
+                try
+                {
+                    synchronized (this) // TODO review synchronized boundary
+                    {
+                        _sslEngine.closeOutbound();
+                        flush(BufferUtil.EMPTY_BUFFER); // Send close handshake
+                        ensureFillInterested();
+                    }
+                }
+                catch (Exception e)
+                {
+                    LOG.ignore(e);
+                }
+            }
             getEndPoint().close();
-            super.close();
+            super.doClose();
         }
 
         @Override

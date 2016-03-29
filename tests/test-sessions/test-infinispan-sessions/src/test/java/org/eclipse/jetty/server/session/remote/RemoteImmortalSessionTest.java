@@ -59,9 +59,9 @@ public class RemoteImmortalSessionTest extends AbstractImmortalSessionTest
      * @see org.eclipse.jetty.server.session.AbstractImmortalSessionTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs)
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavenge, int idlePassivateInterval)
     {
-        return new InfinispanTestSessionServer(port, maxInactiveMs, scavengeMs, __testSupport.getCache());
+        return new InfinispanTestSessionServer(port, maxInactiveMs, scavenge, idlePassivateInterval, __testSupport.getCache());
     }
 
     @Override

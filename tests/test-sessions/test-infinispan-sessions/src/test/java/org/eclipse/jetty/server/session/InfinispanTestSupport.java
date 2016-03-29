@@ -88,7 +88,6 @@ public class InfinispanTestSupport
         _tmpdir = File.createTempFile("infini", "span");
         _tmpdir.delete();
         _tmpdir.mkdir();
-        System.err.println("Temp file: "+_tmpdir);
         Configuration config = _builder.persistence().addSingleFileStore().location(_tmpdir.getAbsolutePath()).storeAsBinary().build();
         _manager.defineConfiguration(_name, config);
        }

@@ -62,7 +62,8 @@ public class AliasedConstraintTest
     private static Server server;
     private static LocalConnector connector;
     private static ConstraintSecurityHandler security;
-
+    
+    
     @BeforeClass
     public static void startServer() throws Exception
     {
@@ -73,7 +74,8 @@ public class AliasedConstraintTest
         ContextHandler context = new ContextHandler();
         SessionHandler session = new SessionHandler();
 
-        HashLoginService loginService = new HashLoginService(TEST_REALM);
+        TestLoginService loginService = new TestLoginService(TEST_REALM);
+        
         loginService.putUser("user0",new Password("password"),new String[] {});
         loginService.putUser("user",new Password("password"),new String[] { "user" });
         loginService.putUser("user2",new Password("password"),new String[] { "user" });

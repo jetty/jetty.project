@@ -53,9 +53,11 @@ import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
-import org.eclipse.jetty.server.session.HashedSession;
+import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
@@ -415,7 +417,7 @@ public class ResponseTest
 
         response.sendError(404);
         assertEquals(404, response.getStatus());
-        assertEquals(null, response.getReason());
+        assertEquals("Not Found", response.getReason());
 
         response = newResponse();
 
@@ -436,6 +438,37 @@ public class ResponseTest
         assertEquals(406, response.getStatus());
         assertEquals("Super Nanny", response.getReason());
         assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
+    }
+    
+    @Test
+    public void testStatusCodesNoErrorHandler() throws Exception
+    {
+        _server.removeBean(_server.getBean(ErrorHandler.class));
+        Response response = newResponse();
+
+        response.sendError(404);
+        assertEquals(404, response.getStatus());
+        assertEquals("Not Found", response.getReason());
+
+        response = newResponse();
+
+        response.sendError(500, "Database Error");
+        assertEquals(500, response.getStatus());
+        assertEquals("Database Error", response.getReason());
+        assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()),Matchers.nullValue());
+
+        response = newResponse();
+
+        response.setStatus(200);
+        assertEquals(200, response.getStatus());
+        assertEquals(null, response.getReason());
+
+        response = newResponse();
+
+        response.sendError(406, "Super Nanny");
+        assertEquals(406, response.getStatus());
+        assertEquals("Super Nanny", response.getReason());
+        assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()),Matchers.nullValue());
     }
 
     @Test
@@ -478,9 +511,11 @@ public class ResponseTest
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
         HashSessionManager manager = new HashSessionManager();
-        manager.setSessionIdManager(new HashSessionIdManager());
+        manager.setSessionIdManager(new DefaultSessionIdManager(_server));
         request.setSessionManager(manager);
-        request.setSession(new TestSession(manager, "12345"));
+        TestSession tsession = new TestSession(manager, "12345");
+        tsession.setExtendedId(manager.getSessionIdManager().getExtendedId("12345", null));
+        request.setSession(tsession);
 
         manager.setCheckingRemoteSessionIdEncoding(false);
 
@@ -553,7 +588,7 @@ public class ResponseTest
                     request.setRequestedSessionId("12345");
                     request.setRequestedSessionIdFromCookie(i>2);
                     HashSessionManager manager = new HashSessionManager();
-                    manager.setSessionIdManager(new HashSessionIdManager());
+                    manager.setSessionIdManager(new DefaultSessionIdManager(_server));
                     request.setSessionManager(manager);
                     request.setSession(new TestSession(manager, "12345"));
                     manager.setCheckingRemoteSessionIdEncoding(false);
@@ -849,11 +884,12 @@ public class ResponseTest
         return new Response(_channel, _channel.getResponse().getHttpOutput());
     }
 
-    private static class TestSession extends HashedSession
+    private static class TestSession extends Session
     {
         protected TestSession(HashSessionManager hashSessionManager, String id)
         {
-            super(hashSessionManager, 0L, 0L, id);
+            super(new SessionData(id, "", "0.0.0.0", 0, 0, 0, 300));
+            setSessionManager(hashSessionManager);
         }
     }
 }

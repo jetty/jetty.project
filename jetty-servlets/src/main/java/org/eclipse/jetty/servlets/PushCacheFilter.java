@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -46,7 +45,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.PushBuilder;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -190,14 +189,13 @@ public class PushCacheFilter implements Filter
                                 long primaryTimestamp = primaryResource._timestamp.get();
                                 if (primaryTimestamp != 0)
                                 {
-                                    RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher(path);
                                     if (now - primaryTimestamp < TimeUnit.MILLISECONDS.toNanos(_associatePeriod))
                                     {
-                                        ConcurrentMap<String, RequestDispatcher> associated = primaryResource._associated;
+                                        Set<String> associated = primaryResource._associated;
                                         // Not strictly concurrent-safe, just best effort to limit associations.
                                         if (associated.size() <= _maxAssociations)
                                         {
-                                            if (associated.putIfAbsent(path, dispatcher) == null)
+                                            if (associated.add(path))
                                             {
                                                 if (LOG.isDebugEnabled())
                                                     LOG.debug("Associated {} to {}", path, referrerPathNoContext);
@@ -256,22 +254,23 @@ public class PushCacheFilter implements Filter
         // Push associated resources.
         if (!isPushRequest(request) && !conditional && !primaryResource._associated.isEmpty())
         {
+            PushBuilder pushBuilder = Request.getBaseRequest(request).getPushBuilder();
+
             // Breadth-first push of associated resources.
             Queue<PrimaryResource> queue = new ArrayDeque<>();
             queue.offer(primaryResource);
             while (!queue.isEmpty())
             {
                 PrimaryResource parent = queue.poll();
-                for (Map.Entry<String, RequestDispatcher> entry : parent._associated.entrySet())
+                for (String childPath : parent._associated)
                 {
-                    PrimaryResource child = _cache.get(entry.getKey());
+                    PrimaryResource child = _cache.get(childPath);
                     if (child != null)
                         queue.offer(child);
 
-                    Dispatcher dispatcher = (Dispatcher)entry.getValue();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Pushing {} for {}", dispatcher, path);
-                    dispatcher.push(request);
+                        LOG.debug("Pushing {} for {}", childPath, path);
+                    pushBuilder.path(childPath).push();
                 }
             }
         }
@@ -297,7 +296,7 @@ public class PushCacheFilter implements Filter
         for (Map.Entry<String, PrimaryResource> entry : _cache.entrySet())
         {
             PrimaryResource resource = entry.getValue();
-            String value = String.format("size=%d: %s", resource._associated.size(), new TreeSet<>(resource._associated.keySet()));
+            String value = String.format("size=%d: %s", resource._associated.size(), new TreeSet<>(resource._associated));
             result.put(entry.getKey(), value);
         }
         return result;
@@ -317,7 +316,7 @@ public class PushCacheFilter implements Filter
 
     private static class PrimaryResource
     {
-        private final ConcurrentMap<String, RequestDispatcher> _associated = new ConcurrentHashMap<>();
+        private final Set<String> _associated = Collections.newSetFromMap(new ConcurrentHashMap<>());
         private final AtomicLong _timestamp = new AtomicLong();
     }
 }

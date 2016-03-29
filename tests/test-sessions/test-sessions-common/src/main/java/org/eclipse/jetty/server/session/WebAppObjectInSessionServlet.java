@@ -62,7 +62,6 @@ public class WebAppObjectInSessionServlet extends HttpServlet
             {
                 HttpSession session = request.getSession(false);
                 Object staticAttribute = session.getAttribute("staticAttribute");
-                System.err.println("staticAttribute="+staticAttribute);
                 Assert.assertTrue(staticAttribute instanceof TestSharedStatic);
                 
 //                Object objectAttribute = session.getAttribute("objectAttribute");

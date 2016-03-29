@@ -21,11 +21,11 @@ package com.acme;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
-@ManagedObject(value="Managed Object")
+@ManagedObject(value = "Managed Object")
 public class Managed
 {
     String managed = "foo";
-    
+
     @ManagedAttribute("Managed Attribute")
     public String getManaged()
     {
@@ -36,11 +36,10 @@ public class Managed
     {
         this.managed = managed;
     }
-       
-    
+
     public String bad()
     {
         return "bad";
     }
-    
+
 }

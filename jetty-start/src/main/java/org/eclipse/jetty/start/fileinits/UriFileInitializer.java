@@ -54,7 +54,7 @@ public class UriFileInitializer implements FileInitializer
         if(isFilePresent(file, baseHome.getPath(fileRef)))
         {
             // All done
-            return true;
+            return false;
         }
 
         download(uri,file);

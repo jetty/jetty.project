@@ -90,10 +90,10 @@ public class XmlConfiguration
     private static XmlParser initParser()
     {
         XmlParser parser = new XmlParser();
-        URL config60 = Loader.getResource(XmlConfiguration.class, "org/eclipse/jetty/xml/configure_6_0.dtd");
-        URL config76 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_7_6.dtd");
-        URL config90 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_9_0.dtd");
-        URL config93 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_9_3.dtd");
+        URL config60 = Loader.getResource("org/eclipse/jetty/xml/configure_6_0.dtd");
+        URL config76 = Loader.getResource("org/eclipse/jetty/xml/configure_7_6.dtd");
+        URL config90 = Loader.getResource("org/eclipse/jetty/xml/configure_9_0.dtd");
+        URL config93 = Loader.getResource("org/eclipse/jetty/xml/configure_9_3.dtd");
         parser.redirectEntity("configure.dtd",config90);
         parser.redirectEntity("configure_1_0.dtd",config60);
         parser.redirectEntity("configure_1_1.dtd",config60);
@@ -365,7 +365,7 @@ public class XmlConfiguration
             if (className == null)
                 return null;
 
-            return Loader.loadClass(XmlConfiguration.class,className);
+            return Loader.loadClass(className);
         }
 
         /**
@@ -708,7 +708,7 @@ public class XmlConfiguration
             if (clazz!=null)
             {
                 // static call
-                oClass=Loader.loadClass(XmlConfiguration.class,clazz);
+                oClass=Loader.loadClass(clazz);
                 obj=null;
             }
             else if (obj!=null)
@@ -755,7 +755,7 @@ public class XmlConfiguration
             if (LOG.isDebugEnabled())
                 LOG.debug("XML new " + clazz);
             
-            Class<?> oClass = Loader.loadClass(XmlConfiguration.class,clazz);
+            Class<?> oClass = Loader.loadClass(clazz);
             
             // Find the <Arg> elements
             Map<String, Object> namedArgMap = new HashMap<>();
@@ -846,7 +846,7 @@ public class XmlConfiguration
                             aClass = InetAddress.class;
                             break;
                         default:
-                            aClass = Loader.loadClass(XmlConfiguration.class, type);
+                            aClass = Loader.loadClass(type);
                             break;
                     }
                 }

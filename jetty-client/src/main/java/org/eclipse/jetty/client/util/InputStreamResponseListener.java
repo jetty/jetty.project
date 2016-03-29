@@ -86,14 +86,6 @@ public class InputStreamResponseListener extends Listener.Adapter
     {
     }
 
-    /**
-     * @deprecated response content is not buffered anymore, but handled asynchronously.
-     */
-    @Deprecated
-    public InputStreamResponseListener(long maxBufferSize)
-    {
-    }
-
     @Override
     public void onHeaders(Response response)
     {

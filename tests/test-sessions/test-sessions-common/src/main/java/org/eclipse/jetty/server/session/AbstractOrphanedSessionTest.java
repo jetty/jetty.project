@@ -41,7 +41,7 @@ import org.junit.Test;
 public abstract class AbstractOrphanedSessionTest
 {
 
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivateInterval);
 
     /**
      * If nodeA creates a session, and just afterwards crashes, it is the only node that knows about the session.
@@ -55,14 +55,14 @@ public abstract class AbstractOrphanedSessionTest
         String contextPath = "";
         String servletMapping = "/server";
         int inactivePeriod = 5;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, -1);
+        AbstractTestServer server1 = createServer(0, inactivePeriod, -1, -1);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         try
         {
             server1.start();
             int port1 = server1.getPort();
             int scavengePeriod = 2;
-            AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod);
+            AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod, 2);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);         
             try
             {

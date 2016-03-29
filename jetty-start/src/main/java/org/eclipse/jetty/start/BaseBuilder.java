@@ -23,17 +23,20 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+
+import javax.management.RuntimeErrorException;
 
 import org.eclipse.jetty.start.builders.StartDirBuilder;
 import org.eclipse.jetty.start.builders.StartIniBuilder;
 import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer;
 import org.eclipse.jetty.start.fileinits.TestFileInitializer;
 import org.eclipse.jetty.start.fileinits.UriFileInitializer;
-import org.eclipse.jetty.start.graph.CriteriaSetPredicate;
-import org.eclipse.jetty.start.graph.UniqueCriteriaPredicate;
-import org.eclipse.jetty.start.graph.Predicate;
-import org.eclipse.jetty.start.graph.Selection;
 
 /**
  * Build a start configuration in <code>${jetty.base}</code>, including
@@ -94,37 +97,6 @@ public class BaseBuilder
         }
     }
 
-    private void ackLicenses() throws IOException
-    {
-        if (startArgs.isLicenseCheckRequired())
-        {
-            if (startArgs.isApproveAllLicenses())
-            {
-                StartLog.info("All Licenses Approved via Command Line Option");
-            }
-            else
-            {
-                Licensing licensing = new Licensing();
-                for (Module module : startArgs.getAllModules().getSelected())
-                {
-                    if (!module.hasFiles(baseHome,startArgs.getProperties()))
-                    {
-                        licensing.addModule(module);
-                    }
-                }
-
-                if (licensing.hasLicenses())
-                {
-                    StartLog.debug("Requesting License Acknowledgement");
-                    if (!licensing.acknowledgeLicenses())
-                    {
-                        StartLog.warn(EXITING_LICENSE_NOT_ACKNOWLEDGED);
-                        System.exit(1);
-                    }
-                }
-            }
-        }
-    }
 
     /**
      * Build out the Base directory (if needed)
@@ -135,112 +107,101 @@ public class BaseBuilder
     public boolean build() throws IOException
     {
         Modules modules = startArgs.getAllModules();
-        boolean dirty = false;
 
-        String dirCriteria = "<add-to-startd>";
-        String iniCriteria = "<add-to-start-ini>";
-        Selection startDirSelection = new Selection(dirCriteria);
-        Selection startIniSelection = new Selection(iniCriteria);
-        
-        List<String> startDNames = new ArrayList<>();
-        startDNames.addAll(startArgs.getAddToStartdIni());
-        List<String> startIniNames = new ArrayList<>();
-        startIniNames.addAll(startArgs.getAddToStartIni());
-
-        int count = 0;
-        count += modules.selectNodes(startDNames,startDirSelection);
-        count += modules.selectNodes(startIniNames,startIniSelection);
-
-        // look for ambiguous declaration found in both places
-        Predicate ambiguousPredicate = new CriteriaSetPredicate(dirCriteria,iniCriteria);
-        List<Module> ambiguous = modules.getMatching(ambiguousPredicate);
-
-        if (ambiguous.size() > 0)
+        // Select all the added modules to determine which ones are newly enabled
+        Set<String> enabled = new HashSet<>();
+        Set<String> startDModules = new HashSet<>();
+        Set<String> startModules = new HashSet<>();
+        if (!startArgs.getAddToStartdIni().isEmpty() || !startArgs.getAddToStartIni().isEmpty())
         {
-            StringBuilder warn = new StringBuilder();
-            warn.append("Ambiguous module locations detected, defaulting to --add-to-start for the following module selections:");
-            warn.append(" [");
-            
-            for (int i = 0; i < ambiguous.size(); i++)
+            if (startArgs.isAddToStartdFirst())
             {
-                if (i > 0)
-                {
-                    warn.append(", ");
-                }
-                warn.append(ambiguous.get(i).getName());
+                for (String name:startArgs.getAddToStartdIni())
+                    startDModules.addAll(modules.select(name,"--add-to-startd"));
+                for (String name:startArgs.getAddToStartIni())
+                    startModules.addAll(modules.select(name,"--add-to-start"));
             }
-            warn.append(']');
-            StartLog.warn(warn.toString());
+            else
+            {
+                for (String name:startArgs.getAddToStartIni())
+                    startModules.addAll(modules.select(name,"--add-to-start"));
+                for (String name:startArgs.getAddToStartdIni())
+                    startDModules.addAll(modules.select(name,"--add-to-startd"));
+            }
+            enabled.addAll(startDModules);
+            enabled.addAll(startModules);
         }
 
-        StartLog.debug("Adding %s new module(s)",count);
+        if (StartLog.isDebugEnabled())
+            StartLog.debug("startD=%s start=%s",startDModules,startModules);
         
-        // Acknowledge Licenses
-        ackLicenses();
+        // Check the licenses
+        if (startArgs.isLicenseCheckRequired())
+        {
+            Licensing licensing = new Licensing();
+            for (String name : enabled)
+                licensing.addModule(modules.get(name));
+            
+            if (licensing.hasLicenses())
+            {
+                if (startArgs.isApproveAllLicenses())
+                {
+                    StartLog.info("All Licenses Approved via Command Line Option");
+                }
+                else if (!licensing.acknowledgeLicenses())
+                {
+                    StartLog.warn(EXITING_LICENSE_NOT_ACKNOWLEDGED);
+                    System.exit(1);
+                }
+            }
+        }
 
-        // Collect specific modules to enable
-        // Should match 'criteria', with no other selections.explicit
-        Predicate startDMatcher = new UniqueCriteriaPredicate(dirCriteria);
-        Predicate startIniMatcher = new UniqueCriteriaPredicate(iniCriteria);
-
-        List<Module> startDModules = modules.getMatching(startDMatcher);
-        List<Module> startIniModules = modules.getMatching(startIniMatcher);
-
+        // generate the files
         List<FileArg> files = new ArrayList<FileArg>();
-
+        AtomicReference<BaseBuilder.Config> builder = new AtomicReference<>();
+        AtomicBoolean modified = new AtomicBoolean();
+        Consumer<Module> do_build_add = module ->
+        {
+            try
+            {
+                if (module.isSkipFilesValidation())
+                {
+                    StartLog.debug("Skipping [files] validation on %s",module.getName());
+                } 
+                else 
+                {
+                    if (builder.get().addModule(module))
+                        modified.set(true);
+                    for (String file : module.getFiles())
+                        files.add(new FileArg(module,startArgs.getProperties().expand(file)));
+                }
+            }
+            catch(Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        };
+        
         if (!startDModules.isEmpty())
         {
-            StartDirBuilder builder = new StartDirBuilder(this);
-            for (Module mod : startDModules)
-            {
-                if (ambiguous.contains(mod))
-                {
-                    // skip ambiguous module
-                    continue;
-                }
-                
-                if (mod.isSkipFilesValidation())
-                {
-                    StartLog.debug("Skipping [files] validation on %s",mod.getName());
-                } 
-                else 
-                {
-                    dirty |= builder.addModule(mod);
-                    for (String file : mod.getFiles())
-                    {
-                        files.add(new FileArg(mod,startArgs.getProperties().expand(file)));
-                    }
-                }
-            }
+            builder.set(new StartDirBuilder(this));
+            startDModules.stream().map(n->modules.get(n)).forEach(do_build_add);
         }
 
-        if (!startIniModules.isEmpty())
+        if (!startModules.isEmpty())
         {
-            StartIniBuilder builder = new StartIniBuilder(this);
-            for (Module mod : startIniModules)
-            {
-                if (mod.isSkipFilesValidation())
-                {
-                    StartLog.debug("Skipping [files] validation on %s",mod.getName());
-                } 
-                else 
-                {
-                    dirty |= builder.addModule(mod);
-                    for (String file : mod.getFiles())
-                    {
-                        files.add(new FileArg(mod,startArgs.getProperties().expand(file)));
-                    }
-                }
-            }
+            builder.set(new StartIniBuilder(this));
+            startModules.stream().map(n->modules.get(n)).forEach(do_build_add);
         }
-        
-        // Process files
+
         files.addAll(startArgs.getFiles());
-        dirty |= processFileResources(files);
-
-        return dirty;
+        if (!files.isEmpty() && processFileResources(files))
+            modified.set(Boolean.TRUE);
+        
+        return modified.get();
     }
-
+    
+        
     public BaseHome getBaseHome()
     {
         return baseHome;
@@ -273,7 +234,7 @@ public class BaseBuilder
             }
             
             // make the directories in ${jetty.base} that we need
-            FS.ensureDirectoryExists(file.getParent());
+            boolean modified = FS.ensureDirectoryExists(file.getParent());
             
             URI uri = URI.create(arg.uri);
 
@@ -332,7 +293,7 @@ public class BaseBuilder
                 if (startArgs.isTestingModeEnabled())
                 {
                     StartLog.log("TESTING MODE","Skipping required file check on: %s",shortRef);
-                    return true;
+                    return false;
                 }
 
                 StartLog.warn("Missing Required File: %s",baseHome.toShortForm(file));
@@ -343,7 +304,7 @@ public class BaseBuilder
                     StartLog.warn("  Run start.jar --create-files to download");
                 }
 
-                return true;
+                return false;
             }
         }
     }
@@ -372,7 +333,8 @@ public class BaseBuilder
             Path file = baseHome.getBasePath(arg.location);
             try
             {
-                dirty |= processFileResource(arg,file);
+                boolean processed = processFileResource(arg,file);
+                dirty |= processed;
             }
             catch (Throwable t)
             {

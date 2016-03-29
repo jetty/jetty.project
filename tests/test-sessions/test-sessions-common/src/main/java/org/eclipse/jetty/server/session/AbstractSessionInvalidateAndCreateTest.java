@@ -73,7 +73,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
         }
     }
 
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod);
 
 
 
@@ -96,7 +96,8 @@ public abstract class AbstractSessionInvalidateAndCreateTest
         String servletMapping = "/server";
         int inactivePeriod = 1;
         int scavengePeriod = 2;
-        AbstractTestServer server = createServer(0, inactivePeriod, scavengePeriod);
+        int idlePassivatePeriod = -1;
+        AbstractTestServer server = createServer(0, inactivePeriod, scavengePeriod, idlePassivatePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -124,13 +125,12 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-
                 // Make a request which will invalidate the existing session and create a new one
                 Request request2 = client.newRequest(url + "?action=test");
                 request2.header("Cookie", sessionCookie);
                 ContentResponse response2 = request2.send();
                 assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-
+         
                 // Wait for the scavenger to run, waiting 3 times the scavenger period
                 pause(scavengePeriod);
 
@@ -139,7 +139,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 assertTrue(listener.destroys.contains("session1"));
                 assertTrue(listener.destroys.contains("session2"));
                 //session2's HttpSessionBindingListener should have been called when it was scavenged
-                assertTrue(servlet.unbound);
+                assertTrue(servlet.listener.unbound);
             }
             finally
             {
@@ -151,24 +151,33 @@ public abstract class AbstractSessionInvalidateAndCreateTest
             server.stop();
         }
     }
+    
+    public static class Foo implements Serializable
+    {
+        public boolean bar = false;
+        
+        public boolean getBar() { return bar;};
+    }
 
-    public static class TestServlet extends HttpServlet
+    public static class MySessionBindingListener implements HttpSessionBindingListener, Serializable
     {
         private boolean unbound = false;
         
-        public class MySessionBindingListener implements HttpSessionBindingListener, Serializable
+        public void valueUnbound(HttpSessionBindingEvent event)
+        {
+            unbound = true;
+        }
+
+        public void valueBound(HttpSessionBindingEvent event)
         {
 
-            public void valueUnbound(HttpSessionBindingEvent event)
-            {
-                unbound = true;
-            }
-
-            public void valueBound(HttpSessionBindingEvent event)
-            {
-
-            }
         }
+    }
+    
+    public static class TestServlet extends HttpServlet
+    {
+        public MySessionBindingListener listener = new MySessionBindingListener();
+       
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
@@ -186,7 +195,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 {
                     //invalidate existing session
                     session.invalidate();
-
+                    
                     //now try to access the invalid session
                     try
                     {
@@ -202,7 +211,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                     //now make a new session
                     session = request.getSession(true);
                     session.setAttribute("identity", "session2");
-                    session.setAttribute("listener", new MySessionBindingListener());
+                    session.setAttribute("listener", listener);
                 }
                 else
                     fail("Session already missing");

@@ -47,13 +47,15 @@ public class SameNodeLoadTest extends AbstractSameNodeLoadTest
         _testSupport.tearDown();
     }
     
+  
+
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSameNodeLoadTest#createServer(int)
+     * @see org.eclipse.jetty.server.session.AbstractSameNodeLoadTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod)
     {
-        return  new GCloudTestServer(port, _testSupport.getConfiguration());
+        return new GCloudTestServer(port, max, scavenge, idlePassivationPeriod, _testSupport.getConfiguration());
     }
 
     @Test

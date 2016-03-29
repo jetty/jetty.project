@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
@@ -248,14 +249,31 @@ public class WebAppContextTest
     public void testServletContextListener() throws Exception
     {
         Server server = new Server();
+        HotSwapHandler swap = new HotSwapHandler();
+        server.setHandler(swap);
+        server.start();
+        
         ServletContextHandler context = new ServletContextHandler(
                 ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         context.setResourceBase(System.getProperty("java.io.tmpdir"));
-        server.setHandler(context);
 
         final List<String> history=new ArrayList<>();
-        
+
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent servletContextEvent)
+            {
+                history.add("I0");
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent servletContextEvent)
+            {
+                history.add("D0");
+            }
+        });
         context.addEventListener(new ServletContextListener()
         {
             @Override
@@ -268,6 +286,7 @@ public class WebAppContextTest
             public void contextDestroyed(ServletContextEvent servletContextEvent)
             {
                 history.add("D1");
+                throw new RuntimeException("Listener1 destroy broken");
             }
         });
         context.addEventListener(new ServletContextListener()
@@ -276,7 +295,7 @@ public class WebAppContextTest
             public void contextInitialized(ServletContextEvent servletContextEvent)
             {
                 history.add("I2");
-                throw new RuntimeException("Listener2 broken");
+                throw new RuntimeException("Listener2 init broken");
             }
 
             @Override
@@ -302,21 +321,32 @@ public class WebAppContextTest
         
         try
         {
-            server.start();
+            swap.setHandler(context);
+            context.start();
         }
         catch(Exception e)
         {
-            // System.err.println(e);
+            history.add(e.getMessage());
         }
         finally
         {
-            server.stop();
+            try
+            {
+                swap.setHandler(null);
+            }
+            catch(Exception e)
+            {
+                while(e.getCause() instanceof Exception)
+                    e=(Exception)e.getCause();
+                history.add(e.getMessage());
+            }
+            finally
+            {
+            }
         }
-          
-        // TODO should be either:
-        // Assert.assertThat(history,Matchers.contains("I1","I2","D1"));
-        // or
-        // Assert.assertThat(history,Matchers.contains("I1","I2","D3","D3","D1"));
-        Assert.assertThat(history,Matchers.contains("I1","I2","D3","D2","D1"));
+         
+        Assert.assertThat(history,Matchers.contains("I0","I1","I2","Listener2 init broken","D1","D0","Listener1 destroy broken"));
+        
+        server.stop();
     }
 }

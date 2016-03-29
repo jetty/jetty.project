@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,13 +36,47 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 public class JdbcTestServer extends AbstractTestServer
 {
     public static final String DRIVER_CLASS = "org.apache.derby.jdbc.EmbeddedDriver";
-    public static final String DEFAULT_CONNECTION_URL = "jdbc:derby:sessions;create=true";
-    public static final int SAVE_INTERVAL = 1;
+    public static final String DEFAULT_CONNECTION_URL = "jdbc:derby:memory:sessions;create=true";
+    public static final String DEFAULT_SHUTDOWN_URL = "jdbc:derby:memory:sessions;drop=true";
+    public static final int STALE_INTERVAL = 1;
     
+
+    public static final String EXPIRY_COL = "extime";
+    public static final String LAST_ACCESS_COL = "latime";
+    public static final String LAST_NODE_COL = "lnode";
+    public static final String LAST_SAVE_COL = "lstime";
+    public static final String MAP_COL = "mo";
+    public static final String MAX_IDLE_COL = "mi";  
+    public static final String TABLE = "mysessions";
+    public static final String ID_COL = "mysessionid";
+    public static final String ACCESS_COL = "atime";
+    public static final String CONTEXT_COL = "cpath";
+    public static final String COOKIE_COL = "cooktime";
+    public static final String CREATE_COL = "ctime";
     
     static 
     {
         System.setProperty("derby.system.home", MavenTestingUtils.getTargetFile("test-derby").getAbsolutePath());
+    }
+    
+    
+    public static void shutdown (String connectionUrl)
+    throws Exception
+    {
+        if (connectionUrl == null)
+            connectionUrl = DEFAULT_SHUTDOWN_URL;
+        
+        try
+        {
+            DriverManager.getConnection(connectionUrl);
+        }
+        catch( SQLException expected )
+        {
+            if (!"08006".equals(expected.getSQLState()))
+            {
+               throw expected;
+            }
+        }
     }
 
     
@@ -50,14 +85,14 @@ public class JdbcTestServer extends AbstractTestServer
         super(port);
     }
     
-    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod, String connectionUrl)
+    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, String connectionUrl)
     {
-        super(port, maxInactivePeriod, scavengePeriod, connectionUrl);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod, connectionUrl);
     }
     
-    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod)
+    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod, DEFAULT_CONNECTION_URL);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod, DEFAULT_CONNECTION_URL);
     }
     
  
@@ -70,44 +105,10 @@ public class JdbcTestServer extends AbstractTestServer
         return new SessionHandler(sessionManager);
     }
 
-    static int __workers=0;
-    
+   
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionIdManager(String)
+     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionManager()
      */
-    @Override
-    public  SessionIdManager newSessionIdManager(Object config)
-    {
-        synchronized(JdbcTestServer.class)
-        {
-            JDBCSessionIdManager idManager = new JDBCSessionIdManager(_server);
-            idManager.setScavengeInterval(_scavengePeriod);
-            idManager.setWorkerName("w"+(__workers++));
-            idManager.setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:(String)config));
-            JDBCSessionIdManager.SessionIdTableSchema idTableSchema = new JDBCSessionIdManager.SessionIdTableSchema();
-            idTableSchema.setTableName("mysessionids");
-            idTableSchema.setIdColumn("myid");
-            idManager.setSessionIdTableSchema(idTableSchema);
-            
-            JDBCSessionIdManager.SessionTableSchema sessionTableSchema = new JDBCSessionIdManager.SessionTableSchema();
-            sessionTableSchema.setTableName("mysessions");
-            sessionTableSchema.setIdColumn("mysessionid");
-            sessionTableSchema.setAccessTimeColumn("atime");
-            sessionTableSchema.setContextPathColumn("cpath");
-            sessionTableSchema.setCookieTimeColumn("cooktime");
-            sessionTableSchema.setCreateTimeColumn("ctime");
-            sessionTableSchema.setExpiryTimeColumn("extime");
-            sessionTableSchema.setLastAccessTimeColumn("latime");
-            sessionTableSchema.setLastNodeColumn("lnode");
-            sessionTableSchema.setLastSavedTimeColumn("lstime");
-            sessionTableSchema.setMapColumn("mo");
-            sessionTableSchema.setMaxIntervalColumn("mi");           
-            idManager.setSessionTableSchema(sessionTableSchema);
-            
-            return idManager;
-        }
-    }
-
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionManager()
      */
@@ -115,33 +116,29 @@ public class JdbcTestServer extends AbstractTestServer
     public SessionManager newSessionManager()
     {
         JDBCSessionManager manager =  new JDBCSessionManager();
-        manager.setSessionIdManager((JDBCSessionIdManager)_sessionIdManager);
-        manager.setSaveInterval(SAVE_INTERVAL); //ensure we save any changes to the session at least once per second
+        JDBCSessionDataStore ds = manager.getSessionDataStore();
+        ds.setGracePeriodSec(_scavengePeriod);
+        DatabaseAdaptor da = new DatabaseAdaptor();
+        da.setDriverInfo(DRIVER_CLASS, (_config==null?DEFAULT_CONNECTION_URL:(String)_config));
+        ds.setDatabaseAdaptor(da);
+        JDBCSessionDataStore.SessionTableSchema sessionTableSchema = new JDBCSessionDataStore.SessionTableSchema();
+        sessionTableSchema.setTableName(TABLE);
+        sessionTableSchema.setIdColumn(ID_COL);
+        sessionTableSchema.setAccessTimeColumn(ACCESS_COL);
+        sessionTableSchema.setContextPathColumn(CONTEXT_COL);
+        sessionTableSchema.setCookieTimeColumn(COOKIE_COL);
+        sessionTableSchema.setCreateTimeColumn(CREATE_COL);
+        sessionTableSchema.setExpiryTimeColumn(EXPIRY_COL);
+        sessionTableSchema.setLastAccessTimeColumn(LAST_ACCESS_COL);
+        sessionTableSchema.setLastNodeColumn(LAST_NODE_COL);
+        sessionTableSchema.setLastSavedTimeColumn(LAST_SAVE_COL);
+        sessionTableSchema.setMapColumn(MAP_COL);
+        sessionTableSchema.setMaxIntervalColumn(MAX_IDLE_COL);       
+        ds.setSessionTableSchema(sessionTableSchema);
         return manager;
     }
 
-    
-    public boolean existsInSessionIdTable(String id)
-    throws Exception
-    {
-        Class.forName(DRIVER_CLASS);
-        Connection con = null;
-        try
-        {
-            con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
-            PreparedStatement statement = con.prepareStatement("select * from "+
-                    ((JDBCSessionIdManager)_sessionIdManager)._sessionIdTableSchema.getTableName()+
-                    " where "+((JDBCSessionIdManager)_sessionIdManager)._sessionIdTableSchema.getIdColumn()+" = ?");
-            statement.setString(1, id);
-            ResultSet result = statement.executeQuery();
-            return result.next();
-        }
-        finally
-        {
-            if (con != null)
-                con.close();
-        }
-    }
+   
     
     
     public boolean existsInSessionTable(String id, boolean verbose)
@@ -153,8 +150,8 @@ public class JdbcTestServer extends AbstractTestServer
         {
             con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
             PreparedStatement statement = con.prepareStatement("select * from "+
-                    ((JDBCSessionIdManager)_sessionIdManager)._sessionTableSchema.getTableName()+
-                    " where "+((JDBCSessionIdManager)_sessionIdManager)._sessionTableSchema.getIdColumn()+" = ?");
+                    TABLE+
+                    " where "+ID_COL+" = ?");
             statement.setString(1, id);
             ResultSet result = statement.executeQuery();
             if (verbose)
@@ -187,8 +184,7 @@ public class JdbcTestServer extends AbstractTestServer
         try
         {
             con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
-            PreparedStatement statement = con.prepareStatement("select * from "+((JDBCSessionIdManager)_sessionIdManager)._sessionIdTableSchema.getTableName());
-          
+            PreparedStatement statement = con.prepareStatement("select "+ID_COL+" from "+TABLE);      
             ResultSet result = statement.executeQuery();
             while (result.next())
             {

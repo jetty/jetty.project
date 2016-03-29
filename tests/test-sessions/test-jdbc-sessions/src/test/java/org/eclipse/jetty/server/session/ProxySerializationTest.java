@@ -20,6 +20,7 @@
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -34,9 +35,9 @@ public class ProxySerializationTest extends AbstractProxySerializationTest
      * @see org.eclipse.jetty.server.session.AbstractProxySerializationTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivate)
     {
-        return new JdbcTestServer(port, max, scavenge);
+        return new JdbcTestServer(port, max, scavenge, idlePassivate);
     }
 
     /** 
@@ -55,4 +56,11 @@ public class ProxySerializationTest extends AbstractProxySerializationTest
         super.testProxySerialization();
     }
 
+ 
+    
+    @After
+    public void tearDown() throws Exception 
+    {
+        JdbcTestServer.shutdown(null);
+    }
 }

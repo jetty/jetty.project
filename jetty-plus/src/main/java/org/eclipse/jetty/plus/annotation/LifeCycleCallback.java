@@ -106,7 +106,7 @@ public abstract class LifeCycleCallback
         if (_target == null)
         {
             if (_targetClass == null)
-                _targetClass = Loader.loadClass(null, _className);
+                _targetClass = Loader.loadClass(_className);
             _target = _targetClass.getDeclaredMethod(_methodName, TypeUtil.NO_ARGS);
         }
 

@@ -63,7 +63,7 @@ public interface Connection extends Closeable
      * @return the {@link EndPoint} associated with this {@link Connection}
      */
     public EndPoint getEndPoint();
-
+    
     /**
      * <p>Performs a logical close of this connection.</p>
      * <p>For simple connections, this may just mean to delegate the close to the associated
@@ -91,8 +91,8 @@ public interface Connection extends Closeable
     public long getBytesIn();
     public long getBytesOut();
     public long getCreatedTimeStamp();
-
-    public interface UpgradeFrom extends Connection
+    
+    public interface UpgradeFrom
     {
         /**
          * <p>Takes the input buffer from the connection on upgrade.</p>
@@ -104,8 +104,8 @@ public interface Connection extends Closeable
          */
         ByteBuffer onUpgradeFrom();
     }
-
-    public interface UpgradeTo extends Connection
+    
+    public interface UpgradeTo
     {
         /**
          * <p>Callback method invoked when this connection is upgraded.</p>
@@ -117,8 +117,8 @@ public interface Connection extends Closeable
          */
         void onUpgradeTo(ByteBuffer prefilled);
     }
-
-    /**
+    
+    /** 
      * <p>A Listener for connection events.</p>
      * <p>Listeners can be added to a {@link Connection} to get open and close events.
      * The AbstractConnectionFactory implements a pattern where objects implement

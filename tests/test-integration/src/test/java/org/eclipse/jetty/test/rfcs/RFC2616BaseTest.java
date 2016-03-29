@@ -535,9 +535,9 @@ public abstract class RFC2616BaseTest
         req4.append("\n"); // no virtual host
 
         HttpTester.Response response = http.request(req4);
+        System.err.println(response);
 
         assertEquals("5.2 No Host",HttpStatus.BAD_REQUEST_400,response.getStatus());
-        assertEquals("5.2 No Host","", response.getContent());
     }
 
     /**

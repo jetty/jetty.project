@@ -62,8 +62,8 @@ public class ModuleTest
         Module module = new Module(basehome,file.toPath());
         
         Assert.assertThat("Module Name",module.getName(),is("websocket"));
-        Assert.assertThat("Module Parents Size",module.getParentNames().size(),is(1));
-        Assert.assertThat("Module Parents",module.getParentNames(),containsInAnyOrder("annotations"));
+        Assert.assertThat("Module Parents Size",module.getDepends().size(),is(1));
+        Assert.assertThat("Module Parents",module.getDepends(),containsInAnyOrder("annotations"));
         Assert.assertThat("Module Xmls Size",module.getXmls().size(),is(0));
         Assert.assertThat("Module Options Size",module.getLibs().size(),is(1));
         Assert.assertThat("Module Options",module.getLibs(),contains("lib/websocket/*.jar"));

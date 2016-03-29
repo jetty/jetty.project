@@ -92,7 +92,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         {
             try
             {
-                _class=Loader.loadClass(Holder.class, _className);
+                _class=Loader.loadClass(_className);
                 if(LOG.isDebugEnabled())
                     LOG.debug("Holding {} from {}",_class,_class.getClassLoader());
             }

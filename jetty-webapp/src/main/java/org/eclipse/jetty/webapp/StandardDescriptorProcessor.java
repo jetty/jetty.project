@@ -33,12 +33,12 @@ import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletException;
 import javax.servlet.SessionTrackingMode;
 
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -51,6 +51,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
@@ -272,7 +273,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             try
             {
-                Loader.loadClass(this.getClass(), servlet_class);
+                Loader.loadClass(servlet_class);
             }
             catch (ClassNotFoundException e)
             {
@@ -648,11 +649,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         XmlParser.Node tNode = node.get("session-timeout");
         if (tNode != null)
-        {
+        { 
             java.math.BigDecimal asDecimal = new java.math.BigDecimal(tNode.toString(false, true));
-            if (asDecimal.compareTo(AbstractSessionManager.MAX_INACTIVE_MINUTES) > 0)
-                throw new IllegalStateException ("Max session-timeout in minutes is "+AbstractSessionManager.MAX_INACTIVE_MINUTES);
-            
+            if (asDecimal.compareTo(org.eclipse.jetty.server.session.SessionManager.MAX_INACTIVE_MINUTES) > 0)
+                throw new IllegalStateException ("Max session-timeout in minutes is "+org.eclipse.jetty.server.session.SessionManager.MAX_INACTIVE_MINUTES);
+
             context.getSessionHandler().getSessionManager().setMaxInactiveInterval(asDecimal.intValueExact() * 60);
         }
 

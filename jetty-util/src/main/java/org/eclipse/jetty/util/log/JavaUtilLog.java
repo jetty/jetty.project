@@ -95,7 +95,7 @@ public class JavaUtilLog extends AbstractLogger
                         {
                             try
                             {
-                                URL props = Loader.getResource(JavaUtilLog.class,properties);
+                                URL props = Loader.getResource(properties);
                                 if (props != null)
                                     LogManager.getLogManager().readConfiguration(props.openStream());
                             }

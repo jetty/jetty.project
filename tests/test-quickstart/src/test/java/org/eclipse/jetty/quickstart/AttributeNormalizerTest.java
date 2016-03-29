@@ -43,10 +43,10 @@ public class AttributeNormalizerTest
         Resource webresource = Resource.newResource(webref);
         AttributeNormalizer normalizer = new AttributeNormalizer(webresource);
         String result = null;
-        
+
         result = normalizer.normalize(URI.create(webref));
         assertThat(result, is("${WAR}"));
-        
+
         result = normalizer.normalize(URI.create(webref + "/deep/ref"));
         assertThat(result, is("${WAR}/deep/ref"));
     }

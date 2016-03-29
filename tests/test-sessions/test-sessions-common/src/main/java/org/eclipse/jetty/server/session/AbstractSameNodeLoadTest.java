@@ -19,8 +19,8 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -52,7 +52,9 @@ public abstract class AbstractSameNodeLoadTest
 {
     protected boolean _stress = Boolean.getBoolean( "STRESS" );
 
-    public abstract AbstractTestServer createServer(int port);
+    
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod);
+
 
     @Test
     public void testLoad() throws Exception
@@ -61,7 +63,7 @@ public abstract class AbstractSameNodeLoadTest
         {
             String contextPath = "";
             String servletMapping = "/server";
-            AbstractTestServer server1 = createServer( 0 );
+            AbstractTestServer server1 = createServer(0, 20000, 4, 1000);
             server1.addContext( contextPath ).addServlet( TestServlet.class, servletMapping );
 
             try

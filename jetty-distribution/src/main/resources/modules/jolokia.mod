@@ -1,6 +1,5 @@
-#
-# Jolokia Jetty module
-#
+[description]
+Deploys the Jolokia console as a web application.
 
 [depend]
 stats

@@ -376,6 +376,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         }
         else
         {
+            result = channel.exchangeTerminating(exchange, result);
             HttpDestination destination = getHttpChannel().getHttpDestination();
             boolean ordered = destination.getHttpClient().isStrictEventOrdering();
             if (!ordered)

@@ -59,6 +59,7 @@ public class IncludeExclude<ITEM>
     /**
      * Default constructor over {@link HashSet}
      */
+    @SuppressWarnings("unchecked")
     public IncludeExclude()
     {
         this(HashSet.class);
@@ -72,6 +73,7 @@ public class IncludeExclude<ITEM>
      * @param setClass The type of {@link Set} to using internally
      * @param <SET> the {@link Set} type
      */
+    @SuppressWarnings("unchecked")
     public <SET extends Set<ITEM>> IncludeExclude(Class<SET> setClass)
     {
         try
@@ -124,7 +126,7 @@ public class IncludeExclude<ITEM>
         _includes.add(element);
     }
     
-    public void include(ITEM... element)
+    public void include(@SuppressWarnings("unchecked") ITEM... element)
     {
         for (ITEM e: element)
             _includes.add(e);
@@ -135,7 +137,7 @@ public class IncludeExclude<ITEM>
         _excludes.add(element);
     }
     
-    public void exclude(ITEM... element)
+    public void exclude(@SuppressWarnings("unchecked") ITEM... element)
     {
         for (ITEM e: element)
             _excludes.add(e);

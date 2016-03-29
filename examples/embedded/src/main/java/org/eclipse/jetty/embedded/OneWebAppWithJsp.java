@@ -62,6 +62,7 @@ public class OneWebAppWithJsp
                     + warFile.getAbsolutePath() );
         }
         webapp.setWar( warFile.getAbsolutePath() );
+        webapp.setExtractWAR(true);
 
         // This webapp will use jsps and jstl. We need to enable the
         // AnnotationConfiguration in order to correctly
@@ -100,6 +101,8 @@ public class OneWebAppWithJsp
 
         // Start things up! 
         server.start();
+        
+        server.dumpStdErr();
 
         // The use of server.join() the will make the current thread join and
         // wait until the server is done executing.

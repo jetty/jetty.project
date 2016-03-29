@@ -19,17 +19,34 @@
 package org.eclipse.jetty.nosql.mongodb;
 
 
+import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractInvalidationSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class InvalidateSessionTest extends AbstractInvalidationSessionTest
 {
+    public final static int IDLE_PASSIVATE_SEC = 1;
+    
+    @BeforeClass
+    public static void beforeClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+        MongoTestServer.createCollection();
+    }
+
+    @AfterClass
+    public static void afterClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+    }
 
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int maxInterval, int scavengeInterval, int idleInterval)
     {
-       return new MongoTestServer(port);
+        return new MongoTestServer(port, maxInterval, scavengeInterval, idleInterval);
     }
 
     @Override
@@ -37,11 +54,10 @@ public class InvalidateSessionTest extends AbstractInvalidationSessionTest
     {
         try
         {
-            Thread.currentThread().sleep(2000);
+            Thread.sleep(2 * IDLE_PASSIVATE_SEC * 1000);
         }
-        catch (Exception e)
+        catch (InterruptedException e)
         {
-            e.printStackTrace();
         }
     }
     

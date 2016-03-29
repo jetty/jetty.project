@@ -43,12 +43,12 @@ Contact the project developers via the project's "dev" list.
 
 Search for bugs
 ----------------
-This project uses Bugzilla to track ongoing development and issues.
+This project uses GitHub Issues to track ongoing development and issues.
 
-- [https://bugs.eclipse.org/bugs/buglist.cgi?product=Jetty](https://bugs.eclipse.org/bugs/buglist.cgi?product=Jetty)
+- [https://github.com/eclipse/jetty.project/issues](https://github.com/eclipse/jetty.project/issues)
 
 Create a new bug
 -----------------
 Be sure to search for existing bugs before you create another one. Remember that contributions are always welcome!
 
-- [https://bugs.eclipse.org/bugs/enter_bug.cgi?product=Jetty](https://bugs.eclipse.org/bugs/enter_bug.cgi?product=Jetty)
+- [https://github.com/eclipse/jetty.project/issues](https://github.com/eclipse/jetty.project/issues)

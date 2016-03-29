@@ -69,8 +69,9 @@ public class SpecExampleConstraintTest
         ContextHandler _context = new ContextHandler();
         _session = new SessionHandler();
 
-        HashLoginService _loginService = new HashLoginService(TEST_REALM);
-        _loginService.putUser("fred",new Password("password"));
+        TestLoginService _loginService = new TestLoginService(TEST_REALM);
+
+        _loginService.putUser("fred",new Password("password"), IdentityService.NO_ROLES);
         _loginService.putUser("harry",new Password("password"), new String[] {"HOMEOWNER"});
         _loginService.putUser("chris",new Password("password"), new String[] {"CONTRACTOR"});
         _loginService.putUser("steven", new Password("password"), new String[] {"SALESCLERK"});

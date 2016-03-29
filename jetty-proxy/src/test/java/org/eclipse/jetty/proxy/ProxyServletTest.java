@@ -61,6 +61,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpContentResponse;
 import org.eclipse.jetty.client.HttpProxy;
@@ -1081,7 +1082,8 @@ public class ProxyServletTest
         Assert.assertEquals(-1, input.read());
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
-        Assert.assertEquals(0, destination.getConnectionPool().getIdleConnections().size());
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 
     @Test
@@ -1154,7 +1156,8 @@ public class ProxyServletTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
-        Assert.assertEquals(0, destination.getConnectionPool().getIdleConnections().size());
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 
     @Test

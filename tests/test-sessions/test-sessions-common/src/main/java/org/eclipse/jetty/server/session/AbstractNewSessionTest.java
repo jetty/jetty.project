@@ -37,10 +37,13 @@ import org.junit.Test;
 
 /**
  * AbstractNewSessionTest
+ * 
+ * Create a session, wait for it to be scanvenged, represent the cookie and check that  a
+ * new session is created.
  */
 public abstract class AbstractNewSessionTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivatePeriod);
 
     public void pause(int scavenge)
     {
@@ -59,7 +62,7 @@ public abstract class AbstractNewSessionTest
     {
         String servletMapping = "/server";
         int scavengePeriod = 3;
-        AbstractTestServer server = createServer(0, 1, scavengePeriod);
+        AbstractTestServer server = createServer(0, 1, scavengePeriod, 4);
         ServletContextHandler context = server.addContext("/");
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "";

@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 
@@ -42,7 +43,7 @@ import org.junit.Test;
  */
 public abstract class AbstractInvalidationSessionTest
 {
-    public abstract AbstractTestServer createServer(int port);
+    public abstract AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int idlePassivatePeriod);
     public abstract void pause();
 
     @Test
@@ -50,7 +51,7 @@ public abstract class AbstractInvalidationSessionTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        AbstractTestServer server1 = createServer(0);
+        AbstractTestServer server1 = createServer(0, 30, 1, 1);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
 
@@ -58,7 +59,7 @@ public abstract class AbstractInvalidationSessionTest
         {
             server1.start();
             int port1 = server1.getPort();
-            AbstractTestServer server2 = createServer(0);
+            AbstractTestServer server2 = createServer(0, 30, 1, 1);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
             try
@@ -69,6 +70,7 @@ public abstract class AbstractInvalidationSessionTest
                 QueuedThreadPool executor = new QueuedThreadPool();
                 client.setExecutor(executor);
                 client.start();
+                
                 try
                 {
                     String[] urls = new String[2];
@@ -83,22 +85,18 @@ public abstract class AbstractInvalidationSessionTest
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                    
-                    
-                    // Be sure the session is also present in node2
 
+                    // Be sure the session is also present in node2
                     Request request2 = client.newRequest(urls[1] + "?action=increment");
                     request2.header("Cookie", sessionCookie);
                     ContentResponse response2 = request2.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
- 
 
                     // Invalidate on node1
                     Request request1 = client.newRequest(urls[0] + "?action=invalidate");
                     request1.header("Cookie", sessionCookie);
                     response1 = request1.send();
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
-           
 
                     pause();
 
@@ -145,6 +143,18 @@ public abstract class AbstractInvalidationSessionTest
             {
                 HttpSession session = request.getSession(false);
                 session.invalidate();
+                
+                try
+                {
+                    session.invalidate();
+                    fail("Session should be invalid");
+                    
+                }
+                catch (IllegalStateException e)
+                {
+                    //expected
+                }
+                
             }
             else if ("test".equals(action))
             {

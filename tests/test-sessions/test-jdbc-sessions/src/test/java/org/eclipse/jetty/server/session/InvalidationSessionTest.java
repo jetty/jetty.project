@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
+import org.eclipse.jetty.server.SessionManager;
 import org.junit.After;
 import org.junit.Test;
 
@@ -29,9 +27,11 @@ import org.junit.Test;
  */
 public class InvalidationSessionTest extends AbstractInvalidationSessionTest
 {
-    public AbstractTestServer createServer(int port)
+    public static final int IDLE_PASSIVATE_SEC = 3;
+    
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int idlePassivateInterval)
     {
-        return new JdbcTestServer(port);
+        return new JdbcTestServer(port, maxInactive, scavengeInterval, idlePassivateInterval);
     }
     
     public void pause()
@@ -43,7 +43,7 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
         //that the node will re-load the session from the database and discover that it has gone.
         try
         {
-            Thread.sleep(2 * JdbcTestServer.SAVE_INTERVAL * 1000);
+            Thread.sleep(2 * IDLE_PASSIVATE_SEC * 1000);
         }
         catch (InterruptedException e)
         {
@@ -60,12 +60,6 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
     @After
     public void tearDown() throws Exception 
     {
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
+        JdbcTestServer.shutdown(null);
     }
 }

@@ -37,11 +37,12 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Locker
 {
     private static final boolean SPIN = Boolean.getBoolean(Locker.class.getName() + ".spin");
+    private static final Lock LOCKED = new Lock();
 
     private final boolean _spin;
     private final ReentrantLock _lock = new ReentrantLock();
     private final AtomicReference<Thread> _spinLockState = new AtomicReference<>(null);
-    private final Lock _unlock = new Lock();
+    private final Lock _unlock = new UnLock();
 
     public Locker()
     {
@@ -61,6 +62,17 @@ public class Locker
             concLock();
         return _unlock;
     }
+    
+    
+    public Lock lockIfNotHeld ()
+    {
+        if (_spin)
+            throw new UnsupportedOperationException();
+        if (_lock.isHeldByCurrentThread())
+            return LOCKED;
+        _lock.lock();
+        return _unlock;
+    }
 
     private void spinLock()
     {
@@ -78,6 +90,7 @@ public class Locker
             return;
         }
     }
+    
 
     private void concLock()
     {
@@ -93,8 +106,16 @@ public class Locker
         else
             return _lock.isLocked();
     }
-
-    public class Lock implements AutoCloseable
+    public static class Lock implements AutoCloseable
+    {
+        @Override
+        public void close()
+        {
+        }
+    }
+    
+    
+    public class UnLock extends Lock
     {
         @Override
         public void close()

@@ -24,6 +24,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -51,7 +53,10 @@ import org.junit.Test;
  */
 public abstract class AbstractLastAccessTimeTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
+    
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivatePeriod);
+ 
+   
 
     @Test
     public void testLastAccessTime() throws Exception
@@ -60,21 +65,27 @@ public abstract class AbstractLastAccessTimeTest
         String servletMapping = "/server";
         int maxInactivePeriod = 8; //session will timeout after 8 seconds
         int scavengePeriod = 2; //scavenging occurs every 2 seconds
-        AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod);
+        int idlePassivatePeriod = -1; //dont check for idle sessions to passivate
+        AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
         TestServlet servlet1 = new TestServlet();
         ServletHolder holder1 = new ServletHolder(servlet1);
         ServletContextHandler context = server1.addContext(contextPath);
         TestSessionListener listener1 = new TestSessionListener();
-        context.addEventListener(listener1);
+        context.getSessionHandler().addEventListener(listener1);
         context.addServlet(holder1, servletMapping);
+        SessionManager m1 = (SessionManager)context.getSessionHandler().getSessionManager();
+        
 
         try
         {
             server1.start();
             int port1=server1.getPort();
-            AbstractTestServer server2 = createServer(0, maxInactivePeriod, scavengePeriod);
-            server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+            AbstractTestServer server2 = createServer(0, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
+            ServletContextHandler context2 = server2.addContext(contextPath);
+            context2.addServlet(TestServlet.class, servletMapping);
+            SessionManager m2 = (SessionManager)context2.getSessionHandler().getSessionManager();
 
+            
             try
             {
                 server2.start();
@@ -89,9 +100,12 @@ public abstract class AbstractLastAccessTimeTest
                     assertEquals("test", response1.getContentAsString());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue( sessionCookie != null );
+                    assertEquals(1, ((MemorySessionStore)m1.getSessionStore()).getSessions());
+                    assertEquals(1, ((MemorySessionStore)m1.getSessionStore()).getSessionsMax());
+                    assertEquals(1, ((MemorySessionStore)m1.getSessionStore()).getSessionsTotal());
                     // Mangle the cookie, replacing Path with $Path, etc.
-                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
+                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");        
+                    
                     // Perform some request to server2 using the session cookie from the previous request
                     // This should migrate the session from server1 to server2, and leave server1's
                     // session in a very stale state, while server2 has a very fresh session.
@@ -111,14 +125,16 @@ public abstract class AbstractLastAccessTimeTest
                             sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                         Thread.sleep(requestInterval);
+                        assertSessionCounts(1,1,1, m2);
                     }
-
+                    
                     // At this point, session1 should be eligible for expiration.
                     // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                     Thread.sleep(scavengePeriod * 2500L);
-
+                    
                     //check that the session was not scavenged over on server1 by ensuring that the SessionListener destroy method wasn't called
-                    assertFalse(listener1.destroyed);
+                    assertFalse(listener1._destroys.contains(AbstractTestServer.extractSessionId(sessionCookie)));
+                    assertAfterScavenge(m1);
                 }
                 finally
                 {
@@ -135,22 +151,39 @@ public abstract class AbstractLastAccessTimeTest
             server1.stop();
         }
     }
+    
+    public void assertAfterSessionCreated (SessionManager m)
+    {
+        assertSessionCounts(1, 1, 1, m);
+    }
+    
+    public void assertAfterScavenge (SessionManager manager)
+    {
+        assertSessionCounts(1,1,1, manager);
+    }
+    
+    public void assertSessionCounts (int current, int max, int total, SessionManager manager)
+    {
+        assertEquals(current, ((MemorySessionStore)manager.getSessionStore()).getSessions());
+        assertEquals(max, ((MemorySessionStore)manager.getSessionStore()).getSessionsMax());
+        assertEquals(total, ((MemorySessionStore)manager.getSessionStore()).getSessionsTotal());
+    }
 
     public static class TestSessionListener implements HttpSessionListener
     {
-        public boolean destroyed = false;
-        public boolean created = false;
+        public Set<String> _creates = new HashSet<String>();
+        public Set<String> _destroys = new HashSet<String>();
 
         @Override
         public void sessionDestroyed(HttpSessionEvent se)
         {
-           destroyed = true;
+           _destroys.add(se.getSession().getId());
         }
 
         @Override
         public void sessionCreated(HttpSessionEvent se)
         {
-            created = true;
+            _creates.add(se.getSession().getId());
         }
     }
 
@@ -158,7 +191,10 @@ public abstract class AbstractLastAccessTimeTest
 
     public static class TestServlet extends HttpServlet
     {
-
+        /**
+         * 
+         */
+        private static final long serialVersionUID = 1L;
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
@@ -187,14 +223,14 @@ public abstract class AbstractLastAccessTimeTest
 
         private void sendResult(HttpSession session, PrintWriter writer)
         {
-                if (session != null)
-                {
-                        writer.print(session.getAttribute("test"));
-                }
-                else
-                {
-                        writer.print("null");
-                }
+            if (session != null)
+            {
+                writer.print(session.getAttribute("test"));
+            }
+            else
+            {
+                writer.print("null");
+            }
         }
     }
 }

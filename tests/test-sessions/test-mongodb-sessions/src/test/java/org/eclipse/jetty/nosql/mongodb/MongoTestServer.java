@@ -20,14 +20,13 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import java.net.UnknownHostException;
 
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.SessionHandler;
 
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 
 
@@ -37,69 +36,49 @@ import com.mongodb.MongoException;
 public class MongoTestServer extends AbstractTestServer
 {
     static int __workers=0;
-    private boolean _saveAllAttributes = false; // false save dirty, true save all
     
     
-    public static class TestMongoSessionIdManager extends MongoSessionIdManager 
+    
+    public static void dropCollection () throws MongoException, UnknownHostException
     {
-
-        public TestMongoSessionIdManager(Server server) throws UnknownHostException, MongoException
-        {
-            super(server);
-        }
-        
-        
-        public void deleteAll ()
-        {
-            
-            DBCursor checkSessions = _sessions.find();
-
-            for (DBObject session : checkSessions)
-            {
-                _sessions.remove(session);
-            }
-        }
-        
-        public void cancelScavenge ()
-        {
-            if (_scavengerTask != null)
-                _scavengerTask.cancel();
-        }
+        new Mongo().getDB("HttpSessions").getCollection("testsessions").drop();
     }
+    
+    
+    public static void createCollection() throws UnknownHostException, MongoException
+    {
+        new Mongo().getDB("HttpSessions").createCollection("testsessions", null);
+    }
+    
+    
+    public static DBCollection getCollection () throws UnknownHostException, MongoException 
+    {
+        return new Mongo().getDB("HttpSessions").getCollection("testsessions");
+    }
+    
     
     public MongoTestServer(int port)
     {
-        super(port, 30, 10);
+        super(port);
     }
 
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod)
+    
+    public MongoTestServer(int port, int idlePassivatePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod);
+        super(port, 30, 10, idlePassivatePeriod);
+    }
+
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod,int idlePassivatePeriod)
+    {
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }
     
     
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, boolean saveAllAttributes)
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, boolean saveAllAttributes)
     {
-        super(port, maxInactivePeriod, scavengePeriod);
-        
-        _saveAllAttributes = saveAllAttributes;
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }
 
-    public SessionIdManager newSessionIdManager(Object config)
-    {
-        try
-        {
-            MongoSessionIdManager idManager = new TestMongoSessionIdManager(_server);
-            idManager.setWorkerName("w"+(__workers++));
-            idManager.setScavengePeriod(_scavengePeriod);                  
-
-            return idManager;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
 
     public SessionManager newSessionManager()
     {
@@ -107,16 +86,14 @@ public class MongoTestServer extends AbstractTestServer
         try
         {
             manager = new MongoSessionManager();
+            ((MongoSessionManager)manager).getSessionDataStore().setDBCollection(getCollection());
+            manager.getSessionDataStore().setGracePeriodSec(_scavengePeriod);
         }
         catch (Exception e)
         {
             throw new RuntimeException(e);
         }
         
-        manager.setSavePeriod(0);
-        manager.setStalePeriod(0);
-        manager.setSaveAllAttributes(_saveAllAttributes);
-        //manager.setScavengePeriod((int)TimeUnit.SECONDS.toMillis(_scavengePeriod));
         return manager;
     }
 

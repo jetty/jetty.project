@@ -22,18 +22,26 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.eclipse.jetty.start.graph.Graph;
-import org.eclipse.jetty.start.graph.GraphException;
-import org.eclipse.jetty.start.graph.OnlyTransitivePredicate;
-import org.eclipse.jetty.start.graph.Selection;
+import org.eclipse.jetty.util.TopologicalSort;
 
 /**
  * Access for all modules declared, as well as what is enabled.
  */
-public class Modules extends Graph<Module>
+public class Modules implements Iterable<Module>
 {
+    private final List<Module> modules = new ArrayList<>();
+    private final Map<String,Module> names = new HashMap<>();
     private final BaseHome baseHome;
     private final StartArgs args;
 
@@ -41,8 +49,6 @@ public class Modules extends Graph<Module>
     {
         this.baseHome = basehome;
         this.args = args;
-        this.setSelectionTerm("enable");
-        this.setNodeTerm("module");
         
         String java_version = System.getProperty("java.version");
         if (java_version!=null)
@@ -53,24 +59,16 @@ public class Modules extends Graph<Module>
 
     public void dump()
     {
-        List<Module> ordered = new ArrayList<>();
-        ordered.addAll(getNodes());
-        Collections.sort(ordered,new Module.NameComparator());
-
-        List<Module> active = getSelected();
-
-        for (Module module : ordered)
+        List<String> ordered = modules.stream().map(m->{return m.getName();}).collect(Collectors.toList());
+        Collections.sort(ordered);
+        ordered.stream().map(n->{return get(n);}).forEach(module->
         {
-            boolean activated = active.contains(module);
-            boolean selected = module.isSelected();
-            boolean transitive = selected && module.matches(OnlyTransitivePredicate.INSTANCE);
-
             String status = "[ ]";
-            if (transitive)
+            if (module.isTransitive())
             {
                 status = "[t]";
             }
-            else if (selected)
+            else if (module.isSelected())
             {
                 status = "[x]";
             }
@@ -80,9 +78,17 @@ public class Modules extends Graph<Module>
             {
                 System.out.printf("        Ref: %s%n",module.getFilesystemRef());
             }
-            for (String parent : module.getParentNames())
+            for (String description : module.getDescription())
+            {
+                System.out.printf("           : %s%n",description);
+            }
+            for (String parent : module.getDepends())
             {
                 System.out.printf("     Depend: %s%n",parent);
+            }
+            for (String optional : module.getOptional())
+            {
+                System.out.printf("   Optional: %s%n",optional);
             }
             for (String lib : module.getLibs())
             {
@@ -92,91 +98,34 @@ public class Modules extends Graph<Module>
             {
                 System.out.printf("        XML: %s%n",xml);
             }
-            if (StartLog.isDebugEnabled())
+            for (String jvm : module.getJvmArgs())
             {
-                System.out.printf("      depth: %d%n",module.getDepth());
+                System.out.printf("        JVM: %s%n",jvm);
             }
-            if (activated)
+            if (module.isSelected())
             {
-                for (Selection selection : module.getSelections())
+                for (String selection : module.getSelections())
                 {
-                    System.out.printf("    Enabled: <via> %s%n",selection);
+                    System.out.printf("    Enabled: %s%n",selection);
                 }
             }
-            else
-            {
-                System.out.printf("    Enabled: <not enabled in this configuration>%n");
-            }
-        }
+        });
     }
 
-    @Override
-    public Module resolveNode(String name)
+    public void dumpSelected()
     {
-        String expandedName = args.getProperties().expand(name);
-
-        if (Props.hasPropertyKey(expandedName))
+        int i=0;
+        for (Module module:getSelected())
         {
-            StartLog.debug("Not yet able to expand property in: %s",name);
-            return null;
-        }
-
-        Path file = baseHome.getPath("modules/" + expandedName + ".mod");
-        if (FS.canReadFile(file))
-        {
-            Module parent = registerModule(file);
-            parent.expandProperties(args.getProperties());
-            updateParentReferencesTo(parent);
-            return parent;
-        }
-        else
-        {
-            if (!Props.hasPropertyKey(name))
+            String name=module.getName();
+            String index=(i++)+")";
+            for (String s:module.getSelections())
             {
-                StartLog.debug("Missing module definition: [ Mod: %s | File: %s ]",name,file);
-            }
-            return null;
-        }
-    }
-    
-    @Override
-    public void onNodeSelected(Module module)
-    {
-        StartLog.debug("on node selected: [%s] (%s.mod)",module.getName(),module.getFilesystemRef());
-        args.parseModule(module);
-        module.expandProperties(args.getProperties());
-    }
-
-    public List<String> normalizeLibs(List<Module> active)
-    {
-        List<String> libs = new ArrayList<>();
-        for (Module module : active)
-        {
-            for (String lib : module.getLibs())
-            {
-                if (!libs.contains(lib))
-                {
-                    libs.add(lib);
-                }
+                System.out.printf("  %4s %-15s %s%n",index,name,s);
+                index="";
+                name="";
             }
         }
-        return libs;
-    }
-
-    public List<String> normalizeXmls(List<Module> active)
-    {
-        List<String> xmls = new ArrayList<>();
-        for (Module module : active)
-        {
-            for (String xml : module.getXmls())
-            {
-                if (!xmls.contains(xml))
-                {
-                    xmls.add(xml);
-                }
-            }
-        }
-        return xmls;
     }
 
     public void registerAll() throws IOException
@@ -191,54 +140,26 @@ public class Modules extends Graph<Module>
     {
         if (!FS.canReadFile(file))
         {
-            throw new GraphException("Cannot read file: " + file);
+            throw new IllegalStateException("Cannot read file: " + file);
         }
         String shortName = baseHome.toShortForm(file);
         try
         {
             StartLog.debug("Registering Module: %s",shortName);
             Module module = new Module(baseHome,file);
-            return register(module);
+            modules.add(module);
+            names.put(module.getName(),module);
+            if (module.isDynamic())
+                names.put(module.getFilesystemRef(),module);
+            return module;
+        }
+        catch (Error|RuntimeException t)
+        {
+            throw t;
         }
         catch (Throwable t)
         {
-            throw new GraphException("Unable to register module: " + shortName,t);
-        }
-    }
-
-    /**
-     * Modules can have a different logical name than to their filesystem reference. This updates existing references to
-     * the filesystem form to use the logical
-     * name form.
-     * 
-     * @param module
-     *            the module that might have other modules referring to it.
-     */
-    private void updateParentReferencesTo(Module module)
-    {
-        if (module.getName().equals(module.getFilesystemRef()))
-        {
-            // nothing to do, its sane already
-            return;
-        }
-
-        for (Module m : getNodes())
-        {
-            List<String> resolvedParents = new ArrayList<>();
-            for (String parent : m.getParentNames())
-            {
-                if (parent.equals(module.getFilesystemRef()))
-                {
-                    // use logical name instead
-                    resolvedParents.add(module.getName());
-                }
-                else
-                {
-                    // use name as-is
-                    resolvedParents.add(parent);
-                }
-            }
-            m.setParentNames(resolvedParents);
+            throw new IllegalStateException("Unable to register module: " + shortName,t);
         }
     }
 
@@ -247,21 +168,103 @@ public class Modules extends Graph<Module>
     {
         StringBuilder str = new StringBuilder();
         str.append("Modules[");
-        str.append("count=").append(count());
+        str.append("count=").append(modules.size());
         str.append(",<");
-        boolean delim = false;
-        for (String name : getNodeNames())
+        final AtomicBoolean delim = new AtomicBoolean(false);
+        modules.forEach(m->
         {
-            if (delim)
-            {
+            if (delim.get())
                 str.append(',');
-            }
-            str.append(name);
-            delim = true;
-        }
+            str.append(m.getName());
+            delim.set(true);
+        });
         str.append(">");
         str.append("]");
         return str.toString();
     }
 
+    public void sort()
+    {
+        TopologicalSort<Module> sort = new TopologicalSort<>();
+        for (Module module: modules)
+        {
+            Consumer<String> add = name ->
+            {
+                Module dependency = names.get(name);
+                if (dependency!=null)
+                    sort.addDependency(module,dependency);
+            };
+            module.getDepends().forEach(add);
+            module.getOptional().forEach(add);
+        }
+        sort.sort(modules);
+    }
+
+    public List<Module> getSelected()
+    {
+        return modules.stream().filter(m->{return m.isSelected();}).collect(Collectors.toList());
+    }
+
+    public Set<String> select(String name, String enabledFrom)
+    {
+        Module module = get(name);
+        if (module==null)
+            throw new UsageException(UsageException.ERR_UNKNOWN,"Unknown module='%s'",name);
+
+        Set<String> enabled = new HashSet<>();
+        enable(enabled,module,enabledFrom,false);
+        return enabled;
+    }
+
+    private void enable(Set<String> enabled,Module module, String enabledFrom, boolean transitive)
+    {
+        StartLog.debug("enable %s from %s transitive=%b",module,enabledFrom,transitive);
+        if (module.addSelection(enabledFrom,transitive))
+        {
+            StartLog.debug("enabled %s",module.getName());
+            enabled.add(module.getName());
+            module.expandProperties(args.getProperties());
+            if (module.hasDefaultConfig())
+            {
+                for(String line:module.getDefaultConfig())
+                    args.parse(line,module.getFilesystemRef(),false);
+                for (Module m:modules)
+                    m.expandProperties(args.getProperties());
+            }
+        }
+        else if (module.isTransitive() && module.hasIniTemplate())
+            enabled.add(module.getName());
+        
+        for(String name:module.getDepends())
+        {
+            Module depends = names.get(name);
+            StartLog.debug("%s depends on %s/%s",module,name,depends);
+            if (depends==null)
+            {
+                Path file = baseHome.getPath("modules/" + name + ".mod");
+                depends = registerModule(file);
+                depends.expandProperties(args.getProperties());
+            }
+            
+            if (depends!=null)
+                enable(enabled,depends,"transitive from "+module.getName(),true);
+        }
+    }
+    
+    public Module get(String name)
+    {
+        return names.get(name);
+    }
+
+    @Override
+    public Iterator<Module> iterator()
+    {
+        return modules.iterator();
+    }
+
+    public Stream<Module> stream()
+    {
+        return modules.stream();
+    }
+    
 }

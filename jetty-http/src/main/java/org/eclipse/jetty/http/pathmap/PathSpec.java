@@ -27,6 +27,8 @@ public abstract class PathSpec implements Comparable<PathSpec>
     protected PathSpecGroup group;
     protected int pathDepth;
     protected int specLength;
+    protected String prefix;
+    protected String suffix;
 
     @Override
     public int compareTo(PathSpec other)
@@ -124,6 +126,24 @@ public abstract class PathSpec implements Comparable<PathSpec>
         return pathSpec;
     }
 
+    /**
+     * A simple prefix match for the pathspec or null
+     * @return A simple prefix match for the pathspec or null
+     */
+    public String getPrefix()
+    {
+        return prefix;
+    }
+
+    /**
+     * A simple suffix match for the pathspec or null
+     * @return A simple suffix match for the pathspec or null
+     */
+    public String getSuffix()
+    {
+        return suffix;
+    }
+    
     /**
      * Get the relative path.
      * 

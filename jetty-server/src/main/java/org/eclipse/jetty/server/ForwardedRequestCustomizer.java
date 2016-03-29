@@ -215,6 +215,7 @@ public class ForwardedRequestCustomizer implements Customizer
             {
                 request.setAttribute("javax.servlet.request.ssl_session_id", ssl_session_id);
                 request.setScheme(HttpScheme.HTTPS.asString());
+                request.setSecure(true);
             }
         }
 

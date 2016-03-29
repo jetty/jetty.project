@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+
+  <!-- ===================================================================== -->
+  <!-- Get a reference to the default local cache.                           -->
+  <!-- ===================================================================== -->
+  <New id="local" class="org.infinispan.manager.DefaultCacheManager">
+     <Get id="cache" name="cache"></Get>
+  </New>
+
+  <!-- ===================================================================== -->
+  <!-- Get a reference to a hotrod client for a remote cache.               -->
+  <!-- Change the name of the cache to match your setup.                    -->
+  <!-- ===================================================================== -->
+  <!--
+  <New id="hotrodMgr" class="org.infinispan.client.hotrod.RemoteCacheManager">
+    <Call id="cache" name="getCache">
+      <Arg>sessions</Arg>
+    </Call>
+  </New>
+  -->
+
+
+  <Get name="sessionHandler">
+     <Set name="sessionManager">
+        <New class="org.eclipse.jetty.server.session.infinispan.InfinispanSessionManager">
+           <Set name="maxInactiveInterval">seconds</Set>
+           <Get name="sessionDataStore">
+             <Set name="cache">
+                <Ref id="cache"/>
+             </Set>
+           </Get>
+           <Get name="sessionStore">
+             <Set name="idlePassivationTimeoutSec">seconds</Set>
+             <Set name="expiryTimeoutSec">seconds</Set>
+           </Get>
+        </New>     
+     </Set>
+  </Get>
+
+</Configure>

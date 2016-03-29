@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+
+  <Get name="sessionHandler">
+     <Set name="sessionManager">
+        <New class="org.eclipse.jetty.server.session.FileSessionManager">
+           <Set name="maxInactiveInterval">seconds</Set>
+           <Get name="sessionDataStore">
+             <Set name="storeDir">filename</Set>
+             <Set name="deleteUnrestorableFiles">boolean</Set>
+           </Get>
+           <Get name="sessionStore">
+             <Set name="idlePassivationTimeoutSec">seconds</Set>
+             <Set name="expiryTimeoutSec">seconds</Set>
+           </Get>
+        </New>     
+     </Set>
+  </Get>
+
+</Configure>

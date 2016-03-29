@@ -25,9 +25,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
@@ -89,14 +86,7 @@ public class HttpClientFailureTest
         try
         {
             client.newRequest("localhost", connector.getLocalPort())
-                    .onRequestHeaders(new Request.HeadersListener()
-                    {
-                        @Override
-                        public void onHeaders(Request request)
-                        {
-                            connectionRef.get().getEndPoint().close();
-                        }
-                    })
+                    .onRequestHeaders(request -> connectionRef.get().getEndPoint().close())
                     .timeout(5, TimeUnit.SECONDS)
                     .send();
             Assert.fail();
@@ -106,7 +96,7 @@ public class HttpClientFailureTest
             // Expected.
         }
 
-        DuplexConnectionPool connectionPool = connectionRef.get().getHttpDestination().getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)connectionRef.get().getHttpDestination().getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
@@ -134,25 +124,17 @@ public class HttpClientFailureTest
         final CountDownLatch completeLatch = new CountDownLatch(1);
         DeferredContentProvider content = new DeferredContentProvider();
         client.newRequest("localhost", connector.getLocalPort())
-                .onRequestCommit(new Request.CommitListener()
+                .onRequestCommit(request ->
                 {
-                    @Override
-                    public void onCommit(Request request)
-                    {
-                        connectionRef.get().getEndPoint().close();
-                        commitLatch.countDown();
-                    }
+                    connectionRef.get().getEndPoint().close();
+                    commitLatch.countDown();
                 })
                 .content(content)
                 .idleTimeout(2, TimeUnit.SECONDS)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isFailed())
-                            completeLatch.countDown();
-                    }
+                    if (result.isFailed())
+                        completeLatch.countDown();
                 });
 
         Assert.assertTrue(commitLatch.await(5, TimeUnit.SECONDS));
@@ -170,7 +152,7 @@ public class HttpClientFailureTest
         Assert.assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 
-        DuplexConnectionPool connectionPool = connectionRef.get().getHttpDestination().getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)connectionRef.get().getHttpDestination().getConnectionPool();
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());

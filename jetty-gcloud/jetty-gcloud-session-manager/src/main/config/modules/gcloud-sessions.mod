@@ -1,6 +1,5 @@
-#
-# Jetty GCloudDatastore Session Manager module
-#
+[description]
+Enables  GCloudDatastore session management.
 
 [depend]
 annotations
@@ -44,18 +43,17 @@ maven://com.google.apis/google-api-services-datastore/v1beta2-rev23-1.19.0|lib/g
 lib/jetty-gcloud-session-manager-${jetty.version}.jar
 lib/gcloud/*.jar
 
-[xml]
-etc/jetty-gcloud-sessions.xml
 
 [license]
 GCloudDatastore is an open source project hosted on Github and released under the Apache 2.0 license.
 https://github.com/GoogleCloudPlatform/gcloud-java
 http://www.apache.org/licenses/LICENSE-2.0.html
 
+[xml]
+etc/jetty-gcloud-sessions.xml
+
+
 [ini-template]
-## Unique identifier to force the workername for this node in the cluster
-## If not set, will default to the string "node" plus the Env variable $GAE_MODULE_INSTANCE
-# jetty.gcloudSession.workerName=node1
 
 
 ## GCloudDatastore Session config

@@ -35,8 +35,10 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.JarResource;
@@ -295,7 +297,7 @@ public class GCloudSessionTestSupport
     public void listSessions () throws Exception
     {
         ensureDatastore();
-        GqlQuery.Builder builder = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+GCloudSessionManager.KIND);
+        GqlQuery.Builder builder = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+GCloudSessionDataStore.KIND);
        
         Query<Entity> query = builder.build();
     
@@ -311,11 +313,30 @@ public class GCloudSessionTestSupport
         System.err.println("END OF SESSIONS::::::::");
     }
     
+    public Set<String> getSessionIds () throws Exception
+    {
+        HashSet<String> ids = new HashSet<String>();
+        ensureDatastore();
+        GqlQuery.Builder builder = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+GCloudSessionDataStore.KIND);
+       
+        Query<Entity> query = builder.build();
+    
+        QueryResults<Entity> results = _ds.run(query);
+        assertNotNull(results);
+        while (results.hasNext())
+        {
+            Entity e = results.next();
+            ids.add(e.getString("id"));
+        }
+        
+        return ids;
+    }
+    
     public void assertSessions(int count) throws Exception
     {
         ensureDatastore();
         StructuredQuery<ProjectionEntity> keyOnlyProjectionQuery = Query.projectionEntityQueryBuilder()
-                .kind(GCloudSessionManager.KIND)
+                .kind(GCloudSessionDataStore.KIND)
                 .projection(Projection.property("__key__"))
                 .limit(100)
                 .build();  
@@ -334,7 +355,7 @@ public class GCloudSessionTestSupport
     {
        ensureDatastore();
         StructuredQuery<ProjectionEntity> keyOnlyProjectionQuery = Query.projectionEntityQueryBuilder()
-                .kind(GCloudSessionManager.KIND)
+                .kind(GCloudSessionDataStore.KIND)
                 .projection(Projection.property("__key__"))
                 .limit(100)
                 .build();  

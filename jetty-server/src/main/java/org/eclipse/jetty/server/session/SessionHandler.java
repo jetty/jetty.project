@@ -243,6 +243,7 @@ public class SessionHandler extends ScopedHandler
         if (requested_session_id != null && sessionManager != null)
         {
             HttpSession session = sessionManager.getHttpSession(requested_session_id);
+            
             if (session != null && sessionManager.isValid(session))
                 baseRequest.setSession(session);
             return;
@@ -273,7 +274,6 @@ public class SessionHandler extends ScopedHandler
                         if (requested_session_id != null)
                         {
                             session = sessionManager.getHttpSession(requested_session_id);
-
                             if (session != null && sessionManager.isValid(session))
                             {
                                 break;

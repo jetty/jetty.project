@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class LeakTrackingConnectionPool extends ConnectionPool
+public class LeakTrackingConnectionPool extends DuplexConnectionPool
 {
     private static final Logger LOG = Log.getLogger(LeakTrackingConnectionPool.class);
 

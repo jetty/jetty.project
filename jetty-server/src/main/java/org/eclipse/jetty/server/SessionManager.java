@@ -29,17 +29,12 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.server.session.SessionStore;
 import org.eclipse.jetty.util.component.LifeCycle;
 
-/* --------------------------------------------------------------------- */
 /**
  * Session Manager.
  * The API required to manage sessions for a servlet context.
- *
- */
-
-/* ------------------------------------------------------------ */
-/**
  */
 public interface SessionManager extends LifeCycle
 {
@@ -194,13 +189,7 @@ public interface SessionManager extends LifeCycle
      */
     public SessionIdManager getSessionIdManager();
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return the cross context session id manager.
-     * @deprecated use {@link #getSessionIdManager()}
-     */
-    @Deprecated
-    public SessionIdManager getMetaManager();
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -222,17 +211,17 @@ public interface SessionManager extends LifeCycle
     /**
      * @param session the session object
      * @return the unique id of the session within the cluster, extended with an optional node id.
-     * @see #getClusterId(HttpSession)
+     * @see #getId(HttpSession)
      */
-    public String getNodeId(HttpSession session);
+    public String getExtendedId(HttpSession session);
 
     /* ------------------------------------------------------------ */
     /**
      * @param session the session object
      * @return the unique id of the session within the cluster (without a node id extension)
-     * @see #getNodeId(HttpSession)
+     * @see #getExtendedId(HttpSession)
      */
-    public String getClusterId(HttpSession session);
+    public String getId(HttpSession session);
 
     /* ------------------------------------------------------------ */
     /**
@@ -286,6 +275,12 @@ public interface SessionManager extends LifeCycle
      * @return whether the session management is handled via URLs.
      */
     public boolean isUsingURLs();
+    
+    /**
+     * Invalidate the session corresponding to the id
+     * @param id the identity of the session to invalidate
+     */
+    public void invalidate(String id);
 
     public Set<SessionTrackingMode> getDefaultSessionTrackingModes();
 
@@ -308,10 +303,34 @@ public interface SessionManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /** Change the existing session id.
     * 
-    * @param oldClusterId the old cluster id
-    * @param oldNodeId the old node id
-    * @param newClusterId the new cluster id
-    * @param newNodeId the new node id
+    * @param oldId the old session id
+    * @param oldExtendedId the session id including worker suffix
+    * @param newId the new session id
+    * @param newExtendedId the new session id including worker suffix
     */
-    public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId);  
+    public void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId);  
+   
+    
+    /**
+     * Get the session store for this manager
+     * @return the session store
+     */
+    public SessionStore getSessionStore();
+    
+    
+    /**
+     * Check if id is in use by this manager
+     * 
+     * @param id identity of session to check
+     * 
+     * @return true if this manager knows about this id
+     */
+    public boolean isIdInUse (String id) throws Exception;
+    
+    /**
+     * 
+     */
+    public void scavenge ();
+    
+    
 }

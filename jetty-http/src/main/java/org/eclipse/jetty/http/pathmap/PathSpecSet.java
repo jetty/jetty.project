@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.http.pathmap;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.AbstractSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Predicate;
 
 /**
@@ -31,79 +27,21 @@ import java.util.function.Predicate;
  * <p>
  * Used by {@link org.eclipse.jetty.util.IncludeExclude} logic
  */
-public class PathSpecSet implements Set<String>, Predicate<String>
+public class PathSpecSet extends AbstractSet<String> implements Predicate<String>
 {
-    private final Set<PathSpec> specs = new TreeSet<>();
+    private final PathMappings<Boolean> specs = new PathMappings<>();
 
     @Override
     public boolean test(String s)
     {
-        for (PathSpec spec : specs)
-        {
-            if (spec.matches(s))
-            {
-                return true;
-            }
-        }
-        return false;
+        return specs.getMatch(s)!=null;
     }
 
-    @Override
-    public boolean isEmpty()
-    {
-        return specs.isEmpty();
-    }
-
-    @Override
-    public Iterator<String> iterator()
-    {
-        return new Iterator<String>()
-        {
-            private Iterator<PathSpec> iter = specs.iterator();
-
-            @Override
-            public boolean hasNext()
-            {
-                return iter.hasNext();
-            }
-
-            @Override
-            public String next()
-            {
-                PathSpec spec = iter.next();
-                if (spec == null)
-                {
-                    return null;
-                }
-                return spec.getDeclaration();
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException("Remove not supported by this Iterator");
-            }
-        };
-    }
 
     @Override
     public int size()
     {
         return specs.size();
-    }
-
-    @Override
-    public boolean contains(Object o)
-    {
-        if (o instanceof PathSpec)
-        {
-            return specs.contains(o);
-        }
-        if (o instanceof String)
-        {
-            return specs.contains(toPathSpec((String)o));
-        }
-        return false;
     }
 
     private PathSpec asPathSpec(Object o)
@@ -118,48 +56,15 @@ public class PathSpecSet implements Set<String>, Predicate<String>
         }
         if (o instanceof String)
         {
-            return toPathSpec((String)o);
+            return PathMappings.asPathSpec((String)o);
         }
-        return toPathSpec(o.toString());
-    }
-
-    private PathSpec toPathSpec(String rawSpec)
-    {
-        if ((rawSpec == null) || (rawSpec.length() < 1))
-        {
-            throw new RuntimeException("Path Spec String must start with '^', '/', or '*.': got [" + rawSpec + "]");
-        }
-        if (rawSpec.charAt(0) == '^')
-        {
-            return new RegexPathSpec(rawSpec);
-        }
-        else
-        {
-            return new ServletPathSpec(rawSpec);
-        }
+        return PathMappings.asPathSpec(o.toString());
     }
 
     @Override
-    public Object[] toArray()
+    public boolean add(String s)
     {
-        return toArray(new String[specs.size()]);
-    }
-
-    @Override
-    public <T> T[] toArray(T[] a)
-    {
-        int i = 0;
-        for (PathSpec spec : specs)
-        {
-            a[i++] = (T)spec.getDeclaration();
-        }
-        return a;
-    }
-
-    @Override
-    public boolean add(String e)
-    {
-        return specs.add(toPathSpec(e));
+        return specs.put(PathMappings.asPathSpec(s),Boolean.TRUE);
     }
 
     @Override
@@ -169,54 +74,29 @@ public class PathSpecSet implements Set<String>, Predicate<String>
     }
 
     @Override
-    public boolean containsAll(Collection<?> coll)
-    {
-        for (Object o : coll)
-        {
-            if (!specs.contains(asPathSpec(o)))
-                return false;
-        }
-        return true;
-    }
-
-    @Override
-    public boolean addAll(Collection<? extends String> coll)
-    {
-        boolean ret = false;
-
-        for (String s : coll)
-        {
-            ret |= add(s);
-        }
-
-        return ret;
-    }
-
-    @Override
-    public boolean retainAll(Collection<?> coll)
-    {
-        List<PathSpec> collSpecs = new ArrayList<>();
-        for (Object o : coll)
-        {
-            collSpecs.add(asPathSpec(o));
-        }
-        return specs.retainAll(collSpecs);
-    }
-
-    @Override
-    public boolean removeAll(Collection<?> coll)
-    {
-        List<PathSpec> collSpecs = new ArrayList<>();
-        for (Object o : coll)
-        {
-            collSpecs.add(asPathSpec(o));
-        }
-        return specs.removeAll(collSpecs);
-    }
-
-    @Override
     public void clear()
     {
-        specs.clear();
+        specs.reset();
+    }
+
+
+    @Override
+    public Iterator<String> iterator()
+    {
+        final Iterator<MappedResource<Boolean>> iterator = specs.iterator();
+        return new Iterator<String>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public String next()
+            {
+                return iterator.next().getPathSpec().getDeclaration();
+            }
+        };
     }
 }

@@ -23,8 +23,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -63,8 +61,8 @@ public class MaxInactiveMigrationTest
 
     @Before
     public void setUp() throws Exception {
-        testServer1 = new JdbcTestServer(0, -1, 2);
-        testServer2 = new JdbcTestServer(0, -1, 2);
+        testServer1 = new JdbcTestServer(0, -1, 2, -1);
+        testServer2 = new JdbcTestServer(0, -1, 2, -1);
         ServletContextHandler context = testServer1.addContext("");
         context.addServlet(TestServlet.class, "/test");
         ServletContextHandler context2 = testServer2.addContext("");
@@ -81,13 +79,8 @@ public class MaxInactiveMigrationTest
         testServer1.stop();
         testServer2.stop();
         client.stop();
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
+
+        JdbcTestServer.shutdown(null);
     }
 
 

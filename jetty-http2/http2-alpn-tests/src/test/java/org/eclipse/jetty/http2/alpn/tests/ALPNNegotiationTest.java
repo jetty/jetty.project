@@ -91,12 +91,17 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             Assert.assertTrue(read > 0);
             // Cannot decrypt, as the SSLEngine has been already closed
 
-            // Now if we read more, we should either read the TLS Close Alert, or directly -1
+            // Now if we read more, we should read a TLS Alert.
             encrypted.clear();
             read = channel.read(encrypted);
-            // Sending a TLS Close Alert during handshake results in an exception when
-            // unwrapping that the server react to by closing the connection abruptly.
-            Assert.assertTrue(read < 0);
+            if (read > 0)
+            {
+                encrypted.flip();
+                // TLS Alert message type == 21.
+                Assert.assertEquals(21, encrypted.get() & 0xFF);
+                encrypted.clear();
+                Assert.assertEquals(-1, channel.read(encrypted));
+            }
         }
     }
 

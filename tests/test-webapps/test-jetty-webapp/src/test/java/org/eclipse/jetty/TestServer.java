@@ -44,7 +44,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.session.HashSessionManager;
+import org.eclipse.jetty.server.session.FileSessionManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -131,8 +131,8 @@ public class TestServer
             sessiondir.delete();
         sessiondir.mkdir();
         sessiondir.deleteOnExit();
-        ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setStoreDirectory(sessiondir);
-        ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setSavePeriod(10);
+        ((FileSessionManager)webapp.getSessionHandler().getSessionManager()).getSessionDataStore().setStoreDir(sessiondir);
+        //((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setSavePeriod(10);
 
         contexts.addHandler(webapp);
 

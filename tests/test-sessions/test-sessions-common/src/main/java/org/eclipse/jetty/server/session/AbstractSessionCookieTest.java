@@ -29,8 +29,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import junit.framework.Assert;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -38,12 +36,14 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import junit.framework.Assert;
+
 /**
  * AbstractSessionCookieTest
  */
 public abstract class AbstractSessionCookieTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivateInterval);
 
     public void pause(int scavenge)
     {
@@ -64,7 +64,9 @@ public abstract class AbstractSessionCookieTest
         String contextPath = "";
         String servletMapping = "/server";
         int scavengePeriod = 3;
-        AbstractTestServer server = createServer(0, 1, scavengePeriod);
+        int inspectPeriod = 1;
+        int idlePassivatePeriod = 10;
+        AbstractTestServer server = createServer(0, 1, scavengePeriod,idlePassivatePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
 

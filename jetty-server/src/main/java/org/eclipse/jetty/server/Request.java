@@ -76,7 +76,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.server.session.AbstractSession;
+import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.IO;
@@ -161,6 +161,7 @@ public class Request implements HttpServletRequest
     private final HttpInput _input;
 
     private MetaData.Request _metadata;
+    private String _originalURI;
 
     private String _contextPath;
     private String _servletPath;
@@ -206,7 +207,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public HttpFields getHttpFields()
     {
-        return _metadata.getFields();
+        return _metadata==null?null:_metadata.getFields();
     }
 
     /* ------------------------------------------------------------ */
@@ -224,7 +225,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public boolean isPushSupported()
     {
-        return getHttpChannel().getHttpTransport().isPushSupported();
+        return !isPush() && getHttpChannel().getHttpTransport().isPushSupported();
     }
 
     /* ------------------------------------------------------------ */
@@ -368,7 +369,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private void extractQueryParameters()
     {
-        if (_metadata.getURI() == null || !_metadata.getURI().hasQuery())
+        if (_metadata == null || _metadata.getURI() == null || !_metadata.getURI().hasQuery())
             _queryParameters=NO_PARAMS;
         else
         {
@@ -655,7 +656,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getContentType()
     {
-        String content_type = _metadata.getFields().get(HttpHeader.CONTENT_TYPE);
+        String content_type = _metadata==null?null:_metadata.getFields().get(HttpHeader.CONTENT_TYPE);
         if (_characterEncoding==null && content_type!=null)
         {
             MimeTypes.Type mime = MimeTypes.CACHE.get(content_type);
@@ -937,22 +938,25 @@ public class Request implements HttpServletRequest
     @Override
     public String getLocalName()
     {
-        if (_channel==null)
+        if (_channel!=null)
         {
-            try
-            {
-                String name =InetAddress.getLocalHost().getHostName();
-                if (StringUtil.ALL_INTERFACES.equals(name))
-                    return null;
-                return name;
-            }
-            catch (java.net.UnknownHostException e)
-            {
-                LOG.ignore(e);
-            }
+            InetSocketAddress local=_channel.getLocalAddress();
+            if (local!=null)
+                return local.getHostString();
         }
-        InetSocketAddress local=_channel.getLocalAddress();
-        return local.getHostString();
+
+        try
+        {
+            String name =InetAddress.getLocalHost().getHostName();
+            if (StringUtil.ALL_INTERFACES.equals(name))
+                return null;
+            return name;
+        }
+        catch (java.net.UnknownHostException e)
+        {
+            LOG.ignore(e);
+        }
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -965,7 +969,7 @@ public class Request implements HttpServletRequest
         if (_channel==null)
             return 0;
         InetSocketAddress local=_channel.getLocalAddress();
-        return local.getPort();
+        return local==null?0:local.getPort();
     }
 
     /* ------------------------------------------------------------ */
@@ -1138,7 +1142,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getQueryString()
     {
-        return _metadata.getURI().getQuery();
+        return _metadata==null?null:_metadata.getURI().getQuery();
     }
 
     /* ------------------------------------------------------------ */
@@ -1270,6 +1274,8 @@ public class Request implements HttpServletRequest
     @Override
     public RequestDispatcher getRequestDispatcher(String path)
     {
+        path = URIUtil.compactPath(path);
+
         if (path == null || _context == null)
             return null;
 
@@ -1364,7 +1370,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getServerName()
     {
-        String name = _metadata.getURI().getHost();
+        String name = _metadata==null?null:_metadata.getURI().getHost();
 
         // Return already determined host
         if (name != null)
@@ -1377,7 +1383,7 @@ public class Request implements HttpServletRequest
     private String findServerName()
     {
         // Return host from header field
-        HttpField host = _metadata.getFields().getField(HttpHeader.HOST);
+        HttpField host = _metadata==null?null:_metadata.getFields().getField(HttpHeader.HOST);
         if (host!=null)
         {
             // TODO is this needed now?
@@ -1412,8 +1418,8 @@ public class Request implements HttpServletRequest
     @Override
     public int getServerPort()
     {
-        HttpURI uri = _metadata.getURI();
-        int port = (uri.getHost()==null)?findServerPort():uri.getPort();
+        HttpURI uri = _metadata==null?null:_metadata.getURI();
+        int port = (uri == null || uri.getHost()==null)?findServerPort():uri.getPort();
 
         // If no port specified, return the default port for the scheme
         if (port <= 0)
@@ -1431,7 +1437,7 @@ public class Request implements HttpServletRequest
     private int findServerPort()
     {
         // Return host from header field
-        HttpField host = _metadata.getFields().getField(HttpHeader.HOST);
+        HttpField host = _metadata==null?null:_metadata.getFields().getField(HttpHeader.HOST);
         if (host!=null)
         {
             // TODO is this needed now?
@@ -1485,23 +1491,24 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * Add @override when 3.1 api is available
+    /** 
+     * @see javax.servlet.http.HttpServletRequest#changeSessionId()
      */
+    @Override
     public String changeSessionId()
     {
         HttpSession session = getSession(false);
         if (session == null)
             throw new IllegalStateException("No session");
 
-        if (session instanceof AbstractSession)
+        if (session instanceof Session)
         {
-            AbstractSession abstractSession =  ((AbstractSession)session);
-            abstractSession.renewId(this);
+            Session s =  ((Session)session);
+            s.renewId(this);
             if (getRemoteUser() != null)
-                abstractSession.setAttribute(AbstractSession.SESSION_CREATED_SECURE, Boolean.TRUE);
-            if (abstractSession.isIdChanged())
-                _channel.getResponse().addCookie(_sessionManager.getSessionCookie(abstractSession, getContextPath(), isSecure()));
+                s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+            if (s.isIdChanged())
+                _channel.getResponse().addCookie(_sessionManager.getSessionCookie(s, getContextPath(), isSecure()));
         }
 
         return session.getId();
@@ -1578,6 +1585,14 @@ public class Request implements HttpServletRequest
         return _metadata==null?null:_metadata.getURI();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the original uri passed in metadata before customization/rewrite
+     */
+    public String getOriginalURI()
+    {
+        return _originalURI;
+    }
     /* ------------------------------------------------------------ */
     /**
      * @param uri the URI to set
@@ -1697,7 +1712,7 @@ public class Request implements HttpServletRequest
             return false;
 
         HttpSession session = getSession(false);
-        return (session != null && _sessionManager.getSessionIdManager().getClusterId(_requestedSessionId).equals(_sessionManager.getClusterId(session)));
+        return (session != null && _sessionManager.getSessionIdManager().getId(_requestedSessionId).equals(_sessionManager.getId(session)));
     }
 
     /* ------------------------------------------------------------ */
@@ -1739,7 +1754,6 @@ public class Request implements HttpServletRequest
         return _savedNewSessions.get(key);
     }
 
-
     /* ------------------------------------------------------------ */
     /**
      * @param request the Request metadata
@@ -1747,6 +1761,7 @@ public class Request implements HttpServletRequest
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
     {
         _metadata=request;
+        _originalURI=_metadata.getURIString();
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
 
@@ -1803,6 +1818,7 @@ public class Request implements HttpServletRequest
     protected void recycle()
     {
         _metadata=null;
+        _originalURI=null;
 
         if (_context != null)
             throw new IllegalStateException("Request in context!");
@@ -2020,7 +2036,7 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @return True if this is the first call of {@link #takeNewContext()} since the last
+     * @return True if this is the first call of <code>takeNewContext()</code> since the last
      *         {@link #setContext(org.eclipse.jetty.server.handler.ContextHandler.Context)} call.
      */
     public boolean takeNewContext()

@@ -40,9 +40,14 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
+/**
+ * AbstractSessionExpiryTest
+ *
+ *
+ */
 public abstract class AbstractSessionExpiryTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod);
 
     public void pause(int scavengePeriod)
     {
@@ -78,9 +83,11 @@ public abstract class AbstractSessionExpiryTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 10;
+        int inactivePeriod = 20;
         int scavengePeriod = 10;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
+        int inspectPeriod = 1;
+        int idlePassivatePeriod = 8;
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, idlePassivatePeriod);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         server1.addContext(contextPath).addServlet(holder, servletMapping);
@@ -104,6 +111,7 @@ public abstract class AbstractSessionExpiryTest
 
             //now stop the server
             server1.stop();
+   
 
             //start the server again, before the session times out
             server1.start();
@@ -134,7 +142,8 @@ public abstract class AbstractSessionExpiryTest
         String servletMapping = "/server";
         int inactivePeriod = 2;
         int scavengePeriod = 1;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
+        int inspectPeriod = 1;
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, -1);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -161,12 +170,12 @@ public abstract class AbstractSessionExpiryTest
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
             
             String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
-            
+
             verifySessionCreated(listener,sessionId);
             
             //now stop the server
             server1.stop();
-
+            
             //and wait until the expiry time has passed
             pause(inactivePeriod);
 
@@ -175,7 +184,7 @@ public abstract class AbstractSessionExpiryTest
             
             port1 = server1.getPort();
             url = "http://localhost:" + port1 + contextPath + servletMapping;
-
+            
             //make another request, the session should have expired
             Request request = client.newRequest(url + "?action=test");
             request.getHeaders().add("Cookie", sessionCookie);

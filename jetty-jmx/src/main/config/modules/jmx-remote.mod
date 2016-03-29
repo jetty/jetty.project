@@ -1,6 +1,5 @@
-#
-# JMX Remote Module
-#
+[description]
+Enables remote RMI access to JMX
 
 [depend]
 jmx

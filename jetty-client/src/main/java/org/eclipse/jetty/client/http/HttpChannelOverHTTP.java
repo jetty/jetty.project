@@ -18,16 +18,20 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.util.Locale;
+
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpReceiver;
-import org.eclipse.jetty.client.HttpSender;
+import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 
 public class HttpChannelOverHTTP extends HttpChannel
@@ -55,13 +59,13 @@ public class HttpChannelOverHTTP extends HttpChannel
     }
 
     @Override
-    protected HttpSender getHttpSender()
+    protected HttpSenderOverHTTP getHttpSender()
     {
         return sender;
     }
 
     @Override
-    protected HttpReceiver getHttpReceiver()
+    protected HttpReceiverOverHTTP getHttpReceiver()
     {
         return receiver;
     }
@@ -83,6 +87,42 @@ public class HttpChannelOverHTTP extends HttpChannel
     public void release()
     {
         connection.release();
+    }
+
+    @Override
+    public Result exchangeTerminating(HttpExchange exchange, Result result)
+    {
+        if (result.isFailed())
+            return result;
+
+        HttpResponse response = exchange.getResponse();
+        
+        if ((response.getVersion() == HttpVersion.HTTP_1_1) && 
+            (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101))
+        {
+            String connection = response.getHeaders().get(HttpHeader.CONNECTION);
+            if ((connection == null) || !connection.toLowerCase(Locale.US).contains("upgrade"))
+            {
+                return new Result(result,new HttpResponseException("101 Switching Protocols without Connection: Upgrade not supported",response));
+            }
+            
+            // Upgrade Response
+            HttpRequest request = exchange.getRequest();
+            if (request instanceof HttpConnectionUpgrader)
+            {
+                HttpConnectionUpgrader listener = (HttpConnectionUpgrader)request;
+                try
+                {
+                    listener.upgrade(response,getHttpConnection());
+                }
+                catch (Throwable x)
+                {
+                    return new Result(result,x);
+                }
+            }
+        }
+
+        return result;
     }
 
     public void receive()
@@ -131,7 +171,10 @@ public class HttpChannelOverHTTP extends HttpChannel
         }
         else
         {
-            release();
+            if (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
+                connection.remove();
+            else
+                release();
         }
     }
 
@@ -143,4 +186,5 @@ public class HttpChannelOverHTTP extends HttpChannel
                 sender,
                 receiver);
     }
+
 }

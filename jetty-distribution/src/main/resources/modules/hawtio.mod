@@ -1,6 +1,5 @@
-#
-# Hawtio x module
-#
+[description]
+Deploys the Hawtio console as a webapplication.
 
 [depend]
 stats

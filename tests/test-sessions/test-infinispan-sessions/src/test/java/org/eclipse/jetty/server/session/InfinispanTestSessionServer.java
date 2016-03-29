@@ -21,52 +21,36 @@ package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
-import org.eclipse.jetty.session.infinispan.InfinispanSessionIdManager;
+import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionManager;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.infinispan.Cache;
 import org.infinispan.commons.api.BasicCache;
 import org.infinispan.commons.util.CloseableIteratorSet;
 
 public class InfinispanTestSessionServer extends AbstractTestServer
 {
-    static int __workers=0;
-    
-
-
     
     
     public InfinispanTestSessionServer(int port, BasicCache config)
     {
-        this(port, 30, 10, config);
+        this(port, 30, 10, 2, config);
     }
     
   
     
-    public InfinispanTestSessionServer(int port, int maxInactivePeriod, int scavengePeriod, BasicCache config)
+    public InfinispanTestSessionServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, BasicCache config)
     {
-        super(port, maxInactivePeriod, scavengePeriod, config);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod, config);
     }
     
     
-
-    @Override
-    public SessionIdManager newSessionIdManager(Object config)
-    {
-        InfinispanSessionIdManager idManager = new InfinispanSessionIdManager(getServer());
-        idManager.setWorkerName("w"+(__workers++));
-        idManager.setCache((BasicCache)config);
-        return idManager;
-    }
 
     @Override
     public SessionManager newSessionManager()
     {
         InfinispanSessionManager sessionManager = new InfinispanSessionManager();
-        sessionManager.setSessionIdManager((InfinispanSessionIdManager)_sessionIdManager);
-        sessionManager.setCache(((InfinispanSessionIdManager)_sessionIdManager).getCache());
-        sessionManager.setStaleIntervalSec(1);
-        sessionManager.setScavengeInterval(_scavengePeriod);
-        
+        sessionManager.getSessionDataStore().setCache((BasicCache)_config);
         return sessionManager;
     }
 
@@ -76,23 +60,23 @@ public class InfinispanTestSessionServer extends AbstractTestServer
         return new SessionHandler(sessionManager);
     }
 
-    public boolean exists (String id)
+    public boolean exists (WebAppContext context, String id)
     {
-        BasicCache cache = ((InfinispanSessionIdManager)_sessionIdManager).getCache();
+        BasicCache cache = (BasicCache)_config;
         if (cache != null)
         {
-            return cache.containsKey(id);      
+            return cache.containsKey(((InfinispanSessionDataStore)(context.getSessionHandler().getSessionManager().getSessionStore().getSessionDataStore())).getCacheKey(id));      
         }
         
         return false;
     }
     
-    public Object get (String id)
+    public Object get (WebAppContext context, String id)
     {
-        BasicCache cache = ((InfinispanSessionIdManager)_sessionIdManager).getCache();
+        BasicCache cache = (BasicCache)_config;
         if (cache != null)
         {
-            return cache.get(id);      
+            return cache.get(((InfinispanSessionDataStore)(context.getSessionHandler().getSessionManager().getSessionStore().getSessionDataStore())).getCacheKey(id));      
         }
         
         return null;
@@ -100,7 +84,7 @@ public class InfinispanTestSessionServer extends AbstractTestServer
 
     public void dumpCache ()
     {
-        BasicCache cache = ((InfinispanSessionIdManager)_sessionIdManager).getCache();
+        BasicCache cache = (BasicCache)_config;
         if (cache != null)
         {
             System.err.println(cache.getName()+" contains "+cache.size()+" entries");         
@@ -108,8 +92,9 @@ public class InfinispanTestSessionServer extends AbstractTestServer
     }
 
     public void clearCache ()
-    { 
-        BasicCache cache = ((InfinispanSessionIdManager)_sessionIdManager).getCache();
+    {         
+        BasicCache cache = (BasicCache)_config;
+
         if (cache != null)
             cache.clear();
     }

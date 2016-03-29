@@ -1,6 +1,6 @@
-#
-# Jetty Proxy module
-#
+[description]
+Enable the Jetty Proxy, that allows the server to act
+as a non-transparent proxy for browsers.
 
 [depend]
 servlet

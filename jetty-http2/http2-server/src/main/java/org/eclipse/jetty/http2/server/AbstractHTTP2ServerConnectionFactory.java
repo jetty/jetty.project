@@ -123,9 +123,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
         Generator generator = new Generator(connector.getByteBufferPool(), getMaxDynamicTableSize(), getMaxHeaderBlockFragment());
-        FlowControlStrategy flowControl = newFlowControlStrategy();
-        if (flowControl == null)
-            flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
+        FlowControlStrategy flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener, flowControl);
         session.setMaxLocalStreams(getMaxConcurrentStreams());
         session.setMaxRemoteStreams(getMaxConcurrentStreams());
@@ -140,15 +138,6 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
                         endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
         connection.addListener(connectionListener);
         return configure(connection, connector, endPoint);
-    }
-
-    /**
-     * @deprecated use {@link #setFlowControlStrategyFactory(FlowControlStrategy.Factory)} instead
-     */
-    @Deprecated
-    protected FlowControlStrategy newFlowControlStrategy()
-    {
-        return null;
     }
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);

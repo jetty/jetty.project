@@ -1,6 +1,7 @@
-#
-# Set UID Feature
-#
+[description]
+Enables the unix setUID configuration so that the server
+may be started as root to open privileged ports/files before
+changing to a restricted user (eg jetty).
 
 [depend]
 server
