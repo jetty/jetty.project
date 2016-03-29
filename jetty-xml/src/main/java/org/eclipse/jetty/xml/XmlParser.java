@@ -93,20 +93,17 @@ public class XmlParser
             SAXParserFactory factory = SAXParserFactory.newInstance();
             factory.setValidating(validating);
             _parser = factory.newSAXParser();
-
-            try
-            {
-                if (validating)
+            if (validating)
+            {	
+                try
+                {                
                     _parser.getXMLReader().setFeature("http://apache.org/xml/features/validation/schema", validating);
-            }
-            catch (Exception e)
-            {
-                if (validating)
+                }
+                catch (Exception e)
+                {
                     LOG.warn("Schema validation may not be supported: ", e);
-                else
-                    LOG.ignore(e);
+                }
             }
-
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/validation", validating);
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/namespaces", true);
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/namespace-prefixes", false);
