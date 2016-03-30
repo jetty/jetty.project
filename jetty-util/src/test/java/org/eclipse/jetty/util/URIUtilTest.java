@@ -266,6 +266,7 @@ public class URIUtilTest
             {"a/.","a/"},
             {"a/..",""},
             {"a/../..",null},
+            {"/foo/../../bar",null},
             {"/foo/../bar//","/bar//"},
         };
 
