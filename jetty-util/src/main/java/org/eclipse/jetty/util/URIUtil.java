@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
@@ -53,6 +54,7 @@ public class URIUtil
     public static final String HTTP_COLON="http:";
     public static final String HTTPS="https";
     public static final String HTTPS_COLON="https:";
+    private static final Pattern __PATH_SPLIT = Pattern.compile("(?<=\\/)");
 
     // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
     public static final Charset __CHARSET=StandardCharsets.UTF_8 ;
@@ -514,7 +516,7 @@ public class URIUtil
             return null;
 
         List<String> directories = new LinkedList<>();
-        Collections.addAll(directories, path.split("(?<=\\/)"));
+        Collections.addAll(directories, __PATH_SPLIT.split(path));
 
         for(ListIterator<String> iterator = directories.listIterator(); iterator.hasNext();)
         {
