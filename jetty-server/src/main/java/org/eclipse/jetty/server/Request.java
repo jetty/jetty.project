@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
@@ -701,20 +702,12 @@ public class Request implements HttpServletRequest
         }
 
         _cookiesExtracted = true;
-
-        Enumeration<?> enm = _metadata.getFields().getValues(HttpHeader.COOKIE.toString());
-
-        // Handle no cookies
-        if (enm != null)
+        
+        for (String c : _metadata.getFields().getValuesList(HttpHeader.COOKIE))
         {
             if (_cookies == null)
                 _cookies = new CookieCutter();
-
-            while (enm.hasMoreElements())
-            {
-                String c = (String)enm.nextElement();
-                _cookies.addCookieField(c);
-            }
+            _cookies.addCookieField(c);
         }
 
         //Javadoc for Request.getCookies() stipulates null for no cookies
@@ -825,34 +818,22 @@ public class Request implements HttpServletRequest
         if (_metadata==null)
             return Locale.getDefault();
 
-        Enumeration<String> enm = _metadata.getFields().getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
+        List<String> acceptable = _metadata.getFields().getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
 
         // handle no locale
-        if (enm == null || !enm.hasMoreElements())
+        if (acceptable.isEmpty())
             return Locale.getDefault();
 
-        // sort the list in quality order
-        List<?> acceptLanguage = HttpFields.qualityList(enm);
-        if (acceptLanguage.size() == 0)
-            return Locale.getDefault();
-
-        int size = acceptLanguage.size();
-
-        if (size > 0)
+        String language = acceptable.get(0);
+        language = HttpFields.stripParameters(language);
+        String country = "";
+        int dash = language.indexOf('-');
+        if (dash > -1)
         {
-            String language = (String)acceptLanguage.get(0);
-            language = HttpFields.valueParameters(language,null);
-            String country = "";
-            int dash = language.indexOf('-');
-            if (dash > -1)
-            {
-                country = language.substring(dash + 1).trim();
-                language = language.substring(0,dash).trim();
-            }
-            return new Locale(language,country);
+            country = language.substring(dash + 1).trim();
+            language = language.substring(0,dash).trim();
         }
-
-        return Locale.getDefault();
+        return new Locale(language,country);        
     }
 
     /* ------------------------------------------------------------ */
@@ -865,38 +846,26 @@ public class Request implements HttpServletRequest
         if (_metadata==null)
             return Collections.enumeration(__defaultLocale);
 
-        Enumeration<String> enm = _metadata.getFields().getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
+        List<String> acceptable = _metadata.getFields().getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
 
         // handle no locale
-        if (enm == null || !enm.hasMoreElements())
+        if (acceptable.isEmpty())
             return Collections.enumeration(__defaultLocale);
 
-        // sort the list in quality order
-        List<String> acceptLanguage = HttpFields.qualityList(enm);
-
-        if (acceptLanguage.size() == 0)
-            return Collections.enumeration(__defaultLocale);
-
-        List<Locale> langs = new ArrayList<>();
-
-        // convert to locals
-        for (String language : acceptLanguage)
+        List<Locale> locales = acceptable.stream().map(language->
         {
-            language = HttpFields.valueParameters(language, null);
+            language = HttpFields.stripParameters(language);
             String country = "";
             int dash = language.indexOf('-');
             if (dash > -1)
             {
                 country = language.substring(dash + 1).trim();
-                language = language.substring(0, dash).trim();
+                language = language.substring(0,dash).trim();
             }
-            langs.add(new Locale(language, country));
-        }
-
-        if (langs.size() == 0)
-            return Collections.enumeration(__defaultLocale);
-
-        return Collections.enumeration(langs);
+            return new Locale(language,country);
+        }).collect(Collectors.toList());
+        
+        return Collections.enumeration(locales);
     }
 
     /* ------------------------------------------------------------ */

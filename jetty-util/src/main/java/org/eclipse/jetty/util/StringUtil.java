@@ -246,16 +246,15 @@ public class StringUtil
         if (c<s.length())
             buf.append(s.substring(c,s.length()));
 
-        return buf.toString();
-        
+        return buf.toString();   
     }
-
 
     /* ------------------------------------------------------------ */
     /** Remove single or double quotes.
      * @param s the input string
      * @return the string with quotes removed
      */
+    @Deprecated
     public static String unquote(String s)
     {
         return QuotedStringTokenizer.unquote(s);
