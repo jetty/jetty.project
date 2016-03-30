@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,6 +40,8 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -130,7 +133,6 @@ public class RequestTest
 
     }
 
-    @Ignore("Empty headers are not 7230 compliant")
     @Test
     public void testEmptyHeaders() throws Exception
     {
@@ -140,15 +142,24 @@ public class RequestTest
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 assertNotNull(request.getLocale());
-                assertTrue(request.getLocales().hasMoreElements());
-                assertNull(request.getContentType());
+                assertTrue(request.getLocales().hasMoreElements()); // Default locale
+                assertEquals("",request.getContentType());
                 assertNull(request.getCharacterEncoding());
                 assertEquals(0,request.getQueryString().length());
                 assertEquals(-1,request.getContentLength());
                 assertNull(request.getCookies());
-                assertNull(request.getHeader("Name"));
-                assertFalse(request.getHeaders("Name").hasMoreElements());
-                assertEquals(-1,request.getDateHeader("Name"));
+                assertEquals("",request.getHeader("Name"));
+                assertTrue(request.getHeaders("Name").hasMoreElements()); // empty
+                try
+                {
+                    request.getDateHeader("Name");
+                    assertTrue(false);
+                }
+                catch(IllegalArgumentException e)
+                {
+                    
+                }
+                assertEquals(-1,request.getDateHeader("Other"));
                 return true;
             }
         };
@@ -213,6 +224,43 @@ public class RequestTest
 
         String responses=_connector.getResponses(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testLocale() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
+            {
+                assertThat(request.getLocale().getLanguage(),is("da"));
+                Enumeration<Locale> locales = request.getLocales();
+                Locale locale=locales.nextElement();
+                assertThat(locale.getLanguage(),is("da"));
+                assertThat(locale.getCountry(),is(""));
+                locale=locales.nextElement();
+                assertThat(locale.getLanguage(),is("en"));
+                assertThat(locale.getCountry(),is("AU"));
+                locale=locales.nextElement();
+                assertThat(locale.getLanguage(),is("en"));
+                assertThat(locale.getCountry(),is("GB"));
+                locale=locales.nextElement();
+                assertThat(locale.getLanguage(),is("en"));
+                assertThat(locale.getCountry(),is(""));
+                assertFalse(locales.hasMoreElements());
+                return true;
+            }
+        };
+
+        String request="GET / HTTP/1.1\r\n"+
+            "Host: whatever\r\n"+
+            "Connection: close\r\n"+
+            "Accept-Language: da, en-gb;q=0.8, en;q=0.7\r\n"+
+            "Accept-Language: XX;q=0, en-au;q=0.9\r\n"+
+            "\r\n";
+        String response = _connector.getResponses(request);
+        assertThat(response,Matchers.containsString(" 200 OK"));
     }
 
 
@@ -1089,14 +1137,14 @@ public class RequestTest
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
-                    "Cookie: name=quoted=\\\"value\\\"\n" +
+                    "Cookie: name=quoted=\"\\\"value\\\"\"\n" +
                     "Connection: close\n"+
                     "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertEquals(1,cookies.size());
         assertEquals("name", cookies.get(0).getName());
-        assertEquals("quoted=\\\"value\\\"", cookies.get(0).getValue());
+        assertEquals("quoted=\"value\"", cookies.get(0).getValue());
 
         cookies.clear();
         response=_connector.getResponses(

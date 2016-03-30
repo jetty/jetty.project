@@ -462,7 +462,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         resp.setHeader("Allow", "GET,HEAD,POST,OPTIONS");
     }
 
-
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.Servlet#destroy()

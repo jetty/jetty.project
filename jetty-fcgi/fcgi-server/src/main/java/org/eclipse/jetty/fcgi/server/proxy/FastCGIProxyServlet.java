@@ -171,7 +171,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         }
 
         // PHP does not like multiple Cookie headers, coalesce into one.
-        List<String> cookies = proxyRequest.getHeaders().getValuesList(HttpHeader.COOKIE.asString());
+        List<String> cookies = proxyRequest.getHeaders().getValuesList(HttpHeader.COOKIE);
         if (cookies.size() > 1)
         {
             StringBuilder builder = new StringBuilder();

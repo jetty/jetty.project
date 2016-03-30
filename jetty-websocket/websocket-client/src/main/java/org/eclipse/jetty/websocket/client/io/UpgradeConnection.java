@@ -378,6 +378,7 @@ public class UpgradeConnection extends AbstractConnection implements Connection.
         {
             for (String extVal : extValues)
             {
+                // TODO use QuotedCSV ???
                 QuotedStringTokenizer tok = new QuotedStringTokenizer(extVal,",");
                 while (tok.hasMoreTokens())
                 {
