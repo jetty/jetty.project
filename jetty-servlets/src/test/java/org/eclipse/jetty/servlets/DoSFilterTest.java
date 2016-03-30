@@ -18,47 +18,18 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.servlets.DoSFilter.RateTracker;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 public class DoSFilterTest extends AbstractDoSFilterTest
 {
-    private static final Logger LOG = Log.getLogger(DoSFilterTest.class);
-
-    @BeforeClass
-    public static void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        startServer(DoSFilter2.class);
-    }
-
-    public static class DoSFilter2 extends DoSFilter
-    {
-        @Override
-        public void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
-        {
-            try
-            {
-                response.getWriter().append("DoSFilter: timeout");
-                super.closeConnection(request,response,thread);
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e);
-            }
-        }
+        startServer(DoSFilter.class);
     }
 
     @Test
@@ -67,22 +38,17 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         DoSFilter doSFilter = new DoSFilter();
 
         boolean exceeded = hitRateTracker(doSFilter,0);
-        assertTrue("Last hit should have exceeded",exceeded);
+        Assert.assertTrue("Last hit should have exceeded",exceeded);
 
         int sleep = 250;
         exceeded = hitRateTracker(doSFilter,sleep);
-        assertFalse("Should not exceed as we sleep 300s for each hit and thus do less than 4 hits/s",exceeded);
+        Assert.assertFalse("Should not exceed as we sleep 300s for each hit and thus do less than 4 hits/s",exceeded);
     }
 
     @Test
     public void testWhitelist() throws Exception
     {
         DoSFilter filter = new DoSFilter();
-        List<String> whitelist = new ArrayList<String>();
-        whitelist.add("192.168.0.1/32");
-        whitelist.add("10.0.0.0/8");
-        whitelist.add("4d8:0:a:1234:ABc:1F:b18:17");
-        whitelist.add("4d8:0:a:1234:ABc:1F:0:0/96");
         filter.setWhitelist("192.168.0.1/32,10.0.0.0/8,4d8:0:a:1234:ABc:1F:b18:17,4d8:0:a:1234:ABc:1F:0:0/96");
         Assert.assertTrue(filter.checkWhitelist("192.168.0.1"));
         Assert.assertFalse(filter.checkWhitelist("192.168.0.2"));
@@ -93,6 +59,14 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         Assert.assertTrue(filter.checkWhitelist("4d8:0:a:1234:ABc:1F:b18:17"));
         Assert.assertTrue(filter.checkWhitelist("4d8:0:a:1234:ABc:1F:b18:0"));
         Assert.assertFalse(filter.checkWhitelist("4d8:0:a:1234:ABc:1D:0:0"));
+    }
+
+    @Test
+    public void testUnresponsiveServer() throws Exception
+    {
+        String last="GET /ctx/timeout/?sleep="+2*_requestMaxTime+" HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
+        String responses = doRequests("",0,0,0,last);
+        Assert.assertThat(responses, Matchers.containsString(" 503 "));
     }
 
     private boolean hitRateTracker(DoSFilter doSFilter, int sleep) throws InterruptedException

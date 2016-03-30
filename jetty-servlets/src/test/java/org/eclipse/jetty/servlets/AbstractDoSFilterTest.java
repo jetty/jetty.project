@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -44,23 +39,17 @@ import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.Assert;
 import org.junit.Test;
 
-/**
- * @version $Revision$ $Date$
- */
 public abstract class AbstractDoSFilterTest
 {
-    private static ServletTester _tester;
-    private static String _host;
-    private static int _port;
-    private static long _requestMaxTime = 200;
-    private static FilterHolder _dosFilter;
-    private static FilterHolder _timeoutFilter;
+    protected ServletTester _tester;
+    protected String _host;
+    protected int _port;
+    protected long _requestMaxTime = 200;
 
-    public static void startServer(Class<? extends Filter> filter) throws Exception
+    public void startServer(Class<? extends Filter> filter) throws Exception
     {
         _tester = new ServletTester("/ctx");
         HttpURI uri = new HttpURI(_tester.createConnector(true));
@@ -69,51 +58,35 @@ public abstract class AbstractDoSFilterTest
 
         _tester.getContext().addServlet(TestServlet.class, "/*");
 
-        _dosFilter = _tester.getContext().addFilter(filter, "/dos/*", EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        _dosFilter.setInitParameter("maxRequestsPerSec", "4");
-        _dosFilter.setInitParameter("delayMs", "200");
-        _dosFilter.setInitParameter("throttledRequests", "1");
-        _dosFilter.setInitParameter("waitMs", "10");
-        _dosFilter.setInitParameter("throttleMs", "4000");
-        _dosFilter.setInitParameter("remotePort", "false");
-        _dosFilter.setInitParameter("insertHeaders", "true");
+        FilterHolder dosFilter = _tester.getContext().addFilter(filter, "/dos/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        dosFilter.setInitParameter("maxRequestsPerSec", "4");
+        dosFilter.setInitParameter("delayMs", "200");
+        dosFilter.setInitParameter("throttledRequests", "1");
+        dosFilter.setInitParameter("waitMs", "10");
+        dosFilter.setInitParameter("throttleMs", "4000");
+        dosFilter.setInitParameter("remotePort", "false");
+        dosFilter.setInitParameter("insertHeaders", "true");
 
-        _timeoutFilter = _tester.getContext().addFilter(filter, "/timeout/*", EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        _timeoutFilter.setInitParameter("maxRequestsPerSec", "4");
-        _timeoutFilter.setInitParameter("delayMs", "200");
-        _timeoutFilter.setInitParameter("throttledRequests", "1");
-        _timeoutFilter.setInitParameter("waitMs", "10");
-        _timeoutFilter.setInitParameter("throttleMs", "4000");
-        _timeoutFilter.setInitParameter("remotePort", "false");
-        _timeoutFilter.setInitParameter("insertHeaders", "true");
-        _timeoutFilter.setInitParameter("maxRequestMs", _requestMaxTime + "");
+        FilterHolder timeoutFilter = _tester.getContext().addFilter(filter, "/timeout/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        timeoutFilter.setInitParameter("maxRequestsPerSec", "4");
+        timeoutFilter.setInitParameter("delayMs", "200");
+        timeoutFilter.setInitParameter("throttledRequests", "1");
+        timeoutFilter.setInitParameter("waitMs", "10");
+        timeoutFilter.setInitParameter("throttleMs", "4000");
+        timeoutFilter.setInitParameter("remotePort", "false");
+        timeoutFilter.setInitParameter("insertHeaders", "true");
+        timeoutFilter.setInitParameter("maxRequestMs", _requestMaxTime + "");
 
         _tester.start();
     }
 
-    @AfterClass
-    public static void stopServer() throws Exception
+    @After
+    public void stopServer() throws Exception
     {
         _tester.stop();
     }
 
-    @Before
-    public void startFilters() throws Exception
-    {
-        _dosFilter.start();
-        _dosFilter.initialize();
-        _timeoutFilter.start();
-        _timeoutFilter.initialize();
-    }
-
-    @After
-    public void stopFilters() throws Exception
-    {
-        _timeoutFilter.stop();
-        _dosFilter.stop();
-    }
-
-    private String doRequests(String loopRequests, int loops, long pauseBetweenLoops, long pauseBeforeLast, String lastRequest) throws Exception
+    protected String doRequests(String loopRequests, int loops, long pauseBetweenLoops, long pauseBeforeLast, String lastRequest) throws Exception
     {
         try (Socket socket = new Socket(_host,_port))
         {
@@ -143,8 +116,7 @@ public abstract class AbstractDoSFilterTest
                 // don't read in anything, forcing the request to time out
                 Thread.sleep(_requestMaxTime * 2);
             }
-            String response = IO.toString(in,StandardCharsets.UTF_8);
-            return response;
+            return IO.toString(in,StandardCharsets.UTF_8);
         }
     }
 
@@ -167,8 +139,8 @@ public abstract class AbstractDoSFilterTest
         String request="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\n\r\n";
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request,11,300,300,last);
-        assertEquals(12,count(responses,"HTTP/1.1 200 OK"));
-        assertEquals(0,count(responses,"DoSFilter:"));
+        Assert.assertEquals(12,count(responses,"HTTP/1.1 200 OK"));
+        Assert.assertEquals(0,count(responses,"DoSFilter:"));
     }
 
     @Test
@@ -178,8 +150,8 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request,2,1100,1100,last);
 
-        assertEquals(9,count(responses,"HTTP/1.1 200 OK"));
-        assertEquals(0,count(responses,"DoSFilter:"));
+        Assert.assertEquals(9,count(responses,"HTTP/1.1 200 OK"));
+        Assert.assertEquals(0,count(responses,"DoSFilter:"));
     }
 
     @Test
@@ -189,8 +161,8 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request+request,2,1100,1100,last);
 
-        assertEquals(2,count(responses,"DoSFilter: delayed"));
-        assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
+        Assert.assertEquals(2,count(responses,"DoSFilter: delayed"));
+        Assert.assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
     }
 
     @Test
@@ -206,7 +178,7 @@ public abstract class AbstractDoSFilterTest
                     // Cause a delay, then sleep while holding pass
                     String request="GET /ctx/dos/sleeper HTTP/1.1\r\nHost: localhost\r\n\r\n";
                     String last="GET /ctx/dos/sleeper?sleep=2000 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
-                    String responses = doRequests(request+request+request+request,1,0,0,last);
+                    doRequests(request+request+request+request,1,0,0,last);
                 }
                 catch(Exception e)
                 {
@@ -221,10 +193,10 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request,1,0,0,last);
         // System.out.println("responses are " + responses);
-        assertEquals("200 OK responses", 5,count(responses,"HTTP/1.1 200 OK"));
-        assertEquals("delayed responses", 1,count(responses,"DoSFilter: delayed"));
-        assertEquals("throttled responses", 1,count(responses,"DoSFilter: throttled"));
-        assertEquals("unavailable responses", 0,count(responses,"DoSFilter: unavailable"));
+        Assert.assertEquals("200 OK responses", 5,count(responses,"HTTP/1.1 200 OK"));
+        Assert.assertEquals("delayed responses", 1,count(responses,"DoSFilter: delayed"));
+        Assert.assertEquals("throttled responses", 1,count(responses,"DoSFilter: throttled"));
+        Assert.assertEquals("unavailable responses", 0,count(responses,"DoSFilter: unavailable"));
 
         other.join();
     }
@@ -242,7 +214,7 @@ public abstract class AbstractDoSFilterTest
                     // Cause a delay, then sleep while holding pass
                     String request="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\n\r\n";
                     String last="GET /ctx/dos/test?sleep=5000 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
-                    String responses = doRequests(request+request+request+request,1,0,0,last);
+                    doRequests(request+request+request+request,1,0,0,last);
                 }
                 catch(Exception e)
                 {
@@ -259,11 +231,11 @@ public abstract class AbstractDoSFilterTest
 
         // System.err.println("RESPONSES: \n"+responses);
 
-        assertEquals(4,count(responses,"HTTP/1.1 200 OK"));
-        assertEquals(1,count(responses,"HTTP/1.1 429"));
-        assertEquals(1,count(responses,"DoSFilter: delayed"));
-        assertEquals(1,count(responses,"DoSFilter: throttled"));
-        assertEquals(1,count(responses,"DoSFilter: unavailable"));
+        Assert.assertEquals(4,count(responses,"HTTP/1.1 200 OK"));
+        Assert.assertEquals(1,count(responses,"HTTP/1.1 429"));
+        Assert.assertEquals(1,count(responses,"DoSFilter: delayed"));
+        Assert.assertEquals(1,count(responses,"DoSFilter: throttled"));
+        Assert.assertEquals(1,count(responses,"DoSFilter: unavailable"));
 
         other.join();
     }
@@ -281,8 +253,8 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nCookie: " + sessionId + "\r\n\r\n";
         String responses = doRequests(request+request+request+request+request,2,1100,1100,last);
 
-        assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
-        assertEquals(2,count(responses,"DoSFilter: delayed"));
+        Assert.assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
+        Assert.assertEquals(2,count(responses,"DoSFilter: delayed"));
     }
 
     @Test
@@ -304,21 +276,21 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nCookie: " + sessionId2 + "\r\n\r\n";
 
         // ensure the sessions are new
-        String responses = doRequests(request1+request2,1,1100,1100,last);
+        doRequests(request1+request2,1,1100,1100,last);
         Thread.sleep(1000);
 
-        responses = doRequests(request1+request2+request1+request2+request1,2,1100,1100,last);
+        String responses = doRequests(request1+request2+request1+request2+request1,2,1100,1100,last);
 
-        assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
-        assertEquals(0,count(responses,"DoSFilter: delayed"));
+        Assert.assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
+        Assert.assertEquals(0,count(responses,"DoSFilter: delayed"));
 
         // alternate between sessions
         responses = doRequests(request1+request2+request1+request2+request1,2,250,250,last);
 
         // System.err.println(responses);
-        assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
+        Assert.assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
         int delayedRequests = count(responses,"DoSFilter: delayed");
-        assertTrue("delayedRequests: " + delayedRequests + " is not between 2 and 5",delayedRequests >= 2 && delayedRequests <= 5);
+        Assert.assertTrue("delayedRequests: " + delayedRequests + " is not between 2 and 5",delayedRequests >= 2 && delayedRequests <= 5);
     }
 
     @Test
@@ -330,9 +302,8 @@ public abstract class AbstractDoSFilterTest
         String responses = doRequests("",0,0,0,last);
         // was expired, and stopped before reaching the end of the requests
         int responseLines = count(responses, "Line:");
-        assertTrue(responses.contains("DoSFilter: timeout"));
-        assertThat(responseLines,greaterThan(0));
-        assertThat(responseLines,Matchers.lessThan(numRequests));
+        Assert.assertThat(responseLines,Matchers.greaterThan(0));
+        Assert.assertThat(responseLines,Matchers.lessThan(numRequests));
     }
 
     public static class TestServlet extends HttpServlet implements Servlet
@@ -358,7 +329,7 @@ public abstract class AbstractDoSFilterTest
                 int count = Integer.parseInt(request.getParameter("lines"));
                 for(int i = 0; i < count; ++i)
                 {
-                    response.getWriter().append("Line: " + i+"\n");
+                    response.getWriter().append("Line: " + i + "\n");
                     response.flushBuffer();
 
                     try
@@ -368,7 +339,6 @@ public abstract class AbstractDoSFilterTest
                     catch(InterruptedException e)
                     {
                     }
-
                 }
             }
 
