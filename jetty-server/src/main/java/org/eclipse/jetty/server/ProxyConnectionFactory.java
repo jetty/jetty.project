@@ -30,6 +30,8 @@ import java.util.Iterator;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Connection.UpgradeFrom;
+import org.eclipse.jetty.io.Connection.UpgradeTo;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.BufferUtil;
@@ -184,7 +186,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                 if (_buffer.equals(V2_MAGIC))
                 {
                     LOG.debug("EndPoint {} found Proxy V2 magic", getEndPoint());
-                    ProxyProtocolV2Connection v2 = new ProxyProtocolV2Connection(getEndPoint(),_connector,_proxyNext,_buffer);
+                    ProxyProtocolV2Connection v2 = new ProxyProtocolV2Connection(getEndPoint(),_connector,_proxyNext);
                     getEndPoint().upgrade(v2); // must not implement UpgradeTo, since we did the handoff on the constructor
                     return;
                 }
@@ -192,7 +194,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                 if (_buffer.slice().limit(V1_MAGIC.remaining()).equals(V1_MAGIC))
                 {
                     LOG.debug("EndPoint {} found Proxy V1 magic", getEndPoint());
-                    ProxyProtocolV1Connection v1 = new ProxyProtocolV1Connection(getEndPoint(),_connector,_proxyNext,_buffer);
+                    ProxyProtocolV1Connection v1 = new ProxyProtocolV1Connection(getEndPoint(),_connector,_proxyNext);
                     getEndPoint().upgrade(v1); // must not implement UpgradeTo, since we did the handoff on the constructor
                     return;
                 }
@@ -217,13 +219,19 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                 close();
             }
         }
+
+        @Override
+        public ByteBuffer onUpgradeFrom() {
+            return _buffer;
+        }
     }
 
-    public static class ProxyProtocolV1Connection extends AbstractConnection
+    public static class ProxyProtocolV1Connection extends AbstractConnection implements UpgradeTo
     {
         // 0     1 2       3       4 5 6
         // 98765432109876543210987654321
         // PROXY P R.R.R.R L.L.L.L R Lrn
+
 
         private final int[] __size = {29,23,21,13,5,3,1};
         private final Connector _connector;
@@ -233,14 +241,19 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         private int _fields;
         private int _length;
 
-        protected ProxyProtocolV1Connection(EndPoint endp, Connector connector, String next,ByteBuffer buffer)
+        protected ProxyProtocolV1Connection(EndPoint endp, Connector connector, String next)
         {
             super(endp,connector.getExecutor());
             _connector=connector;
             _next=next;
+        }
+
+        @Override
+        public void onUpgradeTo(ByteBuffer buffer) {
             _length=buffer.remaining();
             parse(buffer);
         }
+
 
         @Override
         public void onOpen()
@@ -248,8 +261,8 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             super.onOpen();
             fillInterested();
         }
-        
-        
+
+
         private boolean parse(ByteBuffer buffer)
         {
             // parse fields
@@ -372,23 +385,27 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
     enum Family { UNSPEC, INET, INET6, UNIX }
     enum Transport { UNSPEC, STREAM, DGRAM }
 
-    public class ProxyProtocolV2Connection extends AbstractConnection
+    public class ProxyProtocolV2Connection extends AbstractConnection implements UpgradeTo
     {
         private final Connector _connector;
         private final String _next;
-        private final boolean _local;
-        private final Family _family;
-        private final Transport _transport;
-        private final int _length;
-        private final ByteBuffer _buffer;
+        private boolean _local;
+        private Family _family;
+        private Transport _transport;
+        private int _length;
+        private ByteBuffer _buffer;
 
-        protected ProxyProtocolV2Connection(EndPoint endp, Connector connector, String next,ByteBuffer buffer)
+        protected ProxyProtocolV2Connection(EndPoint endp, Connector connector, String next)
             throws IOException
         {
             super(endp,connector.getExecutor());
             _connector=connector;
             _next=next;
-            
+        }
+
+        @Override
+        public void onUpgradeTo(ByteBuffer buffer)
+        {
             if (buffer.remaining()!=16)
                 throw new IllegalStateException();
             
@@ -402,11 +419,11 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             //     uint16_t len;     /* number of following bytes part of the header */
             // };
             if (!buffer.equals(V2_MAGIC))
-                    throw new IOException("Bad PROXY protocol v2 signature");
-            
+                    throw new IllegalStateException("Bad PROXY protocol v2 signature");
+
             int versionAndCommand = 0xff & buffer.get();
             if ((versionAndCommand&0xf0) != 0x20)
-                throw new IOException("Bad PROXY protocol v2 version");
+                throw new IllegalStateException("Bad PROXY protocol v2 version");
             _local=(versionAndCommand&0xf)==0x00;
 
             int transportAndFamily = 0xff & buffer.get();
@@ -417,7 +434,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                 case 2: _family=Family.INET6; break;
                 case 3: _family=Family.UNIX; break;
                 default:
-                    throw new IOException("Bad PROXY protocol v2 family");
+                    throw new IllegalStateException("Bad PROXY protocol v2 family");
             }
             
             switch(0xf&transportAndFamily)
@@ -426,17 +443,17 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                 case 1: _transport=Transport.STREAM; break;
                 case 2: _transport=Transport.DGRAM; break;
                 default:
-                    throw new IOException("Bad PROXY protocol v2 family");
+                    throw new IllegalStateException("Bad PROXY protocol v2 family");
             }
                         
             _length = buffer.getChar();
             
             if (!_local && (_family==Family.UNSPEC || _family==Family.UNIX || _transport!=Transport.STREAM))
-                throw new IOException(String.format("Unsupported PROXY protocol v2 mode 0x%x,0x%x",versionAndCommand,transportAndFamily));
+                throw new UnsupportedOperationException(String.format("Unsupported PROXY protocol v2 mode 0x%x,0x%x",versionAndCommand,transportAndFamily));
 
             if (_length>_maxProxyHeader)
-                throw new IOException(String.format("Unsupported PROXY protocol v2 mode 0x%x,0x%x,0x%x",versionAndCommand,transportAndFamily,_length));
-                
+                throw new UnsupportedOperationException(String.format("Unsupported PROXY protocol v2 mode 0x%x,0x%x,0x%x",versionAndCommand,transportAndFamily,_length));
+
             _buffer = _length>0?BufferUtil.allocate(_length):BufferUtil.EMPTY_BUFFER;
         }
 
