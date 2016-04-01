@@ -368,10 +368,9 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             }
         }
     }
-    
-    
-    enum Family { UNSPEC, INET, INET6, UNIX };
-    enum Transport { UNSPEC, STREAM, DGRAM };
+
+    enum Family { UNSPEC, INET, INET6, UNIX }
+    enum Transport { UNSPEC, STREAM, DGRAM }
 
     public class ProxyProtocolV2Connection extends AbstractConnection
     {
