@@ -871,7 +871,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             case LOCALLY_CLOSED:
             case REMOTELY_CLOSED:
             {
-                abort(new TimeoutException());
+                abort(new TimeoutException("Idle timeout " + endPoint.getIdleTimeout() + " ms"));
                 return false;
             }
             default:
