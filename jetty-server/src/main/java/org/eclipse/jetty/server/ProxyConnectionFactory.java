@@ -20,8 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -515,9 +513,9 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                         {
                             byte[] addr=new byte[4];
                             _buffer.get(addr);
-                            src = Inet4Address.getByAddress(addr);
+                            src = InetAddress.getByAddress(addr);
                             _buffer.get(addr);
-                            dst = Inet4Address.getByAddress(addr);
+                            dst = InetAddress.getByAddress(addr);
                             sp = _buffer.getChar();
                             dp = _buffer.getChar();
 
@@ -528,9 +526,9 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                         {
                             byte[] addr=new byte[16];
                             _buffer.get(addr);
-                            src = Inet6Address.getByAddress(addr);
+                            src = InetAddress.getByAddress(addr);
                             _buffer.get(addr);
-                            dst = Inet6Address.getByAddress(addr);
+                            dst = InetAddress.getByAddress(addr);
                             sp = _buffer.getChar();
                             dp = _buffer.getChar();
                             break;  
