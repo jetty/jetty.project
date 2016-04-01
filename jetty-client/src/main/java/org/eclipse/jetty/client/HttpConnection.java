@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -103,7 +104,7 @@ public abstract class HttpConnection implements Connection
 
         URI uri = request.getURI();
 
-        if (proxy != null && !HttpClient.isSchemeSecure(request.getScheme()) && uri != null)
+        if (proxy instanceof HttpProxy && !HttpClient.isSchemeSecure(request.getScheme()) && uri != null)
         {
             path = uri.toString();
             request.path(path);

@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -258,6 +259,58 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         Stream stream = (Stream)request.getAttributes().get(HTTP2Stream.class.getName());
         Assert.assertNotNull(stream);
         Assert.assertEquals(lastStream.get(), stream.getId());
+    }
+
+    @Test
+    public void testAbsoluteFormTarget() throws Exception
+    {
+        String path = "/path";
+        String query = "a=b";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                Assert.assertEquals(path, request.getRequestURI());
+                Assert.assertEquals(query, request.getQueryString());
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .path("http://localhost:" + connector.getLocalPort() + path + "?" + query)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testRequestViaForwardHttpProxy() throws Exception
+    {
+        String path = "/path";
+        String query = "a=b";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                Assert.assertEquals(path, request.getRequestURI());
+                Assert.assertEquals(query, request.getQueryString());
+            }
+        });
+
+        int proxyPort = connector.getLocalPort();
+        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort));
+
+        int serverPort = proxyPort + 1; // Any port will do, just not the same as the proxy.
+        ContentResponse response = client.newRequest("localhost", serverPort)
+                .path(path + "?" + query)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @Ignore

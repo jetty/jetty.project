@@ -26,8 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -69,17 +67,16 @@ public class Socks4ProxyTest
         byte ip4 = 13;
         String serverHost = ip1 + "." + ip2 + "." + ip3 + "." + ip4;
         int serverPort = proxyPort + 1; // Any port will do
+        String method = "GET";
+        String path = "/path";
         client.newRequest(serverHost, serverPort)
-                .path("/path")
+                .method(method)
+                .path(path)
                 .timeout(5, TimeUnit.SECONDS)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isSucceeded())
-                            latch.countDown();
-                    }
+                    if (result.isSucceeded())
+                        latch.countDown();
                 });
 
         SocketChannel channel = server.accept();
@@ -100,11 +97,11 @@ public class Socks4ProxyTest
         // Socks4 response.
         channel.write(ByteBuffer.wrap(new byte[]{0, 0x5A, 0, 0, 0, 0, 0, 0}));
 
-        buffer = ByteBuffer.allocate(3);
+        buffer = ByteBuffer.allocate(method.length() + 1 + path.length());
         read = channel.read(buffer);
-        Assert.assertEquals(3, read);
+        Assert.assertEquals(buffer.capacity(), read);
         buffer.flip();
-        Assert.assertEquals("GET", StandardCharsets.UTF_8.decode(buffer).toString());
+        Assert.assertEquals(method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
 
         // Response
         String response = "" +
@@ -129,19 +126,17 @@ public class Socks4ProxyTest
 
         String serverHost = "127.0.0.13"; // Test expects an IP address.
         int serverPort = proxyPort + 1; // Any port will do
+        String method = "GET";
         client.newRequest(serverHost, serverPort)
+                .method(method)
                 .path("/path")
                 .timeout(5, TimeUnit.SECONDS)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isSucceeded())
-                            latch.countDown();
-                        else
-                            result.getFailure().printStackTrace();
-                    }
+                    if (result.isSucceeded())
+                        latch.countDown();
+                    else
+                        result.getFailure().printStackTrace();
                 });
 
         SocketChannel channel = server.accept();
@@ -161,11 +156,11 @@ public class Socks4ProxyTest
 
         channel.write(ByteBuffer.wrap(chunk2));
 
-        buffer = ByteBuffer.allocate(3);
+        buffer = ByteBuffer.allocate(method.length());
         read = channel.read(buffer);
-        Assert.assertEquals(3, read);
+        Assert.assertEquals(buffer.capacity(), read);
         buffer.flip();
-        Assert.assertEquals("GET", StandardCharsets.UTF_8.decode(buffer).toString());
+        Assert.assertEquals(method, StandardCharsets.UTF_8.decode(buffer).toString());
 
         // Response
         String response = "" +
