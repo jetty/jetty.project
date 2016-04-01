@@ -87,6 +87,7 @@ public class HttpChannelState
      */
     public enum Async
     {
+        NOT_ASYNC,
         STARTED,          // AsyncContext.startAsync() has been called
         DISPATCH,         // AsyncContext.dispatch() has been called
         COMPLETE,         // AsyncContext.complete() has been called
@@ -114,7 +115,7 @@ public class HttpChannelState
     {
         _channel=channel;
         _state=State.IDLE;
-        _async=null;
+        _async=Async.NOT_ASYNC;
         _initial=true;
     }
 
@@ -228,31 +229,28 @@ public class HttpChannelState
                         return Action.WRITE_CALLBACK;
                     }
 
-                    if (_async!=null)
+                    switch(_async)
                     {
-                        Async async=_async;
-                        switch(async)
-                        {
-                            case COMPLETE:
-                                _state=State.COMPLETING;
-                                return Action.COMPLETE;
-                            case DISPATCH:
-                                _state=State.DISPATCHED;
-                                _async=null;
-                                return Action.ASYNC_DISPATCH;
-                            case EXPIRED:
-                            case ERRORED:
-                                _state=State.DISPATCHED;
-                                _async=null;
-                                return Action.ERROR_DISPATCH;
-                            case STARTED:
+                        case COMPLETE:
+                            _state=State.COMPLETING;
+                            return Action.COMPLETE;
+                        case DISPATCH:
+                            _state=State.DISPATCHED;
+                            _async=Async.NOT_ASYNC;
+                            return Action.ASYNC_DISPATCH;
+                        case EXPIRED:
+                        case ERRORED:
+                            _state=State.DISPATCHED;
+                            _async=Async.NOT_ASYNC;
+                            return Action.ERROR_DISPATCH;
+                        case STARTED:
                             case EXPIRING:
-                            case ERRORING:
-                                return Action.WAIT;
-
-                            default:
-                                throw new IllegalStateException(getStatusStringLocked());
-                        }
+                        case ERRORING:
+                            return Action.WAIT;
+                        case NOT_ASYNC:
+                            break;
+                        default:
+                            throw new IllegalStateException(getStatusStringLocked());
                     }
 
                     return Action.WAIT;
@@ -276,8 +274,7 @@ public class HttpChannelState
         {
             if(DEBUG)
                 LOG.debug("startAsync {}",toStringLocked());
-            
-            if (_state!=State.DISPATCHED || _async!=null)
+            if (_state!=State.DISPATCHED || _async!=Async.NOT_ASYNC)
                 throw new IllegalStateException(this.getStatusStringLocked());
 
             _async=Async.STARTED;
@@ -354,73 +351,72 @@ public class HttpChannelState
                     throw new IllegalStateException(this.getStatusStringLocked());
             }
 
-            if (_async!=null)
+            _initial=false;
+            switch(_async)
             {
-                _initial=false;
-                switch(_async)
-                {
-                    case COMPLETE:
-                        _state=State.COMPLETING;
-                        _async=null;
-                        action=Action.COMPLETE;
-                        break;
+                case COMPLETE:
+                    _state=State.COMPLETING;
+                    _async=Async.NOT_ASYNC;
+                    action=Action.COMPLETE;
+                    break;
 
-                    case DISPATCH:
-                        _state=State.DISPATCHED;
-                        _async=null;
-                        action=Action.ASYNC_DISPATCH;
-                        break;
+                case DISPATCH:
+                    _state=State.DISPATCHED;
+                    _async=Async.NOT_ASYNC;
+                    action=Action.ASYNC_DISPATCH;
+                    break;
 
-                    case STARTED:
-                        if (_asyncReadUnready && _asyncReadPossible)
-                        {
-                            _state=State.ASYNC_IO;
-                            _asyncReadUnready=false;
-                            action = Action.READ_CALLBACK;
-                        }
-                        else if (_asyncWrite) // TODO refactor same as read
-                        {
-                            _asyncWrite=false;
-                            _state=State.ASYNC_IO;
-                            action=Action.WRITE_CALLBACK;
-                        }
-                        else
-                        {
-                            schedule_event=_event;
-                            read_interested=_asyncReadUnready;
-                            _state=State.ASYNC_WAIT;
-                            action=Action.WAIT;
-                        }
-                        break;
-
-                    case EXPIRING:
-                        // onTimeout callbacks still being called, so just WAIT
+                case STARTED:
+                    if (_asyncReadUnready && _asyncReadPossible)
+                    {
+                        _state=State.ASYNC_IO;
+                        _asyncReadUnready=false;
+                        action = Action.READ_CALLBACK;
+                    }
+                    else if (_asyncWrite) // TODO refactor same as read
+                    {
+                        _asyncWrite=false;
+                        _state=State.ASYNC_IO;
+                        action=Action.WRITE_CALLBACK;
+                    }
+                    else
+                    {
+                        schedule_event=_event;
+                        read_interested=_asyncReadUnready;
                         _state=State.ASYNC_WAIT;
                         action=Action.WAIT;
-                        break;
+                    }
+                    break;
 
-                    case EXPIRED:
-                        // onTimeout handling is complete, but did not dispatch as
-                        // we were handling.  So do the error dispatch here
-                        _state=State.DISPATCHED;
-                        _async=null;
-                        action=Action.ERROR_DISPATCH;
-                        break;
-                        
-                    case ERRORED:
-                        _state=State.DISPATCHED;
-                        _async=null;
-                        action=Action.ERROR_DISPATCH;
-                        break;
+                case EXPIRING:
+                    // onTimeout callbacks still being called, so just WAIT
+                    _state=State.ASYNC_WAIT;
+                    action=Action.WAIT;
+                    break;
 
-                    default:
-                        throw new IllegalStateException(this.getStatusStringLocked());
-                }
-            }
-            else
-            {
-                _state=State.COMPLETING;
-                action=Action.COMPLETE;
+                case EXPIRED:
+                    // onTimeout handling is complete, but did not dispatch as
+                    // we were handling.  So do the error dispatch here
+                    _state=State.DISPATCHED;
+                    _async=Async.NOT_ASYNC;
+                    action=Action.ERROR_DISPATCH;
+                    break;
+
+                case ERRORED:
+                    _state=State.DISPATCHED;
+                    _async=Async.NOT_ASYNC;
+                    action=Action.ERROR_DISPATCH;
+                    break;
+
+                case NOT_ASYNC:
+                    _state=State.COMPLETING;
+                    action=Action.COMPLETE;
+                    break;
+
+                default:
+                    _state=State.COMPLETING;
+                    action=Action.COMPLETE;
+                    break;
             }
         }
 
@@ -690,7 +686,7 @@ public class HttpChannelState
             }
             
             // Are we blocking?
-            if (_async==null)
+            if (_async==Async.NOT_ASYNC)
             {
                 // Only called from within HttpChannel Handling, so much be dispatched, let's stay dispatched!
                 if (_state==State.DISPATCHED)
@@ -792,7 +788,7 @@ public class HttpChannelState
                     aListeners=_asyncListeners;
                     event=_event;
                     _state=State.COMPLETED;
-                    _async=null;
+                    _async=Async.NOT_ASYNC;
                     break;
 
                 default:
@@ -855,7 +851,7 @@ public class HttpChannelState
             }
             _asyncListeners=null;
             _state=State.IDLE;
-            _async=null;
+            _async=Async.NOT_ASYNC;
             _initial=true;
             _asyncReadPossible=_asyncReadUnready=false;
             _asyncWrite=false;
@@ -882,7 +878,7 @@ public class HttpChannelState
             }
             _asyncListeners=null;
             _state=State.UPGRADED;
-            _async=null;
+            _async=Async.NOT_ASYNC;
             _initial=true;
             _asyncReadPossible=_asyncReadUnready=false;
             _asyncWrite=false;
@@ -972,7 +968,7 @@ public class HttpChannelState
         try(Locker.Lock lock= _locker.lock())
         {
             if (_state==State.DISPATCHED)
-                return _async!=null;
+                return _async!=Async.NOT_ASYNC;
             return _async==Async.STARTED || _async==Async.EXPIRING;
         }
     }
@@ -981,7 +977,7 @@ public class HttpChannelState
     {
         try(Locker.Lock lock= _locker.lock())
         {
-            return !_initial || _async!=null;
+            return !_initial || _async!=Async.NOT_ASYNC;
         }
     }
 
