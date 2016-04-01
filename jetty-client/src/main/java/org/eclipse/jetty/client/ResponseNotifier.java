@@ -209,7 +209,6 @@ public class ResponseNotifier
         }
         notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
-            // TODO: handle callback
             notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()), Callback.NOOP);
         notifySuccess(listeners, response);
     }
@@ -231,7 +230,6 @@ public class ResponseNotifier
         }
         notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
-            // TODO: handle callback
             notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()), Callback.NOOP);
         notifyFailure(listeners, response, failure);
     }
