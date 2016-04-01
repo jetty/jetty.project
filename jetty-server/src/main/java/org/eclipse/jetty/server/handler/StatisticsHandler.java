@@ -22,9 +22,9 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -60,15 +60,15 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final SampleStatistic _dispatchedTimeStats = new SampleStatistic();
     private final CounterStatistic _asyncWaitStats = new CounterStatistic();
 
-    private final AtomicInteger _asyncDispatches = new AtomicInteger();
-    private final AtomicInteger _expires = new AtomicInteger();
+    private final LongAdder _asyncDispatches = new LongAdder();
+    private final LongAdder _expires = new LongAdder();
 
-    private final AtomicInteger _responses1xx = new AtomicInteger();
-    private final AtomicInteger _responses2xx = new AtomicInteger();
-    private final AtomicInteger _responses3xx = new AtomicInteger();
-    private final AtomicInteger _responses4xx = new AtomicInteger();
-    private final AtomicInteger _responses5xx = new AtomicInteger();
-    private final AtomicLong _responsesTotalBytes = new AtomicLong();
+    private final LongAdder _responses1xx = new LongAdder();
+    private final LongAdder _responses2xx = new LongAdder();
+    private final LongAdder _responses3xx = new LongAdder();
+    private final LongAdder _responses4xx = new LongAdder();
+    private final LongAdder _responses5xx = new LongAdder();
+    private final LongAdder _responsesTotalBytes = new LongAdder();
 
     private final AtomicReference<FutureCallback> _shutdown=new AtomicReference<>();
     
@@ -79,7 +79,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         @Override
         public void onTimeout(AsyncEvent event) throws IOException
         {
-            _expires.incrementAndGet();
+            _expires.increment();
         }
         
         @Override
@@ -132,14 +132,14 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         _dispatchedTimeStats.reset();
         _asyncWaitStats.reset();
 
-        _asyncDispatches.set(0);
-        _expires.set(0);
-        _responses1xx.set(0);
-        _responses2xx.set(0);
-        _responses3xx.set(0);
-        _responses4xx.set(0);
-        _responses5xx.set(0);
-        _responsesTotalBytes.set(0L);
+        _asyncDispatches.reset();
+        _expires.reset();
+        _responses1xx.reset();
+        _responses2xx.reset();
+        _responses3xx.reset();
+        _responses4xx.reset();
+        _responses5xx.reset();
+        _responsesTotalBytes.reset();
     }
 
     @Override
@@ -159,7 +159,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         {
             // resumed request
             start = System.currentTimeMillis();
-            _asyncDispatches.incrementAndGet();
+            _asyncDispatches.increment();
         }
 
         try
@@ -221,19 +221,19 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             switch (response.getStatus() / 100)
             {
                 case 1:
-                    _responses1xx.incrementAndGet();
+                    _responses1xx.increment();
                     break;
                 case 2:
-                    _responses2xx.incrementAndGet();
+                    _responses2xx.increment();
                     break;
                 case 3:
-                    _responses3xx.incrementAndGet();
+                    _responses3xx.increment();
                     break;
                 case 4:
-                    _responses4xx.incrementAndGet();
+                    _responses4xx.increment();
                     break;
                 case 5:
-                    _responses5xx.incrementAndGet();
+                    _responses5xx.increment();
                     break;
                 default:
                     break;
@@ -241,8 +241,8 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         }
         else
             // will fall through to not found handler
-            _responses4xx.incrementAndGet();
-        _responsesTotalBytes.addAndGet(response.getContentCount());
+            _responses4xx.increment();
+        _responsesTotalBytes.add(response.getContentCount());
     }
 
     @Override
@@ -454,7 +454,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @ManagedAttribute("number of requested that have been asynchronously dispatched")
     public int getAsyncDispatches()
     {
-        return _asyncDispatches.get();
+        return _asyncDispatches.intValue();
     }
 
     /**
@@ -464,7 +464,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @ManagedAttribute("number of async requests requests that have expired")
     public int getExpires()
     {
-        return _expires.get();
+        return _expires.intValue();
     }
 
     /**
@@ -474,7 +474,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @ManagedAttribute("number of requests with 1xx response status")
     public int getResponses1xx()
     {
-        return _responses1xx.get();
+        return _responses1xx.intValue();
     }
 
     /**
@@ -484,7 +484,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @ManagedAttribute("number of requests with 2xx response status")
     public int getResponses2xx()
     {
-        return _responses2xx.get();
+        return _responses2xx.intValue();
     }
 
     /**
@@ -494,7 +494,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @ManagedAttribute("number of requests with 3xx response status")
     public int getResponses3xx()
     {
-        return _responses3xx.get();
+        return _responses3xx.intValue();
     }
 
     /**
@@ -504,7 +504,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @ManagedAttribute("number of requests with 4xx response status")
     public int getResponses4xx()
     {
-        return _responses4xx.get();
+        return _responses4xx.intValue();
     }
 
     /**
@@ -514,7 +514,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @ManagedAttribute("number of requests with 5xx response status")
     public int getResponses5xx()
     {
-        return _responses5xx.get();
+        return _responses5xx.intValue();
     }
 
     /**
@@ -532,7 +532,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @ManagedAttribute("total number of bytes across all responses")
     public long getResponsesBytesTotal()
     {
-        return _responsesTotalBytes.get();
+        return _responsesTotalBytes.longValue();
     }
 
     public String toStatsHTML()
