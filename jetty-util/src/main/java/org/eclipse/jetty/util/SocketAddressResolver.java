@@ -155,7 +155,7 @@ public interface SocketAddressResolver
                     {
                         if (complete.compareAndSet(false, true))
                         {
-                            promise.failed(new TimeoutException());
+                            promise.failed(new TimeoutException("DNS timeout " + getTimeout() + " ms"));
                             thread.interrupt();
                         }
                     }, timeout, TimeUnit.MILLISECONDS);

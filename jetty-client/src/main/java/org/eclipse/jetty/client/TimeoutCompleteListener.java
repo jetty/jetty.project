@@ -68,7 +68,7 @@ public class TimeoutCompleteListener implements Response.CompleteListener, Runna
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Executing timeout task {} for {}", task, request);
-        request.abort(new TimeoutException("Total timeout elapsed"));
+        request.abort(new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed"));
     }
 
     public void cancel()
