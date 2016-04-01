@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -50,11 +51,29 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ProxyConnectionFactory extends AbstractConnectionFactory
 {
-    public static final String TLS_VERSION = "TLS_VERSION"; 
-    
+    public static final String TLS_VERSION = "TLS_VERSION";
+
+    private static final ByteBuffer V1_MAGIC;
+    private static final ByteBuffer V2_MAGIC = ByteBuffer.wrap(
+            new byte[]{0x0D,0x0A,0x0D,0x0A,0x00,0x0D,0x0A,0x51,0x55,0x49,0x54,0x0A});
+
     private static final Logger LOG = Log.getLogger(ProxyConnectionFactory.class);
     private final String _next;
     private int _maxProxyHeader=1024;
+
+    static
+    {
+        try {
+            V1_MAGIC = ByteBuffer.wrap("PROXY".getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+
+        if (V1_MAGIC.remaining() > V2_MAGIC.remaining())
+        {
+            throw new IllegalStateException("Proxy V1 magic should be shorter than V2 magic");
+        }
+    }
 
     /* ------------------------------------------------------------ */
     /** Proxy Connection Factory that uses the next ConnectionFactory
@@ -324,8 +343,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
     
     enum Family { UNSPEC, INET, INET6, UNIX };
     enum Transport { UNSPEC, STREAM, DGRAM };
-    private static final byte[] MAGIC = new byte[]{0x0D,0x0A,0x0D,0x0A,0x00,0x0D,0x0A,0x51,0x55,0x49,0x54,0x0A};
-    
+
     public class ProxyProtocolV2Connection extends AbstractConnection
     {
         private final Connector _connector;
@@ -355,8 +373,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             //     uint8_t fam;      /* protocol family and address */
             //     uint16_t len;     /* number of following bytes part of the header */
             // };
-            for (int i=0;i<MAGIC.length;i++)
-                if (buffer.get()!=MAGIC[i])
+            if (!buffer.equals(V2_MAGIC))
                     throw new IOException("Bad PROXY protocol v2 signature");
             
             int versionAndCommand = 0xff & buffer.get();
