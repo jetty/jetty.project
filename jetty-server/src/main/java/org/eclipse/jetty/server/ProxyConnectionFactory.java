@@ -58,7 +58,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             new byte[]{0x0D,0x0A,0x0D,0x0A,0x00,0x0D,0x0A,0x51,0x55,0x49,0x54,0x0A});
 
     private static final Logger LOG = Log.getLogger(ProxyConnectionFactory.class);
-    private final String _next;
+    private final String _proxyNext, _fallbackNext;
     private int _maxProxyHeader=1024;
 
     static
@@ -81,14 +81,24 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
      */
     public ProxyConnectionFactory()
     {
-        super("proxy");
-        _next=null;
+        this(null);
     }
 
-    public ProxyConnectionFactory(String nextProtocol)
+    public ProxyConnectionFactory(String proxyNext)
+    {
+        this(proxyNext, null);
+    }
+
+    /**
+     * Proxy connection factory that uses {@code proxyNext} for
+     * successful proxy connections, otherwise falls back to trying
+     * {@code fallbackNext}
+     */
+    public ProxyConnectionFactory(String proxyNext, String fallbackNext)
     {
         super("proxy");
-        _next=nextProtocol;
+        _proxyNext=proxyNext;
+        _fallbackNext=fallbackNext;
     }
 
     public int getMaxProxyHeader()
@@ -104,7 +114,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
     @Override
     public Connection newConnection(Connector connector, EndPoint endp)
     {
-        String next=_next;
+        String next=_proxyNext;
         if (next==null)
         {
             for (Iterator<String> i = connector.getProtocols().iterator();i.hasNext();)
@@ -118,20 +128,26 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             }
         }
 
-        return new ProxyProtocolV1orV2Connection(endp,connector,next);
+        String fallbackNext=_fallbackNext;
+        if (fallbackNext == null) {
+            fallbackNext = next;
+        }
+
+        return new ProxyProtocolV1orV2Connection(endp,connector,next,fallbackNext);
     }
-    
-    public class ProxyProtocolV1orV2Connection extends AbstractConnection
+
+    public class ProxyProtocolV1orV2Connection extends AbstractConnection implements UpgradeFrom
     {
         private final Connector _connector;
-        private final String _next;
-        private ByteBuffer _buffer = BufferUtil.allocate(16);
-        
-        protected ProxyProtocolV1orV2Connection(EndPoint endp, Connector connector, String next)
+        private final String _proxyNext, _fallbackNext;
+        private final ByteBuffer _buffer = BufferUtil.allocate(V2_MAGIC.remaining());
+
+        protected ProxyProtocolV1orV2Connection(EndPoint endp, Connector connector, String proxyNext, String fallbackNext)
         {
             super(endp,connector.getExecutor());
             _connector=connector;
-            _next=next;
+            _proxyNext=proxyNext;
+            _fallbackNext=fallbackNext;
         }
 
         @Override
@@ -162,25 +178,40 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                     }
                 }
 
-                // Is it a V1?
-                switch(_buffer.get(0))
+                if (_buffer.remaining() != V2_MAGIC.remaining())
                 {
-                    case 'P':
-                    {
-                        ProxyProtocolV1Connection v1 = new ProxyProtocolV1Connection(getEndPoint(),_connector,_next,_buffer);
-                        getEndPoint().upgrade(v1);
-                        return;
-                    }
-                    case 0x0D:
-                    {
-                        ProxyProtocolV2Connection v2 = new ProxyProtocolV2Connection(getEndPoint(),_connector,_next,_buffer);
-                        getEndPoint().upgrade(v2);
-                        return;
-                    }
-                    default:       
-                        LOG.warn("Not PROXY protocol for {}",getEndPoint());
-                        close();  
+                    throw new IllegalStateException("Expected to read " + V2_MAGIC.remaining() + " bytes");
                 }
+
+                if (_buffer.equals(V2_MAGIC))
+                {
+                    LOG.debug("EndPoint {} found Proxy V2 magic", getEndPoint());
+                    ProxyProtocolV2Connection v2 = new ProxyProtocolV2Connection(getEndPoint(),_connector,_proxyNext,_buffer);
+                    getEndPoint().upgrade(v2); // must not implement UpgradeTo, since we did the handoff on the constructor
+                    return;
+                }
+
+                if (_buffer.slice().limit(V1_MAGIC.remaining()).equals(V1_MAGIC))
+                {
+                    LOG.debug("EndPoint {} found Proxy V1 magic", getEndPoint());
+                    ProxyProtocolV1Connection v1 = new ProxyProtocolV1Connection(getEndPoint(),_connector,_proxyNext,_buffer);
+                    getEndPoint().upgrade(v1); // must not implement UpgradeTo, since we did the handoff on the constructor
+                    return;
+                }
+
+                // Create the next protocol
+                ConnectionFactory fallbackFactory = _connector.getConnectionFactory(_fallbackNext);
+                if (fallbackFactory == null)
+                {
+                    LOG.warn("No Fallback protocol '{}' for {}",_fallbackNext,getEndPoint());
+                    close();
+                    return;
+                }
+
+                LOG.debug("Fallback protocol '{}' for {}",_fallbackNext,getEndPoint());
+
+                Connection newConnection = fallbackFactory.newConnection(_connector, getEndPoint());
+                getEndPoint().upgrade(newConnection);
             }
             catch (Throwable x)
             {
