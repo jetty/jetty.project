@@ -427,23 +427,25 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             _local=(versionAndCommand&0xf)==0x00;
 
             int transportAndFamily = 0xff & buffer.get();
-            switch(transportAndFamily>>4)
+            final int family = transportAndFamily>>4;
+            switch(family)
             {
                 case 0: _family=Family.UNSPEC; break;
                 case 1: _family=Family.INET; break;
                 case 2: _family=Family.INET6; break;
                 case 3: _family=Family.UNIX; break;
                 default:
-                    throw new IllegalStateException("Bad PROXY protocol v2 family");
+                    throw new UnsupportedOperationException("Bad PROXY protocol v2 family " + family);
             }
-            
-            switch(0xf&transportAndFamily)
+
+            final int transport = 0xf & transportAndFamily;
+            switch(transport)
             {
                 case 0: _transport=Transport.UNSPEC; break;
                 case 1: _transport=Transport.STREAM; break;
                 case 2: _transport=Transport.DGRAM; break;
                 default:
-                    throw new IllegalStateException("Bad PROXY protocol v2 family");
+                    throw new UnsupportedOperationException("Bad PROXY protocol v2 transport " + transport);
             }
                         
             _length = buffer.getChar();
