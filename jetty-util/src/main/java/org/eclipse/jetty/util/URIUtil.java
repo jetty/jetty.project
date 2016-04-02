@@ -20,10 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
@@ -515,9 +512,9 @@ public class URIUtil
         if(path.startsWith("/.."))
             return null;
 
-        List<String> directories = new LinkedList<>();
+        List<String> directories = new ArrayList<>();
         Collections.addAll(directories, __PATH_SPLIT.split(path));
-
+        
         for(ListIterator<String> iterator = directories.listIterator(); iterator.hasNext();)
         {
             switch (iterator.next()) {
