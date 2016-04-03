@@ -558,7 +558,7 @@ public class JspcMojo extends AbstractMojo
             Artifact artifact = (Artifact)iter.next();
 
             // Include runtime and compile time libraries
-            if (!Artifact.SCOPE_TEST.equals(artifact.getScope()) && !Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
+            if (!Artifact.SCOPE_TEST.equals(artifact.getScope()) && (!Artifact.SCOPE_PROVIDED.equals(artifact.getScope()) || useProvidedScope))
             {
                 String filePath = artifact.getFile().getCanonicalPath();
                 if (getLog().isDebugEnabled())
@@ -567,6 +567,29 @@ public class JspcMojo extends AbstractMojo
                 urls.add(Resource.toURL(artifact.getFile()));
             }
         }
+
+        if(useProvidedScope){
+            for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
+            {
+                Artifact artifact = iter.next();
+                if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
+                {
+                    //test to see if the provided artifact was amongst the plugin artifacts
+                    URL artifactUrl = Resource.toURL(artifact.getFile());
+
+                    if (! urls.contains(artifactUrl))
+                    {
+                        urls.add(artifactUrl);
+                        if (getLog().isDebugEnabled()) { getLog().debug("Adding provided artifact: "+artifact);}
+                    }
+                    else
+                    {
+                        if (getLog().isDebugEnabled()) { getLog().debug("Skipping provided artifact: "+artifact);}
+                    }
+                }
+            }
+        }
+
         return urls;
     }
     
