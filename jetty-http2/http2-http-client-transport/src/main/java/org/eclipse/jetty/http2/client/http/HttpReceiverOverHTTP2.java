@@ -117,6 +117,8 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             {
                 byteBufferPool.release(copy);
                 super.succeeded();
+                if (frame.isEndStream())
+                    responseSuccess(exchange);
             }
 
             @Override
@@ -127,11 +129,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             }
         };
 
-        if (responseContent(exchange, copy, delegate))
-        {
-            if (frame.isEndStream())
-                responseSuccess(exchange);
-        }
+        responseContent(exchange, copy, delegate);
     }
 
     @Override
