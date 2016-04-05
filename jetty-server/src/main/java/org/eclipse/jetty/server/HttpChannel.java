@@ -295,16 +295,23 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         _request.setHandled(false);
                         _response.getHttpOutput().reopen();
 
-                        List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
-                        if (!customizers.isEmpty())
-                        {
-                            for (HttpConfiguration.Customizer customizer : customizers)
-                                customizer.customize(getConnector(), _configuration, _request);
-                        }
                         try
                         {
                             _request.setDispatcherType(DispatcherType.REQUEST);
-                            getServer().handle(this);
+                            
+                            List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
+                            if (!customizers.isEmpty())
+                            {
+                                for (HttpConfiguration.Customizer customizer : customizers)
+                                {
+                                    customizer.customize(getConnector(), _configuration, _request);
+                                    if (_request.isHandled())
+                                        break;
+                                }
+                            }
+
+                            if (!_request.isHandled())
+                                getServer().handle(this);
                         }
                         finally
                         {

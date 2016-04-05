@@ -24,6 +24,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.annotation.Name;
+
 
 /**
  * Sets the cookie in the response whenever the rule finds a match.
@@ -38,8 +40,17 @@ public class CookiePatternRule extends PatternRule
     /* ------------------------------------------------------------ */
     public CookiePatternRule()
     {
+        this(null,null,null);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public CookiePatternRule(@Name("pattern") String pattern, @Name("name") String name, @Name("value") String value)
+    {
+        super(pattern);
         _handling = false;
         _terminating = false;
+        setName(name);
+        setValue(value);
     }
 
     /* ------------------------------------------------------------ */

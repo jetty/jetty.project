@@ -32,7 +32,18 @@ import javax.servlet.http.HttpServletResponse;
 public abstract class RegexRule extends Rule
 {
     protected Pattern _regex; 
-
+    
+    /* ------------------------------------------------------------ */
+    protected RegexRule()
+    {
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected RegexRule(String pattern)
+    {
+        setRegex(pattern);
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Sets the regular expression string used to match with string URI.
@@ -41,7 +52,7 @@ public abstract class RegexRule extends Rule
      */
     public void setRegex(String regex)
     {
-        _regex=Pattern.compile(regex);
+        _regex=regex==null?null:Pattern.compile(regex);
     }
 
     /* ------------------------------------------------------------ */

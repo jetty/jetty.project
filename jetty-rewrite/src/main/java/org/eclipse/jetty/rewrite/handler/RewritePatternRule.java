@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.Name;
 
 /**
  * Rewrite the URI by replacing the matched {@link PathMap} path with a fixed string.
@@ -38,10 +39,18 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     /* ------------------------------------------------------------ */
     public RewritePatternRule()
     {
+        this(null,null);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public RewritePatternRule(@Name("pattern") String pattern, @Name("replacement") String replacement)
+    {
         _handling = false;
         _terminating = false;
+        setReplacement(replacement);
     }
-
+    
+    
     /* ------------------------------------------------------------ */
     /**
      * Whenever a match is found, it replaces with this value.
@@ -50,9 +59,17 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
      */
     public void setReplacement(String replacement)
     {
-        String[] split = replacement.split("\\?", 2);
-        _replacement = split[0];
-        _query = split.length == 2 ? split[1] : null;
+        if (replacement==null)
+        {
+            _replacement=null;
+            _query=null;
+        }
+        else
+        {
+            String[] split = replacement.split("\\?", 2);
+            _replacement = split[0];
+            _query = split.length == 2 ? split[1] : null;
+        }
     }
 
     /* ------------------------------------------------------------ */

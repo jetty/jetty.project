@@ -24,6 +24,8 @@ import java.util.regex.Matcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.annotation.Name;
+
 /**
  * If this rule matches, terminate the processing of other rules.
  * Allowing the request to be processed by the handlers after the rewrite rules.
@@ -32,6 +34,12 @@ public class TerminatingRegexRule extends RegexRule
 {
     public TerminatingRegexRule()
     {
+        this(null);
+    }
+    
+    public TerminatingRegexRule(@Name("regex") String regex)
+    {
+        super(regex);
         super.setTerminating(true);
     }
 
