@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
@@ -63,7 +64,7 @@ public interface HttpContent
     ReadableByteChannel getReadableByteChannel() throws IOException;
     void release();
 
-    HttpContent getGzipContent();
+    Map<CompressedContentFormat,? extends HttpContent> getPrecompressedContents();
     
     
     public interface Factory

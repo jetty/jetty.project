@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -896,6 +895,150 @@ public class DefaultServletTest
         assertResponseContains("ETag: "+etag_gzip,response);
 
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag,response);
+    }
+
+    @Test
+    public void testBrotli() throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getPathFile("docroot").toFile();
+        FS.ensureDirExists(resBase);
+        File file0 = new File(resBase, "data0.txt");
+        createFile(file0, "Hello Text 0");
+        File file0br = new File(resBase, "data0.txt.br");
+        createFile(file0br, "fake brotli");
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("precompressed", "true");
+        defholder.setInitParameter("etags", "true");
+        defholder.setInitParameter("resourceBase", resBasePath);
+
+        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
+        assertResponseContains("Content-Length: 12", response);
+        assertResponseContains("Content-Type: text/plain",response);
+        assertResponseContains("Hello Text 0",response);
+        assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseContains("ETag: ",response);
+        assertResponseNotContains("Content-Encoding: br",response);
+        int e=response.indexOf("ETag: ");
+        String etag = response.substring(e+6,response.indexOf('"',e+11)+1);
+        String etag_br = etag.substring(0,etag.length()-1)+"--br\"";
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip;q=0.9,br\r\n\r\n");
+        assertResponseContains("Content-Length: 11", response);
+        assertResponseContains("fake br",response);
+        assertResponseContains("Content-Type: text/plain",response);
+        assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseContains("Content-Encoding: br",response);
+        assertResponseContains("ETag: "+etag_br,response);
+
+        response = connector.getResponses("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br,gzip\r\n\r\n");
+        assertResponseContains("Content-Length: 11", response);
+        assertResponseContains("fake br",response);
+        assertResponseContains("Content-Type: application/brotli",response);
+        assertResponseNotContains("Vary: Accept-Encoding",response);
+        assertResponseNotContains("Content-Encoding: ",response);
+        assertResponseNotContains("ETag: "+etag_br,response);
+        assertResponseContains("ETag: ",response);
+
+        response = connector.getResponses("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"wobble\"\r\n\r\n");
+        assertResponseContains("Content-Length: 11", response);
+        assertResponseContains("fake brotli",response);
+        assertResponseContains("Content-Type: application/brotli",response);
+        assertResponseNotContains("Vary: Accept-Encoding",response);
+        assertResponseNotContains("Content-Encoding: ",response);
+        assertResponseNotContains("ETag: "+etag_br,response);
+        assertResponseContains("ETag: ",response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: "+etag_br+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag_br,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\","+etag_br+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag_br,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag,response);
+    }
+
+    @Test
+    public void testCachedBrotli() throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getPathFile("docroot").toFile();
+        FS.ensureDirExists(resBase);
+        File file0 = new File(resBase, "data0.txt");
+        createFile(file0, "Hello Text 0");
+        File file0br = new File(resBase, "data0.txt.br");
+        createFile(file0br, "fake brotli");
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("precompressed", "true");
+        defholder.setInitParameter("etags", "true");
+        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("maxCachedFiles", "1024");
+        defholder.setInitParameter("maxCachedFileSize", "200000000");
+        defholder.setInitParameter("maxCacheSize", "256000000");
+
+        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
+        assertResponseContains("Content-Length: 12", response);
+        assertResponseContains("Content-Type: text/plain",response);
+        assertResponseContains("Hello Text 0",response);
+        assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseContains("ETag: ",response);
+        assertResponseNotContains("Content-Encoding: ",response);
+        int e=response.indexOf("ETag: ");
+        String etag = response.substring(e+6,response.indexOf('"',e+11)+1);
+        String etag_gzip = etag.substring(0,etag.length()-1)+"--br\"";
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\n\r\n");
+        assertResponseContains("Content-Length: 11", response);
+        assertResponseContains("fake brotli",response);
+        assertResponseContains("Content-Type: text/plain",response);
+        assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseContains("Content-Encoding: br",response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+
+        response = connector.getResponses("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\n\r\n");
+        assertResponseContains("Content-Length: 11", response);
+        assertResponseContains("fake brotli",response);
+        assertResponseContains("Content-Type: application/br",response);
+        assertResponseNotContains("Vary: Accept-Encoding",response);
+        assertResponseNotContains("Content-Encoding: ",response);
+        assertResponseNotContains("ETag: "+etag_gzip,response);
+        assertResponseContains("ETag: ",response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
+        assertResponseContains("304 Not Modified", response);
+        assertResponseContains("ETag: "+etag_gzip,response);
+
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
     }

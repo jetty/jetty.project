@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
@@ -196,7 +197,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges",_resourceService.isAcceptRanges()));
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed",_resourceService.isDirAllowed()));
         _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome",_resourceService.isRedirectWelcome()));
-        _resourceService.setGzip(getInitBoolean("gzip",_resourceService.isGzip()));
+        _resourceService.setPrecompressedFormats(parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip", false)));
         _resourceService.setPathInfoOnly(getInitBoolean("pathInfoOnly",_resourceService.isPathInfoOnly()));
         _resourceService.setEtags(getInitBoolean("etags",_resourceService.isEtags()));
         
@@ -270,7 +271,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         {
             if (_cache==null && (max_cached_files!=-2 || max_cache_size!=-2 || max_cached_file_size!=-2))
             {
-                _cache = new ResourceCache(null,this,_mimeTypes,_useFileMappedBuffer,_resourceService.isEtags(),_resourceService.isGzip());
+                _cache = new ResourceCache(null,this,_mimeTypes,_useFileMappedBuffer,_resourceService.isEtags(),_resourceService.getPrecompressedFormats());
                 if (max_cache_size>=0)
                     _cache.setMaxCacheSize(max_cache_size);
                 if (max_cached_file_size>=-1)
@@ -289,7 +290,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         HttpContent.Factory contentFactory=_cache;
         if (contentFactory==null)
         {
-            contentFactory=new ResourceContentFactory(this,_mimeTypes,_resourceService.isGzip());
+            contentFactory=new ResourceContentFactory(this,_mimeTypes,_resourceService.getPrecompressedFormats());
             if (resourceCache!=null)
                 _servletContext.setAttribute(resourceCache,contentFactory);
         }
@@ -310,11 +311,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         else
         {
             //.svgz files are gzipped svg files and must be served with Content-Encoding:gzip
-            gzip_equivalent_file_extensions.add(".svgz");   
+            gzip_equivalent_file_extensions.add(".svgz");
         }
         _resourceService.setGzipEquivalentFileExtensions(gzip_equivalent_file_extensions);
 
-        
+
         _servletHandler= _contextHandler.getChildHandlerByClass(ServletHandler.class);
         for (ServletHolder h :_servletHandler.getServlets())
             if (h.getServletInstance()==this)
@@ -322,6 +323,27 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
         if (LOG.isDebugEnabled())
             LOG.debug("resource base = "+_resourceBase);
+    }
+
+    private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, boolean gzip) {
+        List<CompressedContentFormat> ret = new ArrayList<>();
+        if (precompressed != null && precompressed.indexOf('=') > 0) {
+            for (String pair : precompressed.split(",")) {
+                String[] setting = pair.split("=");
+                String encoding = setting[0];
+                String extension = setting[1];
+                ret.add(new CompressedContentFormat(encoding, extension));
+            }
+        } else if (precompressed != null) {
+            if (Boolean.parseBoolean(precompressed)) {
+                ret.add(CompressedContentFormat.BR);
+                ret.add(CompressedContentFormat.GZIP);
+            }
+        } else if (gzip) {
+            // gzip handling is for backwards compatibility with older Jetty
+            ret.add(CompressedContentFormat.GZIP);
+        }
+        return ret.toArray(new CompressedContentFormat[ret.size()]);
     }
 
     /**

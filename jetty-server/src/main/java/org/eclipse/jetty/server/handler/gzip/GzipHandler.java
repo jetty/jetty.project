@@ -28,7 +28,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.GzipHttpContent;
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -102,6 +102,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _mimeTypes.exclude("application/zip");
         _mimeTypes.exclude("application/gzip");
         _mimeTypes.exclude("application/bzip2");
+        _mimeTypes.exclude("application/brotli");
+        _mimeTypes.exclude("application/x-xz");
         _mimeTypes.exclude("application/x-rar-compressed");
         LOG.debug("{} mime types {}",this,_mimeTypes);
         
@@ -476,13 +478,13 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         String etag = baseRequest.getHttpFields().get(HttpHeader.IF_NONE_MATCH); 
         if (etag!=null)
         {
-            int i=etag.indexOf(GzipHttpContent.ETAG_GZIP_QUOTE);
+            int i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote);
             if (i>0)
             {
                 while (i>=0)
                 {
-                    etag=etag.substring(0,i)+etag.substring(i+GzipHttpContent.ETAG_GZIP.length());
-                    i=etag.indexOf(GzipHttpContent.ETAG_GZIP_QUOTE,i);
+                    etag=etag.substring(0,i)+etag.substring(i+CompressedContentFormat.GZIP._etag.length());
+                    i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote,i);
                 }
                 baseRequest.getHttpFields().put(new HttpField(HttpHeader.IF_NONE_MATCH,etag));
             }
