@@ -23,6 +23,8 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.annotation.Name;
+
 
 /**
  * Sets the header in the response whenever the rule finds a match.
@@ -31,13 +33,23 @@ public class HeaderPatternRule extends PatternRule
 {
     private String _name;
     private String _value;
-    private boolean _add=false;
+    private boolean _add;
 
     /* ------------------------------------------------------------ */
     public HeaderPatternRule()
     {
+        this(null,null,null);
+    }
+
+    /* ------------------------------------------------------------ */
+    public HeaderPatternRule(@Name("pattern") String pattern, @Name("name") String name, @Name("value") String value)
+    {
+        super(pattern);
         _handling = false;
         _terminating = false;
+        _add=false;
+        setName(name);
+        setValue(value);
     }
 
     /* ------------------------------------------------------------ */

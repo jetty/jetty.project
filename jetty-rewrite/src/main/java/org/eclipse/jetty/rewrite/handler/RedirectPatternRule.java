@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.annotation.Name;
 
 /**
  * Issues a (3xx) Redirect response whenever the rule finds a match.
@@ -39,10 +40,17 @@ public class RedirectPatternRule extends PatternRule
     
     public RedirectPatternRule()
     {
-        _handling = true;
-        _terminating = true;
+        this(null,null);
     }
 
+    public RedirectPatternRule(@Name("pattern") String pattern, @Name("location") String location)
+    {
+        super(pattern);
+        _handling = true;
+        _terminating = true;
+        _location=location;
+    }
+    
     /**
      * Sets the redirect location.
      * 

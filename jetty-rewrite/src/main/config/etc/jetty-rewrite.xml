@@ -8,7 +8,7 @@
   <!-- =========================================================== -->
   <Call name="insertHandler">
     <Arg>
-      <New id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
+      <New class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
 	<Set name="rewriteRequestURI"><Property name="jetty.rewrite.rewriteRequestURI" deprecated="rewrite.rewriteRequestURI" default="true"/></Set>
 	<Set name="rewritePathInfo"><Property name="jetty.rewrite.rewritePathInfo" deprecated="rewrite.rewritePathInfo" default="false"/></Set>
 	<Set name="originalPathAttribute"><Property name="jetty.rewrite.originalPathAttribute" deprecated="rewrite.originalPathAttribute" default="requestedPath"/></Set>
@@ -21,19 +21,9 @@
 	  </Array>
 	</Set>
 
-	<!-- example rule -->
-	<!--
-	<Call name="addRule">
-	  <Arg>
-	    <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-	      <Set name="pattern">/favicon.ico</Set>
-	      <Set name="name">Cache-Control</Set>
-	      <Set name="value">Max-Age=3600,public</Set>
-	      <Set name="terminating">true</Set>
-	    </New>
-	  </Arg>
-	</Call>
-	-->
+        <Get id="Rewrite" name="ruleContainer"/>
+        
+	<!-- see rewrite-compactpath.xml for example how to add a rule -->
 
       </New>
     </Arg>

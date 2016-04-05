@@ -1,7 +1,8 @@
 #
-# Jetty Rewrite module
+# Jetty Rewrite Customizer module
 #
-# Install rewrite rules as a handler applied to all requests on a server
+# Apply rewrite rules as a request customizer applied to all
+# connectors sharing a HttpConfiguration
 #
 [depend]
 server
@@ -10,14 +11,14 @@ server
 lib/jetty-rewrite-${jetty.version}.jar
 
 [xml]
-etc/jetty-rewrite.xml
+etc/jetty-rewrite-customizer.xml
 
 [ini-template]
 ## Whether to rewrite the request URI
 # jetty.rewrite.rewriteRequestURI=true
 
 ## Whether to rewrite the path info
-# jetty.rewrite.rewritePathInfo=false
+# jetty.rewrite.rewritePathInfo=true
 
 ## Request attribute key under with the original path is stored
 # jetty.rewrite.originalPathAttribute=requestedPath

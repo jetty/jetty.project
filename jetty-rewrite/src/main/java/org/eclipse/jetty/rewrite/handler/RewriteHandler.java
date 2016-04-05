@@ -206,11 +206,28 @@ public class RewriteHandler extends HandlerWrapper
      * Assigns the rules to process.
      * @param rules a {@link RuleContainer} containing other rules to process
      */
+    @Deprecated
     public void setRules(RuleContainer rules)
     {
         _rules = rules;
     }
+    
+    /*------------------------------------------------------------ */
+    /**
+     * Assigns the rules to process.
+     * @param rules a {@link RuleContainer} containing other rules to process
+     */
+    public void setRuleContainer(RuleContainer rules)
+    {
+        _rules = rules;
+    }
 
+    /*------------------------------------------------------------ */
+    public RuleContainer getRuleContainer()
+    {
+        return _rules;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Add a Rule
