@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.annotation.Name;
 
 /**
  * Issues a (3xx) Redirect response whenever the rule finds a match via regular expression.
@@ -37,23 +38,31 @@ import org.eclipse.jetty.http.HttpStatus;
  */
 public class RedirectRegexRule extends RegexRule
 {
-    protected String _replacement;
+    protected String _location;
     private int _statusCode = HttpStatus.FOUND_302;
-    
+
     public RedirectRegexRule()
     {
-        _handling = true;
-        _terminating = true;
+        this(null,null);
+    }
+    
+    public RedirectRegexRule(@Name("regex") String regex, @Name("location") String location)
+    {
+        super(regex);
+        setHandling(true);
+        setTerminating(true);
+        setLocation(location);
     }
 
-    /**
-     * Whenever a match is found, it replaces with this value.
-     * 
-     * @param replacement the replacement string.
-     */
+    @Deprecated
     public void setReplacement(String replacement)
     {
-        _replacement = replacement;
+        _location = replacement;
+    }
+    
+    public void setLocation(String location)
+    {
+        _location = location;
     }
     
     /**
@@ -77,7 +86,7 @@ public class RedirectRegexRule extends RegexRule
     protected String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher)
             throws IOException
     {
-        target=_replacement;
+        target=_location;
         for (int g=1;g<=matcher.groupCount();g++)
         {
             String group = matcher.group(g);
@@ -101,7 +110,7 @@ public class RedirectRegexRule extends RegexRule
         StringBuilder str = new StringBuilder();
         str.append(super.toString());
         str.append('[').append(_statusCode);
-        str.append('>').append(_replacement);
+        str.append('>').append(_location);
         str.append(']');
         return str.toString();
     }
