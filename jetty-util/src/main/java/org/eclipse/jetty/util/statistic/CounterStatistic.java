@@ -19,9 +19,8 @@
 package org.eclipse.jetty.util.statistic;
 
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.eclipse.jetty.util.Atomics;
-
+import java.util.concurrent.atomic.LongAccumulator;
+import java.util.concurrent.atomic.LongAdder;
 
 /* ------------------------------------------------------------ */
 /** Statistics on a counter value.
@@ -33,30 +32,30 @@ import org.eclipse.jetty.util.Atomics;
  */
 public class CounterStatistic
 {
-    protected final AtomicLong _max = new AtomicLong();
-    protected final AtomicLong _curr = new AtomicLong();
-    protected final AtomicLong _total = new AtomicLong();
+    protected final LongAccumulator _max = new LongAccumulator(Math::max,0L);
+    protected final AtomicLong _current = new AtomicLong();
+    protected final LongAdder _total = new LongAdder();
 
     /* ------------------------------------------------------------ */
     public void reset()
     {
-        _total.set(0);
-        _max.set(0);
-        long current=_curr.get();
-        _total.addAndGet(current);
-        Atomics.updateMax(_max,current);
+        _total.reset();
+        _max.reset();
+        long current=_current.get();
+        _total.add(current);
+        _max.accumulate(current);
     }
 
     /* ------------------------------------------------------------ */
     public void reset(final long value)
     {
-        _total.set(0);
-        _max.set(0);
-        _curr.set(value);
+        _current.set(value);
+        _total.reset();
+        _max.reset();
         if (value>0)
         {
-            _total.addAndGet(value);
-            Atomics.updateMax(_max,value);
+            _total.add(value);
+            _max.accumulate(value);
         }
     }
 
@@ -67,11 +66,11 @@ public class CounterStatistic
      */
     public long add(final long delta)
     {
-        long value=_curr.addAndGet(delta);
+        long value=_current.addAndGet(delta);
         if (delta > 0)
         {
-            _total.addAndGet(delta);
-            Atomics.updateMax(_max,value);
+            _total.add(delta);
+            _max.accumulate(value);
         }
         return value;
     }
@@ -83,7 +82,10 @@ public class CounterStatistic
      */
     public long increment()
     {
-        return add(1);
+        long value=_current.incrementAndGet();
+        _total.increment();
+        _max.accumulate(value);
+        return value;
     }
 
     /* ------------------------------------------------------------ */
@@ -93,7 +95,7 @@ public class CounterStatistic
      */
     public long decrement()
     {
-        return add(-1);
+        return _current.decrementAndGet();
     }
 
     /* ------------------------------------------------------------ */
@@ -111,7 +113,7 @@ public class CounterStatistic
      */
     public long getCurrent()
     {
-        return _curr.get();
+        return _current.get();
     }
 
     /* ------------------------------------------------------------ */
@@ -120,13 +122,13 @@ public class CounterStatistic
      */
     public long getTotal()
     {
-        return _total.get();
+        return _total.sum();
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
-        return String.format("%s@%x{c=%d,m=%d,t=%d}",this.getClass().getSimpleName(),hashCode(),_curr.get(),_max.get(),_total.get());
+        return String.format("%s@%x{c=%d,m=%d,t=%d}",this.getClass().getSimpleName(),hashCode(),_current.get(),_max.get(),_total.sum());
     }
 }
