@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -165,6 +166,7 @@ public class PathResource extends Resource
     public PathResource(Path path)
     {
         this.path = path.toAbsolutePath();
+        assertValidPath(path);
         this.uri = this.path.toUri();
         this.alias = checkAliasPath(path);
     }
@@ -255,6 +257,17 @@ public class PathResource extends Resource
         return new PathResource(this.path.getFileSystem().getPath(path.toString(), subpath));
     }
 
+    private void assertValidPath(Path path)
+    {
+        // TODO merged from 9.2, check if necessary
+        String str = path.toString();
+        int idx = StringUtil.indexOfControlChars(str);
+        if(idx >= 0)
+        {
+            throw new InvalidPathException(str, "Invalid Character at index " + idx);
+        }
+    }
+    
     @Override
     public void close()
     {
