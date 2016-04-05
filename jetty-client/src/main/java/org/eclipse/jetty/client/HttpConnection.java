@@ -104,7 +104,7 @@ public abstract class HttpConnection implements Connection
 
         URI uri = request.getURI();
 
-        if (proxy != null && !HttpScheme.HTTPS.is(request.getScheme()) && uri != null)
+        if (proxy instanceof HttpProxy && !HttpScheme.HTTPS.is(request.getScheme()) && uri != null)
         {
             path = uri.toString();
             request.path(path);

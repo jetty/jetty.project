@@ -198,7 +198,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         if (multiplexed)
             close &= isFillInterested();
         if (close)
-            close(new TimeoutException("Idle timeout " + idleTimeout + "ms"));
+            close(new TimeoutException("Idle timeout " + idleTimeout + " ms"));
         return false;
     }
 

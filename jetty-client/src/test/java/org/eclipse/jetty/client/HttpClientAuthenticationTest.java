@@ -21,6 +21,8 @@ package org.eclipse.jetty.client;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,6 +39,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BasicAuthentication;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.DigestAuthentication;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -102,6 +105,15 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     @Test
     public void test_BasicAuthentication() throws Exception
     {
+        startBasic(new EmptyServerHandler());
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
+        test_Authentication(new BasicAuthentication(uri, realm, "basic", "basic"));
+    }
+
+    @Test
+    public void test_BasicEmptyRealm() throws Exception
+    {
+        realm = "";
         startBasic(new EmptyServerHandler());
         URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
         test_Authentication(new BasicAuthentication(uri, realm, "basic", "basic"));
@@ -394,5 +406,43 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(200, response.getStatus());
         Assert.assertEquals(1, requests.get());
+    }
+
+    @Test
+    public void test_RequestFailsAfterResponse() throws Exception
+    {
+        startBasic(new EmptyServerHandler());
+
+        AuthenticationStore authenticationStore = client.getAuthenticationStore();
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
+        BasicAuthentication authentication = new BasicAuthentication(uri, realm, "basic", "basic");
+        authenticationStore.addAuthentication(authentication);
+
+        CountDownLatch successLatch = new CountDownLatch(1);
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        DeferredContentProvider content = new DeferredContentProvider();
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/secure")
+                .onRequestContent((request, buffer) -> request.abort(new Exception()))
+                .content(content)
+                .onResponseSuccess(response -> successLatch.countDown())
+                .send(result ->
+                {
+                    if (result.isFailed() && result.getResponseFailure() == null)
+                        resultLatch.countDown();
+                });
+
+        // Wait for the response to arrive to
+        // the authentication protocol handler.
+        Thread.sleep(1000);
+
+        // Send some content to trigger request failure.
+        content.offer(ByteBuffer.wrap("test".getBytes(StandardCharsets.UTF_8)));
+        content.close();
+
+        // Verify that the response was successful, it's the request that failed.
+        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 }

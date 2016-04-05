@@ -307,6 +307,7 @@ public abstract class HttpReceiver
                 }
                 default:
                 {
+                    callback.failed(new IllegalStateException("Invalid response state " + current));
                     return false;
                 }
             }
