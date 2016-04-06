@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.server.SessionManager;
+
 import org.junit.After;
 import org.junit.Test;
 

@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 
 /**

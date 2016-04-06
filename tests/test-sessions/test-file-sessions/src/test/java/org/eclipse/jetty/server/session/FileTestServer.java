@@ -26,7 +26,6 @@ import static org.junit.Assert.assertFalse;
 import java.io.File;
 
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.util.IO;
 
 /**

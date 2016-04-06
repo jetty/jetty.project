@@ -20,11 +20,11 @@
 package org.eclipse.jetty.gcloud.session;
 
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractSessionStore;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.server.session.SessionManager;
 import org.eclipse.jetty.server.session.StalePeriodStrategy;
 
 import com.google.gcloud.datastore.Datastore;

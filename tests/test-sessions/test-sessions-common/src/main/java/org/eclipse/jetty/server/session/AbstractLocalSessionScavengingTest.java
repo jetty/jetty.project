@@ -32,7 +32,6 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 
@@ -146,8 +145,6 @@ public abstract class AbstractLocalSessionScavengingTest
 
     public static class TestServlet extends HttpServlet
     {
-        private SessionManager sessionManager;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {
@@ -156,13 +153,11 @@ public abstract class AbstractLocalSessionScavengingTest
             {
                 HttpSession session = request.getSession(true);
                 session.setAttribute("test", "test");
-                this.sessionManager = ((Request)request).getSessionManager();
             }
             else if ("test".equals(action))
             {
                 HttpSession session = request.getSession(false);
                 session.setAttribute("test", "test");
-                this.sessionManager = ((Request)request).getSessionManager();
             }
             else if ("check".equals(action))
             {

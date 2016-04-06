@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.io.File;
-
-import org.eclipse.jetty.server.SessionManager;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.After;
 import org.junit.Before;

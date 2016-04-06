@@ -29,7 +29,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -471,9 +470,9 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
      * 
      * @return all session managers
      */
-    public Set<org.eclipse.jetty.server.SessionManager> getSessionManagers()
+    public Set<SessionManager> getSessionManagers()
     {
-        Set<org.eclipse.jetty.server.SessionManager> managers = new HashSet<>();
+        Set<SessionManager> managers = new HashSet<>();
 
         Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
         for (int i=0; contexts!=null && i<contexts.length; i++)

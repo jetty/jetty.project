@@ -19,13 +19,10 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractIdleSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.Session;

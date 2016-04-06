@@ -22,6 +22,7 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.server.session.SessionManager;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /** 

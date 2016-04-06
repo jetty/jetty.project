@@ -20,7 +20,6 @@
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionManager;
 import org.eclipse.jetty.webapp.WebAppContext;

@@ -19,11 +19,9 @@
 
 package org.eclipse.jetty.server.session.remote;
 
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractInvalidationSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.InfinispanTestSessionServer;
-import org.eclipse.jetty.session.infinispan.InfinispanSessionManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;

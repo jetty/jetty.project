@@ -19,7 +19,7 @@
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
+
 
 /**
  * @version $Revision$ $Date$

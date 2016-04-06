@@ -19,7 +19,6 @@
 package org.eclipse.jetty.nosql.mongodb;
 
 
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractInvalidationSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.junit.AfterClass;
