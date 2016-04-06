@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import static org.eclipse.jetty.http.CompressedContentFormat.BR;
 import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
+import static org.eclipse.jetty.http.HttpFields.qualityList;
 import static org.eclipse.jetty.http.HttpHeaderValue.IDENTITY;
 
 import java.io.FileNotFoundException;
@@ -247,10 +248,10 @@ public abstract class ResourceService
             {
                 // Tell caches that response may vary by accept-encoding
                 response.addHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
-                
-                String accept=request.getHeader(HttpHeader.ACCEPT_ENCODING.asString());
-                CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(accept, precompressedContents.keySet());
-                if (accept!=null && precompressedContentEncoding!=null)
+
+                List<String> preferredEncodings = HttpFields.qualityList(request.getHeaders(HttpHeader.ACCEPT_ENCODING.asString()));
+                CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(preferredEncodings, precompressedContents.keySet());
+                if (precompressedContentEncoding!=null)
                 {
                     HttpContent precompressedContent = precompressedContents.get(precompressedContentEncoding);
                     if (LOG.isDebugEnabled())
@@ -284,59 +285,23 @@ public abstract class ResourceService
         }
     }
 
-    private CompressedContentFormat getBestPrecompressedContent(String accept, Collection<CompressedContentFormat> availableFormats) {
-        if (accept == null || availableFormats.isEmpty())
-        {
+    private CompressedContentFormat getBestPrecompressedContent(List<String> preferredEncodings, Collection<CompressedContentFormat> availableFormats) {
+        if (availableFormats.isEmpty())
             return null;
-        }
-        CompressedContentFormat bestEncoding = null;
-        float bestResourceQuality=0;
-        for (String preference:accept.split(","))
+
+        for (String encoding : preferredEncodings)
         {
-            if (bestResourceQuality>=1)
-            {
-                return bestEncoding;
-            }
-            float quality=1;
-            int qualityIdx=preference.indexOf(';');
-            if (qualityIdx>0)
-            {
-                int equalsIdx=preference.indexOf('=',qualityIdx+1);
-                if (equalsIdx==-1)
-                {
-                    continue;
-                }
-                quality=Float.parseFloat(preference.substring(equalsIdx+1).trim());
-            }
-            if (quality>bestResourceQuality)
-            {
-                String encoding=preference;
-                if (qualityIdx>0)
-                {
-                    encoding=encoding.substring(0,qualityIdx);
-                }
-                encoding=encoding.trim();
-                if (IDENTITY.asString().equals(encoding))
-                {
-                    bestEncoding = null;
-                    bestResourceQuality=quality;
-                    continue;
-                }
-                if ("*".equals(encoding))
-                {
-                    bestEncoding = availableFormats.iterator().next();
-                    bestResourceQuality=quality;
-                    continue;
-                }
-                for (CompressedContentFormat format : availableFormats) {
-                    if (format._encoding.equals(encoding)) {
-                        bestEncoding=format;
-                        bestResourceQuality=quality;
-                    }
-                }
-            }
+            for (CompressedContentFormat format : availableFormats)
+                if (format._encoding.equals(encoding))
+                    return format;
+
+            if ("*".equals(encoding))
+                return availableFormats.iterator().next();
+
+            if (IDENTITY.asString().equals(encoding))
+                return null;
         }
-        return bestEncoding;
+        return null;
     }
 
 
