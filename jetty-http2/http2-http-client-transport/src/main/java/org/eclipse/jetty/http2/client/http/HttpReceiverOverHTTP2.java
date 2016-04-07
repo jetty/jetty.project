@@ -110,34 +110,26 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         copy.put(original);
         BufferUtil.flipToFlush(copy, 0);
 
-        Callback delegate = new Callback()
+        Callback delegate = new Callback.Nested(callback)
         {
-            @Override
-            public boolean isNonBlocking()
-            {
-                return callback.isNonBlocking();
-            }
-
             @Override
             public void succeeded()
             {
                 byteBufferPool.release(copy);
-                callback.succeeded();
+                super.succeeded();
+                if (frame.isEndStream())
+                    responseSuccess(exchange);
             }
 
             @Override
             public void failed(Throwable x)
             {
                 byteBufferPool.release(copy);
-                callback.failed(x);
+                super.failed(x);
             }
         };
 
-        if (responseContent(exchange, copy, delegate))
-        {
-            if (frame.isEndStream())
-                responseSuccess(exchange);
-        }
+        responseContent(exchange, copy, delegate);
     }
 
     @Override

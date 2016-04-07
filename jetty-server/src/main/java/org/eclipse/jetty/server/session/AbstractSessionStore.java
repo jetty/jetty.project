@@ -19,10 +19,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -42,24 +40,29 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
-    protected ArrayList<SessionInspector> _inspectors = new ArrayList<SessionInspector>();
     protected SessionDataStore _sessionDataStore;
-    protected SessionManager _manager;
+    protected final SessionManager _manager;
     protected SessionContext _context;
     protected int _idlePassivationTimeoutSec;
-    protected int _expiryTimeoutSec;
-    private IdleInspector _idleInspector;
-    private ExpiryInspector _expiryInspector;
     private boolean _passivateOnComplete;
     
 
     /**
-     * Create a new Session object from session data
+     * Create a new Session object from pre-existing session data
      * @param data the session data
      * @return a new Session object
      */
     public abstract Session newSession (SessionData data);
-
+    
+    
+    /**
+     * Create a new Session for a request.
+     * 
+     * @param request the request
+     * @param data the session data
+     * @return the new session
+     */
+    public abstract Session newSession (HttpServletRequest request, SessionData data);
     
     
     /**
@@ -90,16 +93,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      */
     public abstract boolean doReplace (String id, Session oldValue, Session newValue);
     
-    
-    
-    /**
-     * Check to see if the session exists in the store
-     * @param id the id
-     * @return true if the Session object exists in the session store
-     */
-    public abstract boolean doExists (String id);
-    
-    
+
     
     /**
      * Remove the session with this identity from the store
@@ -130,18 +124,13 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     /**
      * 
      */
-    public AbstractSessionStore ()
-    {
-    }
-    
-    
-    /**
-     * @param manager the SessionManager
-     */
-    public void setSessionManager (SessionManager manager)
+    public AbstractSessionStore (SessionManager manager)
     {
         _manager = manager;
     }
+    
+    
+ 
     
     /**
      * @return the SessionManger
@@ -180,15 +169,6 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         _sessionDataStore.initialize(_context);
         _sessionDataStore.start();
 
-        if (_expiryTimeoutSec >= 0)
-        {
-            synchronized (_inspectors)
-            {
-                _expiryInspector = new ExpiryInspector(this, _manager.getSessionIdManager());
-                _expiryInspector.setTimeoutSet(_expiryTimeoutSec);
-                _inspectors.add(0, _expiryInspector);
-            }
-        }
         
         super.doStart();
     }
@@ -200,7 +180,6 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     protected void doStop() throws Exception
     {
         _sessionDataStore.stop();
-        _expiryInspector = null;
         super.doStop();
     }
 
@@ -237,47 +216,12 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      */
     public void setIdlePassivationTimeoutSec(int idleTimeoutSec)
     {
-        synchronized (_inspectors)
-        {
-            _idlePassivationTimeoutSec = idleTimeoutSec;
-            if (_idlePassivationTimeoutSec == 0)
-            {
-                if (_idleInspector  != null)
-                    _inspectors.remove(_idleInspector);
-                _idleInspector = null;
-            }
-            else 
-            {
-                if (_idleInspector == null)
-                {
-                    _idleInspector = new IdleInspector(this);
-                    _inspectors.add(_idleInspector);
-                }
+       _idlePassivationTimeoutSec = idleTimeoutSec;
 
-                _idleInspector.setTimeoutSet(_idlePassivationTimeoutSec);
-            }
-        }
     }
 
 
 
-    /**
-     * @return the expiryTimeoutSec
-     */
-    public int getExpiryTimeoutSec()
-    {
-        return _expiryTimeoutSec;
-    }
-
-
-
-    /**
-     * @param expiryTimeoutSec the expiryTimeoutSec to set
-     */
-    public void setExpiryTimeoutSec(int expiryTimeoutSec)
-    {
-        _expiryTimeoutSec = expiryTimeoutSec;
-    }
 
 
 
@@ -339,16 +283,18 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
                                 phsLock.close();
                                 break;
                             }
-
-                            //successfully swapped in the session
-                            phsLock.close();
-                            break;
+                            else
+                            {
+                                //successfully swapped in the session
+                                session.setTimeout (); //TODO start the session timer
+                                phsLock.close();
+                                break;
+                            }
                         }
                     }
                     catch (Exception e)
                     {
                         ex = e; //remember a problem happened loading the session
-                        LOG.warn(e);
                         doDelete(id); //remove the placeholder
                         phsLock.close();
                         session = null;
@@ -411,15 +357,24 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
         if (_sessionDataStore == null)
             return null; //can't load it
-        
-        data =_sessionDataStore.load(id);
 
-        if (data == null) //session doesn't exist
-            return null;
+        try
+        {
+            data =_sessionDataStore.load(id);
 
-        session = newSession(data);
-        session.setSessionManager(_manager);
-        return session;
+            if (data == null) //session doesn't exist
+                return null;
+
+            session = newSession(data);
+            session.setSessionManager(_manager);
+            return session;
+        }
+        catch (UnreadableSessionDataException e)
+        {
+            //can't load the session, delete it
+            _sessionDataStore.delete(id);
+            throw e;
+        }
     }
 
     /** 
@@ -486,40 +441,36 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
                 }
             }
             
-            doPutIfAbsent(id,session); //ensure it is in our map         
+            doPutIfAbsent(id,session); //ensure it is in our map  
         }
-            
-      /*      if ((session.isNew() || session.getSessionData().isDirty()) && _sessionDataStore != null)
-            {
-                if (_sessionDataStore.isPassivating())
-                {
-                    session.willPassivate();
-                    try
-                    {
-                        _sessionDataStore.store(id, session.getSessionData());
-                    }
-                    finally
-                    {
-                        session.didActivate();
-                    }
-                }
-                else
-                    _sessionDataStore.store(id, session.getSessionData());
-
-
-            }
-            doPutIfAbsent(id,session);*/
     }
 
     /** 
-     * Check to see if the session object exists in this store.
+     * Check to see if a session corresponding to the id exists.
+     * 
+     * This method will first check with the object store. If it
+     * doesn't exist in the object store (might be passivated etc),
+     * it will check with the data store.
+     * @throws Exception 
      * 
      * @see org.eclipse.jetty.server.session.SessionStore#exists(java.lang.String)
      */
     @Override
-    public boolean exists(String id)
+    public boolean exists(String id) throws Exception
     {
-        return doExists(id);
+        //try the object store first
+        Session s = doGet(id);
+        if (s != null)
+        {
+            try (Lock lock = s.lock())
+            {
+                //wait for the lock and check the validity of the session
+                return s.isValid();
+            }
+        }
+        
+        //not there, so find out if session data exists for it
+        return _sessionDataStore.exists (id);
     }
 
 
@@ -543,6 +494,9 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
         }
         
         //delete it from the session object store
+        if (session != null)
+            session.stopTimeout();
+        
         return doDelete(id);
     }
 
@@ -562,46 +516,13 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
        
        if (LOG.isDebugEnabled())
            LOG.debug("SessionStore checking expiration on {}", candidates);
-       return _sessionDataStore.getExpired(candidates, _expiryTimeoutSec);
+       return _sessionDataStore.getExpired(candidates);
     }
 
     
     
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#inspect()
-     */
-    public void inspect ()
-    {      
-        Stream<Session> stream = getStream();
-
-        synchronized (_inspectors)
-        {
-            try
-            {
-                final ArrayList<Boolean> wantInspect = new ArrayList<Boolean>();
-                for (SessionInspector i:_inspectors)
-                    wantInspect.add(Boolean.valueOf(i.preInspection()));
-
-                stream.forEach(s->{for (int i=0;i<_inspectors.size(); i++) { if (wantInspect.get(i)) _inspectors.get(i).inspect(s);}});
-            }
-            finally 
-            {
-                try
-                {
-                    for (SessionInspector i:_inspectors)
-                        i.postInspection();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn(e);
-                }
-                stream.close();
-            }
-        }
-    }
     
-   
-    
+  
 
     
     /**
@@ -610,6 +531,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * 
      * @param id identity of session to passivate
      */
+    @Override
     public void passivateIdleSession(String id)
     {
         if (!isStarted())
@@ -644,6 +566,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
                     s.willPassivate();
                     _sessionDataStore.store(id, s.getSessionData());
                     s.setPassivated();
+                    s.stopTimeout();
                     doDelete(id); //Take the session object of this session store
                 }
                 catch (Exception e)
@@ -709,6 +632,8 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     @Override
     public Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs)
     {
-        return null;
+        Session session = newSession(request, _sessionDataStore.newSessionData(id, time, time, time, maxInactiveMs));
+        session.setSessionManager(_manager);
+        return session;
     }
 }

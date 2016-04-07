@@ -26,7 +26,6 @@ import static org.junit.Assert.assertFalse;
 import java.io.File;
 
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.util.IO;
 
 /**
@@ -122,18 +121,18 @@ public class FileTestServer extends AbstractTestServer
     
     public FileTestServer(int port)
     {
-        super(port, 30, 10,1,2);
+        super(port, 30, 10,2);
     }
 
-    public FileTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectPeriod, int idlePassivatePeriod)
+    public FileTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }
 
 
     public SessionIdManager newSessionIdManager(Object config)
     {
-        HashSessionIdManager mgr = new HashSessionIdManager(_server);
+        DefaultSessionIdManager mgr = new DefaultSessionIdManager(_server);
         mgr.setWorkerName("worker"+(__workers++));
         return mgr;
     }

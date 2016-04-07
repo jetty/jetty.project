@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -72,7 +73,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
         }
     }
 
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivationPeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod);
 
 
 
@@ -95,9 +96,8 @@ public abstract class AbstractSessionInvalidateAndCreateTest
         String servletMapping = "/server";
         int inactivePeriod = 1;
         int scavengePeriod = 2;
-        int inspectPeriod = 1;
         int idlePassivatePeriod = -1;
-        AbstractTestServer server = createServer(0, inactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod);
+        AbstractTestServer server = createServer(0, inactivePeriod, scavengePeriod, idlePassivatePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -195,6 +195,18 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 {
                     //invalidate existing session
                     session.invalidate();
+                    
+                    //now try to access the invalid session
+                    try
+                    {
+                        session.getAttribute("identity");
+                        fail("Session should be invalid");
+                    }
+                    catch (IllegalStateException e)
+                    {
+                        assertNotNull(e.getMessage());
+                        assertTrue(e.getMessage().contains("id"));
+                    }
 
                     //now make a new session
                     session = request.getSession(true);

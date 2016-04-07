@@ -18,45 +18,13 @@
 
 package org.eclipse.jetty.servlets;
 
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.junit.BeforeClass;
+import org.junit.Before;
 
 public class CloseableDoSFilterTest extends AbstractDoSFilterTest
 {
-    private static final Logger LOG = Log.getLogger(CloseableDoSFilterTest.class);
-
-    @BeforeClass
-    public static void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        startServer(CloseableDoSFilter2.class);
-    }
-
-    public static class CloseableDoSFilter2 extends CloseableDoSFilter
-    {
-        @Override
-        public void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
-        {
-            try
-            {
-                response.getWriter().append("DoSFilter: timeout");
-                response.flushBuffer();
-                super.closeConnection(request, response, thread);
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e);
-            }
-        }
-    }
-
-    public void testUnresponsiveClient() throws Exception
-    {
-        // TODO work out why this intermittently fails
-        LOG.warn("Ignored Closeable testUnresponsiveClient");
+        startServer(CloseableDoSFilter.class);
     }
 }

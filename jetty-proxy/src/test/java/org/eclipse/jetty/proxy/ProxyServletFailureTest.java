@@ -54,8 +54,7 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
@@ -304,12 +303,15 @@ public class ProxyServletFailureTest
         prepareServer(new EchoHttpServlet());
         long idleTimeout = 1000;
         serverConnector.setIdleTimeout(idleTimeout);
+        
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        {
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                    .content(new BytesContentProvider(content))
+                    .send();
 
-        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .content(new BytesContentProvider(content))
-                .send();
-
-        Assert.assertEquals(500, response.getStatus());
+            Assert.assertEquals(500, response.getStatus());
+        }
     }
 
     @Test(expected = TimeoutException.class)
@@ -391,8 +393,7 @@ public class ProxyServletFailureTest
     @Test
     public void testServerException() throws Exception
     {
-        ((StdErrLog)Log.getLogger(ServletHandler.class)).setHideStacks(true);
-        try
+        try (StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
         {
             prepareProxy();
             prepareServer(new HttpServlet()
@@ -409,10 +410,6 @@ public class ProxyServletFailureTest
                     .send();
 
             Assert.assertEquals(500, response.getStatus());
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(ServletHandler.class)).setHideStacks(false);
         }
     }
 }

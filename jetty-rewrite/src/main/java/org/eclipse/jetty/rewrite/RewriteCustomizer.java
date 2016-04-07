@@ -16,21 +16,29 @@
 //  ========================================================================
 //
 
+package org.eclipse.jetty.rewrite;
 
-package org.eclipse.jetty.server.session;
+import java.io.IOException;
 
+import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.rewrite.handler.RuleContainer;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConfiguration.Customizer;
+import org.eclipse.jetty.server.Request;
 
-
-/**
- * SessionInspector
- *
- *
- */
-public interface SessionInspector
+public class RewriteCustomizer extends RuleContainer implements Customizer 
 {
-    public int getTimeoutSec();
-    public void setTimeoutSet(int sec);
-    public boolean preInspection();
-    public void inspect(Session s);
-    public void postInspection (); //on completion
+    @Override
+    public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
+    {
+        try
+        {
+            matchAndApply(request.getPathInfo(), request, request.getResponse());
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeIOException(e);
+        }
+    }
 }

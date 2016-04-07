@@ -19,7 +19,6 @@
 package org.eclipse.jetty.nosql.mongodb;
 
 
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractInvalidationSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.junit.AfterClass;
@@ -44,9 +43,9 @@ public class InvalidateSessionTest extends AbstractInvalidationSessionTest
     }
 
     @Override
-    public AbstractTestServer createServer(int port, int maxInterval, int scavengeInterval, int inspectInterval, int idleInterval)
+    public AbstractTestServer createServer(int port, int maxInterval, int scavengeInterval, int idleInterval)
     {
-        return new MongoTestServer(port, maxInterval, scavengeInterval, inspectInterval, idleInterval);
+        return new MongoTestServer(port, maxInterval, scavengeInterval, idleInterval);
     }
 
     @Override

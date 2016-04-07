@@ -36,7 +36,6 @@ public class HttpTransportOverFCGI implements HttpTransport
     private final ServerGenerator generator;
     private final Flusher flusher;
     private final int request;
-    private volatile boolean head;
     private volatile boolean shutdown;
     private volatile boolean aborted;
 
@@ -52,7 +51,7 @@ public class HttpTransportOverFCGI implements HttpTransport
     {
         return false;
     }
-    
+
     @Override
     public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
@@ -89,16 +88,15 @@ public class HttpTransportOverFCGI implements HttpTransport
     {
         return false;
     }
-    
+
     @Override
     public void push(org.eclipse.jetty.http.MetaData.Request request)
-    {   
+    {
         // LOG.debug("ignore push in {}",this);
     }
-    
+
     private void commit(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        this.head = head;
         boolean shutdown = this.shutdown = info.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
         if (head)

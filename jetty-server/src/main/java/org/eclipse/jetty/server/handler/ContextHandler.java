@@ -871,8 +871,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         ClassLoader old_classloader = null;
         ClassLoader old_webapploader = null;
         Thread current_thread = null;
-        exitScope(null);
         Context old_context = __context.get();
+        enterScope(null,"doStop");
         __context.set(_scontext);
         try
         {
@@ -895,13 +895,27 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 _errorHandler.stop();
 
             for (EventListener l : _programmaticListeners)
+            {
                 removeEventListener(l);
+                if (l instanceof ContextScopeListener)
+                {
+                    try
+                    {
+                        ((ContextScopeListener)l).exitScope(_scontext,null);
+                    }
+                    catch(Throwable e)
+                    {
+                        LOG.warn(e);
+                    }
+                }
+            }
             _programmaticListeners.clear();
         }
         finally
         {
-            LOG.info("Stopped {}", this);
             __context.set(old_context);
+            exitScope(null);
+            LOG.info("Stopped {}", this);
             // reset the classloader
             if ((old_classloader == null || (old_classloader != old_webapploader)) && current_thread != null)
                 current_thread.setContextClassLoader(old_classloader);

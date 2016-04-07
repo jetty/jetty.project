@@ -36,7 +36,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.After;
@@ -54,7 +54,6 @@ public class ReloadedSessionMissingClassTest
     @Test
     public void testSessionReloadWithMissingClass() throws Exception
     {
-        ((StdErrLog)Log.getLogger("org.eclipse.jetty.server.session")).setHideStacks(true);
         Resource.setDefaultUseCaches(false);
         String contextPath = "/foo";
 
@@ -96,7 +95,7 @@ public class ReloadedSessionMissingClassTest
         webApp.addServlet("Bar", "/bar");
         server1.start();
         int port1 = server1.getPort();
-        try
+        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -124,12 +123,12 @@ public class ReloadedSessionMissingClassTest
                 Request request = client.newRequest("http://localhost:" + port1 + contextPath + "/bar?action=get");
                 request.header("Cookie", sessionCookie);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());  
+                
                 String afterStopSessionId = (String)webApp.getServletContext().getAttribute("foo.session");
                 Boolean fooPresent = (Boolean)webApp.getServletContext().getAttribute("foo.present");
                 assertFalse(fooPresent);
                 assertNotNull(afterStopSessionId);
-                assertFalse(fooPresent);
                 assertTrue(!afterStopSessionId.equals(sessionId));  
 
             }

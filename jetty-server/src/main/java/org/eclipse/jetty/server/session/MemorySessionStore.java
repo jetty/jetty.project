@@ -73,9 +73,9 @@ public class MemorySessionStore extends AbstractSessionStore
     
     
     
-    public MemorySessionStore ()
+    public MemorySessionStore (SessionManager manager)
     {
-       super();
+        super (manager);
     }
     
     
@@ -129,14 +129,7 @@ public class MemorySessionStore extends AbstractSessionStore
        return s;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doExists(java.lang.String)
-     */
-    @Override
-    public boolean doExists(String id)
-    {
-       return _sessions.containsKey(id);
-    }
+  
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(java.lang.String)
@@ -200,12 +193,12 @@ public class MemorySessionStore extends AbstractSessionStore
 
  
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionStore#newSession(javax.servlet.http.HttpServletRequest, java.lang.String, long, long)
+     * @see org.eclipse.jetty.server.session.AbstractSessionStore#newSession(javax.servlet.http.HttpServletRequest, org.eclipse.jetty.server.session.SessionData)
      */
     @Override
-    public Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs)
+    public Session newSession(HttpServletRequest request, SessionData data)
     {
-        MemorySession s =  new MemorySession(request, _sessionDataStore.newSessionData(id, time, time, time, maxInactiveMs));
+        MemorySession s =  new MemorySession(request,data);
         return s;
     }
 
@@ -223,14 +216,6 @@ public class MemorySessionStore extends AbstractSessionStore
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#getStream()
-     */
-    @Override
-    public Stream<Session> getStream()
-    {
-        return _sessions.values().stream();
-    }
 
 
     /** 

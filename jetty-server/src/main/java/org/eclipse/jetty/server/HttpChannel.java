@@ -24,7 +24,6 @@ import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -298,16 +297,23 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         _request.setHandled(false);
                         _response.getHttpOutput().reopen();
 
-                        List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
-                        if (!customizers.isEmpty())
-                        {
-                            for (HttpConfiguration.Customizer customizer : customizers)
-                                customizer.customize(getConnector(), _configuration, _request);
-                        }
                         try
                         {
                             _request.setDispatcherType(DispatcherType.REQUEST);
-                            getServer().handle(this);
+                            
+                            List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
+                            if (!customizers.isEmpty())
+                            {
+                                for (HttpConfiguration.Customizer customizer : customizers)
+                                {
+                                    customizer.customize(getConnector(), _configuration, _request);
+                                    if (_request.isHandled())
+                                        break;
+                                }
+                            }
+
+                            if (!_request.isHandled())
+                                getServer().handle(this);
                         }
                         finally
                         {
@@ -320,7 +326,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         _request.setHandled(false);
                         _response.getHttpOutput().reopen();
-                        
+
                         try
                         {
                             _request.setDispatcherType(DispatcherType.ASYNC);
@@ -709,25 +715,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _transport.abort(failure);
     }
 
-    private class CommitCallback implements Callback
+    private class CommitCallback extends Callback.Nested
     {
-        private final Callback _callback;
-
         private CommitCallback(Callback callback)
         {
-            _callback = callback;
-        }
-
-        @Override
-        public boolean isNonBlocking()
-        {
-            return _callback.isNonBlocking();
-        }
-
-        @Override
-        public void succeeded()
-        {
-            _callback.succeeded();
+            super(callback);
         }
 
         @Override
@@ -738,12 +730,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
             if (x instanceof BadMessageException)
             {
-                _transport.send(HttpGenerator.RESPONSE_500_INFO, false, null, true, new Callback()
+                _transport.send(HttpGenerator.RESPONSE_500_INFO, false, null, true, new Callback.Nested(this)
                 {
                     @Override
                     public void succeeded()
                     {
-                        _callback.failed(x);
+                        super.failed(x);
                         _response.getHttpOutput().closed();
                     }
 
@@ -751,14 +743,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     public void failed(Throwable th)
                     {
                         _transport.abort(x);
-                        _callback.failed(x);
+                        super.failed(x);
                     }
                 });
             }
             else
             {
                 _transport.abort(x);
-                _callback.failed(x);
+                super.failed(x);
             }
         }
     }

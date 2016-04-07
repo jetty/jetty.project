@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -59,20 +65,13 @@ import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import static org.eclipse.jetty.util.log.Log.getLogger;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 
 
 @RunWith(AdvancedRunner.class)
@@ -201,8 +200,7 @@ public class AsyncServletTest
     @Test
     public void testAsyncNotSupportedAsync() throws Exception
     {
-        ((StdErrLog)getLogger(HttpChannel.class)).setHideStacks(true);
-        try
+        try (StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
         {
             _expectedCode="500 ";
             String response=process("noasync","start=200",null);
@@ -217,10 +215,6 @@ public class AsyncServletTest
             assertContains("500",response);
             assertContains("!asyncSupported",response);
             assertContains("AsyncServletTest$AsyncServlet",response);
-        }
-        finally
-        {
-            ((StdErrLog)getLogger(HttpChannel.class)).setHideStacks(false); 
         }
     }
 

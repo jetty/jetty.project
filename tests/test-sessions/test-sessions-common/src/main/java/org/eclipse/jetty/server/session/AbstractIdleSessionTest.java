@@ -19,11 +19,9 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -35,12 +33,10 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.Locker.Lock;
 import org.junit.Test;
 
@@ -67,7 +63,7 @@ public abstract class AbstractIdleSessionTest
      * @param idleSec
      * @return
      */
-    public  abstract AbstractTestServer createServer (int port, int max, int scavenge, int inspectPeriod, int idleSec);
+    public  abstract AbstractTestServer createServer (int port, int max, int scavenge,  int idleSec);
  
 
     /**
@@ -118,19 +114,17 @@ public abstract class AbstractIdleSessionTest
         int inactivePeriod = 20;
         int scavengePeriod = 3;
         int idlePeriod = 5;
-        int inspectPeriod = 1;
-        ((StdErrLog)Log.getLogger("org.eclipse.jetty.server.session")).setHideStacks(true);
-        System.setProperty("org.eclipse.jetty.STACKS", "false");
+  
 
 
-        _server1 = createServer(0, inactivePeriod, scavengePeriod, inspectPeriod, idlePeriod);
+        _server1 = createServer(0, inactivePeriod, scavengePeriod, idlePeriod);
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
         _server1.start();
         int port1 = _server1.getPort();
 
-        try
+        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -145,8 +139,7 @@ public abstract class AbstractIdleSessionTest
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
             //and wait until the session should be idled out
-            pause(idlePeriod * 2);
-
+            pause(idlePeriod*3);
             
             //check that the session has been idled
             checkSessionIdled(AbstractTestServer.extractSessionId(sessionCookie));
@@ -161,7 +154,7 @@ public abstract class AbstractIdleSessionTest
             checkSessionDeIdled(AbstractTestServer.extractSessionId(sessionCookie));
 
             //wait again for the session to be idled
-            pause(idlePeriod * 2);
+            pause(idlePeriod*3);
             
             //check that it is
             checkSessionIdled(AbstractTestServer.extractSessionId(sessionCookie));
@@ -169,6 +162,7 @@ public abstract class AbstractIdleSessionTest
             //While idle, take some action to ensure that a deidle won't work, like
             //deleting all sessions in mongo
             deleteSessionData(AbstractTestServer.extractSessionId(sessionCookie));
+
             
             //make a request
             request = client.newRequest(url + "?action=testfail");
@@ -187,7 +181,7 @@ public abstract class AbstractIdleSessionTest
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
             //and wait until the session should be idled out
-            pause(idlePeriod * 2);
+            pause(idlePeriod * 3);
 
             //stop the scavenger
             if (_server1.getInspector() != null)
@@ -197,7 +191,7 @@ public abstract class AbstractIdleSessionTest
             checkSessionIdled(AbstractTestServer.extractSessionId(sessionCookie));
 
             //wait until the session should be expired
-            pause (inactivePeriod + (inactivePeriod/2));
+            pause (inactivePeriod + (3*scavengePeriod));
 
             //make another request to de-idle the session
             request = client.newRequest(url + "?action=testfail");

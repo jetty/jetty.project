@@ -47,6 +47,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -57,6 +58,7 @@ import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -69,13 +71,17 @@ public class AsyncIOServletTest
     private ServerConnector connector;
     private ServletContextHandler context;
     private String path = "/path";
-    private static final ThreadLocal<String> scope = new ThreadLocal<>();
+    private static final ThreadLocal<Throwable> scope = new ThreadLocal<>();
 
     public void startServer(HttpServlet servlet) throws Exception
     {
+        startServer(servlet,30000);
+    }
+    public void startServer(HttpServlet servlet, long idleTimeout) throws Exception
+    {
         server = new Server();
         connector = new ServerConnector(server);
-        connector.setIdleTimeout(30000);
+        connector.setIdleTimeout(idleTimeout);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(false);
         server.addConnector(connector);
 
@@ -90,8 +96,12 @@ public class AsyncIOServletTest
             public void enterScope(Context context, Request request, Object reason)
             {
                 if (scope.get()!=null)
+                {
+                    System.err.println(Thread.currentThread()+" Already entered scope!!!");
+                    scope.get().printStackTrace();
                     throw new IllegalStateException();
-                scope.set("SCOPPED");
+                }
+                scope.set(new Throwable());
                 
             }
             @Override
@@ -106,6 +116,8 @@ public class AsyncIOServletTest
         server.start();
     }
 
+    
+    
     private static void assertScope()
     {
         if (scope.get()==null)
@@ -116,6 +128,13 @@ public class AsyncIOServletTest
     public void stopServer() throws Exception
     {
         server.stop();
+        if (scope.get()!=null)
+        {
+            System.err.println("Still in scope after stop!");
+            scope.get().printStackTrace();
+            throw new IllegalStateException("Didn't leave scope");
+        }
+        scope.set(null);
     }
 
     @Test
@@ -241,11 +260,7 @@ public class AsyncIOServletTest
                     }
                 });
             }
-        });
-        server.stop();
-        long idleTimeout = 1000;
-        connector.setIdleTimeout(idleTimeout);
-        server.start();
+        },1000);
 
         String data1 = "0123456789";
         String data2 = "ABCDEF";
@@ -323,7 +338,8 @@ public class AsyncIOServletTest
                 "\r\n" +
                 data;
 
-        try (Socket client = new Socket("localhost", connector.getLocalPort()))
+        try (Socket client = new Socket("localhost", connector.getLocalPort());
+             StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             OutputStream output = client.getOutputStream();
             output.write(request.getBytes("UTF-8"));

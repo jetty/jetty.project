@@ -34,7 +34,7 @@ public class FileSessionManager extends SessionManager
      */
     public FileSessionManager ()
     {
-        _sessionStore = new MemorySessionStore();
+        setSessionStore(new MemorySessionStore(this));
         _sessionDataStore = new FileSessionDataStore();
     }
 

@@ -22,9 +22,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,14 +33,15 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
-import org.eclipse.jetty.http.GzipHttpContent;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.PrecompressedHttpContent;
 import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -47,19 +49,21 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
-// TODO rename to ContentCache
-public class ResourceCache implements HttpContent.Factory
+/**
+ * Caching HttpContent.Factory
+ */
+public class CachedContentFactory implements HttpContent.Factory
 {
-    private static final Logger LOG = Log.getLogger(ResourceCache.class);
+    private static final Logger LOG = Log.getLogger(CachedContentFactory.class);
 
     private final ConcurrentMap<String,CachedHttpContent> _cache;
     private final AtomicInteger _cachedSize;
     private final AtomicInteger _cachedFiles;
     private final ResourceFactory _factory;
-    private final ResourceCache _parent;
+    private final CachedContentFactory _parent;
     private final MimeTypes _mimeTypes;
     private final boolean _etags;
-    private final boolean _gzip;
+    private final CompressedContentFormat[] _precompressedFormats;
     private final boolean  _useFileMappedBuffer;
     
     private int _maxCachedFileSize =128*1024*1024;
@@ -73,9 +77,9 @@ public class ResourceCache implements HttpContent.Factory
      * @param mimeTypes Mimetype to use for meta data
      * @param useFileMappedBuffer true to file memory mapped buffers
      * @param etags true to support etags 
-     * @param gzip true to support gzip 
+     * @param precompressedFormats array of precompression formats to support
      */
-    public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer,boolean etags,boolean gzip)
+    public CachedContentFactory(CachedContentFactory parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer,boolean etags,CompressedContentFormat[] precompressedFormats)
     {
         _factory = factory;
         _cache=new ConcurrentHashMap<String,CachedHttpContent>();
@@ -85,7 +89,7 @@ public class ResourceCache implements HttpContent.Factory
         _parent=parent;
         _useFileMappedBuffer=useFileMappedBuffer;
         _etags=etags;
-        _gzip=gzip;
+        _precompressedFormats=precompressedFormats;
     }
 
     /* ------------------------------------------------------------ */
@@ -235,70 +239,84 @@ public class ResourceCache implements HttpContent.Factory
     private HttpContent load(String pathInContext, Resource resource, int maxBufferSize)
         throws IOException
     {
-        if (resource==null || !resource.exists())
+        if (resource == null || !resource.exists())
             return null;
-        
+
         if (resource.isDirectory())
             return new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize());
-        
+
         // Will it fit in the cache?
         if (isCacheable(resource))
-        {   
-            CachedHttpContent content=null;
-            
-            // Look for a gzip resource
-            if (_gzip)
+        {
+            CachedHttpContent content = null;
+
+            // Look for precompressed resources
+            if (_precompressedFormats.length > 0)
             {
-                String pathInContextGz=pathInContext+".gz";
-                CachedHttpContent contentGz = _cache.get(pathInContextGz);
-                if (contentGz==null || !contentGz.isValid())
+                Map<CompressedContentFormat, CachedHttpContent> precompresssedContents = new HashMap<>(_precompressedFormats.length);
+                for (CompressedContentFormat format : _precompressedFormats)
                 {
-                    contentGz=null;
-                    Resource resourceGz=_factory.getResource(pathInContextGz);
-                    if (resourceGz.exists() && resourceGz.lastModified()>=resource.lastModified() && resourceGz.length()<resource.length())
+                    String compressedPathInContext = pathInContext + format._extension;
+                    CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
+                    if (compressedContent == null || compressedContent.isValid())
                     {
-                        contentGz = new CachedHttpContent(pathInContextGz,resourceGz,null);
-                        CachedHttpContent added = _cache.putIfAbsent(pathInContextGz,contentGz);
-                        if (added!=null)
+                        compressedContent = null;
+                        Resource compressedResource = _factory.getResource(compressedPathInContext);
+                        if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified()
+                                && compressedResource.length() < resource.length())
                         {
-                            contentGz.invalidate();
-                            contentGz=added;
+                            compressedContent = new CachedHttpContent(compressedPathInContext,compressedResource,null);
+                            CachedHttpContent added = _cache.putIfAbsent(compressedPathInContext,compressedContent);
+                            if (added != null)
+                            {
+                                compressedContent.invalidate();
+                                compressedContent = added;
+                            }
                         }
                     }
+                    if (compressedContent != null)
+                        precompresssedContents.put(format,compressedContent);
                 }
-                content = new CachedHttpContent(pathInContext,resource,contentGz);
+                content = new CachedHttpContent(pathInContext,resource,precompresssedContents);
             }
-            else 
+            else
                 content = new CachedHttpContent(pathInContext,resource,null);
 
             // Add it to the cache.
             CachedHttpContent added = _cache.putIfAbsent(pathInContext,content);
-            if (added!=null)
+            if (added != null)
             {
                 content.invalidate();
-                content=added;
+                content = added;
             }
-            
+
             return content;
         }
-        
-        // Look for non Cacheable gzip resource or content
+
+        // Look for non Cacheable precompressed resource or content
         String mt = _mimeTypes.getMimeByExtension(pathInContext);
-        if (_gzip)
+        if (_precompressedFormats.length > 0)
         {
-            // Is the gzip content cached?
-            String pathInContextGz=pathInContext+".gz";
-            CachedHttpContent contentGz = _cache.get(pathInContextGz);
-            if (contentGz!=null && contentGz.isValid() && contentGz.getResource().lastModified()>=resource.lastModified())
-                return new ResourceHttpContent(resource,mt,maxBufferSize,contentGz);
-            
-            // Is there a gzip resource?
-            Resource resourceGz=_factory.getResource(pathInContextGz);
-            if (resourceGz.exists() && resourceGz.lastModified()>=resource.lastModified() && resourceGz.length()<resource.length())
-                return new ResourceHttpContent(resource,mt,maxBufferSize,
-                       new ResourceHttpContent(resourceGz,_mimeTypes.getMimeByExtension(pathInContextGz),maxBufferSize));
+            // Is the precompressed content cached?
+            Map<CompressedContentFormat, HttpContent> compressedContents = new HashMap<>();
+            for (CompressedContentFormat format : _precompressedFormats)
+            {
+                String compressedPathInContext = pathInContext + format._extension;
+                CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
+                if (compressedContent != null && compressedContent.isValid() && compressedContent.getResource().lastModified() >= resource.lastModified())
+                    compressedContents.put(format,compressedContent);
+
+                // Is there a precompressed resource?
+                Resource compressedResource = _factory.getResource(compressedPathInContext);
+                if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified()
+                        && compressedResource.length() < resource.length())
+                    compressedContents.put(format,
+                            new ResourceHttpContent(compressedResource,_mimeTypes.getMimeByExtension(compressedPathInContext),maxBufferSize));
+            }
+            if (!compressedContents.isEmpty())
+                return new ResourceHttpContent(resource,mt,maxBufferSize,compressedContents);
         }
-        
+
         return new ResourceHttpContent(resource,mt,maxBufferSize);
     }
     
@@ -396,14 +414,14 @@ public class ResourceCache implements HttpContent.Factory
         final HttpField _lastModified;
         final long _lastModifiedValue;
         final HttpField _etag;
-        final CachedGzipHttpContent _gzipped;
+        final Map<CompressedContentFormat, CachedPrecompressedHttpContent> _precompressed;
         
         volatile long _lastAccessed;
         AtomicReference<ByteBuffer> _indirectBuffer=new AtomicReference<ByteBuffer>();
         AtomicReference<ByteBuffer> _directBuffer=new AtomicReference<ByteBuffer>();
 
         /* ------------------------------------------------------------ */
-        CachedHttpContent(String pathInContext,Resource resource,CachedHttpContent gzipped)
+        CachedHttpContent(String pathInContext,Resource resource,Map<CompressedContentFormat, CachedHttpContent> precompressedResources)
         {
             _key=pathInContext;
             _resource=resource;
@@ -426,9 +444,20 @@ public class ResourceCache implements HttpContent.Factory
             
             _lastAccessed=System.currentTimeMillis();
             
-            _etag=ResourceCache.this._etags?new PreEncodedHttpField(HttpHeader.ETAG,resource.getWeakETag()):null;
-            
-            _gzipped=gzipped==null?null:new CachedGzipHttpContent(this,gzipped);        
+            _etag=CachedContentFactory.this._etags?new PreEncodedHttpField(HttpHeader.ETAG,resource.getWeakETag()):null;
+
+            if (precompressedResources != null)
+            {
+                _precompressed = new HashMap<>(precompressedResources.size());
+                for (Map.Entry<CompressedContentFormat, CachedHttpContent> entry : precompressedResources.entrySet())
+                {
+                    _precompressed.put(entry.getKey(),new CachedPrecompressedHttpContent(this,entry.getValue(),entry.getKey()));
+                }
+            }
+            else
+            {
+                _precompressed = null;
+            }
         }
         
 
@@ -556,7 +585,6 @@ public class ResourceCache implements HttpContent.Factory
             return _mimeType;
         }
 
-
         /* ------------------------------------------------------------ */
         @Override
         public void release()
@@ -570,7 +598,7 @@ public class ResourceCache implements HttpContent.Factory
             ByteBuffer buffer = _indirectBuffer.get();
             if (buffer==null)
             {
-                ByteBuffer buffer2=ResourceCache.this.getIndirectBuffer(_resource);
+                ByteBuffer buffer2=CachedContentFactory.this.getIndirectBuffer(_resource);
                 
                 if (buffer2==null)
                     LOG.warn("Could not load "+this);
@@ -595,7 +623,7 @@ public class ResourceCache implements HttpContent.Factory
             ByteBuffer buffer = _directBuffer.get();
             if (buffer==null)
             {
-                ByteBuffer buffer2=ResourceCache.this.getDirectBuffer(_resource);
+                ByteBuffer buffer2=CachedContentFactory.this.getDirectBuffer(_resource);
 
                 if (buffer2==null)
                     LOG.warn("Could not load "+this);
@@ -650,38 +678,50 @@ public class ResourceCache implements HttpContent.Factory
         @Override
         public String toString()
         {
-            return String.format("CachedContent@%x{r=%s,e=%b,lm=%s,ct=%s,gz=%b}",hashCode(),_resource,_resource.exists(),_lastModified,_contentType,_gzipped!=null);
+            return String.format("CachedContent@%x{r=%s,e=%b,lm=%s,ct=%s,c=%b}",hashCode(),_resource,_resource.exists(),_lastModified,_contentType,!_precompressed.isEmpty());
         }
 
         /* ------------------------------------------------------------ */
         @Override
-        public HttpContent getGzipContent()
+        public Map<CompressedContentFormat,? extends HttpContent> getPrecompressedContents()
         {
-            return (_gzipped!=null && _gzipped.isValid())?_gzipped:null;
+            if (_precompressed==null)
+                return null;
+            Map<CompressedContentFormat, CachedPrecompressedHttpContent> ret=_precompressed;
+            for (Map.Entry<CompressedContentFormat, CachedPrecompressedHttpContent> entry:_precompressed.entrySet())
+            {
+                if (!entry.getValue().isValid())
+                {
+                    if (ret == _precompressed)
+                        ret = new HashMap<>(_precompressed);
+                    ret.remove(entry.getKey());
+                }
+            }
+            return ret;
         }
     }
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class CachedGzipHttpContent extends GzipHttpContent
+    public class CachedPrecompressedHttpContent extends PrecompressedHttpContent
     {
         private final CachedHttpContent _content; 
-        private final CachedHttpContent _contentGz;
+        private final CachedHttpContent _precompressedContent;
         private final HttpField _etag;
-        
-        CachedGzipHttpContent(CachedHttpContent content, CachedHttpContent contentGz)
+
+        CachedPrecompressedHttpContent(CachedHttpContent content, CachedHttpContent precompressedContent, CompressedContentFormat format)
         {
-            super(content,contentGz);
+            super(content,precompressedContent,format);
             _content=content;
-            _contentGz=contentGz;
+            _precompressedContent=precompressedContent;
             
-            _etag=(ResourceCache.this._etags)?new PreEncodedHttpField(HttpHeader.ETAG,_content.getResource().getWeakETag("--gzip")):null;
+            _etag=(CachedContentFactory.this._etags)?new PreEncodedHttpField(HttpHeader.ETAG,_content.getResource().getWeakETag(format._etag)):null;
         }
 
         public boolean isValid()
         {
-            return _contentGz.isValid() && _content.isValid() && _content.getResource().lastModified() <= _contentGz.getResource().lastModified();
+            return _precompressedContent.isValid() && _content.isValid() && _content.getResource().lastModified() <= _precompressedContent.getResource().lastModified();
         }
 
         @Override

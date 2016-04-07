@@ -43,6 +43,7 @@ public class TestStaticMimeTypeServlet extends TestDirContentServlet
         mimeTypes = new MimeTypes();
         // Some real world, yet not terribly common, mime type mappings.
         mimeTypes.addMimeMapping("bz2","application/bzip2");
+        mimeTypes.addMimeMapping("br","application/brotli");
         mimeTypes.addMimeMapping("bmp","image/bmp");
         mimeTypes.addMimeMapping("tga","application/tga");
         mimeTypes.addMimeMapping("xcf","image/xcf");

@@ -69,10 +69,10 @@ public class NullSessionDataStore extends AbstractSessionDataStore
 
  
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
      */
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
+    public Set<String> doGetExpired(Set<String> candidates)
     {
        return candidates; //whatever is suggested we accept
     }
@@ -83,6 +83,16 @@ public class NullSessionDataStore extends AbstractSessionDataStore
      */
     @Override
     public boolean isPassivating()
+    {
+        return false;
+    }
+
+
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
+     */
+    @Override
+    public boolean exists(String id)
     {
         return false;
     }

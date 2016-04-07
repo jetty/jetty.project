@@ -65,6 +65,18 @@
         </configuration>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.neo4j.build.plugins</groupId>
+          <artifactId>clirr-maven-plugin</artifactId>
+          <configuration>
+            <!-- Clirr fails with "org.apache.tools.ant.Task not found" on this project -->
+            <skip>true</skip>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <dependencies>

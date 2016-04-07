@@ -22,33 +22,27 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import org.eclipse.jetty.http.MimeTypes.Type;
+import java.util.Map;
 
+import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
-public class GzipHttpContent implements HttpContent
+public class PrecompressedHttpContent implements HttpContent
 {
-    private final HttpContent _content; 
-    private final HttpContent _contentGz;
-    public final static String ETAG_GZIP="--gzip";
-    public final static String ETAG_GZIP_QUOTE="--gzip\"";
-    public final static PreEncodedHttpField CONTENT_ENCODING_GZIP=new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING,"gzip");
-    
-    public static String removeGzipFromETag(String etag)
+    private final HttpContent _content;
+    private final HttpContent _precompressedContent;
+    private final CompressedContentFormat _format;
+
+    public PrecompressedHttpContent(HttpContent content, HttpContent precompressedContent, CompressedContentFormat format)
     {
-        if (etag==null)
-            return null;
-        int i = etag.indexOf(ETAG_GZIP_QUOTE);
-        if (i<0)
-            return etag;
-        return etag.substring(0,i)+'"';
-    }
-    
-    public GzipHttpContent(HttpContent content, HttpContent contentGz)
-    {  
-        _content=content;
-        _contentGz=contentGz;
+        _content = content;
+        _precompressedContent = precompressedContent;
+        _format = format;
+        if (_precompressedContent == null || _format == null)
+        {
+            throw new NullPointerException("Missing compressed content and/or format");
+        }
     }
 
     @Override
@@ -78,7 +72,7 @@ public class GzipHttpContent implements HttpContent
     @Override
     public String getETagValue()
     {
-        return _content.getResource().getWeakETag(ETAG_GZIP);
+        return _content.getResource().getWeakETag(_format._etag);
     }
 
     @Override
@@ -108,13 +102,13 @@ public class GzipHttpContent implements HttpContent
     @Override
     public HttpField getContentEncoding()
     {
-        return CONTENT_ENCODING_GZIP;
+        return _format._contentEncoding;
     }
 
     @Override
     public String getContentEncodingValue()
     {
-        return CONTENT_ENCODING_GZIP.getValue();
+        return _format._contentEncoding.getValue();
     }
 
     @Override
@@ -138,50 +132,50 @@ public class GzipHttpContent implements HttpContent
     @Override
     public ByteBuffer getIndirectBuffer()
     {
-        return _contentGz.getIndirectBuffer();
+        return _precompressedContent.getIndirectBuffer();
     }
 
     @Override
     public ByteBuffer getDirectBuffer()
     {
-        return _contentGz.getDirectBuffer();
+        return _precompressedContent.getDirectBuffer();
     }
 
     @Override
     public HttpField getContentLength()
     {
-        return _contentGz.getContentLength();
+        return _precompressedContent.getContentLength();
     }
 
     @Override
     public long getContentLengthValue()
     {
-        return _contentGz.getContentLengthValue();
+        return _precompressedContent.getContentLengthValue();
     }
 
     @Override
     public InputStream getInputStream() throws IOException
     {
-        return _contentGz.getInputStream();
+        return _precompressedContent.getInputStream();
     }
 
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
-        return _contentGz.getReadableByteChannel();
+        return _precompressedContent.getReadableByteChannel();
     }
 
     @Override
     public String toString()
     {
-        return String.format("GzipHttpContent@%x{r=%s|%s,lm=%s|%s,ct=%s}",hashCode(),
-                _content.getResource(),_contentGz.getResource(),
-                _content.getResource().lastModified(),_contentGz.getResource().lastModified(),
+        return String.format("PrecompressedHttpContent@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}",hashCode(),_format._encoding,
+                _content.getResource(),_precompressedContent.getResource(),
+                _content.getResource().lastModified(),_precompressedContent.getResource().lastModified(),
                 getContentType());
     }
 
     @Override
-    public HttpContent getGzipContent()
+    public Map<CompressedContentFormat, HttpContent> getPrecompressedContents()
     {
         return null;
     }

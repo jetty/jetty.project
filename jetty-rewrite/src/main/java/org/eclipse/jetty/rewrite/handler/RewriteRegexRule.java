@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.annotation.Name;
 
 /**
  * Rewrite the URI by matching with a regular expression. 
@@ -43,8 +44,16 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
     /* ------------------------------------------------------------ */
     public RewriteRegexRule()
     {
-        _handling = false;
-        _terminating = false;
+        this(null,null);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public RewriteRegexRule(@Name("regex") String regex, @Name("replacement") String replacement)
+    {
+        setHandling(false);
+        setTerminating(false);
+        setRegex(regex);
+        setReplacement(replacement);
     }
 
     /* ------------------------------------------------------------ */
@@ -55,10 +64,19 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
      */
     public void setReplacement(String replacement)
     {
-        String[] split=replacement.split("\\?",2);
-        _replacement = split[0];
-        _query=split.length==2?split[1]:null;
-        _queryGroup=_query!=null && _query.contains("$Q");
+        if (replacement==null)
+        {
+            _replacement=null;
+            _query=null;
+            _queryGroup=false;
+        }
+        else
+        {
+            String[] split=replacement.split("\\?",2);
+            _replacement = split[0];
+            _query=split.length==2?split[1]:null;
+            _queryGroup=_query!=null && _query.contains("$Q");
+        }
     }
 
 

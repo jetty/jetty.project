@@ -21,7 +21,7 @@ package org.eclipse.jetty.nosql.mongodb;
 import java.net.UnknownHostException;
 
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.server.session.SessionManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.SessionHandler;
 
@@ -63,36 +63,22 @@ public class MongoTestServer extends AbstractTestServer
     }
 
     
-    public MongoTestServer(int port, int inspectionPeriod, int idlePassivatePeriod)
+    public MongoTestServer(int port, int idlePassivatePeriod)
     {
-        super(port, 30, 10, inspectionPeriod, idlePassivatePeriod);
+        super(port, 30, 10, idlePassivatePeriod);
     }
 
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectionPeriod, int idlePassivatePeriod)
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod,int idlePassivatePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod, inspectionPeriod, idlePassivatePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }
     
     
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectionPeriod, int idlePassivatePeriod, boolean saveAllAttributes)
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, boolean saveAllAttributes)
     {
-        super(port, maxInactivePeriod, scavengePeriod, inspectionPeriod, idlePassivatePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }
 
-    public SessionIdManager newSessionIdManager(Object config)
-    {
-        try
-        {
-            MongoSessionIdManager idManager = new MongoSessionIdManager(_server, getCollection());
-            idManager.setWorkerName("w"+(__workers++));
-               
-            return idManager;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
 
     public SessionManager newSessionManager()
     {
@@ -100,7 +86,8 @@ public class MongoTestServer extends AbstractTestServer
         try
         {
             manager = new MongoSessionManager();
-            manager.getSessionDataStore().setGracePeriodSec(_inspectionPeriod);
+            ((MongoSessionManager)manager).getSessionDataStore().setDBCollection(getCollection());
+            manager.getSessionDataStore().setGracePeriodSec(_scavengePeriod);
         }
         catch (Exception e)
         {

@@ -22,8 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.Test;
 
 
@@ -41,9 +40,8 @@ public class LifeCycleListenerTest
 
         lifecycle.setCause(cause);
 
-        try
+        try (StacklessLogging stackless = new StacklessLogging(AbstractLifeCycle.class))
         {
-            StdErrLog.getLogger(AbstractLifeCycle.class).setHideStacks(true);
             lifecycle.start();
             assertTrue(false);
         }
@@ -51,10 +49,6 @@ public class LifeCycleListenerTest
         {
             assertEquals(cause,e);
             assertEquals(cause,listener.getCause());
-        }
-        finally
-        {
-            StdErrLog.getLogger(AbstractLifeCycle.class).setHideStacks(false);
         }
         lifecycle.setCause(null);
 
@@ -88,9 +82,8 @@ public class LifeCycleListenerTest
         lifecycle.start();
         lifecycle.setCause(cause);
 
-        try
+        try (StacklessLogging stackless = new StacklessLogging(AbstractLifeCycle.class))
         {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
             lifecycle.stop();
             assertTrue(false);
         }
@@ -98,10 +91,6 @@ public class LifeCycleListenerTest
         {
             assertEquals(cause,e);
             assertEquals(cause,listener.getCause());
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(false);
         }
 
         lifecycle.setCause(null);

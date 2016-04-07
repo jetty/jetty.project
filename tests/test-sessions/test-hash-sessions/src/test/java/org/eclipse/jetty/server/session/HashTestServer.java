@@ -19,7 +19,7 @@
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
+
 
 /**
  * @version $Revision$ $Date$
@@ -30,21 +30,14 @@ public class HashTestServer extends AbstractTestServer
     
     public HashTestServer(int port)
     {
-        super(port, 30, 10, 1, 2);
+        super(port, 30, 10, 2);
     }
 
-    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectPeriod, int idlePassivatePeriod)
+    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }
 
-
-    public SessionIdManager newSessionIdManager(Object config)
-    {
-        HashSessionIdManager mgr = new HashSessionIdManager(_server);
-        mgr.setWorkerName("worker"+(__workers++));
-        return mgr;
-    }
 
     public SessionManager newSessionManager()
     {

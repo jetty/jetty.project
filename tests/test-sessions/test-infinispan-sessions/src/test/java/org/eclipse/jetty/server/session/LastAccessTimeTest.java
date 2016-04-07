@@ -42,9 +42,9 @@ public class LastAccessTimeTest extends AbstractLastAccessTimeTest
     
 
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectInterval, int idlePassivateInterval)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivateInterval)
     {
-        return new InfinispanTestSessionServer(port, max, scavenge, inspectInterval, idlePassivateInterval, __testSupport.getCache());
+        return new InfinispanTestSessionServer(port, max, scavenge, idlePassivateInterval, __testSupport.getCache());
     }
 
     @Override

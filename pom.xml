@@ -18,7 +18,7 @@
     <slf4j-version>1.6.6</slf4j-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
     <alpn.api.version>1.1.2.v20150522</alpn.api.version>
-    <jsp.version>8.0.27</jsp.version>
+    <jsp.version>8.0.33</jsp.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
   </properties>
@@ -458,6 +458,22 @@
           <artifactId>maven-pmd-plugin</artifactId>
           <version>3.4</version>
         </plugin>
+        <plugin>
+          <groupId>org.neo4j.build.plugins</groupId>
+          <artifactId>clirr-maven-plugin</artifactId>
+          <version>1.0.1</version>
+          <configuration>
+            <htmlOutputFile>clirr-report.html</htmlOutputFile>
+            <xmlOutputFile>${project.build.directory}/clirr-report.xml</xmlOutputFile>
+            <failOnError>true</failOnError>
+            <failOnWarning>true</failOnWarning>
+            <failOnInfo>false</failOnInfo>
+            <logResults>true</logResults>
+            <minSeverity>info</minSeverity>
+            <comparisonVersion>9.3.8.v20160314</comparisonVersion>
+            <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -834,31 +850,6 @@
       </modules>
     </profile>
     <profile>
-      <id>api-change</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>clirr-maven-plugin</artifactId>
-            <version>2.5</version>
-            <executions>
-              <execution>
-                <id>compare-api</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>clirr</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <minSeverity>info</minSeverity>
-              <comparisonVersion>9.0.3.v20130506</comparisonVersion>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
       <id>8u00</id>
       <activation>
         <property>
@@ -1044,6 +1035,18 @@
         <property>
           <name>java.version</name>
           <value>1.8.0_74</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.7.v20160121</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u77</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_77</value>
         </property>
       </activation>
       <properties>

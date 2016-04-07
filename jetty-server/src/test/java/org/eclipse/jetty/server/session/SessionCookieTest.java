@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.util.stream.Stream;
-
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.http.HttpServletRequest;
 
@@ -41,16 +39,12 @@ public class SessionCookieTest
     public class MockSessionStore extends AbstractSessionStore
     {
 
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionStore#newSession(HttpServletRequest, String, long, long)
-         */
-        @Override
-        public Session newSession(HttpServletRequest request, String key, long time, long maxInactiveMs)
+        public MockSessionStore(SessionManager manager)
         {
-            // TODO Auto-generated method stub
-            return null;
+            super(manager);
         }
 
+      
         /** 
          * @see org.eclipse.jetty.server.session.SessionStore#shutdown()
          */
@@ -90,15 +84,7 @@ public class SessionCookieTest
             return null;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doExists(String)
-         */
-        @Override
-        public boolean doExists(String key)
-        {
-            // TODO Auto-generated method stub
-            return false;
-        }
+      
 
         /** 
          * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(String)
@@ -109,15 +95,7 @@ public class SessionCookieTest
             return null;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionStore#getStream()
-         */
-        @Override
-        public Stream<Session> getStream()
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
+      
 
         /** 
          * @see org.eclipse.jetty.server.session.AbstractSessionStore#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
@@ -129,12 +107,22 @@ public class SessionCookieTest
             return false;
         }
 
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSessionStore#newSession(javax.servlet.http.HttpServletRequest, org.eclipse.jetty.server.session.SessionData)
+         */
+        @Override
+        public Session newSession(HttpServletRequest request, SessionData data)
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
    
     }
 
     
     
-    public class MockSessionIdManager extends AbstractSessionIdManager
+    public class MockSessionIdManager extends DefaultSessionIdManager
     {
         public MockSessionIdManager(Server server)
         {
@@ -165,36 +153,8 @@ public class SessionCookieTest
             // TODO Auto-generated method stub
             
         }
-
-        /** 
-         * @see org.eclipse.jetty.server.SessionIdManager#useId(Session)
-         */
-        @Override
-        public void useId(Session session)
-        {
-            // TODO Auto-generated method stub
-            
-        }
-
-        /** 
-         * @see org.eclipse.jetty.server.SessionIdManager#removeId(java.lang.String)
-         */
-        @Override
-        public boolean removeId(String id)
-        {
-            return true;
-        }
     }
-    
-    public class MockSessionManager extends SessionManager
-    {
-        public MockSessionManager()
-        {
-            _sessionStore = new MockSessionStore();
-            ((AbstractSessionStore)_sessionStore).setSessionDataStore(new NullSessionDataStore());
-        }
-    }
-
+  
   
 
     @Test
@@ -203,7 +163,10 @@ public class SessionCookieTest
         Server server = new Server();
         MockSessionIdManager idMgr = new MockSessionIdManager(server);
         idMgr.setWorkerName("node1");
-        MockSessionManager mgr = new MockSessionManager();
+        SessionManager mgr = new SessionManager();
+        MockSessionStore store = new MockSessionStore(mgr);
+        store.setSessionDataStore(new NullSessionDataStore());
+        mgr.setSessionStore(store);
         mgr.setSessionIdManager(idMgr);
         
         long now = System.currentTimeMillis();

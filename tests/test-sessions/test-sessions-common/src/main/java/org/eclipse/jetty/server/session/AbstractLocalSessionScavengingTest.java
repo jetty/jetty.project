@@ -32,7 +32,6 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 
@@ -41,7 +40,7 @@ import org.junit.Test;
  */
 public abstract class AbstractLocalSessionScavengingTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePeriod);
 
     public void pause(int scavengePeriod)
     {
@@ -64,7 +63,7 @@ public abstract class AbstractLocalSessionScavengingTest
         int scavengePeriod = 2;
         int inspectionPeriod = 2;
         int idlePeriod = 20;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, inspectionPeriod, idlePeriod);
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, idlePeriod);
         ServletContextHandler context1 = server1.addContext(contextPath);
         context1.addServlet(TestServlet.class, servletMapping);
 
@@ -72,7 +71,7 @@ public abstract class AbstractLocalSessionScavengingTest
         {
             server1.start();
             int port1 = server1.getPort();
-            AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod * 3, inspectionPeriod, idlePeriod);
+            AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod * 3, idlePeriod);
             ServletContextHandler context2 = server2.addContext(contextPath);
             context2.addServlet(TestServlet.class, servletMapping);
 
@@ -146,8 +145,6 @@ public abstract class AbstractLocalSessionScavengingTest
 
     public static class TestServlet extends HttpServlet
     {
-        private SessionManager sessionManager;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {
@@ -156,13 +153,11 @@ public abstract class AbstractLocalSessionScavengingTest
             {
                 HttpSession session = request.getSession(true);
                 session.setAttribute("test", "test");
-                this.sessionManager = ((Request)request).getSessionManager();
             }
             else if ("test".equals(action))
             {
                 HttpSession session = request.getSession(false);
                 session.setAttribute("test", "test");
-                this.sessionManager = ((Request)request).getSessionManager();
             }
             else if ("check".equals(action))
             {

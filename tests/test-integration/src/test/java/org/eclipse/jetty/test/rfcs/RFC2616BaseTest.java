@@ -18,8 +18,12 @@
 
 package org.eclipse.jetty.test.rfcs;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +36,7 @@ import java.util.List;
 import java.util.TimeZone;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.test.support.StringUtil;
@@ -41,6 +46,7 @@ import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.StringAssert;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -1444,15 +1450,17 @@ public abstract class RFC2616BaseTest
     public void test14_23_IncompleteHostHeader() throws Exception
     {
         // HTTP/1.1 - Incomplete (empty) Host header
+        try (StacklessLogging stackless = new StacklessLogging(HttpParser.class))
+        {
+            StringBuffer req4 = new StringBuffer();
+            req4.append("GET /tests/R1.txt HTTP/1.1\n");
+            req4.append("Host:\n");
+            req4.append("Connection: close\n");
+            req4.append("\n");
 
-        StringBuffer req4 = new StringBuffer();
-        req4.append("GET /tests/R1.txt HTTP/1.1\n");
-        req4.append("Host:\n");
-        req4.append("Connection: close\n");
-        req4.append("\n");
-
-        HttpTester.Response response = http.request(req4);
-        assertEquals("14.23 HTTP/1.1 - Empty Host", HttpStatus.BAD_REQUEST_400, response.getStatus());
+            HttpTester.Response response = http.request(req4);
+            assertEquals("14.23 HTTP/1.1 - Empty Host", HttpStatus.BAD_REQUEST_400, response.getStatus());
+        }
     }
 
     /**

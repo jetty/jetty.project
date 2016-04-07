@@ -51,7 +51,7 @@ public class AsyncContextState implements AsyncContext
     {
         HttpChannelState state=_state;
         if (state==null)
-            throw new IllegalStateException("AsyncContext completed");
+            throw new IllegalStateException("AsyncContext completed and/or Request lifecycle recycled");
         return state;
     }
 

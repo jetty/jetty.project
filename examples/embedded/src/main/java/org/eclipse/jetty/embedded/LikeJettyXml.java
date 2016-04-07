@@ -29,6 +29,7 @@ import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.server.ConnectorStatistics;
 import org.eclipse.jetty.server.DebugListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -182,6 +183,7 @@ public class LikeJettyXml
         StatisticsHandler stats = new StatisticsHandler();
         stats.setHandler(server.getHandler());
         server.setHandler(stats);
+        ConnectorStatistics.addToAllConnectors(server);
 
 
         // === jetty-requestlog.xml ===

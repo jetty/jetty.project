@@ -33,7 +33,18 @@ public abstract class PatternRule extends Rule
 {
     protected String _pattern;
 
+    /* ------------------------------------------------------------ */
+    protected PatternRule()
+    {
+    }
 
+    /* ------------------------------------------------------------ */
+    protected PatternRule(String pattern)
+    {
+        this();
+        setPattern(pattern);
+    }
+    
     /* ------------------------------------------------------------ */
     public String getPattern()
     {

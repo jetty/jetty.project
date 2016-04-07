@@ -53,7 +53,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -812,11 +812,9 @@ public class RequestLogHandlerTest
         requestLog.setHandler(testHandler);
 
         server.setHandler(requestLog);
-
-        try
+        
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class,HttpChannelState.class))
         {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
-            ((StdErrLog)Log.getLogger(HttpChannelState.class)).setHideStacks(true);
             server.start();
 
             String host = connector.getHost();
@@ -855,8 +853,6 @@ public class RequestLogHandlerTest
         finally
         {
             server.stop();
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
-            ((StdErrLog)Log.getLogger(HttpChannelState.class)).setHideStacks(false);
         }
     }
 

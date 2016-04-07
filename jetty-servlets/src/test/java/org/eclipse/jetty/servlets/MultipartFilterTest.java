@@ -31,6 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
@@ -43,9 +44,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.MultiPartInputStreamParser;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -100,7 +108,7 @@ public class MultipartFilterTest
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             assertNotNull(req.getParameter("fileup"));
-            System.err.println("Fileup="+req.getParameter("fileup"));
+            // System.err.println("Fileup="+req.getParameter("fileup"));
             assertNotNull(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
             assertEquals(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX), "application/octet-stream");
             super.doPost(req, resp);
@@ -162,8 +170,11 @@ public class MultipartFilterTest
         request.setContent(content);
 
 
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,response.getStatus());
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        {
+            response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+            assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,response.getStatus());
+        }
     }
 
 
@@ -611,10 +622,13 @@ public class MultipartFilterTest
         request.setHeader("Host","tester");
         request.setURI("/context/dump");
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
-        
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
-        assertTrue(response.getContent().indexOf("Missing content")>=0);
+
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        {
+            response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+            assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+            assertTrue(response.getContent().indexOf("Missing content")>=0);
+        }
     }
 
     @Test
@@ -634,9 +648,12 @@ public class MultipartFilterTest
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         request.setContent(whitespace);
         
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
-        assertTrue(response.getContent().indexOf("Missing initial")>=0);
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        {
+            response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+            assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+            assertTrue(response.getContent().indexOf("Missing initial")>=0);
+        }
     }
     
   
@@ -656,10 +673,13 @@ public class MultipartFilterTest
         request.setURI("/context/dump");
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         request.setContent(whitespace);
-        
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
-        assertTrue(response.getContent().indexOf("Missing initial")>=0);
+
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        {
+            response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+            assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+            assertTrue(response.getContent().indexOf("Missing initial")>=0);
+        }
     }
 
     @Test
@@ -785,9 +805,12 @@ public class MultipartFilterTest
         }
         request.setContent(baos.toString());
 
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        assertTrue(response.getContent().contains("Buffer size exceeded"));
-        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        {
+            response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+            assertTrue(response.getContent().contains("Buffer size exceeded"));
+            assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+        }
     }
 
     public static class TestServletParameterMap extends DumpServlet
@@ -844,30 +867,34 @@ public class MultipartFilterTest
 
     public static class TestServletCharSet extends HttpServlet
     {
-
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             //test that the multipart content bytes were converted correctly from their charset to unicode
-            String content = (String)req.getParameter("ttt");
-            assertNotNull(content);
-            assertEquals("ttt\u01FCzzz",content);       
-            assertEquals("application/octet-stream; charset=UTF-8",req.getParameter("ttt"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
-                  
+            String filename = req.getParameter("ttt");
+            assertEquals("ttt.txt",filename);  
+            String contentType = (String)req.getParameter("ttt"+MultiPartFilter.CONTENT_TYPE_SUFFIX);
+            assertEquals("application/octet-stream; charset=UTF-8",contentType);  
+            String charset=MimeTypes.getCharsetFromContentType(contentType);
+            assertEquals("utf-8",charset);  
             
-            //test that the parameter map retrieves values as String[]
-            Map map = req.getParameterMap();
-            Object o = map.get("ttt");
-            assertTrue(o.getClass().isArray());
-            super.doPost(req, resp);
+            File file = (File)req.getAttribute("ttt");
+            String content=IO.toString(new InputStreamReader(new FileInputStream(file),charset));
+            assertEquals("ttt\u01FCzzz",content);       
+            
+            resp.setStatus(200);
+            resp.setContentType(contentType);
+            resp.getWriter().print(content);
         } 
     }
-    
     
     @Test
     public void testWithCharSet()
     throws Exception
     {
+        ((StdErrLog)Log.getLogger(MultiPartFilter.class)).setDebugEnabled(true);
+        ((StdErrLog)Log.getLogger(MultiPartInputStreamParser.class)).setDebugEnabled(true);
+        
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -885,14 +912,18 @@ public class MultipartFilterTest
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         
         baos.write(("--" + boundary + "\r\n"+
-                "Content-Disposition: form-data; name=\"ttt\"\r\n"+
+                "Content-Disposition: form-data; name=\"ttt\"; filename=\"ttt.txt\"\r\n"+
                 "Content-Type: application/octet-stream; charset=UTF-8\r\n\r\n").getBytes());
         baos.write("ttt\u01FCzzz".getBytes(StandardCharsets.UTF_8));
         baos.write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
   
         
         request.setContent(baos.toByteArray());   
+
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+        assertEquals("ttt\u01FCzzz",response.getContent());
+        
     }
 
     

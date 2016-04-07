@@ -32,7 +32,9 @@ public interface Callback
      * Instance of Adapter that can be used when the callback methods need an empty
      * implementation without incurring in the cost of allocating a new Adapter object.
      */
-    Callback NOOP = new Callback(){};
+    static Callback NOOP = new Callback()
+    {
+    };
 
     /**
      * <p>Callback invoked when the operation completes.</p>
@@ -40,14 +42,16 @@ public interface Callback
      * @see #failed(Throwable)
      */
     default void succeeded()
-    {}
+    {
+    }
 
     /**
      * <p>Callback invoked when the operation fails.</p>
      * @param x the reason for the operation failure
      */
     default void failed(Throwable x)
-    {}
+    {
+    }
 
     /**
      * @return True if the callback is known to never block the caller
@@ -119,6 +123,38 @@ public interface Callback
         }
     }
 
+    class Nested implements Callback
+    {
+        private final Callback callback;
+
+        public Nested(Callback callback)
+        {
+            this.callback = callback;
+        }
+
+        public Nested(Nested nested)
+        {
+            this.callback = nested.callback;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            callback.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            callback.failed(x);
+        }
+
+        @Override
+        public boolean isNonBlocking()
+        {
+            return callback.isNonBlocking();
+        }
+    }
     /**
      * <p>A CompletableFuture that is also a Callback.</p>
      */

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,6 +40,8 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,7 +64,7 @@ import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -130,7 +133,6 @@ public class RequestTest
 
     }
 
-    @Ignore("Empty headers are not 7230 compliant")
     @Test
     public void testEmptyHeaders() throws Exception
     {
@@ -140,15 +142,24 @@ public class RequestTest
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 assertNotNull(request.getLocale());
-                assertTrue(request.getLocales().hasMoreElements());
-                assertNull(request.getContentType());
+                assertTrue(request.getLocales().hasMoreElements()); // Default locale
+                assertEquals("",request.getContentType());
                 assertNull(request.getCharacterEncoding());
                 assertEquals(0,request.getQueryString().length());
                 assertEquals(-1,request.getContentLength());
                 assertNull(request.getCookies());
-                assertNull(request.getHeader("Name"));
-                assertFalse(request.getHeaders("Name").hasMoreElements());
-                assertEquals(-1,request.getDateHeader("Name"));
+                assertEquals("",request.getHeader("Name"));
+                assertTrue(request.getHeaders("Name").hasMoreElements()); // empty
+                try
+                {
+                    request.getDateHeader("Name");
+                    assertTrue(false);
+                }
+                catch(IllegalArgumentException e)
+                {
+                    
+                }
+                assertEquals(-1,request.getDateHeader("Other"));
                 return true;
             }
         };
@@ -213,6 +224,43 @@ public class RequestTest
 
         String responses=_connector.getResponses(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testLocale() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
+            {
+                assertThat(request.getLocale().getLanguage(),is("da"));
+                Enumeration<Locale> locales = request.getLocales();
+                Locale locale=locales.nextElement();
+                assertThat(locale.getLanguage(),is("da"));
+                assertThat(locale.getCountry(),is(""));
+                locale=locales.nextElement();
+                assertThat(locale.getLanguage(),is("en"));
+                assertThat(locale.getCountry(),is("AU"));
+                locale=locales.nextElement();
+                assertThat(locale.getLanguage(),is("en"));
+                assertThat(locale.getCountry(),is("GB"));
+                locale=locales.nextElement();
+                assertThat(locale.getLanguage(),is("en"));
+                assertThat(locale.getCountry(),is(""));
+                assertFalse(locales.hasMoreElements());
+                return true;
+            }
+        };
+
+        String request="GET / HTTP/1.1\r\n"+
+            "Host: whatever\r\n"+
+            "Connection: close\r\n"+
+            "Accept-Language: da, en-gb;q=0.8, en;q=0.7\r\n"+
+            "Accept-Language: XX;q=0, en-au;q=0.9\r\n"+
+            "\r\n";
+        String response = _connector.getResponses(request);
+        assertThat(response,Matchers.containsString(" 200 OK"));
     }
 
 
@@ -332,9 +380,12 @@ public class RequestTest
         "\r\n"+
         multipart;
 
-        String responses=_connector.getResponses(request);
-        //System.err.println(responses);
-        assertTrue(responses.startsWith("HTTP/1.1 500"));
+        try(StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        {
+            String responses=_connector.getResponses(request);
+            //System.err.println(responses);
+            assertTrue(responses.startsWith("HTTP/1.1 500"));
+        }
     }
 
 
@@ -1086,14 +1137,14 @@ public class RequestTest
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
-                    "Cookie: name=quoted=\\\"value\\\"\n" +
+                    "Cookie: name=quoted=\"\\\"value\\\"\"\n" +
                     "Connection: close\n"+
                     "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertEquals(1,cookies.size());
         assertEquals("name", cookies.get(0).getName());
-        assertEquals("quoted=\\\"value\\\"", cookies.get(0).getValue());
+        assertEquals("quoted=\"value\"", cookies.get(0).getValue());
 
         cookies.clear();
         response=_connector.getResponses(
@@ -1286,110 +1337,100 @@ public class RequestTest
     @Test
     public void testHashDOSKeys() throws Exception
     {
-        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
-        LOG.info("Expecting maxFormKeys limit and Closing HttpParser exceptions...");
-        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",-1);
-        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
-
-
-        StringBuilder buf = new StringBuilder(4000000);
-        buf.append("a=b");
-
-        // The evil keys file is not distributed - as it is dangerous
-        File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
-        if (evil_keys.exists())
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            LOG.info("Using real evil keys!");
-            try (BufferedReader in = new BufferedReader(new FileReader(evil_keys)))
+            LOG.info("Expecting maxFormKeys limit and Closing HttpParser exceptions...");
+            _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",-1);
+            _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
+
+
+            StringBuilder buf = new StringBuilder(4000000);
+            buf.append("a=b");
+
+            // The evil keys file is not distributed - as it is dangerous
+            File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
+            if (evil_keys.exists())
             {
-                String key=null;
-                while((key=in.readLine())!=null)
-                    buf.append("&").append(key).append("=").append("x");
+                LOG.info("Using real evil keys!");
+                try (BufferedReader in = new BufferedReader(new FileReader(evil_keys)))
+                {
+                    String key=null;
+                    while((key=in.readLine())!=null)
+                        buf.append("&").append(key).append("=").append("x");
+                }
             }
-        }
-        else
-        {
-            // we will just create a lot of keys and make sure the limit is applied
-            for (int i=0;i<2000;i++)
-                buf.append("&").append("K").append(i).append("=").append("x");
-        }
-        buf.append("&c=d");
-
-
-        _handler._checker = new RequestTester()
-        {
-            @Override
-            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            else
             {
-                return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
+                // we will just create a lot of keys and make sure the limit is applied
+                for (int i=0;i<2000;i++)
+                    buf.append("&").append("K").append(i).append("=").append("x");
             }
-        };
+            buf.append("&c=d");
 
-        String request="POST / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n"+
-        "Content-Length: "+buf.length()+"\r\n"+
-        "Connection: close\r\n"+
-        "\r\n"+
-        buf;
 
-        try
-        {
+            _handler._checker = new RequestTester()
+            {
+                @Override
+                public boolean check(HttpServletRequest request,HttpServletResponse response)
+                {
+                    return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
+                }
+            };
+
+            String request="POST / HTTP/1.1\r\n"+
+                    "Host: whatever\r\n"+
+                    "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n"+
+                    "Content-Length: "+buf.length()+"\r\n"+
+                    "Connection: close\r\n"+
+                    "\r\n"+
+                    buf;
+
             long start=System.currentTimeMillis();
             String response = _connector.getResponses(request);
             assertThat(response,Matchers.containsString("IllegalStateException"));
             long now=System.currentTimeMillis();
             assertTrue((now-start)<5000);
         }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
-        }
     }
 
     @Test
     public void testHashDOSSize() throws Exception
-    {
-        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
-        LOG.info("Expecting maxFormSize limit and too much data exceptions...");
-        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",3396);
-        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
-
-        StringBuilder buf = new StringBuilder(4000000);
-        buf.append("a=b");
-        // we will just create a lot of keys and make sure the limit is applied
-        for (int i=0;i<500;i++)
-            buf.append("&").append("K").append(i).append("=").append("x");
-        buf.append("&c=d");
-
-        _handler._checker = new RequestTester()
+    {        
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            @Override
-            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            LOG.info("Expecting maxFormSize limit and too much data exceptions...");
+            _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",3396);
+            _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
+
+            StringBuilder buf = new StringBuilder(4000000);
+            buf.append("a=b");
+            // we will just create a lot of keys and make sure the limit is applied
+            for (int i=0;i<500;i++)
+                buf.append("&").append("K").append(i).append("=").append("x");
+            buf.append("&c=d");
+
+            _handler._checker = new RequestTester()
             {
-                return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
-            }
-        };
+                @Override
+                public boolean check(HttpServletRequest request,HttpServletResponse response)
+                {
+                    return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
+                }
+            };
 
-        String request="POST / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n"+
-        "Content-Length: "+buf.length()+"\r\n"+
-        "Connection: close\r\n"+
-        "\r\n"+
-        buf;
+            String request="POST / HTTP/1.1\r\n"+
+                    "Host: whatever\r\n"+
+                    "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n"+
+                    "Content-Length: "+buf.length()+"\r\n"+
+                    "Connection: close\r\n"+
+                    "\r\n"+
+                    buf;
 
-        try
-        {
             long start=System.currentTimeMillis();
             String response = _connector.getResponses(request);
             assertTrue(response.contains("IllegalStateException"));
             long now=System.currentTimeMillis();
             assertTrue((now-start)<5000);
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         }
     }
 

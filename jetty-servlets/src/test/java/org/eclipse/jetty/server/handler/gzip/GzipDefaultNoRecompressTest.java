@@ -47,6 +47,7 @@ public class GzipDefaultNoRecompressTest
         {
             // Some already compressed files
                 { "test_quotes.gz", "application/gzip"  , GzipHandler.GZIP },
+                { "test_quotes.br", "application/brotli"  , GzipHandler.GZIP },
                 { "test_quotes.bz2", "application/bzip2", GzipHandler.GZIP },
                 { "test_quotes.zip", "application/zip"  , GzipHandler.GZIP },
                 { "test_quotes.rar", "application/x-rar-compressed", GzipHandler.GZIP },

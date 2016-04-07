@@ -52,10 +52,9 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
      * should attempt to expire.
      * 
      * @param candidates the ids of sessions the SessionStore thinks has expired
-     * @param scavengePeriodSec the period in sec of the scavenge cycle checks
      * @return the reconciled set of session ids that this node should attempt to expire
      */
-    public abstract Set<String> doGetExpired (Set<String> candidates, int scavengePeriodSec);
+    public abstract Set<String> doGetExpired (Set<String> candidates);
 
     
     /** 
@@ -95,14 +94,14 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set, int)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
      */
     @Override
-    public Set<String> getExpired(Set<String> candidates, int scavengePeriodSec)
+    public Set<String> getExpired(Set<String> candidates)
     {
         try
         {
-            return doGetExpired (candidates, scavengePeriodSec);
+            return doGetExpired (candidates);
         }
         finally
         {
@@ -146,4 +145,5 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
     {
         _gracePeriodSec = sec;
     }
+
 }

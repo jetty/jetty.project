@@ -41,9 +41,9 @@ public class LocalSessionScavengingTest extends AbstractLocalSessionScavengingTe
     }
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectSec, int idlePassivateSec)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivateSec)
     {
-       MongoTestServer mserver=new MongoTestServer(port,max,scavenge, inspectSec, idlePassivateSec);
+       MongoTestServer mserver=new MongoTestServer(port,max,scavenge, idlePassivateSec);
        
        return mserver;
     }

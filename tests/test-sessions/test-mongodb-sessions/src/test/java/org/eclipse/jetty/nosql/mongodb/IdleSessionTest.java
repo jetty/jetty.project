@@ -19,13 +19,10 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractIdleSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.Session;
@@ -43,9 +40,9 @@ public class IdleSessionTest extends AbstractIdleSessionTest
      * @see org.eclipse.jetty.server.session.AbstractIdleSessionTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int inspectSec, final int idleSec)
+    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int idleSec)
     {
-        return  new MongoTestServer(port,max,scavenge, inspectSec, idleSec);
+        return  new MongoTestServer(port,max,scavenge, idleSec);
     }
 
     /** 

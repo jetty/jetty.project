@@ -29,10 +29,12 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.InvalidPathException;
 import java.nio.file.StandardOpenOption;
 import java.security.Permission;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -67,6 +69,7 @@ public class FileResource extends Resource
         {
             // Try standard API to convert URL to file.
             file =new File(url.toURI());
+            assertValidPath(file.toString());
         }
         catch (URISyntaxException e) 
         {
@@ -110,6 +113,7 @@ public class FileResource extends Resource
         _file=file;
         URI file_uri=_file.toURI();
         _uri=normalizeURI(_file,uri);
+        assertValidPath(file.toString());
 
         // Is it a URI alias?
         if (!URIUtil.equalsIgnoreEncodings(_uri,file_uri.toString()))
@@ -121,6 +125,7 @@ public class FileResource extends Resource
     /* -------------------------------------------------------- */
     public FileResource(File file)
     {
+        assertValidPath(file.toString());
         _file=file;
         _uri=normalizeURI(_file,_file.toURI());
         _alias=checkFileAlias(_file);
@@ -182,6 +187,7 @@ public class FileResource extends Resource
     public Resource addPath(String path)
         throws IOException, MalformedURLException
     {
+        assertValidPath(path);
         path = org.eclipse.jetty.util.URIUtil.canonicalPath(path);
 
         if (path==null)
@@ -207,7 +213,7 @@ public class FileResource extends Resource
         }
         catch (final URISyntaxException e)
         {
-            throw new MalformedURLException(e.getMessage())
+            throw new InvalidPathException(path, e.getMessage())
             {
                 {
                     initCause(e);
@@ -217,8 +223,16 @@ public class FileResource extends Resource
 
         return new FileResource(uri);
     }
-   
-    
+
+    private void assertValidPath(String path)
+    {
+        int idx = StringUtil.indexOfControlChars(path);
+        if (idx >= 0)
+        {
+            throw new InvalidPathException(path, "Invalid Character at index " + idx);
+        }
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public URI getAlias()

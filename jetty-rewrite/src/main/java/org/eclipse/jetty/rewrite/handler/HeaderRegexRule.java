@@ -24,13 +24,14 @@ import java.util.regex.Matcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.annotation.Name;
+
 
 /* ------------------------------------------------------------ */
 /** Rule to add a header based on a Regex match
  */
 public class HeaderRegexRule extends RegexRule
 {
-
     private String _name;
     private String _value;
     private boolean _add=false;
@@ -38,10 +39,19 @@ public class HeaderRegexRule extends RegexRule
     /* ------------------------------------------------------------ */
     public HeaderRegexRule()
     {
-        _handling = false;
-        _terminating = false;
+        this(null,null,null);
     }
 
+    /* ------------------------------------------------------------ */
+    public HeaderRegexRule(@Name("regex") String regex, @Name("name") String name, @Name("value") String value)
+    {
+        super(regex);
+        setHandling(false);
+        setTerminating(false);
+        setName(name);
+        setValue(value);
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Sets the header name.

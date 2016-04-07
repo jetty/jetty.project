@@ -257,7 +257,7 @@ public class WebSocketCloseTest
         {
             client.setProtocols("fastfail");
             client.setTimeout(1,TimeUnit.SECONDS);
-            try (StacklessLogging scope = new StacklessLogging(AbstractEventDriver.class))
+            try (StacklessLogging scope = new StacklessLogging(AbstractEventDriver.class,WebSocketSession.class))
             {
                 client.connect();
                 client.sendStandardRequest();

@@ -19,9 +19,11 @@
 package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.util.EnumSet;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -33,15 +35,19 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
@@ -254,8 +260,13 @@ public class HttpClientTest extends AbstractTest
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
-                response.getOutputStream().write(new byte[length]);
+                try
+                {
+                    baseRequest.setHandled(true);
+                    response.getOutputStream().write(new byte[length]);
+                }
+                catch(IOException e)
+                {}
             }
         });
 
@@ -277,8 +288,7 @@ public class HttpClientTest extends AbstractTest
         }
         catch (ExecutionException x)
         {
-            // Buffering capacity exceeded.
-            x.printStackTrace();
+            Assert.assertThat(x.getMessage(),Matchers.containsString("Buffering capacity exceeded"));
         }
 
         // Verify that we can make another request.
@@ -368,6 +378,36 @@ public class HttpClientTest extends AbstractTest
                 .send();
 
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testDownloadWithInputStreamResponseListener() throws Exception
+    {
+        String content = "hello world";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.getOutputStream().print(content);
+            }
+        });
+
+        CountDownLatch latch = new CountDownLatch(1);
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(getScheme())
+                .onResponseSuccess(response -> latch.countDown())
+                .send(listener);
+        Response response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.getStatus());
+
+        // Response cannot succeed until we read the content.
+        Assert.assertFalse(latch.await(500, TimeUnit.MILLISECONDS));
+
+        InputStream input = listener.getInputStream();
+        Assert.assertEquals(content, IO.toString(input));
     }
 
     private void sleep(long time) throws IOException

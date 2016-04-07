@@ -19,13 +19,13 @@
 package org.eclipse.jetty.util.statistic;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 
-import org.hamcrest.Matchers;
-import org.junit.Assert;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+
 import org.junit.Test;
 
 
@@ -76,5 +76,82 @@ public class CounterStatisticTest
         assertThat(count.getMax(),equalTo(4L));
         assertThat(count.getTotal(),equalTo(5L));
     }
+    
 
+    @Test
+    public void testCounterContended()
+        throws Exception
+    {
+        final CounterStatistic counter = new CounterStatistic();
+        final int N=100;
+        final int L=1000;
+        final Thread[] threads = new Thread[N];
+        final CyclicBarrier incBarrier = new CyclicBarrier(N);
+        final CountDownLatch decBarrier = new CountDownLatch(N/2);
+        
+        for (int i=N;i-->0;)
+        {
+            final int I = i;
+      
+                
+            threads[i]=(i>=N/2)
+            ?new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        incBarrier.await();
+                        decBarrier.await();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                    Random random = new Random();
+                    for (int l=L;l-->0;)
+                    {
+                        counter.decrement();
+                        if (random.nextInt(5)==0)
+                            Thread.yield();
+                    }
+                }
+            }
+            :new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        incBarrier.await();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                    Random random = new Random();
+                    for (int l=L;l-->0;)
+                    {
+                        counter.increment();
+                        if (l==L/2)
+                            decBarrier.countDown();
+                        if (random.nextInt(5)==0)
+                            Thread.yield();
+                    }
+                }
+            };
+            threads[i].start();
+        }
+        
+
+        for (int i=N;i-->0;)
+            threads[i].join();
+        
+        assertThat(counter.getCurrent(),equalTo(0L));
+        assertThat(counter.getTotal(),equalTo(N*L/2L));
+        assertThat(counter.getMax(),greaterThanOrEqualTo((N/2)*(L/2L)));
+    }
+   
 }

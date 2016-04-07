@@ -871,7 +871,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             case LOCALLY_CLOSED:
             case REMOTELY_CLOSED:
             {
-                abort(new TimeoutException());
+                abort(new TimeoutException("Idle timeout " + endPoint.getIdleTimeout() + " ms"));
                 return false;
             }
             default:
@@ -1139,7 +1139,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     break;
                 }
             }
-            callback.succeeded();
+            super.succeeded();
         }
     }
 
@@ -1202,7 +1202,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 // and eventually remove the stream.
                 if (stream.updateClose(dataFrame.isEndStream(), true))
                     removeStream(stream);
-                callback.succeeded();
+                super.succeeded();
             }
         }
     }

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2.client.http;
 
+import java.net.URI;
+
 import org.eclipse.jetty.client.HttpContent;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpSender;
@@ -47,8 +49,9 @@ public class HttpSenderOverHTTP2 extends HttpSender
     @Override
     protected void sendHeaders(HttpExchange exchange, final HttpContent content, final Callback callback)
     {
-        final Request request = exchange.getRequest();
-        HttpURI uri = new HttpURI(request.getScheme(), request.getHost(), request.getPort(), request.getPath(), null, request.getQuery(), null);
+        Request request = exchange.getRequest();
+        String path = relativize(request.getPath());
+        HttpURI uri = new HttpURI(request.getScheme(), request.getHost(), request.getPort(), path, null, request.getQuery(), null);
         MetaData.Request metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders());
         HeadersFrame headersFrame = new HeadersFrame(metaData, null, !content.hasContent());
         HttpChannelOverHTTP2 channel = getHttpChannel();
@@ -82,6 +85,24 @@ public class HttpSenderOverHTTP2 extends HttpSender
         };
         // TODO optimize the send of HEADERS and DATA frames.
         channel.getSession().newStream(headersFrame, promise, channel.getStreamListener());
+    }
+
+    private String relativize(String path)
+    {
+        try
+        {
+            String result = path;
+            URI uri = URI.create(result);
+            if (uri.isAbsolute())
+                result = uri.getPath();
+            return result.isEmpty() ? "/" : result;
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not relativize " + path);
+            return path;
+        }
     }
 
     @Override

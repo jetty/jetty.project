@@ -19,11 +19,9 @@
 
 package org.eclipse.jetty.server.session.remote;
 
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractInvalidationSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.InfinispanTestSessionServer;
-import org.eclipse.jetty.session.infinispan.InfinispanSessionManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -58,9 +56,9 @@ public class RemoteInvalidationSessionTest extends AbstractInvalidationSessionTe
      * @see org.eclipse.jetty.server.session.AbstractInvalidationSessionTest#createServer(int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int maxInterval, int scavengeInterval, int inspectInterval, int idlePassivateInterval)
+    public AbstractTestServer createServer(int port, int maxInterval, int scavengeInterval, int idlePassivateInterval)
     {
-        return new InfinispanTestSessionServer(port, maxInterval, scavengeInterval, inspectInterval, idlePassivateInterval,__testSupport.getCache());
+        return new InfinispanTestSessionServer(port, maxInterval, scavengeInterval, idlePassivateInterval, __testSupport.getCache());
     }
 
     

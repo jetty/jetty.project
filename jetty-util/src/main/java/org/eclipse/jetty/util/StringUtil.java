@@ -246,16 +246,15 @@ public class StringUtil
         if (c<s.length())
             buf.append(s.substring(c,s.length()));
 
-        return buf.toString();
-        
+        return buf.toString();   
     }
-
 
     /* ------------------------------------------------------------ */
     /** Remove single or double quotes.
      * @param s the input string
      * @return the string with quotes removed
      */
+    @Deprecated
     public static String unquote(String s)
     {
         return QuotedStringTokenizer.unquote(s);
@@ -380,6 +379,53 @@ public class StringUtil
         {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    /**
+     * Find the index of a control characters in String
+     * <p>
+     * This will return a result on the first occurrence of a control character, regardless if
+     * there are more than one.
+     * </p>
+     * <p>
+     * Note: uses codepoint version of {@link Character#isISOControl(int)} to support Unicode better.
+     * </p>
+     *
+     * <pre>
+     *   indexOfControlChars(null)      == -1
+     *   indexOfControlChars("")        == -1
+     *   indexOfControlChars("\r\n")    == 0
+     *   indexOfControlChars("\t")      == 0
+     *   indexOfControlChars("   ")     == -1
+     *   indexOfControlChars("a")       == -1
+     *   indexOfControlChars(".")       == -1
+     *   indexOfControlChars(";\n")     == 1
+     *   indexOfControlChars("abc\f")   == 3
+     *   indexOfControlChars("z\010")   == 1
+     *   indexOfControlChars(":\u001c") == 1
+     * </pre>
+     *
+     * @param str
+     *            the string to test.
+     * @return the index of first control character in string, -1 if no control characters encountered
+     */
+    public static int indexOfControlChars(String str)
+    {
+        if (str == null)
+        {
+            return -1;
+        }
+        int len = str.length();
+        for (int i = 0; i < len; i++)
+        {
+            if (Character.isISOControl(str.codePointAt(i)))
+            {
+                // found a control character, we can stop searching  now
+                return i;
+            }
+        }
+        // no control characters
+        return -1;
     }
 
     /* ------------------------------------------------------------ */

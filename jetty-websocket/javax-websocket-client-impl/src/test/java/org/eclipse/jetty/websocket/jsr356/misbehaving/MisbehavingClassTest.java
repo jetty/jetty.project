@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.EchoHandler;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEndpointEventDriver;
 import org.junit.AfterClass;
@@ -90,7 +91,7 @@ public class MisbehavingClassTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EndpointRuntimeOnOpen socket = new EndpointRuntimeOnOpen();
 
-        try (StacklessLogging logging = new StacklessLogging(EndpointRuntimeOnOpen.class,JsrEndpointEventDriver.class))
+        try (StacklessLogging logging = new StacklessLogging(EndpointRuntimeOnOpen.class,JsrEndpointEventDriver.class,WebSocketSession.class))
         {
             // expecting ArrayIndexOutOfBoundsException during onOpen
             Session session = container.connectToServer(socket,serverUri);
@@ -111,7 +112,7 @@ public class MisbehavingClassTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         AnnotatedRuntimeOnOpen socket = new AnnotatedRuntimeOnOpen();
 
-        try (StacklessLogging logging = new StacklessLogging(AnnotatedRuntimeOnOpen.class))
+        try (StacklessLogging logging = new StacklessLogging(AnnotatedRuntimeOnOpen.class,WebSocketSession.class))
         {
             // expecting ArrayIndexOutOfBoundsException during onOpen
             Session session = container.connectToServer(socket,serverUri);

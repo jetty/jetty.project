@@ -64,10 +64,10 @@ public class AttributeNameTest
         MongoTestServer.dropCollection();
     }
 
-    public AbstractTestServer createServer(int port, int max, int scavenge, int inspect, int idlePassivate)
+    public AbstractTestServer createServer(int port, int max, int scavenge,  int idlePassivate)
     throws Exception
     {   
-        MongoTestServer server = new MongoTestServer(port,max,scavenge,inspect, idlePassivate, true);
+        MongoTestServer server = new MongoTestServer(port,max,scavenge,idlePassivate, true);
         
         return server;
 
@@ -82,12 +82,12 @@ public class AttributeNameTest
         int scavengePeriod = 20000;
         int inspectPeriod = 60;
         int idlePassivatePeriod = -1;
-        AbstractTestServer server1 = createServer(0,maxInactivePeriod,scavengePeriod, inspectPeriod, idlePassivatePeriod);
+        AbstractTestServer server1 = createServer(0,maxInactivePeriod,scavengePeriod, idlePassivatePeriod);
         server1.addContext(contextPath).addServlet(TestServlet.class,servletMapping);
         server1.start();
         int port1 = server1.getPort();
         
-        AbstractTestServer server2 = createServer(0,maxInactivePeriod,scavengePeriod,inspectPeriod, idlePassivatePeriod);
+        AbstractTestServer server2 = createServer(0,maxInactivePeriod,scavengePeriod, idlePassivatePeriod);
         server2.addContext(contextPath).addServlet(TestServlet.class,servletMapping);
         server2.start();
         int port2 = server2.getPort();

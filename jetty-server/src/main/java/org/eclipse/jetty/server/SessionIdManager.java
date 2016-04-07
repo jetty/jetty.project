@@ -18,12 +18,15 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.Set;
+
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.server.session.SessionManager;
 import org.eclipse.jetty.util.component.LifeCycle;
 
-/** Session ID Manager.
+/** 
+ * Session ID Manager.
  * Manages session IDs across multiple contexts.
  */
 public interface SessionIdManager extends LifeCycle
@@ -34,30 +37,25 @@ public interface SessionIdManager extends LifeCycle
      * @return True if the session ID is in use by at least one context.
      */
     public boolean isIdInUse(String id);
+
     
     /* ------------------------------------------------------------ */
     /**
-     * Notify the sessionid manager that a particular session id is in use
-     * @param session the session whose id is being used
+     * Expire all sessions on all contexts that share the same id.
+     * 
+     * @param id The session ID without any cluster node extension
      */
-    public void useId (Session session);
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Remove id
-     * @param id the plain session id (no workername extension) of the session to remove
-     * @return true if the id was removed, false otherwise
-     */
-    public boolean removeId (String id);
+    public void expireAll(String id);
     
     
     /* ------------------------------------------------------------ */
     /**
      * Invalidate all sessions on all contexts that share the same id.
      * 
-     * @param id The session ID without any cluster node extension
+     * @param id the session id
      */
-    public void expireAll(String id);
+    public void invalidateAll (String id);
+    
     
     /* ------------------------------------------------------------ */
     /**
@@ -109,5 +107,10 @@ public interface SessionIdManager extends LifeCycle
     */
     public void renewSessionId(String oldId, String oldExtendedId, HttpServletRequest request);    
 
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the set of all session managers for this node
+     * @return the set of session managers
+     */
+    public  Set<SessionManager> getSessionManagers();
 }

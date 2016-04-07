@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -33,6 +35,7 @@ import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
 
+import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
@@ -73,20 +76,76 @@ public class Session implements SessionManager.SessionIf
     public enum PassivationState {PASSIVATED, ACTIVE};
 
     
-    protected SessionData _sessionData;
-    protected SessionManager _manager;
+    protected SessionData _sessionData; //the actual data associated with a session
+    protected SessionManager _manager; //the manager of the session
     protected String _extendedId; //the _id plus the worker name
     protected long _requests;
-    private boolean _idChanged;
+    private boolean _idChanged; 
     private boolean _newSession;
     private State _state = State.VALID; //state of the session:valid,invalid or being invalidated
-    private Locker _lock = new Locker();
-
-    private PassivationState _passivationState = PassivationState.ACTIVE;
-
-
-
+    private Locker _lock = new Locker(); //sync lock
+    private PassivationState _passivationState = PassivationState.ACTIVE; //passivated or not
+    private InspectionTimeout _inspectionTimeout = null;
     
+    
+
+    /* ------------------------------------------------------------- */
+    /**
+     * InspectionTimeout
+     *
+     *
+     */
+    public class InspectionTimeout extends IdleTimeout
+    {
+
+
+        public InspectionTimeout()
+        {
+            super(getSessionManager().getScheduler());
+        }
+
+        /** 
+         * @see org.eclipse.jetty.io.IdleTimeout#onIdleExpired(java.util.concurrent.TimeoutException)
+         */
+        @Override
+        protected void onIdleExpired(TimeoutException timeout)
+        {
+            //called when the timer goes off
+            if (LOG.isDebugEnabled()) LOG.debug("Timer expired for session {}", getId());
+           getSessionManager().inspect(Session.this);
+        }
+
+        /** 
+         * @see org.eclipse.jetty.io.IdleTimeout#isOpen()
+         */
+        @Override
+        public boolean isOpen()
+        {
+            // Called to determine if the timer should be reset
+            // True if:
+            // 1. the session is still valid
+            // BUT if passivated out to disk, do we really want this timer to keep going off?
+            try (Lock lock = _lock.lockIfNotHeld())
+            {
+                return isValid() && !isPassivated();
+            }
+        }
+
+        /** 
+         * @see org.eclipse.jetty.io.IdleTimeout#setIdleTimeout(long)
+         */
+        @Override
+        public void setIdleTimeout(long idleTimeout)
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("setIdleTimeout called: "+idleTimeout);
+            super.setIdleTimeout(idleTimeout);
+        }
+
+    }
+
+
+
+    /* ------------------------------------------------------------- */
     /**
      * Create a new session
      * 
@@ -101,7 +160,8 @@ public class Session implements SessionManager.SessionIf
     }
     
     
-    
+
+    /* ------------------------------------------------------------- */
     /**
      * Re-create an existing session
      * @param data the session data
@@ -111,7 +171,8 @@ public class Session implements SessionManager.SessionIf
         _sessionData = data;
     }
     
-    
+
+    /* ------------------------------------------------------------- */
     /**
      * Should call this method with a lock held if you want to
      * make decision on what to do with the session
@@ -127,13 +188,15 @@ public class Session implements SessionManager.SessionIf
     }
     
     
-    
+
+    /* ------------------------------------------------------------- */
     public void setSessionManager (SessionManager manager)
     {
         _manager = manager;
     }
     
-    
+
+    /* ------------------------------------------------------------- */
     public void setExtendedId (String extendedId)
     {
         _extendedId = extendedId;
@@ -204,19 +267,7 @@ public class Session implements SessionManager.SessionIf
         }
     }
     
-    
-    /* ------------------------------------------------------------ */
-    public void setLastNode (String nodename)
-    {
-        _sessionData.setLastNode(nodename);
-    }
-    
-    /* ------------------------------------------------------------ */
-    public String getLastNode ()
-    {
-        return _sessionData.getLastNode();
-    }
-
+  
 
     /* ------------------------------------------------------------ */
     /**
@@ -404,12 +455,70 @@ public class Session implements SessionManager.SessionIf
         try (Lock lock = _lock.lockIfNotHeld())
         {
             _sessionData.setMaxInactiveMs((long)secs*1000L);  
-            _sessionData.setExpiry(_sessionData.getMaxInactiveMs() <= 0 ? 0 : (System.currentTimeMillis() + _sessionData.getMaxInactiveMs()));
+            _sessionData.setExpiry(_sessionData.calcExpiry());
             _sessionData.setDirty(true);
-            if (secs <= 0)
-                LOG.warn("Session {} is now immortal (maxInactiveInterval={})", _sessionData.getId(), secs);
-            else if (LOG.isDebugEnabled())
-                LOG.debug("Session {} maxInactiveInterval={}", _sessionData.getId(), secs);
+            setTimeout();
+            if (LOG.isDebugEnabled())
+            {
+                if (secs <= 0)
+                    LOG.debug("Session {} is now immortal (maxInactiveInterval={})", _sessionData.getId(), secs);
+                else
+                    LOG.debug("Session {} maxInactiveInterval={}", _sessionData.getId(), secs);
+            }
+        }
+    }
+    
+    
+    /**
+     * 
+     */
+    public void setTimeout ()
+    {
+        try (Lock lock = _lock.lockIfNotHeld())
+        {
+            if (LOG.isDebugEnabled())LOG.debug("Set timeout called");
+            long maxInactive =  _sessionData.getMaxInactiveMs();
+            long maxIdle = TimeUnit.SECONDS.toMillis(getSessionManager().getSessionStore().getIdlePassivationTimeoutSec());
+
+
+            if (maxInactive <= 0 && maxIdle <=0)
+            {
+                //session is immortal and idle passivation is not supported
+                if (_inspectionTimeout != null)
+                    _inspectionTimeout.setIdleTimeout(-1);
+                
+                if (LOG.isDebugEnabled()) LOG.debug("Session maxInactive <= 0 && idlePassivation <=0: timer cancelled");
+                return;
+            }
+
+            if (_inspectionTimeout == null)
+                _inspectionTimeout = new InspectionTimeout();
+
+            //set the inspection timer to the smaller of the maxIdle interval or the idlePassivation interval
+            long timeout = 0;
+            if (maxInactive <= 0)
+                timeout = maxIdle;
+            else if (maxIdle <= 0)
+                timeout = maxInactive;
+            else
+               timeout = Math.min(maxInactive, maxIdle);
+            
+            _inspectionTimeout.setIdleTimeout(timeout);
+            if (LOG.isDebugEnabled()) LOG.debug("Session timer(ms)={}", timeout);
+        }
+    }
+
+
+    public void stopTimeout ()
+    {
+        try (Lock lock = _lock.lockIfNotHeld())
+        {
+            if (_inspectionTimeout != null)
+            {
+                _inspectionTimeout.setIdleTimeout(-1);
+                _inspectionTimeout = null;
+                if (LOG.isDebugEnabled()) LOG.debug("Session timer stopped");
+            }
         }
     }
 
@@ -452,10 +561,10 @@ public class Session implements SessionManager.SessionIf
         checkLocked();
 
         if (_state != State.VALID)
-            throw new IllegalStateException();
+            throw new IllegalStateException("Not valid for write: id="+_sessionData.getId()+" created="+_sessionData.getCreated()+" accessed="+_sessionData.getAccessed()+" lastaccessed="+_sessionData.getLastAccessed()+" maxInactiveMs="+_sessionData.getMaxInactiveMs()+" expiry="+_sessionData.getExpiry());
         
         if (_passivationState == PassivationState.PASSIVATED)
-            throw new IllegalStateException("Passivated");
+            throw new IllegalStateException("Not valid for write: id="+_sessionData.getId()+" passivated");
     }
     
     
@@ -469,10 +578,10 @@ public class Session implements SessionManager.SessionIf
         checkLocked();
         
         if (_state == State.INVALID)
-            throw new IllegalStateException("Invalid");
+            throw new IllegalStateException("Invalid for read: id="+_sessionData.getId()+" created="+_sessionData.getCreated()+" accessed="+_sessionData.getAccessed()+" lastaccessed="+_sessionData.getLastAccessed()+" maxInactiveMs="+_sessionData.getMaxInactiveMs()+" expiry="+_sessionData.getExpiry());
         
         if (_passivationState == PassivationState.PASSIVATED)
-            throw new IllegalStateException("Passivated");
+            throw new IllegalStateException("Invalid for read: id="+_sessionData.getId()+" passivated");
     }
     
     
@@ -723,7 +832,7 @@ public class Session implements SessionManager.SessionIf
             if (result)
             {
                 //tell id mgr to remove session from all other contexts
-                ((AbstractSessionIdManager)_manager.getSessionIdManager()).invalidateAll(_sessionData.getId());
+                ((DefaultSessionIdManager)_manager.getSessionIdManager()).invalidateAll(_sessionData.getId());
             }
         }
         catch (Exception e)

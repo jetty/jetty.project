@@ -22,9 +22,9 @@ public class ImmortalSessionTest extends AbstractImmortalSessionTest
 {
 
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivationPeriod)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod)
     {
-        return new HashTestServer(port,max,scavenge,inspectionPeriod, idlePassivationPeriod);
+        return new HashTestServer(port,max,scavenge,idlePassivationPeriod);
     }
 
 }

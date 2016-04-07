@@ -20,27 +20,39 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Stream;
+import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Callback;
@@ -173,6 +185,129 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                     if (request.getVersion() != HttpVersion.HTTP_2)
                         request.abort(new Exception("Not a HTTP/2 request"));
                 })
+                .send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testLastStreamId() throws Exception
+    {
+        prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Map<Integer, Integer> onPreface(Session session)
+            {
+                Map<Integer, Integer> settings = new HashMap<>();
+                settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, 1);
+                return settings;
+            }
+
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Request request = (MetaData.Request)frame.getMetaData();
+                if (HttpMethod.HEAD.is(request.getMethod()))
+                {
+                    stream.getSession().close(ErrorCode.REFUSED_STREAM_ERROR.code, null, Callback.NOOP);
+                }
+                else
+                {
+                    MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                    stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                }
+                return null;
+            }
+        }));
+        server.start();
+
+        CountDownLatch latch = new CountDownLatch(2);
+        AtomicInteger lastStream = new AtomicInteger();
+        client = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client())
+        {
+            @Override
+            protected void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
+            {
+                super.onClose(connection, frame);
+                lastStream.set(frame.getLastStreamId());
+                latch.countDown();
+            }
+        }, null);
+        QueuedThreadPool clientExecutor = new QueuedThreadPool();
+        clientExecutor.setName("client");
+        client.setExecutor(clientExecutor);
+        client.start();
+
+        // Prime the connection to allow client and server prefaces to be exchanged.
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .path("/zero")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        org.eclipse.jetty.client.api.Request request = client.newRequest("localhost", connector.getLocalPort())
+                .method(HttpMethod.HEAD)
+                .path("/one");
+        request.send(result ->
+        {
+            if (result.isFailed())
+                latch.countDown();
+        });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        Stream stream = (Stream)request.getAttributes().get(HTTP2Stream.class.getName());
+        Assert.assertNotNull(stream);
+        Assert.assertEquals(lastStream.get(), stream.getId());
+    }
+
+    @Test
+    public void testAbsoluteFormTarget() throws Exception
+    {
+        String path = "/path";
+        String query = "a=b";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                Assert.assertEquals(path, request.getRequestURI());
+                Assert.assertEquals(query, request.getQueryString());
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .path("http://localhost:" + connector.getLocalPort() + path + "?" + query)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testRequestViaForwardHttpProxy() throws Exception
+    {
+        String path = "/path";
+        String query = "a=b";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                Assert.assertEquals(path, request.getRequestURI());
+                Assert.assertEquals(query, request.getQueryString());
+            }
+        });
+
+        int proxyPort = connector.getLocalPort();
+        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort));
+
+        int serverPort = proxyPort + 1; // Any port will do, just not the same as the proxy.
+        ContentResponse response = client.newRequest("localhost", serverPort)
+                .path(path + "?" + query)
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());

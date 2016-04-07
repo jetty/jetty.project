@@ -42,7 +42,7 @@ public class InfinispanSessionManager extends SessionManager
 
     public InfinispanSessionManager()
     {
-        _sessionStore = new MemorySessionStore();
+        setSessionStore(new MemorySessionStore(this));
         _sessionDataStore = new InfinispanSessionDataStore();
     }
     
@@ -80,9 +80,6 @@ public class InfinispanSessionManager extends SessionManager
 
 
 
-    /**
-     * @return
-     */
     public InfinispanSessionDataStore getSessionDataStore()
     {
         return _sessionDataStore;

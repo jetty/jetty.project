@@ -42,14 +42,14 @@ import org.junit.Test;
  */
 public abstract class AbstractReentrantRequestSessionTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivatePeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivatePeriod);
 
     @Test
     public void testReentrantRequestSession() throws Exception
     {
         String contextPath = "";
         String servletMapping = "/server";
-        AbstractTestServer server = createServer(0, 100, 400, 2, 10);
+        AbstractTestServer server = createServer(0, 100, 400, 10);
         server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         try
         {

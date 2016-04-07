@@ -99,7 +99,7 @@ public class MongoSessionManager extends SessionManager
     /* ------------------------------------------------------------ */
     public MongoSessionManager() throws UnknownHostException, MongoException
     {
-        _sessionStore = new MemorySessionStore();
+        setSessionStore(new MemorySessionStore(this));
         _sessionDataStore = new MongoSessionDataStore();
     }
     
@@ -110,22 +110,10 @@ public class MongoSessionManager extends SessionManager
     public void doStart() throws Exception
     {    
         ((AbstractSessionStore)_sessionStore).setSessionDataStore(_sessionDataStore);
-        _sessionDataStore.setDBCollection(_dbSessions);
         super.doStart();
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public void setSessionIdManager(SessionIdManager metaManager)
-    {
-        MongoSessionIdManager msim = (MongoSessionIdManager)metaManager;
-        _dbSessions=msim.getSessions();
-        super.setSessionIdManager(metaManager);
-        
-    }
-
-                        {
-                        }
+  
     
     public MongoSessionDataStore getSessionDataStore()
     {

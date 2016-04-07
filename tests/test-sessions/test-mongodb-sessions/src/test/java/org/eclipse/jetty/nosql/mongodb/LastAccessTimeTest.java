@@ -41,9 +41,9 @@ public class LastAccessTimeTest extends AbstractLastAccessTimeTest
         MongoTestServer.dropCollection();
     }
 
-    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectSec, int idlePassivateSec)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivateSec)
     {
-        return new MongoTestServer(port,max,scavenge, inspectSec, idlePassivateSec);
+        return new MongoTestServer(port,max,scavenge, idlePassivateSec);
     }
 
    

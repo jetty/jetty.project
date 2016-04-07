@@ -41,7 +41,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
-    private static final Pattern AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+realm=\"([^\"]+)\"(.*)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+realm=\"([^\"]*)\"(.*)", Pattern.CASE_INSENSITIVE);
 
     private final HttpClient client;
     private final int maxContentLength;
@@ -88,9 +88,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding());
             if (result.isFailed())
             {
-                Throwable failure = result.getFailure();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Authentication challenge failed {}", failure);
+                    LOG.debug("Authentication challenge failed {}", result.getFailure());
                 forwardFailureComplete(request, result.getRequestFailure(), response, result.getResponseFailure());
                 return;
             }
@@ -206,7 +205,12 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         {
             HttpConversation conversation = request.getConversation();
             conversation.updateResponseListeners(null);
-            notifier.forwardFailureComplete(conversation.getResponseListeners(), request, requestFailure, response, responseFailure);
+            List<Response.ResponseListener> responseListeners = conversation.getResponseListeners();
+            if (responseFailure == null)
+                notifier.forwardSuccess(responseListeners, response);
+            else
+                notifier.forwardFailure(responseListeners, response, responseFailure);
+            notifier.notifyComplete(responseListeners, new Result(request, requestFailure, response, responseFailure));
         }
 
         private List<Authentication.HeaderInfo> parseAuthenticateHeader(Response response, HttpHeader header)

@@ -58,14 +58,17 @@ public class HttpChannelOverFCGI extends HttpChannel
 
     protected void header(HttpField field)
     {
-        if (FCGI.Headers.REQUEST_METHOD.equalsIgnoreCase(field.getName()))
-            method = field.getValue();
-        else if (FCGI.Headers.DOCUMENT_URI.equalsIgnoreCase(field.getName()))
-            path = field.getValue();
-        else if (FCGI.Headers.QUERY_STRING.equalsIgnoreCase(field.getName()))
-            query = field.getValue();
-        else if (FCGI.Headers.SERVER_PROTOCOL.equalsIgnoreCase(field.getName()))
-            version = field.getValue();
+        String name = field.getName();
+        String value = field.getValue();
+        getRequest().setAttribute(name, value);
+        if (FCGI.Headers.REQUEST_METHOD.equalsIgnoreCase(name))
+            method = value;
+        else if (FCGI.Headers.DOCUMENT_URI.equalsIgnoreCase(name))
+            path = value;
+        else if (FCGI.Headers.QUERY_STRING.equalsIgnoreCase(name))
+            query = value;
+        else if (FCGI.Headers.SERVER_PROTOCOL.equalsIgnoreCase(name))
+            version = value;
         else
             processField(field);
     }
@@ -107,10 +110,11 @@ public class HttpChannelOverFCGI extends HttpChannel
                 httpName.append(part.substring(1).toLowerCase(Locale.ENGLISH));
             }
             String headerName = httpName.toString();
+            String value = field.getValue();
             if (HttpHeader.HOST.is(headerName))
-                return new HostPortHttpField(field.getValue());
+                return new HostPortHttpField(value);
             else
-                return new HttpField(httpName.toString(), field.getValue());
+                return new HttpField(headerName, value);
         }
         return null;
     }

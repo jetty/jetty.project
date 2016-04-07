@@ -178,18 +178,12 @@ public class ProxyServlet extends AbstractProxyServlet
                 offset = 0;
             }
 
-            onResponseContent(request, response, proxyResponse, buffer, offset, length, new Callback()
+            onResponseContent(request, response, proxyResponse, buffer, offset, length, new Callback.Nested(callback)
             {
-                @Override
-                public void succeeded()
-                {
-                    callback.succeeded();
-                }
-
                 @Override
                 public void failed(Throwable x)
                 {
-                    callback.failed(x);
+                    super.failed(x);
                     proxyResponse.abort(x);
                 }
             });

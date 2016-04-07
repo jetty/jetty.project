@@ -50,9 +50,9 @@ public abstract class AbstractSessionRenewTest
 {
     protected AbstractTestServer _server;
     
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivationPeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod);
 
-    public abstract boolean verifyChange (String oldSessionId, String newSessionId);
+    public abstract boolean verifyChange (WebAppContext context, String oldSessionId, String newSessionId);
     
     /**
      * @throws Exception
@@ -65,7 +65,7 @@ public abstract class AbstractSessionRenewTest
         int scavengePeriod = 3;
         int inspectPeriod = 1;
         int idlePassivatePeriod = -1;
-        _server = createServer(0, maxInactive, scavengePeriod, inspectPeriod, idlePassivatePeriod);
+        _server = createServer(0, maxInactive, scavengePeriod, idlePassivatePeriod);
         WebAppContext context = _server.addWebAppContext(".", contextPath);
         context.setParentLoaderPriority(true);
         context.addServlet(TestServlet.class, servletMapping);
@@ -101,7 +101,7 @@ public abstract class AbstractSessionRenewTest
             assertNotSame(sessionCookie, renewSessionCookie);
             assertTrue(testListener.isCalled());
             
-            assertTrue(verifyChange(AbstractTestServer.extractSessionId(sessionCookie), AbstractTestServer.extractSessionId(renewSessionCookie)));
+            assertTrue(verifyChange(context, AbstractTestServer.extractSessionId(sessionCookie), AbstractTestServer.extractSessionId(renewSessionCookie)));
         }
         finally
         {
@@ -160,7 +160,7 @@ public abstract class AbstractSessionRenewTest
                 assertFalse(beforeSessionId.equals(afterSessionId)); //different id
 
                 SessionManager sessionManager = ((Session)afterSession).getSessionManager();
-                AbstractSessionIdManager sessionIdManager = (AbstractSessionIdManager)sessionManager.getSessionIdManager();
+                DefaultSessionIdManager sessionIdManager = (DefaultSessionIdManager)sessionManager.getSessionIdManager();
 
                 assertTrue(sessionIdManager.isIdInUse(afterSessionId)); //new session id should be in use
                 assertFalse(sessionIdManager.isIdInUse(beforeSessionId));

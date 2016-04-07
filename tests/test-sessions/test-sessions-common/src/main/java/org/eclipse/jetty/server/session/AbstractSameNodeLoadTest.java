@@ -53,7 +53,7 @@ public abstract class AbstractSameNodeLoadTest
     protected boolean _stress = Boolean.getBoolean( "STRESS" );
 
     
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivationPeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod);
 
 
     @Test
@@ -63,7 +63,7 @@ public abstract class AbstractSameNodeLoadTest
         {
             String contextPath = "";
             String servletMapping = "/server";
-            AbstractTestServer server1 = createServer(0, 20000, 4, 2, 1000);
+            AbstractTestServer server1 = createServer(0, 20000, 4, 1000);
             server1.addContext( contextPath ).addServlet( TestServlet.class, servletMapping );
 
             try

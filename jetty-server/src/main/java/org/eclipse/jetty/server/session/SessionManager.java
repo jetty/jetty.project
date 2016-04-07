@@ -30,6 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionAttributeListener;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -51,6 +53,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
+import org.eclipse.jetty.util.thread.Locker.Lock;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 import static java.lang.Math.round;
 
@@ -62,9 +67,60 @@ import static java.lang.Math.round;
  * Handles session lifecycle. There is one SessionManager per context.
  *
  */
-public class SessionManager extends ContainerLifeCycle implements org.eclipse.jetty.server.SessionManager
+public class SessionManager extends ContainerLifeCycle
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Session cookie name.
+     * Defaults to <code>JSESSIONID</code>, but can be set with the
+     * <code>org.eclipse.jetty.servlet.SessionCookie</code> context init parameter.
+     */
+    public final static String __SessionCookieProperty = "org.eclipse.jetty.servlet.SessionCookie";
+    public final static String __DefaultSessionCookie = "JSESSIONID";
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Session id path parameter name.
+     * Defaults to <code>jsessionid</code>, but can be set with the
+     * <code>org.eclipse.jetty.servlet.SessionIdPathParameterName</code> context init parameter.
+     * If set to null or "none" no URL rewriting will be done.
+     */
+    public final static String __SessionIdPathParameterNameProperty = "org.eclipse.jetty.servlet.SessionIdPathParameterName";
+    public final static String __DefaultSessionIdPathParameterName = "jsessionid";
+    public final static String __CheckRemoteSessionEncoding = "org.eclipse.jetty.servlet.CheckingRemoteSessionIdEncoding";
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Session Domain.
+     * If this property is set as a ServletContext InitParam, then it is
+     * used as the domain for session cookies. If it is not set, then
+     * no domain is specified for the session cookie.
+     */
+    public final static String __SessionDomainProperty = "org.eclipse.jetty.servlet.SessionDomain";
+    public final static String __DefaultSessionDomain = null;
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Session Path.
+     * If this property is set as a ServletContext InitParam, then it is
+     * used as the path for the session cookie.  If it is not set, then
+     * the context path is used as the path for the cookie.
+     */
+    public final static String __SessionPathProperty = "org.eclipse.jetty.servlet.SessionPath";
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Session Max Age.
+     * If this property is set as a ServletContext InitParam, then it is
+     * used as the max age for the session cookie.  If it is not set, then
+     * a max age of -1 is used.
+     */
+    public final static String __MaxAgeProperty = "org.eclipse.jetty.servlet.MaxAge";
             
     public Set<SessionTrackingMode> __defaultSessionTrackingModes =
         Collections.unmodifiableSet(
@@ -101,9 +157,10 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
    
 
-    /* ------------------------------------------------------------ */
-    // Setting of max inactive interval for new sessions
-    // -1 means no timeout
+    /**
+     * Setting of max inactive interval for new sessions
+     * -1 means no timeout
+     */
     protected int _dftMaxIdleSecs=-1;
     protected SessionHandler _sessionHandler;
     protected boolean _httpOnly=false;
@@ -135,6 +192,12 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     private boolean _usingURLs;
     private boolean _usingCookies=true;
+    
+    protected ConcurrentHashSet<String> _candidateSessionIdsForExpiry = new ConcurrentHashSet<String>();
+
+    protected Scheduler _scheduler;
+    protected boolean _ownScheduler = false;
+    
 
 
     
@@ -174,7 +237,15 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * Called by the {@link SessionHandler} when a session is first accessed by a request.
+     *
+     * @param session the session object
+     * @param secure  whether the request is secure or not
+     * @return the session cookie. If not null, this cookie should be set on the response to either migrate
+     *         the session or to refresh a session cookie that may expire.
+     * @see #complete(HttpSession)
+     */
     public HttpCookie access(HttpSession session,boolean secure)
     {
         long now=System.currentTimeMillis();
@@ -200,7 +271,15 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * Adds an event listener for session-related events.
+     *
+     * @param listener the session event listener to add
+     *                 Individual SessionManagers implementations may accept arbitrary listener types,
+     *                 but they are expected to at least handle HttpSessionActivationListener,
+     *                 HttpSessionAttributeListener, HttpSessionBindingListener and HttpSessionListener.
+     * @see #removeEventListener(EventListener)
+     */
     public void addEventListener(EventListener listener)
     {
         if (listener instanceof HttpSessionAttributeListener)
@@ -213,7 +292,11 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * Removes all event listeners for session-related events.
+     *
+     * @see #removeEventListener(EventListener)
+     */
     public void clearEventListeners()
     {
         for (EventListener e :getBeans(EventListener.class))
@@ -224,7 +307,12 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * Called by the {@link SessionHandler} when a session is last accessed by a request.
+     *
+     * @param session the session object
+     * @see #access(HttpSession, boolean)
+     */
     public void complete(HttpSession session)
     {
         Session s = ((SessionIf)session).getSession();
@@ -267,7 +355,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                     try
                     {
                         Thread.currentThread().setContextClassLoader(serverLoader);
-                        _sessionIdManager=new HashSessionIdManager(server);
+                        _sessionIdManager=new DefaultSessionIdManager(server);
                         server.setSessionIdManager(_sessionIdManager);
                         server.manage(_sessionIdManager);
                         _sessionIdManager.start();
@@ -281,46 +369,51 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                 // server session id is never managed by this manager
                 addBean(_sessionIdManager,false);
             }
+
+            _scheduler = server.getBean(Scheduler.class);
+            if (_scheduler == null)
+            {            
+                _scheduler = new ScheduledExecutorScheduler();
+                _ownScheduler = true;
+                _scheduler.start();
+
+            }
         }
         
 
         // Look for a session cookie name
         if (_context!=null)
         {
-            String tmp=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__SessionCookieProperty);
+            String tmp=_context.getInitParameter(__SessionCookieProperty);
             if (tmp!=null)
                 _sessionCookie=tmp;
 
-            tmp=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__SessionIdPathParameterNameProperty);
+            tmp=_context.getInitParameter(__SessionIdPathParameterNameProperty);
             if (tmp!=null)
                 setSessionIdPathParameterName(tmp);
 
             // set up the max session cookie age if it isn't already
             if (_maxCookieAge==-1)
             {
-                tmp=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__MaxAgeProperty);
+                tmp=_context.getInitParameter(__MaxAgeProperty);
                 if (tmp!=null)
                     _maxCookieAge=Integer.parseInt(tmp.trim());
             }
 
             // set up the session domain if it isn't already
             if (_sessionDomain==null)
-                _sessionDomain=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__SessionDomainProperty);
+                _sessionDomain=_context.getInitParameter(__SessionDomainProperty);
 
             // set up the sessionPath if it isn't already
             if (_sessionPath==null)
-                _sessionPath=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__SessionPathProperty);
+                _sessionPath=_context.getInitParameter(__SessionPathProperty);
 
-            tmp=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__CheckRemoteSessionEncoding);
+            tmp=_context.getInitParameter(__CheckRemoteSessionEncoding);
             if (tmp!=null)
                 _checkingRemoteSessionIdEncoding=Boolean.parseBoolean(tmp);
         }
        
-        _sessionContext = new SessionContext(_sessionIdManager.getWorkerName(), _context);
-
-       if (_sessionStore instanceof AbstractSessionStore)
-           ((AbstractSessionStore)_sessionStore).setSessionManager(this);
-       
+        _sessionContext = new SessionContext(_sessionIdManager.getWorkerName(), _context);       
        
        _sessionStore.initialize(_sessionContext);
        _sessionStore.start();
@@ -334,15 +427,18 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     {
         shutdownSessions();
         _sessionStore.stop();
+        if (_ownScheduler && _scheduler != null)
+            _scheduler.stop();
+        _scheduler = null;
         super.doStop();
         _loader=null;
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the httpOnly.
+     * @return true if session cookies should be HTTP-only (Microsoft extension)
+     * @see org.eclipse.jetty.http.HttpCookie#isHttpOnly()
      */
-    @Override
     @ManagedAttribute("true if cookies use the http only flag")
     public boolean getHttpOnly()
     {
@@ -350,7 +446,12 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * Returns the <code>HttpSession</code> with the given session id
+     *
+     * @param id the session id
+     * @return the <code>HttpSession</code> with the corresponding id or null if no session with the given id exists
+     */
     public HttpSession getHttpSession(String extendedId)
     {
         String id = getSessionIdManager().getId(extendedId);
@@ -363,9 +464,10 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the SessionIdManager used for cross context session management
+     * Gets the cross context session id manager
+     * @return the session id manager
+     *
      */
-    @Override
     @ManagedAttribute("Session ID Manager")
     public SessionIdManager getSessionIdManager()
     {
@@ -374,10 +476,11 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
 
     /* ------------------------------------------------------------ */
+
     /**
-     * @return seconds
+     * @return the max period of inactivity, after which the session is invalidated, in seconds.
+     * @see #setMaxInactiveInterval(int)
      */
-    @Override
     @ManagedAttribute("default maximum time a session may be idle for (in s)")
     public int getMaxInactiveInterval()
     {
@@ -435,7 +538,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     /* ------------------------------------------------------------ */
     /**
-     * A sessioncookie is marked as secure IFF any of the following conditions are true:
+     * A session cookie is marked as secure IFF any of the following conditions are true:
      * <ol>
      * <li>SessionCookieConfig.setSecure == true</li>
      * <li>SessionCookieConfig.setSecure == false &amp;&amp; _secureRequestOnly==true &amp;&amp; request is HTTPS</li>
@@ -459,9 +562,14 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
      * you set it to false, then a session cookie is NEVER marked as secure, even if
      * the initiating request was secure.
      *
-     * @see org.eclipse.jetty.server.SessionManager#getSessionCookie(javax.servlet.http.HttpSession, java.lang.String, boolean)
+     * @param session         the session to which the cookie should refer.
+     * @param contextPath     the context to which the cookie should be linked.
+     *                        The client will only send the cookie value when requesting resources under this path.
+     * @param requestIsSecure whether the client is accessing the server over a secure protocol (i.e. HTTPS).
+     * @return if this <code>SessionManager</code> uses cookies, then this method will return a new
+     *         {@link Cookie cookie object} that should be set on the client in order to link future HTTP requests
+     *         with the <code>session</code>. If cookies are not in use, this method returns <code>null</code>.
      */
-    @Override
     public HttpCookie getSessionCookie(HttpSession session, String contextPath, boolean requestIsSecure)
     {
         if (isUsingCookies())
@@ -526,7 +634,10 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * @return the URL path parameter name for session id URL rewriting, by default "jsessionid".
+     * @see #setSessionIdPathParameterName(String)
+     */
     @ManagedAttribute("name of use for URL session tracking")
     public String getSessionIdPathParameterName()
     {
@@ -534,7 +645,11 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * @return a formatted version of {@link #getSessionIdPathParameterName()}, by default
+     *         ";" + sessionIdParameterName + "=", for easier lookup in URL strings.
+     * @see #getSessionIdPathParameterName()
+     */
     public String getSessionIdPathParameterNamePrefix()
     {
         return _sessionIdPathParameterNamePrefix;
@@ -542,16 +657,18 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the usingCookies.
+     * @return whether the session management is handled via cookies.
      */
-    @Override
     public boolean isUsingCookies()
     {
         return _usingCookies;
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * @param session the session to test for validity
+     * @return whether the given session is valid, that is, it has not been invalidated.
+     */
     public boolean isValid(HttpSession session)
     {
         Session s = ((SessionIf)session).getSession();
@@ -559,7 +676,11 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * @param session the session object
+     * @return the unique id of the session within the cluster (without a node id extension)
+     * @see #getExtendedId(HttpSession)
+     */
     public String getId(HttpSession session)
     {
         Session s = ((SessionIf)session).getSession();
@@ -567,7 +688,11 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * @param session the session object
+     * @return the unique id of the session within the cluster, extended with an optional node id.
+     * @see #getId(HttpSession)
+     */
     public String getExtendedId(HttpSession session)
     {
         Session s = ((SessionIf)session).getSession();
@@ -576,26 +701,25 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     /* ------------------------------------------------------------ */
     /**
-     * Create a new HttpSession for a request
+     * Creates a new <code>HttpSession</code>.
+     *
+     * @param request the HttpServletRequest containing the requested session id
+     * @return the new <code>HttpSession</code>
      */
-    @Override
     public HttpSession newHttpSession(HttpServletRequest request)
     {
-
         long created=System.currentTimeMillis();
         String id =_sessionIdManager.newSessionId(request,created);      
         Session session = _sessionStore.newSession(request, id, created,  (_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000L:-1));
-        session.setExtendedId(_sessionIdManager.getExtendedId(id,request));
-        session.setSessionManager(this);
-        session.setLastNode(_sessionIdManager.getWorkerName());
-        session.getSessionData().setExpiry(_dftMaxIdleSecs <= 0 ? 0 : (created + _dftMaxIdleSecs*1000L));
+        session.setExtendedId(_sessionIdManager.getExtendedId(id, request));
+        session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());
+        session.setMaxInactiveInterval(_dftMaxIdleSecs>0?_dftMaxIdleSecs:-1); //TODO awkward: needed to kick off timer and calc expiry
         if (request.isSecure())
             session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
         try
         {
             _sessionStore.put(id, session);
             _sessionsCreatedStats.increment();         
-            _sessionIdManager.useId(session);
             
             if (_sessionListeners!=null)
             {
@@ -614,7 +738,12 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * Removes an event listener for for session-related events.
+     *
+     * @param listener the session event listener to remove
+     * @see #addEventListener(EventListener)
+     */
     public void removeEventListener(EventListener listener)
     {
         if (listener instanceof HttpSessionAttributeListener)
@@ -651,7 +780,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     /**
      * @param metaManager The metaManager used for cross context session management.
      */
-    @Override
     public void setSessionIdManager(SessionIdManager metaManager)
     {
         updateBean(_sessionIdManager, metaManager);
@@ -659,14 +787,22 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * Sets the max period of inactivity, after which the session is invalidated, in seconds.
+     *
+     * @param seconds the max inactivity period, in seconds. 
+     * @see #getMaxInactiveInterval()
+     */
     public void setMaxInactiveInterval(int seconds)
     {
         _dftMaxIdleSecs=seconds;
-        if (_dftMaxIdleSecs <= 0)
-            LOG.warn("Sessions created by this manager are immortal (default maxInactiveInterval={})"+_dftMaxIdleSecs);
-        else if (LOG.isDebugEnabled())
-            LOG.debug("SessionManager default maxInactiveInterval={}", _dftMaxIdleSecs);
+        if (LOG.isDebugEnabled())
+        {
+            if (_dftMaxIdleSecs <= 0)
+                LOG.debug("Sessions created by this manager are immortal (default maxInactiveInterval={})",_dftMaxIdleSecs);
+            else
+                LOG.debug("SessionManager default maxInactiveInterval={}", _dftMaxIdleSecs);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -686,7 +822,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
      * @param sessionHandler
      *            The sessionHandler to set.
      */
-    @Override
     public void setSessionHandler(SessionHandler sessionHandler)
     {
         _sessionHandler=sessionHandler;
@@ -694,7 +829,13 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * Sets the session id URL path parameter name.
+     *
+     * @param parameterName the URL path parameter name for session id URL rewriting (null or "none" for no rewriting).
+     * @see #getSessionIdPathParameterName()
+     * @see #getSessionIdPathParameterNamePrefix()
+     */
     public void setSessionIdPathParameterName(String param)
     {
         _sessionIdPathParameterName =(param==null||"none".equals(param))?null:param;
@@ -741,17 +882,23 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                     return null;
                 }
                 
-                session.setExtendedId(_sessionIdManager.getExtendedId(id, null)); //TODO not sure if this is OK?
-                session.setLastNode(_sessionIdManager.getWorkerName());  //TODO write through the change of node?
+                session.setExtendedId(_sessionIdManager.getExtendedId(id, null));
+                session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());  //TODO write through the change of node?
             }
             return session;
         }
         catch (UnreadableSessionDataException e)
         {
             LOG.warn(e);
-            //Could not retrieve the session with the given id
-            //Tell the session id manager that the session id is not to be used by any other threads/contexts
-            _sessionIdManager.removeId(id);
+            try
+            {
+                //tell id mgr to remove session from all other contexts
+                getSessionIdManager().invalidateAll(id);
+            }
+            catch (Exception x)
+            {
+                LOG.warn("Error cross-context invalidating unreadable session {}", id, x);
+            }
             return null;
         }
         catch (Exception other)
@@ -781,6 +928,12 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     public SessionStore getSessionStore ()
     {
         return _sessionStore;
+    }
+    
+    
+    public void setSessionStore (SessionStore store)
+    {
+        _sessionStore = store;
     }
     
     /* ------------------------------------------------------------ */
@@ -856,21 +1009,18 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
     {
         return __defaultSessionTrackingModes;
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
     {
         return Collections.unmodifiableSet(_sessionTrackingModes);
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
     {
         _sessionTrackingModes=new HashSet<SessionTrackingMode>(sessionTrackingModes);
@@ -879,14 +1029,15 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    /**
+     * @return whether the session management is handled via URLs.
+     */
     public boolean isUsingURLs()
     {
         return _usingURLs;
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public SessionCookieConfig getSessionCookieConfig()
     {
         return _cookieConfig;
@@ -929,9 +1080,8 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.server.SessionManager#isCheckingRemoteSessionIdEncoding()
+     * @return True if absolute URLs are check for remoteness before being session encoded.
      */
-    @Override
     @ManagedAttribute("check remote session id encoding")
     public boolean isCheckingRemoteSessionIdEncoding()
     {
@@ -940,9 +1090,8 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.server.SessionManager#setCheckingRemoteSessionIdEncoding(boolean)
+     * @param remote True if absolute URLs are check for remoteness before being session encoded.
      */
-    @Override
     public void setCheckingRemoteSessionIdEncoding(boolean remote)
     {
         _checkingRemoteSessionIdEncoding=remote;
@@ -950,18 +1099,25 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
 
     /* ------------------------------------------------------------ */
-    /**
-     * Change the session id and tell the HttpSessionIdListeners the id changed.
-     * 
-     */
-    @Override
+    /** Change the existing session id.
+    * 
+    * @param oldId the old session id
+    * @param oldExtendedId the session id including worker suffix
+    * @param newId the new session id
+    * @param newExtendedId the new session id including worker suffix
+    */
     public void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId)
     {
         try
         {
             Session session = _sessionStore.renewSessionId (oldId, newId); //swap the id over
+            if (session == null)
+            {
+                //session doesn't exist on this context
+                return;
+            }
+            
             session.setExtendedId(newExtendedId); //remember the extended id
-            _sessionIdManager.useId(session); //tell id manager new id is in use
 
             //inform the listeners
             if (!_sessionIdListeners.isEmpty())
@@ -972,36 +1128,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                     l.sessionIdChanged(event, oldId);
                 }
             }
-
-     /*       Session session =_sessionStore.get(oldId);
-            if (session == null)
-            {
-                LOG.warn("Unable to renew id to "+newId+" for non-existant session "+oldId);
-                return;
-            }
-            
-            try (Lock lock = session.lock())
-            {
-                //swap the ids
-                session.renewId(oldId, oldExtendedId, newId, newExtendedId);
-
-                _sessionStore.put(newId, session);
-
-                //tell session id manager the id is in use
-                _sessionIdManager.useId(session);
-
-                //inform the listeners
-                if (!_sessionIdListeners.isEmpty())
-                {
-                    HttpSessionEvent event = new HttpSessionEvent(session);
-                    for (HttpSessionIdListener l:_sessionIdListeners)
-                    {
-                        l.sessionIdChanged(event, oldId);
-                    }
-                }
-                
-                
-            }*/
         }
         catch (Exception e)
         {
@@ -1040,18 +1166,141 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         }
     }
 
+
     
-    /* ------------------------------------------------------------ */
-    public void inspect ()
+    public void scavenge ()
     {
         //don't attempt to scavenge if we are shutting down
         if (isStopping() || isStopped())
             return;
-
-         _sessionStore.inspect();
+        
+        if (LOG.isDebugEnabled()) LOG.debug("Scavenging sessions");
+        //Get a snapshot of the candidates as they are now. Others that
+        //arrive during this processing will be dealt with on 
+        //subsequent call to scavenge
+        String[] ss = _candidateSessionIdsForExpiry.toArray(new String[0]);
+        Set<String> candidates = new HashSet<String>(Arrays.asList(ss));
+        _candidateSessionIdsForExpiry.removeAll(candidates);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Scavenging session ids {}", candidates);
+        try
+        {
+            candidates = _sessionStore.checkExpiration(candidates);
+            for (String id:candidates)
+            {  
+                try
+                {
+                    getSessionIdManager().expireAll(id);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn(e);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+        }
     }
     
-  
+    
+    public void inspect (Session session)
+    {
+        if (session == null)
+            return;
+        
+
+        //check if the session is:
+        //1. valid
+        //2. expired
+        //3. passivatable
+        boolean passivate = false;
+        try (Lock lock = session.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Inspecting session {}, valid={}", session.getId(), session.isValid());
+            
+            if (!session.isValid())
+                return; //do nothing, session is no longer valid
+            
+            if (session.isExpiredAt(System.currentTimeMillis()))
+            {
+                _candidateSessionIdsForExpiry.add(session.getId());
+                if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
+            }
+            else if (_sessionStore.getIdlePassivationTimeoutSec() > 0 && session.isIdleLongerThan(_sessionStore.getIdlePassivationTimeoutSec()))
+            {
+                passivate = true;
+                if (LOG.isDebugEnabled())LOG.debug("Session {} will be passivated", session.getId());
+            }
+        }
+        
+        if (passivate)
+            _sessionStore.passivateIdleSession(session.getId()); //TODO call passivate inside lock
+      
+    }
+    
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Check if id is in use by this context
+     * 
+     * @param id identity of session to check
+     * 
+     * @return true if this manager knows about this id
+     * @throws Exception 
+     */
+    public boolean isIdInUse(String id) throws Exception
+    {
+        //Ask the session store
+        return _sessionStore.exists(id);
+    }
+    
+    
+    
+    
+    /* ------------------------------------------------------------ */
+    public Scheduler getScheduler()
+    {
+       return _scheduler;
+    }
+
+
+
+
+    /** 
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return (_context==null?super.toString():_context.toString());
+    }
+
+
+
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /**
+     * SessionIf
+     * 
+     * Interface that any session wrapper should implement so that
+     * SessionManager may access the Jetty session implementation.
+     *
+     */
+    public interface SessionIf extends HttpSession
+    {
+        public Session getSession();
+    }
+
+
+
+
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -1161,18 +1410,6 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /**
-     * Interface that any session wrapper should implement so that
-     * SessionManager may access the Jetty session implementation.
-     *
-     */
-    public interface SessionIf extends HttpSession
-    {
-        public Session getSession();
-    }
 
     public void doSessionAttributeListeners(Session session, String name, Object old, Object value)
     {
@@ -1191,4 +1428,5 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
             }
         }
     }
+
 }

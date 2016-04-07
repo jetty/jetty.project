@@ -31,6 +31,12 @@ public class TerminatingPatternRule extends PatternRule
 {
     public TerminatingPatternRule()
     {
+        this(null);
+    }
+    
+    public TerminatingPatternRule(String pattern)
+    {
+        super(pattern);
         super.setTerminating(true);
     }
 

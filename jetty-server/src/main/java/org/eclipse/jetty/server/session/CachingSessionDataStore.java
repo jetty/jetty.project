@@ -116,10 +116,10 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set, int)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
      */
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, int expiryTimeoutSec)
+    public Set<String> doGetExpired(Set<String> candidates)
     {
         // TODO Auto-generated method stub
         return null;
@@ -167,6 +167,13 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
        return true;
     }
 
-    
-    
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
+     */
+    @Override
+    public boolean exists(String id) throws Exception
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }

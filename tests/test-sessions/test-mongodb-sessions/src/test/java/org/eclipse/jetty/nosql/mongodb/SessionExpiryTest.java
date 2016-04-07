@@ -69,9 +69,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     }
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int inspect, int idlePassivate)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivate)
     {
-       return new MongoTestServer(port,max,scavenge, inspect, idlePassivate);
+       return new MongoTestServer(port,max,scavenge, idlePassivate);
     }
 
     @Test
@@ -93,9 +93,8 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         String servletMapping = "/server";
         int inactivePeriod = Integer.MAX_VALUE * 60; //integer overflow
         int scavengePeriod = 10;
-        int inspectPeriod = 1;
         int idlePassivatePeriod = 0;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod);
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, idlePassivatePeriod);
         ChangeTimeoutServlet servlet = new ChangeTimeoutServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -123,10 +122,10 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             
             String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
             
-            DBCollection sessions = ((MongoSessionIdManager)((MongoTestServer)server1).getServer().getSessionIdManager()).getSessions();
+            DBCollection sessions = MongoTestServer.getCollection();
             verifySessionCreated(listener,sessionId);
             //verify that the session timeout is set in mongo
-            verifySessionTimeout(sessions, sessionId, -1); //SessionManager sets -1 if maxInactive < 0
+            verifySessionTimeout(sessions, sessionId, -1000); //SessionManager sets -1 if maxInactive < 0
             
             //get the session expiry time from mongo
             long expiry = getSessionExpiry(sessions, sessionId);
@@ -146,9 +145,8 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         String servletMapping = "/server";
         int inactivePeriod = 10;
         int scavengePeriod = 1;
-        int inspectPeriod = 1;
         int idlePassivatePeriod = 0;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, inspectPeriod, idlePassivatePeriod);
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, idlePassivatePeriod);
         ChangeTimeoutServlet servlet = new ChangeTimeoutServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -176,14 +174,13 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             
             String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
             
-            DBCollection sessions = ((MongoSessionIdManager)((MongoTestServer)server1).getServer().getSessionIdManager()).getSessions();
+            DBCollection sessions = MongoTestServer.getCollection();
             verifySessionCreated(listener,sessionId);
             //verify that the session timeout is set in mongo
             verifySessionTimeout(sessions, sessionId, inactivePeriod);
             
             //get the session expiry time from mongo
             long expiry = getSessionExpiry(sessions, sessionId);
-           
             //make another request to change the session timeout to a smaller value
             inactivePeriod = 5;
             Request request = client.newRequest(url + "?action=change&val="+inactivePeriod);
@@ -206,7 +203,10 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
             //verify that the session timeout is set in mongo
             verifySessionTimeout(sessions, sessionId, inactivePeriod);
-            assertTrue(getSessionAccessed(sessions, sessionId)+ (1000L*inactivePeriod) == getSessionExpiry(sessions, sessionId));            
+            long latestExpiry = getSessionExpiry(sessions, sessionId);
+            assertTrue (latestExpiry > expiry);       
+            assertTrue(getSessionAccessed(sessions, sessionId)+ (1000L*inactivePeriod) <= getSessionExpiry(sessions, sessionId));  
+            assertTrue (latestExpiry >= 15);//old inactive expired in 5, new inactive expired in 20
         }
         finally
         {
@@ -224,7 +224,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         int scavengePeriod = 1;
         int inspectPeriod = 1;
         int idlePassivatePeriod = 0;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod,inspectPeriod, idlePassivatePeriod);
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod,idlePassivatePeriod);
         ImmediateChangeTimeoutServlet servlet = new ImmediateChangeTimeoutServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -254,7 +254,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             
             String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
             
-            DBCollection sessions = ((MongoSessionIdManager)((MongoTestServer)server1).getServer().getSessionIdManager()).getSessions();
+            DBCollection sessions = MongoTestServer.getCollection();
             verifySessionCreated(listener,sessionId);
             //verify that the session timeout is the new value and not the default
             verifySessionTimeout(sessions, sessionId, inactivePeriod);             

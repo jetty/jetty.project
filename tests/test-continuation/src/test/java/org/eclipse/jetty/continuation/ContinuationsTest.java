@@ -332,10 +332,12 @@ public class ContinuationsTest
     {
         Server server = new Server();
         
-        try {
+        try 
+        {
             ServerConnector connector = new ServerConnector(server);
             server.addConnector(connector);
-            if(log != null) {
+            if(log != null) 
+            {
                 log.clear();
             }
             history.clear();
@@ -370,7 +372,9 @@ public class ContinuationsTest
                 socket.getOutputStream().flush();
                 return toString(socket.getInputStream());
             }
-        } finally {
+        } 
+        finally 
+        {
             server.stop();
             
             if (log != null)
@@ -640,7 +644,8 @@ public class ContinuationsTest
     {
         private final List<String> log;
         
-        public Log(List<String> log) {
+        public Log(List<String> log) 
+        {
             this.log = log;
         }
         

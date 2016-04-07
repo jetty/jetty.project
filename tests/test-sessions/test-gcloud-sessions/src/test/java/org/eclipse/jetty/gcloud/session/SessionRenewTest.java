@@ -23,6 +23,8 @@ import java.util.Set;
 
 import org.eclipse.jetty.server.session.AbstractSessionRenewTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.webapp.WebAppContext;
+
 import static org.junit.Assert.fail;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -54,9 +56,9 @@ public class SessionRenewTest extends AbstractSessionRenewTest
      * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectionPeriod, int idlePassivationPeriod)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod)
     {
-        return  new GCloudTestServer(port,max, scavenge, inspectionPeriod, idlePassivationPeriod,_testSupport.getConfiguration());
+        return  new GCloudTestServer(port,max, scavenge, idlePassivationPeriod, _testSupport.getConfiguration());
     }
 
     @Test
@@ -70,7 +72,7 @@ public class SessionRenewTest extends AbstractSessionRenewTest
      * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
      */
     @Override
-    public boolean verifyChange(String oldSessionId, String newSessionId)
+    public boolean verifyChange(WebAppContext context, String oldSessionId, String newSessionId)
     {
         try
         {

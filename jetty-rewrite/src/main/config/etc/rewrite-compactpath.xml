@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RuleContainer">
+  <Call name="addRule">
+    <Arg>
+      <New class="org.eclipse.jetty.rewrite.handler.CompactPathRule"/>
+    </Arg>
+  </Call>
+</Configure>
+

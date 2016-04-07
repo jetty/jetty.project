@@ -21,7 +21,7 @@ package org.eclipse.jetty.server.session;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.server.session.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -35,18 +35,20 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public abstract class AbstractTestServer
 {
     public static int DEFAULT_MAX_INACTIVE = 30;
-    public static int DEFAULT_INSPECTION_SEC = 2;
+ 
     public static int DEFAULT_SCAVENGE_SEC = 10;
     public static int DEFAULT_IDLE_PASSIVATE_SEC = 2;
     
+    protected static int __workers=0;
+    
     protected final Server _server;
     protected final int _maxInactivePeriod;
-    protected final int _inspectionPeriod;
     protected final int _idlePassivatePeriod;
     protected final int _scavengePeriod;
     protected final ContextHandlerCollection _contexts;
     protected SessionIdManager _sessionIdManager;
-    private PeriodicSessionInspector _inspector;
+    private HouseKeeper _housekeeper;
+    protected Object _config;
 
   
     
@@ -70,33 +72,43 @@ public abstract class AbstractTestServer
     
     public AbstractTestServer(int port)
     {
-        this(port, DEFAULT_MAX_INACTIVE, DEFAULT_SCAVENGE_SEC, DEFAULT_INSPECTION_SEC, DEFAULT_IDLE_PASSIVATE_SEC);
+        this(port, DEFAULT_MAX_INACTIVE, DEFAULT_SCAVENGE_SEC, DEFAULT_IDLE_PASSIVATE_SEC);
     }
 
-    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectionPeriod, int idlePassivatePeriod)
+    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod)
     {
-        this (port, maxInactivePeriod, scavengePeriod, inspectionPeriod, idlePassivatePeriod, null);
+        this (port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod, null);
     }
     
-    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int inspectionPeriod, int idlePassivatePeriod,  Object sessionIdMgrConfig)
+    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, Object cfg)
     {
         _server = new Server(port);
         _maxInactivePeriod = maxInactivePeriod;
         _scavengePeriod = scavengePeriod;
-        _inspectionPeriod = inspectionPeriod;
         _idlePassivatePeriod = idlePassivatePeriod;
         _contexts = new ContextHandlerCollection();
-        _sessionIdManager = newSessionIdManager(sessionIdMgrConfig);
+        _config = cfg;
+        _sessionIdManager = newSessionIdManager();
         _server.setSessionIdManager(_sessionIdManager);
-        ((AbstractSessionIdManager) _sessionIdManager).setServer(_server);
-        _inspector = new PeriodicSessionInspector();
-        _inspector.setIntervalSec(_inspectionPeriod);
-        ((AbstractSessionIdManager)_sessionIdManager).setSessionInspector(_inspector);
+        ((DefaultSessionIdManager) _sessionIdManager).setServer(_server);
+        _housekeeper = new HouseKeeper();
+        _housekeeper.setIntervalSec(_scavengePeriod);
+        ((DefaultSessionIdManager)_sessionIdManager).setSessionInspector(_housekeeper);
     }
     
-    
 
-    public abstract SessionIdManager newSessionIdManager(Object config);
+
+    /**
+     * @return
+     */
+    public SessionIdManager newSessionIdManager()
+    {
+        DefaultSessionIdManager idManager = new DefaultSessionIdManager(getServer());
+        idManager.setWorkerName("w"+(__workers++));
+        return idManager;
+    }
+
+
     public abstract SessionManager newSessionManager();
     public abstract SessionHandler newSessionHandler(SessionManager sessionManager);
 
@@ -108,9 +120,9 @@ public abstract class AbstractTestServer
         _server.start();
     }
     
-    public PeriodicSessionInspector getInspector()
+    public HouseKeeper getInspector()
     {
-        return _inspector;
+        return _housekeeper;
     }
     
     public int getPort()
@@ -126,7 +138,6 @@ public abstract class AbstractTestServer
         sessionManager.setSessionIdManager(_sessionIdManager);
         sessionManager.setMaxInactiveInterval(_maxInactivePeriod);
         sessionManager.getSessionStore().setIdlePassivationTimeoutSec(_idlePassivatePeriod);
-        sessionManager.getSessionStore().setExpiryTimeoutSec (_scavengePeriod);
         SessionHandler sessionHandler = newSessionHandler(sessionManager);
         sessionManager.setSessionHandler(sessionHandler);
         context.setSessionHandler(sessionHandler);
@@ -153,7 +164,6 @@ public abstract class AbstractTestServer
         sessionManager.setMaxInactiveInterval(_maxInactivePeriod);
         
         sessionManager.getSessionStore().setIdlePassivationTimeoutSec(_idlePassivatePeriod);
-        sessionManager.getSessionStore().setExpiryTimeoutSec (_scavengePeriod);
 
         SessionHandler sessionHandler = newSessionHandler(sessionManager);
         sessionManager.setSessionHandler(sessionHandler);

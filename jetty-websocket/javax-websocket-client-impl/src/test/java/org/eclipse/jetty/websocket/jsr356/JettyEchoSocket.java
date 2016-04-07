@@ -38,6 +38,9 @@ public class JettyEchoSocket extends WebSocketAdapter
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
+        if (isNotConnected())
+            return;
+
         try
         {
             RemoteEndpoint remote = getRemote();
@@ -60,6 +63,9 @@ public class JettyEchoSocket extends WebSocketAdapter
     @Override
     public void onWebSocketText(String message)
     {
+        if (isNotConnected())
+            return;
+
         try
         {
             RemoteEndpoint remote = getRemote();

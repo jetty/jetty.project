@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.io.File;
-
-import org.eclipse.jetty.server.SessionManager;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,9 +40,9 @@ public class SessionRenewTest extends AbstractSessionRenewTest
     }
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge,int inspectionPeriod, int idlePassivatePeriod)
+    public AbstractTestServer createServer(int port, int max, int scavenge,int idlePassivatePeriod)
     {
-        return new FileTestServer(port, max, scavenge,inspectionPeriod,idlePassivatePeriod);
+        return new FileTestServer(port, max, scavenge,idlePassivatePeriod);
     }
 
     @Test
@@ -58,7 +55,7 @@ public class SessionRenewTest extends AbstractSessionRenewTest
      * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
      */
     @Override
-    public boolean verifyChange(String oldSessionId, String newSessionId)
+    public boolean verifyChange(WebAppContext context, String oldSessionId, String newSessionId)
     {
         ((FileTestServer)_server).assertFileExists(oldSessionId, false);
         ((FileTestServer)_server).assertFileExists(newSessionId, true);

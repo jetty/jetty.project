@@ -21,6 +21,8 @@ package org.eclipse.jetty.server.session;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
+
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.After;
 import org.junit.Test;
 
@@ -28,9 +30,9 @@ public class SessionRenewTest extends AbstractSessionRenewTest
 {
 
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int inspect, int idlePassivate)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivate)
     {
-        return new JdbcTestServer(port, max, scavenge, inspect, idlePassivate);
+        return new JdbcTestServer(port, max, scavenge, idlePassivate);
     }
     
     
@@ -39,7 +41,7 @@ public class SessionRenewTest extends AbstractSessionRenewTest
      * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
      */
     @Override
-    public boolean verifyChange(String oldSessionId, String newSessionId)
+    public boolean verifyChange(WebAppContext context, String oldSessionId, String newSessionId)
     {
         try
         {

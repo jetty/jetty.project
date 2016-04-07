@@ -695,20 +695,20 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("sendContent(buffer={},{})",BufferUtil.toDetailString(content),callback);
 
-        write(content, true, new Callback()
+        write(content, true, new Callback.Nested(callback)
         {
             @Override
             public void succeeded()
             {
                 closed();
-                callback.succeeded();
+                super.succeeded();
             }
 
             @Override
             public void failed(Throwable x)
             {
                 abort(x);
-                callback.failed(x);
+                super.failed(x);
             }
         });
     }

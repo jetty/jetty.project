@@ -93,10 +93,9 @@ public interface SessionDataStore extends LifeCycle
      * @param candidates if provided, these are keys of sessions that
      * the SessionStore thinks has expired and should be verified by the
      * SessionDataStore
-     * @param scavengePeriodSec the time to attempt scavenge (in seconds)
      * @return set of session ids
      */
-    public Set<String> getExpired (Set<String> candidates, int scavengePeriodSec);
+    public Set<String> getExpired (Set<String> candidates);
     
     
     
@@ -105,5 +104,16 @@ public interface SessionDataStore extends LifeCycle
      * @return true if this store can passivate sessions, false otherwise
      */
     public boolean isPassivating ();
+    
+    
+    /**
+     * Test if data exists for a given session id.
+     * 
+     * @param id Identity of session whose existance should be checked
+     * 
+     * @return true if valid, non-expired session exists
+     * @throws Exception if problem checking existance with persistence layer
+     */
+    public boolean exists (String id) throws Exception;
     
 }

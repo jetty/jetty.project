@@ -22,6 +22,7 @@ package org.eclipse.jetty.server.session.remote;
 import org.eclipse.jetty.server.session.AbstractSessionRenewTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.InfinispanTestSessionServer;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,9 +56,9 @@ public class RemoteSessionRenewTest extends AbstractSessionRenewTest
      * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int inspectInterval, int idlePassivateInterval)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivateInterval)
     {
-        return new InfinispanTestSessionServer(port, max, scavenge, inspectInterval, idlePassivateInterval,__testSupport.getCache());
+        return new InfinispanTestSessionServer(port, max, scavenge, idlePassivateInterval, __testSupport.getCache());
     }
 
     @Test
@@ -70,8 +71,8 @@ public class RemoteSessionRenewTest extends AbstractSessionRenewTest
      * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
      */
     @Override
-    public boolean verifyChange(String oldSessionId, String newSessionId)
+    public boolean verifyChange(WebAppContext context, String oldSessionId, String newSessionId)
     {
-       return !((InfinispanTestSessionServer)_server).exists(oldSessionId) && ((InfinispanTestSessionServer)_server).exists(newSessionId);
+       return !((InfinispanTestSessionServer)_server).exists(context, oldSessionId) && ((InfinispanTestSessionServer)_server).exists(context, newSessionId);
     }
 }

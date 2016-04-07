@@ -27,7 +27,6 @@ import java.util.Map;
 import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
-import javax.websocket.server.ServerEndpointConfig.Configurator;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
@@ -63,8 +62,8 @@ public class JsrCreator implements WebSocketCreator
     @Override
     public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {
-        JsrHandshakeRequest hsreq = new JsrHandshakeRequest(req);
-        JsrHandshakeResponse hsresp = new JsrHandshakeResponse(resp);
+        JsrHandshakeRequest jsrHandshakeRequest = new JsrHandshakeRequest(req);
+        JsrHandshakeResponse jsrHandshakeResponse = new JsrHandshakeResponse(resp);
 
         // Get raw config, as defined when the endpoint was added to the container
         ServerEndpointConfig config = metadata.getConfig();
@@ -85,10 +84,7 @@ public class JsrCreator implements WebSocketCreator
         // Get Configurator from config object (not guaranteed to be unique per endpoint upgrade)
         ServerEndpointConfig.Configurator configurator = config.getConfigurator();
 
-        // modify handshake
-        configurator.modifyHandshake(config,hsreq,hsresp);
-
-        // check origin
+        // [JSR] Step 1: check origin
         if (!configurator.checkOrigin(req.getOrigin()))
         {
             try
@@ -103,7 +99,7 @@ public class JsrCreator implements WebSocketCreator
             return null;
         }
 
-        // deal with sub protocols
+        // [JSR] Step 2: deal with sub protocols
         List<String> supported = config.getSubprotocols();
         List<String> requested = req.getSubProtocols();
         String subprotocol = configurator.getNegotiatedSubprotocol(supported,requested);
@@ -112,22 +108,22 @@ public class JsrCreator implements WebSocketCreator
             resp.setAcceptedSubProtocol(subprotocol);
         }
 
-        // deal with extensions
-        List<Extension> installedExts = new ArrayList<>();
+        // [JSR] Step 3: deal with extensions
+        List<Extension> installedExtensions = new ArrayList<>();
         for (String extName : extensionFactory.getAvailableExtensions().keySet())
         {
-            installedExts.add(new JsrExtension(extName));
+            installedExtensions.add(new JsrExtension(extName));
         }
         List<Extension> requestedExts = new ArrayList<>();
         for (ExtensionConfig reqCfg : req.getExtensions())
         {
             requestedExts.add(new JsrExtension(reqCfg));
         }
-        List<Extension> usedExts = configurator.getNegotiatedExtensions(installedExts,requestedExts);
+        List<Extension> usedExtensions = configurator.getNegotiatedExtensions(installedExtensions,requestedExts);
         List<ExtensionConfig> configs = new ArrayList<>();
-        if (usedExts != null)
+        if (usedExtensions != null)
         {
-            for (Extension used : usedExts)
+            for (Extension used : usedExtensions)
             {
                 ExtensionConfig ecfg = new ExtensionConfig(used.getName());
                 for (Parameter param : used.getParameters())
@@ -139,23 +135,27 @@ public class JsrCreator implements WebSocketCreator
         }
         resp.setExtensions(configs);
 
-        // create endpoint class
+        // [JSR] Step 4: build out new ServerEndpointConfig
+        PathSpec pathSpec = jsrHandshakeRequest.getRequestPathSpec();
+        if (pathSpec instanceof UriTemplatePathSpec)
+        {
+            // We have a PathParam path spec
+            UriTemplatePathSpec wspathSpec = (UriTemplatePathSpec)pathSpec;
+            String requestPath = req.getRequestPath();
+            // Wrap the config with the path spec information
+            config = new PathParamServerEndpointConfig(containerScope,config,wspathSpec,requestPath);
+        }
+
+        // [JSR] Step 5: Call modifyHandshake
+        configurator.modifyHandshake(config,jsrHandshakeRequest,jsrHandshakeResponse);
+
         try
         {
+            // [JSR] Step 6: create endpoint class
             Class<?> endpointClass = config.getEndpointClass();
-            Configurator configr = config.getConfigurator();
-            Object endpoint = configr.getEndpointInstance(endpointClass);
+            Object endpoint = config.getConfigurator().getEndpointInstance(endpointClass);
             // Do not decorate here (let the Connection and Session start first)
             // This will allow CDI to see Session for injection into Endpoint classes.
-            PathSpec pathSpec = hsreq.getRequestPathSpec();
-            if (pathSpec instanceof UriTemplatePathSpec)
-            {
-                // We have a PathParam path spec
-                UriTemplatePathSpec wspathSpec = (UriTemplatePathSpec)pathSpec;
-                String requestPath = req.getRequestPath();
-                // Wrap the config with the path spec information
-                config = new PathParamServerEndpointConfig(containerScope,config,wspathSpec,requestPath);
-            }
             return new EndpointInstance(endpoint,config,metadata);
         }
         catch (InstantiationException e)

@@ -19,7 +19,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.server.SessionManager;
 import org.junit.After;
 import org.junit.Before;
 
@@ -48,9 +47,9 @@ public class IdleSessionTest extends AbstractIdleSessionTest
      * @see org.eclipse.jetty.server.session.AbstractIdleSessionTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(final int port, final int max, final int scavenge, int inspectPeriod, final int idleSec)
+    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int idleSec)
     {
-       return new FileTestServer(port,max,scavenge, inspectPeriod, idleSec);
+       return new FileTestServer(port,max,scavenge, idleSec);
     }
 
     
