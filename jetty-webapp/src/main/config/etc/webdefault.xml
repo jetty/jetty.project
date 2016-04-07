@@ -92,7 +92,14 @@
  *
  *  gzip              If set to true, then static content will be served as
  *                    gzip content encoded if a matching resource is
- *                    found ending with ".gz"
+ *                    found ending with ".gz" (default false) 
+ *                    (deprecated: use precompressed)
+ *                    
+ *  precompressed     If set to a comma separated list of file extensions, these
+ *                    indicate compressed formats that are known to map to a mime-type
+ *                    that may be listed in a requests Accept-Encoding header.
+ *                    If set to a boolean True, then a default set of compressed formats
+ *                    will be used, otherwise no precompressed formats.
  *
  *  resourceBase      Set to replace the context resource base
  *
@@ -164,10 +171,12 @@
       <param-name>maxCachedFiles</param-name>
       <param-value>2048</param-value>
     </init-param>
+    <!--
     <init-param>
-      <param-name>gzip</param-name>
-      <param-value>false</param-value>
+      <param-name>precompressed</param-name>
+      <param-value>gzip,br</param-value>
     </init-param>
+    -->
     <init-param>
       <param-name>etags</param-name>
       <param-value>false</param-value>

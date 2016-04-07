@@ -49,16 +49,18 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
-// TODO rename to ContentCache
-public class ResourceCache implements HttpContent.Factory
+/**
+ * Caching HttpContent.Factory
+ */
+public class CachedContentFactory implements HttpContent.Factory
 {
-    private static final Logger LOG = Log.getLogger(ResourceCache.class);
+    private static final Logger LOG = Log.getLogger(CachedContentFactory.class);
 
     private final ConcurrentMap<String,CachedHttpContent> _cache;
     private final AtomicInteger _cachedSize;
     private final AtomicInteger _cachedFiles;
     private final ResourceFactory _factory;
-    private final ResourceCache _parent;
+    private final CachedContentFactory _parent;
     private final MimeTypes _mimeTypes;
     private final boolean _etags;
     private final CompressedContentFormat[] _precompressedFormats;
@@ -77,7 +79,7 @@ public class ResourceCache implements HttpContent.Factory
      * @param etags true to support etags 
      * @param precompressedFormats array of precompression formats to support
      */
-    public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer,boolean etags,CompressedContentFormat[] precompressedFormats)
+    public CachedContentFactory(CachedContentFactory parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer,boolean etags,CompressedContentFormat[] precompressedFormats)
     {
         _factory = factory;
         _cache=new ConcurrentHashMap<String,CachedHttpContent>();
@@ -442,7 +444,7 @@ public class ResourceCache implements HttpContent.Factory
             
             _lastAccessed=System.currentTimeMillis();
             
-            _etag=ResourceCache.this._etags?new PreEncodedHttpField(HttpHeader.ETAG,resource.getWeakETag()):null;
+            _etag=CachedContentFactory.this._etags?new PreEncodedHttpField(HttpHeader.ETAG,resource.getWeakETag()):null;
 
             if (precompressedResources != null)
             {
@@ -596,7 +598,7 @@ public class ResourceCache implements HttpContent.Factory
             ByteBuffer buffer = _indirectBuffer.get();
             if (buffer==null)
             {
-                ByteBuffer buffer2=ResourceCache.this.getIndirectBuffer(_resource);
+                ByteBuffer buffer2=CachedContentFactory.this.getIndirectBuffer(_resource);
                 
                 if (buffer2==null)
                     LOG.warn("Could not load "+this);
@@ -621,7 +623,7 @@ public class ResourceCache implements HttpContent.Factory
             ByteBuffer buffer = _directBuffer.get();
             if (buffer==null)
             {
-                ByteBuffer buffer2=ResourceCache.this.getDirectBuffer(_resource);
+                ByteBuffer buffer2=CachedContentFactory.this.getDirectBuffer(_resource);
 
                 if (buffer2==null)
                     LOG.warn("Could not load "+this);
@@ -714,7 +716,7 @@ public class ResourceCache implements HttpContent.Factory
             _content=content;
             _precompressedContent=precompressedContent;
             
-            _etag=(ResourceCache.this._etags)?new PreEncodedHttpField(HttpHeader.ETAG,_content.getResource().getWeakETag(format._etag)):null;
+            _etag=(CachedContentFactory.this._etags)?new PreEncodedHttpField(HttpHeader.ETAG,_content.getResource().getWeakETag(format._etag)):null;
         }
 
         public boolean isValid()
