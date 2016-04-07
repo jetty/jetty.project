@@ -285,7 +285,8 @@ public abstract class ResourceService
         }
     }
 
-    private CompressedContentFormat getBestPrecompressedContent(List<String> preferredEncodings, Collection<CompressedContentFormat> availableFormats) {
+    private CompressedContentFormat getBestPrecompressedContent(List<String> preferredEncodings, Collection<CompressedContentFormat> availableFormats)
+    {
         if (availableFormats.isEmpty())
             return null;
 

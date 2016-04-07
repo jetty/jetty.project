@@ -325,21 +325,29 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             LOG.debug("resource base = "+_resourceBase);
     }
 
-    private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, boolean gzip) {
+    private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, boolean gzip)
+    {
         List<CompressedContentFormat> ret = new ArrayList<>();
-        if (precompressed != null && precompressed.indexOf('=') > 0) {
-            for (String pair : precompressed.split(",")) {
+        if (precompressed != null && precompressed.indexOf('=') > 0)
+        {
+            for (String pair : precompressed.split(","))
+            {
                 String[] setting = pair.split("=");
                 String encoding = setting[0];
                 String extension = setting[1];
-                ret.add(new CompressedContentFormat(encoding, extension));
+                ret.add(new CompressedContentFormat(encoding,extension));
             }
-        } else if (precompressed != null) {
-            if (Boolean.parseBoolean(precompressed)) {
+        }
+        else if (precompressed != null)
+        {
+            if (Boolean.parseBoolean(precompressed))
+            {
                 ret.add(CompressedContentFormat.BR);
                 ret.add(CompressedContentFormat.GZIP);
             }
-        } else if (gzip) {
+        }
+        else if (gzip)
+        {
             // gzip handling is for backwards compatibility with older Jetty
             ret.add(CompressedContentFormat.GZIP);
         }

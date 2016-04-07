@@ -237,73 +237,82 @@ public class ResourceCache implements HttpContent.Factory
     private HttpContent load(String pathInContext, Resource resource, int maxBufferSize)
         throws IOException
     {
-        if (resource==null || !resource.exists())
+        if (resource == null || !resource.exists())
             return null;
-        
+
         if (resource.isDirectory())
             return new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize());
-        
+
         // Will it fit in the cache?
         if (isCacheable(resource))
-        {   
-            CachedHttpContent content=null;
-            
+        {
+            CachedHttpContent content = null;
+
             // Look for precompressed resources
             if (_precompressedFormats.length > 0)
             {
-                Map<CompressedContentFormat, CachedHttpContent> precompresssedContents=new HashMap<>(_precompressedFormats.length);
-                for (CompressedContentFormat format : _precompressedFormats) {
-                    String compressedPathInContext=pathInContext+format._extension;
-                    CachedHttpContent compressedContent=_cache.get(compressedPathInContext);
-                    if (compressedContent==null || compressedContent.isValid()) {
-                        compressedContent=null;
+                Map<CompressedContentFormat, CachedHttpContent> precompresssedContents = new HashMap<>(_precompressedFormats.length);
+                for (CompressedContentFormat format : _precompressedFormats)
+                {
+                    String compressedPathInContext = pathInContext + format._extension;
+                    CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
+                    if (compressedContent == null || compressedContent.isValid())
+                    {
+                        compressedContent = null;
                         Resource compressedResource = _factory.getResource(compressedPathInContext);
-                        if (compressedResource.exists() && compressedResource.lastModified()>=resource.lastModified() && compressedResource.length()<resource.length()) {
-                            compressedContent=new CachedHttpContent(compressedPathInContext,compressedResource,null);
-                            CachedHttpContent added=_cache.putIfAbsent(compressedPathInContext,compressedContent);
-                            if (added!=null) {
+                        if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified()
+                                && compressedResource.length() < resource.length())
+                        {
+                            compressedContent = new CachedHttpContent(compressedPathInContext,compressedResource,null);
+                            CachedHttpContent added = _cache.putIfAbsent(compressedPathInContext,compressedContent);
+                            if (added != null)
+                            {
                                 compressedContent.invalidate();
-                                compressedContent=added;
+                                compressedContent = added;
                             }
                         }
                     }
-                    if (compressedContent!=null)
+                    if (compressedContent != null)
                         precompresssedContents.put(format,compressedContent);
                 }
                 content = new CachedHttpContent(pathInContext,resource,precompresssedContents);
             }
-            else 
+            else
                 content = new CachedHttpContent(pathInContext,resource,null);
 
             // Add it to the cache.
             CachedHttpContent added = _cache.putIfAbsent(pathInContext,content);
-            if (added!=null)
+            if (added != null)
             {
                 content.invalidate();
-                content=added;
+                content = added;
             }
-            
+
             return content;
         }
-        
+
         // Look for non Cacheable precompressed resource or content
         String mt = _mimeTypes.getMimeByExtension(pathInContext);
-        if (_precompressedFormats.length>0) {
+        if (_precompressedFormats.length > 0)
+        {
             // Is the precompressed content cached?
             Map<CompressedContentFormat, HttpContent> compressedContents = new HashMap<>();
-            for (CompressedContentFormat format : _precompressedFormats) {
-                String compressedPathInContext=pathInContext+format._extension;
-                CachedHttpContent compressedContent=_cache.get(compressedPathInContext);
-                if (compressedContent!=null && compressedContent.isValid() && compressedContent.getResource().lastModified()>=resource.lastModified())
+            for (CompressedContentFormat format : _precompressedFormats)
+            {
+                String compressedPathInContext = pathInContext + format._extension;
+                CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
+                if (compressedContent != null && compressedContent.isValid() && compressedContent.getResource().lastModified() >= resource.lastModified())
                     compressedContents.put(format,compressedContent);
 
                 // Is there a precompressed resource?
-                Resource compressedResource=_factory.getResource(compressedPathInContext);
-                if (compressedResource.exists() && compressedResource.lastModified()>=resource.lastModified() && compressedResource.length()<resource.length())
-                    compressedContents.put(format,new ResourceHttpContent(compressedResource,_mimeTypes.getMimeByExtension(compressedPathInContext),maxBufferSize));
+                Resource compressedResource = _factory.getResource(compressedPathInContext);
+                if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified()
+                        && compressedResource.length() < resource.length())
+                    compressedContents.put(format,
+                            new ResourceHttpContent(compressedResource,_mimeTypes.getMimeByExtension(compressedPathInContext),maxBufferSize));
             }
             if (!compressedContents.isEmpty())
-                return new ResourceHttpContent(resource, mt, maxBufferSize, compressedContents);
+                return new ResourceHttpContent(resource,mt,maxBufferSize,compressedContents);
         }
 
         return new ResourceHttpContent(resource,mt,maxBufferSize);
@@ -435,12 +444,16 @@ public class ResourceCache implements HttpContent.Factory
             
             _etag=ResourceCache.this._etags?new PreEncodedHttpField(HttpHeader.ETAG,resource.getWeakETag()):null;
 
-            if (precompressedResources != null) {
+            if (precompressedResources != null)
+            {
                 _precompressed = new HashMap<>(precompressedResources.size());
-                for (Map.Entry<CompressedContentFormat, CachedHttpContent> entry : precompressedResources.entrySet()) {
-                    _precompressed.put(entry.getKey(), new CachedPrecompressedHttpContent(this, entry.getValue(), entry.getKey()));
+                for (Map.Entry<CompressedContentFormat, CachedHttpContent> entry : precompressedResources.entrySet())
+                {
+                    _precompressed.put(entry.getKey(),new CachedPrecompressedHttpContent(this,entry.getValue(),entry.getKey()));
                 }
-            } else {
+            }
+            else
+            {
                 _precompressed = null;
             }
         }
@@ -570,7 +583,6 @@ public class ResourceCache implements HttpContent.Factory
             return _mimeType;
         }
 
-
         /* ------------------------------------------------------------ */
         @Override
         public void release()
@@ -676,7 +688,8 @@ public class ResourceCache implements HttpContent.Factory
             Map<CompressedContentFormat, CachedPrecompressedHttpContent> ret=_precompressed;
             for (Map.Entry<CompressedContentFormat, CachedPrecompressedHttpContent> entry:_precompressed.entrySet())
             {
-                if (!entry.getValue().isValid()) {
+                if (!entry.getValue().isValid())
+                {
                     if (ret == _precompressed)
                         ret = new HashMap<>(_precompressed);
                     ret.remove(entry.getKey());
