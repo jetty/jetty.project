@@ -27,7 +27,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
@@ -103,7 +103,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
         _context = (scontext == null?null:scontext.getContextHandler());
         _mimeTypes = _context == null?new MimeTypes():_context.getMimeTypes();
 
-        _resourceService.setContentFactory(new ResourceContentFactory(this,_mimeTypes,_resourceService.isGzip()));
+        _resourceService.setContentFactory(new ResourceContentFactory(this,_mimeTypes,_resourceService.getPrecompressedFormats()));
 
         super.doStart();
     }
@@ -319,9 +319,23 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
     /**
      * @return If set to true, then static content will be served as gzip content encoded if a matching resource is found ending with ".gz"
      */
+    @Deprecated
     public boolean isGzip()
     {
-        return _resourceService.isGzip();
+        for (CompressedContentFormat formats : _resourceService.getPrecompressedFormats()) {
+            if (CompressedContentFormat.GZIP._encoding.equals(formats._encoding)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @return Precompressed resources formats that can be used to serve compressed variant of resources.
+     */
+    public CompressedContentFormat[] getPrecompressedFormats()
+    {
+        return _resourceService.getPrecompressedFormats();
     }
 
     /* ------------------------------------------------------------ */
@@ -407,9 +421,10 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
      * @param gzip
      *            If set to true, then static content will be served as gzip content encoded if a matching resource is found ending with ".gz"
      */
+    @Deprecated
     public void setGzip(boolean gzip)
     {
-        _resourceService.setGzip(gzip);
+        setPrecompressedFormats(gzip?new CompressedContentFormat[]{CompressedContentFormat.GZIP}:new CompressedContentFormat[0]);
     }
 
     /* ------------------------------------------------------------ */
@@ -419,6 +434,16 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
     public void setGzipEquivalentFileExtensions(List<String> gzipEquivalentFileExtensions)
     {
         _resourceService.setGzipEquivalentFileExtensions(gzipEquivalentFileExtensions);
+    }
+
+    /**
+     * @param precompressedFormats
+     *            The list of precompresed formats to serve in encoded format if matching resource found.
+     *            For example serve gzip encoded file if ".gz" suffixed resource is found.
+     */
+    public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
+    {
+        _resourceService.setPrecompressedFormats(precompressedFormats);
     }
 
     /* ------------------------------------------------------------ */

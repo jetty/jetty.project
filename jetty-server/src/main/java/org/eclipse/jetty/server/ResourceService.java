@@ -18,16 +18,20 @@
 
 package org.eclipse.jetty.server;
 
-import static org.eclipse.jetty.http.GzipHttpContent.ETAG_GZIP_QUOTE;
-import static org.eclipse.jetty.http.GzipHttpContent.removeGzipFromETag;
+import static org.eclipse.jetty.http.CompressedContentFormat.BR;
+import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
+import static org.eclipse.jetty.http.HttpFields.qualityList;
+import static org.eclipse.jetty.http.HttpHeaderValue.IDENTITY;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
@@ -35,6 +39,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
@@ -67,7 +72,7 @@ public abstract class ResourceService
     private boolean _acceptRanges=true;
     private boolean _dirAllowed=true;
     private boolean _redirectWelcome=false;
-    private boolean _gzip=false;
+    private CompressedContentFormat[] _precompressedFormats=new CompressedContentFormat[0];
     private boolean _pathInfoOnly=false;
     private boolean _etags=false;
     private HttpField _cacheControl;
@@ -113,14 +118,14 @@ public abstract class ResourceService
         _redirectWelcome = redirectWelcome;
     }
 
-    public boolean isGzip()
+    public CompressedContentFormat[] getPrecompressedFormats()
     {
-        return _gzip;
+        return _precompressedFormats;
     }
 
-    public void setGzip(boolean gzip)
+    public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
     {
-        _gzip = gzip;
+        _precompressedFormats = precompressedFormats;
     }
 
     public boolean isPathInfoOnly()
@@ -195,7 +200,7 @@ public abstract class ResourceService
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);        
         
         boolean endsWithSlash=(pathInfo==null?request.getServletPath():pathInfo).endsWith(URIUtil.SLASH);
-        boolean gzippable=_gzip && !endsWithSlash && !included && reqRanges==null;
+        boolean checkPrecompressedVariants=_precompressedFormats.length > 0 && !endsWithSlash && !included && reqRanges==null;
         
         HttpContent content=null;
         boolean release_content=true;
@@ -237,20 +242,22 @@ public abstract class ResourceService
             if (!included && !passConditionalHeaders(request,response,content))
                 return;
                 
-            // Gzip?
-            HttpContent gzip_content = gzippable?content.getGzipContent():null;
-            if (gzip_content!=null)
+            // Precompressed variant available?
+            Map<CompressedContentFormat,? extends HttpContent> precompressedContents = checkPrecompressedVariants?content.getPrecompressedContents():null;
+            if (precompressedContents!=null)
             {
                 // Tell caches that response may vary by accept-encoding
                 response.addHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
-                
-                // Does the client accept gzip?
-                String accept=request.getHeader(HttpHeader.ACCEPT_ENCODING.asString());
-                if (accept!=null && accept.indexOf("gzip")>=0)
+
+                List<String> preferredEncodings = HttpFields.qualityList(request.getHeaders(HttpHeader.ACCEPT_ENCODING.asString()));
+                CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(preferredEncodings, precompressedContents.keySet());
+                if (precompressedContentEncoding!=null)
                 {
+                    HttpContent precompressedContent = precompressedContents.get(precompressedContentEncoding);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("gzip={}",gzip_content);
-                    content=gzip_content;
+                        LOG.debug("precompressed={}",precompressedContent);
+                    content=precompressedContent;
+                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(),precompressedContentEncoding._encoding);
                 }
             }
 
@@ -276,6 +283,25 @@ public abstract class ResourceService
                     content.release();
             }
         }
+    }
+
+    private CompressedContentFormat getBestPrecompressedContent(List<String> preferredEncodings, Collection<CompressedContentFormat> availableFormats) {
+        if (availableFormats.isEmpty())
+            return null;
+
+        for (String encoding : preferredEncodings)
+        {
+            for (CompressedContentFormat format : availableFormats)
+                if (format._encoding.equals(encoding))
+                    return format;
+
+            if ("*".equals(encoding))
+                return availableFormats.iterator().next();
+
+            if (IDENTITY.asString().equals(encoding))
+                return null;
+        }
+        return null;
     }
 
 
@@ -346,9 +372,9 @@ public abstract class ResourceService
     /* ------------------------------------------------------------ */
     protected boolean isGzippedContent(String path)
     {
-        if (path == null || _gzipEquivalentFileExtensions==null) 
+        if (path == null || _gzipEquivalentFileExtensions==null)
             return false;
-      
+
         for (String suffix:_gzipEquivalentFileExtensions)
             if (path.endsWith(suffix))
                 return true;
@@ -433,7 +459,7 @@ public abstract class ResourceService
                             QuotedCSV quoted = new QuotedCSV(true,ifm);
                             for (String tag : quoted)
                             {
-                                if (etag.equals(tag) || tag.endsWith(ETAG_GZIP_QUOTE) && etag.equals(removeGzipFromETag(tag)))
+                                if (tagEquals(etag, tag))
                                 {
                                     match=true;
                                     break;
@@ -451,7 +477,7 @@ public abstract class ResourceService
                     if (ifnm!=null && etag!=null)
                     {
                         // Handle special case of exact match OR gzip exact match
-                        if (etag.equals(ifnm) || ifnm.endsWith(ETAG_GZIP_QUOTE) && ifnm.indexOf(',')<0 && etag.equals(removeGzipFromETag(etag)))
+                        if (tagEquals(etag, ifnm) && ifnm.indexOf(',')<0)
                         {
                             response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                             response.setHeader(HttpHeader.ETAG.asString(),ifnm);
@@ -462,7 +488,7 @@ public abstract class ResourceService
                         QuotedCSV quoted = new QuotedCSV(true,ifnm);
                         for (String tag : quoted)
                         {
-                            if (etag.equals(tag) || tag.endsWith(ETAG_GZIP_QUOTE) && etag.equals(removeGzipFromETag(tag))) 
+                            if (tagEquals(etag, tag))
                             {
                                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                                 response.setHeader(HttpHeader.ETAG.asString(),tag);
@@ -518,6 +544,20 @@ public abstract class ResourceService
         return true;
     }
 
+    protected boolean tagEquals(String etag, String tag)
+    {
+        if (etag.equals(tag))
+            return true;
+        if (tag.endsWith(GZIP._etagQuote)) {
+            int i = tag.indexOf(GZIP._etagQuote);
+            return etag.equals(tag.substring(0,i) + '"');
+        }
+        if (tag.endsWith(BR._etagQuote)) {
+            int i = tag.indexOf(BR._etagQuote);
+            return etag.equals(tag.substring(0,i) + '"');
+        }
+        return false;
+    }
 
     /* ------------------------------------------------------------------- */
     protected void sendDirectory(HttpServletRequest request,
