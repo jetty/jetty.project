@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration.Dynamic;
@@ -185,6 +186,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _configurationDiscovered=true;
     private boolean _allowDuplicateFragmentNames = false;
     private boolean _throwUnavailableOnStartupException = false;
+    private boolean _checkingServerClasses = true;
+    
 
 
 
@@ -747,11 +750,33 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         _systemClasses.prependPattern(classOrPackage);
     }
-
+    
+    /* ------------------------------------------------------------ */
+    /** Call a Callable for which all calls to {@link #isServerClass(String)}
+     * will return false.
+     * @param callable The callable to call.
+     * @throws Exception Any exception thrown by the Callable
+     */
+    public void runWithoutCheckingServerClasses(Callable<Void> callable) throws Exception
+    {
+        _checkingServerClasses=false;
+        try
+        {
+            callable.call();
+        }
+        finally
+        {
+            _checkingServerClasses=true;
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public boolean isServerClass(String name)
     {
+        if (!_checkingServerClasses)
+            return false;
+        
         if (_serverClasses == null)
             loadServerClasses();
 
