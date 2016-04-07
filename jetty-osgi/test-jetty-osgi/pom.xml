@@ -67,6 +67,13 @@
       <version>${url.version}</version>
       <scope>test</scope>
     </dependency>
+    
+	<dependency>
+		<groupId>org.ops4j.pax.tinybundles</groupId>
+		<artifactId>tinybundles</artifactId>
+		<version>2.1.1</version>
+	</dependency>
+
 
     <!-- OSGi R4 frameworks -->
 <!--

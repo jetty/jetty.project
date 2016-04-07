@@ -31,6 +31,7 @@ import java.util.StringTokenizer;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.osgi.boot.utils.OSGiClassLoader;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
@@ -166,7 +167,16 @@ public class DefaultJettyAtJettyHomeHelper
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
         {
-            Thread.currentThread().setContextClassLoader(JettyBootstrapActivator.class.getClassLoader());
+            ClassLoader cl;
+            if (jettyHomeBundle != null)
+            {
+                cl = new OSGiClassLoader(JettyBootstrapActivator.class.getClassLoader(),jettyHomeBundle);
+            }
+            else
+            {
+                cl = JettyBootstrapActivator.class.getClassLoader();
+            }
+            Thread.currentThread().setContextClassLoader(cl);
             
             // these properties usually are the ones passed to this type of
             // configuration.
