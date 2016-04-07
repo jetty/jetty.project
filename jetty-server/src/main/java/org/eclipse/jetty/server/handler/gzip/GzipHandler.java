@@ -293,23 +293,20 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             return null;
         }
 
-        // If not HTTP/2, then we must check the accept encoding header
-        if (request.getHttpVersion()!=HttpVersion.HTTP_2)
+        // check the accept encoding header
+        HttpField accept = request.getHttpFields().getField(HttpHeader.ACCEPT_ENCODING);
+
+        if (accept==null)
         {
-            HttpField accept = request.getHttpFields().getField(HttpHeader.ACCEPT_ENCODING);
+            LOG.debug("{} excluded !accept {}",this,request);
+            return null;
+        }
+        boolean gzip = accept.contains("gzip");
 
-            if (accept==null)
-            {
-                LOG.debug("{} excluded !accept {}",this,request);
-                return null;
-            }
-            boolean gzip = accept.contains("gzip");
-
-            if (!gzip)
-            {
-                LOG.debug("{} excluded not gzip accept {}",this,request);
-                return null;
-            }
+        if (!gzip)
+        {
+            LOG.debug("{} excluded not gzip accept {}",this,request);
+            return null;
         }
         
         Deflater df = _deflater.get();
