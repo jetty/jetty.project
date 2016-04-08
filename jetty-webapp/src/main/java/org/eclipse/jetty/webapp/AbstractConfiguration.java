@@ -20,113 +20,143 @@ package org.eclipse.jetty.webapp;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class AbstractConfiguration implements Configuration
 {
+    protected static final boolean ENABLE_BY_DEFAULT = true;
     private final boolean _enabledByDefault;
-    private final List<String> _after;
-    private final List<String> _before;
-    private final List<String> _system;
-    private final List<String> _server;
+    private final List<String> _after=new ArrayList<>();
+    private final List<String> _beforeThis=new ArrayList<>();
+    private final ClasspathPattern _system=new ClasspathPattern();
+    private final ClasspathPattern _server=new ClasspathPattern();
+    
     
     protected AbstractConfiguration()
     {
-        this(false,(String[])null,(String[])null,null,null);
+        this(!ENABLE_BY_DEFAULT);
     }
 
-    protected AbstractConfiguration(String[] before,String[] after)
+    protected AbstractConfiguration(boolean enableByDefault)
     {
-        this(false,before,after,null,null);
-    }
-    
-    protected AbstractConfiguration(boolean enableByDefault,String[] before,String[] after)
-    {
-        this(enableByDefault,before,after,null,null);
-    }
-    
-    /**
-     * @param before Configurations that come before this configuration
-     * @param after Configuration that come after this configuration
-     * @param systemClasses
-     * @param serverClasses
-     */
-    protected AbstractConfiguration(String[] before,String[] after,String[] systemClasses,String[] serverClasses)
-    {
-        this (false,before,after,systemClasses,serverClasses);
+        _enabledByDefault=enableByDefault;
     }
 
     /**
-     * @param enabledByDefault
-     * @param before Configurations that come before this configuration
-     * @param after Configuration that come after this configuration
-     * @param systemClasses
-     * @param serverClasses
+     * Add configuration classes that come before this configuration
+     * @param classes Classname or package name
      */
-    protected AbstractConfiguration(
-            boolean enableByDefault,
-            Class<? extends Configuration>[] before,
-            Class<? extends Configuration>[] after,
-            String[] systemClasses,
-            String[] serverClasses)
+    protected void beforeThis(String... classes)
     {
-        _enabledByDefault=enableByDefault;
-        _after=Collections.unmodifiableList(after==null?Collections.emptyList():Arrays.asList(after).stream().map(Class::getName).collect(Collectors.toList()));
-        _before=Collections.unmodifiableList(before==null?Collections.emptyList():Arrays.asList(before).stream().map(Class::getName).collect(Collectors.toList()));
-        _system=new ArrayList<>(systemClasses==null?Collections.emptyList():Arrays.asList(systemClasses));
-        _server=new ArrayList<>(serverClasses==null?Collections.emptyList():Arrays.asList(serverClasses));
+        for (String c:classes)
+            _beforeThis.add(c);
     }
-    
+
     /**
-     * @param enabledByDefault
-     * @param before Configurations that come before this configuration
-     * @param after Configuration that come after this configuration
-     * @param systemClasses
-     * @param serverClasses
+     * Add configuration classes that come before this configuration
+     * @param classes Classes
      */
-    protected AbstractConfiguration(boolean enableByDefault,String[] before,String[] after,String[] systemClasses,String[] serverClasses)
+    protected void beforeThis(Class<?>... classes)
     {
-        _enabledByDefault=enableByDefault;
-        _after=Collections.unmodifiableList(after==null?Collections.emptyList():Arrays.asList(after));
-        _before=Collections.unmodifiableList(before==null?Collections.emptyList():Arrays.asList(before));
-        _system=new ArrayList<>(systemClasses==null?Collections.emptyList():Arrays.asList(systemClasses));
-        _server=new ArrayList<>(serverClasses==null?Collections.emptyList():Arrays.asList(serverClasses));
+        beforeThis(Arrays.asList(classes).stream().map(Class::getName).collect(Collectors.toList()).toArray(new String[classes.length]));
+    }
+
+    /**
+     * Add configuration classes that come after this configuration
+     * @param classes Classname or package name
+     */
+    protected void afterThis(String... classes)
+    {
+        for (String c:classes)
+            _after.add(c);
+    }
+
+    /**
+     * Add configuration classes that come after this configuration
+     * @param classes Class
+     */
+    protected void afterThis(Class<?>... classes)
+    {
+        afterThis(Arrays.asList(classes).stream().map(Class::getName).collect(Collectors.toList()).toArray(new String[classes.length]));
     }
     
-    protected void addSystemClass(String... systemClass)
+    /** 
+     * Protect classes from modification by the web application by adding them
+     * to the {@link WebAppConfiguration#getSystemClasses()}
+     * @param classes classname or package pattern
+     */
+    protected void protect(String... classes)
     {
-        for (String s:systemClass)
-            _system.add(s);
+        _system.add(classes);
+    }
+
+    /** 
+     * Hide classes from the web application by adding them
+     * to the {@link WebAppConfiguration#getServerClasses()}
+     * @param classes classname or package pattern
+     */
+    protected void hide(String... classes)
+    {
+        _server.add(classes);
+    }
+
+    /** 
+     * Expose classes to the web application by adding them
+     * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
+     * @param classes classname or package pattern
+     */
+    protected void expose(String... classes)
+    {
+        for (String c:classes)
+        {
+            if (c.startsWith("-"))
+                throw new IllegalArgumentException();
+            _server.add("-"+c);
+        }
+    }
+
+    /** 
+     * Protect classes from modification by the web application by adding them
+     * to the {@link WebAppConfiguration#getSystemClasses()} and 
+     * expose them to the web application by adding them
+     * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
+     * @param classes classname or package pattern
+     */
+    protected void protectAndExpose(String... classes)
+    {
+        for (String c:classes)
+        {
+            if (c.startsWith("-"))
+                throw new IllegalArgumentException();
+
+            _system.add(c);
+            _server.add("-"+c);
+        }
     }
     
-    protected void addServerClass(String... serverClass)
-    {
-        for (String s:serverClass)
-            _system.add(s);
-    }
     
     @Override
-    public List<String> getConfigurationsAfterThis()
+    public Collection<String> getConfigurationsAfterThis()
     {
         return _after;
     }
 
     @Override
-    public List<String> getConfigurationsBeforeThis()
+    public Collection<String> getConfigurationsBeforeThis()
     {
-        return _before;
+        return _beforeThis;
     }
 
     @Override
-    public List<String> getSystemClasses()
+    public ClasspathPattern getSystemClasses()
     {
         return _system;
     }
     
     @Override
-    public List<String> getServerClasses()
+    public ClasspathPattern getServerClasses()
     {
         return _server;
     }

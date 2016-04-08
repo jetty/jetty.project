@@ -35,10 +35,8 @@ public class JmxConfiguration extends AbstractConfiguration
 {
     public JmxConfiguration()
     {
-        super(true,
-                null,
-                new String[]{WebXmlConfiguration.class.getName(),MetaInfConfiguration.class.getName(),WebInfConfiguration.class.getName()},
-                new String[]{"org.eclipse.jetty.jmx."},
-                new String[]{"-org.eclipse.jetty.jmx."});
+        super(ENABLE_BY_DEFAULT);
+        afterThis(WebXmlConfiguration.class,MetaInfConfiguration.class,WebInfConfiguration.class);
+        protectAndExpose("org.eclipse.jetty.jmx.");
     }
 }

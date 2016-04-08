@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.ListIterator;
 
 import org.eclipse.jetty.util.TopologicalSort;
@@ -35,7 +35,10 @@ public interface Configuration
     public final static String ATTR="org.eclipse.jetty.webapp.configuration";
     
     /* ------------------------------------------------------------------------------- */
-    /** Get a class that this class replaces/extends
+    /** Get a class that this class replaces/extends.
+     * If this is added to {@link Configurations} collection that already contains a 
+     * configuration of the replaced class or that reports to replace the same class, then
+     * it is replaced with this instance. 
      * @return The class this Configuration replaces/extends or null if it replaces no other configuration
      */
     public default Class<? extends Configuration> replaces() { return null; } 
@@ -45,28 +48,26 @@ public interface Configuration
      * @return The names of Configurations that {@link TopologicalSort} must order 
      * before this configuration.
      */
-    public default List<String> getConfigurationsBeforeThis() { return Collections.emptyList(); }
+    public default Collection<String> getConfigurationsBeforeThis() { return Collections.emptyList(); }
 
     /* ------------------------------------------------------------------------------- */
     /** Get known Configuration Dependents.
      * @return The names of Configurations that {@link TopologicalSort} must order 
      * after this configuration.
      */
-    public default List<String> getConfigurationsAfterThis(){ return Collections.emptyList(); }
+    public default Collection<String> getConfigurationsAfterThis(){ return Collections.emptyList(); }
 
     /* ------------------------------------------------------------------------------- */
     /** Get the system classes associated with this Configuration.
-     * @return A list of class/package names.  Exclusions are prepended to the system classes and 
-     * inclusions are appended.
+     * @return ClasspathPattern of system classes.
      */
-    public default List<String> getSystemClasses() { return Collections.emptyList();  }
+    public default ClasspathPattern getSystemClasses() { return new ClasspathPattern();  }
 
     /* ------------------------------------------------------------------------------- */
     /** Get the system classes associated with this Configuration.
-     * @return A list of class/package names.  Exclusions are prepended to the system classes and 
-     * inclusions are appended.
+     * @return ClasspathPattern of server classes.
      */
-    public default List<String> getServerClasses() { return Collections.emptyList();  }
+    public default ClasspathPattern getServerClasses() { return new ClasspathPattern();  }
     
     /**
      * @return true if the Configuration should be added to a Context by default 
@@ -123,17 +124,6 @@ public interface Configuration
      */
     public void destroy (WebAppContext context) throws Exception;
     
-
-    /* ------------------------------------------------------------------------------- */
-    /** Clone configuration instance.
-     * <p>
-     * Configure an instance of a WebAppContext, based on a template WebAppContext that 
-     * has previously been configured by this Configuration.
-     * @param template The template context
-     * @param context The context to configure
-     * @throws Exception if unable to clone
-     */
-    public void cloneConfigure (WebAppContext template, WebAppContext context) throws Exception;
     
     /**
      * @deprecated Use {@link Configurations}

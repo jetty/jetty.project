@@ -61,10 +61,10 @@ public class EnvConfiguration extends AbstractConfiguration
 
     public EnvConfiguration()
     {
-        super(new String[]{WebXmlConfiguration.class.getName(),MetaInfConfiguration.class.getName(),FragmentConfiguration.class.getName()},
-              new String[]{PlusConfiguration.class.getName(),JettyWebXmlConfiguration.class.getName()},
-              new String[]{"org.eclipse.jetty.jndi."},
-              new String[]{"-org.eclipse.jetty.jndi."});
+        super(!ENABLE_BY_DEFAULT);
+        beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,FragmentConfiguration.class);
+        afterThis(PlusConfiguration.class,JettyWebXmlConfiguration.class);
+        protectAndExpose("org.eclipse.jetty.jndi.");
     }    
     
     public void setJettyEnvXml (URL url)

@@ -180,8 +180,9 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
     }
 
+    @SuppressWarnings("deprecation")
     @Test
-    public void testExposedClass() throws Exception
+    public void testExposedClassDeprecated() throws Exception
     {
         String[] oldSC=_context.getServerClasses();
         String[] newSC=new String[oldSC.length+1];
@@ -198,20 +199,34 @@ public class WebAppClassLoaderTest
     }
 
     @Test
-    public void testSystemServerClass() throws Exception
+    public void testExposedClass() throws Exception
+    {
+        _context.getServerClasspathPattern().exclude("org.eclipse.jetty.webapp.Configuration");
+
+        assertCanLoadClass("org.acme.webapp.ClassInJarA");
+        assertCanLoadClass("org.acme.webapp.ClassInJarB");
+        assertCanLoadClass("org.acme.other.ClassInClassesC");
+
+        assertCanLoadClass("org.eclipse.jetty.webapp.Configuration");
+        assertCantLoadClass("org.eclipse.jetty.webapp.JarScanner");
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void testSystemServerClassDeprecated() throws Exception
     {
         String[] oldServC=_context.getServerClasses();
         String[] newServC=new String[oldServC.length+1];
         newServC[0]="org.eclipse.jetty.webapp.Configuration";
         System.arraycopy(oldServC,0,newServC,1,oldServC.length);
         _context.setServerClasses(newServC);
-
+        
         String[] oldSysC=_context.getSystemClasses();
         String[] newSysC=new String[oldSysC.length+1];
         newSysC[0]="org.eclipse.jetty.webapp.";
         System.arraycopy(oldSysC,0,newSysC,1,oldSysC.length);
         _context.setSystemClasses(newSysC);
-
+        
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
@@ -232,6 +247,26 @@ public class WebAppClassLoaderTest
         newServC[0]="org.acme.webapp.ClassInJarA";
         System.arraycopy(oldServC,0,newServC,1,oldServC.length);
         _context.setServerClasses(newServC);
+        assertCanLoadResource("org/acme/webapp/ClassInJarA.class");
+    }
+    
+    @Test
+    public void testSystemServerClass() throws Exception
+    {
+        _context.getServerClasspathPattern().add("org.eclipse.jetty.webapp.Configuration");
+        _context.getSystemClasspathPattern().add("org.eclipse.jetty.webapp.");
+        
+        assertCanLoadClass("org.acme.webapp.ClassInJarA");
+        assertCanLoadClass("org.acme.webapp.ClassInJarB");
+        assertCanLoadClass("org.acme.other.ClassInClassesC");
+        assertCantLoadClass("org.eclipse.jetty.webapp.Configuration");
+        assertCantLoadClass("org.eclipse.jetty.webapp.JarScanner");
+
+        _context.getSystemClasspathPattern().add("org.acme.webapp.ClassInJarA");
+        assertCanLoadResource("org/acme/webapp/ClassInJarA.class");
+        _context.getSystemClasspathPattern().remove("org.acme.webapp.ClassInJarA");
+
+        _context.getServerClasspathPattern().add("org.acme.webapp.ClassInJarA");
         assertCanLoadResource("org/acme/webapp/ClassInJarA.class");
     }
 

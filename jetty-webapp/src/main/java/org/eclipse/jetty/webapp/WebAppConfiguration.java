@@ -29,22 +29,14 @@ public class WebAppConfiguration extends AbstractConfiguration
 {
     public WebAppConfiguration()
     {
-        super(true,
-                new String[]{WebXmlConfiguration.class.getName(),MetaInfConfiguration.class.getName(),WebInfConfiguration.class.getName()},
-                new String[]{JettyWebXmlConfiguration.class.getName()},
-                new String[]{
-                        "org.eclipse.jetty.util.log.",
-                        "org.eclipse.jetty.servlet.DefaultServlet", 
-                        "org.eclipse.jetty.servlet.NoJspServlet",
-                        "org.eclipse.jetty.continuation.",
-        },
-                new String[]{
-                        "-org.eclipse.jetty.util.log.",
-                        "-org.eclipse.jetty.servlet.DefaultServlet", 
-                        "-org.eclipse.jetty.servlet.NoJspServlet",
-                        "-org.eclipse.jetty.servlet.listener.",
-                        "-org.eclipse.jetty.continuation.",
-                        "-org.eclipse.jetty.alpn.",
-        });
+        super(ENABLE_BY_DEFAULT);
+        beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,WebInfConfiguration.class);
+        afterThis(JettyWebXmlConfiguration.class);
+        protectAndExpose("org.eclipse.jetty.util.log.",
+                "org.eclipse.jetty.servlet.DefaultServlet", 
+                "org.eclipse.jetty.servlet.NoJspServlet",
+                "org.eclipse.jetty.continuation.");
+        expose("org.eclipse.jetty.servlet.listener.",
+               "org.eclipse.jetty.alpn.");
     }
 }

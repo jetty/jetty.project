@@ -62,11 +62,9 @@ public class QuickStartConfiguration extends AbstractConfiguration
     
     public QuickStartConfiguration()
     {
-        super(false,
-              new String[]{WebInfConfiguration.class.getName()},
-              new String[]{WebXmlConfiguration.class.getName()},
-              null,null
-              );
+        super(!ENABLE_BY_DEFAULT);
+        beforeThis(WebInfConfiguration.class);
+        afterThis(WebXmlConfiguration.class);
     }
 
     public void setMode(Mode mode)

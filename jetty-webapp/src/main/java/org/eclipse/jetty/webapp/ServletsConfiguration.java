@@ -29,16 +29,13 @@ public class ServletsConfiguration extends AbstractConfiguration
 {
     public ServletsConfiguration()
     {
-        super(true,
-                new String[]{WebXmlConfiguration.class.getName(),MetaInfConfiguration.class.getName(),WebInfConfiguration.class.getName(),WebAppConfiguration.class.getName()},
-                new String[]{JettyWebXmlConfiguration.class.getName()},
-                new String[]{
-                        "org.eclipse.jetty.servlets.PushCacheFilter", //must be loaded by container classpath
-                        "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath
-
-        },
-                new String[]{
-                        "-org.eclipse.jetty.servlets.",     // don't hide jetty servlets
-        });
+        super(ENABLE_BY_DEFAULT);
+        beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,WebInfConfiguration.class,WebAppConfiguration.class);
+        afterThis(JettyWebXmlConfiguration.class);
+        protectAndExpose();
+        protect("org.eclipse.jetty.servlets.PushCacheFilter", //must be loaded by container classpath
+                "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath
+                );
+        expose("org.eclipse.jetty.servlets."); // don't hide jetty servlets
     }
 }

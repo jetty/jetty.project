@@ -48,14 +48,10 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     protected Resource _originalResourceBase;
     protected List<Resource>  _unpackedOverlayResources;
 
-    
-    
     public MavenWebInfConfiguration()
     {
-        super();
-        addServerClass(
-                "org.apache.maven.",
-                "org.codehaus.plexus.");
+        hide("org.apache.maven.",
+             "org.codehaus.plexus.");
     }
 
     @Override

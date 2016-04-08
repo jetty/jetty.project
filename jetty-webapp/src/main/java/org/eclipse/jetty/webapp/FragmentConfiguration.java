@@ -34,7 +34,7 @@ public class FragmentConfiguration extends AbstractConfiguration
 
     public FragmentConfiguration()
     {
-        super(new String[]{MetaInfConfiguration.class.getName()},null);
+        beforeThis(MetaInfConfiguration.class,WebXmlConfiguration.class);
     }
 
     @Override

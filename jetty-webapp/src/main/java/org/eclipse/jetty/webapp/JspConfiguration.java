@@ -35,14 +35,11 @@ public class JspConfiguration extends AbstractConfiguration
 {
     public JspConfiguration()
     {
-        super(true,
-                new String[]{WebXmlConfiguration.class.getName(),MetaInfConfiguration.class.getName(),WebInfConfiguration.class.getName(),FragmentConfiguration.class.getName()},
-                new String[]{WebAppConfiguration.class.getName()},
-                new String[]{
-                        "org.eclipse.jetty.jsp.JettyJspServlet"},
-                new String[]{
-                        "-org.eclipse.jetty.jsp.",
-                        "-org.eclipse.jetty.apache.",
-                        "org.eclipse.jdt."});
+        super(ENABLE_BY_DEFAULT);
+        beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,WebInfConfiguration.class,FragmentConfiguration.class);
+        afterThis(WebAppConfiguration.class);
+        protectAndExpose("org.eclipse.jetty.jsp.");
+        expose("org.eclipse.jetty.apache.");
+        hide("org.eclipse.jdt.");
     }
 }

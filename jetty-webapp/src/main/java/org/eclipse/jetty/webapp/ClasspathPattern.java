@@ -25,9 +25,9 @@ import java.util.stream.Collectors;
 
 /* ------------------------------------------------------------ */
 /**
- * Classpath classes list performs sequential pattern matching of a class name 
- * against an internal array of classpath pattern entries.
- * A class pattern is a string of one of the forms:<ul>
+ * Classpath classes list performs pattern matching of a class name 
+ * against an classpath pattern entries.
+ * A class pattern is a string of one of the forms/rules:<ul>
  * <li>'org.package.SomeClass' will match a specific class
  * <li>'org.package.' will match a specific package hierarchy
  * <li>'-org.package.Classname' excludes a specific class
@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
  * are to be explicitly included or excluded (eg. org.example.MyClass$NestedClass).
  * <li>Nested classes are matched by their containing class. (eg. -org.example.MyClass
  * would exclude org.example.MyClass$AnyNestedClass)
+ * <li>Package or Class exclusions are applied before inclusive patterns.
  * </ul>
  * When class is initialized from a classpath pattern string, entries 
  * in this string should be separated by ':' (semicolon) or ',' (comma).
@@ -61,6 +62,19 @@ public class ClasspathPattern
         boolean isInclusive()
         {
             return _inclusive;
+        }
+        
+        @Override
+        public boolean equals(Object o)
+        {
+            if (o instanceof Entry)
+            {
+                Entry e=(Entry)o;
+                if (_pattern==null && e._pattern==null)
+                    return true;
+                return _pattern.equals(e._pattern);
+            }
+            return false;
         }
         
         @Override
@@ -91,6 +105,43 @@ public class ClasspathPattern
     }
     
     /* ------------------------------------------------------------ */
+    public ClasspathPattern(ClasspathPattern patterns)
+    {
+        add(patterns);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void clear()
+    {
+        _entries.clear();
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isEmpty()
+    {
+        return _entries.isEmpty();
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void exclude(String... patterns)
+    {
+        if (patterns==null || patterns.length==0)
+            return;
+        
+        for (String p :patterns)
+        {
+            if (p.startsWith("-"))
+                throw new IllegalArgumentException();
+            String x="-"+p;
+            if (_entries.stream().anyMatch(e->{return x.equals(e.toString());}))
+                continue;
+                
+            Entry e = new Entry(x);
+            _entries.add(0,e);
+        }        
+    }
+    
+    /* ------------------------------------------------------------ */
     public void add(String... patterns)
     {
         if (patterns==null || patterns.length==0)
@@ -109,6 +160,55 @@ public class ClasspathPattern
         }        
     }
     
+    /* ------------------------------------------------------------ */
+    public void add(ClasspathPattern pattern)
+    {
+        if (pattern==null)
+            return;
+
+        for (Entry e :pattern._entries)
+        {
+            if (_entries.contains(e))
+                continue;
+                
+            if (e.isInclusive())
+                _entries.add(e);
+            else
+                _entries.add(0,e);
+        }        
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void addInclusions(ClasspathPattern pattern)
+    {
+        if (pattern==null)
+            return;
+
+        for (Entry e :pattern._entries)
+        {
+            if (_entries.contains(e))
+                continue;
+                
+            if (e.isInclusive())
+                _entries.add(e);
+        }        
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void addExclusions(ClasspathPattern pattern)
+    {
+        if (pattern==null)
+            return;
+
+        for (Entry e :pattern._entries)
+        {
+            if (_entries.contains(e))
+                continue;
+                
+            if (!e.isInclusive())
+                _entries.add(0,e);
+        }        
+    }
     
     /* ------------------------------------------------------------ */
     public boolean remove(String pattern)
@@ -189,5 +289,4 @@ public class ClasspathPattern
         }
         return false;
     }
-
 }

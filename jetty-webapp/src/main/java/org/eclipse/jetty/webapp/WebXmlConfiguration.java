@@ -39,7 +39,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
     /* ------------------------------------------------------------------------------- */
     public WebXmlConfiguration()
     {
-        super(new String[]{WebInfConfiguration.class.getName()},null);
+        beforeThis(WebInfConfiguration.class);
     }
 
     /* ------------------------------------------------------------------------------- */

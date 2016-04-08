@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -98,11 +97,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     public AnnotationConfiguration()
     {
-        super(true,
-              new String[]{WebXmlConfiguration.class.getName(),MetaInfConfiguration.class.getName(),FragmentConfiguration.class.getName(),PlusConfiguration.class.getName()},
-              new String[]{JettyWebXmlConfiguration.class.getName()},
-              new String[]{"org.eclipse.jetty.util.annotation."},
-              new String[]{"-org.eclipse.jetty.util.annotation.","org.objectweb.asm."});
+        super(ENABLE_BY_DEFAULT);
+        beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,FragmentConfiguration.class,PlusConfiguration.class);
+        afterThis(JettyWebXmlConfiguration.class);
+        protectAndExpose("org.eclipse.jetty.util.annotation.");
+        hide("org.objectweb.asm.");
     }
     
     /**

@@ -43,15 +43,13 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
      * the web-app currently installed.
      * it is passed as a property to the jetty-web.xml file */
     public static final String PROPERTY_THIS_WEB_INF_URL = "this.web-inf.url";
-
-
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
 
-
     public JettyWebXmlConfiguration()
     {
-        super(true,new String[]{WebXmlConfiguration.class.getName(),FragmentConfiguration.class.getName(),MetaInfConfiguration.class.getName()},null);
+        super(ENABLE_BY_DEFAULT);
+        beforeThis(WebXmlConfiguration.class,FragmentConfiguration.class,MetaInfConfiguration.class);
     }
     
     /**
@@ -77,39 +75,26 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
             if(jetty.exists())
             {
-                // No server classes while configuring
-                String[] old_server_classes = context.getServerClasses();
+                if(LOG.isDebugEnabled())
+                    LOG.debug("Configure: "+jetty);
+
+                Object xml_attr=context.getAttribute(XML_CONFIGURATION);
+                context.removeAttribute(XML_CONFIGURATION);
+                
+                final XmlConfiguration jetty_config = xml_attr instanceof XmlConfiguration
+                    ?(XmlConfiguration)xml_attr
+                    :new XmlConfiguration(jetty.getURI().toURL());
+                setupXmlConfiguration(jetty_config, web_inf);
+                
                 try
                 {
-                    context.setServerClasses(null);
-                    if(LOG.isDebugEnabled())
-                        LOG.debug("Configure: "+jetty);
-
-                    XmlConfiguration jetty_config = (XmlConfiguration)context.getAttribute(XML_CONFIGURATION);
-
-                    if (jetty_config==null)
-                    {
-                        jetty_config=new XmlConfiguration(jetty.getURI().toURL());
-                    }
-                    else
-                    {
-                        context.removeAttribute(XML_CONFIGURATION);
-                    }
-                    setupXmlConfiguration(jetty_config, web_inf);
-                    try
-                    {
-                        XmlConfiguration config=jetty_config;
-                        WebAppClassLoader.runWithServerClassAccess(()->{config.configure(context);return null;});
-                    }
-                    catch (ClassNotFoundException e)
-                    {
-                        LOG.warn("Unable to process jetty-web.xml", e);
-                    }
+                    final XmlConfiguration config=jetty_config;
+                    WebAppClassLoader.runWithServerClassAccess(()->{config.configure(context);return null;});
                 }
-                finally
+                catch(Exception e)
                 {
-                    if (old_server_classes != null)
-                        context.setServerClasses(old_server_classes);
+                    LOG.warn("Error applying {}",jetty);
+                    throw e;
                 }
             }
         }

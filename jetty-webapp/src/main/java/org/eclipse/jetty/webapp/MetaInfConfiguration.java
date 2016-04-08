@@ -90,7 +90,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /* ------------------------------------------------------------------------------- */
     public MetaInfConfiguration()
     {
-        super(new String[]{WebXmlConfiguration.class.getName()},null);
+        beforeThis(WebXmlConfiguration.class);
     }
 
     /* ------------------------------------------------------------------------------- */
