@@ -74,13 +74,12 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 jetty=web_inf.addPath("web-jetty.xml");
 
             if(jetty.exists())
-            {
+            {             
                 if(LOG.isDebugEnabled())
                     LOG.debug("Configure: "+jetty);
 
                 Object xml_attr=context.getAttribute(XML_CONFIGURATION);
                 context.removeAttribute(XML_CONFIGURATION);
-                
                 final XmlConfiguration jetty_config = xml_attr instanceof XmlConfiguration
                     ?(XmlConfiguration)xml_attr
                     :new XmlConfiguration(jetty.getURI().toURL());
@@ -88,8 +87,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 
                 try
                 {
-                    final XmlConfiguration config=jetty_config;
-                    WebAppClassLoader.runWithServerClassAccess(()->{config.configure(context);return null;});
+                    WebAppClassLoader.runWithServerClassAccess(()->{jetty_config.configure(context);return null;});
                 }
                 catch(Exception e)
                 {
