@@ -51,9 +51,9 @@ public class ResourceCacheTest
         Resource[] r = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false,false,CompressedContentFormat.NONE);
-        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false,false,CompressedContentFormat.NONE);
-        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false,false,CompressedContentFormat.NONE);
+        CachedContentFactory rc3 = new CachedContentFactory(null,r[2],mime,false,false,CompressedContentFormat.NONE);
+        CachedContentFactory rc2 = new CachedContentFactory(rc3,r[1],mime,false,false,CompressedContentFormat.NONE);
+        CachedContentFactory rc1 = new CachedContentFactory(rc2,r[0],mime,false,false,CompressedContentFormat.NONE);
 
         assertEquals("1 - one", getContent(rc1, "1.txt"));
         assertEquals("2 - two", getContent(rc1, "2.txt"));
@@ -81,8 +81,8 @@ public class ResourceCacheTest
         Resource[] r = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false,false,CompressedContentFormat.NONE);
-        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false,false,CompressedContentFormat.NONE)
+        CachedContentFactory rc3 = new CachedContentFactory(null,r[2],mime,false,false,CompressedContentFormat.NONE);
+        CachedContentFactory rc2 = new CachedContentFactory(rc3,r[1],mime,false,false,CompressedContentFormat.NONE)
         {
             @Override
             public boolean isCacheable(Resource resource)
@@ -91,7 +91,7 @@ public class ResourceCacheTest
             }
         };
 
-        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false,false,CompressedContentFormat.NONE);
+        CachedContentFactory rc1 = new CachedContentFactory(rc2,r[0],mime,false,false,CompressedContentFormat.NONE);
 
         assertEquals("1 - one", getContent(rc1, "1.txt"));
         assertEquals("2 - two", getContent(rc1, "2.txt"));
@@ -114,7 +114,7 @@ public class ResourceCacheTest
         final Resource directory;
         File[] files=new File[10];
         String[] names=new String[files.length];
-        ResourceCache cache;
+        CachedContentFactory cache;
 
         for (int i=0;i<files.length;i++)
         {
@@ -132,7 +132,7 @@ public class ResourceCacheTest
         directory=Resource.newResource(files[0].getParentFile().getAbsolutePath());
 
 
-        cache=new ResourceCache(null,directory,new MimeTypes(),false,false,CompressedContentFormat.NONE);
+        cache=new CachedContentFactory(null,directory,new MimeTypes(),false,false,CompressedContentFormat.NONE);
 
         cache.setMaxCacheSize(95);
         cache.setMaxCachedFileSize(85);
@@ -159,7 +159,7 @@ public class ResourceCacheTest
             assertEquals(0,cache.getCachedSize());
             assertEquals(0,cache.getCachedFiles());
 
-            cache=new ResourceCache(null,directory,new MimeTypes(),true,false,CompressedContentFormat.NONE);
+            cache=new CachedContentFactory(null,directory,new MimeTypes(),true,false,CompressedContentFormat.NONE);
             cache.setMaxCacheSize(95);
             cache.setMaxCachedFileSize(85);
             cache.setMaxCachedFiles(4);
@@ -284,7 +284,7 @@ public class ResourceCacheTest
         Resource[] resources = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        ResourceCache cache = new ResourceCache(null,resources[0],mime,false,false,CompressedContentFormat.NONE);
+        CachedContentFactory cache = new CachedContentFactory(null,resources[0],mime,false,false,CompressedContentFormat.NONE);
 
         assertEquals("4 - four", getContent(cache, "four.txt"));
         assertEquals("4 - four (no extension)", getContent(cache, "four"));
@@ -303,7 +303,7 @@ public class ResourceCacheTest
         return buffer.toString();
     }
 
-    static String getContent(ResourceCache rc, String path) throws Exception
+    static String getContent(CachedContentFactory rc, String path) throws Exception
     {
         HttpContent content = rc.lookup(path);
         if (content==null)

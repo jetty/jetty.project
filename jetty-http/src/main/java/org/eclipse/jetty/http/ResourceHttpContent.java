@@ -61,13 +61,17 @@ public class ResourceHttpContent implements HttpContent
     {
         _resource=resource;
         _contentType=contentType;
-        _maxBuffer=maxBuffer;
-        if (precompressedContents == null) {
+        _maxBuffer = maxBuffer;
+        if (precompressedContents == null)
+        {
             _precompressedContents = null;
-        } else {
+        }
+        else
+        {
             _precompressedContents = new HashMap<>(precompressedContents.size());
-            for (Map.Entry<CompressedContentFormat, HttpContent> entry : precompressedContents.entrySet()) {
-                _precompressedContents.put(entry.getKey(), new PrecompressedHttpContent(this, entry.getValue(), entry.getKey()));
+            for (Map.Entry<CompressedContentFormat, HttpContent> entry : precompressedContents.entrySet())
+            {
+                _precompressedContents.put(entry.getKey(),new PrecompressedHttpContent(this,entry.getValue(),entry.getKey()));
             }
         }
     }
