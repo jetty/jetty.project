@@ -24,6 +24,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.PermissionCollection;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,6 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration.Dynamic;
@@ -186,7 +188,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _configurationDiscovered=true;
     private boolean _allowDuplicateFragmentNames = false;
     private boolean _throwUnavailableOnStartupException = false;
-
+    
 
 
     private MetaData _metadata=new MetaData();
@@ -748,7 +750,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         _systemClasses.prependPattern(classOrPackage);
     }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     public boolean isServerClass(String name)

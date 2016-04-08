@@ -77,40 +77,25 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 jetty=web_inf.addPath("web-jetty.xml");
 
             if(jetty.exists())
-            {
-                // No server classes while configuring
-                String[] old_server_classes = context.getServerClasses();
+            {             
+                if(LOG.isDebugEnabled())
+                    LOG.debug("Configure: "+jetty);
+
+                Object xml_attr=context.getAttribute(XML_CONFIGURATION);
+                context.removeAttribute(XML_CONFIGURATION);
+                final XmlConfiguration jetty_config = xml_attr instanceof XmlConfiguration
+                    ?(XmlConfiguration)xml_attr
+                    :new XmlConfiguration(jetty.getURI().toURL());
+                setupXmlConfiguration(jetty_config, web_inf);
+                
                 try
                 {
-                    context.setServerClasses(null);
-                    if(LOG.isDebugEnabled())
-                        LOG.debug("Configure: "+jetty);
-
-                    XmlConfiguration jetty_config = (XmlConfiguration)context.getAttribute(XML_CONFIGURATION);
-
-                    if (jetty_config==null)
-                    {
-                        jetty_config=new XmlConfiguration(jetty.getURI().toURL());
-                    }
-                    else
-                    {
-                        context.removeAttribute(XML_CONFIGURATION);
-                    }
-                    setupXmlConfiguration(jetty_config, web_inf);
-                    try
-                    {
-                        XmlConfiguration config=jetty_config;
-                        WebAppClassLoader.runWithServerClassAccess(()->{config.configure(context);return null;});
-                    }
-                    catch (ClassNotFoundException e)
-                    {
-                        LOG.warn("Unable to process jetty-web.xml", e);
-                    }
+                    WebAppClassLoader.runWithServerClassAccess(()->{jetty_config.configure(context);return null;});
                 }
-                finally
+                catch(Exception e)
                 {
-                    if (old_server_classes != null)
-                        context.setServerClasses(old_server_classes);
+                    LOG.warn("Error applying {}",jetty);
+                    throw e;
                 }
             }
         }
