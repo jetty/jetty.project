@@ -20,6 +20,8 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpConnection;
@@ -35,6 +37,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 public class HttpConnectionOverHTTP2 extends HttpConnection
 {
     private final Set<HttpChannel> channels = new ConcurrentHashSet<>();
+    private final AtomicBoolean closed = new AtomicBoolean();
     private final Session session;
 
     public HttpConnectionOverHTTP2(HttpDestination destination, Session session)
@@ -73,6 +76,15 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
     }
 
     @Override
+    public boolean onIdleTimeout(long idleTimeout)
+    {
+        boolean close = super.onIdleTimeout(idleTimeout);
+        if (close)
+            close(new TimeoutException("idle_timeout"));
+        return false;
+    }
+
+    @Override
     public void close()
     {
         close(new AsynchronousCloseException());
@@ -80,11 +92,14 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
 
     protected void close(Throwable failure)
     {
-        // First close then abort, to be sure that the connection cannot be reused
-        // from an onFailure() handler or by blocking code waiting for completion.
-        getHttpDestination().close(this);
-        session.close(ErrorCode.NO_ERROR.code, failure.getMessage(), Callback.NOOP);
-        abort(failure);
+        if (closed.compareAndSet(false, true))
+        {
+            getHttpDestination().close(this);
+
+            abort(failure);
+
+            session.close(ErrorCode.NO_ERROR.code, failure.getMessage(), Callback.NOOP);
+        }
     }
 
     private void abort(Throwable failure)

@@ -138,17 +138,16 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     {
         if (closed.compareAndSet(false, true))
         {
-            // First close then abort, to be sure that the connection cannot be reused
-            // from an onFailure() handler or by blocking code waiting for completion.
             getHttpDestination().close(this);
+
+            abort(failure);
+
             getEndPoint().shutdownOutput();
             if (LOG.isDebugEnabled())
                 LOG.debug("Shutdown {}", this);
             getEndPoint().close();
             if (LOG.isDebugEnabled())
                 LOG.debug("Closed {}", this);
-
-            abort(failure);
         }
     }
 
