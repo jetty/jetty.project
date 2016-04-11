@@ -38,6 +38,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CompletableCallback;
 
 public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listener
 {
@@ -110,26 +111,40 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         copy.put(original);
         BufferUtil.flipToFlush(copy, 0);
 
-        Callback delegate = new Callback.Nested(callback)
+        CompletableCallback delegate = new CompletableCallback()
         {
             @Override
             public void succeeded()
             {
                 byteBufferPool.release(copy);
+                callback.succeeded();
                 super.succeeded();
-                if (frame.isEndStream())
-                    responseSuccess(exchange);
             }
 
             @Override
             public void failed(Throwable x)
             {
                 byteBufferPool.release(copy);
+                callback.failed(x);
                 super.failed(x);
+            }
+
+            @Override
+            public void resume()
+            {
+                if (frame.isEndStream())
+                    responseSuccess(exchange);
+            }
+
+            @Override
+            public void abort(Throwable failure)
+            {
             }
         };
 
         responseContent(exchange, copy, delegate);
+        if (!delegate.tryComplete())
+            delegate.resume();
     }
 
     @Override

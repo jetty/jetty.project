@@ -403,6 +403,8 @@ public class HttpClientTest extends AbstractTest
 
         InputStream input = listener.getInputStream();
         Assert.assertEquals(content, IO.toString(input));
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     private void sleep(long time) throws IOException
