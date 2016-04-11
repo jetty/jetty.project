@@ -1,3 +1,5 @@
+jetty-9.3.9-SNAPSHOT
+
 jetty-9.3.9.M1 - 11 April 2016
  + 481 Event response.success notified without waiting for content callback for
    HTTP/2 transport
