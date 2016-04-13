@@ -42,7 +42,7 @@ public class QuotedQualityCSV implements Iterable<String>
     private final List<String> _values = new ArrayList<>();
     private final List<Double> _quality = new ArrayList<>();
     private boolean _sorted = false;
-    private final Function<String, Integer> tieBreakerFunction;
+    private final Function<String, Integer> secondaryOrderingFunction;
     
     /* ------------------------------------------------------------ */
     public QuotedQualityCSV()
@@ -50,9 +50,9 @@ public class QuotedQualityCSV implements Iterable<String>
         this((s) -> s.length());
     }
 
-    public QuotedQualityCSV(Function<String, Integer> tieBreakerFunction)
+    public QuotedQualityCSV(Function<String, Integer> secondaryOrderingFunction)
     {
-        this.tieBreakerFunction = tieBreakerFunction;
+        this.secondaryOrderingFunction = secondaryOrderingFunction;
     }
 
 
@@ -230,7 +230,7 @@ public class QuotedQualityCSV implements Iterable<String>
         _sorted=true;
 
         Double last = ZERO;
-        int comparatorValue = Integer.MIN_VALUE;
+        int lastOrderIndex = Integer.MIN_VALUE;
 
         for (int i = _values.size(); i-- > 0;)
         {
@@ -238,20 +238,20 @@ public class QuotedQualityCSV implements Iterable<String>
             Double q = _quality.get(i);
 
             int compare=last.compareTo(q);
-            if (compare > 0  || (compare==0 && tieBreakerFunction.apply(v)<comparatorValue))
+            if (compare>0 || (compare==0 && secondaryOrderingFunction.apply(v)<lastOrderIndex))
             {
                 _values.set(i, _values.get(i + 1));
                 _values.set(i + 1, v);
                 _quality.set(i, _quality.get(i + 1));
                 _quality.set(i + 1, q);
                 last = ZERO;
-                comparatorValue=0;
+                lastOrderIndex=0;
                 i = _values.size();
                 continue;
             }
 
             last=q;
-            comparatorValue= tieBreakerFunction.apply(v);
+            lastOrderIndex=secondaryOrderingFunction.apply(v);
 
         }
     }
