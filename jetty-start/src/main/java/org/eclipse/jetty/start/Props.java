@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -33,6 +31,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.Props.Prop;
+
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * Management of Properties.
@@ -227,8 +227,6 @@ public final class Props implements Iterable<Prop>
                 throw new PropsException(err.toString());
             }
 
-            seenStack.push(property);
-
             // find property name
             expanded.append(str.subSequence(offset,mat.start()));
             // get property value
@@ -241,7 +239,9 @@ public final class Props implements Iterable<Prop>
             else
             {
                 // recursively expand
+                seenStack.push(property);
                 value = expand(value,seenStack);
+                seenStack.pop();
                 expanded.append(value);
             }
             // update offset
