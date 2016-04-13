@@ -77,6 +77,7 @@ public abstract class ResourceService
     private boolean _redirectWelcome=false;
     private CompressedContentFormat[] _precompressedFormats=new CompressedContentFormat[0];
     private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
+    private int _encodingCacheSize=100;
     private boolean _pathInfoOnly=false;
     private boolean _etags=false;
     private HttpField _cacheControl;
@@ -130,6 +131,16 @@ public abstract class ResourceService
     public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
     {
         _precompressedFormats = precompressedFormats;
+    }
+
+    public void setEncodingCacheSize(int encodingCacheSize)
+    {
+        _encodingCacheSize = encodingCacheSize;
+    }
+
+    public int getEncodingCacheSize()
+    {
+        return _encodingCacheSize;
     }
 
     public boolean isPathInfoOnly()
@@ -302,7 +313,7 @@ public abstract class ResourceService
             values=encodingQualityCSV.getValues();
 
             // keep cache size in check even if we get strange/malicious input
-            if (_preferredEncodingOrderCache.size()>200)
+            if (_preferredEncodingOrderCache.size()>_encodingCacheSize)
                 _preferredEncodingOrderCache.clear();
 
             _preferredEncodingOrderCache.put(acceptEncoding,values);

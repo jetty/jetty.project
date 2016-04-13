@@ -256,6 +256,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             LOG.debug(e);
         }
 
+        int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
+        if (encodingHeaderCacheSize >= 0)
+            _resourceService.setEncodingCacheSize(encodingHeaderCacheSize);
+
         String cc=getInitParameter("cacheControl");
         if (cc!=null)
             _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL,cc));
