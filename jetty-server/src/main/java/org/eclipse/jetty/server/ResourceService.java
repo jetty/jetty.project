@@ -253,7 +253,7 @@ public abstract class ResourceService
                 // Tell caches that response may vary by accept-encoding
                 response.addHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
 
-                List<String> preferredEncodings = getPreferredEncodingOrder(request);
+                List<String> preferredEncodings = getPreferredEncodingOrder(request.getHeader(HttpHeader.ACCEPT_ENCODING.asString()));
                 CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(preferredEncodings, precompressedContents.keySet());
                 if (precompressedContentEncoding!=null)
                 {
@@ -289,30 +289,23 @@ public abstract class ResourceService
         }
     }
 
-    private List<String> getPreferredEncodingOrder(HttpServletRequest request)
+    private List<String> getPreferredEncodingOrder(String acceptEncoding)
     {
-        Enumeration<String> e = request.getHeaders(HttpHeader.ACCEPT_ENCODING.asString());
-        if (e==null || !e.hasMoreElements())
+        if (acceptEncoding==null)
             return emptyList();
 
-        String key=e.nextElement();
-        while (e.hasMoreElements())
-            key+='\n'+e.nextElement();
-
-        List<String> values=_preferredEncodingOrderCache.get(key);
+        List<String> values=_preferredEncodingOrderCache.get(acceptEncoding);
         if (values==null)
         {
             QuotedEncodingQualityCSV encodingQualityCSV = new QuotedEncodingQualityCSV(_precompressedFormats);
-            Enumeration<String> e2=request.getHeaders(HttpHeader.ACCEPT_ENCODING.asString());
-            while (e2.hasMoreElements())
-                encodingQualityCSV.addValue(e2.nextElement());
+            encodingQualityCSV.addValue(acceptEncoding);
             values=encodingQualityCSV.getValues();
 
-            // keep cache size in check even if we get strange/malicious input - with 4k headers this is still under 1 megabyte
+            // keep cache size in check even if we get strange/malicious input
             if (_preferredEncodingOrderCache.size()>200)
                 _preferredEncodingOrderCache.clear();
 
-            _preferredEncodingOrderCache.put(key,values);
+            _preferredEncodingOrderCache.put(acceptEncoding,values);
         }
 
         return values;
