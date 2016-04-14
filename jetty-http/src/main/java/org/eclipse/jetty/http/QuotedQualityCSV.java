@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http;
 
+import static java.lang.Integer.MIN_VALUE;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -45,11 +47,35 @@ public class QuotedQualityCSV implements Iterable<String>
     private final Function<String, Integer> secondaryOrderingFunction;
     
     /* ------------------------------------------------------------ */
+
+    /**
+     * Sorts values with equal quality according to the length of the value String.
+     */
     public QuotedQualityCSV()
     {
         this((s) -> s.length());
     }
 
+    /**
+     * Sorts values with equal quality according to given order.
+     */
+    public QuotedQualityCSV(String[] serverPreferredValueOrder)
+    {
+        this((s) -> {
+            for (int i=0;i<serverPreferredValueOrder.length;++i)
+                if (serverPreferredValueOrder[i].equals(s))
+                    return serverPreferredValueOrder.length-i;
+
+            if ("*".equals(s))
+                return serverPreferredValueOrder.length;
+
+            return MIN_VALUE;
+        });
+    }
+
+    /**
+     * Orders values with equal quality with the given function.
+     */
     public QuotedQualityCSV(Function<String, Integer> secondaryOrderingFunction)
     {
         this.secondaryOrderingFunction = secondaryOrderingFunction;

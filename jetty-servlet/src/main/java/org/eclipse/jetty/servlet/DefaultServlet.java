@@ -81,9 +81,10 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *                    found ending with ".gz" (default false) 
  *                    (deprecated: use precompressed)
  *                    
- *  precompressed     If set to a comma separated list of file extensions, these
- *                    indicate compressed formats that are known to map to a mime-type
- *                    that may be listed in a requests Accept-Encoding header.
+ *  precompressed     If set to a comma separated list of encoding types (that may be
+ *                    listed in a requests Accept-Encoding header) to file
+ *                    extension mappings to look for and serve. For example:
+ *                    "br=.br,gzip=.gz,bzip2=.bz".
  *                    If set to a boolean True, then a default set of compressed formats
  *                    will be used, otherwise no precompressed formats.
  *
