@@ -68,9 +68,14 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
+        this(selectorManager, id, ExecutionStrategy.Factory.getDefault());
+    }
+
+    public ManagedSelector(SelectorManager selectorManager, int id, ExecutionStrategy.Factory executionFactory)
+    {
         _selectorManager = selectorManager;
         _id = id;
-        _strategy = ExecutionStrategy.Factory.instanceFor(new SelectorProducer(), selectorManager.getExecutor());
+        _strategy = executionFactory.newExecutionStrategy(new SelectorProducer(), selectorManager.getExecutor());
         setStopTimeout(5000);
     }
 
@@ -559,7 +564,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             LOG.debug("rejected accept {}",channel);
             closeNoExceptions(channel);
         }
-        
+
         @Override
         public void run()
         {
