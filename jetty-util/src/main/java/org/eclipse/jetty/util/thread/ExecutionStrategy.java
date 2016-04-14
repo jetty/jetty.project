@@ -101,15 +101,6 @@ public interface ExecutionStrategy
         {
             return DefaultExecutionStrategyFactory.INSTANCE;
         }
-
-        /**
-         * @deprecated use {@code getDefault().newExecutionStrategy(Producer, Executor)} instead
-         */
-        @Deprecated
-        public static ExecutionStrategy instanceFor(Producer producer, Executor executor)
-        {
-            return getDefault().newExecutionStrategy(producer, executor);
-        }
     }
 
     public static class DefaultExecutionStrategyFactory implements Factory
