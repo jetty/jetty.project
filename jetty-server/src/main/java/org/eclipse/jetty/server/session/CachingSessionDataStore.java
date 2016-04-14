@@ -32,7 +32,7 @@ import java.util.Set;
  * can increase performance. The cache implementation can either be a local cache, 
  * a remote cache, or a clustered cache.
  */
-public class CachingSessionDataStore extends AbstractSessionDataStore
+public class CachingSessionDataStore extends AbstractSessionStore
 {
 
     public interface SessionDataCache
@@ -45,17 +45,17 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
     }
     
     
-    protected SessionDataStore _delegateDataStore;
+    protected SessionStore _delegateDataStore;
     protected SessionDataCache _cache;
     
     
-    public void setSessionDataStore (SessionDataStore store)
+    public void setSessionDataStore (SessionStore store)
     {
         checkStarted();
         _delegateDataStore = store;
     }
     
-    public SessionDataStore getSessionDataStore()
+    public SessionStore getSessionDataStore()
     {
         return _delegateDataStore;
     }
@@ -74,7 +74,7 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
     
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionStore#load(java.lang.String)
      */
     @Override
     public SessionData load(String id) throws Exception
@@ -103,7 +103,7 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionStore#delete(java.lang.String)
      */
     @Override
     public boolean delete(String id) throws Exception
@@ -116,7 +116,7 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
+     * @see org.eclipse.jetty.server.session.SessionStore#getExpired(Set)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
@@ -127,14 +127,14 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
+     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
      */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         //write to the SessionDataStore first
-        if (_delegateDataStore instanceof AbstractSessionDataStore)
-            ((AbstractSessionDataStore)_delegateDataStore).doStore(id, data, lastSaveTime);
+        if (_delegateDataStore instanceof AbstractSessionStore)
+            ((AbstractSessionStore)_delegateDataStore).doStore(id, data, lastSaveTime);
 
         //else??????
         
@@ -159,7 +159,7 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
+     * @see org.eclipse.jetty.server.session.SessionStore#isPassivating()
      */
     @Override
     public boolean isPassivating()
@@ -168,7 +168,7 @@ public class CachingSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionStore#exists(java.lang.String)
      */
     @Override
     public boolean exists(String id) throws Exception

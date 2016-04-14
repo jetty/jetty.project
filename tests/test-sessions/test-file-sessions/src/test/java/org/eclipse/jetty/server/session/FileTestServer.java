@@ -137,16 +137,17 @@ public class FileTestServer extends AbstractTestServer
         return mgr;
     }
 
-    public SessionManager newSessionManager()
-    {
-        FileSessionManager manager = new FileSessionManager();
-        manager.getSessionDataStore().setStoreDir(_tmpDir);
-        return manager;
-    }
+   
 
-    public SessionHandler newSessionHandler(SessionManager sessionManager)
+    public SessionHandler newSessionHandler()
     {
-        return new SessionHandler(sessionManager);
+        SessionHandler handler =  new SessionHandler();
+        DefaultSessionCache ss = new DefaultSessionCache(handler);
+        handler.setSessionStore(ss);
+        FileSessionDataStore ds = new FileSessionDataStore();
+        ds.setStoreDir(_tmpDir);
+        ss.setSessionStore(ds);
+        return handler;
     }
 
 }

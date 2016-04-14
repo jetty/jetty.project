@@ -73,7 +73,7 @@ public abstract class AbstractLastAccessTimeTest
         TestSessionListener listener1 = new TestSessionListener();
         context.getSessionHandler().addEventListener(listener1);
         context.addServlet(holder1, servletMapping);
-        SessionManager m1 = (SessionManager)context.getSessionHandler().getSessionManager();
+        SessionHandler m1 = context.getSessionHandler();
         
 
         try
@@ -83,7 +83,7 @@ public abstract class AbstractLastAccessTimeTest
             AbstractTestServer server2 = createServer(0, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
             ServletContextHandler context2 = server2.addContext(contextPath);
             context2.addServlet(TestServlet.class, servletMapping);
-            SessionManager m2 = (SessionManager)context2.getSessionHandler().getSessionManager();
+            SessionHandler m2 = context2.getSessionHandler();
 
             
             try
@@ -100,9 +100,9 @@ public abstract class AbstractLastAccessTimeTest
                     assertEquals("test", response1.getContentAsString());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue( sessionCookie != null );
-                    assertEquals(1, ((MemorySessionStore)m1.getSessionStore()).getSessions());
-                    assertEquals(1, ((MemorySessionStore)m1.getSessionStore()).getSessionsMax());
-                    assertEquals(1, ((MemorySessionStore)m1.getSessionStore()).getSessionsTotal());
+                    assertEquals(1, ((DefaultSessionCache)m1.getSessionStore()).getSessions());
+                    assertEquals(1, ((DefaultSessionCache)m1.getSessionStore()).getSessionsMax());
+                    assertEquals(1, ((DefaultSessionCache)m1.getSessionStore()).getSessionsTotal());
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");        
                     
@@ -152,21 +152,21 @@ public abstract class AbstractLastAccessTimeTest
         }
     }
     
-    public void assertAfterSessionCreated (SessionManager m)
+    public void assertAfterSessionCreated (SessionHandler m)
     {
         assertSessionCounts(1, 1, 1, m);
     }
     
-    public void assertAfterScavenge (SessionManager manager)
+    public void assertAfterScavenge (SessionHandler manager)
     {
         assertSessionCounts(1,1,1, manager);
     }
     
-    public void assertSessionCounts (int current, int max, int total, SessionManager manager)
+    public void assertSessionCounts (int current, int max, int total, SessionHandler manager)
     {
-        assertEquals(current, ((MemorySessionStore)manager.getSessionStore()).getSessions());
-        assertEquals(max, ((MemorySessionStore)manager.getSessionStore()).getSessionsMax());
-        assertEquals(total, ((MemorySessionStore)manager.getSessionStore()).getSessionsTotal());
+        assertEquals(current, ((DefaultSessionCache)manager.getSessionStore()).getSessions());
+        assertEquals(max, ((DefaultSessionCache)manager.getSessionStore()).getSessionsMax());
+        assertEquals(total, ((DefaultSessionCache)manager.getSessionStore()).getSessionsTotal());
     }
 
     public static class TestSessionListener implements HttpSessionListener

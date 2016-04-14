@@ -19,9 +19,10 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import org.eclipse.jetty.server.session.SessionManager;
+
 import org.eclipse.jetty.server.session.AbstractInvalidationSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -61,11 +62,11 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
              * @see org.eclipse.jetty.gcloud.session.GCloudTestServer#newSessionManager()
              */
             @Override
-            public SessionManager newSessionManager()
+            public SessionHandler newSessionHandler()
             {
-                GCloudSessionManager manager = (GCloudSessionManager)super.newSessionManager();
-                manager.getSessionStore().setIdlePassivationTimeoutSec(IDLE_PASSIVATE_SEC);
-                return manager;
+                SessionHandler handler = super.newSessionHandler();
+                handler.getSessionStore().setIdlePassivationTimeoutSec(IDLE_PASSIVATE_SEC);
+                return handler;
             }
 
         };

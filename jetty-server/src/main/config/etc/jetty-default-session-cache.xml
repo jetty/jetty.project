@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+  <!-- ===================================================================== -->
+  <!-- Configure a factory for in-memory Session objects                     -->
+  <!-- ===================================================================== -->
+  <Call name="addBean">
+    <New class="org.eclipse.jetty.server.session.DefaultSessionCacheFactory">
+     <Set name="idlePassivationTimeoutSec"><Property name="jetty.session.idlePassivationTimeout.seconds" default="0" /></Set>
+     <Set name="passivateOnComplete"><Property name="jetty.session.passivateOnComplete" default="false" /></Set>
+    </New>
+  </Call>
+
+</Configure>

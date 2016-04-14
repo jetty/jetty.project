@@ -329,15 +329,15 @@ public class QuickStartDescriptorGenerator
         }
 
         //session-config
-        if (_webApp.getSessionHandler().getSessionManager() != null)
+        if (_webApp.getSessionHandler() != null)
         {
             out.openTag("session-config");
-            int maxInactiveSec = _webApp.getSessionHandler().getSessionManager().getMaxInactiveInterval();
+            int maxInactiveSec = _webApp.getSessionHandler().getMaxInactiveInterval();
             out.tag("session-timeout", (maxInactiveSec==0?"0":Integer.toString(maxInactiveSec/60)));
 
 
             //cookie-config
-            SessionCookieConfig cookieConfig = _webApp.getSessionHandler().getSessionManager().getSessionCookieConfig();
+            SessionCookieConfig cookieConfig = _webApp.getSessionHandler().getSessionCookieConfig();
             if (cookieConfig != null)
             {
                 out.openTag("cookie-config");
@@ -360,7 +360,7 @@ public class QuickStartDescriptorGenerator
             }
             
             // tracking-modes
-            Set<SessionTrackingMode> modes =_webApp. getSessionHandler().getSessionManager().getEffectiveSessionTrackingModes();
+            Set<SessionTrackingMode> modes =_webApp. getSessionHandler().getEffectiveSessionTrackingModes();
             if (modes != null)
             {
                 for (SessionTrackingMode mode:modes)

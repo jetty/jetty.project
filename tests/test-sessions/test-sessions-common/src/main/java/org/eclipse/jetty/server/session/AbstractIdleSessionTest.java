@@ -184,8 +184,8 @@ public abstract class AbstractIdleSessionTest
             pause(idlePeriod * 3);
 
             //stop the scavenger
-            if (_server1.getInspector() != null)
-                _server1.getInspector().stop();
+            if (_server1.getHouseKeeper() != null)
+                _server1.getHouseKeeper().stop();
             
             //check that the session is idle
             checkSessionIdled(AbstractTestServer.extractSessionId(sessionCookie));

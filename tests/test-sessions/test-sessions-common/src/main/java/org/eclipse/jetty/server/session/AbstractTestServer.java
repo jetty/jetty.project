@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.session;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.session.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -93,7 +92,7 @@ public abstract class AbstractTestServer
         ((DefaultSessionIdManager) _sessionIdManager).setServer(_server);
         _housekeeper = new HouseKeeper();
         _housekeeper.setIntervalSec(_scavengePeriod);
-        ((DefaultSessionIdManager)_sessionIdManager).setSessionInspector(_housekeeper);
+        ((DefaultSessionIdManager)_sessionIdManager).setSessionHouseKeeper(_housekeeper);
     }
     
 
@@ -109,8 +108,7 @@ public abstract class AbstractTestServer
     }
 
 
-    public abstract SessionManager newSessionManager();
-    public abstract SessionHandler newSessionHandler(SessionManager sessionManager);
+    public abstract SessionHandler newSessionHandler();
 
 
     public void start() throws Exception
@@ -120,7 +118,7 @@ public abstract class AbstractTestServer
         _server.start();
     }
     
-    public HouseKeeper getInspector()
+    public HouseKeeper getHouseKeeper()
     {
         return _housekeeper;
     }
@@ -133,13 +131,10 @@ public abstract class AbstractTestServer
     public ServletContextHandler addContext(String contextPath)
     {
         ServletContextHandler context = new ServletContextHandler(_contexts, contextPath);
-
-        SessionManager sessionManager = newSessionManager();
-        sessionManager.setSessionIdManager(_sessionIdManager);
-        sessionManager.setMaxInactiveInterval(_maxInactivePeriod);
-        sessionManager.getSessionStore().setIdlePassivationTimeoutSec(_idlePassivatePeriod);
-        SessionHandler sessionHandler = newSessionHandler(sessionManager);
-        sessionManager.setSessionHandler(sessionHandler);
+        SessionHandler sessionHandler = newSessionHandler();
+        sessionHandler.setSessionIdManager(_sessionIdManager);
+        sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);
+        sessionHandler.getSessionStore().setIdlePassivationTimeoutSec(_idlePassivatePeriod);
         context.setSessionHandler(sessionHandler);
 
         return context;
@@ -158,15 +153,10 @@ public abstract class AbstractTestServer
     public WebAppContext addWebAppContext(String warPath, String contextPath)
     {
         WebAppContext context = new WebAppContext(_contexts, warPath, contextPath);
-
-        SessionManager sessionManager = newSessionManager();
-        sessionManager.setSessionIdManager(_sessionIdManager);
-        sessionManager.setMaxInactiveInterval(_maxInactivePeriod);
-        
-        sessionManager.getSessionStore().setIdlePassivationTimeoutSec(_idlePassivatePeriod);
-
-        SessionHandler sessionHandler = newSessionHandler(sessionManager);
-        sessionManager.setSessionHandler(sessionHandler);
+        SessionHandler sessionHandler = newSessionHandler();
+        sessionHandler.setSessionIdManager(_sessionIdManager);
+        sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);   
+        sessionHandler.getSessionStore().setIdlePassivationTimeoutSec(_idlePassivatePeriod);
         context.setSessionHandler(sessionHandler);
 
         return context;

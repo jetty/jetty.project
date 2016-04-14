@@ -78,7 +78,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.session.Session;
-import org.eclipse.jetty.server.session.SessionManager;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.IO;
@@ -194,7 +194,7 @@ public class Request implements HttpServletRequest
     private Map<Object, HttpSession> _savedNewSessions;
     private UserIdentity.Scope _scope;
     private HttpSession _session;
-    private SessionManager _sessionManager;
+    private SessionHandler _sessionHandler;
     private long _timeStamp;
     private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
     private AsyncContextState _async;
@@ -1478,7 +1478,7 @@ public class Request implements HttpServletRequest
             if (getRemoteUser() != null)
                 s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
             if (s.isIdChanged())
-                _channel.getResponse().addCookie(_sessionManager.getSessionCookie(s, getContextPath(), isSecure()));
+                _channel.getResponse().addCookie(_sessionHandler.getSessionCookie(s, getContextPath(), isSecure()));
         }
 
         return session.getId();
@@ -1503,7 +1503,7 @@ public class Request implements HttpServletRequest
     {
         if (_session != null)
         {
-            if (_sessionManager != null && !_sessionManager.isValid(_session))
+            if (_sessionHandler != null && !_sessionHandler.isValid(_session))
                 _session = null;
             else
                 return _session;
@@ -1515,11 +1515,11 @@ public class Request implements HttpServletRequest
         if (getResponse().isCommitted())
             throw new IllegalStateException("Response is committed");
 
-        if (_sessionManager == null)
+        if (_sessionHandler == null)
             throw new IllegalStateException("No SessionManager");
 
-        _session = _sessionManager.newHttpSession(this);
-        HttpCookie cookie = _sessionManager.getSessionCookie(_session,getContextPath(),isSecure());
+        _session = _sessionHandler.newHttpSession(this);
+        HttpCookie cookie = _sessionHandler.getSessionCookie(_session,getContextPath(),isSecure());
         if (cookie != null)
             _channel.getResponse().addCookie(cookie);
 
@@ -1530,9 +1530,9 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the sessionManager.
      */
-    public SessionManager getSessionManager()
+    public SessionHandler getSessionHandler()
     {
-        return _sessionManager;
+        return _sessionHandler;
     }
 
     /* ------------------------------------------------------------ */
@@ -1682,7 +1682,7 @@ public class Request implements HttpServletRequest
             return false;
 
         HttpSession session = getSession(false);
-        return (session != null && _sessionManager.getSessionIdManager().getId(_requestedSessionId).equals(_sessionManager.getId(session)));
+        return (session != null && _sessionHandler.getSessionIdManager().getId(_requestedSessionId).equals(_sessionHandler.getId(session)));
     }
 
     /* ------------------------------------------------------------ */
@@ -1831,7 +1831,7 @@ public class Request implements HttpServletRequest
         _requestedSessionIdFromCookie = false;
         _secure=false;
         _session = null;
-        _sessionManager = null;
+        _sessionHandler = null;
         _scope = null;
         _servletPath = null;
         _timeStamp = 0;
@@ -2185,9 +2185,9 @@ public class Request implements HttpServletRequest
      * @param sessionManager
      *            The sessionManager to set.
      */
-    public void setSessionManager(SessionManager sessionManager)
+    public void setSessionHandler(SessionHandler sessionHandler)
     {
-        _sessionManager = sessionManager;
+        _sessionHandler = sessionHandler;
     }
 
     /* ------------------------------------------------------------ */

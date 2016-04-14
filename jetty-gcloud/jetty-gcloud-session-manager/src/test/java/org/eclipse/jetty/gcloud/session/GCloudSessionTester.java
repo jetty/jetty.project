@@ -25,6 +25,7 @@ import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
+import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -58,10 +59,12 @@ public class GCloudSessionTester
         webapp.setContextPath("/");
         webapp.setWar("../../jetty-distribution/target/distribution/demo-base/webapps/test.war");
         webapp.addAliasCheck(new AllowSymLinkAliasChecker());
-        GCloudSessionManager mgr = new GCloudSessionManager();
-        mgr.getSessionDataStore().setGCloudConfiguration(config);
-        mgr.setSessionIdManager(idmgr);
-        webapp.setSessionHandler(new SessionHandler(mgr));
+        GCloudSessionStore ds = new GCloudSessionStore();
+        ds.setGCloudConfiguration(config);
+        DefaultSessionCache ss = new DefaultSessionCache(webapp.getSessionHandler());
+        webapp.getSessionHandler().setSessionStore(ss);
+        ss.setSessionStore(ds);
+        webapp.getSessionHandler().setSessionIdManager(idmgr);
 
         // A WebAppContext is a ContextHandler as well so it needs to be set to
         // the server so it is aware of where to send the appropriate requests.

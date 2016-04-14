@@ -84,7 +84,7 @@ public abstract class AbstractStopSessionManagerPreserveSessionTest
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 //stop the session manager
-                context.getSessionHandler().getSessionManager().stop();
+                context.getSessionHandler().stop();
                 
                 //check the database to see that the session is still valid
                 checkSessionPersisted(true);

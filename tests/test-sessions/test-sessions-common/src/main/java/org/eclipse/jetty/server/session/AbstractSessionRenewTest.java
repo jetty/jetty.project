@@ -159,7 +159,7 @@ public abstract class AbstractSessionRenewTest
                 assertTrue(beforeSession==afterSession); //same object
                 assertFalse(beforeSessionId.equals(afterSessionId)); //different id
 
-                SessionManager sessionManager = ((Session)afterSession).getSessionManager();
+                SessionHandler sessionManager = ((Session)afterSession).getSessionHandler();
                 DefaultSessionIdManager sessionIdManager = (DefaultSessionIdManager)sessionManager.getSessionIdManager();
 
                 assertTrue(sessionIdManager.isIdInUse(afterSessionId)); //new session id should be in use

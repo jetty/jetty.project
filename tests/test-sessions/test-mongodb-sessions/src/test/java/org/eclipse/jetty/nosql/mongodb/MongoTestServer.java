@@ -21,8 +21,8 @@ package org.eclipse.jetty.nosql.mongodb;
 import java.net.UnknownHostException;
 
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.session.SessionManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.SessionHandler;
 
 import com.mongodb.DBCollection;
@@ -80,26 +80,26 @@ public class MongoTestServer extends AbstractTestServer
     }
 
 
-    public SessionManager newSessionManager()
+
+    public SessionHandler newSessionHandler()
     {
-        MongoSessionManager manager;
+        SessionHandler handler = new SessionHandler();
         try
         {
-            manager = new MongoSessionManager();
-            ((MongoSessionManager)manager).getSessionDataStore().setDBCollection(getCollection());
-            manager.getSessionDataStore().setGracePeriodSec(_scavengePeriod);
+            MongoSessionStore ds = new MongoSessionStore();
+            ds.setDBCollection(getCollection());
+            ds.setGracePeriodSec(_scavengePeriod);
+            
+            DefaultSessionCache ss = new DefaultSessionCache(handler);
+            handler.setSessionStore(ss);
+            return handler;
         }
         catch (Exception e)
         {
             throw new RuntimeException(e);
         }
         
-        return manager;
-    }
-
-    public SessionHandler newSessionHandler(SessionManager sessionManager)
-    {
-        return new SessionHandler(sessionManager);
+        
     }
     
     public static void main(String... args) throws Exception

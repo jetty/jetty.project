@@ -651,10 +651,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (tNode != null)
         { 
             java.math.BigDecimal asDecimal = new java.math.BigDecimal(tNode.toString(false, true));
-            if (asDecimal.compareTo(org.eclipse.jetty.server.session.SessionManager.MAX_INACTIVE_MINUTES) > 0)
-                throw new IllegalStateException ("Max session-timeout in minutes is "+org.eclipse.jetty.server.session.SessionManager.MAX_INACTIVE_MINUTES);
+            if (asDecimal.compareTo(org.eclipse.jetty.server.session.SessionHandler.MAX_INACTIVE_MINUTES) > 0)
+                throw new IllegalStateException ("Max session-timeout in minutes is "+org.eclipse.jetty.server.session.SessionHandler.MAX_INACTIVE_MINUTES);
 
-            context.getSessionHandler().getSessionManager().setMaxInactiveInterval(asDecimal.intValueExact() * 60);
+            context.getSessionHandler().setMaxInactiveInterval(asDecimal.intValueExact() * 60);
         }
 
         //Servlet Spec 3.0
@@ -683,7 +683,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (descriptor instanceof OverrideDescriptor)
                         modes = new HashSet<SessionTrackingMode>();
                     else
-                        modes = new HashSet<SessionTrackingMode>(context.getSessionHandler().getSessionManager().getEffectiveSessionTrackingModes());
+                        modes = new HashSet<SessionTrackingMode>(context.getSessionHandler().getEffectiveSessionTrackingModes());
                     context.getMetaData().setOrigin("session.tracking-mode", descriptor);
                     break;
                 }    
@@ -697,7 +697,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 String trackMode = mNode.toString(false, true);
                 modes.add(SessionTrackingMode.valueOf(trackMode));
             }
-            context.getSessionHandler().getSessionManager().setSessionTrackingModes(modes);   
+            context.getSessionHandler().setSessionTrackingModes(modes);   
         }
        
 
@@ -715,7 +715,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case NotSet:
                     {
                         //no <cookie-config><name> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setName(name);
+                        context.getSessionHandler().getSessionCookieConfig().setName(name);
                         context.getMetaData().setOrigin("cookie-config.name", descriptor);
                         break;
                     }
@@ -726,7 +726,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         //<cookie-config><name> set in a web xml, only allow web-default/web-override to change
                         if (!(descriptor instanceof FragmentDescriptor))
                         {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setName(name);
+                            context.getSessionHandler().getSessionCookieConfig().setName(name);
                             context.getMetaData().setOrigin("cookie-config.name", descriptor);
                         }
                         break;
@@ -734,7 +734,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getName().equals(name))
+                        if (!context.getSessionHandler().getSessionCookieConfig().getName().equals(name))
                             throw new IllegalStateException("Conflicting cookie-config name "+name+" in "+descriptor.getResource());
                         break;
                     }
@@ -752,7 +752,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case NotSet:
                     {
                         //no <cookie-config><domain> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setDomain(domain);
+                        context.getSessionHandler().getSessionCookieConfig().setDomain(domain);
                         context.getMetaData().setOrigin("cookie-config.domain", descriptor);
                         break;
                     }
@@ -763,7 +763,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         //<cookie-config><domain> set in a web xml, only allow web-default/web-override to change
                         if (!(descriptor instanceof FragmentDescriptor))
                         {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setDomain(domain);
+                            context.getSessionHandler().getSessionCookieConfig().setDomain(domain);
                             context.getMetaData().setOrigin("cookie-config.domain", descriptor);
                         }
                         break;
@@ -771,7 +771,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getDomain().equals(domain))
+                        if (!context.getSessionHandler().getSessionCookieConfig().getDomain().equals(domain))
                             throw new IllegalStateException("Conflicting cookie-config domain "+domain+" in "+descriptor.getResource());
                         break;
                     }
@@ -789,7 +789,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case NotSet:
                     {
                         //no <cookie-config><domain> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setPath(path);
+                        context.getSessionHandler().getSessionCookieConfig().setPath(path);
                         context.getMetaData().setOrigin("cookie-config.path", descriptor);
                         break;
                     }
@@ -800,7 +800,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         //<cookie-config><domain> set in a web xml, only allow web-default/web-override to change
                         if (!(descriptor instanceof FragmentDescriptor))
                         {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setPath(path);
+                            context.getSessionHandler().getSessionCookieConfig().setPath(path);
                             context.getMetaData().setOrigin("cookie-config.path", descriptor);
                         }
                         break;
@@ -808,7 +808,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getPath().equals(path))
+                        if (!context.getSessionHandler().getSessionCookieConfig().getPath().equals(path))
                             throw new IllegalStateException("Conflicting cookie-config path "+path+" in "+descriptor.getResource());
                         break;
                     }
@@ -826,7 +826,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case NotSet:
                     {
                         //no <cookie-config><comment> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setComment(comment);
+                        context.getSessionHandler().getSessionCookieConfig().setComment(comment);
                         context.getMetaData().setOrigin("cookie-config.comment", descriptor);
                         break;
                     }
@@ -837,7 +837,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         //<cookie-config><comment> set in a web xml, only allow web-default/web-override to change
                         if (!(descriptor instanceof FragmentDescriptor))
                         {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setComment(comment);
+                            context.getSessionHandler().getSessionCookieConfig().setComment(comment);
                             context.getMetaData().setOrigin("cookie-config.comment", descriptor);
                         }
                         break;
@@ -845,7 +845,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getComment().equals(comment))
+                        if (!context.getSessionHandler().getSessionCookieConfig().getComment().equals(comment))
                             throw new IllegalStateException("Conflicting cookie-config comment "+comment+" in "+descriptor.getResource());
                         break;
                     }
@@ -864,7 +864,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case NotSet:
                     {
                         //no <cookie-config><http-only> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setHttpOnly(httpOnly);
+                        context.getSessionHandler().getSessionCookieConfig().setHttpOnly(httpOnly);
                         context.getMetaData().setOrigin("cookie-config.http-only", descriptor);
                         break;
                     }
@@ -875,7 +875,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         //<cookie-config><http-only> set in a web xml, only allow web-default/web-override to change
                         if (!(descriptor instanceof FragmentDescriptor))
                         {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setHttpOnly(httpOnly);
+                            context.getSessionHandler().getSessionCookieConfig().setHttpOnly(httpOnly);
                             context.getMetaData().setOrigin("cookie-config.http-only", descriptor);
                         }
                         break;
@@ -883,7 +883,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (context.getSessionHandler().getSessionManager().getSessionCookieConfig().isHttpOnly() != httpOnly)
+                        if (context.getSessionHandler().getSessionCookieConfig().isHttpOnly() != httpOnly)
                             throw new IllegalStateException("Conflicting cookie-config http-only "+httpOnly+" in "+descriptor.getResource());
                         break;
                     }
@@ -902,7 +902,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case NotSet:
                     {
                         //no <cookie-config><secure> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setSecure(secure);
+                        context.getSessionHandler().getSessionCookieConfig().setSecure(secure);
                         context.getMetaData().setOrigin("cookie-config.secure", descriptor);
                         break;
                     }
@@ -913,7 +913,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         //<cookie-config><secure> set in a web xml, only allow web-default/web-override to change
                         if (!(descriptor instanceof FragmentDescriptor))
                         {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setSecure(secure);
+                            context.getSessionHandler().getSessionCookieConfig().setSecure(secure);
                             context.getMetaData().setOrigin("cookie-config.secure", descriptor);
                         }
                         break;
@@ -921,7 +921,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (context.getSessionHandler().getSessionManager().getSessionCookieConfig().isSecure() != secure)
+                        if (context.getSessionHandler().getSessionCookieConfig().isSecure() != secure)
                             throw new IllegalStateException("Conflicting cookie-config secure "+secure+" in "+descriptor.getResource());
                         break;
                     }
@@ -940,7 +940,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case NotSet:
                     {
                         //no <cookie-config><max-age> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setMaxAge(maxAge);
+                        context.getSessionHandler().getSessionCookieConfig().setMaxAge(maxAge);
                         context.getMetaData().setOrigin("cookie-config.max-age", descriptor);
                         break;
                     }
@@ -951,7 +951,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         //<cookie-config><max-age> set in a web xml, only allow web-default/web-override to change
                         if (!(descriptor instanceof FragmentDescriptor))
                         {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setMaxAge(maxAge);
+                            context.getSessionHandler().getSessionCookieConfig().setMaxAge(maxAge);
                             context.getMetaData().setOrigin("cookie-config.max-age", descriptor);
                         }
                         break;
@@ -959,7 +959,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (context.getSessionHandler().getSessionManager().getSessionCookieConfig().getMaxAge() != maxAge)
+                        if (context.getSessionHandler().getSessionCookieConfig().getMaxAge() != maxAge)
                             throw new IllegalStateException("Conflicting cookie-config max-age "+maxAge+" in "+descriptor.getResource());
                         break;
                     }

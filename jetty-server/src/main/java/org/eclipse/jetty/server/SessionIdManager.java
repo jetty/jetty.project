@@ -22,7 +22,7 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.server.session.SessionManager;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /** 
@@ -109,8 +109,8 @@ public interface SessionIdManager extends LifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * Get the set of all session managers for this node
-     * @return the set of session managers
+     * Get the set of all session handlers for this node
+     * @return the set of session handlers
      */
-    public  Set<SessionManager> getSessionManagers();
+    public  Set<SessionHandler> getSessionHandlers();
 }

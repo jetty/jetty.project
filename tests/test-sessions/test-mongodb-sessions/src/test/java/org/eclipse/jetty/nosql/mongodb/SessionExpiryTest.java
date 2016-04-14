@@ -278,9 +278,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         assertNotNull(sessions);
         assertNotNull(id);
         
-        DBObject o = sessions.findOne(new BasicDBObject(MongoSessionDataStore.__ID,id));
+        DBObject o = sessions.findOne(new BasicDBObject(MongoSessionStore.__ID,id));
         assertNotNull(o);
-        Long maxIdle = (Long)o.get(MongoSessionDataStore.__MAX_IDLE);
+        Long maxIdle = (Long)o.get(MongoSessionStore.__MAX_IDLE);
         assertNotNull(maxIdle);
         assertEquals(val, maxIdle.longValue());
     }
@@ -290,9 +290,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         assertNotNull(sessions);
         assertNotNull(id);
         
-        DBObject o = sessions.findOne(new BasicDBObject(MongoSessionDataStore.__ID,id));
+        DBObject o = sessions.findOne(new BasicDBObject(MongoSessionStore.__ID,id));
         assertNotNull(o);
-        Long expiry = (Long)o.get(MongoSessionDataStore.__EXPIRY);
+        Long expiry = (Long)o.get(MongoSessionStore.__EXPIRY);
         return (expiry == null? null : expiry.longValue());
     }
     
@@ -301,9 +301,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         assertNotNull(sessions);
         assertNotNull(id);
         
-        DBObject o = sessions.findOne(new BasicDBObject(MongoSessionDataStore.__ID,id));
+        DBObject o = sessions.findOne(new BasicDBObject(MongoSessionStore.__ID,id));
         assertNotNull(o);
-        Long inactiveInterval = (Long)o.get(MongoSessionDataStore.__MAX_IDLE);
+        Long inactiveInterval = (Long)o.get(MongoSessionStore.__MAX_IDLE);
         return (inactiveInterval == null? null : inactiveInterval.longValue());
     }
     
@@ -312,9 +312,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         assertNotNull(sessions);
         assertNotNull(id);
         
-        DBObject o = sessions.findOne(new BasicDBObject(MongoSessionDataStore.__ID,id));
+        DBObject o = sessions.findOne(new BasicDBObject(MongoSessionStore.__ID,id));
         assertNotNull(o);
-        Long accessed = (Long)o.get(MongoSessionDataStore.__ACCESSED);
+        Long accessed = (Long)o.get(MongoSessionStore.__ACCESSED);
         return (accessed == null? null : accessed.longValue());
     }
     
@@ -323,7 +323,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         assertNotNull(sessions);
         assertNotNull(id);
         
-        DBObject o = sessions.findOne(new BasicDBObject(MongoSessionDataStore.__ID,id));
+        DBObject o = sessions.findOne(new BasicDBObject(MongoSessionStore.__ID,id));
         assertNotNull(o);
         System.err.println(o);
     }
