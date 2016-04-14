@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -77,6 +78,15 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         getHttpDestination().release(this);
     }
 
+    @Override
+    public boolean onIdleTimeout(long idleTimeout)
+    {
+        boolean close = super.onIdleTimeout(idleTimeout);
+        if (close)
+            close(new TimeoutException("idle_timeout"));
+        return false;
+    }
+
     public boolean isClosed()
     {
         return closed.get();
@@ -92,11 +102,11 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         if (closed.compareAndSet(false, true))
         {
-            // First close then abort, to be sure that the connection cannot be reused
-            // from an onFailure() handler or by blocking code waiting for completion.
             getHttpDestination().close(this);
-            session.close(ErrorCode.NO_ERROR.code, failure.getMessage(), Callback.NOOP);
+
             abort(failure);
+
+            session.close(ErrorCode.NO_ERROR.code, failure.getMessage(), Callback.NOOP);
         }
     }
 

@@ -1,5 +1,40 @@
 jetty-9.4.0-SNAPSHOT
 
+jetty-9.3.9.M1 - 11 April 2016
+ + 481 Event response.success notified without waiting for content callback for
+   HTTP/2 transport
+ + 490 serverClasses set from jetty-web.xml
+ + 491 Do not assume gzip acceptable for HTTP/2
+ + 503 Wrong request-per-connection counting in MultiplexHttpDestination in
+   case of failures
+ + 504 HTTP/2 client transport cannot send request after idle timeout
+
+ jetty-9.3.9.M0 - 05 April 2016
+ + 184 Empty Realm for BasicAuthentication
+ + 371 update apache jsp to 8.0.27
+ + 418 Add osgi capability for endpoint configurator
+ + 424 Jetty impl. of Websocket ServerEndpointConfig.Configurator lifecycle out
+   of spec
+ + 427 Squelch intentional exceptions seen during websocket testing
+ + 434 RequestTest stack traces
+ + 435 adjust debug log message
+ + 437 Avoid NPE on receiving empty message though MessageHandler.Partial
+ + 438 File and Path Resources with control characters should be rejected
+ + 446 jetty-quickstart path normalization uses improper paths on Windows
+ + 448 RFC2616 Compliance Mode should track and report RFC7230 violations
+ + 450 Client AuthenticationProtocolHandler sends request failures to response
+   failure listener
+ + 451 RFC2616 Compliance mode should support empty headers
+ + 453 Change logging of setting session maxInactiveInterval to DEBUG from WARN
+ + 454 DoSFilter does not send an error status code when closing a connection,
+   because of timeout
+ + 458 Improve Quality list handling
+ + 467 Compact // rule
+ + 469 Update to Apache Jasper 8.0.33
+ + 470 AsyncContextState NPE if called after reset
+ + 472 Use LongAdder for statistics
+ + 476 HttpClient should not send absolute-form target with non HttpProxy
+
 jetty-9.3.8.v20160314 - 14 March 2016
  + 107 ResourceHandler range support testcase
  + 124 Don't produce text/html if the request doesn't accept it

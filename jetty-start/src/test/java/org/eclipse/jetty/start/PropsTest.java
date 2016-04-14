@@ -18,14 +18,17 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import org.eclipse.jetty.start.Props.Prop;
+import org.junit.Test;
+
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import org.eclipse.jetty.start.Props.Prop;
-import org.junit.Test;
 
 public class PropsTest
 {
@@ -119,6 +122,17 @@ public class PropsTest
 
         // Should expand
         assertThat(props.expand("server-id=corporate-${id}"),is("server-id=corporate-jetty-9.1"));
+    }
+
+    @Test
+    public void testExpandDouble()
+    {
+        Props props = new Props();
+        props.setProperty("bar","apple",FROM_TEST);
+        props.setProperty("foo","foo/${bar}/${bar}-xx",FROM_TEST);
+
+        // Should expand
+        assertThat(props.expand("foo/${bar}/${bar}-xx"),is("foo/apple/apple-xx"));
     }
 
     @Test
