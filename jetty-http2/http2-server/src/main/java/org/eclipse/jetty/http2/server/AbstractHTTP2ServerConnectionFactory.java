@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 
 @ManagedObject
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
@@ -46,6 +47,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxConcurrentStreams = -1;
     private int maxHeaderBlockFragment = 0;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
+    private ExecutionStrategy.Factory executionStrategyFactory = ExecutionStrategy.Factory.getDefault();
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -112,6 +114,16 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.flowControlStrategyFactory = flowControlStrategyFactory;
     }
 
+    public ExecutionStrategy.Factory getExecutionStrategyFactory()
+    {
+        return executionStrategyFactory;
+    }
+
+    public void setExecutionStrategyFactory(ExecutionStrategy.Factory executionStrategyFactory)
+    {
+        this.executionStrategyFactory = executionStrategyFactory;
+    }
+
     public HttpConfiguration getHttpConfiguration()
     {
         return httpConfiguration;
@@ -135,7 +147,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         ServerParser parser = newServerParser(connector, session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
-                        endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
+                        endPoint, httpConfiguration, parser, session, getInputBufferSize(), getExecutionStrategyFactory(), listener);
         connection.addListener(connectionListener);
         return configure(connection, connector, endPoint);
     }

@@ -46,14 +46,14 @@ public class HTTP2Connection extends AbstractConnection
     private final HTTP2Producer producer = new HTTP2Producer();
     private final ExecutionStrategy executionStrategy;
 
-    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize, ExecutionStrategy.Factory executionFactory)
     {
         super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.executionStrategy = ExecutionStrategy.Factory.instanceFor(producer, executor);
+        this.executionStrategy = executionFactory.newExecutionStrategy(producer, executor);
     }
 
     public ISession getSession()

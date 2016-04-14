@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
 {
     private static final Logger LOG = Log.getLogger(ExecuteProduceConsume.class);
+
     private final Locker _locker = new Locker();
     private final Runnable _runExecute = new RunExecute();
     private final Producer _producer;
@@ -61,7 +62,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
     {
         this(producer,executor,(executor instanceof ThreadPool)?new ProduceExecuteConsume(producer,executor):null);
     }
-    
+
     public ExecuteProduceConsume(Producer producer, Executor executor, ExecutionStrategy lowResourceStrategy)
     {
         this._producer = producer;
@@ -75,7 +76,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} execute",this);
-        
+
         boolean produce=false;
         try (Lock locked = _locker.lock())
         {
@@ -140,7 +141,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
             // suffer as badly from thread starvation
             while (_threadpool!=null && _threadpool.isLowOnThreads())
             {
-                LOG.debug("EWYK low resources {}",this);
+                LOG.debug("EPC low resources {}",this);
                 try
                 {
                     _lowresources.execute();
@@ -151,7 +152,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
                     LOG.warn(e);
                 }
             }
-            
+
             // no longer low resources so produceAndRun normally
             produceAndRun();
         }
@@ -272,7 +273,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append("EPR ");
+        builder.append("EPC ");
         try (Lock locked = _locker.lock())
         {
             builder.append(_idle?"Idle/":"");
@@ -290,6 +291,15 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
         public void run()
         {
             execute();
+        }
+    }
+
+    public static class Factory implements ExecutionStrategy.Factory
+    {
+        @Override
+        public ExecutionStrategy newExecutionStrategy(Producer producer, Executor executor)
+        {
+            return new ExecuteProduceConsume(producer, executor);
         }
     }
 }

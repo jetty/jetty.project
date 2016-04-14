@@ -31,7 +31,8 @@ import org.eclipse.jetty.util.thread.ExecutionStrategy;
  */
 public class ProduceExecuteConsume implements ExecutionStrategy
 {
-    private static final Logger LOG = Log.getLogger(ExecutionStrategy.class);
+    private static final Logger LOG = Log.getLogger(ProduceExecuteConsume.class);
+
     private final Producer _producer;
     private final Executor _executor;
 
@@ -50,7 +51,7 @@ public class ProduceExecuteConsume implements ExecutionStrategy
             // Produce a task.
             Runnable task = _producer.produce();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} PER produced {}",_producer,task);
+                LOG.debug("{} produced {}", _producer, task);
 
             if (task == null)
                 break;
@@ -60,7 +61,7 @@ public class ProduceExecuteConsume implements ExecutionStrategy
             {
                 _executor.execute(task);
             }
-            catch(RejectedExecutionException e)
+            catch (RejectedExecutionException e)
             {
                 //  Discard/reject tasks that cannot be executed
                 if (task instanceof Rejectable)
@@ -83,5 +84,14 @@ public class ProduceExecuteConsume implements ExecutionStrategy
     public void dispatch()
     {
         execute();
+    }
+
+    public static class Factory implements ExecutionStrategy.Factory
+    {
+        @Override
+        public ExecutionStrategy newExecutionStrategy(Producer producer, Executor executor)
+        {
+            return new ProduceExecuteConsume(producer, executor);
+        }
     }
 }

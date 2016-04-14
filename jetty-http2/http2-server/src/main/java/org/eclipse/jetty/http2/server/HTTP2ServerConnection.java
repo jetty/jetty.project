@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 
 public class HTTP2ServerConnection extends HTTP2Connection implements Connection.UpgradeTo
 {
@@ -59,9 +60,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final HttpConfiguration httpConfig;
     private final List<Frame> upgradeFrames = new ArrayList<>();
 
-    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ExecutionStrategy.Factory executionFactory, ServerSessionListener listener)
     {
-        super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize);
+        super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize, executionFactory);
         this.listener = listener;
         this.httpConfig = httpConfig;
     }
