@@ -18,9 +18,10 @@
 
 package org.eclipse.jetty.server;
 
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptyList;
 import static org.eclipse.jetty.http.CompressedContentFormat.BR;
 import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
-import static org.eclipse.jetty.http.HttpFields.qualityList;
 import static org.eclipse.jetty.http.HttpHeaderValue.IDENTITY;
 
 import java.io.FileNotFoundException;
@@ -32,6 +33,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
@@ -48,6 +50,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -73,6 +76,9 @@ public abstract class ResourceService
     private boolean _dirAllowed=true;
     private boolean _redirectWelcome=false;
     private CompressedContentFormat[] _precompressedFormats=new CompressedContentFormat[0];
+    private String[] _preferredEncodingOrder =new String[0];
+    private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
+    private int _encodingCacheSize=100;
     private boolean _pathInfoOnly=false;
     private boolean _etags=false;
     private HttpField _cacheControl;
@@ -126,6 +132,17 @@ public abstract class ResourceService
     public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
     {
         _precompressedFormats = precompressedFormats;
+        _preferredEncodingOrder = stream(_precompressedFormats).map(f->f._encoding).toArray(String[]::new);
+    }
+
+    public void setEncodingCacheSize(int encodingCacheSize)
+    {
+        _encodingCacheSize = encodingCacheSize;
+    }
+
+    public int getEncodingCacheSize()
+    {
+        return _encodingCacheSize;
     }
 
     public boolean isPathInfoOnly()
@@ -249,7 +266,7 @@ public abstract class ResourceService
                 // Tell caches that response may vary by accept-encoding
                 response.addHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
 
-                List<String> preferredEncodings = HttpFields.qualityList(request.getHeaders(HttpHeader.ACCEPT_ENCODING.asString()));
+                List<String> preferredEncodings = getPreferredEncodingOrder(request);
                 CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(preferredEncodings, precompressedContents.keySet());
                 if (precompressedContentEncoding!=null)
                 {
@@ -283,6 +300,40 @@ public abstract class ResourceService
                     content.release();
             }
         }
+    }
+
+    private List<String> getPreferredEncodingOrder(HttpServletRequest request)
+    {
+        Enumeration<String> headers = request.getHeaders(HttpHeader.ACCEPT_ENCODING.asString());
+        if (!headers.hasMoreElements())
+            return emptyList();
+
+        String key = headers.nextElement();
+        if (headers.hasMoreElements())
+        {
+            StringBuilder sb = new StringBuilder(key.length()*2);
+            do
+            {
+                sb.append(',').append(headers.nextElement());
+            } while (headers.hasMoreElements());
+            key = sb.toString();
+        }
+
+        List<String> values=_preferredEncodingOrderCache.get(key);
+        if (values==null)
+        {
+            QuotedQualityCSV encodingQualityCSV = new QuotedQualityCSV(_preferredEncodingOrder);
+            encodingQualityCSV.addValue(key);
+            values=encodingQualityCSV.getValues();
+
+            // keep cache size in check even if we get strange/malicious input
+            if (_preferredEncodingOrderCache.size()>_encodingCacheSize)
+                _preferredEncodingOrderCache.clear();
+
+            _preferredEncodingOrderCache.put(key,values);
+        }
+
+        return values;
     }
 
     private CompressedContentFormat getBestPrecompressedContent(List<String> preferredEncodings, Collection<CompressedContentFormat> availableFormats)
