@@ -19,10 +19,12 @@
   <!-- Infinispan DefaultCache                                               -->
   <!-- ===================================================================== -->
   <Call name="addBean">
+   <Arg>
     <New class="org.eclipse.jetty.server.session.InfinispanSessionStoreFactory">
        <Set name="cache"><Ref id="remoteCache"/></Set>
        <Set name="infinispanIdleTimeoutSec"><Property name="jetty.session.infinispanIdleTimeout.seconds" default="0" /></Set>
        <Set name="gracePeriod"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
     </New>
+   </Arg>
   </Call>
 </Configure> 

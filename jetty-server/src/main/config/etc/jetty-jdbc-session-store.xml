@@ -8,6 +8,7 @@
   <!-- Configure a factory for JDBCSessionStores                             -->
   <!-- ===================================================================== -->
   <Call name="addBean">
+   <Arg>
     <New class="org.eclipse.jetty.server.session.JDBCSessionStoreFactory">   
       <Set name="gracePeriod"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
       <Set name="databaseAdaptor">
@@ -58,6 +59,7 @@
 		</New>
 	</Set>
     </New>
+   </Arg>
   </Call>
 
 </Configure>

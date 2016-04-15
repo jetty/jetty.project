@@ -8,11 +8,12 @@
   <!-- Configure a factory for GCloudSessionStores                           -->
   <!-- ===================================================================== -->
   <Call name="addBean">
+   <Arg>
     <New class="org.eclipse.jetty.server.session.GCloudSessionStoreFactory">      
-
        <Set name="gcloudConfiguration"><Ref id="gconf"/></Set>
        <Set name="gracePeriod"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
     </New>
+   </Arg>
   </Call>
   
 </Configure>

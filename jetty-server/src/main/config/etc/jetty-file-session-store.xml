@@ -8,9 +8,11 @@
   <!-- Configure a factory for FileSessionStores                             -->
   <!-- ===================================================================== -->
   <Call name="addBean">
+   <Arg>
     <New class="org.eclipse.jetty.server.session.FileSessionStoreFactory">
        <Set name="deleteUnrestorableFiles"><Property name="jetty.session.deleteUnrestorableFiles" default="false" /></Set>
        <Set name="storeDir"><Property name="jetty.session.storeDir"/></Set>
     </New>
+   </Arg>
   </Call>
 </Configure> 
