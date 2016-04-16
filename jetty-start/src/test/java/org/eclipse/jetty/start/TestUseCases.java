@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -57,6 +56,8 @@ public class TestUseCases
                 return name.endsWith(".assert.txt");
             }
         });
+        
+        Arrays.sort(cases);
         
         List<Object[]> ret = new ArrayList<>();
         for(File assertTxt:cases)

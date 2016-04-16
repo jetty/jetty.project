@@ -234,8 +234,8 @@ public class Modules implements Iterable<Module>
             {
                 providers.forEach(p-> 
                 { 
-                    if (p!=module && p.isEnabled()) 
-                        throw new UsageException("Module %s capability %s already provided by %s",module.getName(),name,p.getName());
+                    if (p!=module && p.isEnabled() && !p.isTransitive()) 
+                        throw new UsageException("Capability %s already enabled by %s for %s",name,p.getName(),module.getName());
                 });
             }   
         }

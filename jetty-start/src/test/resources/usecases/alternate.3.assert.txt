@@ -1,2 +1,2 @@
 EX|UsageException
-EX|default already provided by alternate
+EX|default already enabled by alternate
