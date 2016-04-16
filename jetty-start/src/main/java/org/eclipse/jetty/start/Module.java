@@ -36,6 +36,22 @@ import java.util.stream.Collectors;
 
 /**
  * Represents a Module metadata, as defined in Jetty.
+ * 
+ * <p>A module consists of:
+ * <ul>
+ * <li>A set of jar files, directories and/or jar file patterns to be added to the classpath</li>
+ * <li>A list of XML configuration files</li>
+ * <li>Properties set either directly or via a file of properties</li>
+ * <li>A set of modules names (or capability names) that this module depends on.</li>
+ * <li>A set of capability names that this module provides (including it's own name).</li>
+ * <li>Licence details for using the module</li>
+ * </ul>
+ * Modules are discovered in the <code>${jetty.home}/modules</code> and 
+ * <code>${jetty.home}/modules</code> directories. A module may refer to 
+ * non-discovered dynamic module in a subdirectory, using a property as part or 
+ * all of the name.
+ * A module may be enabled, either directly by name or transiently via a dependency
+ * from another module by name or provided capability.
  */
 public class Module
 {
