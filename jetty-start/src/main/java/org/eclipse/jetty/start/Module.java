@@ -24,15 +24,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.CollationKey;
-import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.Function;
@@ -46,74 +40,96 @@ import java.util.stream.Collectors;
 public class Module
 {
     private static final String VERSION_UNSPECIFIED = "9.2";
+    private static Pattern MOD_NAME = Pattern.compile("^(.*)\\.mod",Pattern.CASE_INSENSITIVE);
 
-    /** The name of this Module (as a filesystem reference) */
-    private String fileRef;
-    
     /** The file of the module */
-    private final Path file;
+    private final Path _path;
 
     /** The name of the module */
-    private String name;
+    private final String _name;
     
-    /** The module description */
-    private List<String> description;
-    
+    /** Is the module dynamic - ie referenced rather than discovered */
+    private final boolean _dynamic;
+
     /** The version of Jetty the module supports */
     private Version version;
+    
+    /** The module description */
+    private final List<String> _description=new ArrayList<>();
 
     /** List of xml configurations for this Module */
-    private List<String> xmls;
+    private final List<String> _xmls=new ArrayList<>();
     
     /** List of ini template lines */
-    private List<String> iniTemplate;
+    private final List<String> _iniTemplate=new ArrayList<>();
     
     /** List of default config */
-    private List<String> defaultConfig;
+    private final List<String> _defaultConfig=new ArrayList<>();
     
     /** List of library options for this Module */
-    private List<String> libs;
+    private final List<String> _libs=new ArrayList<>();
     
     /** List of files for this Module */
-    private List<String> files;
+    private final List<String> _files=new ArrayList<>();
     
     /** List of selections for this Module */
-    private Set<String> selections;
+    private final Set<String> _enables=new HashSet<>();
     
-    /** Boolean true if directly enabled, false if selections are transitive */
-    private boolean enabled;
+    /** List of provides for this Module */
+    private final Set<String> _provides=new HashSet<>();
+    
+    /** Boolean true if directly enabled, false if all selections are transitive */
+    private boolean _notTransitive;
     
     /** Skip File Validation (default: false) */
-    private boolean skipFilesValidation = false;
+    private boolean _skipFilesValidation = false;
     
     /** List of jvm Args */
-    private List<String> jvmArgs;
+    private final List<String> _jvmArgs=new ArrayList<>();
     
     /** License lines */
-    private List<String> license;
+    private final List<String> _license=new ArrayList<>();
     
     /** Dependencies */
-    private Set<String> depends;
+    private final Set<String> _depends=new HashSet<>();
     
     /** Optional */
-    private  Set<String> optional;
+    private final Set<String> _optional=new HashSet<>();
 
-    public Module(BaseHome basehome, Path file) throws FileNotFoundException, IOException
+    public Module(BaseHome basehome, Path path) throws FileNotFoundException, IOException
     {
         super();
-        this.file = file;
-
-        // Strip .mod
-        this.fileRef = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(file.getFileName().toString()).replaceFirst("");
-        name=fileRef;
-
-        init(basehome);
+        _path = path;
+        
+        // Module name is the / separated path below the modules directory
+        int m=-1;
+        for (int i=path.getNameCount();i-->0;)
+        {
+            if ("modules".equals(path.getName(i).toString()))
+            {
+                m=i;
+                break;
+            }
+        }
+        if (m<0)
+            throw new IllegalArgumentException("Module not contained within modules directory: "+basehome.toShortForm(path));
+        String n=path.getName(m+1).toString();
+        for (int i=m+2;i<path.getNameCount();i++)
+            n=n+"/"+path.getName(i).toString();
+        Matcher matcher=MOD_NAME.matcher(n);
+        if (!matcher.matches())
+            throw new IllegalArgumentException("Module filename must have .mod extension: "+basehome.toShortForm(path));
+        _name=matcher.group(1);
+    
+        _provides.add(_name);
+        _dynamic=_name.contains("/");        
+        
         process(basehome);
     }
 
     public String getName()
     {
-        return name;
+        return _name;
     }
     
     @Override
@@ -132,70 +148,62 @@ public class Module
             return false;
         }
         Module other = (Module)obj;
-        if (fileRef == null)
-        {
-            if (other.fileRef != null)
-            {
-                return false;
-            }
-        }
-        else if (!fileRef.equals(other.fileRef))
-        {
-            return false;
-        }
-        return true;
+        if (_path == null)
+            return other._path == null;
+        
+        return _path.equals(other._path);
     }
 
     public void expandProperties(Props props)
     {
         Function<String,String> expander = d->{return props.expand(d);};
-        depends=depends.stream().map(expander).collect(Collectors.toSet());
-        optional=optional.stream().map(expander).collect(Collectors.toSet());
+        
+        Set<String> tmp=_depends.stream().map(expander).collect(Collectors.toSet());
+        _depends.clear();
+        _depends.addAll(tmp);
+        tmp=_optional.stream().map(expander).collect(Collectors.toSet());
+        _optional.clear();
+        _optional.addAll(tmp);
     }
 
     public List<String> getDefaultConfig()
     {
-        return defaultConfig;
+        return _defaultConfig;
     }
     
     public List<String> getIniTemplate()
     {
-        return iniTemplate;
+        return _iniTemplate;
     }
 
     public List<String> getFiles()
     {
-        return files;
+        return _files;
     }
 
     public boolean isSkipFilesValidation()
     {
-        return skipFilesValidation;
-    }
-
-    public String getFilesystemRef()
-    {
-        return fileRef;
+        return _skipFilesValidation;
     }
 
     public List<String> getJvmArgs()
     {
-        return jvmArgs;
+        return _jvmArgs;
     }
 
     public List<String> getLibs()
     {
-        return libs;
+        return _libs;
     }
 
     public List<String> getLicense()
     {
-        return license;
+        return _license;
     }
     
     public List<String> getXmls()
     {
-        return xmls;
+        return _xmls;
     }
     
     public Version getVersion()
@@ -205,63 +213,33 @@ public class Module
 
     public boolean hasDefaultConfig()
     {
-        return !defaultConfig.isEmpty();
+        return !_defaultConfig.isEmpty();
     }
     
     public boolean hasIniTemplate()
     {
-        return !iniTemplate.isEmpty();
+        return !_iniTemplate.isEmpty();
     }
 
     @Override
     public int hashCode()
     {
-        final int prime = 31;
-        int result = 1;
-        result = (prime * result) + ((fileRef == null)?0:fileRef.hashCode());
-        return result;
+        return _name.hashCode();
     }
 
     public boolean hasLicense()
     {
-        return (license != null) && (license.size() > 0);
-    }
-
-    private void init(BaseHome basehome)
-    {
-        description = new ArrayList<>();
-        xmls = new ArrayList<>();
-        defaultConfig = new ArrayList<>();
-        iniTemplate = new ArrayList<>();
-        libs = new ArrayList<>();
-        files = new ArrayList<>();
-        jvmArgs = new ArrayList<>();
-        license = new ArrayList<>();
-        depends = new HashSet<>();
-        optional = new HashSet<>();
-        selections = new HashSet<>();
-
-        String name = basehome.toShortForm(file);
-
-        // Find module system name (usually in the form of a filesystem reference)
-        Pattern pat = Pattern.compile("^.*[/\\\\]{1}modules[/\\\\]{1}(.*).mod$",Pattern.CASE_INSENSITIVE);
-        Matcher mat = pat.matcher(name);
-        if (!mat.find())
-        {
-            throw new RuntimeException("Invalid Module location (must be located under /modules/ directory): " + name);
-        }
-        this.fileRef = mat.group(1).replace('\\','/');
-        this.name=this.fileRef;
+        return (_license != null) && (_license.size() > 0);
     }
 
     /**
      * Indicates a module that is dynamic in nature
      * 
-     * @return a module where the declared metadata name does not match the filename reference (aka a dynamic module)
+     * @return a module where the name is not in the top level of the modules directory
      */
     public boolean isDynamic()
     {
-        return !name.equals(fileRef);
+        return _dynamic;
     }
 
     public boolean hasFiles(BaseHome baseHome, Props props)
@@ -282,13 +260,13 @@ public class Module
     {
         Pattern section = Pattern.compile("\\s*\\[([^]]*)\\]\\s*");
 
-        if (!FS.canReadFile(file))
+        if (!FS.canReadFile(_path))
         {
-            StartLog.debug("Skipping read of missing file: %s",basehome.toShortForm(file));
+            StartLog.debug("Skipping read of missing file: %s",basehome.toShortForm(_path));
             return;
         }
 
-        try (BufferedReader buf = Files.newBufferedReader(file,StandardCharsets.UTF_8))
+        try (BufferedReader buf = Files.newBufferedReader(_path,StandardCharsets.UTF_8))
         {
             String sectionType = "";
             String line;
@@ -311,7 +289,7 @@ public class Module
                         // for the [ini-template] section
                         if ("INI-TEMPLATE".equals(sectionType))
                         {
-                            iniTemplate.add(line);
+                            _iniTemplate.add(line);
                         }
                     }
                     else
@@ -322,36 +300,37 @@ public class Module
                                 // ignore (this would be entries before first section)
                                 break;
                             case "DESCRIPTION":
-                                description.add(line);
+                                _description.add(line);
                                 break;
                             case "DEPEND":
-                                depends.add(line);
+                                _depends.add(line);
                                 break;
                             case "FILES":
-                                files.add(line);
+                                _files.add(line);
                                 break;
                             case "DEFAULTS": // old name introduced in 9.2.x
                             case "INI": // new name for 9.3+
-                                defaultConfig.add(line);
+                                _defaultConfig.add(line);
                                 break;
                             case "INI-TEMPLATE":
-                                iniTemplate.add(line);
+                                _iniTemplate.add(line);
                                 break;
                             case "LIB":
-                                libs.add(line);
+                                _libs.add(line);
                                 break;
                             case "LICENSE":
                             case "LICENCE":
-                                license.add(line);
+                                _license.add(line);
                                 break;
                             case "NAME":
-                                name=line;
+                            case "PROVIDES":
+                                _provides.add(line);
                                 break;
                             case "OPTIONAL":
-                                optional.add(line);
+                                _optional.add(line);
                                 break;
                             case "EXEC":
-                                jvmArgs.add(line);
+                                _jvmArgs.add(line);
                                 break;
                             case "VERSION":
                                 if (version != null)
@@ -361,7 +340,7 @@ public class Module
                                 version = new Version(line);
                                 break;
                             case "XML":
-                                xmls.add(line);
+                                _xmls.add(line);
                                 break;
                             default:
                                 throw new IOException("Unrecognized Module section: [" + sectionType + "]");
@@ -384,7 +363,7 @@ public class Module
     
     public void setSkipFilesValidation(boolean skipFilesValidation)
     {
-        this.skipFilesValidation = skipFilesValidation;
+        this._skipFilesValidation = skipFilesValidation;
     }
     
     @Override
@@ -392,13 +371,9 @@ public class Module
     {
         StringBuilder str = new StringBuilder();
         str.append("Module[").append(getName());
-        if (isDynamic())
+        if (isEnabled())
         {
-            str.append(",file=").append(fileRef);
-        }
-        if (isSelected())
-        {
-            str.append(",selected");
+            str.append(",enabled");
         }
         if (isTransitive())
         {
@@ -410,52 +385,64 @@ public class Module
 
     public Set<String> getDepends()
     {
-        return Collections.unmodifiableSet(depends);
+        return new HashSet<>(_depends);
     }
 
+    public Set<String>  getProvides()
+    {
+        return new HashSet<>(_provides);        
+    }
+    
     public Set<String> getOptional()
     {
-        return Collections.unmodifiableSet(optional);
+        return new HashSet<>(_optional);
     }
     
     public List<String> getDescription()
     {
-        return description;
+        return _description;
     }
     
-    public boolean isSelected()
+    public boolean isEnabled()
     {
-        return !selections.isEmpty();
+        return !_enables.isEmpty();
     }
     
-    public Set<String> getSelections()
+    public Set<String> getEnableSources()
     {
-        return Collections.unmodifiableSet(selections);
+        return new HashSet<>(_enables);
     }
 
-    public boolean addSelection(String enabledFrom,boolean transitive)
+    /**
+     * @param source
+     * @param transitive
+     * @return True if the module was not previously enabled
+     */
+    public boolean enable(String source,boolean transitive)
     {
-        boolean updated=selections.isEmpty();
+        boolean updated=_enables.isEmpty();
         if (transitive)
         {
-            if (!enabled)
-                selections.add(enabledFrom);
+            // Ignore transitive selections if explicitly enabled
+            if (!_notTransitive)
+                _enables.add(source);
         }
         else
         {
-            if (!enabled)
+            if (!_notTransitive)
             {
+                // Ignore transitive selections if explicitly enabled
                 updated=true;
-                selections.clear(); // clear any transitive enabling
+                _enables.clear(); // clear any transitive enabling
             }
-            enabled=true;
-            selections.add(enabledFrom);
+            _notTransitive=true;
+            _enables.add(source);
         }
         return updated;
     }
 
     public boolean isTransitive()
     {
-        return isSelected() && !enabled;
+        return isEnabled() && !_notTransitive;
     }
 }

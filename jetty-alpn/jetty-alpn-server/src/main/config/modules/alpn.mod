@@ -15,9 +15,6 @@ specific version of Java.
 # All versions of alpn-boot can be found at
 # http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/
 
-[name]
-alpn
-
 [depend]
 ssl
 alpn-impl/alpn-${java.version}

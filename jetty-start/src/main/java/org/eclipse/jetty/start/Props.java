@@ -375,4 +375,10 @@ public final class Props implements Iterable<Prop>
         System.setProperty(key,value);
         sysPropTracking.add(key);
     }
+    
+    @Override
+    public String toString()
+    {
+        return props.toString();
+    }
 }

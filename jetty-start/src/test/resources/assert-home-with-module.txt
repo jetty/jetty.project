@@ -1,0 +1,22 @@
+# The XMLs we expect (order is important)
+XML|${jetty.base}/etc/optional.xml
+XML|${jetty.base}/etc/base.xml
+XML|${jetty.base}/etc/main.xml
+XML|${jetty.base}/etc/extra.xml
+
+# The LIBs we expect (order is irrelevant)
+LIB|${jetty.base}/lib/optional.jar
+LIB|${jetty.base}/lib/base.jar
+LIB|${jetty.base}/lib/main.jar
+LIB|${jetty.base}/lib/other.jar
+LIB|${jetty.base}/lib/extra/extra0.jar
+LIB|${jetty.base}/lib/extra/extra1.jar
+jar
+
+# The Properties we expect (order is irrelevant)
+PROP|extra.prop=value0
+PROP|main.prop=value0
+PROP|optional.prop=value0
+
+# Files / Directories to create
+FILE|maindir/

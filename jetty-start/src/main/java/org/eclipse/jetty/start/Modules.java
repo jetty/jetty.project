@@ -27,11 +27,14 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import javax.net.ssl.HostnameVerifier;
 
 import org.eclipse.jetty.util.TopologicalSort;
 
@@ -40,15 +43,16 @@ import org.eclipse.jetty.util.TopologicalSort;
  */
 public class Modules implements Iterable<Module>
 {
-    private final List<Module> modules = new ArrayList<>();
-    private final Map<String,Module> names = new HashMap<>();
-    private final BaseHome baseHome;
-    private final StartArgs args;
+    private final List<Module> _modules = new ArrayList<>();
+    private final Map<String,Module> _names = new HashMap<>();
+    private final Map<String,Set<Module>> _provided = new HashMap<>();
+    private final BaseHome _baseHome;
+    private final StartArgs _args;
 
     public Modules(BaseHome basehome, StartArgs args)
     {
-        this.baseHome = basehome;
-        this.args = args;
+        this._baseHome = basehome;
+        this._args = args;
         
         String java_version = System.getProperty("java.version");
         if (java_version!=null)
@@ -59,7 +63,7 @@ public class Modules implements Iterable<Module>
 
     public void dump()
     {
-        List<String> ordered = modules.stream().map(m->{return m.getName();}).collect(Collectors.toList());
+        List<String> ordered = _modules.stream().map(m->{return m.getName();}).collect(Collectors.toList());
         Collections.sort(ordered);
         ordered.stream().map(n->{return get(n);}).forEach(module->
         {
@@ -68,15 +72,15 @@ public class Modules implements Iterable<Module>
             {
                 status = "[t]";
             }
-            else if (module.isSelected())
+            else if (module.isEnabled())
             {
                 status = "[x]";
             }
 
             System.out.printf("%n %s Module: %s%n",status,module.getName());
-            if (!module.getName().equals(module.getFilesystemRef()))
+            if (module.getProvides().size()>1)
             {
-                System.out.printf("        Ref: %s%n",module.getFilesystemRef());
+                System.out.printf("   Provides: %s%n",module.getProvides());
             }
             for (String description : module.getDescription())
             {
@@ -102,9 +106,9 @@ public class Modules implements Iterable<Module>
             {
                 System.out.printf("        JVM: %s%n",jvm);
             }
-            if (module.isSelected())
+            if (module.isEnabled())
             {
-                for (String selection : module.getSelections())
+                for (String selection : module.getEnableSources())
                 {
                     System.out.printf("    Enabled: %s%n",selection);
                 }
@@ -119,7 +123,7 @@ public class Modules implements Iterable<Module>
         {
             String name=module.getName();
             String index=(i++)+")";
-            for (String s:module.getSelections())
+            for (String s:module.getEnableSources())
             {
                 System.out.printf("  %4s %-15s %s%n",index,name,s);
                 index="";
@@ -130,7 +134,7 @@ public class Modules implements Iterable<Module>
 
     public void registerAll() throws IOException
     {
-        for (Path path : baseHome.getPaths("modules/*.mod"))
+        for (Path path : _baseHome.getPaths("modules/*.mod"))
         {
             registerModule(path);
         }
@@ -142,15 +146,17 @@ public class Modules implements Iterable<Module>
         {
             throw new IllegalStateException("Cannot read file: " + file);
         }
-        String shortName = baseHome.toShortForm(file);
+        String shortName = _baseHome.toShortForm(file);
         try
         {
             StartLog.debug("Registering Module: %s",shortName);
-            Module module = new Module(baseHome,file);
-            modules.add(module);
-            names.put(module.getName(),module);
-            if (module.isDynamic())
-                names.put(module.getFilesystemRef(),module);
+            Module module = new Module(_baseHome,file);
+            _modules.add(module);
+            _names.put(module.getName(),module);
+            module.getProvides().forEach(n->{
+                _provided.computeIfAbsent(n,k->new HashSet<Module>()).add(module);
+            });
+            
             return module;
         }
         catch (Error|RuntimeException t)
@@ -168,10 +174,10 @@ public class Modules implements Iterable<Module>
     {
         StringBuilder str = new StringBuilder();
         str.append("Modules[");
-        str.append("count=").append(modules.size());
+        str.append("count=").append(_modules.size());
         str.append(",<");
         final AtomicBoolean delim = new AtomicBoolean(false);
-        modules.forEach(m->
+        _modules.forEach(m->
         {
             if (delim.get())
                 str.append(',');
@@ -186,23 +192,23 @@ public class Modules implements Iterable<Module>
     public void sort()
     {
         TopologicalSort<Module> sort = new TopologicalSort<>();
-        for (Module module: modules)
+        for (Module module: _modules)
         {
             Consumer<String> add = name ->
             {
-                Module dependency = names.get(name);
+                Module dependency = _names.get(name);
                 if (dependency!=null)
                     sort.addDependency(module,dependency);
             };
             module.getDepends().forEach(add);
             module.getOptional().forEach(add);
         }
-        sort.sort(modules);
+        sort.sort(_modules);
     }
 
     public List<Module> getSelected()
     {
-        return modules.stream().filter(m->{return m.isSelected();}).collect(Collectors.toList());
+        return _modules.stream().filter(m->{return m.isEnabled();}).collect(Collectors.toList());
     }
 
     public Set<String> select(String name, String enabledFrom)
@@ -216,55 +222,101 @@ public class Modules implements Iterable<Module>
         return enabled;
     }
 
-    private void enable(Set<String> enabled,Module module, String enabledFrom, boolean transitive)
+    private void enable(Set<String> newlyEnabled, Module module, String enabledFrom, boolean transitive)
     {
         StartLog.debug("enable %s from %s transitive=%b",module,enabledFrom,transitive);
-        if (module.addSelection(enabledFrom,transitive))
+        
+        // Check that this is not already provided by another module!
+        for (String name:module.getProvides())
+        {
+            Set<Module> providers = _provided.get(name);
+            if (providers!=null)
+            {
+                providers.forEach(p-> 
+                { 
+                    if (p!=module && p.isEnabled()) 
+                        throw new UsageException("Module %s capability %s already provided by %s",module.getName(),name,p.getName());
+                });
+            }   
+        }
+      
+        // Enable the  module
+        if (module.enable(enabledFrom,transitive))
         {
             StartLog.debug("enabled %s",module.getName());
-            enabled.add(module.getName());
-            module.expandProperties(args.getProperties());
+            newlyEnabled.add(module.getName());
+            
+            // Expand module properties
+            module.expandProperties(_args.getProperties());
+            
+            // Apply default configuration
             if (module.hasDefaultConfig())
             {
                 for(String line:module.getDefaultConfig())
-                    args.parse(line,module.getFilesystemRef(),false);
-                for (Module m:modules)
-                    m.expandProperties(args.getProperties());
+                    _args.parse(line,module.getName(),false);
+                for (Module m:_modules)
+                    m.expandProperties(_args.getProperties());
             }
         }
         else if (module.isTransitive() && module.hasIniTemplate())
-            enabled.add(module.getName());
+            newlyEnabled.add(module.getName());
         
-        for(String name:module.getDepends())
+        
+        // Process module dependencies (always processed as may be dynamic)
+        for(String dependsOn:module.getDepends())
         {
-            Module depends = names.get(name);
-            StartLog.debug("%s depends on %s/%s",module,name,depends);
-            if (depends==null)
+            // Look for modules that provide that dependency
+            Set<Module> providers = _provided.get(dependsOn);
+            StartLog.debug("%s depends on %s provided by ",module,dependsOn,providers);
+            
+            // If there are no known providers of the module
+            if ((providers==null||providers.isEmpty()))
             {
-                Path file = baseHome.getPath("modules/" + name + ".mod");
-                depends = registerModule(file);
-                depends.expandProperties(args.getProperties());
+                // look for a dynamic module
+                if (dependsOn.contains("/"))
+                {
+                    Path file = _baseHome.getPath("modules/" + dependsOn + ".mod");
+                    registerModule(file).expandProperties(_args.getProperties());
+                    providers = _provided.get(dependsOn);
+                    if (providers==null || providers.isEmpty())
+                        throw new UsageException("Module %s does not provide %s",_baseHome.toShortForm(file),dependsOn);
+
+                    enable(newlyEnabled,providers.stream().findFirst().get(),"dynamic dependency of "+module.getName(),true);
+                    continue;
+                }
+                throw new UsageException("No module found to provide %s for %s",dependsOn,module);
             }
             
-            if (depends!=null)
-                enable(enabled,depends,"transitive from "+module.getName(),true);
+            // If a provider is already enabled, then add a transitive enable
+            long enabled=providers.stream().filter(Module::isEnabled).count();
+            if (enabled>0)
+                providers.stream().filter(m->m.isEnabled()&&m!=module).forEach(m->enable(newlyEnabled,m,"transitive provider of "+dependsOn+" for "+module.getName(),true));
+            else
+            {
+                // Is there an obvious default?
+                Optional<Module> dftProvider = providers.stream().filter(m->m.getName().equals(dependsOn)).findFirst();
+                if (dftProvider.isPresent())
+                    enable(newlyEnabled,dftProvider.get(),"default provider of "+dependsOn+" for "+module.getName(),true);
+                else
+                    throw new UsageException("Module %s requires %s from one of %s",module,dependsOn,providers);
+            }
         }
     }
     
     public Module get(String name)
     {
-        return names.get(name);
+        return _names.get(name);
     }
 
     @Override
     public Iterator<Module> iterator()
     {
-        return modules.iterator();
+        return _modules.iterator();
     }
 
     public Stream<Module> stream()
     {
-        return modules.stream();
+        return _modules.stream();
     }
     
 }
