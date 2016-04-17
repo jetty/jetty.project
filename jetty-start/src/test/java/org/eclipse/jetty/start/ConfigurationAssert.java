@@ -35,6 +35,8 @@ import java.util.Set;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.hamcrest.Matchers;
+import org.hamcrest.core.StringStartsWith;
 import org.junit.Assert;
 
 public class ConfigurationAssert
@@ -166,6 +168,11 @@ public class ConfigurationAssert
             }
         }
         assertContainsUnordered("Files/Dirs",expectedFiles,actualFiles);
+        
+        textFile.stream()
+        .filter(s->s.startsWith("EXISTS|"))
+        .map(s->baseHome.getPath(s.substring(7)).toFile())
+        .forEach(f->Assert.assertTrue(f+" exists",f.exists()));
     }
 
     private static String shorten(BaseHome baseHome, Path path, Path testResourcesDir)

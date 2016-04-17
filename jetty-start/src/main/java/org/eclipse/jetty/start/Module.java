@@ -318,9 +318,11 @@ public class Module
                             case "DESCRIPTION":
                                 _description.add(line);
                                 break;
-                            case "DEPEND":
+                            case "DEPEND":  
+                            case "DEPENDS":
                                 _depends.add(line);
                                 break;
+                            case "FILE":
                             case "FILES":
                                 _files.add(line);
                                 break;
@@ -332,13 +334,17 @@ public class Module
                                 _iniTemplate.add(line);
                                 break;
                             case "LIB":
+                            case "LIBS":
                                 _libs.add(line);
                                 break;
                             case "LICENSE":
+                            case "LICENSES":
                             case "LICENCE":
+                            case "LICENCES":
                                 _license.add(line);
                                 break;
                             case "NAME":
+                            case "PROVIDE":
                             case "PROVIDES":
                                 _provides.add(line);
                                 break;

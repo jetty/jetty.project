@@ -64,7 +64,7 @@ public class TestUseCases
         {
             String caseName=assertTxt.getName().replace(".assert.txt","");
             String baseName=caseName.split("\\.")[0];
-            ret.add(new Object[] {caseName,baseName, assertTxt, lines(new File(usecases,caseName+".cmdline.txt"))});
+            ret.add(new Object[] {caseName,baseName, assertTxt, lines(new File(usecases,caseName+".prepare.txt")),lines(new File(usecases,caseName+".cmdline.txt"))});
         }
         
         return ret;
@@ -87,30 +87,49 @@ public class TestUseCases
     public File assertFile;
 
     @Parameter(3)
+    public String[] prepare;
+    
+    @Parameter(4)
     public String[] commandLineArgs;
 
     @Test
     public void testUseCase() throws Exception
     {
         Path homeDir = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
-        Path baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + baseName).toPath().toRealPath();
-
-        Main main = new Main();
-        List<String> cmdLine = new ArrayList<>();
-        cmdLine.add("jetty.home=" + homeDir.toString());
-        cmdLine.add("jetty.base=" + baseDir.toString());
-        // cmdLine.add("--debug");
-
-        if (commandLineArgs != null)
-        {
-            for (String arg : commandLineArgs)
-            {
-                cmdLine.add(arg);
-            }
-        }
+        
+        Path baseSrcDir = MavenTestingUtils.getTestResourceDir("usecases/" + baseName).toPath().toRealPath();
+        Path baseDir = MavenTestingUtils.getTargetTestingPath(caseName);
+        if (baseDir.toFile().exists())
+            org.eclipse.jetty.toolchain.test.FS.cleanDirectory(baseDir);
+        else
+            baseDir.toFile().mkdirs();
+        org.eclipse.jetty.toolchain.test.IO.copyDir(baseSrcDir.toFile(),baseDir.toFile());
+        
+        
+        System.setProperty("jetty.home",homeDir.toString());
+        System.setProperty("jetty.base",baseDir.toString());
 
         try
         {
+            if (prepare != null && prepare.length>0)
+            {
+                Main main = new Main();
+                List<String> cmdLine = new ArrayList<>();
+                cmdLine.add("--testing-mode");
+                for (String arg : prepare)
+                    cmdLine.add(arg);
+                main.start(main.processCommandLine(cmdLine));
+            }
+
+            Main main = new Main();
+            List<String> cmdLine = new ArrayList<>();
+            // cmdLine.add("--debug");
+            if (commandLineArgs != null)
+            {
+                for (String arg : commandLineArgs)
+                    cmdLine.add(arg);
+            }
+
             StartArgs args = main.processCommandLine(cmdLine);
             BaseHome baseHome = main.getBaseHome();
             ConfigurationAssert.assertConfiguration(baseHome,args,assertFile);
