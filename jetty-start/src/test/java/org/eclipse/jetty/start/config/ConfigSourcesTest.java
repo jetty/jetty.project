@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.start.config;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,10 +38,6 @@ import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class ConfigSourcesTest
 {

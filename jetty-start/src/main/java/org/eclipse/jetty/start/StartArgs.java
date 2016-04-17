@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.start;
 
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,8 +42,6 @@ import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.DirConfigSource;
-
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * The Arguments required to start Jetty.

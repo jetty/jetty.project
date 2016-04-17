@@ -35,8 +35,6 @@ import java.util.Set;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.hamcrest.Matchers;
-import org.hamcrest.core.StringStartsWith;
 import org.junit.Assert;
 
 public class ConfigurationAssert

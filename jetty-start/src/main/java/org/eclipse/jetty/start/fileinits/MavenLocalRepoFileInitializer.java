@@ -25,7 +25,6 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
-import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.Utils;
 

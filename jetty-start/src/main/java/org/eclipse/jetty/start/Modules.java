@@ -34,8 +34,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.net.ssl.HostnameVerifier;
-
 import org.eclipse.jetty.util.TopologicalSort;
 
 /**
@@ -225,6 +223,7 @@ public class Modules implements Iterable<Module>
     private void enable(Set<String> newlyEnabled, Module module, String enabledFrom, boolean transitive)
     {
         StartLog.debug("enable %s from %s transitive=%b",module,enabledFrom,transitive);
+        AtomicBoolean replace_ini_properties=new AtomicBoolean(false);
         
         // Check that this is not already provided by another module!
         for (String name:module.getProvides())
@@ -234,8 +233,19 @@ public class Modules implements Iterable<Module>
             {
                 providers.forEach(p-> 
                 { 
-                    if (p!=module && p.isEnabled() && !p.isTransitive()) 
-                        throw new UsageException("Capability %s already enabled by %s for %s",name,p.getName(),module.getName());
+                    if (p!=module && p.isEnabled())
+                    {
+                        // If the already enabled module is transitive and this enable is not
+                        if (p.isTransitive() && !transitive)
+                        {
+                            p.clearTransitiveEnable();
+                            // TODO this is not a rigorous way to handle
+                            // ini properties that were added by a default transitive module 
+                            replace_ini_properties.set(true);
+                        }
+                        else
+                            throw new UsageException("Capability %s already enabled by %s for %s",name,p.getName(),module.getName());
+                    }
                 });
             }   
         }
@@ -253,7 +263,7 @@ public class Modules implements Iterable<Module>
             if (module.hasDefaultConfig())
             {
                 for(String line:module.getDefaultConfig())
-                    _args.parse(line,module.getName(),false);
+                    _args.parse(line,module.getName(),replace_ini_properties.get());
                 for (Module m:_modules)
                     m.expandProperties(_args.getProperties());
             }

@@ -378,9 +378,11 @@ public class Module
         }
     }
 
-    public void setEnabled(boolean enabled)
+    public void clearTransitiveEnable()
     {
-        throw new RuntimeException("Don't enable directly");
+        if (_notTransitive)
+            throw new IllegalStateException("Not Transitive");
+        _enables.clear();
     }
     
     public void setSkipFilesValidation(boolean skipFilesValidation)
