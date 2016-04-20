@@ -20,6 +20,7 @@ package org.eclipse.jetty.osgi.boot;
 
 import java.io.File;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
@@ -57,51 +59,21 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 {
     private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
     
-    /* ------------------------------------------------------------ */
-    /**
-     * Check if we should be enabling annotation processing
-     * 
-     * @return true if the jetty-annotations.jar is present, false otherwise
-     */
-    private static boolean annotationsAvailable()
-    {
-        boolean result = false;
-        try
-        {
-            Loader.loadClass(AbstractWebAppProvider.class,"org.eclipse.jetty.annotations.AnnotationConfiguration");
-            result = true;
-            LOG.debug("Annotation support detected");
-        }
-        catch (ClassNotFoundException e)
-        {
-            result = false;
-            LOG.debug("No annotation support detected");
-        }
-
-        return result;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Check if jndi is support is present.
-     * 
-     * @return true if the jetty-jndi.jar is present, false otherwise
-     */
-    private static boolean jndiAvailable()
-    {
-        try
-        {
-            Loader.loadClass(AbstractWebAppProvider.class, "org.eclipse.jetty.plus.jndi.Resource");
-            Loader.loadClass(AbstractWebAppProvider.class, "org.eclipse.jetty.plus.webapp.EnvConfiguration");
-            LOG.debug("JNDI support detected");
-            return true;
-        }
-        catch (ClassNotFoundException e)
-        {
-            LOG.debug("No JNDI support detected");
-            return false;
-        }
-    }
+    public static final String[] CONFIGURATION_CLASSES = {
+                                                   "org.eclipse.jetty.webapp.FragmentConfiguration",
+                                                   "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
+                                                   "org.eclipse.jetty.webapp.WebXmlConfiguration",
+                                                   "org.eclipse.jetty.webapp.WebAppConfiguration",                                            
+                                                   "org.eclipse.jetty.webapp.ServletsConfiguration",
+                                                   "org.eclipse.jetty.webapp.JspConfiguration",
+                                                   "org.eclipse.jetty.webapp.JaasConfiguration",
+                                                   "org.eclipse.jetty.webapp.JndiConfiguration",
+                                                   "org.eclipse.jetty.webapp.JmxConfiguration",
+                                                   "org.eclipse.jetty.webapp.WebSocketConfiguration",
+                                                   "org.eclipse.jetty.osgi.annotations.AnnotationConfiguration",
+                                                   "org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration",
+                                                   "org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration"
+    };
     
 
     private boolean _parentLoaderPriority;
@@ -113,8 +85,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     private String _tldBundles;
     
     private DeploymentManager _deploymentManager;
-    
-    private String[] _configurationClasses;
+   
     
     private ServerInstanceWrapper _serverWrapper;
     
@@ -290,18 +261,8 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             // Set up what has been configured on the provider
             _webApp.setParentLoaderPriority(isParentLoaderPriority());
             _webApp.setExtractWAR(isExtract());
-
-            _webApp.addConfiguration(new OSGiWebInfConfiguration(),new OSGiMetaInfConfiguration());
-            if (annotationsAvailable())
-                _webApp.addConfiguration(new AnnotationConfiguration());
-
-            //add in EnvConfiguration and PlusConfiguration just after FragmentConfiguration
-            if (jndiAvailable())
-                _webApp.addConfiguration(new EnvConfiguration(),new PlusConfiguration());
             
-            if (getDefaultsDescriptor() != null)
-                _webApp.setDefaultsDescriptor(getDefaultsDescriptor());
-
+  
             //Set up configuration from manifest headers
             //extra classpath
             String tmp = (String)_properties.get(OSGiWebappConstants.JETTY_EXTRA_CLASSPATH);
@@ -345,6 +306,23 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             if (pathsToTldBundles != null)
                 webAppLoader.addClassPath(pathsToTldBundles);
             _webApp.setClassLoader(webAppLoader);
+
+            //set up the configurations appropriate for osgi
+            for (String classname:CONFIGURATION_CLASSES)
+            {
+                try
+                {
+                    _webApp.addConfiguration((Configuration)(Thread.currentThread().getContextClassLoader().loadClass(classname).newInstance()));
+                    // if (LOG.isDebugEnabled())
+                    LOG.info("Using Configuration {}", classname);
+                }
+                catch (ClassNotFoundException cnfe)
+                {
+                    //not present, ignore
+                    // if (LOG.isDebugEnabled())
+                    LOG.info("Ignoring unavailable Configuration {}", classname);
+                }
+            }
 
 
             // apply any META-INF/context.xml file that is found to configure

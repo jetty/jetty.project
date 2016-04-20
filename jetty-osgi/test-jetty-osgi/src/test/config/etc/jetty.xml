@@ -60,19 +60,6 @@
     <Set name="dumpAfterStart">false</Set>
     <Set name="dumpBeforeStop">false</Set>
 
-    <!-- =========================================================== -->
-    <!-- Update the list of default configuration classes            -->
-    <!-- =========================================================== -->    
-    <Call class="org.eclipse.jetty.webapp.Configurations"  name="setServerDefault">
-      <Arg><Ref refid="Server"/></Arg>
-      <Call name="add">
-        <Arg>
-          <Array type="String">
-            <Item>org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration</Item>
-          </Array>
-        </Arg>
-      </Call>
-    </Call>
 
 
     <Call class="java.lang.System" name="setProperty">

@@ -46,28 +46,36 @@ public class Configurations extends AbstractList<Configuration>
     
     private static final List<Configuration> __known = new ArrayList<>();
     private static final Set<String> __knownByClassName = new HashSet<>();
-    static
-    {
-        ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
-        for (Configuration configuration : configs)
-        {
-            __known.add(configuration);
-            __knownByClassName.add(configuration.getClass().getName());
-        }
-        sort(__known);
-        if (LOG.isDebugEnabled())
-        {
-            for (Configuration c: __known)
-                LOG.debug("known {}",c);
-        }
-        
-        LOG.debug("Known Configurations {}",__knownByClassName);
-    }
 
+
+    /**
+     * @return
+     */
     public static List<Configuration> getKnown()
     {
+        synchronized (Configurations.class)
+        {
+            if (__known.isEmpty())
+            {
+                ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
+                for (Configuration configuration : configs)
+                {
+                    __known.add(configuration);
+                    __knownByClassName.add(configuration.getClass().getName());
+                }
+                sort(__known);
+                if (LOG.isDebugEnabled())
+                {
+                    for (Configuration c: __known)
+                        LOG.debug("known {}",c);
+                }
+                
+                LOG.debug("Known Configurations {}",__knownByClassName);
+            }
+        }
         return __known;
     }
+    
     
     /* ------------------------------------------------------------ */
     /** Get/Set/Create the server default Configuration ClassList.
@@ -149,9 +157,12 @@ public class Configurations extends AbstractList<Configuration>
 
     protected static Configuration newConfiguration(String classname)
     {
-        if (!__knownByClassName.contains(classname))
-            LOG.warn("Unknown configuration {}. Not declared for ServiceLoader!",classname);  
-        
+        if (LOG.isDebugEnabled())
+        {
+            if (!__knownByClassName.contains(classname))
+                LOG.warn("Unknown configuration {}. Not declared for ServiceLoader!",classname);
+        }
+
         try
         {
             @SuppressWarnings("unchecked")
@@ -300,8 +311,11 @@ public class Configurations extends AbstractList<Configuration>
     {
         String name=configuration.getClass().getName();
         // Is this configuration known?
-        if (!__knownByClassName.contains(name))
-            LOG.warn("Unknown configuration {}. Not declared for ServiceLoader!",name);            
+        if (LOG.isDebugEnabled())
+        {
+            if (!__knownByClassName.contains(name))
+                LOG.warn("Unknown configuration {}. Not declared for ServiceLoader!",name);        
+        }
 
         // Do we need to replace any existing configuration?
         Class<? extends Configuration> replaces = configuration.replaces();

@@ -164,6 +164,12 @@ public class MetaInfConfiguration extends AbstractConfiguration
         //No pattern to appy to classes, just add to metadata
         context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
 
+        scanJars(context);
+      
+    }
+    
+    protected void scanJars (WebAppContext context) throws Exception
+    {
         boolean useContainerCache = DEFAULT_USE_CONTAINER_METAINF_CACHE;
         Boolean attr = (Boolean)context.getServer().getAttribute(USE_CONTAINER_METAINF_CACHE);
         if (attr != null)
@@ -184,7 +190,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
         scanJars(context, context.getMetaData().getContainerResources(), useContainerCache);
         scanJars(context, context.getMetaData().getWebInfJars(), false);
     }
-    
     
 
     @Override

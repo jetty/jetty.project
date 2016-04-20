@@ -92,7 +92,11 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
     public void preConfigure(final WebAppContext context) throws Exception
     {
         super.preConfigure(context);
-        
+    }
+    
+    @Override
+    protected void scanJars(final WebAppContext context) throws Exception
+    {
         //Check to see if there have been any bundle symbolic names added of bundles that should be
         //regarded as being on the container classpath, and scanned for fragments, tlds etc etc.
         //This can be defined in:
@@ -137,6 +141,8 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
         {
             context.getMetaData().addContainerResource(r);
         }
+        
+        super.scanJars(context);
     }
     
     @Override
