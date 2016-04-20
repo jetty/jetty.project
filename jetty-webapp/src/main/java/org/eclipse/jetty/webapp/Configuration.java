@@ -72,7 +72,7 @@ public interface Configuration
     /**
      * @return true if the Configuration should be added to a Context by default 
      */
-    public default boolean isAddedByDefault() { return false; }
+    public default boolean isEnabledByDefault() { return false; }
     
     /* ------------------------------------------------------------------------------- */
     /** Set up for configuration.

@@ -90,15 +90,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /* ------------------------------------------------------------------------------- */
     public MetaInfConfiguration()
     {
+        super(ENABLE_BY_DEFAULT);
         beforeThis(WebXmlConfiguration.class);
     }
 
-    /* ------------------------------------------------------------------------------- */
-    @Override
-    public boolean isAddedByDefault()
-    {
-        return true;
-    }
     
     /* ------------------------------------------------------------------------------- */
     protected  List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException

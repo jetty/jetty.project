@@ -20,6 +20,7 @@ package org.eclipse.jetty.osgi.boot;
 
 import java.io.File;
 import java.net.URL;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Enumeration;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
@@ -59,21 +61,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 {
     private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
     
-    public static final String[] CONFIGURATION_CLASSES = {
-                                                   "org.eclipse.jetty.webapp.FragmentConfiguration",
-                                                   "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                                                   "org.eclipse.jetty.webapp.WebXmlConfiguration",
-                                                   "org.eclipse.jetty.webapp.WebAppConfiguration",                                            
-                                                   "org.eclipse.jetty.webapp.ServletsConfiguration",
-                                                   "org.eclipse.jetty.webapp.JspConfiguration",
-                                                   "org.eclipse.jetty.webapp.JaasConfiguration",
-                                                   "org.eclipse.jetty.webapp.JndiConfiguration",
-                                                   "org.eclipse.jetty.webapp.JmxConfiguration",
-                                                   "org.eclipse.jetty.webapp.WebSocketConfiguration",
-                                                   "org.eclipse.jetty.osgi.annotations.AnnotationConfiguration",
-                                                   "org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration",
-                                                   "org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration"
-    };
     
 
     private boolean _parentLoaderPriority;
@@ -299,6 +286,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             String pathsToTldBundles = getPathsToRequiredBundles(requireTldBundles);
 
 
+
             // make sure we provide access to all the jetty bundles by going
             // through this bundle.
             OSGiWebappClassLoader webAppLoader = new OSGiWebappClassLoader(_serverWrapper.getParentClassLoaderForWebapps(), _webApp, _bundle);
@@ -306,29 +294,24 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             if (pathsToTldBundles != null)
                 webAppLoader.addClassPath(pathsToTldBundles);
             _webApp.setClassLoader(webAppLoader);
-
-            //set up the configurations appropriate for osgi
-            for (String classname:CONFIGURATION_CLASSES)
-            {
-                try
-                {
-                    _webApp.addConfiguration((Configuration)(Thread.currentThread().getContextClassLoader().loadClass(classname).newInstance()));
-                    // if (LOG.isDebugEnabled())
-                    LOG.info("Using Configuration {}", classname);
-                }
-                catch (ClassNotFoundException cnfe)
-                {
-                    //not present, ignore
-                    // if (LOG.isDebugEnabled())
-                    LOG.info("Ignoring unavailable Configuration {}", classname);
-                }
-            }
-
+            
 
             // apply any META-INF/context.xml file that is found to configure
             // the webapp first
-            applyMetaInfContextXml(rootResource, overrideBundleInstallLocation);
+            try
+            {
+                final Resource finalRootResource = rootResource;
+                WebAppClassLoader.runWithServerClassAccess(()->{applyMetaInfContextXml(finalRootResource, overrideBundleInstallLocation);return null;});
+            }
+            catch(Exception e)
+            {
+                LOG.warn("Error applying context xml");
+                throw e;
+            }
 
+
+
+            
             _webApp.setAttribute(OSGiWebappConstants.REQUIRE_TLD_BUNDLE, requireTldBundles);
 
             //Set up some attributes

@@ -77,6 +77,44 @@ public class Configurations extends AbstractList<Configuration>
     }
     
     
+    
+    /**
+     * @param classes
+     * @throws Exception
+     */
+    public static void setKnown (String ... classes)
+    {
+        synchronized (Configurations.class)
+        {
+            if (!__known.isEmpty())
+                throw new IllegalStateException("Known configuration classes already set");
+
+
+            for (String c:classes)
+            {
+                try
+                {
+                    Class clazz = Thread.currentThread().getContextClassLoader().loadClass(c);
+                    __known.add((Configuration)clazz.newInstance());
+                    __knownByClassName.add(c);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Problem loading known class {}", c);
+                }
+            }
+            sort(__known);
+            if (LOG.isDebugEnabled())
+            {
+                for (Configuration c: __known)
+                    LOG.debug("known {}",c);
+            }
+            
+            LOG.debug("Known Configurations {}",__knownByClassName);
+        }
+    }
+    
+    
     /* ------------------------------------------------------------ */
     /** Get/Set/Create the server default Configuration ClassList.
      * <p>Get the class list from: a Server bean; or the attribute (which can
@@ -133,10 +171,12 @@ public class Configurations extends AbstractList<Configuration>
         }    
         
         if (configurations==null)
+        {
             configurations=new Configurations(Configurations.getKnown().stream()
-                    .filter(Configuration::isAddedByDefault)
+                    .filter(Configuration::isEnabledByDefault)
                     .map(c->c.getClass().getName())
                     .toArray(String[]::new));
+        }
 
         if (LOG.isDebugEnabled())
             LOG.debug("default configurations for {}: {}",server,configurations);
@@ -286,7 +326,6 @@ public class Configurations extends AbstractList<Configuration>
                     sort.addBeforeAfter(c,after);
             }
         }
-        
         sort.sort(configurations);
     }
     

@@ -50,14 +50,9 @@ public class WebInfConfiguration extends AbstractConfiguration
     
     public WebInfConfiguration()
     {
-        super();
+        super(ENABLE_BY_DEFAULT);
     }
 
-    @Override
-    public boolean isAddedByDefault()
-    {
-        return true;
-    }
     
     @Override
     public void preConfigure(final WebAppContext context) throws Exception

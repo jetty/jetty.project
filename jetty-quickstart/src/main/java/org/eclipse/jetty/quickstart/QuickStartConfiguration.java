@@ -77,12 +77,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
         return _mode;
     }
     
-    
-    @Override
-    public boolean isAddedByDefault()
-    {
-        return false;
-    }
 
     /**
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#preConfigure(org.eclipse.jetty.webapp.WebAppContext)

@@ -39,16 +39,11 @@ public class WebXmlConfiguration extends AbstractConfiguration
     /* ------------------------------------------------------------------------------- */
     public WebXmlConfiguration()
     {
+        super(ENABLE_BY_DEFAULT);
         beforeThis(WebInfConfiguration.class);
     }
 
-    /* ------------------------------------------------------------------------------- */
-    @Override
-    public boolean isAddedByDefault()
-    {
-        return true;
-    }
-
+ 
     /* ------------------------------------------------------------------------------- */
     /**
      * 

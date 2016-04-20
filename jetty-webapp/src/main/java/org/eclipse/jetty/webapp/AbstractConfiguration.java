@@ -187,7 +187,7 @@ public class AbstractConfiguration implements Configuration
     }
 
     @Override
-    public boolean isAddedByDefault() 
+    public boolean isEnabledByDefault() 
     { 
         return _enabledByDefault; 
     }

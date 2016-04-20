@@ -61,7 +61,7 @@ public class EnvConfiguration extends AbstractConfiguration
 
     public EnvConfiguration()
     {
-        super(!ENABLE_BY_DEFAULT);
+        super(ENABLE_BY_DEFAULT);
         beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,FragmentConfiguration.class);
         afterThis(PlusConfiguration.class,JettyWebXmlConfiguration.class);
         protectAndExpose("org.eclipse.jetty.jndi.");

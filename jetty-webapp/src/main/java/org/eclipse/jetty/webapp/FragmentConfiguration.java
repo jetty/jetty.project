@@ -34,14 +34,11 @@ public class FragmentConfiguration extends AbstractConfiguration
 
     public FragmentConfiguration()
     {
+        super(ENABLE_BY_DEFAULT);
         beforeThis(MetaInfConfiguration.class,WebXmlConfiguration.class);
     }
 
-    @Override
-    public boolean isAddedByDefault()
-    {
-        return true;
-    }
+   
     
     @Override
     public void preConfigure(WebAppContext context) throws Exception
