@@ -614,12 +614,24 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the configurations.
+     * @deprecated
      */
     public Configuration[] getConfigurations()
     {
         if (_configurations.size()==0)
             loadConfigurations();
         return _configurations.getConfigurations().toArray(new Configuration[_configurations.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the configurations.
+     */
+    public Configurations getWebAppConfigurations()
+    {
+        if (_configurations.size()==0)
+            loadConfigurations();
+        return _configurations;
     }
 
     /* ------------------------------------------------------------ */

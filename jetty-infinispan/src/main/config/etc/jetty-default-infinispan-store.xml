@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+
+  <!-- ===================================================================== -->
+  <!-- Get a reference to the default local cache.                           -->
+  <!-- ===================================================================== -->
+  <New id="local" class="org.infinispan.manager.DefaultCacheManager">
+     <Get id="cache" name="cache"></Get>
+  </New>
+  
+  <!-- ===================================================================== -->
+  <!-- Configure a factory for InfinispanSessionStore using the              -->
+  <!-- Infinispan DefaultCache                                               -->
+  <!-- ===================================================================== -->
+  <Call name="addBean">
+   <Arg>
+    <New class="org.eclipse.jetty.server.session.InfinispanSessionStoreFactory">
+       <Set name="cache"><Ref id="cache"/></Set>
+       <Set name="infinispanIdleTimeoutSec"><Property name="jetty.session.infinispanIdleTimeout.seconds" default="0" /></Set>
+       <Set name="gracePeriod"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+    </New>
+   </Arg>
+  </Call>
+</Configure> 

@@ -280,7 +280,11 @@ public class Version implements Comparable<Version>
             if (revision >= 0)
             {
                 sb.append('.').append(revision);
-                if (update >= 0)
+                if (update >= 0 && update <10)
+                {
+                    sb.append("_0").append(update);
+                }
+                else if (update >= 0)
                 {
                     sb.append('_').append(update);
                 }

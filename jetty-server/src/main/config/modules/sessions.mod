@@ -1,13 +1,20 @@
 [description]
-Enables basic sessions.
+Enables session id management and scavenging.
+
+
+[name]
+sessions
+
+
 
 [xml]
 etc/jetty-sessions.xml
 
+
 [ini-template]
 
 ## The name to uniquely identify this server instance
-#jetty.sssionIdManager.workerName=node1
+#jetty.sessionIdManager.workerName=node1
 
-## How frequently sessions are inspected
-#jetty.sessionInspectionInterval.seconds=60
+## Period between runs of the session scavenger (in seconds)
+#jetty.sessionScavengeInterval.seconds=60

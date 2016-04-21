@@ -99,23 +99,13 @@ public class JdbcTestServer extends AbstractTestServer
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionHandler(org.eclipse.jetty.server.SessionManager)
      */
     @Override
-    public SessionHandler newSessionHandler(SessionManager sessionManager)
+    public SessionHandler newSessionHandler()
     {
-        return new SessionHandler(sessionManager);
-    }
-
-   
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionManager()
-     */
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionManager()
-     */
-    @Override
-    public SessionManager newSessionManager()
-    {
-        JDBCSessionManager manager =  new JDBCSessionManager();
-        JDBCSessionDataStore ds = manager.getSessionDataStore();
+        SessionHandler handler = new SessionHandler();
+        DefaultSessionCache sessionStore = new DefaultSessionCache(handler);
+        handler.setSessionStore(sessionStore);
+        JDBCSessionDataStore ds = new JDBCSessionDataStore();
+        sessionStore.setSessionStore(ds);
         ds.setGracePeriodSec(_scavengePeriod);
         DatabaseAdaptor da = new DatabaseAdaptor();
         da.setDriverInfo(DRIVER_CLASS, (_config==null?DEFAULT_CONNECTION_URL:(String)_config));
@@ -134,9 +124,10 @@ public class JdbcTestServer extends AbstractTestServer
         sessionTableSchema.setMapColumn(MAP_COL);
         sessionTableSchema.setMaxIntervalColumn(MAX_IDLE_COL);       
         ds.setSessionTableSchema(sessionTableSchema);
-        return manager;
+        return handler;
     }
 
+   
    
     
     

@@ -21,14 +21,38 @@ package org.eclipse.jetty.webapp;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ListIterator;
+import java.util.ServiceLoader;
 
 import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.annotation.Name;
 
 /* ------------------------------------------------------------------------------- */
-/** Base Class for WebApplicationContext Configuration.
- * This class can be extended to customize or extend the configuration
- * of the WebApplicationContext. 
+/** A pluggable Configuration for {@link WebAppContext}s.
+ * <p>
+ * A {@link WebAppContext} is configured by the application of one or more {@link Configuration}
+ * instances.  Typically each implemented Configuration is responsible for an aspect of the 
+ * servlet specification (eg {@link WebXmlConfiguration}, {@link FragmentConfiguration}, etc.)
+ * or feature (eg {@link WebSocketConfiguration}, {@link JmxConfiguration} etc.)
+ * </p>
+ * <p>Configuration instances are discovered by the {@link Configurations} class using either the 
+ * {@link ServiceLoader} mechanism or by an explicit call to {@link Configurations#setKnown(String...)}.
+ * By default, all Configurations that do not implement the {@link DisabledByDefault} interface
+ * are applied to all {@link WebAppContext}s within the JVM.  However a Server wide default {@link Configurations}
+ * collection may also be defined with {@link Configurations#setServerDefault(org.eclipse.jetty.server.Server)}.
+ * Furthermore, each individual Context may have its Configurations list explicitly set and/or amended with
+ * {@link WebAppContext#setConfigurations(Configuration[])}, {@link WebAppContext#addConfiguration(Configuration...)}
+ * or {@link WebAppContext#getWebAppConfigurations()}.
+ * </p>
+ * <p>Since Jetty-9.4, Configurations are self ordering using the {@link #getConfigurationsBeforeThis()} and
+ * {@link #getConfigurationsAfterThis()} methods for a {@link TopologicalSort} initiated by {@link Configurations#sort()}
+ * when a {@link WebAppContext} is started.  This means that feature configurations 
+ * (eg {@link JndiConfiguration}, {@link JaasConfiguration}} etc.) can be added or removed without concern 
+ * for ordering.
+ * </p>
+ * <p>Also since Jetty-9.4, Configurations are responsible for providing {@link #getServerClasses()} and
+ * {@link #getSystemClasses()} to configure the {@link WebAppClassLoader} for each context.
+ * </p> 
+ *  
  */
 public interface Configuration 
 {

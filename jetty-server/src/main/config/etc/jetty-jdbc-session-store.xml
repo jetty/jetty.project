@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+  <!-- ===================================================================== -->
+  <!-- Configure a factory for JDBCSessionStores                             -->
+  <!-- ===================================================================== -->
+  <Call name="addBean">
+   <Arg>
+    <New class="org.eclipse.jetty.server.session.JDBCSessionStoreFactory">   
+      <Set name="gracePeriod"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+      <Set name="databaseAdaptor">
+        <Ref id="databaseAdaptor"/>
+      </Set>
+	<Set name="sessionTableSchema">
+		<New
+			class="org.eclipse.jetty.server.session.JDBCSessionStore.SessionTableSchema">
+			<Set name="accessTimeColumn">
+				<Property name="jetty.sessionTableSchema.accessTimeColumn" default="accessTime" />
+			</Set>
+			<Set name="contextPathColumn">
+				<Property name="jetty.sessionTableSchema.contextPathColumn" default="contextPath" />
+			</Set>
+			<Set name="cookieTimeColumn">
+				<Property name="jetty.sessionTableSchema.cookieTimeColumn" default="cookieTime" />
+			</Set>
+			<Set name="createTimeColumn">
+				<Property name="jetty.sessionTableSchema.createTimeColumn" default="createTime" />
+			</Set>
+			<Set name="expiryTimeColumn">
+				<Property name="jetty.sessionTableSchema.expiryTimeColumn" default="expiryTime" />
+			</Set>
+			<Set name="lastAccessTimeColumn">
+				<Property name="jetty.sessionTableSchema.lastAccessTimeColumn" default="lastAccessTime" />
+			</Set>
+			<Set name="lastSavedTimeColumn">
+				<Property name="jetty.sessionTableSchema.lastSavedTimeColumn" default="lastSavedTime" />
+			</Set>
+			<Set name="idColumn">
+				<Property name="jetty.sessionTableSchema.idColumn" default="sessionId" />
+			</Set>
+			<Set name="lastNodeColumn">
+				<Property name="jetty.sessionTableSchema.lastNodeColumn" default="lastNode" />
+			</Set>
+			<Set name="virtualHostColumn">
+				<Property name="jetty.sessionTableSchema.virtualHostColumn" default="virtualHost" />
+			</Set>
+			<Set name="maxIntervalColumn">
+				<Property name="jetty.sessionTableSchema.maxIntervalColumn" default="maxInterval" />
+			</Set>
+			<Set name="mapColumn">
+				<Property name="jetty.sessionTableSchema.mapColumn" default="map" />
+			</Set>
+			<Set name="tableName">
+				<Property name="jetty.sessionTableSchema.table" default="JettySessions" />
+			</Set>
+		</New>
+	</Set>
+    </New>
+   </Arg>
+  </Call>
+
+</Configure>

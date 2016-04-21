@@ -36,17 +36,17 @@ public class SessionCookieTest
    
     
     
-    public class MockSessionStore extends AbstractSessionStore
+    public class MockSessionStore extends AbstractSessionCache
     {
 
-        public MockSessionStore(SessionManager manager)
+        public MockSessionStore(SessionHandler manager)
         {
             super(manager);
         }
 
       
         /** 
-         * @see org.eclipse.jetty.server.session.SessionStore#shutdown()
+         * @see org.eclipse.jetty.server.session.SessionCache#shutdown()
          */
         @Override
         public void shutdown()
@@ -56,7 +56,7 @@ public class SessionCookieTest
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#newSession(org.eclipse.jetty.server.session.SessionData)
+         * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(org.eclipse.jetty.server.session.SessionData)
          */
         @Override
         public Session newSession(SessionData data)
@@ -66,7 +66,7 @@ public class SessionCookieTest
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doGet(String)
+         * @see org.eclipse.jetty.server.session.AbstractSessionCache#doGet(String)
          */
         @Override
         public Session doGet(String key)
@@ -76,7 +76,7 @@ public class SessionCookieTest
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doPutIfAbsent(String, Session)
+         * @see org.eclipse.jetty.server.session.AbstractSessionCache#doPutIfAbsent(String, Session)
          */
         @Override
         public Session doPutIfAbsent(String key, Session session)
@@ -87,7 +87,7 @@ public class SessionCookieTest
       
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doDelete(String)
+         * @see org.eclipse.jetty.server.session.AbstractSessionCache#doDelete(String)
          */
         @Override
         public Session doDelete(String key)
@@ -98,7 +98,7 @@ public class SessionCookieTest
       
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
+         * @see org.eclipse.jetty.server.session.AbstractSessionCache#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
          */
         @Override
         public boolean doReplace(String id, Session oldValue, Session newValue)
@@ -108,7 +108,7 @@ public class SessionCookieTest
         }
 
         /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionStore#newSession(javax.servlet.http.HttpServletRequest, org.eclipse.jetty.server.session.SessionData)
+         * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(javax.servlet.http.HttpServletRequest, org.eclipse.jetty.server.session.SessionData)
          */
         @Override
         public Session newSession(HttpServletRequest request, SessionData data)
@@ -163,9 +163,9 @@ public class SessionCookieTest
         Server server = new Server();
         MockSessionIdManager idMgr = new MockSessionIdManager(server);
         idMgr.setWorkerName("node1");
-        SessionManager mgr = new SessionManager();
+        SessionHandler mgr = new SessionHandler();
         MockSessionStore store = new MockSessionStore(mgr);
-        store.setSessionDataStore(new NullSessionDataStore());
+        store.setSessionStore(new NullSessionStore());
         mgr.setSessionStore(store);
         mgr.setSessionIdManager(idMgr);
         

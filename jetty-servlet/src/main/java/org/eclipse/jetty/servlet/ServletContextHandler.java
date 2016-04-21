@@ -1342,7 +1342,7 @@ public class ServletContextHandler extends ContextHandler
         public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
         {
             if (_sessionHandler!=null)
-                return _sessionHandler.getSessionManager().getDefaultSessionTrackingModes();
+                return _sessionHandler.getDefaultSessionTrackingModes();
             return null;
         }
 
@@ -1350,7 +1350,7 @@ public class ServletContextHandler extends ContextHandler
         public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
         {
             if (_sessionHandler!=null)
-                return _sessionHandler.getSessionManager().getEffectiveSessionTrackingModes();
+                return _sessionHandler.getEffectiveSessionTrackingModes();
             return null;
         }
 
@@ -1415,7 +1415,7 @@ public class ServletContextHandler extends ContextHandler
                 throw new UnsupportedOperationException();
 
             if (_sessionHandler!=null)
-                return _sessionHandler.getSessionManager().getSessionCookieConfig();
+                return _sessionHandler.getSessionCookieConfig();
             return null;
         }
 
@@ -1429,7 +1429,7 @@ public class ServletContextHandler extends ContextHandler
 
 
             if (_sessionHandler!=null)
-                _sessionHandler.getSessionManager().setSessionTrackingModes(sessionTrackingModes);
+                _sessionHandler.setSessionTrackingModes(sessionTrackingModes);
         }
 
         @Override

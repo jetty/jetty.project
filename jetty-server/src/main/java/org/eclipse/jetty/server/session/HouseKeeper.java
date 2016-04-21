@@ -155,7 +155,7 @@ public class HouseKeeper extends AbstractLifeCycle
             _intervalMs += tenPercent;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Inspecting every "+_intervalMs+" ms");
+            LOG.debug("Scavenging every "+_intervalMs+" ms");
         
         synchronized (this)
         {
@@ -173,7 +173,7 @@ public class HouseKeeper extends AbstractLifeCycle
     
     
     /**
-     * Get the period between inspection cycles.
+     * Get the period between scavenge cycles.
      * 
      * @return the interval (in seconds)
      */
@@ -194,10 +194,10 @@ public class HouseKeeper extends AbstractLifeCycle
             return;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Inspecting sessions");
+            LOG.debug("Scavenging sessions");
         
         //find the session managers
-        for (SessionManager manager:_sessionIdManager.getSessionManagers())
+        for (SessionHandler manager:_sessionIdManager.getSessionHandlers())
         {
             if (manager != null)
             {

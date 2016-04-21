@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.start;
 
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +27,6 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,8 +42,6 @@ import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.DirConfigSource;
-
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * The Arguments required to start Jetty.
@@ -114,7 +113,7 @@ public class StartArgs
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
 
     /** List of enabled modules */
-    private Set<String> modules = new HashSet<>();
+    private List<String> modules = new ArrayList<>();
 
     /** List of modules to skip [files] section validation */
     private Set<String> skipFileValidationModules = new HashSet<>();
@@ -538,7 +537,7 @@ public class StartArgs
         return classpath;
     }
 
-    public Set<String> getEnabledModules()
+    public List<String> getEnabledModules()
     {
         return this.modules;
     }
@@ -1120,7 +1119,7 @@ public class StartArgs
         {
             for (String line : module.getDefaultConfig())
             {
-                parse(line,module.getFilesystemRef(),false);
+                parse(line,module.getName(),false);
             }
         }
     }

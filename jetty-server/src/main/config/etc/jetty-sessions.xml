@@ -12,14 +12,14 @@
       <Arg>
         <Ref refid="Server"/>
       </Arg>
-      <Set name="workerName"><Property name="jetty.sessionIdManager.workerName" default="node1"/></Set>
+      <Set name="workerName"><Property name="jetty.sessionIdManager.workerName"><Default>node<Env name="JETTY_WORKER_INSTANCE" default="0"/></Default></Property></Set>
 
       <!-- ===================================================================== -->
-      <!-- Configure a session inspector to help with scavenging                 -->
+      <!-- Configure a session housekeeper to help with scavenging               -->
       <!-- ===================================================================== -->
-      <Set name="sessionInspector"> 
-       <New id="idMgr" class="org.eclipse.jetty.server.session.PeriodicSessionInspector">
-           <Set name="intervalSec"><Property name="jetty.sessionInspectionInterval.seconds" default="60"/></Set>
+      <Set name="sessionHouseKeeper"> 
+       <New class="org.eclipse.jetty.server.session.HouseKeeper">
+           <Set name="intervalSec"><Property name="jetty.sessionScavengeInterval.seconds" default="600"/></Set>
        </New>
       </Set>
    </New>

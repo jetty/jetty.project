@@ -94,7 +94,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                    org.eclipse.jetty.server.session.SessionManager m1 = (org.eclipse.jetty.server.session.SessionManager)context1.getSessionHandler().getSessionManager();
+                    SessionHandler m1 = context1.getSessionHandler();
                     assertEquals(1,  m1.getSessionsCreated());
 
                     // Be sure the session is also present in node2
@@ -102,7 +102,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     request.header("Cookie", sessionCookie);
                     ContentResponse response2 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-                    org.eclipse.jetty.server.session.SessionManager m2 = (org.eclipse.jetty.server.session.SessionManager)context2.getSessionHandler().getSessionManager();
+                    SessionHandler m2 = context2.getSessionHandler();
 
                     // Wait for the scavenger to run on node1, waiting 2.5 times the scavenger period
                     pause(scavengePeriod);

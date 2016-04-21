@@ -316,15 +316,15 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration impl
         }
 
         //session-config
-        if (context.getSessionHandler().getSessionManager() != null)
+        if (context.getSessionHandler() != null)
         {
             out.openTag("session-config");
-            int maxInactiveSec = context.getSessionHandler().getSessionManager().getMaxInactiveInterval();
+            int maxInactiveSec = context.getSessionHandler().getMaxInactiveInterval();
             out.tag("session-timeout", (maxInactiveSec==0?"0":Integer.toString(maxInactiveSec/60)));
 
 
             //cookie-config
-            SessionCookieConfig cookieConfig = context.getSessionHandler().getSessionManager().getSessionCookieConfig();
+            SessionCookieConfig cookieConfig = context.getSessionHandler().getSessionCookieConfig();
             if (cookieConfig != null)
             {
                 out.openTag("cookie-config");
@@ -347,7 +347,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration impl
             }
             
             // tracking-modes
-            Set<SessionTrackingMode> modes =context. getSessionHandler().getSessionManager().getEffectiveSessionTrackingModes();
+            Set<SessionTrackingMode> modes =context. getSessionHandler().getEffectiveSessionTrackingModes();
             if (modes != null)
             {
                 for (SessionTrackingMode mode:modes)

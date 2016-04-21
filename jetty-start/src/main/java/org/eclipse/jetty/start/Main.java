@@ -66,29 +66,31 @@ public class Main
 
     public static void main(String[] args)
     {
+        boolean test=false;
         try
         {
             Main main = new Main();
             StartArgs startArgs = main.processCommandLine(args);
+            test=startArgs.isTestingModeEnabled();
             main.start(startArgs);
         }
         catch (UsageException e)
         {
             System.err.println(e.getMessage());
-            usageExit(e.getCause(),e.getExitCode());
+            usageExit(e.getCause(),e.getExitCode(),test);
         }
         catch (Throwable e)
         {
-            usageExit(e,UsageException.ERR_UNKNOWN);
+            usageExit(e,UsageException.ERR_UNKNOWN,test);
         }
     }
 
     static void usageExit(int exit)
     {
-        usageExit(null,exit);
+        usageExit(null,exit, false);
     }
 
-    static void usageExit(Throwable t, int exit)
+    static void usageExit(Throwable t, int exit, boolean test)
     {
         if (t != null)
         {
@@ -97,7 +99,11 @@ public class Main
         System.err.println();
         System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
         System.err.println("       java -jar start.jar --help  # for more information");
-        System.exit(exit);
+        
+        if (test)
+            System.err.println("EXIT: "+exit);
+        else
+            System.exit(exit);
     }
 
     private BaseHome baseHome;
@@ -456,7 +462,7 @@ public class Main
         }
         catch (Exception e)
         {
-            usageExit(e,ERR_INVOKE_MAIN);
+            usageExit(e,ERR_INVOKE_MAIN,startupArgs.isTestingModeEnabled());
         }
     }
 
@@ -543,11 +549,11 @@ public class Main
         }
         catch (ConnectException e)
         {
-            usageExit(e,ERR_NOT_STOPPED);
+            usageExit(e,ERR_NOT_STOPPED,startupArgs.isTestingModeEnabled());
         }
         catch (Exception e)
         {
-            usageExit(e,ERR_UNKNOWN);
+            usageExit(e,ERR_UNKNOWN,startupArgs.isTestingModeEnabled());
         }
     }
 
@@ -605,11 +611,11 @@ public class Main
         catch (UsageException e)
         {
             System.err.println(e.getMessage());
-            usageExit(e.getCause(),e.getExitCode());
+            usageExit(e.getCause(),e.getExitCode(),startupArgs.isTestingModeEnabled());
         }
         catch (Throwable e)
         {
-            usageExit(e,UsageException.ERR_UNKNOWN);
+            usageExit(e,UsageException.ERR_UNKNOWN,startupArgs.isTestingModeEnabled());
         }
     }
 

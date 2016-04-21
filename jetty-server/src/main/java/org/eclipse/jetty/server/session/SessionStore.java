@@ -20,36 +20,100 @@
 package org.eclipse.jetty.server.session;
 
 import java.util.Set;
-import java.util.stream.Stream;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
  * SessionStore
  *
- * A store of Session objects.  This store of Session objects can be backed by
- * a SessionDataStore to persist/distribute the data contained in the Session objects.
- * 
- * This store of Session objects ensures that all threads within the same context on
- * the same node with the same session id will share exactly the same Session object.
+ * A store for the data contained in a Session object. The store
+ * would usually be persistent.
  */
 public interface SessionStore extends LifeCycle
 {
+    /**
+     * Initialize this session data store for the
+     * given context. A SessionDataStore can only 
+     * be used by one context(/session manager).
+     * 
+     * @param context context associated
+     */
     void initialize(SessionContext context);
-    SessionManager getSessionManager();
-    Session newSession (HttpServletRequest request, String id,  long time, long maxInactiveMs);
-    Session newSession (SessionData data);
-    Session renewSessionId (String oldId, String newId) throws Exception;
-    Session get(String id) throws Exception;
-    void put(String id, Session session) throws Exception;
-    boolean exists (String id) throws Exception;
-    Session delete (String id) throws Exception;
-    void shutdown ();
-    Set<String> checkExpiration (Set<String> candidates);
-    void setIdlePassivationTimeoutSec(int sec);
-    int getIdlePassivationTimeoutSec();
-    SessionDataStore getSessionDataStore();
-    void passivateIdleSession(String id);
+    
+    
+    
+    /**
+     * Read in session data from storage
+     * @param id identity of session to load
+     * @return the SessionData matching the id
+     * @throws Exception if unable to load session data
+     */
+    public SessionData load (String id) throws Exception;
+    
+    
+    /**
+     * Create a new SessionData 
+     * @param id the id
+     * @param created the timestamp when created
+     * @param accessed the timestamp when accessed
+     * @param lastAccessed the timestamp when last accessed
+     * @param maxInactiveMs the max inactive time in milliseconds
+     * @return  a new SessionData object
+     */
+    public SessionData newSessionData (String id, long created, long accessed, long lastAccessed, long maxInactiveMs);
+    
+    
+    
+    
+    /**
+     * Write out session data to storage
+     * @param id identity of session to store
+     * @param data info of session to store
+     * @throws Exception if unable to write session data
+     */
+    public void store (String id, SessionData data) throws Exception;
+    
+    
+    
+    /**
+     * Delete session data from storage
+     * @param id identity of session to delete
+     * @return true if the session was deleted from the permanent store
+     * @throws Exception if unable to delete session data
+     */
+    public boolean delete (String id) throws Exception;
+    
+    
+    
+   
+    /**
+     * Called periodically, this method should search the data store
+     * for sessions that have been expired for a 'reasonable' amount 
+     * of time. 
+     * @param candidates if provided, these are keys of sessions that
+     * the SessionStore thinks has expired and should be verified by the
+     * SessionDataStore
+     * @return set of session ids
+     */
+    public Set<String> getExpired (Set<String> candidates);
+    
+    
+    
+    /**
+     * True if this type of datastore will passivate session objects
+     * @return true if this store can passivate sessions, false otherwise
+     */
+    public boolean isPassivating ();
+    
+    
+    /**
+     * Test if data exists for a given session id.
+     * 
+     * @param id Identity of session whose existance should be checked
+     * 
+     * @return true if valid, non-expired session exists
+     * @throws Exception if problem checking existance with persistence layer
+     */
+    public boolean exists (String id) throws Exception;
+    
 }

@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Simple common abstraction for Text files, that consist of a series of lines.
@@ -109,6 +110,11 @@ public class TextFile implements Iterable<String>
     {
     }
 
+    public Stream<String> stream()
+    {
+        return lines.stream();
+    }
+    
     @Override
     public Iterator<String> iterator()
     {

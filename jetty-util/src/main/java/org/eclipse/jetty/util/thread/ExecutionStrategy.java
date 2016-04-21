@@ -54,7 +54,6 @@ public interface ExecutionStrategy
      */
     public void execute();
 
-    
     /**
      * A task that can handle {@link RejectedExecutionException}
      */
@@ -81,30 +80,54 @@ public interface ExecutionStrategy
         Runnable produce();
     }
 
-    public static class Factory
+    /**
+     * <p>A factory for {@link ExecutionStrategy}.</p>
+     */
+    public static interface Factory
+    {
+        /**
+         * <p>Creates a new {@link ExecutionStrategy}.</p>
+         *
+         * @param producer the execution strategy producer
+         * @param executor the execution strategy executor
+         * @return a new {@link ExecutionStrategy}
+         */
+        public ExecutionStrategy newExecutionStrategy(Producer producer, Executor executor);
+
+        /**
+         * @return the default {@link ExecutionStrategy}
+         */
+        public static Factory getDefault()
+        {
+            return DefaultExecutionStrategyFactory.INSTANCE;
+        }
+    }
+
+    public static class DefaultExecutionStrategyFactory implements Factory
     {
         private static final Logger LOG = Log.getLogger(Factory.class);
+        private static final Factory INSTANCE = new DefaultExecutionStrategyFactory();
 
-        public static ExecutionStrategy instanceFor(Producer producer, Executor executor)
+        @Override
+        public ExecutionStrategy newExecutionStrategy(Producer producer, Executor executor)
         {
-            // TODO remove this mechanism before release
-            String strategy = System.getProperty(producer.getClass().getName()+".ExecutionStrategy");
-            if (strategy!=null)
+            String strategy = System.getProperty(producer.getClass().getName() + ".ExecutionStrategy");
+            if (strategy != null)
             {
                 try
                 {
                     Class<? extends ExecutionStrategy> c = Loader.loadClass(strategy);
-                    Constructor<? extends ExecutionStrategy> m = c.getConstructor(Producer.class,Executor.class);
-                    LOG.info("Use {} for {}",c.getSimpleName(),producer.getClass().getName());
-                    return  m.newInstance(producer,executor);
+                    Constructor<? extends ExecutionStrategy> m = c.getConstructor(Producer.class, Executor.class);
+                    LOG.info("Use {} for {}", c.getSimpleName(), producer.getClass().getName());
+                    return m.newInstance(producer, executor);
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     LOG.warn(e);
                 }
             }
-            
-            return new ExecuteProduceConsume(producer,executor);
+
+            return new ExecuteProduceConsume(producer, executor);
         }
     }
 }

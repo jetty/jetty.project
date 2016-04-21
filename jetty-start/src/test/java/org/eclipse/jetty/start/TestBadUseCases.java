@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,8 +34,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-
-import static org.hamcrest.Matchers.containsString;
 
 /**
  * Test bad configuration scenarios.

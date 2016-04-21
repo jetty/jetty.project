@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.http;
 
+import static java.lang.Integer.MIN_VALUE;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 
 /* ------------------------------------------------------------ */
 /**
@@ -41,15 +44,44 @@ public class QuotedQualityCSV implements Iterable<String>
     private final List<String> _values = new ArrayList<>();
     private final List<Double> _quality = new ArrayList<>();
     private boolean _sorted = false;
+    private final Function<String, Integer> secondaryOrderingFunction;
     
     /* ------------------------------------------------------------ */
-    public QuotedQualityCSV(String... values)
+
+    /**
+     * Sorts values with equal quality according to the length of the value String.
+     */
+    public QuotedQualityCSV()
     {
-        for (String v:values)
-            addValue(v);
+        this((s) -> s.length());
     }
 
-    
+    /**
+     * Sorts values with equal quality according to given order.
+     */
+    public QuotedQualityCSV(String[] serverPreferredValueOrder)
+    {
+        this((s) -> {
+            for (int i=0;i<serverPreferredValueOrder.length;++i)
+                if (serverPreferredValueOrder[i].equals(s))
+                    return serverPreferredValueOrder.length-i;
+
+            if ("*".equals(s))
+                return serverPreferredValueOrder.length;
+
+            return MIN_VALUE;
+        });
+    }
+
+    /**
+     * Orders values with equal quality with the given function.
+     */
+    public QuotedQualityCSV(Function<String, Integer> secondaryOrderingFunction)
+    {
+        this.secondaryOrderingFunction = secondaryOrderingFunction;
+    }
+
+
     /* ------------------------------------------------------------ */
     public void addValue(String value)
     {
@@ -224,7 +256,7 @@ public class QuotedQualityCSV implements Iterable<String>
         _sorted=true;
 
         Double last = ZERO;
-        int len = Integer.MIN_VALUE;
+        int lastOrderIndex = Integer.MIN_VALUE;
 
         for (int i = _values.size(); i-- > 0;)
         {
@@ -232,20 +264,20 @@ public class QuotedQualityCSV implements Iterable<String>
             Double q = _quality.get(i);
 
             int compare=last.compareTo(q);
-            if (compare > 0  || (compare==0 && v.length()<len))
+            if (compare>0 || (compare==0 && secondaryOrderingFunction.apply(v)<lastOrderIndex))
             {
                 _values.set(i, _values.get(i + 1));
                 _values.set(i + 1, v);
                 _quality.set(i, _quality.get(i + 1));
                 _quality.set(i + 1, q);
                 last = ZERO;
-                len=0;
+                lastOrderIndex=0;
                 i = _values.size();
                 continue;
             }
 
             last=q;
-            len=v.length();
+            lastOrderIndex=secondaryOrderingFunction.apply(v);
 
         }
     }

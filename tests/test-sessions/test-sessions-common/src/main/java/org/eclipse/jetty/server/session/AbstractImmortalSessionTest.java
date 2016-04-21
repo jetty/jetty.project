@@ -87,7 +87,7 @@ public abstract class AbstractImmortalSessionTest
                 resp = response.getContentAsString();
                 assertEquals(String.valueOf(value),resp.trim());
                 
-                assertEquals(1, ((org.eclipse.jetty.server.session.SessionManager)context.getSessionHandler().getSessionManager()).getSessionsCreated());
+                assertEquals(1, context.getSessionHandler().getSessionsCreated());
             }
             finally
             {

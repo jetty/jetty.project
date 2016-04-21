@@ -58,7 +58,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     protected String _workerAttr;
     protected long _reseed=100000L;
     protected Server _server;
-    protected HouseKeeper _inspector;
+    protected HouseKeeper _houseKeeper;
     
 
     /* ------------------------------------------------------------ */
@@ -106,10 +106,10 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     /**
      * @param inspector inspector of sessions
      */
-    public void setSessionInspector (HouseKeeper inspector)
+    public void setSessionHouseKeeper (HouseKeeper houseKeeper)
     {
-        _inspector = inspector;
-        _inspector.setSessionIdManager(this);
+        _houseKeeper = houseKeeper;
+        _houseKeeper.setSessionIdManager(this);
     }
    
     
@@ -291,7 +291,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
 
         try
         {
-            for (SessionManager manager:getSessionManagers())
+            for (SessionHandler manager:getSessionHandlers())
             {
                 if (manager.isIdInUse(id))
                 {
@@ -327,14 +327,14 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
        initRandom();
        _workerAttr=(_workerName!=null && _workerName.startsWith("$"))?_workerName.substring(1):null;
        
-       if (_inspector == null)
+       if (_houseKeeper == null)
        {
            LOG.warn("No SessionScavenger set, using defaults");
-           _inspector = new HouseKeeper();
-           _inspector.setSessionIdManager(this);
+           _houseKeeper = new HouseKeeper();
+           _houseKeeper.setSessionIdManager(this);
        }
        
-       _inspector.start();
+       _houseKeeper.start();
     }
 
     /* ------------------------------------------------------------ */
@@ -344,7 +344,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     @Override
     protected void doStop() throws Exception
     {
-        _inspector.stop();
+        _houseKeeper.stop();
     }
 
     /* ------------------------------------------------------------ */
@@ -424,7 +424,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
         if (LOG.isDebugEnabled())
             LOG.debug("Expiring {}",id);
         
-        for (SessionManager manager:getSessionManagers())
+        for (SessionHandler manager:getSessionHandlers())
         {
             manager.invalidate(id);
         }
@@ -435,7 +435,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     {        
         //tell all contexts that may have a session object with this id to
         //get rid of them
-        for (SessionManager manager:getSessionManagers())
+        for (SessionHandler manager:getSessionHandlers())
         {         
             manager.invalidate(id);
         } 
@@ -457,7 +457,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
         //TODO how to handle request for old id whilst id change is happening?
         
         //tell all contexts to update the id 
-        for (SessionManager manager:getSessionManagers())
+        for (SessionHandler manager:getSessionHandlers())
         {
             manager.renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
         }
@@ -470,9 +470,9 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
      * 
      * @return all session managers
      */
-    public Set<SessionManager> getSessionManagers()
+    public Set<SessionHandler> getSessionHandlers()
     {
-        Set<SessionManager> managers = new HashSet<>();
+        Set<SessionHandler> handlers = new HashSet<>();
 
         Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
         for (int i=0; contexts!=null && i<contexts.length; i++)
@@ -480,12 +480,9 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
             SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
             if (sessionHandler != null) 
             {
-                SessionManager manager = (SessionManager)sessionHandler.getSessionManager();
-
-                if (manager != null)
-                    managers.add(manager);
+                handlers.add(sessionHandler);
             }
         }
-        return managers;
+        return handlers;
     }
 }

@@ -41,8 +41,23 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * @author gregw
- *
+ * An ordered list of {@link Configuration} instances.
+ * <p>
+ * The ordering of Configurations will initially be the order in which they
+ * are added.  The {@link #sort()} method can be used to apply a 
+ * {@link TopologicalSort} to the ordering as defined by the 
+ * {@link Configuration#getConfigurationsBeforeThis()} and
+ * {@link Configuration#getConfigurationsAfterThis()} methods.
+ * Instances that do not have ordering dependencies will maintain 
+ * their add order, as will additions/insertions made after the 
+ * the sort.
+ * </p>
+ * <p>
+ * If an added {@link Configuration} returns a value for 
+ * {@link Configuration#replaces()} then the added instance will replace
+ * any existing instance of that type or that has already replaced that
+ * type.
+ * </p>
  */
 public class Configurations extends AbstractList<Configuration>
 {        
@@ -389,7 +404,9 @@ public class Configurations extends AbstractList<Configuration>
         {
             for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
             {
-                if (i.next().getClass().getName().equals(replaces.getName()))
+                Configuration c=i.next();
+                if(c.getClass().getName().equals(replaces.getName()) 
+                || c.replaces()!=null && c.replaces().getName().equals(replaces.getName()))
                 {
                     i.set(configuration);
                     return;

@@ -53,8 +53,24 @@ public class ConfigurationAssert
      */
     public static void assertConfiguration(BaseHome baseHome, StartArgs args, String filename) throws FileNotFoundException, IOException
     {
+        assertConfiguration(baseHome,args,MavenTestingUtils.getTestResourceFile(filename));
+    }
+    
+    /**
+     * Given a provided StartArgs, assert that the configuration it has determined is valid based on values in a assert text file.
+     * 
+     * @param baseHome
+     *            the BaseHome used. Access it via {@link Main#getBaseHome()}
+     * @param args
+     *            the StartArgs that has been processed via {@link Main#processCommandLine(String[])}
+     * @param file
+     *            the file of the assertion values
+     * @throws FileNotFoundException if unable to find the configuration
+     * @throws IOException if unable to process the configuration
+     */
+    public static void assertConfiguration(BaseHome baseHome, StartArgs args, File file) throws FileNotFoundException, IOException
+    {
         Path testResourcesDir = MavenTestingUtils.getTestResourcesDir().toPath().toRealPath();
-        File file = MavenTestingUtils.getTestResourceFile(filename);
         TextFile textFile = new TextFile(file.toPath());
 
         // Validate XMLs (order is important)
@@ -150,6 +166,11 @@ public class ConfigurationAssert
             }
         }
         assertContainsUnordered("Files/Dirs",expectedFiles,actualFiles);
+        
+        textFile.stream()
+        .filter(s->s.startsWith("EXISTS|"))
+        .map(s->baseHome.getPath(s.substring(7)).toFile())
+        .forEach(f->Assert.assertTrue(f+" exists",f.exists()));
     }
 
     private static String shorten(BaseHome baseHome, Path path, Path testResourcesDir)

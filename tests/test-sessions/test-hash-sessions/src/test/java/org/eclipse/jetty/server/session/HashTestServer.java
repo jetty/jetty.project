@@ -39,15 +39,14 @@ public class HashTestServer extends AbstractTestServer
     }
 
 
-    public SessionManager newSessionManager()
-    {
-        HashSessionManager manager = new HashSessionManager();
-        return manager;
-    }
 
-    public SessionHandler newSessionHandler(SessionManager sessionManager)
+    public SessionHandler newSessionHandler()
     {
-        return new SessionHandler(sessionManager);
+        SessionHandler handler = new SessionHandler();
+        DefaultSessionCache ss = new DefaultSessionCache(handler);
+        handler.setSessionStore(ss);
+        ss.setSessionStore(new NullSessionStore());
+        return handler;
     }
 
 }

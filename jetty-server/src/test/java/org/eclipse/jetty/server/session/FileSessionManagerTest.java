@@ -65,15 +65,17 @@ public class FileSessionManagerTest
         idmgr.setServer(server);
         server.setSessionIdManager(idmgr);
         
-        final FileSessionManager manager = new FileSessionManager();
-        manager.getSessionDataStore().setDeleteUnrestorableFiles(true);
+        FileSessionDataStore ds = new FileSessionDataStore();
+        ds.setDeleteUnrestorableFiles(true);
+        DefaultSessionCache ss = new DefaultSessionCache(handler);
+        handler.setSessionStore(ss);
+        ss.setSessionStore(ds);
         //manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         testDir.mkdirs();
-        manager.getSessionDataStore().setStoreDir(testDir);
-        manager.setSessionIdManager(idmgr);
-        handler.setSessionManager(manager);
-        manager.start();
+        ds.setStoreDir(testDir);
+        handler.setSessionIdManager(idmgr);
+        handler.start();
         
         //Create a file that is in the parent dir of the session storeDir
         String expectedFilename =  "_0.0.0.0_dangerFile";    
@@ -82,7 +84,7 @@ public class FileSessionManagerTest
 
         //Verify that passing in the relative filename of an unrecoverable session does not lead
         //to deletion of file outside the session dir (needs deleteUnrecoverableFiles(true))
-        Session session = manager.getSession("../_0.0.0.0_dangerFile");
+        Session session = handler.getSession("../_0.0.0.0_dangerFile");
         Assert.assertTrue(session == null);
         Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile(expectedFilename).exists());
 
@@ -97,15 +99,19 @@ public class FileSessionManagerTest
         final DefaultSessionIdManager idmgr = new DefaultSessionIdManager(server);
         idmgr.setServer(server);
         server.setSessionIdManager(idmgr);
-        final FileSessionManager manager = new FileSessionManager();
-        manager.getSessionDataStore().setDeleteUnrestorableFiles(true);
-        manager.setSessionIdManager(idmgr);
-        handler.setSessionManager(manager);
+      
+        DefaultSessionCache ss = new DefaultSessionCache(handler);
+        FileSessionDataStore ds = new FileSessionDataStore();
+        ss.setSessionStore(ds);
+        handler.setSessionStore(ss);
+        ds.setDeleteUnrestorableFiles(true);
+        handler.setSessionIdManager(idmgr);
+      
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         FS.ensureEmpty(testDir);
 
-        manager.getSessionDataStore().setStoreDir(testDir);
-        manager.start();
+        ds.setStoreDir(testDir);
+        handler.start();
 
         String expectedFilename = "_0.0.0.0_validFile123";
         
@@ -113,7 +119,7 @@ public class FileSessionManagerTest
 
         Assert.assertTrue("File should exist!", new File(testDir, expectedFilename).exists());
 
-        Session session = manager.getSession("validFile123");
+        Session session = handler.getSession("validFile123");
 
         Assert.assertTrue("File shouldn't exist!", !new File(testDir,expectedFilename).exists());
     }
@@ -128,31 +134,35 @@ public class FileSessionManagerTest
         Server server = new Server();
         SessionHandler handler = new SessionHandler();
         handler.setServer(server);
-        FileSessionManager manager = new FileSessionManager();
-        manager.getSessionDataStore().setStoreDir(testDir);
-        manager.setMaxInactiveInterval(5);
+
+        DefaultSessionCache ss = new DefaultSessionCache(handler);
+        FileSessionDataStore ds = new FileSessionDataStore();
+        ss.setSessionStore(ds);
+        handler.setSessionStore(ss);
+        ds.setStoreDir(testDir);
+        handler.setMaxInactiveInterval(5);
         Assert.assertTrue(testDir.exists());
         Assert.assertTrue(testDir.canWrite());
-        handler.setSessionManager(manager);
+
         
         DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
         idManager.setServer(server);
         idManager.setWorkerName("foo");
-        manager.setSessionIdManager(idManager);
+        handler.setSessionIdManager(idManager);
         server.setSessionIdManager(idManager);
         
         server.start();
-        manager.start();
+        handler.start();
         
-        Session session = (Session)manager.newHttpSession(new Request(null, null));
+        Session session = (Session)handler.newHttpSession(new Request(null, null));
         String sessionId = session.getId();
         
         session.setAttribute("one", new Integer(1));
         session.setAttribute("two", new Integer(2));    
         
         //stop will persist sessions
-        manager.setMaxInactiveInterval(30); // change max inactive interval for *new* sessions
-        manager.stop();
+        handler.setMaxInactiveInterval(30); // change max inactive interval for *new* sessions
+        handler.stop();
         
         final String expectedFilename = "_0.0.0.0_"+session.getId();
     
@@ -171,10 +181,10 @@ public class FileSessionManagerTest
         
        
         
-        manager.start();
+        handler.start();
         
         //restore session
-        Session restoredSession = (Session)manager.getSession(sessionId);
+        Session restoredSession = (Session)handler.getSession(sessionId);
         Assert.assertNotNull(restoredSession);
         
         Object o = restoredSession.getAttribute("one");

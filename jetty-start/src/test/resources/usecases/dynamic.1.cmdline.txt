@@ -1,0 +1,2 @@
+java.version=1.8.0_05
+--module=dynamic

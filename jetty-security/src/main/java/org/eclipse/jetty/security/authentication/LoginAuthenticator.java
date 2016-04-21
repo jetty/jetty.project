@@ -118,7 +118,7 @@ public abstract class LoginAuthenticator implements Authenticator
                         s.renewId(request);
                         s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
                         if (s.isIdChanged() && response != null && (response instanceof Response))
-                            ((Response)response).addCookie(s.getSessionManager().getSessionCookie(s, request.getContextPath(), request.isSecure()));
+                            ((Response)response).addCookie(s.getSessionHandler().getSessionCookie(s, request.getContextPath(), request.isSecure()));
                         LOG.debug("renew {}->{}",oldId,s.getId());
                     }
                     else

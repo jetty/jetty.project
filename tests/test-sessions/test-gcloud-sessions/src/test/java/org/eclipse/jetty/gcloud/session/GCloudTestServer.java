@@ -19,16 +19,9 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.session.AbstractSessionStore;
 import org.eclipse.jetty.server.session.AbstractTestServer;
-import org.eclipse.jetty.server.session.DefaultSessionIdManager;
+import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.server.session.SessionManager;
-import org.eclipse.jetty.server.session.StalePeriodStrategy;
-
-import com.google.gcloud.datastore.Datastore;
-import com.google.gcloud.datastore.DatastoreFactory;
 
 /**
  * GCloudTestServer
@@ -64,27 +57,20 @@ public class GCloudTestServer extends AbstractTestServer
     }
 
 
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionManager()
-     */
-    @Override
-    public SessionManager newSessionManager()
-    {
-        GCloudSessionManager sessionManager = new GCloudSessionManager();
-        sessionManager.setSessionIdManager(_sessionIdManager);
-        sessionManager.getSessionDataStore().setGCloudConfiguration((GCloudConfiguration)_config);
-        return sessionManager;
-        
-    }
-
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionHandler(org.eclipse.jetty.server.SessionManager)
      */
     @Override
-    public SessionHandler newSessionHandler(SessionManager sessionManager)
+    public SessionHandler newSessionHandler()
     {
-        return new SessionHandler(sessionManager);
+        SessionHandler handler =  new SessionHandler();
+        handler.setSessionIdManager(_sessionIdManager);
+        GCloudSessionStore ds = new GCloudSessionStore();
+        ds.setGCloudConfiguration((GCloudConfiguration)_config);
+        DefaultSessionCache ss = new DefaultSessionCache(handler);
+        ss.setSessionStore(ds);
+        handler.setSessionStore(ss);
+        return handler;
     }
 
 }
