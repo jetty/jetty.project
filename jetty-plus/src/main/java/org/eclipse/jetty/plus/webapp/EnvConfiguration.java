@@ -61,7 +61,6 @@ public class EnvConfiguration extends AbstractConfiguration
 
     public EnvConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
         beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,FragmentConfiguration.class);
         afterThis(PlusConfiguration.class,JettyWebXmlConfiguration.class);
         protectAndExpose("org.eclipse.jetty.jndi.");
@@ -80,7 +79,7 @@ public class EnvConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public boolean configure (WebAppContext context) throws Exception
+    public void configure (WebAppContext context) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Created java:comp/env for webapp "+context.getContextPath());
@@ -137,8 +136,6 @@ public class EnvConfiguration extends AbstractConfiguration
 
         //add java:comp/env entries for any EnvEntries that have been defined so far
         bindEnvEntries(context);
-        
-        return true;
     }
 
 

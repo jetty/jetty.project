@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 public class AbstractConfiguration implements Configuration
 {
     protected static final boolean ENABLE_BY_DEFAULT = true;
-    private final boolean _enabledByDefault;
     private final List<String> _after=new ArrayList<>();
     private final List<String> _beforeThis=new ArrayList<>();
     private final ClasspathPattern _system=new ClasspathPattern();
@@ -36,12 +35,6 @@ public class AbstractConfiguration implements Configuration
     
     protected AbstractConfiguration()
     {
-        this(!ENABLE_BY_DEFAULT);
-    }
-
-    protected AbstractConfiguration(boolean enableByDefault)
-    {
-        _enabledByDefault=enableByDefault;
     }
 
     /**
@@ -165,9 +158,8 @@ public class AbstractConfiguration implements Configuration
     {
     }
 
-    public boolean configure(WebAppContext context) throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
-        return true;
     }
 
     public void postConfigure(WebAppContext context) throws Exception
@@ -184,11 +176,5 @@ public class AbstractConfiguration implements Configuration
 
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-    }
-
-    @Override
-    public boolean isEnabledByDefault() 
-    { 
-        return _enabledByDefault; 
-    }
+    }    
 }

@@ -19,13 +19,8 @@
 package org.eclipse.jetty.quickstart;
 
 import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.Configuration;
 
-public class StopContextConfiguration extends AbstractConfiguration
+public class StopContextConfiguration extends AbstractConfiguration implements Configuration.AbortConfiguration
 {
-    @Override
-    public boolean configure(WebAppContext context) throws Exception
-    {
-        return false;
-    }
 }

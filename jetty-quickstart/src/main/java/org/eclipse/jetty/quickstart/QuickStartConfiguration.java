@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.StandardDescriptorProcessor;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
@@ -42,7 +43,7 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
  * Re-inflate a deployable webapp from a saved effective-web.xml
  * which combines all pre-parsed web xml descriptors and annotations.
  */
-public class QuickStartConfiguration extends AbstractConfiguration
+public class QuickStartConfiguration extends AbstractConfiguration implements Configuration.DisabledByDefault
 {
     private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
 
@@ -62,7 +63,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
     
     public QuickStartConfiguration()
     {
-        super(!ENABLE_BY_DEFAULT);
         beforeThis(WebInfConfiguration.class);
         afterThis(WebXmlConfiguration.class);
     }
@@ -141,31 +141,31 @@ public class QuickStartConfiguration extends AbstractConfiguration
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
      */
     @Override
-    public boolean configure(WebAppContext context) throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
         if (!_quickStart)
-            return super.configure(context);
-        
-        //add the processor to handle normal web.xml content
-        context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
-        
-        //add a processor to handle extended web.xml format
-        context.getMetaData().addDescriptorProcessor(new QuickStartDescriptorProcessor());
-        
-        //add a decorator that will find introspectable annotations
-        context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
-        
-        //add a context bean that will run ServletContainerInitializers as the context starts
-        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
-        if (starter != null)
-            throw new IllegalStateException("ServletContainerInitializersStarter already exists");
-        starter = new ServletContainerInitializersStarter(context);
-        context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER, starter);
-        context.addBean(starter, true);       
+            super.configure(context);
+        else
+        {
+            //add the processor to handle normal web.xml content
+            context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
 
-        LOG.debug("configured {}",this);
+            //add a processor to handle extended web.xml format
+            context.getMetaData().addDescriptorProcessor(new QuickStartDescriptorProcessor());
 
-        return true;
+            //add a decorator that will find introspectable annotations
+            context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
+
+            //add a context bean that will run ServletContainerInitializers as the context starts
+            ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
+            if (starter != null)
+                throw new IllegalStateException("ServletContainerInitializersStarter already exists");
+            starter = new ServletContainerInitializersStarter(context);
+            context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER, starter);
+            context.addBean(starter, true);       
+
+            LOG.debug("configured {}",this);
+        }
     }
 
     /**

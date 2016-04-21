@@ -50,7 +50,6 @@ public class PlusConfiguration extends AbstractConfiguration
 
     public PlusConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
         beforeThis(EnvConfiguration.class,WebXmlConfiguration.class,MetaInfConfiguration.class,FragmentConfiguration.class);
         afterThis(JettyWebXmlConfiguration.class);
     }    
@@ -69,14 +68,12 @@ public class PlusConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public boolean configure (WebAppContext context)
+    public void configure (WebAppContext context)
     throws Exception
     {
         bindUserTransaction(context);
 
         context.getMetaData().addDescriptorProcessor(new PlusDescriptorProcessor());
-        
-        return true;
     }
 
     @Override

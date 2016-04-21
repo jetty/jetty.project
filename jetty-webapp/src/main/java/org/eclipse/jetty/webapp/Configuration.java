@@ -69,11 +69,6 @@ public interface Configuration
      */
     public default ClasspathPattern getServerClasses() { return new ClasspathPattern();  }
     
-    /**
-     * @return true if the Configuration should be added to a Context by default 
-     */
-    public default boolean isEnabledByDefault() { return false; }
-    
     /* ------------------------------------------------------------------------------- */
     /** Set up for configuration.
      * <p>
@@ -86,17 +81,15 @@ public interface Configuration
      */
     public void preConfigure (WebAppContext context) throws Exception;
     
-    
     /* ------------------------------------------------------------------------------- */
     /** Configure WebApp.
      * <p>
      * Typically this step applies the discovered configuration resources to
      * either the {@link WebAppContext} or the associated {@link MetaData}.
      * @param context The context to configure
-     * @return True if configuration is successful or false if context should not be started.
      * @throws Exception if unable to configure
      */
-    public boolean configure (WebAppContext context) throws Exception;
+    public void configure (WebAppContext context) throws Exception;
     
     
     /* ------------------------------------------------------------------------------- */
@@ -124,6 +117,16 @@ public interface Configuration
      */
     public void destroy (WebAppContext context) throws Exception;
     
+    /**
+     * A Configuration that is not added by default to a context
+     *
+     */
+    interface DisabledByDefault extends Configuration {}
+    
+    /**
+     * A Configuration that will cause {@link Configurations#configure(WebAppContext) to abort with a false return
+     */
+    interface AbortConfiguration extends DisabledByDefault,Configuration {}
     
     /**
      * @deprecated Use {@link Configurations}

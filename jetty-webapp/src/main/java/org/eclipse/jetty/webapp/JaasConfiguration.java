@@ -34,7 +34,6 @@ public class JaasConfiguration extends AbstractConfiguration
 {
     public JaasConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
         beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,WebInfConfiguration.class,FragmentConfiguration.class);
         afterThis(WebAppConfiguration.class);
         protectAndExpose("org.eclipse.jetty.jaas.");

@@ -19,7 +19,6 @@
 
 package org.eclipse.jetty.quickstart;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -60,6 +59,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.MetaData.OriginInfo;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
@@ -72,7 +72,7 @@ import org.eclipse.jetty.xml.XmlAppendable;
  * Generate an effective web.xml from a WebAppContext, including all components 
  * from web.xml, web-fragment.xmls annotations etc.
  */
-public class QuickStartGeneratorConfiguration extends AbstractConfiguration
+public class QuickStartGeneratorConfiguration extends AbstractConfiguration implements Configuration.DisabledByDefault
 {
     private static final Logger LOG = Log.getLogger(QuickStartGeneratorConfiguration.class);
         
@@ -80,7 +80,6 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     {
     }
 
-    
     
     /**
      * Perform the generation of the xml file
@@ -704,7 +703,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public boolean configure(WebAppContext context) throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
         MetaData metadata = context.getMetaData();
         metadata.resolve(context);
@@ -716,7 +715,6 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         {
             generateQuickStartWebXml(context,fos);
         }
-        return true;
     }
 
 

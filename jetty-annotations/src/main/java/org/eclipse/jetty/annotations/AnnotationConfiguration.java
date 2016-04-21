@@ -97,7 +97,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     public AnnotationConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
         beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,FragmentConfiguration.class,PlusConfiguration.class);
         afterThis(JettyWebXmlConfiguration.class);
         protectAndExpose("org.eclipse.jetty.util.annotation.");
@@ -437,7 +436,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
      */
     @Override
-    public boolean configure(WebAppContext context) throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
        context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
 
@@ -471,9 +470,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                LOG.warn ("ServletContainerInitializers: detected. Class hierarchy: empty");
            for (ContainerInitializer i : initializers)
                    i.resolveClasses(context,map);
-       }
-       
-       return true;
+       } 
     }
 
 

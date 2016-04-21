@@ -216,7 +216,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
      * @see org.eclipse.jetty.webapp.WebInfConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
      */
     @Override
-    public boolean configure(WebAppContext context) throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
         TreeMap<String, Resource> prependedResourcesPath = new TreeMap<String, Resource>();
         TreeMap<String, Resource> appendedResourcesPath = new TreeMap<String, Resource>();
@@ -272,8 +272,6 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
             resources[resources.length-1] = context.getBaseResource();
             context.setBaseResource(new ResourceCollection(resources));
         }
-        
-        return true;
     }
 
     

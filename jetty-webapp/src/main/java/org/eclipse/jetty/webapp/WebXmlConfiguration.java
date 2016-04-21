@@ -35,14 +35,11 @@ public class WebXmlConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(WebXmlConfiguration.class);
 
-
     /* ------------------------------------------------------------------------------- */
     public WebXmlConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
         beforeThis(WebInfConfiguration.class);
     }
-
  
     /* ------------------------------------------------------------------------------- */
     /**
@@ -89,10 +86,9 @@ public class WebXmlConfiguration extends AbstractConfiguration
      * 
      */
     @Override
-    public boolean configure (WebAppContext context) throws Exception
+    public void configure (WebAppContext context) throws Exception
     {
         context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
-        return true;
     }
     
     /* ------------------------------------------------------------------------------- */

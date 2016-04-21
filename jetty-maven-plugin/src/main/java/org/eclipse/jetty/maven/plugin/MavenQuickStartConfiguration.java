@@ -72,9 +72,8 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
     }
 
     @Override
-    public boolean configure(WebAppContext context) throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
-        
        JettyWebAppContext jwac = (JettyWebAppContext)context;
         
         //put the classes dir and all dependencies into the classpath
@@ -87,9 +86,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         }
         
         //Set up the quickstart environment for the context
-        boolean configured = super.configure(context);
-                
-        return configured;
+        configure(context);       
     }
     
     @Override

@@ -34,7 +34,6 @@ public class JndiConfiguration extends AbstractConfiguration
 {
     public JndiConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
         beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,WebInfConfiguration.class,FragmentConfiguration.class);
         afterThis(WebAppConfiguration.class);
         protectAndExpose("org.eclipse.jetty.jndi.");

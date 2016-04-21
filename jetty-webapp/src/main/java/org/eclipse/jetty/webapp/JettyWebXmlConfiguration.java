@@ -48,7 +48,6 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
     public JettyWebXmlConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
         beforeThis(WebXmlConfiguration.class,FragmentConfiguration.class,MetaInfConfiguration.class);
     }
     
@@ -58,7 +57,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
      * @see Configuration#configure(WebAppContext)
      */
     @Override
-    public boolean configure (WebAppContext context) throws Exception
+    public void configure (WebAppContext context) throws Exception
     {
         LOG.debug("Configuring web-jetty.xml");
 
@@ -96,8 +95,6 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 }
             }
         }
-
-        return true;
     }
 
     /**

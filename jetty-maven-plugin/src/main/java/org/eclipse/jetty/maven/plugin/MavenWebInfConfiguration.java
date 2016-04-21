@@ -63,7 +63,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     /** 
      * @see org.eclipse.jetty.webapp.WebInfConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
      */
-    public boolean configure(WebAppContext context) throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
         JettyWebAppContext jwac = (JettyWebAppContext)context;
         
@@ -78,8 +78,6 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         }
         
         super.configure(context);
-                
-        return true;
     }
 
     

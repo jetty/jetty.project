@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.webapp;
 
-import static org.eclipse.jetty.toolchain.test.ExtraMatchers.*; 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;

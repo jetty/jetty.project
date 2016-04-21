@@ -50,9 +50,7 @@ public class WebInfConfiguration extends AbstractConfiguration
     
     public WebInfConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
     }
-
     
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
@@ -62,12 +60,10 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         //Extract webapp if necessary
         unpack (context);
-
     }
 
-
     @Override
-    public boolean configure(WebAppContext context) throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
         Resource web_inf = context.getWebInf();
 
@@ -84,8 +80,6 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (lib.exists() || lib.isDirectory())
                 ((WebAppClassLoader)context.getClassLoader()).addJars(lib);
         }
-
-        return true;
     }
 
     @Override

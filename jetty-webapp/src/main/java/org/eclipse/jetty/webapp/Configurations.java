@@ -40,6 +40,10 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * @author gregw
+ *
+ */
 public class Configurations extends AbstractList<Configuration>
 {        
     private static final Logger LOG = Log.getLogger(Configurations.class);
@@ -48,60 +52,19 @@ public class Configurations extends AbstractList<Configuration>
     private static final Set<String> __knownByClassName = new HashSet<>();
 
 
+    /* ------------------------------------------------------------ */
     /**
      * @return
      */
-    public static List<Configuration> getKnown()
+    public static synchronized List<Configuration> getKnown()
     {
-        synchronized (Configurations.class)
+        if (__known.isEmpty())
         {
-            if (__known.isEmpty())
+            ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
+            for (Configuration configuration : configs)
             {
-                ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
-                for (Configuration configuration : configs)
-                {
-                    __known.add(configuration);
-                    __knownByClassName.add(configuration.getClass().getName());
-                }
-                sort(__known);
-                if (LOG.isDebugEnabled())
-                {
-                    for (Configuration c: __known)
-                        LOG.debug("known {}",c);
-                }
-                
-                LOG.debug("Known Configurations {}",__knownByClassName);
-            }
-        }
-        return __known;
-    }
-    
-    
-    
-    /**
-     * @param classes
-     * @throws Exception
-     */
-    public static void setKnown (String ... classes)
-    {
-        synchronized (Configurations.class)
-        {
-            if (!__known.isEmpty())
-                throw new IllegalStateException("Known configuration classes already set");
-
-
-            for (String c:classes)
-            {
-                try
-                {
-                    Class clazz = Thread.currentThread().getContextClassLoader().loadClass(c);
-                    __known.add((Configuration)clazz.newInstance());
-                    __knownByClassName.add(c);
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Problem loading known class {}", c);
-                }
+                __known.add(configuration);
+                __knownByClassName.add(configuration.getClass().getName());
             }
             sort(__known);
             if (LOG.isDebugEnabled())
@@ -109,11 +72,52 @@ public class Configurations extends AbstractList<Configuration>
                 for (Configuration c: __known)
                     LOG.debug("known {}",c);
             }
-            
+
             LOG.debug("Known Configurations {}",__knownByClassName);
         }
+        return __known;
     }
     
+    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param classes
+     * @throws Exception
+     */
+    public static synchronized void setKnown (String ... classes)
+    {
+        if (!__known.isEmpty())
+            throw new IllegalStateException("Known configuration classes already set");
+
+        for (String c:classes)
+        {
+            try
+            {
+                Class<?> clazz = Loader.loadClass(c);
+                __known.add((Configuration)clazz.newInstance());
+                __knownByClassName.add(c);
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Problem loading known class",e);
+            }
+        }
+        sort(__known);
+        if (LOG.isDebugEnabled())
+        {
+            for (Configuration c: __known)
+                LOG.debug("known {}",c);
+        }
+
+        LOG.debug("Known Configurations {}",__knownByClassName);
+    }
+
+    /* ------------------------------------------------------------ */
+    static synchronized void cleanKnown()
+    {
+        __known.clear();
+    }
     
     /* ------------------------------------------------------------ */
     /** Get/Set/Create the server default Configuration ClassList.
@@ -123,7 +127,8 @@ public class Configurations extends AbstractList<Configuration>
      * <p>This method also adds the obtained ClassList instance as a dependent bean
      * on the server and clears the attribute</p>
      * @param server The server the default is for
-     * @return the server default ClassList instance of the configuration classes for this server. Changes to this list will change the server default instance.
+     * @return the server default ClassList instance of the configuration classes for this server. 
+     * Changes to this list will change the server default instance.
      */
     public static Configurations setServerDefault(Server server)
     {
@@ -149,7 +154,8 @@ public class Configurations extends AbstractList<Configuration>
      * either be a ClassList instance or an String[] of class names); or a new instance
      * with default configuration classes.
      * @param server The server the default is for
-     * @return A copy of the server default ClassList instance of the configuration classes for this server. Changes to the returned list will not change the server default.
+     * @return A copy of the server default ClassList instance of the configuration classes for this server. 
+     * Changes to the returned list will not change the server default.
      */
     public static Configurations getServerDefault(Server server)
     {
@@ -173,7 +179,7 @@ public class Configurations extends AbstractList<Configuration>
         if (configurations==null)
         {
             configurations=new Configurations(Configurations.getKnown().stream()
-                    .filter(Configuration::isEnabledByDefault)
+                    .filter(c->!(c instanceof Configuration.DisabledByDefault))
                     .map(c->c.getClass().getName())
                     .toArray(String[]::new));
         }
@@ -271,6 +277,17 @@ public class Configurations extends AbstractList<Configuration>
                 i.remove();
         }
     }
+    
+    public void remove(Class<? extends Configuration>... configClass)
+    {
+        List<String> names = Arrays.asList(configClass).stream().map(c->c.getName()).collect(Collectors.toList());
+        for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
+        {
+            Configuration configuration=i.next();
+            if (names.contains(configuration.getClass().getName()))
+                i.remove();
+        }
+    }
 
     public void remove(@Name("configClass")String... configClass)
     {
@@ -306,24 +323,34 @@ public class Configurations extends AbstractList<Configuration>
     public static void sort(List<Configuration> configurations)
     {
         // Sort the configurations
-        Map<String,Configuration> map = new HashMap<>();
+        Map<String,Configuration> by_name = new HashMap<>();
+        Map<String,List<Configuration>> replaced_by = new HashMap<>();
         TopologicalSort<Configuration> sort = new TopologicalSort<>();
 
         for (Configuration c:configurations)
-            map.put(c.getClass().getName(),c);
+        {
+            by_name.put(c.getClass().getName(),c);
+            if (c.replaces()!=null)
+                replaced_by.computeIfAbsent(c.replaces().getName(),key->new ArrayList<>()).add(c);
+        }
+        
         for (Configuration c:configurations)
         {
             for (String b:c.getConfigurationsBeforeThis())
             {
-                Configuration before=map.get(b);
+                Configuration before=by_name.get(b);
                 if (before!=null)
                     sort.addBeforeAfter(before,c);
+                if (replaced_by.containsKey(b))
+                    replaced_by.get(b).forEach(bc->sort.addBeforeAfter(bc,c));
             }
             for (String a:c.getConfigurationsAfterThis())
             {
-                Configuration after=map.get(a);
+                Configuration after=by_name.get(a);
                 if (after!=null)
                     sort.addBeforeAfter(c,after);
+                if (replaced_by.containsKey(a))
+                    replaced_by.get(a).forEach(ac->sort.addBeforeAfter(c,ac));
             }
         }
         sort.sort(configurations);
@@ -345,7 +372,7 @@ public class Configurations extends AbstractList<Configuration>
     {
         return getConfigurations().iterator();
     }
-
+    
     private void addConfiguration(Configuration configuration)
     {
         String name=configuration.getClass().getName();
@@ -399,13 +426,19 @@ public class Configurations extends AbstractList<Configuration>
         }
     }
     
+    /**
+     * @param webapp The webapp to configure
+     * @return false if a {@link Configuration.AbortConfiguration} was encountered, true otherwise
+     * @throws Exception Thrown by {@link Configuration#configure(WebAppContext)}
+     */
     public boolean configure(WebAppContext webapp) throws Exception
     {
         // Configure webapp
         for (Configuration configuration : _configurations)
         {
             LOG.debug("configure {}",configuration);
-            if (!configuration.configure(webapp))
+            configuration.configure(webapp);
+            if (configuration instanceof Configuration.AbortConfiguration)
                 return false;
         }
         return true;
@@ -421,4 +454,5 @@ public class Configurations extends AbstractList<Configuration>
             configuration.postConfigure(webapp);
         }
     }
+    
 }

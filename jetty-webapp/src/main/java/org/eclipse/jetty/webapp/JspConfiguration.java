@@ -35,7 +35,6 @@ public class JspConfiguration extends AbstractConfiguration
 {
     public JspConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
         beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,WebInfConfiguration.class,FragmentConfiguration.class);
         afterThis(WebAppConfiguration.class);
         protectAndExpose("org.eclipse.jetty.jsp.");

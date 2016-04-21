@@ -29,7 +29,6 @@ public class ServletsConfiguration extends AbstractConfiguration
 {
     public ServletsConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
         beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,WebInfConfiguration.class,WebAppConfiguration.class);
         afterThis(JettyWebXmlConfiguration.class);
         protectAndExpose();

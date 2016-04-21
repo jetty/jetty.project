@@ -31,7 +31,6 @@ public class WebSocketCdiConfiguration extends AbstractConfiguration
 {
     public WebSocketCdiConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
         beforeThis(WebSocketConfiguration.class);
         protectAndExpose("org.eclipse.jetty.cdi.websocket.");
     }

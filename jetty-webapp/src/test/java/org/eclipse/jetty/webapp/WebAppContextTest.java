@@ -57,9 +57,9 @@ public class WebAppContextTest
     public void testConfigurationClassesFromDefault ()
     {
         String[] known_and_enabled=Configurations.getKnown().stream()
-        .filter(Configuration::isEnabledByDefault)
-        .map(c->c.getClass().getName())
-        .toArray(String[]::new);
+                .filter(c->!(c instanceof Configuration.DisabledByDefault))
+                .map(c->c.getClass().getName())
+                .toArray(String[]::new);
         
         Server server = new Server();
         
@@ -190,7 +190,6 @@ public class WebAppContextTest
         assertFalse(context.isProtectedTarget("/something-else/web-inf"));
     }
     
-    
     @Test
     public void testNullPath() throws Exception
     {
@@ -208,6 +207,7 @@ public class WebAppContextTest
         server.addConnector(connector);
         
         server.start();
+        
         try
         {
             String response = connector.getResponses("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
@@ -218,7 +218,6 @@ public class WebAppContextTest
             server.stop();
         }
     }
-    
     
     class ServletA extends GenericServlet
     {

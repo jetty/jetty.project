@@ -34,7 +34,6 @@ public class FragmentConfiguration extends AbstractConfiguration
 
     public FragmentConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
         beforeThis(MetaInfConfiguration.class,WebXmlConfiguration.class);
     }
 

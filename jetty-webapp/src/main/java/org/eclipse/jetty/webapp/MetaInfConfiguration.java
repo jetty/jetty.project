@@ -90,7 +90,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /* ------------------------------------------------------------------------------- */
     public MetaInfConfiguration()
     {
-        super(ENABLE_BY_DEFAULT);
         beforeThis(WebXmlConfiguration.class);
     }
 
@@ -188,7 +187,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     
 
     @Override
-    public boolean configure(WebAppContext context) throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
 
         // Look for extra resource
@@ -203,7 +202,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 collection[i++]=resource;
             context.setBaseResource(new ResourceCollection(collection));
         }
-        return true;
     }
 
     /**
