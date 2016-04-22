@@ -25,7 +25,32 @@
           <onlyAnalyze>org.eclipse.jetty.alpn.*</onlyAnalyze>
         </configuration>
       </plugin>
-    </plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.7</version>
+        <executions>
+          <execution>
+            <id>parse-version</id>
+            <goals>
+              <goal>parse-version</goal>
+            </goals>
+            <configuration>
+              <versionString>${alpn.api.version}</versionString>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <configuration>
+          <instructions>
+            <Import-Package>org.eclipse.jetty.alpn;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}",*</Import-Package>
+          </instructions>
+        </configuration>
+      </plugin>
+   </plugins>
   </build>
   <dependencies>
     <dependency>
