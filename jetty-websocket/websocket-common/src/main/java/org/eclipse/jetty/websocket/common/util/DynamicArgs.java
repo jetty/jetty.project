@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.util;
 
-import org.eclipse.jetty.util.annotation.Name;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -101,7 +99,7 @@ public class DynamicArgs
         @Override
         public String toString()
         {
-            return String.format("%s[%d%s]",type.getSimpleName(),index,tag == null ? "" : "/" + tag);
+            return String.format("%s[%d%s]",type.getName(),index,tag == null ? "" : "/" + tag);
         }
 
         public <T extends Annotation> T getAnnotation(Class<T> annoClass)

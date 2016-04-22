@@ -72,20 +72,30 @@ public class ClientConnectTest
     {
         // Validate thrown cause
         Throwable cause = e.getCause();
-    
-        Assert.assertThat("ExecutionException.cause",cause,errorMatcher);
+        if (!errorClass.isInstance(cause))
+        {
+            cause.printStackTrace(System.err);
+            Assert.assertThat("ExecutionException.cause", cause, instanceOf(errorClass));
+        }
 
-        // Validate websocket captured cause
-        Assert.assertThat("Error Queue Length",wsocket.errorQueue.size(),greaterThanOrEqualTo(1));
-        Throwable capcause = wsocket.errorQueue.poll();
-        Assert.assertThat("Error Queue[0]",capcause,notNullValue());
-        Assert.assertThat("Error Queue[0]",capcause,errorMatcher);
+        if (wsocket.getSession() != null)
+        {
+            // Validate websocket captured cause
+            Assert.assertThat("Error Queue Length", wsocket.errorQueue.size(), greaterThanOrEqualTo(1));
+            Throwable capcause = wsocket.errorQueue.poll();
+            Assert.assertThat("Error Queue[0]", capcause, notNullValue());
+            Assert.assertThat("Error Queue[0]", capcause, instanceOf(errorClass));
 
-        // Validate that websocket didn't see an open event
-        wsocket.assertNotOpened();
+            // Validate that websocket didn't see an open event
+            wsocket.assertNotOpened();
 
-        // Return the captured cause
-        return (E)capcause;
+            // Return the captured cause
+            return (E) capcause;
+        }
+        else
+        {
+            return (E) cause;
+        }
     }
 
     @Before

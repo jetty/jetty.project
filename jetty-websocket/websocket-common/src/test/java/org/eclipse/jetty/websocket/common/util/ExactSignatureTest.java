@@ -39,12 +39,12 @@ public class ExactSignatureTest
 
         public String sigStr(String str)
         {
-            return String.format("sigStr<%s>",str);
+            return String.format("sigStr<%s>", str);
         }
         
         public String sigByteArray(byte[] buf, int offset, int len)
         {
-            return String.format("sigByteArray<%s,%d,%d>",buf == null ? "<null>" : ("[" + buf.length + "]"),offset,len);
+            return String.format("sigByteArray<%s,%d,%d>", buf == null ? "<null>" : ("[" + buf.length + "]"), offset, len);
         }
     }
 
@@ -60,12 +60,12 @@ public class ExactSignatureTest
         throw new AssertionError("Unable to find method: " + name);
     }
     
-    private static final Arg ARG_STR = new Arg(1,String.class);
-    private static final Arg ARG_BOOL = new Arg(2,Boolean.class);
-    private static final Arg ARG_FILE = new Arg(3,File.class);
-    private static final Arg ARG_BYTEARRAY = new Arg(4,byte[].class);
-    private static final Arg ARG_OFFSET = new Arg(5,int.class);
-    private static final Arg ARG_LEN = new Arg(6,int.class);
+    private static final Arg ARG_STR = new Arg(1, String.class);
+    private static final Arg ARG_BOOL = new Arg(2, Boolean.class);
+    private static final Arg ARG_FILE = new Arg(3, File.class);
+    private static final Arg ARG_BYTEARRAY = new Arg(4, byte[].class);
+    private static final Arg ARG_OFFSET = new Arg(5, int.class);
+    private static final Arg ARG_LEN = new Arg(6, int.class);
 
     @Test
     public void testEmptySignature() throws Exception
@@ -75,11 +75,11 @@ public class ExactSignatureTest
 
         SampleSignatures ssigs = new SampleSignatures();
         Method m = findMethodByName(ssigs, "sigEmpty");
-        DynamicArgs dargs = dab.build(m,ARG_STR,ARG_BOOL,ARG_FILE);
+        DynamicArgs dargs = dab.build(m, ARG_STR, ARG_BOOL, ARG_FILE);
         assertThat("DynamicArgs", dargs, notNullValue());
         
         // Test with potential args
-        String result = (String)dargs.invoke(ssigs,"Hello", Boolean.TRUE, new File("bar"));
+        String result = (String) dargs.invoke(ssigs, "Hello", Boolean.TRUE, new File("bar"));
         assertThat("result", result, is("sigEmpty<>"));
     }
     
@@ -91,11 +91,11 @@ public class ExactSignatureTest
 
         SampleSignatures ssigs = new SampleSignatures();
         Method m = findMethodByName(ssigs, "sigStr");
-        DynamicArgs dargs = dab.build(m,ARG_STR,ARG_BOOL,ARG_FILE);
+        DynamicArgs dargs = dab.build(m, ARG_STR, ARG_BOOL, ARG_FILE);
         assertThat("DynamicArgs", dargs, notNullValue());
         
         // Test with potential args
-        String result = (String)dargs.invoke(ssigs,"Hello", Boolean.TRUE, new File("bar"));
+        String result = (String) dargs.invoke(ssigs, "Hello", Boolean.TRUE, new File("bar"));
         assertThat("result", result, is("sigStr<Hello>"));
     }
     
@@ -103,22 +103,22 @@ public class ExactSignatureTest
     public void testByteArraySignature() throws Exception
     {
         DynamicArgs.Builder dab = new DynamicArgs.Builder();
-        dab.addSignature(new ExactSignature(ARG_BYTEARRAY,ARG_OFFSET,ARG_LEN));
+        dab.addSignature(new ExactSignature(ARG_BYTEARRAY, ARG_OFFSET, ARG_LEN));
 
         SampleSignatures ssigs = new SampleSignatures();
         Method m = findMethodByName(ssigs, "sigByteArray");
-        DynamicArgs dargs = dab.build(m,ARG_BYTEARRAY,ARG_OFFSET,ARG_LEN);
+        DynamicArgs dargs = dab.build(m, ARG_BYTEARRAY, ARG_OFFSET, ARG_LEN);
         assertThat("DynamicArgs", dargs, notNullValue());
         
         // Test with potential args
         byte buf[] = new byte[222];
         int offset = 3;
         int len = 44;
-        String result = (String)dargs.invoke(ssigs,buf,offset,len);
+        String result = (String) dargs.invoke(ssigs, buf, offset, len);
         assertThat("result", result, is("sigByteArray<[222],3,44>"));
         
         // Test with empty potential args
-        result = (String)dargs.invoke(ssigs,null,123,456);
+        result = (String) dargs.invoke(ssigs, null, 123, 456);
         assertThat("result", result, is("sigByteArray<<null>,123,456>"));
     }
 }

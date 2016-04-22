@@ -40,14 +40,14 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 public class OnFrameFunction implements Function<Frame, Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
-    private static final Arg SESSION = new Arg(1,Session.class);
-    private static final Arg FRAME = new Arg(2,Frame.class);
+    private static final Arg ARG_SESSION = new Arg(1, Session.class);
+    private static final Arg ARG_FRAME = new Arg(2, Frame.class);
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(Frame.class));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,Frame.class));
+        ARGBUILDER.addSignature(new ExactSignature(ARG_FRAME));
+        ARGBUILDER.addSignature(new ExactSignature(ARG_SESSION, ARG_FRAME));
     }
 
     private final Session session;
@@ -61,14 +61,14 @@ public class OnFrameFunction implements Function<Frame, Void>
         this.endpoint = endpoint;
         this.method = method;
 
-        ReflectUtils.assertIsAnnotated(method,OnWebSocketFrame.class);
+        ReflectUtils.assertIsAnnotated(method, OnWebSocketFrame.class);
         ReflectUtils.assertIsPublicNonStatic(method);
-        ReflectUtils.assertIsReturn(method,Void.TYPE);
+        ReflectUtils.assertIsReturn(method, Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method,SESSION,FRAME);
+        this.callable = ARGBUILDER.build(method, ARG_SESSION, ARG_FRAME);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method,OnWebSocketFrame.class,ARGBUILDER);
+            throw InvalidSignatureException.build(method, OnWebSocketFrame.class, ARGBUILDER);
         }
     }
 
@@ -78,11 +78,11 @@ public class OnFrameFunction implements Function<Frame, Void>
         WebSocketFrame copy = WebSocketFrame.copy(frame);
         try
         {
-            this.callable.invoke(endpoint,session,copy);
+            this.callable.invoke(endpoint, session, copy);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            throw new WebSocketException("Unable to call frame method " + ReflectUtils.toString(endpoint.getClass(),method),e);
+            throw new WebSocketException("Unable to call frame method " + ReflectUtils.toString(endpoint.getClass(), method), e);
         }
         return null;
     }

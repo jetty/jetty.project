@@ -33,19 +33,19 @@ import org.eclipse.jetty.websocket.common.util.ExactSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 /**
- * Jetty {@link WebSocket} {@link OnWebSocketMessage} method {@link Function} for TEXT/{@link String} types
+ * Jetty {@link WebSocket} {@link OnWebSocketMessage} method {@link Function} for ARG_TEXT/{@link String} types
  */
 public class OnTextFunction implements Function<String, Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
-    private static final Arg SESSION = new Arg(1,Session.class);
-    private static final Arg TEXT = new Arg(2,String.class);
+    private static final Arg ARG_SESSION = new Arg(1, Session.class);
+    private static final Arg ARG_TEXT = new Arg(2, String.class);
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(String.class));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,String.class));
+        ARGBUILDER.addSignature(new ExactSignature(ARG_TEXT));
+        ARGBUILDER.addSignature(new ExactSignature(ARG_SESSION, ARG_TEXT));
     }
 
     public static DynamicArgs.Builder getDynamicArgsBuilder()
@@ -69,14 +69,14 @@ public class OnTextFunction implements Function<String, Void>
         this.endpoint = endpoint;
         this.method = method;
 
-        ReflectUtils.assertIsAnnotated(method,OnWebSocketMessage.class);
+        ReflectUtils.assertIsAnnotated(method, OnWebSocketMessage.class);
         ReflectUtils.assertIsPublicNonStatic(method);
-        ReflectUtils.assertIsReturn(method,Void.TYPE);
+        ReflectUtils.assertIsReturn(method, Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method,SESSION,TEXT);
+        this.callable = ARGBUILDER.build(method, ARG_SESSION, ARG_TEXT);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method,OnWebSocketMessage.class,ARGBUILDER);
+            throw InvalidSignatureException.build(method, OnWebSocketMessage.class, ARGBUILDER);
         }
     }
 
@@ -85,11 +85,11 @@ public class OnTextFunction implements Function<String, Void>
     {
         try
         {
-            this.callable.invoke(endpoint,session,text);
+            this.callable.invoke(endpoint, session, text);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            throw new WebSocketException("Unable to call text message method " + ReflectUtils.toString(endpoint.getClass(),method),e);
+            throw new WebSocketException("Unable to call text message method " + ReflectUtils.toString(endpoint.getClass(), method), e);
         }
         return null;
     }

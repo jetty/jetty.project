@@ -20,12 +20,9 @@ package org.eclipse.jetty.websocket.common.util;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.ServiceLoader;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 
 import org.eclipse.jetty.websocket.common.util.DynamicArgs.Arg;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs.Signature;
@@ -34,7 +31,7 @@ public class UnorderedSignature implements Signature, BiPredicate<Method, Class<
 {
     private final Arg[] params;
 
-    public UnorderedSignature(Arg ... args)
+    public UnorderedSignature(Arg... args)
     {
         this.params = args;
     }
@@ -113,43 +110,55 @@ public class UnorderedSignature implements Signature, BiPredicate<Method, Class<
     @Override
     public BiFunction<Object, Object[], Object> getInvoker(Method method, Arg... callArgs)
     {
+        int callArgsLen = callArgs.length;
+
         // Figure out mapping of calling args to method args
         Class<?> paramTypes[] = method.getParameterTypes();
         int paramTypesLength = paramTypes.length;
 
         // Method argument array pointing to index in calling array
         int argMapping[] = new int[paramTypesLength];
-        int callArgsLen = callArgs.length;
+        int argMappingLength = argMapping.length;
 
+        // ServiceLoader for argument identification plugins
         List<ArgIdentifier> argIdentifiers = DynamicArgs.lookupArgIdentifiers();
-
-        for (int mi = 0; mi < paramTypesLength; mi++)
+        DynamicArgs.Arg methodArgs[] = new DynamicArgs.Arg[paramTypesLength];
+        for (int pi = 0; pi < paramTypesLength; pi++)
         {
-            DynamicArgs.Arg methodArg = new DynamicArgs.Arg(method, mi, paramTypes[mi]);
+            methodArgs[pi] = new DynamicArgs.Arg(method, pi, paramTypes[pi]);
 
+            // Supplement method argument identification from plugins
             for (ArgIdentifier argId : argIdentifiers)
-                methodArg = argId.apply(methodArg);
+                methodArgs[pi] = argId.apply(methodArgs[pi]);
+        }
 
+        // Iterate through mappings, looking for a callArg that fits it
+        for (int ai = 0; ai < argMappingLength; ai++)
+        {
             int ref = -1;
+
             // Find reference to argument in callArgs
             for (int ci = 0; ci < callArgsLen; ci++)
             {
-                if (methodArg.tag != null && methodArg.tag.equals(callArgs[ci].tag))
+                if (methodArgs[ai].tag != null && methodArgs[ai].tag.equals(callArgs[ci].tag))
                 {
                     ref = ci;
+                    break;
                 }
-                else if (methodArg.index == callArgs[ci].index)
+                else if (methodArgs[ai].index == callArgs[ci].index)
                 {
                     ref = ci;
+                    break;
                 }
             }
+
             if (ref < 0)
             {
                 StringBuilder err = new StringBuilder();
                 err.append("Unable to map type [");
-                err.append(params[mi]);
+                err.append(methodArgs[ai].type);
                 err.append("] in method ");
-                ReflectUtils.append(err,method);
+                ReflectUtils.append(err, method);
                 err.append(" to calling args: (");
                 boolean delim = false;
                 for (Arg arg : callArgs)
@@ -163,7 +172,8 @@ public class UnorderedSignature implements Signature, BiPredicate<Method, Class<
 
                 throw new DynamicArgsException(err.toString());
             }
-            argMapping[mi] = ref;
+
+            argMapping[ai] = ref;
         }
 
         // Return function capable of calling method
@@ -175,13 +185,13 @@ public class UnorderedSignature implements Signature, BiPredicate<Method, Class<
             }
             try
             {
-                return method.invoke(obj,args);
+                return method.invoke(obj, args);
             }
             catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
             {
                 StringBuilder err = new StringBuilder();
                 err.append("Unable to call: ");
-                ReflectUtils.append(err,obj.getClass(),method);
+                ReflectUtils.append(err, obj.getClass(), method);
                 err.append(" [with ");
                 boolean delim = false;
                 for (Object arg : args)
@@ -199,7 +209,7 @@ public class UnorderedSignature implements Signature, BiPredicate<Method, Class<
                     delim = true;
                 }
                 err.append("]");
-                throw new DynamicArgsException(err.toString(),e);
+                throw new DynamicArgsException(err.toString(), e);
             }
         };
     }

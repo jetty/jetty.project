@@ -39,14 +39,14 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 public class OnReaderFunction implements Function<Reader, Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
-    private static final Arg SESSION = new Arg(1,Session.class);
-    private static final Arg STREAM = new Arg(2,Reader.class);
+    private static final Arg ARG_SESSION = new Arg(1, Session.class);
+    private static final Arg ARG_STREAM = new Arg(2, Reader.class);
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(Reader.class));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,Reader.class));
+        ARGBUILDER.addSignature(new ExactSignature(ARG_STREAM));
+        ARGBUILDER.addSignature(new ExactSignature(ARG_SESSION, ARG_STREAM));
     }
 
     public static DynamicArgs.Builder getDynamicArgsBuilder()
@@ -70,14 +70,14 @@ public class OnReaderFunction implements Function<Reader, Void>
         this.endpoint = endpoint;
         this.method = method;
 
-        ReflectUtils.assertIsAnnotated(method,OnWebSocketMessage.class);
+        ReflectUtils.assertIsAnnotated(method, OnWebSocketMessage.class);
         ReflectUtils.assertIsPublicNonStatic(method);
-        ReflectUtils.assertIsReturn(method,Void.TYPE);
+        ReflectUtils.assertIsReturn(method, Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method,SESSION,STREAM);
+        this.callable = ARGBUILDER.build(method, ARG_SESSION, ARG_STREAM);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method,OnWebSocketMessage.class,ARGBUILDER);
+            throw InvalidSignatureException.build(method, OnWebSocketMessage.class, ARGBUILDER);
         }
     }
 
@@ -86,11 +86,11 @@ public class OnReaderFunction implements Function<Reader, Void>
     {
         try
         {
-            this.callable.invoke(endpoint,session,stream);
+            this.callable.invoke(endpoint, session, stream);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            throw new WebSocketException("Unable to call text message method " + ReflectUtils.toString(endpoint.getClass(),method),e);
+            throw new WebSocketException("Unable to call text message method " + ReflectUtils.toString(endpoint.getClass(), method), e);
         }
         return null;
     }
