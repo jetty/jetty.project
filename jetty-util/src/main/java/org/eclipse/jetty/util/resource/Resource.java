@@ -227,6 +227,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             }
             catch (IllegalArgumentException e)
             {
+                LOG.ignore(e);
                 // Catches scenario where a bad Windows path like "C:\dev" is
                 // improperly escaped, which various downstream classloaders
                 // tend to have a problem with
