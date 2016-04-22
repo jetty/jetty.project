@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.quickstart;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Test;
 
@@ -34,10 +33,8 @@ import static org.junit.Assert.assertThat;
 
 public class AttributeNormalizerTest
 {
-    private static final Logger LOG = Log.getLogger(AttributeNormalizerTest.class);
-
     @Test
-    public void testNormalizeWAR() throws MalformedURLException
+    public void testNormalizeWAR() throws MalformedURLException, IOException
     {
         String webref = "http://localhost/resource/webapps/root";
         Resource webresource = Resource.newResource(webref);
@@ -52,7 +49,7 @@ public class AttributeNormalizerTest
     }
 
     @Test
-    public void testWindowsTLD() throws MalformedURLException
+    public void testWindowsTLD() throws MalformedURLException, IOException
     {
         // Setup AttributeNormalizer
         String webref = "http://localhost/resource/webapps/root";

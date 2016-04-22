@@ -22,7 +22,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -552,7 +551,7 @@ public class SslContextFactory extends AbstractLifeCycle
         {
             _keyStoreResource = Resource.newResource(keyStorePath);
         }
-        catch (MalformedURLException e)
+        catch (Exception e)
         {
             throw new IllegalArgumentException(e);
         }
@@ -628,7 +627,7 @@ public class SslContextFactory extends AbstractLifeCycle
         {
             _trustStoreResource = Resource.newResource(trustStorePath);
         }
-        catch (MalformedURLException e)
+        catch (Exception e)
         {
             throw new IllegalArgumentException(e);
         }

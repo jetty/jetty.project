@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.browser;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -84,7 +85,7 @@ public class JsrBrowserDebugTool
         server.join();
     }
 
-    private void setupServer(int port) throws DeploymentException, ServletException, URISyntaxException, MalformedURLException
+    private void setupServer(int port) throws DeploymentException, ServletException, URISyntaxException, MalformedURLException, IOException
     {
         server = new Server();
         
