@@ -174,11 +174,11 @@ public class UnorderedSignatureTest
         byte buf[] = new byte[222];
         int offset = 3;
         int len = 44;
-        String result = (String)dargs.invoke(m,ssigs,buf,offset,len);
+        String result = (String)dargs.invoke(ssigs,buf,offset,len);
         assertThat("result", result, is("sigByteArray<[222],3,44>"));
 
         // Test with empty potential args
-        result = (String)dargs.invoke(m,ssigs,null,123,456);
+        result = (String)dargs.invoke(ssigs,null,123,456);
         assertThat("result", result, is("sigByteArray<<null>,123,456>"));
     }
 }

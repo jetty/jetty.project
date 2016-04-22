@@ -58,12 +58,13 @@ public class MessageWriterTest
     private WebSocketPolicy policy;
     private TrackingSocket remoteSocket;
     private WebSocketSession session;
+    private WebSocketSession remoteSession;
 
     @After
     public void closeSession() throws Exception
     {
         session.close();
-        session.stop();
+        remoteSession.close();
     }
 
     @Before
@@ -80,8 +81,9 @@ public class MessageWriterTest
         remoteSocket = new TrackingSocket("remote");
         URI remoteURI = new URI("ws://localhost/remote");
         LocalWebSocketConnection remoteConnection = new LocalWebSocketConnection(bufferPool);
-        WebSocketSession remoteSession = new WebSocketSession(containerScope,remoteURI,remoteSocket,remoteConnection);
+        remoteSession = new WebSocketSession(containerScope,remoteURI,remoteSocket,remoteConnection);
         OutgoingFrames socketPipe = FramePipes.to(remoteSession);
+        remoteSession.open();
 
         // Local Session
         TrackingSocket localSocket = new TrackingSocket("local");

@@ -55,7 +55,7 @@ public abstract class ConnectPromise extends FuturePromise<Session> implements R
     {
         if (session != null)
         {
-            // Notify websocket of failure to connect
+            // Notify websocket session of failure to connect
             session.notifyError(cause);
         }
 

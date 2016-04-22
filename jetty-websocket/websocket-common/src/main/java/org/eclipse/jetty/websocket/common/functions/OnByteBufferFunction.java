@@ -39,14 +39,14 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 public class OnByteBufferFunction implements Function<ByteBuffer, Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
-    private static final Arg SESSION = new Arg(1,Session.class);
-    private static final Arg BUFFER = new Arg(2,ByteBuffer.class);
+    private static final Arg ARG_SESSION = new Arg(1, Session.class);
+    private static final Arg ARG_BUFFER = new Arg(2, ByteBuffer.class);
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(ByteBuffer.class));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,ByteBuffer.class));
+        ARGBUILDER.addSignature(new ExactSignature(ARG_BUFFER));
+        ARGBUILDER.addSignature(new ExactSignature(ARG_SESSION, ARG_BUFFER));
     }
 
     public static DynamicArgs.Builder getDynamicArgsBuilder()
@@ -70,14 +70,14 @@ public class OnByteBufferFunction implements Function<ByteBuffer, Void>
         this.endpoint = endpoint;
         this.method = method;
 
-        ReflectUtils.assertIsAnnotated(method,OnWebSocketMessage.class);
+        ReflectUtils.assertIsAnnotated(method, OnWebSocketMessage.class);
         ReflectUtils.assertIsPublicNonStatic(method);
-        ReflectUtils.assertIsReturn(method,Void.TYPE);
+        ReflectUtils.assertIsReturn(method, Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method,SESSION,BUFFER);
+        this.callable = ARGBUILDER.build(method, ARG_SESSION, ARG_BUFFER);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method,OnWebSocketMessage.class,ARGBUILDER);
+            throw InvalidSignatureException.build(method, OnWebSocketMessage.class, ARGBUILDER);
         }
     }
 
@@ -86,11 +86,11 @@ public class OnByteBufferFunction implements Function<ByteBuffer, Void>
     {
         try
         {
-            this.callable.invoke(endpoint,session,bin);
+            this.callable.invoke(endpoint, session, bin);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            throw new WebSocketException("Unable to call text message method " + ReflectUtils.toString(endpoint.getClass(),method),e);
+            throw new WebSocketException("Unable to call text message method " + ReflectUtils.toString(endpoint.getClass(), method), e);
         }
         return null;
     }

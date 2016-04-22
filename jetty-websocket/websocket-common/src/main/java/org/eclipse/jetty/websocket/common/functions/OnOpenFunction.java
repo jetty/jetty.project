@@ -38,13 +38,13 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 public class OnOpenFunction implements Function<Session, Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
-    private static final Arg SESSION = new Arg(1,Session.class);
+    private static final Arg ARG_SESSION = new Arg(1, Session.class);
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
         ARGBUILDER.addSignature(new ExactSignature());
-        ARGBUILDER.addSignature(new ExactSignature(Session.class));
+        ARGBUILDER.addSignature(new ExactSignature(ARG_SESSION));
     }
 
     private final Object endpoint;
@@ -56,14 +56,14 @@ public class OnOpenFunction implements Function<Session, Void>
         this.endpoint = endpoint;
         this.method = method;
 
-        ReflectUtils.assertIsAnnotated(method,OnWebSocketConnect.class);
+        ReflectUtils.assertIsAnnotated(method, OnWebSocketConnect.class);
         ReflectUtils.assertIsPublicNonStatic(method);
-        ReflectUtils.assertIsReturn(method,Void.TYPE);
+        ReflectUtils.assertIsReturn(method, Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method,SESSION);
+        this.callable = ARGBUILDER.build(method, ARG_SESSION);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method,OnWebSocketConnect.class,ARGBUILDER);
+            throw InvalidSignatureException.build(method, OnWebSocketConnect.class, ARGBUILDER);
         }
     }
 
@@ -72,11 +72,11 @@ public class OnOpenFunction implements Function<Session, Void>
     {
         try
         {
-            this.callable.invoke(endpoint,session);
+            this.callable.invoke(endpoint, session);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            throw new WebSocketException("Unable to call method " + ReflectUtils.toString(endpoint.getClass(),method),e);
+            throw new WebSocketException("Unable to call method " + ReflectUtils.toString(endpoint.getClass(), method), e);
         }
         return null;
     }

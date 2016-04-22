@@ -24,25 +24,15 @@
     </modules>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>findbugs-maven-plugin</artifactId>
-                    <configuration>
-                        <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>clirr-maven-plugin</artifactId>
-                    <configuration>
-                        <minSeverity>info</minSeverity>
-                        <comparisonVersion>9.1.0.v20131115</comparisonVersion>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <configuration>
+                    <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
 </project>

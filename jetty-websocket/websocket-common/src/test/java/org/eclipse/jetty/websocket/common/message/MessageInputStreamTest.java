@@ -155,22 +155,21 @@ public class MessageInputStreamTest
         {
             final AtomicBoolean hadError = new AtomicBoolean(false);
 
-            new Thread(new Runnable()
-            {
-                @Override
-                public void run()
+            new Thread(() -> {
+                try
                 {
-                    try
-                    {
-                        // wait for a little bit before sending input closed
-                        TimeUnit.MILLISECONDS.sleep(400);
-                        // TODO: stream.messageComplete();
-                    }
-                    catch (InterruptedException e)
-                    {
-                        hadError.set(true);
-                        e.printStackTrace(System.err);
-                    }
+                    // wait for a little bit before sending input closed
+                    TimeUnit.MILLISECONDS.sleep(400);
+                    stream.close();
+                }
+                catch (InterruptedException e)
+                {
+                    hadError.set(true);
+                    e.printStackTrace(System.err);
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace(System.err);
                 }
             }).start();
 
@@ -180,7 +179,7 @@ public class MessageInputStreamTest
 
             // Test it
             Assert.assertThat("Error when appending",hadError.get(),is(false));
-            Assert.assertThat("Initial byte",b,is(-1));
+            Assert.assertThat("Initial byte (Should be EOF)",b,is(-1));
         }
     }
     

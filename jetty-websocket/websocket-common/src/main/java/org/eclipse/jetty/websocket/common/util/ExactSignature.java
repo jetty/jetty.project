@@ -22,7 +22,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 
 import org.eclipse.jetty.websocket.common.util.DynamicArgs.Arg;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs.Signature;
@@ -39,17 +38,6 @@ public class ExactSignature implements Signature, BiPredicate<Method,Class<?>[]>
     public ExactSignature(Arg... params)
     {
         this.params = params;
-    }
-
-    public ExactSignature(Class<?>... parameters)
-    {
-        int len = parameters.length;
-
-        this.params = new Arg[len];
-        for(int i=0; i<len; i++)
-        {
-            this.params[i] = new Arg(i, parameters[i]);
-        }
     }
 
     @Override

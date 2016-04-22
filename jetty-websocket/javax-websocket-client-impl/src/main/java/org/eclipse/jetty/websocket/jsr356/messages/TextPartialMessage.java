@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import javax.websocket.MessageHandler;
@@ -42,17 +41,16 @@ public class TextPartialMessage implements MessageSink
     }
 
     @Override
-    public void appendFrame(ByteBuffer payload, boolean isLast) throws IOException
+    public void accept(ByteBuffer payload, Boolean fin)
     {
         String partialText = utf8Partial.toPartialString(payload);
 
         // No decoders for Partial messages per JSR-356 (PFD1 spec)
-        partialHandler.onMessage(partialText,isLast);
-    }
+        partialHandler.onMessage(partialText, fin);
 
-    @Override
-    public void messageComplete()
-    {
-        utf8Partial.reset();
+        if (fin)
+        {
+            utf8Partial.reset();
+        }
     }
 }

@@ -38,14 +38,14 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 public class OnErrorFunction implements Function<Throwable, Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
-    private static final Arg SESSION = new Arg(1, Session.class);
-    private static final Arg CAUSE = new Arg(2, Throwable.class);
+    private static final Arg ARG_SESSION = new Arg(1, Session.class);
+    private static final Arg ARG_CAUSE = new Arg(2, Throwable.class);
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(Throwable.class));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,Throwable.class));
+        ARGBUILDER.addSignature(new ExactSignature(ARG_CAUSE));
+        ARGBUILDER.addSignature(new ExactSignature(ARG_SESSION, ARG_CAUSE));
     }
 
     private final Session session;
@@ -59,14 +59,14 @@ public class OnErrorFunction implements Function<Throwable, Void>
         this.endpoint = endpoint;
         this.method = method;
 
-        ReflectUtils.assertIsAnnotated(method,OnWebSocketError.class);
+        ReflectUtils.assertIsAnnotated(method, OnWebSocketError.class);
         ReflectUtils.assertIsPublicNonStatic(method);
-        ReflectUtils.assertIsReturn(method,Void.TYPE);
+        ReflectUtils.assertIsReturn(method, Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method,SESSION,CAUSE);
+        this.callable = ARGBUILDER.build(method, ARG_SESSION, ARG_CAUSE);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method,OnWebSocketError.class,ARGBUILDER);
+            throw InvalidSignatureException.build(method, OnWebSocketError.class, ARGBUILDER);
         }
     }
 
@@ -75,11 +75,11 @@ public class OnErrorFunction implements Function<Throwable, Void>
     {
         try
         {
-            this.callable.invoke(endpoint,session,cause);
+            this.callable.invoke(endpoint, session, cause);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            throw new WebSocketException("Unable to call error method " + ReflectUtils.toString(endpoint.getClass(),method),e);
+            throw new WebSocketException("Unable to call error method " + ReflectUtils.toString(endpoint.getClass(), method), e);
         }
         return null;
     }
