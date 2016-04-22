@@ -155,6 +155,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param useCaches controls URLConnection caching
      * @return A Resource object.
      * @throws MalformedURLException Problem accessing URI
+     * @throws IOException Problem handling resource as file.
      */
     public static Resource newResource(String resource, boolean useCaches)       
         throws MalformedURLException
@@ -176,13 +177,13 @@ public abstract class Resource implements ResourceFactory, Closeable
                     // It's a file.
                     if (resource.startsWith("./"))
                         resource=resource.substring(2);
-                    
                     File file=new File(resource).getCanonicalFile();
-                    return new PathResource(file.toPath());
+                    return new PathResource(file);
                 }
-                catch(Exception e2)
+                catch(IOException e2)
                 {
-                    LOG.debug(Log.EXCEPTION,e2);
+                    // TODO throw the IOException instead
+                    e.addSuppressed(e2);
                     throw e;
                 }
             }
