@@ -65,7 +65,7 @@ public class WebAppContextTest
         
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        assertThat(Arrays.asList(wac.getConfigurations()).stream().map(c->{return c.getClass().getName();}).collect(Collectors.toList()),Matchers.containsInAnyOrder(known_and_enabled));
+        assertThat(wac.getWebAppConfigurations().stream().map(c->{return c.getClass().getName();}).collect(Collectors.toList()),Matchers.containsInAnyOrder(known_and_enabled));
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 
@@ -79,8 +79,7 @@ public class WebAppContextTest
     {
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
-        System.err.println(Arrays.asList(wac.getConfigurations()));
-        Assert.assertThat(Arrays.asList(wac.getConfigurations()).stream().map(c->c.getClass().getName()).collect(Collectors.toList()),
+        Assert.assertThat(wac.getWebAppConfigurations().stream().map(c->c.getClass().getName()).collect(Collectors.toList()),
                 Matchers.contains( 
                         "org.eclipse.jetty.webapp.JmxConfiguration",
                         "org.eclipse.jetty.webapp.WebInfConfiguration",
@@ -97,14 +96,14 @@ public class WebAppContextTest
         Configuration[] configs = {new WebInfConfiguration()};
         WebAppContext wac = new WebAppContext();
         wac.setConfigurations(configs);
-        assertTrue(Arrays.equals(configs, wac.getConfigurations()));
+        Assert.assertThat(wac.getWebAppConfigurations(),Matchers.contains(configs));
 
         //test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = new Server();
         server.setAttribute(Configuration.ATTR, classNames);
         wac.setServer(server);
-        assertTrue(Arrays.equals(configs,wac.getConfigurations()));
+        Assert.assertThat(wac.getWebAppConfigurations(),Matchers.contains(configs));
     }
 
     @Test

@@ -128,7 +128,7 @@ public class QuickStartConfiguration extends AbstractConfiguration implements Co
             throws Exception
     {
         _quickStart=true;
-        context.setConfigurations(Arrays.stream(context.getConfigurations())
+        context.setConfigurations(context.getWebAppConfigurations().stream()
                 .filter(c->!__replacedConfigurations.contains(c.replaces())&&!__replacedConfigurations.contains(c.getClass()))
                 .collect(Collectors.toList()).toArray(new Configuration[]{}));
         context.getMetaData().setWebXml(quickStartWebXml);
