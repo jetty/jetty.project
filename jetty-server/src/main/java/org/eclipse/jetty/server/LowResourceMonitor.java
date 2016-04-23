@@ -79,7 +79,6 @@ public class LowResourceMonitor extends AbstractLifeCycle
     private String _reasons;
     private long _lowStarted;
 
-
     private final Runnable _monitor = new Runnable()
     {
         @Override
@@ -255,13 +254,19 @@ public class LowResourceMonitor extends AbstractLifeCycle
         String reasons=null;
         String cause="";
         int connections=0;
+        
+        if (_monitorThreads && _server.getThreadPool().isLowOnThreads())
+        {
+            reasons=low(reasons,"Low on threads: "+_server.getThreadPool());
+            cause+="T";
+        }
 
         for(Connector connector : getMonitoredOrServerConnectors())
         {
             connections+=connector.getConnectedEndPoints().size();
 
             Executor executor = connector.getExecutor();
-            if (executor instanceof ThreadPool)
+            if (executor instanceof ThreadPool && executor!=_server.getThreadPool())
             {
                 ThreadPool threadpool=(ThreadPool) executor;
                 if (_monitorThreads && threadpool.isLowOnThreads())
@@ -284,7 +289,6 @@ public class LowResourceMonitor extends AbstractLifeCycle
             reasons=low(reasons,"Max memory exceeded: "+memory+">"+_maxMemory);
             cause+="M";
         }
-
 
         if (reasons!=null)
         {
