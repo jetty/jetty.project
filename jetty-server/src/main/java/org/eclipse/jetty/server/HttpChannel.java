@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -70,6 +71,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final AtomicBoolean _committed = new AtomicBoolean();
     private final AtomicInteger _requests = new AtomicInteger();
     private final Connector _connector;
+    private final Executor _executor;
     private final HttpConfiguration _configuration;
     private final EndPoint _endPoint;
     private final HttpTransport _transport;
@@ -92,6 +94,20 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _state = new HttpChannelState(this);
         _request = new Request(this, newHttpInput(_state));
         _response = new Response(this, newHttpOutput());
+        
+        if (connector==null)
+        {
+            // Testing mode
+            _executor=null;
+            _requestLog=null;
+        }
+        else
+        {
+            Server server=_connector.getServer();
+            _executor=server.getThreadPool();
+            _requestLog=server.getRequestLog();
+        }
+        
         _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",this,_endPoint,_endPoint.getConnection(),_state);
@@ -735,7 +751,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     protected void execute(Runnable task)
     {
-        _connector.getExecutor().execute(task);
+        _executor.execute(task);
     }
 
     public Scheduler getScheduler()
