@@ -32,7 +32,8 @@ import org.eclipse.jetty.websocket.common.util.TextUtil;
 /**
  * Simple Echo WebSocket, using async writes of echo
  */
-@WebSocket
+@WebSocket(maxTextMessageSize = 20 * 1024 * 1024,
+           maxBinaryMessageSize = 20 * 1024 * 1024)
 public class ABSocket
 {
     private static Logger LOG = Log.getLogger(ABSocket.class);

@@ -89,7 +89,7 @@ public class OnByteArrayFunction implements Function<byte[], Void>
     {
         try
         {
-            this.callable.invoke(endpoint, bin, 0, bin.length);
+            this.callable.invoke(endpoint, this.session, bin, 0, bin.length);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {

@@ -33,9 +33,10 @@ public class StringMessageSink implements MessageSink
 
     public StringMessageSink(WebSocketPolicy policy, Function<String, Void> onMessageFunction)
     {
+        assert (onMessageFunction != null);
         this.policy = policy;
         this.onMessageFunction = onMessageFunction;
-        size = 0;
+        this.size = 0;
     }
 
     @Override
@@ -60,7 +61,10 @@ public class StringMessageSink implements MessageSink
             if (fin)
             {
                 // notify event
-                onMessageFunction.apply(utf.toString());
+                if (utf != null)
+                    onMessageFunction.apply(utf.toString());
+                else
+                    onMessageFunction.apply("");
                 // reset
                 size = 0;
                 utf = null;

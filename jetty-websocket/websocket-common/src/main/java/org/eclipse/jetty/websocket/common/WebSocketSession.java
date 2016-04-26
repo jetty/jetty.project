@@ -147,7 +147,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         this.executor = connection.getExecutor();
         this.outgoingHandler = connection;
         this.connection.getIOState().addListener(this);
-        this.policy = containerScope.getPolicy().clonePolicy();
+        this.policy = connection.getPolicy();
 
         discoverEndpointFunctions(this.endpoint);
 
@@ -298,31 +298,31 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                     {
                         assertNotSet(onTextSink, "TEXT Message Handler", endpointClass, onmsg);
                         // Normal Text Message
-                        onTextSink = new StringMessageSink(policy,new OnTextFunction(this,endpointClass,onmsg));
+                        onTextSink = new StringMessageSink(policy,new OnTextFunction(this,endpoint,onmsg));
                     }
                     else if (OnByteBufferFunction.hasMatchingSignature(onmsg))
                     {
                         assertNotSet(onBinarySink, "Binary Message Handler", endpointClass, onmsg);
                         // ByteBuffer Binary Message
-                        onBinarySink = new ByteBufferMessageSink(policy,new OnByteBufferFunction(this,endpointClass,onmsg));
+                        onBinarySink = new ByteBufferMessageSink(policy,new OnByteBufferFunction(this,endpoint,onmsg));
                     }
                     else if (OnByteArrayFunction.hasMatchingSignature(onmsg))
                     {
                         assertNotSet(onBinarySink, "Binary Message Handler", endpointClass, onmsg);
                         // byte[] Binary Message
-                        onBinarySink = new ByteArrayMessageSink(policy,new OnByteArrayFunction(this,endpointClass,onmsg));
+                        onBinarySink = new ByteArrayMessageSink(policy,new OnByteArrayFunction(this,endpoint,onmsg));
                     }
                     else if (OnInputStreamFunction.hasMatchingSignature(onmsg))
                     {
                         assertNotSet(onBinarySink, "Binary Message Handler", endpointClass, onmsg);
                         // InputStream Binary Message
-                        onBinarySink = new InputStreamMessageSink(executor,new OnInputStreamFunction(this,endpointClass,onmsg));
+                        onBinarySink = new InputStreamMessageSink(executor,new OnInputStreamFunction(this,endpoint,onmsg));
                     }
                     else if (OnReaderFunction.hasMatchingSignature(onmsg))
                     {
                         assertNotSet(onTextSink, "TEXT Message Handler", endpointClass, onmsg);
                         // Reader Text Message
-                        onTextSink = new ReaderMessageSink(executor,new OnReaderFunction(this,endpointClass,onmsg));
+                        onTextSink = new ReaderMessageSink(executor,new OnReaderFunction(this,endpoint,onmsg));
                     }
                     else
                     {
