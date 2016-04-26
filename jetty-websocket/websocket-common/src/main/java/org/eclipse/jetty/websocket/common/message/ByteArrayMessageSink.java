@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
 public class ByteArrayMessageSink implements MessageSink
 {
+    private static final byte EMPTY_BUFFER[] = new byte[0];
     private static final int BUFFER_SIZE = 65535;
     private final WebSocketPolicy policy;
     private final Function<byte[], Void> onMessageFunction;
@@ -64,7 +65,10 @@ public class ByteArrayMessageSink implements MessageSink
         {
             if (fin)
             {
-                onMessageFunction.apply(out.toByteArray());
+                if(out != null)
+                    onMessageFunction.apply(out.toByteArray());
+                else
+                    onMessageFunction.apply(EMPTY_BUFFER);
                 // reset
                 out = null;
                 size = 0;
