@@ -21,11 +21,15 @@ package org.eclipse.jetty.websocket.common.message;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
 public class StringMessageSink implements MessageSink
 {
+    private static final Logger LOG = Log.getLogger(StringMessageSink.class);
     private final WebSocketPolicy policy;
     private final Function<String, Void> onMessageFunction;
     private Utf8StringBuilder utf;
@@ -42,33 +46,31 @@ public class StringMessageSink implements MessageSink
     @Override
     public void accept(ByteBuffer payload, Boolean fin)
     {
-        try
+        if (payload != null)
         {
-            if (payload != null)
-            {
-                policy.assertValidTextMessageSize(size + payload.remaining());
-                size += payload.remaining();
+            policy.assertValidTextMessageSize(size + payload.remaining());
+            size += payload.remaining();
 
-                if (utf == null)
-                    utf = new Utf8StringBuilder(1024);
+            if (utf == null)
+                utf = new Utf8StringBuilder(1024);
 
-                // allow for fast fail of BAD utf (incomplete utf will trigger on messageComplete)
-                utf.append(payload);
-            }
+            if(LOG.isDebugEnabled())
+                LOG.debug("Raw Payload {}", BufferUtil.toDetailString(payload));
+
+            // allow for fast fail of BAD utf (incomplete utf will trigger on messageComplete)
+            utf.append(payload);
         }
-        finally
+
+        if (fin)
         {
-            if (fin)
-            {
-                // notify event
-                if (utf != null)
-                    onMessageFunction.apply(utf.toString());
-                else
-                    onMessageFunction.apply("");
-                // reset
-                size = 0;
-                utf = null;
-            }
+            // notify event
+            if (utf != null)
+                onMessageFunction.apply(utf.toString());
+            else
+                onMessageFunction.apply("");
+            // reset
+            size = 0;
+            utf = null;
         }
     }
 }

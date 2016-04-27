@@ -595,8 +595,9 @@ public class Parser
             buffer.limit(limit);
             buffer.position(buffer.position() + window.remaining());
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{} Window: {}",policy.getBehavior(),BufferUtil.toDetailString(window));
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("{} Raw Payload: {}",policy.getBehavior(),BufferUtil.toDetailString(window));
             }
 
             maskProcessor.process(window);

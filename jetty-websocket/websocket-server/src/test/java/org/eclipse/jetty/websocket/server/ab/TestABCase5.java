@@ -557,7 +557,7 @@ public class TestABCase5 extends AbstractABCase
     }
 
     /**
-     * Send text fragmented in 2 packets, with ping between them (framewise)
+     * Send text fragmented in 2 packets, with ping between them (frame wise)
      * @throws Exception on test failure
      */
     @Test

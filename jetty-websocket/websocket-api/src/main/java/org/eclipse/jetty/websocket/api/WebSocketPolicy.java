@@ -299,6 +299,8 @@ public class WebSocketPolicy
      */
     public void setIdleTimeout(long ms)
     {
+        if(ms < -1) return; // no change (likely came from annotation)
+
         boolean dirty = (this.idleTimeout != ms);
         assertGreaterThan("IdleTimeout",ms,0);
         this.idleTimeout = ms;
@@ -314,6 +316,8 @@ public class WebSocketPolicy
      */
     public void setInputBufferSize(int size)
     {
+        if(size < 0) return; // no change (likely came from annotation)
+
         boolean dirty = (this.inputBufferSize != size);
         assertGreaterThan("InputBufferSize",size,1);
         assertLessThan("InputBufferSize",size,"MaxTextMessageBufferSize",maxTextMessageBufferSize);
@@ -352,6 +356,8 @@ public class WebSocketPolicy
      */
     public void setMaxBinaryMessageSize(int size)
     {
+        if(size < 0) return; // no change (likely came from annotation)
+
         boolean dirty = (this.maxBinaryMessageSize != size);
         assertGreaterThan("MaxBinaryMessageSize",size,1);
 
@@ -388,6 +394,8 @@ public class WebSocketPolicy
      */
     public void setMaxTextMessageSize(int size)
     {
+        if(size < 0) return; // no change (likely came from annotation)
+
         boolean dirty = (this.maxTextMessageSize != size);
         assertGreaterThan("MaxTextMessageSize",size,1);
 
