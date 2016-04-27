@@ -643,9 +643,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (status < 400 || status > 599)
             status = HttpStatus.BAD_REQUEST_400;
 
+        Action action;
         try
         {
-            if (_state.handling()==Action.DISPATCH)
+           action=_state.handling();
+        }
+        catch(IllegalStateException e)
+        {
+            // The bad message cannot be handled in the current state, so throw
+            // to hopefull somebody that can handle
+            throw new BadMessageException(status,reason);
+        }
+        
+        try
+        {
+            if (action==Action.DISPATCH)
             {
                 ByteBuffer content=null;
                 HttpFields fields=new HttpFields();
