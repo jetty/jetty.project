@@ -12,28 +12,6 @@
     </Arg>
   </New>
 
-  <!-- =============================================================== -->
-  <!-- Configure the webapp                                            -->
-  <!-- =============================================================== -->
- <!-- Only uncomment if you are not using etc/jetty-plus.xml from start.ini
-
-  <Set name="configurationClasses">
-    <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="serverDefault">
-      <Arg><Ref refid="Server" /></Arg>
-      <Call name="addAfter">
-        <Arg name="afterClass">org.eclipse.jetty.webapp.FragmentConfiguration</Arg>
-        <Arg>
-          <Array type="String">
-            <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
-            <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
-            <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
-          </Array>
-        </Arg>
-      </Call>
-    </Call>
-  </Set>
- -->
-
   <Set name="contextPath">/test-jndi</Set>
   <Set name="war"><Property name="jetty.webapps" default="."/>/test-jndi.war</Set>
   <Set name="extractWAR">true</Set>

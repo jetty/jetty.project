@@ -37,24 +37,24 @@
         </executions>
       </plugin>
       <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <extensions>true</extensions>
-          <executions>
-              <execution>
-                  <goals>
-                      <goal>manifest</goal>
-                  </goals>
-              </execution>
-          </executions>
-          <configuration>
-            <instructions>
-              <Main-Class>org.eclipse.jetty.runner.Runner</Main-Class>
-              <Import-Package>!*</Import-Package>
-              <Export-Package></Export-Package>
-            </instructions>
-          </configuration>
-        </plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <instructions>
+            <Main-Class>org.eclipse.jetty.runner.Runner</Main-Class>
+            <Import-Package>!*</Import-Package>
+            <Export-Package></Export-Package>
+          </instructions>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>

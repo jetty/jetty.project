@@ -43,11 +43,14 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
      * the web-app currently installed.
      * it is passed as a property to the jetty-web.xml file */
     public static final String PROPERTY_THIS_WEB_INF_URL = "this.web-inf.url";
-
-
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
 
+    public JettyWebXmlConfiguration()
+    {
+        beforeThis(WebXmlConfiguration.class,FragmentConfiguration.class,MetaInfConfiguration.class);
+    }
+    
     /**
      * Configure
      * Apply web-jetty.xml configuration
@@ -56,13 +59,6 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     @Override
     public void configure (WebAppContext context) throws Exception
     {
-        //cannot configure if the _context is already started
-        if (context.isStarted())
-        {
-            LOG.debug("Cannot configure webapp after it is started");
-            return;
-        }
-
         LOG.debug("Configuring web-jetty.xml");
 
         Resource web_inf = context.getWebInf();
