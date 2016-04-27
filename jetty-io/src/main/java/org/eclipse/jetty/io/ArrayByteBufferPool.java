@@ -19,25 +19,35 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.util.BufferUtil;
 
 public class ArrayByteBufferPool implements ByteBufferPool
 {
     private final int _min;
-    private final Bucket[] _direct;
-    private final Bucket[] _indirect;
+    private final int _maxQueue;
+    private final ByteBufferPool.Bucket[] _direct;
+    private final ByteBufferPool.Bucket[] _indirect;
     private final int _inc;
 
     public ArrayByteBufferPool()
     {
-        this(0,1024,64*1024);
+        this(-1,-1,-1,-1);
     }
 
     public ArrayByteBufferPool(int minSize, int increment, int maxSize)
     {
+        this(minSize,increment,maxSize,-1);
+    }
+    
+    public ArrayByteBufferPool(int minSize, int increment, int maxSize, int maxQueue)
+    {
+        if (minSize<=0)
+            minSize=0;
+        if (increment<=0)
+            increment=1024;
+        if (maxSize<=0)
+            maxSize=64*1024;
         if (minSize>=increment)
             throw new IllegalArgumentException("minSize >= increment");
         if ((maxSize%increment)!=0 || increment>=maxSize)
@@ -45,31 +55,28 @@ public class ArrayByteBufferPool implements ByteBufferPool
         _min=minSize;
         _inc=increment;
 
-        _direct=new Bucket[maxSize/increment];
-        _indirect=new Bucket[maxSize/increment];
+        _direct=new ByteBufferPool.Bucket[maxSize/increment];
+        _indirect=new ByteBufferPool.Bucket[maxSize/increment];
+        _maxQueue=maxQueue;
 
         int size=0;
         for (int i=0;i<_direct.length;i++)
         {
             size+=_inc;
-            _direct[i]=new Bucket(size);
-            _indirect[i]=new Bucket(size);
+            _direct[i]=new ByteBufferPool.Bucket(size,_maxQueue);
+            _indirect[i]=new ByteBufferPool.Bucket(size,_maxQueue);
         }
     }
 
     @Override
     public ByteBuffer acquire(int size, boolean direct)
     {
-        Bucket bucket = bucketFor(size,direct);
-        ByteBuffer buffer = bucket==null?null:bucket._queue.poll();
-
-        if (buffer == null)
-        {
-            int capacity = bucket==null?size:bucket._size;
-            buffer = direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
-        }
-
-        return buffer;
+        ByteBufferPool.Bucket bucket = bucketFor(size,direct);
+        if (bucket==null)
+            return direct ? BufferUtil.allocateDirect(size) : BufferUtil.allocate(size);
+            
+        return bucket.acquire(direct);
+            
     }
 
     @Override
@@ -77,12 +84,9 @@ public class ArrayByteBufferPool implements ByteBufferPool
     {
         if (buffer!=null)
         {    
-            Bucket bucket = bucketFor(buffer.capacity(),buffer.isDirect());
+            ByteBufferPool.Bucket bucket = bucketFor(buffer.capacity(),buffer.isDirect());
             if (bucket!=null)
-            {
-                BufferUtil.clear(buffer);
-                bucket._queue.offer(buffer);
-            }
+                bucket.release(buffer);
         }
     }
 
@@ -90,43 +94,25 @@ public class ArrayByteBufferPool implements ByteBufferPool
     {
         for (int i=0;i<_direct.length;i++)
         {
-            _direct[i]._queue.clear();
-            _indirect[i]._queue.clear();
+            _direct[i].clear();
+            _indirect[i].clear();
         }
     }
 
-    private Bucket bucketFor(int size,boolean direct)
+    private ByteBufferPool.Bucket bucketFor(int size,boolean direct)
     {
         if (size<=_min)
             return null;
         int b=(size-1)/_inc;
         if (b>=_direct.length)
             return null;
-        Bucket bucket = direct?_direct[b]:_indirect[b];
+        ByteBufferPool.Bucket bucket = direct?_direct[b]:_indirect[b];
                 
         return bucket;
     }
 
-    public static class Bucket
-    {
-        public final int _size;
-        public final Queue<ByteBuffer> _queue= new ConcurrentLinkedQueue<>();
-
-        Bucket(int size)
-        {
-            _size=size;
-        }
-        
-        @Override
-        public String toString()
-        {
-            return String.format("Bucket@%x{%d,%d}",hashCode(),_size,_queue.size());
-        }
-    }
-    
-
     // Package local for testing
-    Bucket[] bucketsFor(boolean direct)
+    ByteBufferPool.Bucket[] bucketsFor(boolean direct)
     {
         return direct ? _direct : _indirect;
     }

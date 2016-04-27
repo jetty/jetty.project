@@ -125,7 +125,7 @@ public class AttributeNormalizerPathTest
 
     private AttributeNormalizer normalizer;
 
-    public AttributeNormalizerPathTest(String key, String path) throws MalformedURLException
+    public AttributeNormalizerPathTest(String key, String path) throws MalformedURLException, IOException
     {
         this.key = key;
         this.path = AttributeNormalizer.uriSeparators(path);

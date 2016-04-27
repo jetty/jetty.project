@@ -22,7 +22,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -60,6 +59,7 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.StandardConstants;
@@ -209,7 +209,7 @@ public class SslContextFactory extends AbstractLifeCycle
     /** Set to true to enable SSL Session caching */
     private boolean _sessionCachingEnabled = true;
     /** SSL session cache size */
-    private int _sslSessionCacheSize;
+    private int _sslSessionCacheSize=0;
     /** SSL session timeout */
     private int _sslSessionTimeout;
 
@@ -384,9 +384,15 @@ public class SslContextFactory extends AbstractLifeCycle
                 SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
                 context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol, _sslProvider);
                 context.init(keyManagers,trustManagers,secureRandom);
+                
             }
         }
 
+        // Initialize cache
+        SSLSessionContext serverContext=context.getServerSessionContext();
+        if (serverContext!=null)
+            serverContext.setSessionCacheSize(getSslSessionCacheSize());
+        
         // select the protocols and ciphers
         SSLEngine sslEngine=context.createSSLEngine();
         selectCipherSuites(
@@ -545,7 +551,7 @@ public class SslContextFactory extends AbstractLifeCycle
         {
             _keyStoreResource = Resource.newResource(keyStorePath);
         }
-        catch (MalformedURLException e)
+        catch (Exception e)
         {
             throw new IllegalArgumentException(e);
         }
@@ -621,7 +627,7 @@ public class SslContextFactory extends AbstractLifeCycle
         {
             _trustStoreResource = Resource.newResource(trustStorePath);
         }
-        catch (MalformedURLException e)
+        catch (Exception e)
         {
             throw new IllegalArgumentException(e);
         }
@@ -1411,14 +1417,20 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /** Set the flag to enable SSL Session caching.
-    * @param enableSessionCaching the value of the flag
-    */
+     * If set to true, then the {@link SSLContext#createSSLEngine(String, int)} method is
+     * used to pass host and port information as a hint for session reuse.  Note that
+     * this is only a hint and session may not be reused. Moreover, the hint is typically
+     * only used on client side implementations and setting this to false does not 
+     * stop a server from accepting an offered session ID to reuse.
+     * @param enableSessionCaching the value of the flag
+     */
     public void setSessionCachingEnabled(boolean enableSessionCaching)
     {
         _sessionCachingEnabled = enableSessionCaching;
     }
 
     /** Get SSL session cache size.
+     * Passed directly to {@link SSLSessionContext#setSessionCacheSize(int)}
      * @return SSL session cache size
      */
     public int getSslSessionCacheSize()

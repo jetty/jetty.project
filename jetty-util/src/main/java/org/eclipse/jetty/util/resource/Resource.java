@@ -144,7 +144,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return A Resource object.
      */
     public static Resource newResource(String resource)
-        throws MalformedURLException
+        throws MalformedURLException, IOException
     {
         return newResource(resource, __defaultUseCaches);
     }
@@ -155,9 +155,10 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param useCaches controls URLConnection caching
      * @return A Resource object.
      * @throws MalformedURLException Problem accessing URI
+     * @throws IOException Problem handling resource as file.
      */
     public static Resource newResource(String resource, boolean useCaches)       
-        throws MalformedURLException
+        throws MalformedURLException, IOException
     {
         URL url=null;
         try
@@ -176,14 +177,13 @@ public abstract class Resource implements ResourceFactory, Closeable
                     // It's a file.
                     if (resource.startsWith("./"))
                         resource=resource.substring(2);
-                    
                     File file=new File(resource).getCanonicalFile();
-                    return new PathResource(file.toPath());
+                    return new PathResource(file);
                 }
-                catch(Exception e2)
+                catch(IOException e2)
                 {
-                    LOG.debug(Log.EXCEPTION,e2);
-                    throw e;
+                    e2.addSuppressed(e);
+                    throw e2;
                 }
             }
             else
@@ -226,6 +226,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             }
             catch (IllegalArgumentException e)
             {
+                LOG.ignore(e);
                 // Catches scenario where a bad Windows path like "C:\dev" is
                 // improperly escaped, which various downstream classloaders
                 // tend to have a problem with
