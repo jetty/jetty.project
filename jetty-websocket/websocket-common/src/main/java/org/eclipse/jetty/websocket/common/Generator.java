@@ -367,6 +367,11 @@ public class Generator
         }
     }
 
+    public WebSocketBehavior getBehavior()
+    {
+        return behavior;
+    }
+
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;

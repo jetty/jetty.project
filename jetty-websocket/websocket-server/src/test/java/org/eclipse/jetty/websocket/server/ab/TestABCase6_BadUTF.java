@@ -46,7 +46,7 @@ public class TestABCase6_BadUTF extends AbstractABCase
 {
     private static final Logger LOG = Log.getLogger(TestABCase6_BadUTF.class);
 
-    @Parameters
+    @Parameters(name = "{0} - {1}")
     public static Collection<String[]> data()
     {
         // The various Good UTF8 sequences as a String (hex form)
@@ -163,15 +163,13 @@ public class TestABCase6_BadUTF extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging ignored = new StacklessLogging(Parser.class) )
         {
-            try (StacklessLogging supress = new StacklessLogging(Parser.class))
-            {
-                fuzzer.connect();
-                fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-                fuzzer.send(send);
-                fuzzer.expect(expect);
-            }
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
     }
 }

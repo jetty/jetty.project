@@ -23,9 +23,9 @@ import java.lang.reflect.Method;
 import java.util.function.Function;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.common.FunctionCallException;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs.Arg;
@@ -79,7 +79,7 @@ public class OnErrorFunction implements Function<Throwable, Void>
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            throw new WebSocketException("Unable to call error method " + ReflectUtils.toString(endpoint.getClass(), method), e);
+            throw new FunctionCallException("Unable to call error method " + ReflectUtils.toString(endpoint.getClass(), method), e);
         }
         return null;
     }

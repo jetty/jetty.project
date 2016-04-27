@@ -423,7 +423,7 @@ public class FrameFlusher
     public String toString()
     {
         ByteBuffer aggregate = flusher.aggregate;
-        return String.format("%s[queueSize=%d,aggregateSize=%d,failure=%s]",getClass().getSimpleName(),queue.size(),aggregate == null?0:aggregate.position(),
+        return String.format("%s[%s,queueSize=%d,aggregateSize=%d,failure=%s]",getClass().getSimpleName(),generator.getBehavior(),queue.size(),aggregate == null?0:aggregate.position(),
                 failure);
     }
 }

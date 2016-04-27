@@ -36,42 +36,29 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 { ElementType.TYPE })
 public @interface WebSocket
 {
-    /* NOTE TO OTHER DEVELOPERS: 
-     * If you change any of these default values,
-     * make sure you sync the values with WebSocketPolicy
-     */
-    
     /**
-     * The size of the buffer used to read from the network layer.
-     * <p>
-     * Default: 4096 (4 K)
+     * The size of the buffer (in bytes) used to read from the network layer.
      */
-    int inputBufferSize() default 4 * 1024;
+    int inputBufferSize() default -2;
 
     /**
-     * The maximum size of a binary message during parsing/generating.
+     * The maximum size of a binary message (in bytes) during parsing/generating.
      * <p>
      * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
-     * <p>
-     * Default: 65536 (64 K)
      */
-    int maxBinaryMessageSize() default 64 * 1024;
+    int maxBinaryMessageSize() default -2;
 
     /**
      * The time in ms (milliseconds) that a websocket may be idle before closing.
-     * <p>
-     * Default: 300000 (ms)
      */
-    int maxIdleTime() default 300_000;
+    int maxIdleTime() default -2;
 
     /**
      * The maximum size of a text message during parsing/generating.
      * <p>
      * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
-     * <p>
-     * Default: 65536 (64 K)
      */
-    int maxTextMessageSize() default 64 * 1024;
+    int maxTextMessageSize() default -2;
     
     /**
      * The output frame buffering mode.

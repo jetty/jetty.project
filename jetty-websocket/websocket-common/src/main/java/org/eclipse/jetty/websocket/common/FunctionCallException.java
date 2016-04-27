@@ -16,29 +16,27 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.util;
+package org.eclipse.jetty.websocket.common;
 
 import java.lang.reflect.InvocationTargetException;
 
-@SuppressWarnings("serial")
-public class DynamicArgsException extends RuntimeException
+import org.eclipse.jetty.websocket.api.WebSocketException;
+
+public class FunctionCallException extends WebSocketException
 {
-    public DynamicArgsException(String message, Throwable cause)
+    public FunctionCallException(String message, Throwable cause)
     {
         super(message, cause);
     }
 
-    public DynamicArgsException(String message)
+    public FunctionCallException(Throwable cause)
     {
-        super(message);
+        super(cause);
     }
 
     public Throwable getInvokedCause()
     {
         Throwable cause = getCause();
-        if (cause == null)
-            return null;
-
         if (cause instanceof InvocationTargetException)
         {
             return cause.getCause();

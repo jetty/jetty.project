@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -40,14 +41,18 @@ import org.junit.Test;
 
 public class IdleTimeoutTest
 {
+    @WebSocket(maxIdleTime = 500)
+    public static class FastTimeoutRFCSocket extends RFCSocket
+    {
+    }
+
     @SuppressWarnings("serial")
     public static class TimeoutServlet extends WebSocketServlet
     {
         @Override
         public void configure(WebSocketServletFactory factory)
         {
-            factory.getPolicy().setIdleTimeout(500);
-            factory.register(RFCSocket.class);
+            factory.register(FastTimeoutRFCSocket.class);
         }
     }
 
