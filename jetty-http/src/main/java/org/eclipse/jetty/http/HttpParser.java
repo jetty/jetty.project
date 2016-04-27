@@ -1426,7 +1426,7 @@ public class HttpParser
                     break;
                 default:
                     setState(State.CLOSE);
-                    _handler.badMessage(400,null);
+                    _handler.badMessage(400,"Bad Message "+e.toString());
             }
         }
         catch(Exception|Error e)
