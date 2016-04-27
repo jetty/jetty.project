@@ -22,6 +22,7 @@ public class Jetty
 {
     public static final String VERSION;
     public static final String POWERED_BY;
+    public static final boolean STABLE;
 
     static
     {
@@ -34,6 +35,14 @@ public class Jetty
             VERSION = System.getProperty("jetty.version", "9.3.z-SNAPSHOT");
         
         POWERED_BY="<a href=\"http://eclipse.org/jetty\">Powered by Jetty:// "+VERSION+"</a>";
+        
+        boolean stable=true;
+        for (char c: VERSION.toCharArray())
+        {
+            if (c!='.' && !Character.isDigit(c))
+                stable=false;
+        }
+        STABLE=stable;
     }
 
     private Jetty()
