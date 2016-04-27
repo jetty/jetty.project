@@ -32,15 +32,15 @@ import org.eclipse.jetty.xml.XmlParser;
  *
  */
 
-public class PreconfigureDescriptorProcessor extends IterativeDescriptorProcessor
+public class ExtraXmlDescriptorProcessor extends IterativeDescriptorProcessor
 {
-    private static final Logger LOG = Log.getLogger(PreconfigureDescriptorProcessor.class);
+    private static final Logger LOG = Log.getLogger(ExtraXmlDescriptorProcessor.class);
     
     private final StringBuilder _buffer = new StringBuilder();
     private final boolean _showOrigin;
     private String _origin;
 
-    public PreconfigureDescriptorProcessor ()
+    public ExtraXmlDescriptorProcessor ()
     {
         _showOrigin=LOG.isDebugEnabled();
         try

@@ -21,7 +21,6 @@ package org.eclipse.jetty.deploy.bindings;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.isIn;
-import static org.hamcrest.Matchers.not;
 
 import java.io.File;
 import java.util.List;
@@ -87,11 +86,9 @@ public class GlobalWebappConfigBindingTest
         WebAppContext context = contexts.get(0);
 
         Assert.assertNotNull("Context should not be null",context);
-        String defaultClasses[] = context.getDefaultServerClasses();
         String currentClasses[] = context.getServerClasses();
 
         String addedClass = "org.eclipse.foo."; // What was added by the binding
-        Assert.assertThat("Default Server Classes",addedClass,not(isIn(defaultClasses)));
         Assert.assertThat("Current Server Classes",addedClass,isIn(currentClasses));
 
         //  boolean jndiPackage = false;

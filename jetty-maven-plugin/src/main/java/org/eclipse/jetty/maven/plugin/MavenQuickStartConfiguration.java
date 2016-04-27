@@ -42,7 +42,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
     
     private Resource _quickStartWebXml;
 
-
+    
     public void setQuickStartWebXml (Resource r)
     {
         _quickStartWebXml = r;
@@ -71,11 +71,9 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         context.getMetaData().setWebXml(quickStartWebXml);
     }
 
-
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        
        JettyWebAppContext jwac = (JettyWebAppContext)context;
         
         //put the classes dir and all dependencies into the classpath
@@ -88,21 +86,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         }
         
         //Set up the quickstart environment for the context
-        super.configure(context);
-        
-        // knock out environmental maven and plexus classes from webAppContext
-        String[] existingServerClasses = context.getServerClasses();
-        String[] newServerClasses = new String[2+(existingServerClasses==null?0:existingServerClasses.length)];
-        newServerClasses[0] = "org.apache.maven.";
-        newServerClasses[1] = "org.codehaus.plexus.";
-        System.arraycopy( existingServerClasses, 0, newServerClasses, 2, existingServerClasses.length );
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Server classes:");
-            for (int i=0;i<newServerClasses.length;i++)
-                LOG.debug(newServerClasses[i]);
-        }
-        context.setServerClasses( newServerClasses ); 
+        configure(context);       
     }
     
     @Override
