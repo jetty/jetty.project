@@ -287,6 +287,7 @@ public class Modules implements Iterable<Module>
                 {
                     Path file = _baseHome.getPath("modules/" + dependsOn + ".mod");
                     registerModule(file).expandProperties(_args.getProperties());
+                    sort();
                     providers = _provided.get(dependsOn);
                     if (providers==null || providers.isEmpty())
                         throw new UsageException("Module %s does not provide %s",_baseHome.toShortForm(file),dependsOn);
