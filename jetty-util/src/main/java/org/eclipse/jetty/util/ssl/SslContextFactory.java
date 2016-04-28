@@ -385,14 +385,18 @@ public class SslContextFactory extends AbstractLifeCycle
                 SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
                 context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol, _sslProvider);
                 context.init(keyManagers,trustManagers,secureRandom);
-                
             }
         }
 
         // Initialize cache
         SSLSessionContext serverContext=context.getServerSessionContext();
         if (serverContext!=null)
-            serverContext.setSessionCacheSize(getSslSessionCacheSize());
+        {
+            if (getSslSessionCacheSize()>-1)
+                serverContext.setSessionCacheSize(getSslSessionCacheSize());
+            if (getSslSessionTimeout()>-1)
+            serverContext.setSessionTimeout(getSslSessionTimeout());
+        }
         
         // select the protocols and ciphers
         SSLEngine sslEngine=context.createSSLEngine();
@@ -1429,8 +1433,11 @@ public class SslContextFactory extends AbstractLifeCycle
         return _sslSessionCacheSize;
     }
 
-    /** SEt SSL session cache size.
-     * @param sslSessionCacheSize SSL session cache size to set
+    /** Set SSL session cache size.
+     * <p>Set the max cache size to be set on {@link SSLSessionContext#setSessionCacheSize(int)}
+     * when this factory is started.</p>
+     * @param sslSessionCacheSize SSL session cache size to set. A value  of -1 (default) uses
+     * the JVM default, 0 means unlimited and positive number is a max size.
      */
     public void setSslSessionCacheSize(int sslSessionCacheSize)
     {
@@ -1446,7 +1453,10 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /** Set SSL session timeout.
-     * @param sslSessionTimeout SSL session timeout to set
+     * <p>Set the timeout in seconds to be set on {@link SSLSessionContext#setSessionTimeout(int)}
+     * when this factory is started.</p>
+     * @param sslSessionTimeout SSL session timeout to set in seconds. A value of -1 (default) uses
+     * the JVM default, 0 means unlimited and positive number is a timeout in seconds.
      */
     public void setSslSessionTimeout(int sslSessionTimeout)
     {
