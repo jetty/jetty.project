@@ -113,7 +113,7 @@ public class HttpHeaderAuthModule implements ServerAuthModule
             // Store the user name that was in the header and also set a group.
             handler.handle(new Callback[]
             { new CallerPrincipalCallback(client,userName), new GroupPrincipalCallback(client,new String[]
-            { "users" }) });
+                    { "users" }) });
             return AuthStatus.SUCCESS;
         }
         catch (final Exception e)
