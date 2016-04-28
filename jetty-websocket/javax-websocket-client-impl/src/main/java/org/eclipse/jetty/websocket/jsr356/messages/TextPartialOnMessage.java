@@ -18,32 +18,25 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.function.Function;
 
 import javax.websocket.OnMessage;
 
-import org.eclipse.jetty.websocket.common.message.MessageSink;
-import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
-import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
+import org.eclipse.jetty.websocket.common.message.PartialTextMessage;
+import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
 
 /**
  * Partial TEXT MessageAppender for &#064;{@link OnMessage} annotated methods
+ * @deprecated should just use PartialTextMessageSink directly
  */
-public class TextPartialOnMessage implements MessageSink
+@Deprecated
+public class TextPartialOnMessage extends PartialTextMessageSink
 {
-    private final JsrAnnotatedEventDriver driver;
-    private final Utf8PartialBuilder utf8Partial;
-    private boolean finished;
-
-    public TextPartialOnMessage(JsrAnnotatedEventDriver driver)
-    {
-        this.driver = driver;
-        this.finished = false;
-        this.utf8Partial = new Utf8PartialBuilder();
+    public TextPartialOnMessage(Function< PartialTextMessage, Void> function) {
+        super(function);
     }
 
-    @Override
+    /*@Override
     public void appendFrame(ByteBuffer payload, boolean isLast) throws IOException
     {
         if (finished)
@@ -59,5 +52,5 @@ public class TextPartialOnMessage implements MessageSink
     public void messageComplete()
     {
         finished = true;
-    }
+    }*/
 }

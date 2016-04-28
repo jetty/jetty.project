@@ -18,22 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import java.lang.reflect.Method;
-
-import javax.websocket.CloseReason;
-import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.OnClose;
-
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
-import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
  * Callable for {@link javax.websocket.OnClose} annotated methods
  */
+@Deprecated
 public class OnCloseCallable extends JsrCallable
 {
-    private int idxCloseReason = -1;
+    /*private int idxCloseReason = -1;
 
     public OnCloseCallable(Class<?> pojo, Method method)
     {
@@ -84,6 +77,6 @@ public class OnCloseCallable extends JsrCallable
     @Override
     public void setDecodingType(Class<?> decodingType)
     {
-        /* ignore, not relevant for onClose */
-    }
+        *//* ignore, not relevant for onClose *//*
+    }*/
 }

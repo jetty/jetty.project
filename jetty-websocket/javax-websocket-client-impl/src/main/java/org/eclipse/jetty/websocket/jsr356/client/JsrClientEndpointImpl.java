@@ -19,23 +19,14 @@
 package org.eclipse.jetty.websocket.jsr356.client;
 
 import javax.websocket.ClientEndpoint;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.DeploymentException;
-
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
-import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
-import org.eclipse.jetty.websocket.jsr356.annotations.OnMessageCallable;
-import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 
 /**
  * Event Driver for classes annotated with &#064;{@link ClientEndpoint}
  */
-public class JsrClientEndpointImpl implements EventDriverImpl
+@Deprecated
+public class JsrClientEndpointImpl /*implements EventDriverImpl*/
 {
-    @Override
+/*    @Override
     public EventDriver create(Object websocket, WebSocketPolicy policy) throws DeploymentException
     {
         if (!(websocket instanceof ConfiguredEndpoint))
@@ -85,5 +76,5 @@ public class JsrClientEndpointImpl implements EventDriverImpl
 
         ClientEndpoint anno = endpoint.getClass().getAnnotation(ClientEndpoint.class);
         return (anno != null);
-    }
+    }*/
 }

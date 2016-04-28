@@ -18,20 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-
 import javax.websocket.OnMessage;
-
-import org.eclipse.jetty.websocket.common.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
  * Param handling for static Binary &#064;{@link javax.websocket.OnMessage} parameters.
  */
+@Deprecated
 public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
 {
-    public static final IJsrParamId INSTANCE = new JsrParamIdBinary();
+    /*public static final IJsrParamId INSTANCE = new JsrParamIdBinary();
 
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
@@ -66,5 +61,5 @@ public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
         }
 
         return false;
-    }
+    }*/
 }

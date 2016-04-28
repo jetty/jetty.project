@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
+import java.util.function.Function;
+
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.Decoder.Binary;
@@ -26,7 +28,7 @@ import javax.websocket.MessageHandler.Whole;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.message.ByteArrayMessageSink;
 import org.eclipse.jetty.websocket.jsr356.DecoderFactory;
 import org.eclipse.jetty.websocket.jsr356.MessageHandlerWrapper;
@@ -37,31 +39,29 @@ public class BinaryWholeMessage extends ByteArrayMessageSink
     private final MessageHandler.Whole<Object> wholeHandler;
 
     @SuppressWarnings("unchecked")
-    public BinaryWholeMessage(EventDriver onEvent, MessageHandlerWrapper wrapper)
+    public BinaryWholeMessage(WebSocketPolicy policy, Function<byte[], Void> onMessageFunction, MessageHandlerWrapper wrapper)
     {
-        super(onEvent);
+        super(policy, onMessageFunction);
         this.msgWrapper = wrapper;
         this.wholeHandler = (Whole<Object>)wrapper.getHandler();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public void messageComplete()
+    protected Object notifyOnMessage(byte[] buf)
     {
-        super.finished = true;
-
-        byte data[] = out.toByteArray();
-
         DecoderFactory.Wrapper decoder = msgWrapper.getDecoder();
         Decoder.Binary<Object> binaryDecoder = (Binary<Object>)decoder.getDecoder();
         try
         {
-            Object obj = binaryDecoder.decode(BufferUtil.toBuffer(data));
+            Object obj = binaryDecoder.decode(BufferUtil.toBuffer(buf));
             wholeHandler.onMessage(obj);
         }
         catch (DecodeException e)
         {
             throw new WebSocketException("Unable to decode binary data",e);
         }
+
+        // TODO: Who calls who?
+        return super.notifyOnMessage(buf);
     }
 }

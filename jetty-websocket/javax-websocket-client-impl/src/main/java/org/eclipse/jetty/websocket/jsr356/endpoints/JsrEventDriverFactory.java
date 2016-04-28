@@ -18,27 +18,23 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
-import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.client.JsrClientEndpointImpl;
-
-public class JsrEventDriverFactory extends EventDriverFactory
+@Deprecated
+public class JsrEventDriverFactory /*extends EventDriverFactory*/
 {
-    public JsrEventDriverFactory(WebSocketContainerScope containerScope)
+/*    public JsrEventDriverFactory(WebSocketPolicy policy)
     {
-        super(containerScope);
+//        super(policy);
 
-        clearImplementations();
+        *//*clearImplementations();
         // Classes that extend javax.websocket.Endpoint
         addImplementation(new JsrEndpointImpl());
         // Classes annotated with @javax.websocket.ClientEndpoint
-        addImplementation(new JsrClientEndpointImpl());
+        addImplementation(new JsrClientEndpointImpl());*//*
     }
 
-    /**
+    *//**
      * Unwrap ConfiguredEndpoint for end-user.
-     */
-    @Override
+     *//*
     protected String getClassName(Object websocket)
     {
         if (websocket instanceof ConfiguredEndpoint)
@@ -48,5 +44,5 @@ public class JsrEventDriverFactory extends EventDriverFactory
         }
 
         return websocket.getClass().getName();
-    }
+    }*/
 }

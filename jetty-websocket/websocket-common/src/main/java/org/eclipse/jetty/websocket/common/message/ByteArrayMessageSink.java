@@ -54,7 +54,7 @@ public class ByteArrayMessageSink implements MessageSink
                 if (out == null)
                     out = new ByteArrayOutputStream(BUFFER_SIZE);
 
-                BufferUtil.writeTo(payload,out);
+                BufferUtil.writeTo(payload, out);
             }
         }
         catch (IOException e)
@@ -65,14 +65,19 @@ public class ByteArrayMessageSink implements MessageSink
         {
             if (fin)
             {
-                if(out != null)
-                    onMessageFunction.apply(out.toByteArray());
+                if (out != null)
+                    notifyOnMessage(out.toByteArray());
                 else
-                    onMessageFunction.apply(EMPTY_BUFFER);
+                    notifyOnMessage(EMPTY_BUFFER);
                 // reset
                 out = null;
                 size = 0;
             }
         }
+    }
+
+    protected Object notifyOnMessage(byte buf[])
+    {
+        return onMessageFunction.apply(buf);
     }
 }

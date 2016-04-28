@@ -18,20 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import java.lang.reflect.Method;
-
-import javax.websocket.EndpointConfig;
 import javax.websocket.OnOpen;
-
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
-import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
  * Callable for {@link javax.websocket.OnOpen} annotated methods
  */
+@Deprecated
 public class OnOpenCallable extends JsrCallable
 {
-    private int idxEndpointConfig = -1;
+/*    private int idxEndpointConfig = -1;
 
     public OnOpenCallable(Class<?> pojo, Method method)
     {
@@ -64,6 +59,6 @@ public class OnOpenCallable extends JsrCallable
     @Override
     public void setDecodingType(Class<?> decodingType)
     {
-        /* ignore, not relevant for onClose */
-    }
+        *//* ignore, not relevant for onClose *//*
+    }*/
 }

@@ -19,14 +19,8 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.io.Reader;
-import java.lang.reflect.Method;
 
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
-
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
-import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
  * Callable for {@link javax.websocket.OnMessage} annotated methods with a whole or partial text messages.
@@ -35,19 +29,20 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
  * 
  * @see javax.websocket.Decoder.Text
  */
+@Deprecated
 public class OnMessageTextCallable extends OnMessageCallable
 {
-    private Decoder.Text<?> textDecoder;
+/*    private Decoder.Text<?> textDecoder;
 
     public OnMessageTextCallable(Class<?> pojo, Method method)
     {
         super(pojo,method);
     }
 
-    /**
+    *//**
      * Copy Constructor
      * @param copy the callable to copy from
-     */
+     *//*
     public OnMessageTextCallable(OnMessageCallable copy)
     {
         super(copy);
@@ -71,5 +66,5 @@ public class OnMessageTextCallable extends OnMessageCallable
         super.init(session);
         assertDecoderRequired();
         textDecoder = (Decoder.Text<?>)getDecoder();
-    }
+    }*/
 }

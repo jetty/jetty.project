@@ -18,39 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.concurrent.Executor;
-
-import javax.websocket.CloseReason;
-import javax.websocket.DecodeException;
 import javax.websocket.MessageHandler.Whole;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.message.MessageInputStream;
-import org.eclipse.jetty.websocket.common.message.MessageReader;
-import org.eclipse.jetty.websocket.common.message.ByteArrayMessageSink;
-import org.eclipse.jetty.websocket.common.message.StringMessageSink;
-import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
-import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
-import org.eclipse.jetty.websocket.jsr356.messages.BinaryPartialOnMessage;
-import org.eclipse.jetty.websocket.jsr356.messages.TextPartialOnMessage;
-import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 
 /**
  * Base implementation for JSR-356 Annotated event drivers.
  */
-public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
+@Deprecated
+public class JsrAnnotatedEventDriver /*extends AbstractJsrEventDriver*/
 {
-    private static final Logger LOG = Log.getLogger(JsrAnnotatedEventDriver.class);
+/*    private static final Logger LOG = Log.getLogger(JsrAnnotatedEventDriver.class);
     private final JsrEvents<?, ?> events;
 
     public JsrAnnotatedEventDriver(WebSocketPolicy policy, ConfiguredEndpoint endpointInstance, JsrEvents<?, ?> events, Executor executor)
@@ -72,9 +48,9 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
         this.events.init(jsrsession);
     }
 
-    /**
+    *//**
      * Entry point for all incoming binary frames.
-     */
+     *//*
     @Override
     public void onBinaryFrame(ByteBuffer buffer, boolean fin) throws IOException
     {
@@ -156,9 +132,9 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
         }
     }
 
-    /**
+    *//**
      * Entry point for binary frames destined for {@link Whole}
-     */
+     *//*
     @Override
     public void onBinaryMessage(byte[] data)
     {
@@ -225,7 +201,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
     @Override
     public void onFrame(Frame frame)
     {
-        /* Ignored in JSR-356 */
+        *//* Ignored in JSR-356 *//*
     }
 
     @Override
@@ -291,9 +267,9 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
         }
     }
 
-    /**
+    *//**
      * Entry point for all incoming text frames.
-     */
+     *//*
     @Override
     public void onTextFrame(ByteBuffer buffer, boolean fin) throws IOException
     {
@@ -377,9 +353,9 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
         }
     }
 
-    /**
+    *//**
      * Entry point for whole text messages
-     */
+     *//*
     @Override
     public void onTextMessage(String message)
     {
@@ -409,5 +385,5 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
     public String toString()
     {
         return String.format("%s[websocket=%s]",this.getClass().getSimpleName(),websocket);
-    }
+    }*/
 }

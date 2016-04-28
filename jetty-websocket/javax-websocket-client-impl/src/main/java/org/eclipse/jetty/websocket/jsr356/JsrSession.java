@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.security.Principal;
@@ -45,10 +44,6 @@ import javax.websocket.Extension;
 import javax.websocket.MessageHandler;
 import javax.websocket.MessageHandler.Partial;
 import javax.websocket.MessageHandler.Whole;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
 import javax.websocket.RemoteEndpoint.Async;
 import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
@@ -61,22 +56,12 @@ import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.message.MessageSink;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
-import org.eclipse.jetty.websocket.jsr356.functions.JsrOnCloseFunction;
-import org.eclipse.jetty.websocket.jsr356.functions.JsrOnErrorFunction;
-import org.eclipse.jetty.websocket.jsr356.functions.JsrOnOpenFunction;
-import org.eclipse.jetty.websocket.jsr356.messages.BinaryArrayPartialMessage;
-import org.eclipse.jetty.websocket.jsr356.messages.BinaryBufferPartialMessage;
-import org.eclipse.jetty.websocket.jsr356.messages.JsrInputStreamMessage;
-import org.eclipse.jetty.websocket.jsr356.messages.JsrReaderMessage;
 import org.eclipse.jetty.websocket.jsr356.messages.TextPartialMessage;
-import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadataSet;
 import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadataSet;
-import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
-import org.eclipse.jetty.websocket.jsr356.metadata.MessageHandlerMetadata;
 
 /**
- * Session for the JSR.
+ * Client Session for the JSR.
  */
 public class JsrSession extends WebSocketSession implements javax.websocket.Session, Configurable
 {
@@ -104,7 +89,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
 
         DecoderMetadataSet decoderSet = new DecoderMetadataSet();
         EncoderMetadataSet encoderSet = new EncoderMetadataSet();
-        // TODO: figure out how to populare the decoderSet / encoderSet
+        // TODO: figure out how to populate the decoderSet / encoderSet
         
         this.id = id;
         this.decoderFactory = new DecoderFactory(this,decoderSet,container.getDecoderFactory());
@@ -149,7 +134,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         ClientEndpoint clientEndpoint = websocketClass.getAnnotation(ClientEndpoint.class);
         if(clientEndpoint != null)
         {
-            Method onmethod = null;
+            /*Method onmethod = null;
             
             // @OnOpen [0..1]
             onmethod = ReflectUtils.findAnnotatedMethod(websocketClass,OnOpen.class);
@@ -184,7 +169,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
                     // BinaryStream
                     // Pong
                 }
-            }
+            }*/
         }
     }
     
@@ -209,13 +194,13 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         {
             @SuppressWarnings("unchecked")
             Partial<ByteBuffer> bufhandler = (Partial<ByteBuffer>)handler;
-            setMessageAppender(MessageType.BINARY, new BinaryBufferPartialMessage(bufhandler));
+//            setMessageAppender(MessageType.BINARY, new BinaryBufferPartialMessage(bufhandler));
         }
         else if(byte[].class.isAssignableFrom(clazz))
         {
             @SuppressWarnings("unchecked")
             Partial<byte[]> arrhandler = (Partial<byte[]>)handler;
-            setMessageAppender(MessageType.BINARY, new BinaryArrayPartialMessage(arrhandler));
+//            setMessageAppender(MessageType.BINARY, new BinaryArrayPartialMessage(arrhandler));
         }
         else
         {
@@ -257,7 +242,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
                 @SuppressWarnings("unchecked")
                 Whole<Object> streamhandler = (Whole<Object>)handler;
                 Decoder.BinaryStream<?> streamdecoder = (Decoder.BinaryStream<?>)decoderWrapper.getDecoder();
-                setMessageAppender(MessageType.TEXT,new JsrInputStreamMessage(streamhandler, streamdecoder, websocket, getExecutor()));
+//                setMessageAppender(MessageType.TEXT,new JsrInputStreamMessage(streamhandler, streamdecoder, websocket, getExecutor()));
             } 
             else if(Reader.class.isAssignableFrom(clazz))
             {
@@ -265,7 +250,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
                 @SuppressWarnings("unchecked")
                 Whole<Object> streamhandler = (Whole<Object>)handler;
                 Decoder.TextStream<?> streamdecoder = (Decoder.TextStream<?>)decoderWrapper.getDecoder();
-                setMessageAppender(MessageType.BINARY,new JsrReaderMessage(streamhandler, streamdecoder, websocket, getExecutor()));
+//                setMessageAppender(MessageType.BINARY,new JsrReaderMessage(streamhandler, streamdecoder, websocket, getExecutor()));
             }
         }
     }
@@ -292,84 +277,84 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     
     private void setMessageAppender(MessageType type, MessageSink appender)
     {
-        synchronized(messageAppenders)
-        {
-            MessageSink other = messageAppenders[type.ordinal()];
-            if (other != null)
-            {
-                StringBuilder err = new StringBuilder();
-                err.append("Encountered duplicate MessageHandler handling for ");
-                err.append(type.name()).append(" type messages.  ");
-                err.append(wrapper.getMetadata().getObjectType().getName());
-                err.append(">, ").append(metadata.getHandlerClass().getName());
-                err.append("<");
-                err.append(metadata.getMessageClass().getName());
-                err.append("> and ");
-                err.append(other.getMetadata().getHandlerClass().getName());
-                err.append("<");
-                err.append(other.getMetadata().getMessageClass().getName());
-                err.append("> both implement this message type");
-                throw new IllegalStateException(err.toString());
-            }
-        }
+//        synchronized(messageAppenders)
+//        {
+//            MessageSink other = messageAppenders[type.ordinal()];
+//            if (other != null)
+//            {
+//                StringBuilder err = new StringBuilder();
+//                err.append("Encountered duplicate MessageHandler handling for ");
+//                err.append(type.name()).append(" type messages.  ");
+//                err.append(wrapper.getMetadata().getObjectType().getName());
+//                err.append(">, ").append(metadata.getHandlerClass().getName());
+//                err.append("<");
+//                err.append(metadata.getMessageClass().getName());
+//                err.append("> and ");
+//                err.append(other.getMetadata().getHandlerClass().getName());
+//                err.append("<");
+//                err.append(other.getMetadata().getMessageClass().getName());
+//                err.append("> both implement this message type");
+//                throw new IllegalStateException(err.toString());
+//            }
+//        }
     }
 
 
     private void addMessageAppender(Class<?> clazz, MessageHandler handler)
     {
-        synchronized(messageAppenders)
-        {
-            // TODO Auto-generated method stub
-        }
+//        synchronized(messageAppenders)
+//        {
+//            // TODO Auto-generated method stub
+//        }
     }
 
     private void addMessageHandlerWrapper(Class<?> msgClazz, MessageHandler handler) throws IllegalStateException
     {
-        Objects.requireNonNull(handler, "MessageHandler cannot be null");
-
-        synchronized (wrappers)
-        {
-            for (MessageHandlerMetadata metadata : messageHandlerFactory.getMetadata(msgClazz))
-            {
-                DecoderFactory.Wrapper wrapper = decoderFactory.getWrapperFor(metadata.getMessageClass());
-                if (wrapper == null)
-                {
-                    StringBuilder err = new StringBuilder();
-                    err.append("Unable to find decoder for type <");
-                    err.append(metadata.getMessageClass().getName());
-                    err.append("> used in <");
-                    err.append(metadata.getHandlerClass().getName());
-                    err.append(">");
-                    throw new IllegalStateException(err.toString());
-                }
-
-                MessageType key = wrapper.getMetadata().getMessageType();
-                MessageHandlerWrapper other = wrappers[key.ordinal()];
-                if (other != null)
-                {
-                    StringBuilder err = new StringBuilder();
-                    err.append("Encountered duplicate MessageHandler handling message type <");
-                    err.append(wrapper.getMetadata().getObjectType().getName());
-                    err.append(">, ").append(metadata.getHandlerClass().getName());
-                    err.append("<");
-                    err.append(metadata.getMessageClass().getName());
-                    err.append("> and ");
-                    err.append(other.getMetadata().getHandlerClass().getName());
-                    err.append("<");
-                    err.append(other.getMetadata().getMessageClass().getName());
-                    err.append("> both implement this message type");
-                    throw new IllegalStateException(err.toString());
-                }
-                else
-                {
-                    MessageHandlerWrapper handlerWrapper = new MessageHandlerWrapper(handler,metadata,wrapper);
-                    wrappers[key.ordinal()] = handlerWrapper;
-                }
-            }
-
-            // Update handlerSet
-            updateMessageHandlerSet();
-        }
+//        Objects.requireNonNull(handler, "MessageHandler cannot be null");
+//
+//        synchronized (wrappers)
+//        {
+//            for (MessageHandlerMetadata metadata : messageHandlerFactory.getMetadata(msgClazz))
+//            {
+//                DecoderFactory.Wrapper wrapper = decoderFactory.getWrapperFor(metadata.getMessageClass());
+//                if (wrapper == null)
+//                {
+//                    StringBuilder err = new StringBuilder();
+//                    err.append("Unable to find decoder for type <");
+//                    err.append(metadata.getMessageClass().getName());
+//                    err.append("> used in <");
+//                    err.append(metadata.getHandlerClass().getName());
+//                    err.append(">");
+//                    throw new IllegalStateException(err.toString());
+//                }
+//
+//                MessageType key = wrapper.getMetadata().getMessageType();
+//                MessageHandlerWrapper other = wrappers[key.ordinal()];
+//                if (other != null)
+//                {
+//                    StringBuilder err = new StringBuilder();
+//                    err.append("Encountered duplicate MessageHandler handling message type <");
+//                    err.append(wrapper.getMetadata().getObjectType().getName());
+//                    err.append(">, ").append(metadata.getHandlerClass().getName());
+//                    err.append("<");
+//                    err.append(metadata.getMessageClass().getName());
+//                    err.append("> and ");
+//                    err.append(other.getMetadata().getHandlerClass().getName());
+//                    err.append("<");
+//                    err.append(other.getMetadata().getMessageClass().getName());
+//                    err.append("> both implement this message type");
+//                    throw new IllegalStateException(err.toString());
+//                }
+//                else
+//                {
+//                    MessageHandlerWrapper handlerWrapper = new MessageHandlerWrapper(handler,metadata,wrapper);
+//                    wrappers[key.ordinal()] = handlerWrapper;
+//                }
+//            }
+//
+//            // Update handlerSet
+//            updateMessageHandlerSet();
+//        }
     }
     
     @Override
@@ -419,10 +404,10 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         return config;
     }
 
-    public EndpointMetadata getEndpointMetadata()
-    {
-        return metadata;
-    }
+//    public EndpointMetadata getEndpointMetadata()
+//    {
+//        return metadata;
+//    }
 
     @Override
     public String getId()
@@ -524,23 +509,23 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public void removeMessageHandler(MessageHandler handler)
     {
-        synchronized (wrappers)
-        {
-            try
-            {
-                for (MessageHandlerMetadata metadata : messageHandlerFactory.getMetadata(handler.getClass()))
-                {
-                    DecoderMetadata decoder = decoderFactory.getMetadataFor(metadata.getMessageClass());
-                    MessageType key = decoder.getMessageType();
-                    wrappers[key.ordinal()] = null;
-                }
-                updateMessageHandlerSet();
-            }
-            catch (IllegalStateException e)
-            {
-                LOG.warn("Unable to identify MessageHandler: " + handler.getClass().getName(),e);
-            }
-        }
+//        synchronized (wrappers)
+//        {
+//            try
+//            {
+//                for (MessageHandlerMetadata metadata : messageHandlerFactory.getMetadata(handler.getClass()))
+//                {
+//                    DecoderMetadata decoder = decoderFactory.getMetadataFor(metadata.getMessageClass());
+//                    MessageType key = decoder.getMessageType();
+//                    wrappers[key.ordinal()] = null;
+//                }
+//                updateMessageHandlerSet();
+//            }
+//            catch (IllegalStateException e)
+//            {
+//                LOG.warn("Unable to identify MessageHandler: " + handler.getClass().getName(),e);
+//            }
+//        }
     }
     
     public MessageSink newMessageAppenderFor(MessageType text)
@@ -580,15 +565,15 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     private void updateMessageHandlerSet()
     {
         messageHandlerSet.clear();
-        for (MessageHandlerWrapper wrapper : wrappers)
-        {
-            if (wrapper == null)
-            {
-                // skip empty
-                continue;
-            }
-            messageHandlerSet.add(wrapper.getHandler());
-        }
+//        for (MessageHandlerWrapper wrapper : wrappers)
+//        {
+//            if (wrapper == null)
+//            {
+//                // skip empty
+//                continue;
+//            }
+//            messageHandlerSet.add(wrapper.getHandler());
+//        }
     }
 
     @Override
