@@ -42,11 +42,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * JDBCSessionDataStore
+ * JDBCSessionStore
  *
  * Session data stored in database
  */
-public class JDBCSessionDataStore extends AbstractSessionStore
+public class JDBCSessionStore extends AbstractSessionStore
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
@@ -610,7 +610,7 @@ public class JDBCSessionDataStore extends AbstractSessionStore
     
    
   
-    public JDBCSessionDataStore ()
+    public JDBCSessionStore ()
     {
         super ();
     }

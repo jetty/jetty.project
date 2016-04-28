@@ -28,7 +28,7 @@ public class JDBCSessionStoreFactory extends AbstractSessionStoreFactory
 {
     
     DatabaseAdaptor _adaptor;
-    JDBCSessionDataStore.SessionTableSchema _schema;
+    JDBCSessionStore.SessionTableSchema _schema;
     boolean _deleteUnloadableSessions;
     int _loadAttempts;
 
@@ -39,7 +39,7 @@ public class JDBCSessionStoreFactory extends AbstractSessionStoreFactory
     @Override
     public SessionStore getSessionStore(SessionHandler handler)
     {
-        JDBCSessionDataStore ds = new JDBCSessionDataStore();
+        JDBCSessionStore ds = new JDBCSessionStore();
         ds.setDatabaseAdaptor(_adaptor);
         ds.setSessionTableSchema(_schema);
         ds.setDeleteUnloadableSessions(_deleteUnloadableSessions);
@@ -61,7 +61,7 @@ public class JDBCSessionStoreFactory extends AbstractSessionStoreFactory
     /**
      * @param schema
      */
-    public void setSessionTableSchema (JDBCSessionDataStore.SessionTableSchema schema)
+    public void setSessionTableSchema (JDBCSessionStore.SessionTableSchema schema)
     {
         _schema = schema;
     }

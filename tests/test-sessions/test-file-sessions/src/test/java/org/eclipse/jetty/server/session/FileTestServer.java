@@ -144,7 +144,7 @@ public class FileTestServer extends AbstractTestServer
         SessionHandler handler =  new SessionHandler();
         DefaultSessionCache ss = new DefaultSessionCache(handler);
         handler.setSessionStore(ss);
-        FileSessionDataStore ds = new FileSessionDataStore();
+        FileSessionStore ds = new FileSessionStore();
         ds.setStoreDir(_tmpDir);
         ss.setSessionStore(ds);
         return handler;

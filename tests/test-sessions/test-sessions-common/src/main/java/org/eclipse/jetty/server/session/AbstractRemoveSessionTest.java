@@ -91,7 +91,7 @@ public abstract class AbstractRemoveSessionTest
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 //ensure sessionDestroyed listener is called
                 assertTrue(testListener.isDestroyed());
-                assertEquals(0, ((DefaultSessionCache)m.getSessionStore()).getSessions());
+                assertEquals(0, ((DefaultSessionCache)m.getSessionStore()).getSessionsCurrent());
                 assertEquals(1, ((DefaultSessionCache)m.getSessionStore()).getSessionsMax());
                 assertEquals(1, ((DefaultSessionCache)m.getSessionStore()).getSessionsTotal());
 
@@ -100,7 +100,7 @@ public abstract class AbstractRemoveSessionTest
                 request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                assertEquals(0, ((DefaultSessionCache)m.getSessionStore()).getSessions());
+                assertEquals(0, ((DefaultSessionCache)m.getSessionStore()).getSessionsCurrent());
                 assertEquals(1,  ((DefaultSessionCache)m.getSessionStore()).getSessionsMax());
                 assertEquals(1, ((DefaultSessionCache)m.getSessionStore()).getSessionsTotal());
             }

@@ -32,7 +32,8 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  * delegate SessionStore to improve performance: accessing most persistent store
  * technology can be expensive time-wise, so introducing a fronting cache 
  * can increase performance. The cache implementation can either be a local cache, 
- * a remote cache, or a clustered cache.
+ * a remote cache, or a clustered cache. If the cache is cluster-wide then this can
+ * help with deployments without a sticky load balancer (but this is not ideal).
  */
 public class CachingSessionStore extends AbstractLifeCycle implements SessionStore
 {

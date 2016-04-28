@@ -42,11 +42,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * FileSessionDataStore
+ * FileSessionStore
  *
  * A file-based store of session data.
  */
-public class FileSessionDataStore extends AbstractSessionStore
+public class FileSessionStore extends AbstractSessionStore
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     private File _storeDir;

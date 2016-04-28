@@ -100,7 +100,7 @@ public abstract class AbstractLastAccessTimeTest
                     assertEquals("test", response1.getContentAsString());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue( sessionCookie != null );
-                    assertEquals(1, ((DefaultSessionCache)m1.getSessionStore()).getSessions());
+                    assertEquals(1, ((DefaultSessionCache)m1.getSessionStore()).getSessionsCurrent());
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionStore()).getSessionsMax());
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionStore()).getSessionsTotal());
                     // Mangle the cookie, replacing Path with $Path, etc.
@@ -164,7 +164,7 @@ public abstract class AbstractLastAccessTimeTest
     
     public void assertSessionCounts (int current, int max, int total, SessionHandler manager)
     {
-        assertEquals(current, ((DefaultSessionCache)manager.getSessionStore()).getSessions());
+        assertEquals(current, ((DefaultSessionCache)manager.getSessionStore()).getSessionsCurrent());
         assertEquals(max, ((DefaultSessionCache)manager.getSessionStore()).getSessionsMax());
         assertEquals(total, ((DefaultSessionCache)manager.getSessionStore()).getSessionsTotal());
     }
