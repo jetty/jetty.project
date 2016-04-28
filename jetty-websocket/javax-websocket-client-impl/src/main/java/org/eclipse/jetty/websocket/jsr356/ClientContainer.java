@@ -32,7 +32,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
-import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
@@ -57,10 +56,8 @@ import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
-import org.eclipse.jetty.websocket.jsr356.client.SimpleEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.decoders.PrimitiveDecoderMetadataSet;
 import org.eclipse.jetty.websocket.jsr356.encoders.PrimitiveEncoderMetadataSet;
 import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
@@ -103,7 +100,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         client.setSessionFactory(new JsrSessionFactory(this));
         addBean(client);
         
-        annotatedConfigFunctions.add(new ClientEndpointConfigFunction());
+//        annotatedConfigFunctions.add(new ClientEndpointConfigFunction());
 
         this.decoderFactory = new DecoderFactory(this,PrimitiveDecoderMetadataSet.INSTANCE);
         this.encoderFactory = new EncoderFactory(this,PrimitiveEncoderMetadataSet.INSTANCE);
@@ -204,7 +201,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     protected void doStop() throws Exception
     {
         ShutdownThread.deregister(this);
-        endpointClientMetadataCache.clear();
+//        endpointClientMetadataCache.clear();
         super.doStop();
     }
 
@@ -221,44 +218,47 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
     public EndpointMetadata getClientEndpointMetadata(Class<?> endpoint, EndpointConfig config)
     {
-        synchronized (endpointClientMetadataCache)
-        {
-            EndpointMetadata metadata = endpointClientMetadataCache.get(endpoint);
+        EndpointMetadata metadata = null;
 
-            if (metadata != null)
-            {
-                return metadata;
-            }
-
-            ClientEndpoint anno = endpoint.getAnnotation(ClientEndpoint.class);
-            if (anno != null)
-            {
-                // Annotated takes precedence here
-                AnnotatedClientEndpointMetadata annoMetadata = new AnnotatedClientEndpointMetadata(this,endpoint);
-                AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(annoMetadata);
-                scanner.scan();
-                metadata = annoMetadata;
-            }
-            else if (Endpoint.class.isAssignableFrom(endpoint))
-            {
-                // extends Endpoint
-                @SuppressWarnings("unchecked")
-                Class<? extends Endpoint> eendpoint = (Class<? extends Endpoint>)endpoint;
-                metadata = new SimpleEndpointMetadata(eendpoint,config);
-            }
-            else
-            {
-                StringBuilder err = new StringBuilder();
-                err.append("Not a recognized websocket [");
-                err.append(endpoint.getName());
-                err.append("] does not extend @").append(ClientEndpoint.class.getName());
-                err.append(" or extend from ").append(Endpoint.class.getName());
-                throw new InvalidWebSocketException(err.toString());
-            }
-
-            endpointClientMetadataCache.put(endpoint,metadata);
-            return metadata;
-        }
+//        synchronized (endpointClientMetadataCache)
+//        {
+//            metadata = endpointClientMetadataCache.get(endpoint);
+//
+//            if (metadata != null)
+//            {
+//                return metadata;
+//            }
+//
+//            ClientEndpoint anno = endpoint.getAnnotation(ClientEndpoint.class);
+//            if (anno != null)
+//            {
+//                // Annotated takes precedence here
+//                AnnotatedClientEndpointMetadata annoMetadata = new AnnotatedClientEndpointMetadata(this,endpoint);
+//                AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(annoMetadata);
+//                scanner.scan();
+//                metadata = annoMetadata;
+//            }
+//            else if (Endpoint.class.isAssignableFrom(endpoint))
+//            {
+//                // extends Endpoint
+//                @SuppressWarnings("unchecked")
+//                Class<? extends Endpoint> eendpoint = (Class<? extends Endpoint>)endpoint;
+//                metadata = new SimpleEndpointMetadata(eendpoint,config);
+//            }
+//            else
+//            {
+//                StringBuilder err = new StringBuilder();
+//                err.append("Not a recognized websocket [");
+//                err.append(endpoint.getName());
+//                err.append("] does not extend @").append(ClientEndpoint.class.getName());
+//                err.append(" or extend from ").append(Endpoint.class.getName());
+//                throw new InvalidWebSocketException("Unable to identify as valid Endpoint: " + endpoint);
+//            }
+//
+//            endpointClientMetadataCache.put(endpoint,metadata);
+//            return metadata;
+//        }
+        return metadata;
     }
 
     public DecoderFactory getDecoderFactory()
@@ -369,7 +369,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
                 cec = new EmptyClientEndpointConfig();
             }
         }
-        return new ConfiguredEndpoint(endpoint,cec,metadata);
+        return new ConfiguredEndpoint(endpoint,cec);
     }
 
     @Override

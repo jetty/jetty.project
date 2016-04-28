@@ -18,32 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.concurrent.Executor;
-
-import javax.websocket.CloseReason;
-import javax.websocket.Endpoint;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.message.MessageSink;
-import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
-import org.eclipse.jetty.websocket.jsr356.MessageType;
-
 /**
  * EventDriver for websocket that extend from {@link javax.websocket.Endpoint}
  */
+@Deprecated
 public class JsrEndpointEventDriver extends AbstractJsrEventDriver
 {
-    private static final Logger LOG = Log.getLogger(JsrEndpointEventDriver.class);
+    /*private static final Logger LOG = Log.getLogger(JsrEndpointEventDriver.class);
 
     private final Endpoint endpoint;
     private Map<String, String> pathParameters;
@@ -75,7 +56,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
                 return;
             }
             
-            /*
+            *//*
             if (wrapper.wantsPartialMessages())
             {
                 activeMessage = new BinaryPartialMessage(wrapper);
@@ -99,7 +80,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             {
                 activeMessage = new BinaryWholeMessage(this,wrapper);
             }
-             */
+             *//*
         }
 
         activeMessage.appendFrame(buffer,fin);
@@ -114,7 +95,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
     @Override
     public void onBinaryMessage(byte[] data)
     {
-        /* Ignored, handled by BinaryWholeMessage */
+        *//* Ignored, handled by BinaryWholeMessage *//*
     }
     
     @Override
@@ -157,19 +138,19 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
     @Override
     public void onFrame(Frame frame)
     {
-        /* Ignored, not supported by JSR-356 */
+        *//* Ignored, not supported by JSR-356 *//*
     }
 
     @Override
     public void onInputStream(InputStream stream)
     {
-        /* Ignored, handled by BinaryStreamMessage */
+        *//* Ignored, handled by BinaryStreamMessage *//*
     }
 
     @Override
     public void onReader(Reader reader)
     {
-        /* Ignored, handled by TextStreamMessage */
+        *//* Ignored, handled by TextStreamMessage *//*
     }
 
     @Override
@@ -225,7 +206,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
     @Override
     public void onTextMessage(String message)
     {
-        /* Ignored, handled by TextWholeMessage */
+        *//* Ignored, handled by TextWholeMessage *//*
     }
 
     @Override
@@ -285,5 +266,5 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
     public String toString()
     {
         return String.format("%s[%s]",JsrEndpointEventDriver.class.getSimpleName(),endpoint.getClass().getName());
-    }
+    }*/
 }

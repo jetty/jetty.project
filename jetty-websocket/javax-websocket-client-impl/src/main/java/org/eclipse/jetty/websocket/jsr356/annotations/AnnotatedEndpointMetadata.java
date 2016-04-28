@@ -40,6 +40,7 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
  * @param <C>
  *            the endpoint configuration this is based off of
  */
+@Deprecated
 public abstract class AnnotatedEndpointMetadata<T extends Annotation, C extends EndpointConfig> implements EndpointMetadata
 {
     /**

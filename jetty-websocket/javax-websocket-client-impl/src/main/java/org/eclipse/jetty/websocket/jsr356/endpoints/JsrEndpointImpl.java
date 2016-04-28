@@ -18,15 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
-import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
-
-public class JsrEndpointImpl implements EventDriverImpl
+@Deprecated
+public class JsrEndpointImpl /*implements EventDriverImpl*/
 {
-    @Override
-    public EventDriver create(Object websocket, WebSocketPolicy policy)
+    /*public EventDriver create(Object websocket, WebSocketPolicy policy)
     {
         if (!(websocket instanceof ConfiguredEndpoint))
         {
@@ -54,5 +49,5 @@ public class JsrEndpointImpl implements EventDriverImpl
         Object endpoint = ei.getEndpoint();
 
         return (endpoint instanceof javax.websocket.Endpoint);
-    }
+    }*/
 }

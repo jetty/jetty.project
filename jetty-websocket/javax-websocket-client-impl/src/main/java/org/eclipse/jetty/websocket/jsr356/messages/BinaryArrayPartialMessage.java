@@ -18,27 +18,28 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.function.Function;
 
 import javax.websocket.MessageHandler;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.common.message.MessageSink;
+import org.eclipse.jetty.websocket.common.message.PartialBinaryMessage;
+import org.eclipse.jetty.websocket.common.message.PartialBinaryMessageSink;
 
 /**
  * Partial BINARY MessageAppender for MessageHandler.Partial&lt;byte[]&gt; interface
  */
-public class BinaryArrayPartialMessage implements MessageSink
+@Deprecated
+public class BinaryArrayPartialMessage extends PartialBinaryMessageSink
 {
     private final MessageHandler.Partial<byte[]> partialHandler;
 
-    public BinaryArrayPartialMessage(MessageHandler.Partial<byte[]> handler)
+    public BinaryArrayPartialMessage(Function<PartialBinaryMessage, Void> function, MessageHandler.Partial<byte[]> handler)
     {
+        super(function);
         this.partialHandler = handler;
     }
 
-    @Override
+    /*@Override
     public void appendFrame(ByteBuffer payload, boolean isLast) throws IOException
     {
         partialHandler.onMessage(BufferUtil.toArray(payload),isLast);
@@ -47,6 +48,6 @@ public class BinaryArrayPartialMessage implements MessageSink
     @Override
     public void messageComplete()
     {
-        /* nothing to do here */
-    }
+        *//* nothing to do here *//*
+    }*/
 }

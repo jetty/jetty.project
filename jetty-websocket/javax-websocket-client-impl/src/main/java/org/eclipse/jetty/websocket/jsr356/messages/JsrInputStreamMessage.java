@@ -18,35 +18,33 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.io.InputStream;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 
 import javax.websocket.Decoder;
 import javax.websocket.Decoder.BinaryStream;
 
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.message.MessageSink;
+import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 
 /**
  * Handling of InputStreams (Binary messages) via javax.websocket
+ * @deprecated Should just use InputStreamMessageSink directly (with decoder behind it)
  */
-public class JsrInputStreamMessage implements MessageSink
+@Deprecated
+public class JsrInputStreamMessage extends InputStreamMessageSink
 {
-    private final EventDriver events;
     private final Decoder.BinaryStream<?> decoder;
-    private final Executor executor;
     private MessageInputStream stream = null;
 
-    public JsrInputStreamMessage(EventDriver events, BinaryStream<?> decoder, Executor executor)
+    public JsrInputStreamMessage(Executor executor, Function<InputStream, Void> function, BinaryStream<?> decoder)
     {
+        super(executor, function);
         this.decoder = decoder;
-        this.events = events;
-        this.executor = executor;
     }
 
-    @Override
+    /*@Override
     public void appendFrame(ByteBuffer framePayload, boolean fin) throws IOException
     {
         boolean first = (stream == null);
@@ -79,12 +77,5 @@ public class JsrInputStreamMessage implements MessageSink
                 }
             });
         }
-    }
-
-    @Override
-    public void messageComplete()
-    {
-        stream.messageComplete();
-        stream = null;
-    }
+    }*/
 }

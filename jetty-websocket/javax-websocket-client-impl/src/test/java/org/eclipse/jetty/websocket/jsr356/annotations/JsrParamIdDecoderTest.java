@@ -18,20 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import static org.hamcrest.Matchers.is;
-
-import java.lang.reflect.Method;
-import java.util.Date;
-
-import org.eclipse.jetty.websocket.jsr356.MessageType;
-import org.eclipse.jetty.websocket.jsr356.decoders.DateDecoder;
-import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
-import org.junit.Assert;
-import org.junit.Test;
-
+@Deprecated
 public class JsrParamIdDecoderTest
 {
-    private JsrCallable getOnMessageCallableFrom(Class<?> clazz, String methodName)
+    /*private JsrCallable getOnMessageCallableFrom(Class<?> clazz, String methodName)
     {
         for (Method method : clazz.getMethods())
         {
@@ -53,5 +43,5 @@ public class JsrParamIdDecoderTest
         Param param = new Param(0,Date.class,null);
 
         Assert.assertThat("Match for Decoder",paramId.process(param,callable),is(true));
-    }
+    }*/
 }

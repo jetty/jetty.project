@@ -18,79 +18,68 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
 import java.lang.annotation.Annotation;
-import java.nio.ByteBuffer;
-import java.util.Map;
 
-import javax.websocket.CloseReason;
-import javax.websocket.DecodeException;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
-import javax.websocket.RemoteEndpoint;
-
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
 
 /**
  * The live event methods found for a specific Annotated Endpoint
  * @param <T> the annotation type
  * @param <C> the endpoint config type
  */
+@Deprecated
 public class JsrEvents<T extends Annotation, C extends EndpointConfig>
 {
-    private static final Logger LOG = Log.getLogger(JsrEvents.class);
+    /*private static final Logger LOG = Log.getLogger(JsrEvents.class);
     private final AnnotatedEndpointMetadata<T, C> metadata;
 
-    /**
+    *//**
      * Callable for &#064;{@link OnOpen} annotation.
-     */
+     *//*
     private final OnOpenCallable onOpen;
 
-    /**
+    *//**
      * Callable for &#064;{@link OnClose} annotation
-     */
+     *//*
     private final OnCloseCallable onClose;
 
-    /**
+    *//**
      * Callable for &#064;{@link OnError} annotation
-     */
+     *//*
     private final OnErrorCallable onError;
 
-    /**
+    *//**
      * Callable for &#064;{@link OnMessage} annotation dealing with Text Message Format
-     */
+     *//*
     private final OnMessageTextCallable onText;
 
-    /**
+    *//**
      * Callable for &#064;{@link OnMessage} annotation dealing with Text Streaming Message Format
-     */
+     *//*
     private final OnMessageTextStreamCallable onTextStream;
 
-    /**
+    *//**
      * Callable for &#064;{@link OnMessage} annotation dealing with Binary Message Format
-     */
+     *//*
     private final OnMessageBinaryCallable onBinary;
 
-    /**
+    *//**
      * Callable for &#064;{@link OnMessage} annotation dealing with Binary Streaming Message Format
-     */
+     *//*
     private final OnMessageBinaryStreamCallable onBinaryStream;
 
-    /**
+    *//**
      * Callable for &#064;{@link OnMessage} annotation dealing with Pong Message Format
-     */
+     *//*
     private OnMessagePongCallable onPong;
 
-    /**
+    *//**
      * The Request Parameters (from resolved javax.websocket.server.PathParam entries)
-     */
+     *//*
     private Map<String, String> pathParameters;
 
     public JsrEvents(AnnotatedEndpointMetadata<T, C> metadata)
@@ -306,5 +295,5 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
     public void setPathParameters(Map<String, String> pathParameters)
     {
         this.pathParameters = pathParameters;
-    }
+    }*/
 }

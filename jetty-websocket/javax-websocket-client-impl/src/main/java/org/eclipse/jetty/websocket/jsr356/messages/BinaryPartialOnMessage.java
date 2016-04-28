@@ -18,30 +18,26 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.function.Function;
 
 import javax.websocket.OnMessage;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.common.message.MessageSink;
-import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
+import org.eclipse.jetty.websocket.common.message.PartialBinaryMessage;
+import org.eclipse.jetty.websocket.common.message.PartialBinaryMessageSink;
 
 /**
  * Partial BINARY MessageAppender for &#064;{@link OnMessage} annotated methods
+ * @deprecated Should just use PartialBinaryMessageSink directly
  */
-public class BinaryPartialOnMessage implements MessageSink
+@Deprecated
+public class BinaryPartialOnMessage extends PartialBinaryMessageSink
 {
-    private final JsrAnnotatedEventDriver driver;
-    private boolean finished;
-
-    public BinaryPartialOnMessage(JsrAnnotatedEventDriver driver)
+    public BinaryPartialOnMessage(Function<PartialBinaryMessage, Void> function)
     {
-        this.driver = driver;
-        this.finished = false;
+        super(function);
     }
 
-    @Override
+    /*@Override
     public void appendFrame(ByteBuffer payload, boolean isLast) throws IOException
     {
         if (finished)
@@ -62,5 +58,5 @@ public class BinaryPartialOnMessage implements MessageSink
     public void messageComplete()
     {
         finished = true;
-    }
+    }*/
 }

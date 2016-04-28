@@ -25,62 +25,80 @@ import java.util.function.Function;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.common.FunctionCallException;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs;
-import org.eclipse.jetty.websocket.common.util.ExactSignature;
+import org.eclipse.jetty.websocket.common.util.DynamicArgs.Arg;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.common.util.UnorderedSignature;
 
 /**
  * javax.websocket {@link OnOpen} method {@link Function}
  */
 public class JsrOnOpenFunction implements Function<org.eclipse.jetty.websocket.api.Session, Void>
 {
-    private static final DynamicArgs.Builder ARGBUILDER;
-    private static final int SESSION = 1;
+    private static final Arg ARG_SESSION = new Arg(Session.class);
 
-    static
-    {
-        ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature().indexedAs());
-        ARGBUILDER.addSignature(new ExactSignature(Session.class).indexedAs(SESSION));
-    }
-
+    private final Arg[] extraArgs;
+    private final int paramCount;
     private final Session session;
     private final Object endpoint;
     private final Method method;
     private final DynamicArgs callable;
 
-    public JsrOnOpenFunction(Session session, Object endpoint, Method method)
+    public JsrOnOpenFunction(Session session, Object endpoint, Method method, DynamicArgs.Arg[] extraArgs)
     {
         this.session = session;
         this.endpoint = endpoint;
         this.method = method;
+        this.extraArgs = extraArgs;
 
-        ReflectUtils.assertIsAnnotated(method,OnOpen.class);
+        // Validate Method
+        ReflectUtils.assertIsAnnotated(method, OnOpen.class);
         ReflectUtils.assertIsPublicNonStatic(method);
-        ReflectUtils.assertIsReturn(method,Void.TYPE);
+        ReflectUtils.assertIsReturn(method, Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method);
+        // Build up dynamic callable
+        DynamicArgs.Builder argBuilder = new DynamicArgs.Builder();
+        int argCount = 1;
+        if (this.extraArgs != null)
+            argCount += extraArgs.length;
+
+        this.paramCount = argCount;
+
+        Arg[] callArgs = new Arg[argCount];
+        int idx = 0;
+        callArgs[idx++] = ARG_SESSION;
+        for (Arg arg : this.extraArgs)
+        {
+            callArgs[idx++] = arg;
+        }
+
+        argBuilder.addSignature(new UnorderedSignature(callArgs));
+
+        // Attempt to build callable
+        this.callable = argBuilder.build(method, callArgs);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method,OnOpen.class,ARGBUILDER);
+            throw InvalidSignatureException.build(method, OnOpen.class, argBuilder);
         }
-        this.callable.setArgReferences(SESSION);
-
     }
 
     @Override
     public Void apply(org.eclipse.jetty.websocket.api.Session sess)
     {
-        Object args[] = this.callable.toArgs(this.session);
+        Object params[] = new Object[paramCount];
+        int idx = 0;
+        params[idx++] = session;
+        // TODO: add PathParam Arg Values?
+
         try
         {
-            method.invoke(endpoint,args);
+            method.invoke(endpoint, params);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            throw new WebSocketException("Unable to call method " + ReflectUtils.toString(endpoint.getClass(),method),e);
+            throw new FunctionCallException("Unable to call method " + ReflectUtils.toString(endpoint.getClass(), method), e);
         }
         return null;
     }

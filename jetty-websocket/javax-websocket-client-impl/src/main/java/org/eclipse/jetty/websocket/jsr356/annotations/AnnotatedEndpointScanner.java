@@ -19,25 +19,15 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.util.LinkedList;
-import java.util.List;
 
 import javax.websocket.EndpointConfig;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.InvalidSignatureException;
-import org.eclipse.jetty.websocket.common.events.annotated.AbstractMethodAnnotationScanner;
-import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+//import org.eclipse.jetty.websocket.common.events.annotated.AbstractMethodAnnotationScanner;
 
-public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointConfig> extends AbstractMethodAnnotationScanner<AnnotatedEndpointMetadata<T, C>>
+@Deprecated
+public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointConfig> /*extends AbstractMethodAnnotationScanner<AnnotatedEndpointMetadata<T, C>>*/
 {
-    private static final Logger LOG = Log.getLogger(AnnotatedEndpointScanner.class);
+/*    private static final Logger LOG = Log.getLogger(AnnotatedEndpointScanner.class);
 
     private final LinkedList<IJsrParamId> paramsOnOpen;
     private final LinkedList<IJsrParamId> paramsOnClose;
@@ -78,7 +68,7 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
             err.append("Encountered duplicate method annotations @");
             err.append(methodAnnotationClass.getSimpleName());
             err.append(" on ");
-            err.append(ReflectUtils.toString(pojo,callable.getMethod()));
+//            err.append(ReflectUtils.toString(pojo,callable.getMethod()));
             err.append(" and ");
             err.append(ReflectUtils.toString(pojo,method));
 
@@ -86,7 +76,6 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
         }
     }
 
-    @Override
     public void onMethodAnnotation(AnnotatedEndpointMetadata<T, C> metadata, Class<?> pojo, Method method, Annotation annotation)
     {
         if (LOG.isDebugEnabled())
@@ -96,8 +85,8 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
 
         if (isAnnotation(annotation,OnOpen.class))
         {
-            assertIsPublicNonStatic(method);
-            assertIsReturn(method,Void.TYPE);
+//            assertIsPublicNonStatic(method);
+//            assertIsReturn(method,Void.TYPE);
             assertNotDuplicate(metadata.onOpen,OnOpen.class,pojo,method);
             OnOpenCallable onopen = new OnOpenCallable(pojo,method);
             visitMethod(onopen,pojo,method,paramsOnOpen,OnOpen.class);
@@ -107,8 +96,8 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
 
         if (isAnnotation(annotation,OnClose.class))
         {
-            assertIsPublicNonStatic(method);
-            assertIsReturn(method,Void.TYPE);
+//            assertIsPublicNonStatic(method);
+//            assertIsReturn(method,Void.TYPE);
             assertNotDuplicate(metadata.onClose,OnClose.class,pojo,method);
             OnCloseCallable onclose = new OnCloseCallable(pojo,method);
             visitMethod(onclose,pojo,method,paramsOnClose,OnClose.class);
@@ -118,8 +107,8 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
 
         if (isAnnotation(annotation,OnError.class))
         {
-            assertIsPublicNonStatic(method);
-            assertIsReturn(method,Void.TYPE);
+//            assertIsPublicNonStatic(method);
+//            assertIsReturn(method,Void.TYPE);
             assertNotDuplicate(metadata.onError,OnError.class,pojo,method);
             OnErrorCallable onerror = new OnErrorCallable(pojo,method);
             visitMethod(onerror,pojo,method,paramsOnError,OnError.class);
@@ -129,7 +118,7 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
 
         if (isAnnotation(annotation,OnMessage.class))
         {
-            assertIsPublicNonStatic(method);
+//            assertIsPublicNonStatic(method);
             // assertIsReturn(method,Void.TYPE); // no validation, it can be any return type
             OnMessageCallable onmessage = new OnMessageCallable(pojo,method);
             visitMethod(onmessage,pojo,method,paramsOnMessage,OnMessage.class);
@@ -162,9 +151,14 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
         }
     }
 
+    private boolean isAnnotation(Annotation annotation, Class<? extends Annotation> annoClass)
+    {
+        return false;
+    }
+
     public AnnotatedEndpointMetadata<T, C> scan()
     {
-        scanMethodAnnotations(metadata,metadata.getEndpointClass());
+//        scanMethodAnnotations(metadata,metadata.getEndpointClass());
         return metadata;
     }
 
@@ -210,5 +204,5 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
 
         // Failed identification as a known parameter
         return false;
-    }
+    }*/
 }

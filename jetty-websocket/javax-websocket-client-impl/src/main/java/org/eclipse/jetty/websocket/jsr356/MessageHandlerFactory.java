@@ -72,7 +72,7 @@ public class MessageHandlerFactory
             return ret;
         }
 
-        return register(handler);
+        return register(handler.getClass());
     }
 
     public List<MessageHandlerMetadata> register(Class<? extends MessageHandler> handler)
@@ -111,7 +111,7 @@ public class MessageHandlerFactory
             metadatas.add(new MessageHandlerMetadata(handler,onMessageClass,partial));
         }
 
-        registered.put(handler,metadatas);
+//        registered.put(handler,metadatas);
         return metadatas;
     }
 }

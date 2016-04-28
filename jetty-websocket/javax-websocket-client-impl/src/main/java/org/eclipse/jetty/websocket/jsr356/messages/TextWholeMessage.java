@@ -18,31 +18,33 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
+import java.util.function.Function;
+
 import javax.websocket.MessageHandler;
 import javax.websocket.MessageHandler.Whole;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
-import org.eclipse.jetty.websocket.jsr356.DecoderFactory;
 import org.eclipse.jetty.websocket.jsr356.MessageHandlerWrapper;
 
+/**
+ * @deprecated should just use StringMessageSink directly
+ */
+@Deprecated
 public class TextWholeMessage extends StringMessageSink
 {
     private final MessageHandlerWrapper msgWrapper;
     private final MessageHandler.Whole<Object> wholeHandler;
 
     @SuppressWarnings("unchecked")
-    public TextWholeMessage(EventDriver onEvent, MessageHandlerWrapper wrapper)
+    public TextWholeMessage(WebSocketPolicy policy, Function<String, Void> onMessageFunction, MessageHandlerWrapper wrapper)
     {
-        super(onEvent);
+        super(policy, onMessageFunction);
         this.msgWrapper = wrapper;
-        this.wholeHandler = (Whole<Object>)wrapper.getHandler();
+        this.wholeHandler = (Whole<Object>) wrapper.getHandler();
     }
 
-    @SuppressWarnings("unchecked")
+/*    @SuppressWarnings("unchecked")
     @Override
     public void messageComplete()
     {
@@ -59,5 +61,5 @@ public class TextWholeMessage extends StringMessageSink
         {
             throw new WebSocketException("Unable to decode text data",e);
         }
-    }
+    }*/
 }

@@ -18,33 +18,32 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.io.Reader;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 
 import javax.websocket.Decoder;
 import javax.websocket.Decoder.TextStream;
 
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.message.MessageSink;
-import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
+import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
 
-public class JsrReaderMessage implements MessageSink
+/**
+ * * @deprecated Should just use ReaderMessageSink directly (with decoder behind it)
+ */
+@Deprecated
+public class JsrReaderMessage extends ReaderMessageSink
 {
-    private final EventDriver events;
     private final Decoder.TextStream<?> decoder;
-    private final Executor executor;
-    private MessageReader stream = null;        
+    private MessageReader stream = null;
 
-    public JsrReaderMessage(TextStream<?> decoder, EventDriver events, Executor executor)
+    public JsrReaderMessage(Executor executor, Function<Reader, Void> function, TextStream<?> decoder)
     {
+        super(executor, function);
         this.decoder = decoder;
-        this.events = events;
-        this.executor = executor;
     }
 
-    @Override
+    /*@Override
     public void appendFrame(ByteBuffer framePayload, boolean fin) throws IOException
     {
         boolean first = (stream == null);
@@ -84,5 +83,5 @@ public class JsrReaderMessage implements MessageSink
     {
         stream.messageComplete();
         stream = null;
-    }
+    }*/
 }

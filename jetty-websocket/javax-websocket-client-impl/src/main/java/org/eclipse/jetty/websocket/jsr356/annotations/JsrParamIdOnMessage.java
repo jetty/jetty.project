@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import org.eclipse.jetty.websocket.common.InvalidSignatureException;
-
+@Deprecated
 public abstract class JsrParamIdOnMessage extends JsrParamIdBase implements IJsrParamId
 {
     protected void assertPartialMessageSupportDisabled(Param param, JsrCallable callable)
@@ -27,14 +26,14 @@ public abstract class JsrParamIdOnMessage extends JsrParamIdBase implements IJsr
         if (callable instanceof OnMessageCallable)
         {
             OnMessageCallable onmessage = (OnMessageCallable)callable;
-            if (onmessage.isPartialMessageSupported())
+            /*if (onmessage.isPartialMessageSupported())
             {
                 StringBuilder err = new StringBuilder();
                 err.append("Unable to support parameter type <");
                 err.append(param.type.getName()).append("> in conjunction with the partial message indicator boolean.");
                 err.append(" Only type <String> is supported with partial message boolean indicator.");
                 throw new InvalidSignatureException(err.toString());
-            }
+            }*/
         }
     }
 }

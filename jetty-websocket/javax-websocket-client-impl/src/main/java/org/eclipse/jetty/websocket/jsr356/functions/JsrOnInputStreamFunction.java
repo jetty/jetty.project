@@ -26,11 +26,12 @@ import java.util.function.Function;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.common.FunctionCallException;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs;
-import org.eclipse.jetty.websocket.common.util.ExactSignature;
+import org.eclipse.jetty.websocket.common.util.DynamicArgs.Arg;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.common.util.UnorderedSignature;
 
 /**
  * javax.websocket {@link OnMessage} method {@link Function} for BINARY/{@link InputStream} streaming
@@ -38,61 +39,72 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
  */
 public class JsrOnInputStreamFunction implements Function<InputStream, Void>
 {
-    private static final DynamicArgs.Builder ARGBUILDER;
-    private static final int SESSION = 1;
-    private static final int STREAM = 2;
+    private static final Arg ARG_SESSION = new Arg(Session.class);
+    private static final Arg ARG_STREAM = new Arg(InputStream.class);
 
-    static
-    {
-        ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(InputStream.class).indexedAs(STREAM));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,InputStream.class).indexedAs(SESSION,STREAM));
-    }
-
-    public static DynamicArgs.Builder getDynamicArgsBuilder()
-    {
-        return ARGBUILDER;
-    }
-    
-    public static boolean hasMatchingSignature(Method method)
-    {
-        return ARGBUILDER.hasMatchingSignature(method);
-    }
-
+    private final Arg[] extraArgs;
+    private final int paramCount;
     private final Session session;
     private final Object endpoint;
     private final Method method;
     private final DynamicArgs callable;
 
-    public JsrOnInputStreamFunction(Session session, Object endpoint, Method method)
+    public JsrOnInputStreamFunction(Session session, Object endpoint, Method method, Arg[] extraArgs)
     {
         this.session = session;
         this.endpoint = endpoint;
         this.method = method;
+        this.extraArgs = extraArgs;
 
-        ReflectUtils.assertIsAnnotated(method,OnMessage.class);
+        // Validate Method
+        ReflectUtils.assertIsAnnotated(method, OnMessage.class);
         ReflectUtils.assertIsPublicNonStatic(method);
-        ReflectUtils.assertIsReturn(method,Void.TYPE);
+        // FIXME: Need to support any return!
+        ReflectUtils.assertIsReturn(method, Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method);
+        // Build up dynamic callable
+        DynamicArgs.Builder argBuilder = new DynamicArgs.Builder();
+        int argCount = 2;
+        if (this.extraArgs != null)
+            argCount += extraArgs.length;
+
+        this.paramCount = argCount;
+
+        Arg[] callArgs = new Arg[argCount];
+        int idx = 0;
+        callArgs[idx++] = ARG_SESSION;
+        callArgs[idx++] = ARG_STREAM;
+        for (Arg arg : this.extraArgs)
+        {
+            callArgs[idx++] = arg;
+        }
+
+        argBuilder.addSignature(new UnorderedSignature(callArgs));
+
+        // Attempt to build callable
+        this.callable = argBuilder.build(method, callArgs);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method,OnMessage.class,ARGBUILDER);
+            throw InvalidSignatureException.build(method, OnMessage.class, argBuilder);
         }
-        this.callable.setArgReferences(SESSION,STREAM);
     }
 
     @Override
     public Void apply(InputStream stream)
     {
-        Object args[] = this.callable.toArgs(session,stream);
+        Object params[] = new Object[paramCount];
+        int idx = 0;
+        params[idx++] = session;
+        params[idx++] = stream;
+        // TODO: add PathParam Arg Values?
+
         try
         {
-            method.invoke(endpoint,args);
+            this.callable.invoke(endpoint, params);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            throw new WebSocketException("Unable to call text message method " + ReflectUtils.toString(endpoint.getClass(),method),e);
+            throw new FunctionCallException("Unable to call binary message method " + ReflectUtils.toString(endpoint.getClass(), method), e);
         }
         return null;
     }

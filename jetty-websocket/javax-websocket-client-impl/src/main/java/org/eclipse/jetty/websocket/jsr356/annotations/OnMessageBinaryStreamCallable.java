@@ -19,35 +19,29 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 //import java.io.IOException;
-import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
-
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
-import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
  * Callable for {@link OnMessage} annotated methods for {@link InputStream} based binary message objects
  * 
  * @see javax.websocket.Decoder.BinaryStream
  */
+@Deprecated
 public class OnMessageBinaryStreamCallable extends OnMessageCallable
 {
-    private Decoder.BinaryStream<?> binaryDecoder;
+    /*private Decoder.BinaryStream<?> binaryDecoder;
 
     public OnMessageBinaryStreamCallable(Class<?> pojo, Method method)
     {
         super(pojo,method);
     }
 
-    /**
+    *//**
      * Copy Constructor
      * @param copy the callable to copy from
-     */
+     *//*
     public OnMessageBinaryStreamCallable(OnMessageCallable copy)
     {
         super(copy);
@@ -71,5 +65,5 @@ public class OnMessageBinaryStreamCallable extends OnMessageCallable
         super.init(session);
         assertDecoderRequired();
         binaryDecoder = (Decoder.BinaryStream<?>)getDecoder();
-    }
+    }*/
 }

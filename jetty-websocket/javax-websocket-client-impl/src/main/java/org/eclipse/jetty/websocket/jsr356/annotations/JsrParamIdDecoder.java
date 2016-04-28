@@ -69,8 +69,7 @@ public class JsrParamIdDecoder extends JsrParamIdOnMessage implements IJsrParamI
                     param.bind(Role.MESSAGE_PONG);
                     break;
             }
-
-            callable.setDecodingType(metadata.getObjectType());
+//            callable.setDecoderClass(metadata.getCoderClass());
             return true;
         }
         return false;

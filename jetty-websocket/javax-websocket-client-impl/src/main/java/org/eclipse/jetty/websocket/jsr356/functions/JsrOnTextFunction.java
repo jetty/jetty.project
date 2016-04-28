@@ -18,25 +18,21 @@
 
 package org.eclipse.jetty.websocket.jsr356.functions;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.Function;
 
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.common.InvalidSignatureException;
-import org.eclipse.jetty.websocket.common.util.DynamicArgs;
-import org.eclipse.jetty.websocket.common.util.ExactSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 /**
  * javax.websocket {@link OnMessage} method {@link Function} for TEXT/{@link String} types
  */
+@Deprecated
 public class JsrOnTextFunction implements Function<String, Void>
 {
-    private static final DynamicArgs.Builder ARGBUILDER;
+/*    private static final DynamicArgs.Builder ARGBUILDER;
     private static final int SESSION = 1;
     private static final int TEXT = 2;
 
@@ -55,12 +51,11 @@ public class JsrOnTextFunction implements Function<String, Void>
     public static boolean hasMatchingSignature(Method method)
     {
         return ARGBUILDER.hasMatchingSignature(method);
-    }
+    }*/
 
     private final Session session;
     private final Object endpoint;
     private final Method method;
-    private final DynamicArgs callable;
 
     public JsrOnTextFunction(Session session, Object endpoint, Method method)
     {
@@ -72,18 +67,18 @@ public class JsrOnTextFunction implements Function<String, Void>
         ReflectUtils.assertIsPublicNonStatic(method);
         ReflectUtils.assertIsReturn(method,Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method);
+        /*this.callable = ARGBUILDER.build(method);
         if (this.callable == null)
         {
             throw InvalidSignatureException.build(method,OnMessage.class,ARGBUILDER);
         }
-        this.callable.setArgReferences(SESSION,TEXT);
+        this.callable.setArgReferences(SESSION,TEXT);*/
     }
 
     @Override
     public Void apply(String text)
     {
-        Object args[] = this.callable.toArgs(session,text);
+        /*Object args[] = this.callable.toArgs(session,text);
         try
         {
             method.invoke(endpoint,args);
@@ -91,7 +86,7 @@ public class JsrOnTextFunction implements Function<String, Void>
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
             throw new WebSocketException("Unable to call text message method " + ReflectUtils.toString(endpoint.getClass(),method),e);
-        }
+        }*/
         return null;
     }
 }

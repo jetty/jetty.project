@@ -25,66 +25,87 @@ import java.util.function.Function;
 import javax.websocket.OnClose;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.FunctionCallException;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.DynamicArgs;
-import org.eclipse.jetty.websocket.common.util.ExactSignature;
+import org.eclipse.jetty.websocket.common.util.DynamicArgs.Arg;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.common.util.UnorderedSignature;
 
 /**
  * javax.websocket {@link OnClose} method {@link Function}
  */
 public class JsrOnCloseFunction implements Function<CloseInfo, Void>
 {
-    private static final DynamicArgs.Builder ARGBUILDER;
-    private static final int SESSION = 1;
-    private static final int STATUS_CODE = 2;
-    private static final int REASON = 3;
+    private static final Arg ARG_SESSION = new Arg(Session.class);
+    private static final Arg ARG_STATUS_CODE = new Arg(int.class);
+    private static final Arg ARG_REASON = new Arg(String.class);
 
-    static
-    {
-        ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature().indexedAs());
-        ARGBUILDER.addSignature(new ExactSignature(Session.class).indexedAs(SESSION));
-        ARGBUILDER.addSignature(new ExactSignature(int.class,String.class).indexedAs(STATUS_CODE,REASON));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,int.class,String.class).indexedAs(SESSION,STATUS_CODE,REASON));
-    }
-
+    private final Arg[] extraArgs;
+    private final int paramCount;
     private final Session session;
     private final Object endpoint;
     private final Method method;
     private final DynamicArgs callable;
 
-    public JsrOnCloseFunction(Session session, Object endpoint, Method method)
+    public JsrOnCloseFunction(Session session, Object endpoint, Method method, Arg[] extraArgs)
     {
         this.session = session;
         this.endpoint = endpoint;
         this.method = method;
+        this.extraArgs = extraArgs;
 
-        ReflectUtils.assertIsAnnotated(method,OnClose.class);
+        // Validate Method
+        ReflectUtils.assertIsAnnotated(method, OnClose.class);
         ReflectUtils.assertIsPublicNonStatic(method);
-        ReflectUtils.assertIsReturn(method,Void.TYPE);
+        ReflectUtils.assertIsReturn(method, Void.TYPE);
 
-        this.callable = ARGBUILDER.build(method);
+        // Build up dynamic callable
+        DynamicArgs.Builder argBuilder = new DynamicArgs.Builder();
+        int argCount = 3;
+        if (this.extraArgs != null)
+            argCount += extraArgs.length;
+
+        this.paramCount = argCount;
+
+        Arg[] callArgs = new Arg[argCount];
+        int idx = 0;
+        callArgs[idx++] = ARG_SESSION;
+        callArgs[idx++] = ARG_STATUS_CODE;
+        callArgs[idx++] = ARG_REASON;
+        for (Arg arg : this.extraArgs)
+        {
+            callArgs[idx++] = arg;
+        }
+
+        argBuilder.addSignature(new UnorderedSignature(callArgs));
+
+        // Attempt to build callable
+        this.callable = argBuilder.build(method, callArgs);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method,OnClose.class,ARGBUILDER);
+            throw InvalidSignatureException.build(method, OnClose.class, argBuilder);
         }
-        this.callable.setArgReferences(SESSION,STATUS_CODE,REASON);
     }
 
     @Override
     public Void apply(CloseInfo closeinfo)
     {
-        Object args[] = this.callable.toArgs(session,closeinfo.getStatusCode(),closeinfo.getReason());
+        Object params[] = new Object[paramCount];
+        int idx = 0;
+        params[idx++] = session;
+        params[idx++] = closeinfo.getStatusCode();
+        params[idx++] = closeinfo.getReason();
+        // TODO: add PathParam Arg Values?
+
         try
         {
-            method.invoke(endpoint,args);
+            this.callable.invoke(endpoint, params);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            throw new WebSocketException("Unable to call close method " + ReflectUtils.toString(endpoint.getClass(),method),e);
+            throw new FunctionCallException("Unable to call close method " + ReflectUtils.toString(endpoint.getClass(), method), e);
         }
         return null;
     }
