@@ -38,6 +38,7 @@
         <version>2.4</version>
         <configuration> 
           <minimizeJar>true</minimizeJar>
+          <createDependencyReducedPom>false</createDependencyReducedPom>
           <artifactSet>
             <includes>
               <include>org.eclipse.jetty:jetty-util</include>
