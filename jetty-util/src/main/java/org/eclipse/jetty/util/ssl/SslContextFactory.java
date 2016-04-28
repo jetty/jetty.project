@@ -210,9 +210,9 @@ public class SslContextFactory extends AbstractLifeCycle
     /** Set to true to enable SSL Session caching */
     private boolean _sessionCachingEnabled = true;
     /** SSL session cache size */
-    private int _sslSessionCacheSize=0;
+    private int _sslSessionCacheSize=-1;
     /** SSL session timeout */
-    private int _sslSessionTimeout;
+    private int _sslSessionTimeout=-1;
 
     /** SSL context */
     private SSLContext _setContext;
