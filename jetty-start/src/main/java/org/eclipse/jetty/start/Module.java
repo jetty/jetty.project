@@ -381,11 +381,16 @@ public class Module
         }
     }
 
-    public void clearTransitiveEnable()
+    public boolean clearTransitiveEnable()
     {
         if (_notTransitive)
             throw new IllegalStateException("Not Transitive");
-        _enables.clear();
+        if (isEnabled())
+        {
+            _enables.clear();
+            return true;
+        }
+        return false;
     }
     
     public void setSkipFilesValidation(boolean skipFilesValidation)
