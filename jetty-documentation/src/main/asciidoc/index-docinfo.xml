@@ -1,0 +1,96 @@
+<copyright>
+  <year>1995-2016</year>
+  <holder>Mort Bay Consulting Pty. Ltd.</holder>
+</copyright>
+<revhistory>
+  <revision>
+    <revnumber>{revnumber}</revnumber>
+    <date>
+      <?dbtimestamp format="Y-m-d H:M:S"?>
+    </date>
+    <revdescription>
+      <para>This documentation is produced and contributed to under the Eclipse Public License v1.0.</para>
+    </revdescription>
+  </revision>
+</revhistory>
+<keywordset>
+  <keyword>jetty</keyword>
+  <keyword>servlet</keyword>
+  <keyword>servlet-api</keyword>
+  <keyword>cometd</keyword>
+  <keyword>http</keyword>
+  <keyword>websocket</keyword>
+  <keyword>eclipse</keyword>
+  <keyword>maven</keyword>
+  <keyword>java</keyword>
+  <keyword>server</keyword>
+  <keyword>software</keyword>
+</keywordset>
+<authorgroup>
+  <author>
+    <personname>
+      <firstname>Jan</firstname>
+      <surname>Bartel</surname>
+    </personname>
+    <affiliation>
+      <shortaffil>Jetty</shortaffil>
+      <jobtitle>Project Lead</jobtitle>
+    </affiliation>
+  </author>
+  <author>
+    <personname>
+      <firstname>Thomas</firstname>
+      <surname>Becker</surname>
+    </personname>
+    <affiliation>
+      <shortaffil>Jetty</shortaffil>
+      <jobtitle>Committer</jobtitle>
+    </affiliation>
+  </author>
+  <author>
+    <personname>
+      <firstname>Simone</firstname>
+      <surname>Bordet</surname>
+    </personname>
+    <affiliation>
+      <shortaffil>Jetty</shortaffil>
+      <jobtitle>Committer</jobtitle>
+    </affiliation>
+  </author>
+  <author>
+    <personname>
+      <firstname>Joakim</firstname>
+      <surname>Erdfelt</surname>
+    </personname>
+    <affiliation>
+      <shortaffil>Jetty</shortaffil>
+      <jobtitle>Committer</jobtitle>
+    </affiliation>
+  </author>
+  <author>
+    <personname>
+      <firstname>Jesse</firstname>
+      <surname>McConnell</surname>
+    </personname>
+    <affiliation>
+      <shortaffil>Jetty</shortaffil>
+      <jobtitle>Committer</jobtitle>
+    </affiliation>
+  </author>
+  <author>
+    <personname>
+      <firstname>Greg</firstname>
+      <surname>Wilkins</surname>
+    </personname>
+    <affiliation>
+      <shortaffil>Jetty</shortaffil>
+      <jobtitle>Project Lead</jobtitle>
+    </affiliation>
+  </author>
+  <editor>
+    <personname>
+      <firstname>Shirley</firstname>
+      <surname>Boulay</surname>
+    </personname>
+  </editor>
+</authorgroup>

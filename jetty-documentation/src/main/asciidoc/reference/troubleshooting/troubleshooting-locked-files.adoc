@@ -1,0 +1,124 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[troubleshooting-locked-files-on-windows]]
+=== Troubleshooting Locked Files on Windows
+
+Jetty buffers static content for webapps such as HTML files, CSS files, images, etc.
+If you are using NIO connectors, Jetty uses memory-mapped files to do this.
+The problem is that on Windows, memory mapping a file causes the file to lock, so that you cannot update or replace the file.
+Effectively this means that you have to stop Jetty to update a file.
+
+==== Remedy
+
+Jetty provides a configuration switch in the `webdefault.xml` file for the DefaultServlet that enables or disables the use of memory-mapped files.
+If you are running on Windows and are having file-locking problems, you should set this switch to disable memory-mapped file buffers.
+
+The default `webdefault.xml` file is found in the jetty distribution under the `etc/` directory or in the `jetty-webapp-${version}.jar` artifact at `org/eclipse/jetty/webapp/webdefault.xml`.
+Edit the file in the distribution or extract it to a convenient disk location and edit it to change `useFileMappedBuffer` to false.
+The easiest option is to simply edit the default file contained in the jetty distribution itself.
+
+[source,xml]
+----
+<init-param>
+   <param-name>useFileMappedBuffer</param-name>
+   <param-value>true</param-value> <!-- change to false -->
+ </init-param>
+ 
+    
+----
+
+Make sure to apply your custom `webdefault.xml` file to all of your webapps.
+You can do that by changing the configuration of the Deployment Manager in `etc/jetty-deploy.xml`.
+
+[source,xml]
+----
+<Call id="webappprovider" name="addAppProvider">
+  <Arg>
+    <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+      .
+      .
+      <!-- this should be the new custom webdefault.xml or change should be made in this file -->
+      <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml</Set>
+      <Set name="scanInterval">1</Set>
+      <Set name="extractWars">true</Set>
+      .
+      .
+    </New>
+  </Arg>
+</Call>
+
+    
+----
+
+Alternatively, if you have individually configured your webapps with context xml files, you need to call the `WebAppContext.setDefaultsDescriptor(String path)` method:
+
+[source,xml]
+----
+<New id="myWebAppContext"  class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/</Set>
+  <Set name="war">./webapps/fredapp</Set>
+  <Set name="defaultsDescriptor">/home/fred/jetty/mywebdefaults.xml</Set>
+  .
+  .
+</New>
+
+    
+----
+
+Instead, you could redefine the DefaultServlet in your web.xml file, making sure to set useFileMappedBuffer to false:
+
+[source,xml]
+----
+<web-app ...>
+ ...
+ <servlet>
+     <servlet-name>Default</servlet-name>
+     <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
+     <init-param>
+       <param-name>useFileMappedBuffer</param-name>
+       <param-value>false</param-value>
+     </init-param>
+     <load-on-startup>0</load-on-startup>
+   </servlet>
+ ...
+ </web-app>
+ 
+    
+----
+
+==== Alternate Remedy
+
+You can force a `WebAppContext` to always copy a web app directory on deployment.
+The base directory of your web app (ie the root directory where your static content exists) will be copied to the link:#ref-temporary-directories[temp directory].
+Configure this in an xml file like so:
+
+[source,xml]
+----
+<New id="myWebAppContext"  class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/</Set>
+  <Set name="war">./webapps/fredapp</Set>
+  <Set name="copyWebDir">true</Set>
+  .
+  .
+</New>
+    
+----
+
+____
+[NOTE]
+Be careful with this option when using an explicitly setlink:#ref-temp-directories[temp directory] name - as the name of the temp directory will not unique across redeployments, copying the static content into the same directory name each time may not avoid the locking problem.
+____

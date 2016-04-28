@@ -1,0 +1,44 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[advanced-extras]]
+== Provided Servlets, Filters, and Handlers
+
+Jetty ships with a bundle of servlets that interact with the key classes. 
+Most are in the org.eclipse.jetty.servlets package. 
+These servlets and filters are among the principle elements of Jetty as a component-based infrastructure that holds and runs J2EE applications. 
+As described, they play a major role in running and maintaining the Jetty server.
+
+Also included are a number of Jetty specific handlers that allow access to internals of jetty that would not normally be exposed and are very useful testing environments and many production scenarios.
+
+include::default-servlet.adoc[]
+include::proxy-servlet.adoc[]
+include::balancer-servlet.adoc[]
+include::cgi-servlet.adoc[]
+include::qos-filter.adoc[]
+include::dos-filter.adoc[]
+include::gzip-filter.adoc[]
+include::cross-origin-filter.adoc[]
+include::resource-handler.adoc[]
+include::debug-handler.adoc[]
+include::statistics-handler.adoc[]
+include::ipaccess-handler.adoc[]
+include::moved-context-handler.adoc[]
+include::shutdown-handler.adoc[]
+include::default-handler.adoc[]
+include::error-handler.adoc[]
+include::rewrite-handler.adoc[]
+
