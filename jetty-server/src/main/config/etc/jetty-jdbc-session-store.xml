@@ -11,6 +11,8 @@
    <Arg>
     <New class="org.eclipse.jetty.server.session.JDBCSessionStoreFactory">   
       <Set name="gracePeriod"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+      <Set name="loadAttempts"><Property name="jetty.session.loadAttempts" default="-1" /></Set>
+      <Set name="deleteUnloadables"><Property name="jetty.session.deleteUnloadables" default="false" /></Set>
       <Set name="databaseAdaptor">
         <Ref id="databaseAdaptor"/>
       </Set>
