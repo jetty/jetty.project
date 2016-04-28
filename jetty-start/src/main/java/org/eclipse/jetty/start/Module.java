@@ -344,6 +344,9 @@ public class Module
                                 _license.add(line);
                                 break;
                             case "NAME":
+                                StartLog.warn("Deprecated [Name] used in %s",basehome.toShortForm(_path));
+                                _provides.add(line);
+                                break;
                             case "PROVIDE":
                             case "PROVIDES":
                                 _provides.add(line);
