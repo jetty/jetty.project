@@ -1,0 +1,30 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[websocket-jetty]]
+== Jetty Websocket API
+
+These pages are works in progress that have not been moved to their respective sections yet.
+
+include::jetty-websocket-api.adoc[]
+include::jetty-websocket-api-events.adoc[]
+include::jetty-websocket-api-session.adoc[]
+include::jetty-websocket-api-send-message.adoc[]
+include::jetty-websocket-api-annotations.adoc[]
+include::jetty-websocket-api-listener.adoc[]
+include::jetty-websocket-api-adapter.adoc[]
+include::jetty-websocket-server-api.adoc[]
+include::jetty-websocket-client-api.adoc[]

@@ -1,0 +1,56 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[jndi-quick-setup]]
+=== Quick Setup
+
+If you are using the standard distribution of Jetty, you must enable the
+*jndi* link:#startup-modules[module] to obtain jetty's jndi
+implementation, and the *plus* link:#startup-modules[module] which
+provides classes for interacting with jndi. As the *plus* module depends
+on the *jndi* module, you only need to enable the *plus* module to
+enable both. Assuming you have jetty
+link:#startup-base-and-home[installed] in /opt/jetty, and you have made
+a link:#startup-base-and-home[jetty base] in /opt/jetty/my-base, do:
+
+[source,bash]
+----
+cd /opt/jetty
+cd my-base
+java -jar $JETTY_HOME/start.jar --add-to-startd=plus
+    
+----
+
+You can now start Jetty and use JNDI within your webapps. See
+link:#using-jndi[Using JNDI] for information on how to add entries to
+the JNDI environment that Jetty can look up within webapps.
+
+If you have extra jars associated with your jndi resources, for example
+a database driver jar, and you haven't made a custom
+link:#startup-modules[module] for it, you can put the jars into your
+link:#startup-base-and-home[jetty base] `ext/` directory. You will then
+need to enable the *ext* module to ensure the jars in the `ext/`
+directory are on the classpath. Assuming you have jetty
+link:#startup-base-and-home[installed] in /opt/jetty, and you have made
+a link:#startup-base-and-home[jetty base] in /opt/jetty/my-base, do:
+
+[source,bash]
+----
+cd /opt/jetty
+cd my-base
+java -jar $JETTY_HOME/start.jar --add-to-startd=ext
+    
+----
