@@ -1,14 +1,14 @@
 [description]
-Enables  GCloudDatastore session management.
+Enables GCloudDatastore session management.
 
-[name]
-gcloud-session-store
+[provides]
+session-store
 
-[depend]
+[depends]
 annotations
 webapp
 sessions
-gcloud-${type}
+sessions/gcloud/gcloud-${type}
 
 [files]
 maven://com.google.gcloud/gcloud-java-datastore/0.0.7|lib/gcloud/gcloud-java-datastore-0.0.7.jar
@@ -47,23 +47,21 @@ maven://com.google.apis/google-api-services-datastore/v1beta2-rev23-1.19.0|lib/g
 lib/jetty-gcloud-session-manager-${jetty.version}.jar
 lib/gcloud/*.jar
 
-
 [license]
 GCloudDatastore is an open source project hosted on Github and released under the Apache 2.0 license.
 https://github.com/GoogleCloudPlatform/gcloud-java
 http://www.apache.org/licenses/LICENSE-2.0.html
 
-
 [ini]
 type=remote
 
 [ini-template]
-#type=local
-#type=embedded
-
 
 ## GCloudDatastore Session config
 
+
+## Remote datastore
+type=remote
 ## The gcloud projectId
 ## Set this property to connect to remote gcloud datastore. 
 ## Or, set the DATASTORE_DATASET System property/env variable instead.
@@ -80,3 +78,11 @@ type=remote
 ## The password (can be obfuscated).
 ## Set this property only when connecting to remote gcloud datastore
 #jetty.gcloudSession.password=
+
+
+## Local datastore
+#type=local
+
+
+## Embedded datastore
+#type=embedded

@@ -1,21 +1,16 @@
 [description]
-Enables session storage in files.
+Enables session persistent storage in files.
 
+[provides]
+session-store
 
-[name]
-file-session-store
-
-
+[depends]
+sessions
 
 [xml]
-etc/jetty-file-session-store.xml
-
-
-[depend]
-sessions
+etc/sessions/file-session-store.xml
 
 [ini-template]
 #jetty.session.storeDir=
 #jetty.session.deleteUnrestorableFiles=false
-
 
