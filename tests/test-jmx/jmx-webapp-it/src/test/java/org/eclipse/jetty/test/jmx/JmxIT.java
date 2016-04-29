@@ -80,7 +80,7 @@ public class JmxIT
         ObjectName serverName = new ObjectName("org.eclipse.jetty.server:type=server,id=0");
         String version = getStringAttribute(serverName,"version");
         System.err.println("Running version: " + version);
-        assertThat("Version",version,startsWith("9.4."));
+        assertThat("Version",version,startsWith("10.0."));
     }
 
     @Test
