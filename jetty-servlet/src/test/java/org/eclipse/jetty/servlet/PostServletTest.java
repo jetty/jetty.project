@@ -19,9 +19,9 @@
 package org.eclipse.jetty.servlet;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
@@ -33,12 +33,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class PostServletTest
@@ -58,7 +58,11 @@ public class PostServletTest
                 int l = in.read(buffer);
                 while (l>0)
                 {
-                    // System.err.println("READ: "+new String(buffer,0,l,StandardCharsets.ISO_8859_1));
+                    String s=new String(buffer,0,l,StandardCharsets.ISO_8859_1);
+                    // System.err.println("READ: "+s);
+                    if (s.toLowerCase().contains("flush"))
+                        response.flushBuffer();
+                        
                     l = in.read(buffer);
                 }
                 
@@ -139,7 +143,72 @@ public class PostServletTest
         try (StacklessLogging scope = new StacklessLogging(ServletHandler.class))
         {
             String resp = connector.getResponses(req.toString());
-            assertThat("resp", resp, containsString("HTTP/1.1 500 "));
+            assertThat("resp", resp, containsString("HTTP/1.1 400 "));
+        }
+    }
+    
+    @Test
+    public void testBadSplitPost() throws Exception
+    {
+        StringBuilder req = new StringBuilder();
+        req.append("POST /post HTTP/1.1\r\n");
+        req.append("Host: localhost\r\n");
+        req.append("Connection: close\r\n");
+        req.append("Transfer-Encoding: chunked\r\n");
+        req.append("\r\n");
+        req.append("6\r\n");
+        req.append("Hello ");
+        req.append("\r\n");
+
+        try (StacklessLogging scope = new StacklessLogging(ServletHandler.class))
+        {
+            LocalEndPoint endp=connector.executeRequest(req.toString());
+            req.setLength(0);
+
+            Thread.sleep(1000);
+            req.append("x\r\n");
+            req.append("World\n");
+            req.append("\r\n");
+            req.append("0\r\n"); 
+            req.append("\r\n");
+            endp.addInput(req.toString());
+            
+            endp.waitUntilClosedOrIdleFor(1,TimeUnit.SECONDS);
+            String resp = endp.takeOutputString();
+            assertThat("resp", resp, containsString("HTTP/1.1 400 "));
+        }
+    }
+    
+    @Test
+    public void testBadFlushedPost() throws Exception
+    {
+        StringBuilder req = new StringBuilder();
+        req.append("POST /post HTTP/1.1\r\n");
+        req.append("Host: localhost\r\n");
+        req.append("Transfer-Encoding: chunked\r\n");
+        req.append("\r\n");
+        req.append("6\r\n");
+        req.append("Flush ");
+        req.append("\r\n");
+
+        try (StacklessLogging scope = new StacklessLogging(ServletHandler.class))
+        {
+            LocalEndPoint endp=connector.executeRequest(req.toString());
+            req.setLength(0);
+
+            Thread.sleep(1000);
+            req.append("x\r\n");
+            req.append("World\n");
+            req.append("\r\n");
+            req.append("0\r\n"); 
+            req.append("\r\n");
+            endp.addInput(req.toString());
+            
+            endp.waitUntilClosedOrIdleFor(1,TimeUnit.SECONDS);
+            String resp = endp.takeOutputString();
+            assertThat("resp", resp, containsString("HTTP/1.1 200 "));
+            assertThat("resp", resp, containsString("Transfer-Encoding: chunked"));
+            assertThat("resp", resp, not(containsString("\r\n0\r\n")));
         }
     }
 }
