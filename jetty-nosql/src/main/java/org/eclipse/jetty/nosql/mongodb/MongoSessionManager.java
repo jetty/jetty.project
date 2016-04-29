@@ -602,16 +602,14 @@ public class MongoSessionManager extends NoSqlSessionManager
         
         long idleMs = getIdlePeriod()*1000L;
         long now = System.currentTimeMillis();
-        
-        synchronized (this) //necessary?
+
+
+        for (NoSqlSession session:_sessions.values())
         {
-            for (NoSqlSession session:_sessions.values())
+            if (session.getAccessed()+ idleMs < now)
             {
-                if (session.getAccessed()+ idleMs < now)
-                {
-                    //idle the session by passivating the session to mongo, then clearing the session's attribute map in memory
-                    session.idle();
-                }
+                //idle the session by passivating the session to mongo, then clearing the session's attribute map in memory
+                session.idle();
             }
         }
     }
