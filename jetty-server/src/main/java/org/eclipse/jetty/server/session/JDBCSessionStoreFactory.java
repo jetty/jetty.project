@@ -27,10 +27,58 @@ package org.eclipse.jetty.server.session;
 public class JDBCSessionStoreFactory extends AbstractSessionStoreFactory
 {
     
+    /**
+     * 
+     */
     DatabaseAdaptor _adaptor;
-    JDBCSessionDataStore.SessionTableSchema _schema;
+    /**
+     * 
+     */
+    JDBCSessionStore.SessionTableSchema _schema;
+    /**
+     * 
+     */
     boolean _deleteUnloadableSessions;
+    /**
+     * 
+     */
     int _loadAttempts;
+
+
+    /**
+     * @return
+     */
+    public boolean isDeleteUnloadableSessions()
+    {
+        return _deleteUnloadableSessions;
+    }
+
+
+    /**
+     * @param deleteUnloadableSessions
+     */
+    public void setDeleteUnloadableSessions(boolean deleteUnloadableSessions)
+    {
+        _deleteUnloadableSessions = deleteUnloadableSessions;
+    }
+
+
+    /**
+     * @return
+     */
+    public int getLoadAttempts()
+    {
+        return _loadAttempts;
+    }
+
+
+    /**
+     * @param loadAttempts
+     */
+    public void setLoadAttempts(int loadAttempts)
+    {
+        _loadAttempts = loadAttempts;
+    }
 
 
     /** 
@@ -39,7 +87,7 @@ public class JDBCSessionStoreFactory extends AbstractSessionStoreFactory
     @Override
     public SessionStore getSessionStore(SessionHandler handler)
     {
-        JDBCSessionDataStore ds = new JDBCSessionDataStore();
+        JDBCSessionStore ds = new JDBCSessionStore();
         ds.setDatabaseAdaptor(_adaptor);
         ds.setSessionTableSchema(_schema);
         ds.setDeleteUnloadableSessions(_deleteUnloadableSessions);
@@ -61,7 +109,7 @@ public class JDBCSessionStoreFactory extends AbstractSessionStoreFactory
     /**
      * @param schema
      */
-    public void setSessionTableSchema (JDBCSessionDataStore.SessionTableSchema schema)
+    public void setSessionTableSchema (JDBCSessionStore.SessionTableSchema schema)
     {
         _schema = schema;
     }

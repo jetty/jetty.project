@@ -1,0 +1,34 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[platforms]]
+== Platforms, Stacks and Alternative Distributions
+
+=== Many many options...
+
+In addition to using Jetty in its distribution form and its multiple embedded forms, there are a number of alternative ways to use Jetty.
+Many products and open source projects out there distribute Jetty themselves, in both distribution and embedded forms, not to mention different operating systems bundling Jetty in other installable forms.
+
+If your platform supports Jetty from a distribution or deployment perspective and want to be included on this list just fork the documentation and submit a pull request, or contact us.
+Check out our list of http://www.eclipse.org/jetty/powered[Powered By] page for software that makes use of Jetty, often in novel and exciting ways.
+
+include::jelastic.adoc[]
+include::cloudfoundry.adoc[]
+include::elastic-beanstalk.adoc[]
+include::fedora.adoc[]
+include::ubuntu.adoc[]
+
+

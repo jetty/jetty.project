@@ -1098,6 +1098,8 @@ public class StartArgs
         throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
 
+
+    
     private void enableModules(String source, List<String> moduleNames)
     {
         for (String moduleName : moduleNames)
@@ -1191,6 +1193,16 @@ public class StartArgs
         }
     }
 
+    public void removeProperty(String rawPropValue, String source)
+    {
+        int idx = rawPropValue.indexOf('=');
+        String key = rawPropValue.substring(0,idx);
+        String value = rawPropValue.substring(idx + 1);
+        
+        properties.remove(key,value,source);
+    }
+    
+    
     public void setRun(boolean run)
     {
         this.run = run;
@@ -1211,4 +1223,5 @@ public class StartArgs
         builder.append("]");
         return builder.toString();
     }
+
 }

@@ -7,7 +7,7 @@
     <version>25</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.0-SNAPSHOT</version>
+  <version>10.0.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -768,6 +768,12 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>documentation</id>
+      <modules>
+        <module>jetty-documentation</module>
+      </modules>
     </profile>
     <profile>
       <id>ci</id>

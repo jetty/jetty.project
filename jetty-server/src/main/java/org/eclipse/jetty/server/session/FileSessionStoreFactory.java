@@ -74,7 +74,7 @@ public class FileSessionStoreFactory extends AbstractSessionStoreFactory
     @Override
     public SessionStore getSessionStore(SessionHandler handler)
     {
-        FileSessionDataStore fsds = new FileSessionDataStore();
+        FileSessionStore fsds = new FileSessionStore();
         fsds.setDeleteUnrestorableFiles(isDeleteUnrestorableFiles());
         fsds.setStoreDir(getStoreDir());
         fsds.setGracePeriodSec(getGracePeriodSec());

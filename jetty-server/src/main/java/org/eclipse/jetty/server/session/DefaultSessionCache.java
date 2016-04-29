@@ -37,62 +37,53 @@ public class DefaultSessionCache extends AbstractSessionCache
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
     
+    /**
+     * The cache of sessions in a hashmap
+     */
     protected ConcurrentHashMap<String, Session> _sessions = new ConcurrentHashMap<String, Session>();
     
     private final CounterStatistic _stats = new CounterStatistic();
     
     
+    
     /**
-     * MemorySession
-     *
-     *
+     * @param manager
      */
-    public class MemorySession extends Session
-    {
-        /**
-         * @param request the request associated with the new session
-         * @param data the info for the session
-         */
-        public MemorySession(HttpServletRequest request, SessionData data)
-        {
-            super(request, data);
-        }
-        
-        
-        /**
-         * @param data the info for the restored session object
-         */
-        public MemorySession(SessionData data)
-        {
-            super(data);
-        }
-    }
-    
-    
-    
     public DefaultSessionCache (SessionHandler manager)
     {
         super (manager);
     }
     
     
-    public long getSessions ()
+    /**
+     * @return the number of sessions in the cache
+     */
+    public long getSessionsCurrent ()
     {
         return _stats.getCurrent();
     }
     
     
+    /**
+     * @return the max number of sessions in the cache
+     */
     public long getSessionsMax()
     {
         return _stats.getMax();
     }
     
     
+    /**
+     * @return a running total of sessions in the cache
+     */
     public long getSessionsTotal()
     {
         return _stats.getTotal();
     }
     
+    /**
+     * 
+     */
     public void resetStats()
     {
         _stats.reset();
@@ -195,7 +186,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     @Override
     public Session newSession(HttpServletRequest request, SessionData data)
     {
-        MemorySession s =  new MemorySession(request,data);
+        Session s =  new Session(request,data);
         return s;
     }
 
@@ -208,7 +199,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     @Override
     public Session newSession(SessionData data)
     {
-        MemorySession s = new MemorySession (data);
+        Session s = new Session (data);
         return s;
     }
 

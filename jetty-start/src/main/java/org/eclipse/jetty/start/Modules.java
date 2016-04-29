@@ -223,7 +223,6 @@ public class Modules implements Iterable<Module>
     private void enable(Set<String> newlyEnabled, Module module, String enabledFrom, boolean transitive)
     {
         StartLog.debug("enable %s from %s transitive=%b",module,enabledFrom,transitive);
-        AtomicBoolean replace_ini_properties=new AtomicBoolean(false);
         
         // Check that this is not already provided by another module!
         for (String name:module.getProvides())
@@ -239,9 +238,13 @@ public class Modules implements Iterable<Module>
                         if (p.isTransitive() && !transitive)
                         {
                             p.clearTransitiveEnable();
-                            // TODO this is not a rigorous way to handle
-                            // ini properties that were added by a default transitive module 
-                            replace_ini_properties.set(true);
+                            if (p.hasDefaultConfig())
+                            {
+                                p.getDefaultConfig().forEach(a->
+                                {
+                                    _args.removeProperty(a,p.getName());
+                                });
+                            }
                         }
                         else
                             throw new UsageException("Capability %s already enabled by %s for %s",name,p.getName(),module.getName());
@@ -263,7 +266,7 @@ public class Modules implements Iterable<Module>
             if (module.hasDefaultConfig())
             {
                 for(String line:module.getDefaultConfig())
-                    _args.parse(line,module.getName(),replace_ini_properties.get());
+                    _args.parse(line,module.getName(),false);
                 for (Module m:_modules)
                     m.expandProperties(_args.getProperties());
             }
@@ -287,6 +290,7 @@ public class Modules implements Iterable<Module>
                 {
                     Path file = _baseHome.getPath("modules/" + dependsOn + ".mod");
                     registerModule(file).expandProperties(_args.getProperties());
+                    sort();
                     providers = _provided.get(dependsOn);
                     if (providers==null || providers.isEmpty())
                         throw new UsageException("Module %s does not provide %s",_baseHome.toShortForm(file),dependsOn);

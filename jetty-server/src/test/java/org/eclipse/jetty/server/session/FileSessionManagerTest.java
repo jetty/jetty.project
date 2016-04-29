@@ -65,7 +65,7 @@ public class FileSessionManagerTest
         idmgr.setServer(server);
         server.setSessionIdManager(idmgr);
         
-        FileSessionDataStore ds = new FileSessionDataStore();
+        FileSessionStore ds = new FileSessionStore();
         ds.setDeleteUnrestorableFiles(true);
         DefaultSessionCache ss = new DefaultSessionCache(handler);
         handler.setSessionStore(ss);
@@ -101,7 +101,7 @@ public class FileSessionManagerTest
         server.setSessionIdManager(idmgr);
       
         DefaultSessionCache ss = new DefaultSessionCache(handler);
-        FileSessionDataStore ds = new FileSessionDataStore();
+        FileSessionStore ds = new FileSessionStore();
         ss.setSessionStore(ds);
         handler.setSessionStore(ss);
         ds.setDeleteUnrestorableFiles(true);
@@ -136,7 +136,7 @@ public class FileSessionManagerTest
         handler.setServer(server);
 
         DefaultSessionCache ss = new DefaultSessionCache(handler);
-        FileSessionDataStore ds = new FileSessionDataStore();
+        FileSessionStore ds = new FileSessionStore();
         ss.setSessionStore(ds);
         handler.setSessionStore(ss);
         ds.setStoreDir(testDir);

@@ -1,0 +1,53 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[community]]
+=== Community
+
+Developers and users alike are welcome to engage the Jetty community.
+We all have day jobs here so don't just ask questions on IRC and frustrated if no one answers right away.
+Stick around to hear an answer, one is likely coming at some point!
+
+[[community-mailing-lists]]
+==== Mailing Lists
+
+We have a number of options for people that wish to subscribe to our mailing lists.
+
+* Jetty Developers List
+** Join - https://dev.eclipse.org/mailman/listinfo/jetty-dev
+** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-dev/
+* Jetty Users List
+** Join - https://dev.eclipse.org/mailman/listinfo/jetty-users
+** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-users/
+* Jetty Announcements List
+** Join - https://dev.eclipse.org/mailman/listinfo/jetty-announce
+** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-announce/
+* Jetty Commit List
+** Join - https://dev.eclipse.org/mailman/listinfo/jetty-commit
+** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-commit/
+
+[[community-irc]]
+==== Internet Relay Chat - IRC
+
+Much of our conversations about Jetty occur on IRC in one location or another.
+Users are always welcome to come join our IRC channels and talk with us, other users, or just lurk.
+
+irc.freenode.org - #jetty::
+  Our primary location, we recommend that if your looking to find folks on IRC you try here.
+  We also have commit notifications coming to this channel on the bottom and top of the hour.
+irc.codehaus.org - #jetty::
+  Our prior location before the move to the eclipse foundation.
+  We are idle on here.

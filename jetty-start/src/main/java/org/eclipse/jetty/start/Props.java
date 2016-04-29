@@ -381,4 +381,17 @@ public final class Props implements Iterable<Prop>
     {
         return props.toString();
     }
+
+    public void remove(String key, String value, String source)
+    {
+        Prop prop = props.get(key);
+        
+        if (prop!=null && value.equals(prop.value) && source.equals(prop.origin))
+        {
+            if (prop.overrides==null)
+                props.remove(key);
+            else
+                props.put(key,prop.overrides);
+        }
+    }
 }

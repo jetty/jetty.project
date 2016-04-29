@@ -1,0 +1,254 @@
+/*
+ * GraphViz Graph of Jetty Modules
+ * 
+ * Jetty: http://eclipse.org/jetty/
+ * GraphViz: http://graphviz.org/
+ * 
+ * To Generate Graph image using graphviz:
+ *   $ dot -Tpng -Goverlap=false -o modules-9.png modules-9.3.dot
+ */
+
+digraph modules {
+  node [color=gray, style=filled, shape=rectangle];
+  node [fontname="Verdana", size="20,20"];
+  graph [
+    concentrate=false,
+    fontname="Verdana",
+    fontsize = 20,
+    rankdir = LR,
+    ranksep = 1.5,
+    nodesep = .5,
+    style = bold,
+    labeljust = l,
+    label = "Jetty Modules",
+    ssize = "20,40"
+  ];
+
+  /* Modules */
+
+  node [ labeljust = l ];
+
+  /* Level 0 */
+  { rank = same;
+  "server" [ color="#66FFCC" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>server</B></TD></TR>
+</TABLE>>];
+  "ext" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>ext</B></TD></TR>
+</TABLE>>];
+  "jvm" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>jvm</B></TD></TR>
+</TABLE>>];
+  "apache-jstl" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>apache-jstl</B></TD></TR>
+</TABLE>>];
+  "client" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>client</B></TD></TR>
+</TABLE>>];
+  "logging" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>logging</B></TD></TR>
+</TABLE>>];
+  "resources" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>resources</B></TD></TR>
+</TABLE>>];
+  "apache-jsp" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>apache-jsp</B></TD></TR>
+</TABLE>>];
+  "protonego-boot" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>protonego-boot</B></TD></TR>
+</TABLE>>];
+  }
+
+  /* Level 1 */
+  { rank = same;
+  "requestlog" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>requestlog</B></TD></TR>
+</TABLE>>];
+  "servlet" [ color="#66FFCC" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>servlet</B></TD></TR>
+</TABLE>>];
+  "gzip" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>gzip</B></TD></TR>
+</TABLE>>];
+  "monitor" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>monitor</B></TD></TR>
+</TABLE>>];
+  "rewrite" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>rewrite</B></TD></TR>
+</TABLE>>];
+  "ssl" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>ssl</B></TD></TR>
+</TABLE>>];
+  "security" [ color="#66FFCC" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>security</B></TD></TR>
+</TABLE>>];
+  "setuid" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>setuid</B></TD></TR>
+</TABLE>>];
+  "spring" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>spring</B></TD></TR>
+</TABLE>>];
+  "stats" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>stats</B></TD></TR>
+</TABLE>>];
+  "jmx" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>jmx</B></TD></TR>
+</TABLE>>];
+  "http" [ color="#66FFCC" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>http</B></TD></TR>
+</TABLE>>];
+  "debuglog" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>debuglog</B></TD></TR>
+</TABLE>>];
+  "ipaccess" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>ipaccess</B></TD></TR>
+</TABLE>>];
+  "jaas" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>jaas</B></TD></TR>
+</TABLE>>];
+  "jndi" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>jndi</B></TD></TR>
+</TABLE>>];
+  "lowresources" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>lowresources</B></TD></TR>
+</TABLE>>];
+  }
+
+  /* Level 2 */
+  { rank = same;
+  "fcgi" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>fcgi</B></TD></TR>
+</TABLE>>];
+  "jmx-remote" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>jmx-remote</B></TD></TR>
+</TABLE>>];
+  "webapp" [ color="#66FFCC" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>webapp</B></TD></TR>
+</TABLE>>];
+  "proxy" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>proxy</B></TD></TR>
+</TABLE>>];
+  "alpn" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>alpn</B></TD></TR>
+</TABLE>>];
+  "jaspi" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>jaspi</B></TD></TR>
+</TABLE>>];
+  "http2c" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>http2c</B></TD></TR>
+</TABLE>>];
+  "https" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>https</B></TD></TR>
+</TABLE>>];
+  "servlets" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>servlets</B></TD></TR>
+</TABLE>>];
+  }
+
+  /* Level 3 */
+  { rank = same;
+  "http2" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>http2</B></TD></TR>
+</TABLE>>];
+  "plus" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>plus</B></TD></TR>
+</TABLE>>];
+  "deploy" [ color="#66FFCC" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>deploy</B></TD></TR>
+</TABLE>>];
+  "nosql" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>nosql</B></TD></TR>
+</TABLE>>];
+  }
+
+  /* Level 4 */
+  { rank = same;
+  "annotations" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>annotations</B></TD></TR>
+</TABLE>>];
+  }
+
+  /* Level 5 */
+  { rank = same;
+  "jdbc-sessions" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>jdbc-sessions</B></TD></TR>
+</TABLE>>];
+  "infinispan" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>infinispan</B></TD></TR>
+</TABLE>>];
+  "quickstart" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>quickstart</B></TD></TR>
+</TABLE>>];
+  "jsp" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>jsp</B></TD></TR>
+</TABLE>>];
+  "websocket" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>websocket</B></TD></TR>
+</TABLE>>];
+  }
+
+  /* Level 6 */
+  { rank = same;
+  "jstl" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>jstl</B></TD></TR>
+</TABLE>>];
+  "cdi" [ color="#B8FFB8" label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">
+  <TR><TD ALIGN="LEFT"><B>cdi</B></TD></TR>
+  <TR><TD ALIGN="LEFT">(experimental)</TD></TR>
+</TABLE>>];
+  }
+    "alpn" -> "protonego-boot";
+    "annotations" -> "plus";
+    "cdi" -> "deploy";
+    "cdi" -> "annotations";
+    "cdi" -> "jsp";
+    "debuglog" -> "server";
+    "deploy" -> "webapp";
+    "fcgi" -> "servlet";
+    "fcgi" -> "client";
+    "gzip" -> "server";
+    "http" -> "server";
+    "http2" -> "ssl";
+    "http2" -> "alpn";
+    "http2c" -> "http";
+    "https" -> "ssl";
+    "infinispan" -> "annotations";
+    "infinispan" -> "webapp";
+    "ipaccess" -> "server";
+    "jaas" -> "server";
+    "jaspi" -> "security";
+    "jdbc-sessions" -> "annotations";
+    "jdbc-sessions" -> "webapp";
+    "jmx" -> "server";
+    "jmx-remote" -> "jmx";
+    "jndi" -> "server";
+    "jsp" -> "servlet";
+    "jsp" -> "annotations";
+    "jsp" -> "apache-jsp";
+    "jstl" -> "jsp";
+    "jstl" -> "apache-jstl";
+    "lowresources" -> "server";
+    "monitor" -> "server";
+    "monitor" -> "client";
+    "nosql" -> "webapp";
+    "plus" -> "security";
+    "plus" -> "jndi";
+    "plus" -> "webapp";
+    "proxy" -> "servlet";
+    "proxy" -> "client";
+    "quickstart" -> "plus";
+    "quickstart" -> "annotations";
+    "requestlog" -> "server";
+    "rewrite" -> "server";
+    "security" -> "server";
+    "servlet" -> "server";
+    "servlets" -> "servlet";
+    "setuid" -> "server";
+    "spring" -> "server";
+    "ssl" -> "server";
+    "stats" -> "server";
+    "webapp" -> "servlet";
+    "webapp" -> "security";
+    "websocket" -> "annotations";
+}
+

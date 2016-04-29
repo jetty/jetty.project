@@ -182,7 +182,8 @@ public class ServletContextHandler extends ContextHandler
     @Override
     public void setHandler(Handler handler)
     {
-        LOG.warn("ServletContextHandler.setHandler should not be called directly. Use insertHandler or setSessionHandler etc.");
+        if (handler!=null)
+            LOG.warn("ServletContextHandler.setHandler should not be called directly. Use insertHandler or setSessionHandler etc.");
         super.setHandler(handler);
     }
 

@@ -1,0 +1,127 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[continuations-intro]]
+=== Introduction
+
+Continuations are a mechanism to implement Asynchronous servlets similar to asynchronous features in Servlet 3.0, but provides a simpler and portable interface.
+
+==== Why Asynchronous Servlets ?
+
+===== Not Asynchronous IO
+
+The concept of Asynchronous Servlets is often confused with Asynchronous IO or the use of NIO.
+However, Asynchronous Servlets are not primarily motivated by asynchronous IO, since:
+
+* HTTP Requests are mostly small and arrive in a single packet. Servlets rarely block on requests.
+
+* Many responses are small and fit within the server buffers, so servlets often do not block writing responses.
+
+* Even if we could expose asynchronous IO in a servlet, it is a hard paradigm to program. For example what would an application do if it read 2 bytes of a 3 byte UTF-8 character?
+It would have to buffer and wait for more bytes.
+This is best done by the container rather than the application.
+
+===== Asynchronous Waiting
+
+The main use-case for asynchronous servlets is waiting for non-IO events or resources.
+Many web applications need to wait at some stage during the processing of a HTTP request, for example:
+
+* Waiting for a resource to be available before processing the request (e.g., thread, JDBC Connection).
+
+* Waiting for an application event in an AJAX Comet application (e.g., chat message, price change).
+
+* Waiting for a response from a remote service (e.g., RESTful or SOAP call to a web service).
+
+The servlet API (pre 2.5) supports only a synchronous call style, so that any waiting that a servlet needs to do must be with blocking.
+Unfortunately this means that the thread allocated to the request must be held during that wait along with all its resources: kernel thread, stack memory and often pooled buffers, character converters, EE authentication context, etc.
+It is wasteful of system resources to hold these resources while waiting. Significantly better scalability and quality of service can be achieved if waiting is done asynchronously.
+
+==== Asynchronous Servlet Examples
+
+===== AJAX Comet Server Push
+
+Web 2.0 applications can use the http://en.wikipedia.org/wiki/Comet_(programming)[comet] technique (aka AJAX Push, Server Push, Long Polling) to dynamically update a web page without refreshing the entire page.
+
+Consider a stock portfolio web application. Each browser will send a long poll request to the server asking for any of the user's stock prices that have changed. The server will receive the long poll requests from all its clients, but will not immediately respond.
+Instead the server waits until a stock price changes, at which time it will send a response to each of the clients with that stock in their portfolio.
+The clients that receive the long poll response will immediately send another long poll request so they may obtain future price changes.
+
+Thus the server will typically hold a long poll request for every connected user, so if the servlet is not asynchronous, there would need more than 1000 threads available to handle 1000 simultaneous users.
+1000 threads can consume over 256MB of memory; that would be better used for the application rather than idly waiting for a price to change.
+
+If the servlet is asynchronous, then the number of threads needed is governed by the time to generate each response and the frequency of price changes.
+If every user receives a price every 10 seconds and the response takes 10ms to generate, then 1000 users can be serviced with just 1 thread, and the 256MB of stack be freed for other purposes.
+
+For more on comet see the http://cometd.org/[cometd] project that works asynchronously with Jetty.
+
+===== Asynchronous RESTful Web Service
+
+Consider a web application that accesses a remote web service (e.g., SOAP service or RESTful service).
+Typically a remote web service can take hundreds of milliseconds to produce a response -- eBay's RESTful web service frequently takes 350ms to respond with a list of auctions matching a given keyword -- while only a few 10s of milliseconds of CPU time are needed to locally process a request and generate a response.
+
+To handle 1000 requests per second, which each perform a 200ms web service call, a webapp would needs 1000*(200+20)/1000 = 220 threads and 110MB of stack memory.
+It would also be vulnerable to thread starvation if bursts occurred or the web service became slower. If handled asynchronously, the web application would not need to hold a thread while waiting for web service response.
+Even if the asynchronous mechanism cost 10ms (which it doesn't), then this webapp would need 1000*(20+10)/1000 = 30 threads and 15MB of stack memory.
+This is a 86% reduction in the resources required and 95MB more memory would be available for the application.
+Furthermore, if multiple web services request are required, the asynchronous approach allows these to be made in parallel rather than serially, without allocating additional threads.
+
+For an example of Jetty's solution, see the https://webtide.com/async-rest-jetty-9/[Asynchronous REST example]
+
+===== Quality of Service (e.g., JDBC Connection Pool)
+
+Consider a web application handling on average 400 requests per second, with each request interacting with the database for 50ms.
+To handle this load, 400*50/1000 = 20 JDBC connections are need on average.
+However, requests do not come at an even rate and there are often bursts and pauses.
+To protect a database from bursts, often a JDBC connection pool is applied to limit the simultaneous requests made on the database.
+So for this application, it would be reasonable to apply a JDBC pool of 30 connections, to provide for a 50% margin.
+
+If momentarily the request rate doubled, then the 30 connections would only be able to handle 600 requests per second, and 200 requests per second would join those waiting on the JDBC Connection pool.
+Then if the servlet container had a thread pool with 200 threads, that would be entirely consumed by threads waiting for JDBC connections in 1 second of this request rate.
+After 1s, the web application would be unable to process any requests at all because no threads would be available.
+Even requests that do not use the database would be blocked due to thread starvation.
+To double the thread pool would require an additional 100MB of stack memory and would only give the application another 1s of grace under load!
+
+This thread starvation situation can also occur if the database runs slowly or is momentarily unavailable.
+Thread starvation is a very frequently reported problem, and causes the entire web service to lock up and become unresponsive.
+If the web container was able to suspend the requests waiting for a JDBC connection without threads, then thread starvation would not occur, as only 30 threads would be consumed by requests accessing the database and the other 470 threads would be available to process the request that do not access the database.
+
+For an example of Jetty's solution, see the Quality of Service Filter.
+
+==== Servlet Threading Model
+
+The scalability issues of Java servlets are caused mainly by the server threading model:
+
+===== Thread per connection
+
+The traditional IO model of Java associated a thread with every TCP/IP connection.
+If you have a few very active threads, this model can scale to a very high number of requests per second.
+
+However, the traffic profile typical of many web applications is many persistent HTTP connections that are mostly idle while users read pages or search for the next link to click. With such profiles, the thread-per-connection model can have problems scaling to the thousands of threads required to support thousands of users on large scale deployments.
+
+===== Thread per request
+
+The Java NIO libraries support asynchronous IO, so that threads no longer need to be allocated to every connection.
+When the connection is idle (between requests), then the connection is added to an NIO select set, which allows one thread to scan many connections for activity.
+Only when IO is detected on a connection is a thread allocated to it.
+However, the servlet 2.5 API model still requires a thread to be allocated for the duration of the request handling.
+
+This thread-per-request model allows much greater scaling of connections (users) at the expense of a small reduction to maximum requests per second due to extra scheduling latency.
+
+===== Asynchronous Request handling
+
+The Jetty Continuation (and the servlet 3.0 asynchronous) API introduce a change in the servlet API that allows a request to be dispatched multiple times to a servlet.
+If the servlet does not have the resources required on a dispatch, then the request is suspended (or put into asynchronous mode), so that the servlet may return from the dispatch without a response being sent.
+When the waited-for resources become available, the request is re-dispatched to the servlet, with a new thread, and a response is generated.
