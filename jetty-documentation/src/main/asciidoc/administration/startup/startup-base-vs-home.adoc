@@ -1,0 +1,331 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[startup-base-and-home]]
+=== Managing Jetty Base and Jetty Home
+
+Starting with Jetty 9.1, it is now possible to maintain a separation
+between the binary installation of the standalone Jetty (known as
+`${jetty.home}`), and the customizations for your specific environment
+(known as `${jetty.base}`).
+
+Jetty Base::
+  Also known as the `${jetty.base}` property
+  +
+  This is the location for your configurations and customizations to the
+  Jetty distribution.
+Jetty Home::
+  Also known as the `${jetty.home}` property.
+  +
+  This is the location for the Jetty distribution binaries, default XML
+  IoC configurations, and default module definitions.
+
+Potential configuration is resolved from these 2 directory locations.
+
+Check Jetty Base::
+  If the referenced configuration exists, relative to the defined Jetty
+  Base, use it.
+Check Jetty Home::
+  If the referenced configuration exists, relative to the defined Jetty
+  Home, use it.
+Use java.io.File(String pathname) Logic::
+  Lastly, use the reference as a `java.io.File(String
+          pathname)` reference, following the default resolution rules
+  outlined by that constructor.
+  +
+  In brief, the reference will be used as-is, be it relative (to current
+  working directory, aka $\{user.dir}) or absolute path, or even network
+  reference (such as on Windows and use of UNC paths).
+
+For more details on how startup with start.jar works, see
+link:#execute-start-jar[Using start.jar: Executing]
+
+[[demo-base]]
+==== Demo-Base in the Jetty Distribution
+
+The Jetty Distribution comes with an example $\{jetty.base} which
+enables the various demonstration webapps and server configurations.
+
+How to use the demo-base directory as a Jetty Base directory.
+
+....
+[jetty-distribution-@project.version@]$ ls -la
+total 496
+drwxrwxr-x 11 user group   4096 Oct  8 15:23 ./
+drwxr-xr-x 14 user group   4096 Oct  8 13:04 ../
+drwxrwxr-x  2 user group   4096 Oct  8 06:54 bin/
+drwxrwxr-x  6 user group   4096 Oct  8 06:54 demo-base/
+drwxrwxr-x  2 user group   4096 Oct 11 15:14 etc/
+drwxrwxr-x 11 user group   4096 Oct  8 06:54 lib/
+-rw-rw-r--  1 user group  30012 Sep 30 19:55 license-eplv10-aslv20.html
+drwxrwxr-x  2 user group   4096 Oct  8 06:54 logs/
+drwxrwxr-x  2 user group   4096 Oct  8 06:54 modules/
+-rw-rw-r--  1 user group   6262 Sep 30 19:55 notice.html
+-rw-rw-r--  1 user group   1249 Sep 30 19:55 README.TXT
+drwxrwxr-x  2 user group   4096 Oct  8 06:54 resources/
+drwxrwxr-x  2 user group   4096 Oct  8 06:54 start.d/
+-rw-rw-r--  1 user group   1780 Sep 30 19:55 start.ini
+-rw-rw-r--  1 user group  71921 Sep 30 19:55 start.jar
+-rw-rw-r--  1 user group 336468 Sep 30 19:55 VERSION.txt
+drwxrwxr-x  2 user group   4096 Oct  8 06:54 webapps/
+[jetty-distribution-@project.version@]$ cd demo-base
+[demo-base]$ java -jar $JETTY_HOME/start.jar
+2013-10-16 09:08:47.800:WARN::main: demo test-realm is deployed. DO NOT USE IN PRODUCTION!
+2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-@project.version@
+2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/jetty-distribution-@project.version@/demo-base/webapps/] at interval 1
+2013-10-16 09:08:48.072:WARN::main: async-rest webapp is deployed. DO NOT USE IN PRODUCTION!
+...
+....
+
+As you can see above, you are executing the demo-base configuration
+using the Jetty Base concepts.
+
+If you want to see what the Jetty Base looks like without executing
+Jetty, you can simply list the configuration
+
+....
+[my-base]$ java -jar $JETTY_HOME/start.jar --list-config
+
+Java Environment:
+-----------------
+ java.home=/usr/lib/jvm/jdk-7u21-x64/jre
+ java.vm.vendor=Oracle Corporation
+ java.vm.version=23.21-b01
+ java.vm.name=Java HotSpot(TM) 64-Bit Server VM
+ java.vm.info=mixed mode
+ java.runtime.name=Java(TM) SE Runtime Environment
+ java.runtime.version=1.7.0_21-b11
+ java.io.tmpdir=/tmp
+
+Jetty Environment:
+-----------------
+ jetty.home=/home/user/jetty-distribution-@project.version@
+ jetty.base=/home/user/jetty-distribution-@project.version@/demo-base
+ jetty.version=@project.version@
+
+JVM Arguments:
+--------------
+ (no jvm args specified)
+
+System Properties:
+------------------
+ jetty.base = /home/user/jetty-distribution-@project.version@/demo-base
+ jetty.home = /home/user/jetty-distribution-@project.version@
+
+Properties:
+-----------
+ demo.realm = etc/realm.properties
+ https.port = 8443
+ https.timeout = 30000
+ jaas.login.conf = etc/login.conf
+ jetty.dump.start = false
+ jetty.dump.stop = false
+ jetty.keymanager.password = OBF:1u2u1wml1z7s1z7a1wnl1u2g
+ jetty.keystore = etc/keystore
+ jetty.keystore.password = OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
+ jetty.http.port = 8080
+ jetty.secure.port = 8443
+ jetty.truststore = etc/keystore
+ jetty.truststore.password = OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
+ org.eclipse.jetty.websocket.jsr356 = false
+ threads.max = 200
+ threads.min = 10
+ threads.timeout = 60000
+
+Jetty Server Classpath:
+-----------------------
+Version Information on 42 entries in the classpath.
+Note: order presented here is how they would appear on the classpath.
+      changes to the --module=name command line options will be reflected here.
+ 0:               @project.version@ | ${jetty.home}/lib/jetty-client-@project.version@.jar
+ 1:      1.4.1.v201005082020 | ${jetty.base}/lib/ext/javax.mail.glassfish-1.4.1.v201005082020.jar
+ 2:               @project.version@ | ${jetty.base}/lib/ext/test-mock-resources-@project.version@.jar
+ 3:                    (dir) | ${jetty.home}/resources
+ 4:                    3.1.0 | ${jetty.home}/lib/servlet-api-3.1.jar
+ 5:                  3.1.RC0 | ${jetty.home}/lib/jetty-schemas-3.1.jar
+ 6:               @project.version@ | ${jetty.home}/lib/jetty-http-@project.version@.jar
+ 7:               @project.version@ | ${jetty.home}/lib/jetty-continuation-@project.version@.jar
+ 8:               @project.version@ | ${jetty.home}/lib/jetty-server-@project.version@.jar
+ 9:               @project.version@ | ${jetty.home}/lib/jetty-xml-@project.version@.jar
+10:               @project.version@ | ${jetty.home}/lib/jetty-util-@project.version@.jar
+11:               @project.version@ | ${jetty.home}/lib/jetty-io-@project.version@.jar
+12:               @project.version@ | ${jetty.home}/lib/jetty-jaas-@project.version@.jar
+13:               @project.version@ | ${jetty.home}/lib/jetty-jndi-@project.version@.jar
+14:      1.1.0.v201105071233 | ${jetty.home}/lib/jndi/javax.activation-1.1.0.v201105071233.jar
+15:      1.4.1.v201005082020 | ${jetty.home}/lib/jndi/javax.mail.glassfish-1.4.1.v201005082020.jar
+16:                      1.2 | ${jetty.home}/lib/jndi/javax.transaction-api-1.2.jar
+17:               @project.version@ | ${jetty.home}/lib/jetty-rewrite-@project.version@.jar
+18:               @project.version@ | ${jetty.home}/lib/jetty-security-@project.version@.jar
+19:               @project.version@ | ${jetty.home}/lib/jetty-servlet-@project.version@.jar
+20:                    3.0.0 | ${jetty.home}/lib/jsp/javax.el-3.0.0.jar
+21:      1.2.0.v201105211821 | ${jetty.home}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+22:                    2.3.2 | ${jetty.home}/lib/jsp/javax.servlet.jsp-2.3.2.jar
+23:                    2.3.1 | ${jetty.home}/lib/jsp/javax.servlet.jsp-api-2.3.1.jar
+24:                    2.3.3 | ${jetty.home}/lib/jsp/jetty-jsp-jdt-2.3.3.jar
+25:      1.2.0.v201112081803 | ${jetty.home}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+26:   3.8.2.v20130121-145325 | ${jetty.home}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+27:               @project.version@ | ${jetty.home}/lib/jetty-plus-@project.version@.jar
+28:               @project.version@ | ${jetty.home}/lib/jetty-webapp-@project.version@.jar
+29:               @project.version@ | ${jetty.home}/lib/jetty-annotations-@project.version@.jar
+30:                      4.1 | ${jetty.home}/lib/annotations/asm-4.1.jar
+31:                      4.1 | ${jetty.home}/lib/annotations/asm-commons-4.1.jar
+32:                      1.2 | ${jetty.home}/lib/annotations/javax.annotation-api-1.2.jar
+33:               @project.version@ | ${jetty.home}/lib/jetty-deploy-@project.version@.jar
+34:                      1.0 | ${jetty.home}/lib/websocket/javax.websocket-api-1.0.jar
+35:               @project.version@ | ${jetty.home}/lib/websocket/javax-websocket-client-impl-@project.version@.jar
+36:               @project.version@ | ${jetty.home}/lib/websocket/javax-websocket-server-impl-@project.version@.jar
+37:               @project.version@ | ${jetty.home}/lib/websocket/websocket-api-@project.version@.jar
+38:               @project.version@ | ${jetty.home}/lib/websocket/websocket-client-@project.version@.jar
+39:               @project.version@ | ${jetty.home}/lib/websocket/websocket-common-@project.version@.jar
+40:               @project.version@ | ${jetty.home}/lib/websocket/websocket-server-@project.version@.jar
+41:               @project.version@ | ${jetty.home}/lib/websocket/websocket-servlet-@project.version@.jar
+
+Jetty Active XMLs:
+------------------
+ ${jetty.home}/etc/jetty.xml
+ ${jetty.home}/etc/jetty-http.xml
+ ${jetty.home}/etc/jetty-jaas.xml
+ ${jetty.home}/etc/jetty-rewrite.xml
+ ${jetty.home}/etc/jetty-ssl.xml
+ ${jetty.home}/etc/jetty-https.xml
+ ${jetty.home}/etc/jetty-plus.xml
+ ${jetty.home}/etc/jetty-annotations.xml
+ ${jetty.home}/etc/jetty-deploy.xml
+ ${jetty.base}/etc/demo-rewrite-rules.xml
+ ${jetty.base}/etc/test-realm.xml
+....
+
+This demonstrates the powerful `--list-config` command line option and
+how you can use it to see what the configuration will look like when
+starting Jetty. From the Java environment, to the system properties, to
+the classpath, and finally the Active Jetty IoC XML used to build up
+your Jetty server configuration.
+
+Of note, is that the output will make it known where the configuration
+elements came from, be it in either in `${jetty.home}` or
+`${jetty.base}`.
+
+If you look at the $\{jetty.base}/start.ini you will see something like
+the following.
+
+....
+[my-base]$ cat start.ini
+# Enable security via jaas, and configure it
+--module=jaas
+jaas.login.conf=etc/login.conf
+
+# Enable rewrite examples
+--module=rewrite
+etc/demo-rewrite-rules.xml
+
+# Websocket chat examples needs websocket enabled
+# Don't start for all contexts (set to true in test.xml context)
+org.eclipse.jetty.websocket.jsr356=false
+--module=websocket
+
+# Create and configure the test realm
+etc/test-realm.xml
+demo.realm=etc/realm.properties
+
+# Initialize module server
+--module=server
+threads.min=10
+threads.max=200
+threads.timeout=60000
+jetty.dump.start=false
+jetty.dump.stop=false
+
+--module=deploy
+--module=jsp
+--module=ext
+--module=resources
+--module=client
+--module=annotations
+....
+
+The $\{jetty.base}/start.ini is the main startup configuration entry
+point for Jetty. In this example you will see that we are enabling a few
+modules for Jetty, specifying some properties, and also referencing some
+Jetty IoC XML files (namely the `etc/demo-rewrite-rules.xml` and
+`etc/test-realm.xml` files)
+
+When Jetty's `start.jar` resolves the entries in the start.ini, it will
+follow the link:#base-vs-home-resolution[resolution rules above].
+
+For example, the reference to `etc/demo-rewrite-rules.xml` was found in
+`${jetty.base}/etc/demo-rewrite-rules.xml`.
+
+==== Declaring Jetty Base
+
+The Jetty Distribution's start.jar is the component that manages the
+behavior of this separation.
+
+The Jetty start.jar and XML files always assume that both
+`${jetty.home}` and `${jetty.base}` are defined when starting Jetty.
+
+You can opt to manually define the `${jetty.home}` and `${jetty.base}`
+directories, such as this:
+
+....
+[jetty-distribution-@project.version@]$ pwd
+/home/user/jetty-distribution-@project.version@
+[jetty-distribution-@project.version@]$ java -jar start.jar \
+    jetty.home=/home/user/jetty-distribution-@project.version@ \
+    jetty.base=/home/user/my-base
+2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-@project.version@
+2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
+...
+....
+
+Or you can declare one directory and let the other one be discovered.
+
+The following example uses default discovery of `${jetty.home}` by using
+the parent directory of wherever start.jar itself is, and a manual
+declaration of `${jetty.base}`.
+
+....
+[jetty-distribution-@project.version@]$ pwd
+/home/user/jetty-distribution-@project.version@
+[jetty-distribution-@project.version@]$ java -jar start.jar jetty.base=/home/user/my-base
+2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-@project.version@
+2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
+...
+....
+
+But Jetty recommends that you always start Jetty by sitting in the
+directory that is your $\{jetty.base} and starting Jetty by referencing
+the start.jar remotely.
+
+The following demonstrates this by allowing default discovery of
+`${jetty.home}` via locating the `start.jar`, and using the `user.dir`
+System Property for `${jetty.base}`.
+
+....
+[jetty-distribution-@project.version@]$ pwd
+/home/user/jetty-distribution-@project.version@
+[jetty-distribution-@project.version@]$ cd /home/user/my-base
+[my-base]$ java -jar /home/user/jetty-distribution-@project.version@/start.jar
+2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-@project.version@
+2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
+...
+....
+
+____
+[IMPORTANT]
+Be aware of the `user.dir` system property, it can only be safely set when the JVM starts, and many 3rd party libraries (especially logging) use this system property.
++
+It is strongly recommended that you sit in the directory that is your desired `${jetty.base}` when starting Jetty to have consistent behavior and use of the `user.dir` system property.
+____

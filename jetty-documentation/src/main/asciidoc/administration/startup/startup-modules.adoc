@@ -1,0 +1,168 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[startup-modules]]
+=== Managing Startup Modules
+
+Starting with Jetty 9.1, a new Module system was introduced. (It
+replaced the old `start.config` + `OPTIONS` techniques from past Jetty
+Distributions).
+
+The standard Jetty Distribution ships with several modules defined in
+`${jetty.home}/modules/`
+
+What a Jetty Startup Module Defines:
+
+A Module Name::
+  The name of the module is the keyword used by the `--module=<name>`
+  command line argument to activate/enable modules, and also find
+  dependant modules.
+  +
+  The filename of the module defines its name. (eg: server.mod becomes
+  the module named "server")
+List of Dependant Modules::
+  All modules can declare that they depend on other modules with the
+  `[depend]` section.
+  +
+  The list of dependencies is used to transitively resolve other modules
+  that are deemed to be required based on the modules that you activate.
+  +
+  The order of modules defined in the graph of active modules is used to
+  determine various execution order for configuration, such as Jetty IoC
+  XML configurations, and to resolve conflicting property declarations.
+  +
+  Of note: there is a special section `[optional]` used to describe
+  structurally dependant modules that are not technically required, but
+  might be of use to your specific configuration.
+List of Libraries::
+  Module can optionally declare that they have libraries that they need
+  to function properly.
+  +
+  The `[lib]` section declares a set of pathnames that follow the
+  link:#base-vs-home-resolution[Jetty Base and Jetty Home path
+  resolution rules].
+List of Jetty IoC XML Configurations::
+  A Module can optionally declare a list of Jetty IoC XML configurations
+  used to wire up the functionality that this module defines.
+  +
+  The `[xml]` section declares a set of pathnames that follow the
+  link:#base-vs-home-resolution[Jetty Base and Jetty Home path
+  resolution rules].
+  +
+  Ideally, all XML files are parameterized to accept properties to
+  configure the various elements of the standard configuration. Allowing
+  for a simplified configuration of Jetty for the vast majority of
+  deployments.
+  +
+  The execution order of the Jetty IoC XML configurations is determined
+  by the graph of active module dependencies resolved via the `[depend]`
+  sections.
+  +
+  If the default XML is not sufficient to satisfy your needs, you can
+  override this XML by making your own in the $\{jetty.base}/etc/
+  directory, with the same name. The resolution steps for Jetty Base and
+  Jetty Home will ensure that your copy from $\{jetty.base} will be
+  picked up over the default one in $\{jetty.home}.
+Jetty INI Template::
+  Each module can optionally declare a startup ini template that is used
+  to insert/append/inject sample configuration elements into the
+  `start.ini` or `start.d/*.ini` files when using the
+  `--add-to-start=<name>` or `--add-to-startd=<name>` command line
+  arguments in `start.jar`.
+  +
+  Commonly used to present some of the parameterized property options
+  from the Jetty IoC XML configuration files also referenced in the same
+  module.
+  +
+  The `[ini-template]` section declares this section of sample
+  configuration.
+Required Files and Directories::
+  If the activation of a module requires some paths to exist, the
+  `[files]` section defines them.
+  +
+  There are 2 modes of operation of the entries in this section.
+  +
+  Ensure Directory Exists;;
+    If you add a pathname that ends in `"/"` (slash), such as
+    `"webapps/"`, then that directory will be created if it does not yet
+    exist in `${jetty.base}/<pathname>` (eg: `"webapps/"` will result in
+    `${jetty.base}/webapps/` being created)
+  Download File;;
+    There is a special syntax to allow you to download a file into a
+    specific location if it doesn't exist yet.
+    +
+    `<url>:<pathname>`
+    +
+    Currently, the `<url>` must be a `http://` scheme URL
+    (link:#bugs[file a bug] if you want more schemes supported). The
+    `<pathname>` portion follows the link:#base-vs-home-resolution[Jetty
+    Base and Jetty Home path resolution rules].
+    +
+    Example:
+    +
+    `http://repo.corp.com/maven/corp-security-policy-1.0.jar:lib/corp-security-policy.jar`
+    +
+    This will check for the existence of `lib/corp-security-policy.jar`,
+    and if it doesn't exist, it will download the jar file from
+    `http://repo.corp.com/maven/corp-security-policy-1.0.jar`
+
+[[enabling-modules]]
+==== Enabling Modules
+
+Jetty ships with many modules defined, and a small subset predefined in
+the `start.ini` found in the jetty distribution.
+
+____
+[TIP]
+The default distribution has a co-mingled `${jetty.home}` and `${jetty.base}`. Where the directories for `${jetty.home}` and `${jetty.base}` point to the same location.
++
+It is highly encouraged that you learn about the differences in link:#startup-base-and-home[Jetty Base vs Jetty Home] and take full advantage of this setup.
+____
+
+When you want enable a module, you can use the `--module=<modulename>`
+syntax on the command line (or start.ini) to enable that module and all
+of its dependant modules.
+
+An example of this, with a new, empty, base directory.
+
+We can see from this output, that the directory is new (it is empty
+after all).
+
+Lets see what the configuration looks like so far
+
+Lets try adding some basic support for webapps, with automatic deploy
+(hot deploy), and a single basic HTTP/1.1 connector.
+
+That just created what we need in the `${jetty.base}` directory. Lets
+see what it looks like configuration wise.
+
+You now have a configured and functional server, albiet with no webapps
+deployed. At this point you can toss a webapp (war file) into
+`mybase/webapps/` directory and and start Jetty
+
+[[startup-listing-modules]]
+==== Listing Available and Active Modules
+
+To see which modules are __available__, use the `--list-modules` command
+line argument. This command will also show you which modules are
+__enabled__. Here's an example
+
+Wow, are there really that many modules available?
+
+Yes, the module system has grown a fair bit since it was introduced in
+Jetty 9
+
+image:images/modules-9.3-simplified.png[image,width=768]

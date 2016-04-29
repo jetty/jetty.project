@@ -1,0 +1,150 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[default-logging-with-stderrlog]]
+= Default Logging with Jetty's StdErrLog
+
+If you do nothing to configure your own logging framework, then Jetty
+will default to using an internal `org.eclipse.jetty.util.log.StdErrLog`
+implementation. This will output all logging events to STDERR (aka
+System.err).
+
+Simply use Jetty and you get StdErrLog based logging output.
+
+Included in the Jetty distribution is a logging module that is capable
+of performing simple capturing of all STDOUT and STDERR output to a file
+that is rotated daily.
+
+To enable on the command line:
+
+[source,bash]
+----
+[my-base]$ java -jar /opt/jetty/start.jar --module=logging
+----
+
+You can also include the `--module=logging` command in your
+`${jetty.base}/start.ini`
+
+[source,bash]
+----
+[my-base]$ java -jar /opt/jetty/start.jar --add-to-start=logging
+----
+
+The default configuration for logging output will create a file
+`${jetty.logs}/yyyy_mm_dd.stderrout.log` which allows you to configure
+the output directory by setting the `jetty.logs` property to a path of
+your choice.
+
+If you want a more advanced configuration of your logging output,
+consider using your logging library of choice.
+
+The recommended way to configure StdErrLog is to create a
+`${jetty.home}/resources/jetty-logging.properties` file, specify the Log
+implementation to StdErrLog and then setup your logging levels.
+
+[source,properties]
+----
+# Configure Jetty for StdErrLog Logging
+org.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StrErrLog
+# Overall Logging Level is INFO
+org.eclipse.jetty.LEVEL=INFO
+# Detail Logging for WebSocket
+org.eclipse.jetty.websocket.LEVEL=DEBUG
+----
+
+There are a number of properties you can define in here that will affect
+the StdErrLog behavior.
+
+`<name>.LEVEL=<level>`::
+  Sets the logging level for all loggers within the `name` specified to
+  the level, which can be (in increasing order of restriction) `ALL`,
+  `DEBUG`, `INFO`, `WARN`, `OFF`. The name (or hierarchy) can be a
+  specific fully qualified class or a package namespace, for example,
+  `org.eclipse.jetty.http.LEVEL=DEBUG` is a package namespace approach
+  to turn all loggers in the Jetty HTTP package to DEBUG level, and
+  `org.eclipse.jetty.io.ChanelEndPoint.LEVEL=ALL` turns on all logging
+  events for the specific class, including `DEBUG`, `INFO`, `WARN` (and
+  even special internally ignored exception classes). If more than one
+  system property specifies a logging level, the most specific one
+  applies.
+`<name>.SOURCE=<boolean>`::
+  Named Logger specific, attempts to print the Java source file name and
+  line number from where the logging event originated. Name must be a
+  fully qualified class name (this configurable does not support package
+  name hierarchy). Default is false. Be aware that this is a slow
+  operation and has an impact on performance.
+`<name>.STACKS=<boolean>`::
+  Named Logger specific, controls the display of stacktraces. Name must
+  be a fully qualified class name (this configurable does not support
+  package name hierarchy).
+  +
+  Default is true.
+`org.eclipse.jetty.util.log.stderr.SOURCE=<boolean>`::
+  Special Global Configuration. Attempts to print the Java source file
+  name and line number from where the logging event originated. Default
+  is false.
+`org.eclipse.jetty.util.log.stderr.LONG=<boolean>`::
+  Special Global Configuration. When true, outputs logging events to
+  STDERR using long form, fully qualified class names. When false, uses
+  abbreviated package names.
+  +
+  Default is false.
+  +
+  Example when set to false:
+  +
+....
+2014-06-03 14:36:16.013:INFO:oejs.Server:main: jetty-9.2.0.v20140526
+2014-06-03 14:36:16.028:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/opt/jetty/demo-base/webapps/] at interval 1
+2014-06-03 14:36:16.051:INFO:oejsh.ContextHandler:main: Started o.e.j.s.h.MovedContextHandler@7d256e50{/oldContextPath,null,AVAILABLE}
+2014-06-03 14:36:17.880:INFO:oejs.ServerConnector:main: Started ServerConnector@34f2d11a{HTTP/1.1}{0.0.0.0:8080}
+2014-06-03 14:36:17.888:INFO:oejs.Server:main: Started @257ms
+....
+  +
+  Example when set to true:
+  +
+....
+2014-06-03 14:38:19.019:INFO:org.eclipse.jetty.server.Server:main: jetty-9.2.0.v20140526
+2014-06-03 14:38:19.032:INFO:org.eclipse.jetty.deploy.providers.ScanningAppProvider:main: Deployment monitor [file:/opt/jetty/demo-base/webapps/] at interval 1
+2014-06-03 14:38:19.054:INFO:org.eclipse.jetty.server.handler.ContextHandler:main: Started o.e.j.s.h.MovedContextHandler@246d8660{/oldContextPath,null,AVAILABLE}
+2014-06-03 14:38:20.715:INFO:org.eclipse.jetty.server.ServerConnector:main: Started ServerConnector@59f625be{HTTP/1.1}{0.0.0.0:8080}
+2014-06-03 14:38:20.723:INFO:org.eclipse.jetty.server.Server:main: Started @243ms
+....
+
+Deprecated Parameters:
+
+These parameters existed in prior versions of Jetty, and are no longer
+supported. They are included here for historical (and search engine)
+reasons.
+
+`org.eclipse.jetty.util.log.DEBUG`::
+  Formerly used to enable DEBUG level logging on any logger used within
+  Jetty (not just Jetty's own logger).
+  +
+  Replaced with using the logger implementation specific configuration
+  and level filtering.
+`org.eclipse.jetty.util.log.stderr.DEBUG`::
+  Formerly used to enable DEBUG level logging on the internal Jetty
+  StdErrLog implementation.
+  +
+  Replaced with level specific equivalent: example:
+  `org.eclipse.jetty.LEVEL=DEBUG`
+`DEBUG`::
+  Ancient debugging flag that turned on all debugging, even non-logging
+  debugging.
+  +
+  Jetty no longer uses because many third party libraries employ this
+  overly simple property name, which would generate far too much console
+  output.

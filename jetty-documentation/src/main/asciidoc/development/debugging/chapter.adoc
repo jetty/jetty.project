@@ -1,0 +1,28 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[advanced-debugging]]
+== Debugging
+
+=== Options
+
+Given how flexible Jetty is in how it can be configured and deployed into development and production, there exists a wealth of different options for debugging your application in you favorite environment.
+In this section we will gather up some of these different options available and explain how you can use them.
+If you would like to contribute to this section simply fork the repository and contribute the information, or open a github issue with the information and we'll bring it over.
+
+include::enable-remote-debugging.adoc[]
+include::debugging-with-intellij.adoc[]
+include::debugging-with-eclipse.adoc[]

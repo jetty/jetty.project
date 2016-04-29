@@ -1,0 +1,70 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[jetty-websocket-api-session]]
+=== WebSocket Session
+
+The link:{JDURL}/org/eclipse/jetty/websocket/api/Session.html[Session] object can be used to:
+
+The Connection State (is it open or not).
+
+[source,java]
+----
+if(session.isOpen()) {
+  // send message
+}
+----
+
+Is the Connection Secure.
+
+[source,java]
+----
+if(session.isSecure()) {
+  // connection is using 'wss://'
+}
+----
+
+What was in the Upgrade Request and Response.
+
+[source,java]
+----
+UpgradeRequest req = session.getUpgradeRequest();
+String channelName = req.getParameterMap().get("channelName");
+
+UpgradeRespons resp = session.getUpgradeResponse();
+String subprotocol = resp.getAcceptedSubProtocol();
+----
+
+What is the Local and Remote Address.
+
+[source,java]
+----
+InetSocketAddress remoteAddr = session.getRemoteAddress();
+----
+
+Get and Set the Idle Timeout
+
+[source,java]
+----
+session.setIdleTimeout(2000); // 2 second timeout
+----
+
+Get and Set the Maximum Message Size
+
+[source,java]
+----
+session.setMaximumMessageSize(64*1024); // accept messages up to 64k, fail if larger
+----

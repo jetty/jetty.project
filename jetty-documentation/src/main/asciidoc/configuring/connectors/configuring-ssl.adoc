@@ -1,0 +1,684 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[configuring-ssl]]
+=== Configuring SSL/TLS
+
+This document provides an overview of how to configure SSL and TLS for
+Jetty.
+
+[[tls-and-ssl-versions]]
+==== TLS and SSL versions
+
+Which browser/OS supports which protocols can be
+https://en.wikipedia.org/wiki/Transport_Layer_Security#Web_browsers[found
+on Wikipedia]
+
+* TLS v1.1 and v1.2: The protocols which should be used wherever
+possible. All CBC based ciphers are supported since Java 7, the new GCM
+modes are supported since Java 8.
+* TLS v1.0: still OK but affected by the POODLE attack too. To support
+older browsers this protocol version is still needed.
+* SSL v3: is now deprecated and should only be enabled if you still need
+to support very old browsers like Internet Explorer 6 on Windows XP
+which does not support TLS 1.0 (or is disabled by default).
+
+[[understanding-certificates-and-keys]]
+==== Understanding Certificates and Keys
+
+Configuring SSL can be a confusing experience of keys, certificates,
+protocols and formats, thus it helps to have a reasonable understanding
+of the basics. The following links provide some good starting points:
+
+* Certificates:
+** http://en.tldp.org/HOWTO/SSL-Certificates-HOWTO/index.html[SSL
+Certificates HOWTO]
+** http://mindprod.com/jgloss/certificate.html[Mindprod Java Glossary:
+Certificates]
+* Keytool:
+** http://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html[Keytool
+for Unix]
+** http://docs.oracle.com/javase/8/docs/technotes/tools/windows/keytool.html[Keytool
+for Windows]
+* Other tools:
+** https://www.ibm.com/developerworks/mydeveloperworks/groups/service/html/communityview?communityUuid=6fb00498-f6ea-4f65-bf0c-adc5bd0c5fcc[IBM
+Keyman]
+* OpenSSL:
+** http://www.openssl.org/support/faq.html[OpenSSL FAQ]
+
+[[openssl-vs-keytool]]
+===== OpenSSL vs. Keytool
+
+For testing, the `keytool` utility bundled with the JDK provides the
+simplest way to generate the key and certificate you need.
+
+You can also use the OpenSSL tools to generate keys and certificates, or
+to convert those that you have used with Apache or other servers. Since
+Apache and other servers commonly use the OpenSSL tool suite to generate
+and manipulate keys and certificates, you might already have some keys
+and certificates created by OpenSSL, or you might also prefer the
+formats OpenSSL produces.
+
+If you want the option of using the same certificate with Jetty or a web
+server such as Apache not written in Java, you might prefer to generate
+your private key and certificate with OpenSSL.
+
+[[configuring-jetty-for-ssl]]
+===== Configuring Jetty for SSL
+
+To configure Jetty for SSL, complete the tasks in the following
+sections:
+
+* xref:generating-key-pairs-and-certificates[]
+* xref:requesting-trusted-certificate[]
+* xref:loading-keys-and-certificates[]
+* xref:configuring-sslcontextfactory[]
+
+[[generating-key-pairs-and-certificates]]
+===== Generating Key Pairs and Certificates
+
+The simplest way to generate keys and certificates is to use the
+`keytool` application that comes with the JDK, as it generates keys and
+certificates directly into the keystore. See
+xref:generating-key-pairs-and-certificates-JDK-keytool[].
+
+If you already have keys and certificates, see
+xref:loading-keys-and-certificates[] to load them into a
+JSSE keystore. This section also applies if you have a renewal
+certificate to replace one that is expiring.
+
+The examples below generate only basic keys and certificates. You should
+read the full manuals of the tools you are using if you want to specify:
+
+* the key size
+* the certificate expiration date
+* alternate security providers
+
+[[generating-key-pairs-and-certificates-JDK-keytool]]
+====== Generating Keys and Certificates with JDK's keytool
+
+The following command generates a key pair and certificate directly into
+file `keystore`:
+
+....
+$ keytool -keystore keystore -alias jetty -genkey -keyalg RSA
+....
+
+____
+[NOTE]
+The DSA key algorithm certificate produces an error after loading several pages.
+In a browser, it displays a message "Could not establish an encrypted connection because certificate presented by localhost as an invalid signature."
+The solution is to use RSA for the key algorithm.
+____
+
+This command prompts for information about the certificate and for
+passwords to protect both the keystore and the keys within it. The only
+mandatory response is to provide the fully qualified host name of the
+server at the "first and last name" prompt. For example:
+
+....
+$ keytool -keystore keystore -alias jetty -genkey -keyalg RSA -sigalg SHA256withRSA
+ Enter keystore password:  password
+ What is your first and last name?
+   [Unknown]:  jetty.eclipse.org
+ What is the name of your organizational unit?
+   [Unknown]:  Jetty
+ What is the name of your organization?
+   [Unknown]:  Mort Bay Consulting Pty. Ltd.
+ What is the name of your City or Locality?
+   [Unknown]:
+ What is the name of your State or Province?
+   [Unknown]:
+ What is the two-letter country code for this unit?
+   [Unknown]:
+ Is CN=jetty.eclipse.org, OU=Jetty, O=Mort Bay Consulting Pty. Ltd.,
+ L=Unknown, ST=Unknown, C=Unknown correct?
+   [no]:  yes
+
+ Enter key password for <jetty>
+         (RETURN if same as keystore password):
+ $
+....
+
+You now have the minimal requirements to run an SSL connection and could
+proceed directly to link:#configuring-sslcontextfactory[configure an SSL
+connector]. However the browser will not trust the certificate you have
+generated, and prompts the user to this effect. While what you have at
+this point is often sufficient for testing, most public sites need a
+trusted certificate, as shown in the section
+link:#generating-csr-from-keytool[generating a CSR with keytool].
+
+If you want to use only a self signed certificate for some kind of
+internal admin panel add -validity <days> to the keytool call above,
+otherwise your certificate is only valid for one month.
+
+If you are using java 8 or later, then you may also use the SAN
+extension to set one or more names that the certificate applies to:
+
+....
+$ keytool -keystore keystore -alias jetty -genkey -keyalg RSA -sigalg SHA256withRSA -ext 'SAN=dns:jetty.eclipse.org,dns:*.jetty.org'
+ ...
+....
+
+[[generating-keys-and-certificates-openssl]]
+====== Generating Keys and Certificates with OpenSSL
+
+The following command generates a key pair in the file `jetty.key`:
+
+....
+$ openssl genrsa -aes128 -out jetty.key
+....
+
+You might also want to use the `-rand` file argument to provide an
+arbitrary file that helps seed the random number generator.
+
+The following command generates a certificate for the key into the file
+` jetty.crt`:
+
+....
+$ openssl req -new -x509 -newkey rsa:2048 -sha256 -key jetty.key -out jetty.crt
+....
+
+Adding -sha256 ensures to get a certificate with the now recommended
+SHA-256 signature algorithm. For the paranoid ones add -b4096 to get a
+4069bits long key.
+
+The next command prompts for information about the certificate and for
+passwords to protect both the keystore and the keys within it. The only
+mandatory response is to provide the fully qualified host name of the
+server at the "Common Name" prompt. For example:
+
+....
+$ openssl genrsa -aes128 -out jetty.key
+Generating RSA private key, 2048 bit long modulus
+..............+++
+......................................................................+++
+e is 65537 (0x10001)
+Enter pass phrase for jetty.key:
+Verifying - Enter pass phrase for jetty.key:
+
+$ openssl req -new -x509 -newkey rsa:2048 -sha256 -key jetty.key -out jetty.crt
+Enter pass phrase for jetty.key:
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [AU]:
+State or Province Name (full name) [Some-State]:
+Locality Name (eg, city) []:
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:Mort Bay Consulting Pty. Ltd.
+Organizational Unit Name (eg, section) []:Jetty
+Common Name (e.g. server FQDN or YOUR name) []:jetty.eclipse.org
+Email Address []:
+
+$
+....
+
+You now have the minimal requirements to run an SSL connection and could
+proceed directly to xref:loading-keys-and-certificates[]
+to load these keys and certificates into a JSSE keystore. However the
+browser will not trust the certificate you have generated, and prompts
+the user to this effect. While what you have at this point is often
+sufficient for testing, most public sites need a trusted certificate, as
+shown in the section, xref:generating-csr-from-openssl[]
+to obtain a certificate.
+
+[[using-keys-and-certificates-from-other-sources]]
+====== Using Keys and Certificates from Other Sources
+
+If you have keys and certificates from other sources, you can proceed
+directly to xref:loading-keys-and-certificates[].
+
+[[requesting-trusted-certificate]]
+===== Requesting a Trusted Certificate
+
+The keys and certificates generated with JDK's `keytool` and OpenSSL are
+sufficient to run an SSL connector. However the browser will not trust
+the certificate you have generated, and it will prompt the user to this
+effect.
+
+To obtain a certificate that most common browsers will trust, you need
+to request a well-known certificate authority (CA) to sign your
+key/certificate. Such trusted CAs include: AddTrust, Entrust, GeoTrust,
+RSA Data Security, Thawte, VISA, ValiCert, Verisign, and beTRUSTed,
+among others. Each CA has its own instructions (look for JSSE or OpenSSL
+sections), but all involve a step that generates a certificate signing
+request (CSR).
+
+[[generating-csr-from-keytool]]
+====== Generating a CSR with keytool
+
+The following command generates the file `jetty.csr` using `keytool` for
+a key/cert already in the keystore:
+
+....
+$ keytool -certreq -alias jetty -keystore keystore -file jetty.csr
+....
+
+[[generating-csr-from-openssl]]
+====== Generating a CSR from OpenSSL
+
+The following command generates the file `jetty.csr` using OpenSSL for a
+key in the file `jetty.key`:
+
+....
+$ openssl req -new -key jetty.key -out jetty.csr
+....
+
+Notice that this command uses only the existing key from `jetty.key`
+file, and not a certificate in `jetty.crt` as generated with OpenSSL.
+You need to enter the details for the certificate again.
+
+[[loading-keys-and-certificates]]
+===== Loading Keys and Certificates
+
+Once a CA has sent you a certificate, or if you generated your own
+certificate without `keytool`, you need to load it into a JSSE keystore.
+
+____
+[NOTE]
+You need both the private key and the certificate in the JSSE keystore.
+You should load the certificate into the keystore used to generate the
+CSR with `keytool`. If your key pair is not already in a keystore (for
+example, because it has been generated with OpenSSL), you need to use
+the PKCS12 format to load both key and certificate (see
+link:#loading-keys-and-certificates-via-pkcks12[PKCKS12 Keys &
+Certificates]).
+____
+
+[[loading-certificates-with-keytool]]
+====== Loading Certificates with keytool
+
+You can use `keytool` to load a certificate in PEM form directly into a
+keystore. The PEM format is a text encoding of certificates; it is
+produced by OpenSSL, and is returned by some CAs. An example PEM file
+is:
+
+....
+jetty.crt
+-----BEGIN CERTIFICATE-----
+MIICSDCCAfKgAwIBAgIBADANBgkqhkiG9w0BAQQFADBUMSYwJAYDVQQKEx1Nb3J0
+IEJheSBDb25zdWx0aW5nIFB0eS4gTHRkLjEOMAwGA1UECxMFSmV0dHkxGjAYBgNV
+BAMTEWpldHR5Lm1vcnRiYXkub3JnMB4XDTAzMDQwNjEzMTk1MFoXDTAzMDUwNjEz
+MTk1MFowVDEmMCQGA1UEChMdTW9ydCBCYXkgQ29uc3VsdGluZyBQdHkuIEx0ZC4x
+DjAMBgNVBAsTBUpldHR5MRowGAYDVQQDExFqZXR0eS5tb3J0YmF5Lm9yZzBcMA0G
+CSqGSIb3DQEBAQUAA0sAMEgCQQC5V4oZeVdhdhHqa9L2/ZnKySPWUqqy81riNfAJ
+7uALW0kEv/LtlG34dOOcVVt/PK8/bU4dlolnJx1SpiMZbKsFAgMBAAGjga4wgasw
+HQYDVR0OBBYEFFV1gbB1XRvUx1UofmifQJS/MCYwMHwGA1UdIwR1MHOAFFV1gbB1
+XRvUx1UofmifQJS/MCYwoVikVjBUMSYwJAYDVQQKEx1Nb3J0IEJheSBDb25zdWx0
+aW5nIFB0eS4gTHRkLjEOMAwGA1UECxMFSmV0dHkxGjAYBgNVBAMTEWpldHR5Lm1v
+cnRiYXkub3JnggEAMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEEBQADQQA6NkaV
+OtXzP4ayzBcgK/qSCmF44jdcARmrXhiXUcXzjxsLjSJeYPJojhUdC2LQKy+p4ki8
+Rcz6oCRvCGCe5kDB
+-----END CERTIFICATE-----
+....
+
+The following command loads a PEM encoded certificate in the `jetty.crt`
+file into a JSSE keystore:
+
+....
+$ keytool -keystore keystore -import -alias jetty -file jetty.crt -trustcacerts
+....
+
+If the certificate you receive from the CA is not in a format that
+`keytool` understands, you can use the `openssl` command to convert
+formats:
+
+....
+$ openssl x509 -in jetty.der -inform DER -outform PEM -out jetty.crt
+....
+
+[[loading-keys-and-certificates-via-pkcks12]]
+====== Loading Keys and Certificates via PKCS12
+
+If you have a key and certificate in separate files, you need to combine
+them into a PKCS12 format file to load into a new keystore. The
+certificate can be one you generated yourself or one returned from a CA
+in response to your CSR.
+
+The following OpenSSL command combines the keys in `jetty.key` and the
+certificate in the `jetty.crt` file into the `jetty.pkcs12` file:
+
+....
+$ openssl pkcs12 -inkey jetty.key -in jetty.crt -export -out jetty.pkcs12
+....
+
+If you have a chain of certificates, because your CA is an intermediary,
+build the PKCS12 file as follows:
+
+....
+$ cat example.crt intermediate.crt [intermediate2.crt] ... rootCA.crt > cert-chain.txt
+$ openssl pkcs12 -export -inkey example.key -in cert-chain.txt -out example.pkcs12
+....
+
+The order of certificates must be from server to rootCA, as per RFC2246
+section 7.4.2.
+
+OpenSSL asks for an __export password__. A non-empty password is
+required to make the next step work. Then load the resulting PKCS12 file
+into a JSSE keystore with `keytool`:
+
+....
+$ keytool -importkeystore -srckeystore jetty.pkcs12 -srcstoretype PKCS12 -destkeystore keystore
+....
+
+[[renewing-certificates]]
+===== Renewing Certificates
+
+If you are updating your configuration to use a newer certificate, as
+when the old one is expiring, just load the newer certificate as
+described in the section,
+xref:loading-keys-and-certificates[]. If you imported the
+key and certificate originally using the PKCS12 method, use an alias of
+"1" rather than "jetty", because that is the alias the PKCS12 process
+enters into the keystore.
+
+[[configuring-sslcontextfactory]]
+==== Configuring the Jetty SslContextFactory
+
+The generated SSL certificates from above are held in the key store are
+configured in an instance of
+link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html[SslContextFactory]
+object.
+
+The SslContextFactory is responsible for:
+
+* Creating the Java `SslEngine` used by Jetty's Connectors and Jetty's
+Clients (HTTP/1, HTTP/2, and WebSocket).
+* Managing Keystore Access
+* Managing Truststore Access
+* Managing Protocol selection via Excludes / Includes list
+* Managing Cipher Suite selection via Excludes / Includes list
+* Managing order of Ciphers offered (important for TLS/1.2 and HTTP/2
+support)
+* SSL Session Caching options
+* Certificate https://en.wikipedia.org/wiki/Revocation_list[Revocation
+Lists] and Distribution Points (CRLDP)
+* https://en.wikipedia.org/wiki/Online_Certificate_Status_Protocol[OCSP]
+Support
+* Client Authentication Support
+
+For Jetty Connectors, the configured `SslContextFactory` is injected
+into a specific `ServerConnector` `SslConnectionFactory`.
+
+For Jetty Clients, the various constructors support using a configured
+`SslContextFactory`.
+
+While the SslContextFactory can operate without a keystore (this mode is
+most suitable for the various Jetty Clients) it is best if you at least
+configure the Keystore you are using.
+
+setKeyStorePath::
+  The configured keystore to use for all SSL/TLS in configured Jetty
+  Connector (or Client).
++
+____
+[NOTE]
+as a keystore is vital security information, it can be desirable to   locate the file in a directory with very restricted access.
+____
+
+setKeyStorePassword::
+  The keystore password may be set here in plain text, or as some
+  protection from casual observation, it may be obfuscated using the
+  link:{JDURL}/org/eclipse/jetty/util/security/Password.html[Password]
+  class.
+setTrustStorePath::
+  This is used if validating client certificates and is typically set to
+  the same path as the keystore.
+setKeyManagerPassword::
+  is a password that is passed to the `KeyManagerFactory.init(...)`. If
+  there is no keymanagerpassword, then the keystorepassword is used
+  instead. If there is no trustmanager set, then the keystore is used as
+  the trust store and the keystorepassword is used as the truststore
+  password
+setExcludeCipherSuites / setIncludeCipherSuites::
+  This allows for the customization of the selected Cipher Suites that
+  will be used by SSL/TLS
+setExcludeProtocols / setIncludeProtocols::
+  This allows for the customization of the selected Protocols that will
+  be used by SSL/TLS
+
+____
+[NOTE]
+When working with Includes / Excludes, it is important to know that Excludes will always win.
++
+The selection process is to process the JVM list of available Cipher Suites or Protocols against the include list, then remove the excluded ones.
++
+Be aware that each Include / Exclude list has a Set method (replace the
+list) or Add method (append the list)
+____
+
+____
+[CAUTION]
+The key and truststore passwords may also be set using the system properties: `org.eclipse.jetty.ssl.keypassword` `org.eclipse.jetty.ssl.password`.
++
+This is _not_ a recommended usage.
+____
+
+==== Configuring SSL in Jetty Distribution
+
+For those of you using the Jetty Distribution, the provided modules for
+https and http2 will automatically setup the SslContextFactory, the
+appropriate SslConnectionFactory, and associated ServerConnectors for
+you, in the correct order.
+
+An example of this setup:
+
+[source,plain]
+----
+$ cd /path/to/mybase
+$ java -jar /path/to/jetty-dist/start.jar --add-to-start=https
+INFO: ssl             initialised (transitively) in ${jetty.base}/start.ini
+INFO: https           initialised in ${jetty.base}/start.ini
+INFO: Base directory was modified
+$ ls -l
+drwxrwxr-x.  2 user group  4096 Feb  2 11:47 etc/
+-rw-rw-r--.  1 user group  4259 Feb  2 11:47 start.ini
+$ ls -l etc
+-rw-rw-r--.  1 user group  3697 Feb  2 11:47 keystore
+----
+
+When you check your start.ini, you'll see many commented properties
+ready for you to configure the SslContextFactory basics.
+
+To highlight some of the more commonly used properties:
+
+jetty.ssl.host::
+  Configures which interfaces the SSL/TLS Connector should listen on
+jetty.ssl.port::
+  Configures which port the SSL/TLS Connector should listen on
+jetty.httpConfig.securePort::
+  If a webapp needs to redirect to a secure version of the same
+  resource, then this is the port reported back on the Response
+  `Location` line (Having this be separate is useful if you have
+  something sitting in front of Jetty, such as a Load Balancer or proxy)
+jetty.sslContext.keyStorePath::
+  Sets the location of the `keystore` that you configured with your
+  certificates
+jetty.sslContext.keyStorePassword::
+  Sets the Password for the `keystore`
+
+==== Configuring SNI
+
+From java8, the JVM contains support for the
+http://en.wikipedia.org/wiki/Server_Name_Indication[Server Name
+Indicator (SNI)] extension, which allows a SSL connection handshake to
+indicate one or more DNS names that it applies to. To support this, the
+ExtendedSslContextFactory is used that will look for multiple X509
+certificates within the keystore, each of which may have multiple DNS
+names (including wildcards) associated with the
+http://en.wikipedia.org/wiki/SubjectAltName[Subject Alternate Name]
+extension. When using the ExtendedSSlContextFactory, the correct
+certificate is automatically selected if the SNI extension is present in
+the handshake.
+
+[[configuring-sslcontextfactory-cipherSuites]]
+==== Disabling/Enabling Specific Cipher Suites
+
+For example to avoid the BEAST attack it is necessary to configure a
+specific set of cipher suites. This can either be done via
+link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setIncludeCipherSuites(java.lang.String...)[SslContext.setIncludeCipherSuites(java.lang.String...)]
+or
+vialink:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setExcludeCipherSuites(java.lang.String...)[SslContext.setExcludeCipherSuites(java.lang.String...)].
+
+____
+[NOTE]
+It's crucial that you use the exact names of the cipher suites as used/known by the JDK.
+You can get them by obtaining an instance of SSLEngine and call getSupportedCipherSuites().
+Tools like ssllabs.com might report slightly different names which will be ignored.
+____
+
+____
+[NOTE]
+It's recommended to install the Java Cryptography Extension (JCE) Unlimited Strength policy files in your JRE to get full strength ciphers like AES-256.
+They can be found on the http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java download page].
+Just overwrite the two present JAR files in `<JRE_HOME>/lib/security/`
+____
+
+Both setIncludeCipherSuites and setExcludeCipherSuites can be feed by
+the exact cipher suite name used in the JDK or by using regular
+expressions.
+
+If you have a need to adjust the Includes or Excludes, then this is best
+done with a custom blow-in XML that configures the SslContextFactory to
+suit your needs.
+
+To do this, first create a new `${jetty.base}/etc/tweak-ssl.xml` (this
+can be any name, just avoid prefixing it with "jetty-")
+
+[source,xml]
+----
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" 
+          "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!-- Tweak SsslContextFactory Includes / Excludes -->
+<Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
+  <!-- Mitigate SLOTH Attack -->
+  <Call name="addExcludeCipherSuites">
+    <Arg>
+      <Array type="String">
+        <Item>.*_RSA_.*SHA1$</Item>
+        <Item>.*_RSA_.*SHA$</Item>
+        <Item>.*_RSA_.*MD5$</Item>
+      </Array>
+    </Arg>
+  </Call>
+</Configure>
+----
+
+This new XML will configure the id `sslContextFactory` some more (this
+id is first created by the `ssl` module and its associated
+`${jetty.home}/etc/jetty-ssl-context.xml`). You can do anything you want
+with the `SslContextFactory` in use by the Jetty Distribution from this
+tweak XML.
+
+To make sure that your `${jetty.base}` uses this new XML, add it to the
+end of your `${jetty.base}/start.ini`
+
+[source,plain]
+----
+$ cd /path/to/mybase
+$ ls -l
+drwxrwxr-x.  2 user group  4096 Feb  2 11:47 etc/
+-rw-rw-r--.  1 user group  4259 Feb  2 11:47 start.ini
+$ tail start.ini
+# Module: https
+--module=https
+etc/tweak-ssl.xml
+$ 
+----
+
+____
+[NOTE]
+The default SslContextFactory implementation applies the latest SSL/TLS recommendations surrounding vulnerabilities in SSL/TLS.
+Check the release notes (The `VERSION.txt` found in the root of the Jetty Distribution, or the http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.eclipse.jetty%22%20AND%20a%3A%22jetty-project%22[alternate (classified 'version') artifacts for the `jetty-project` component]on Maven Central) for updates.
++
+The Java JVM is also applying exclusions at the JVM level, and as such, if you have a need to enable something that is generally accepted by the industry as being insecure or vulnerable you will likely have to enable it in BOTH the Java JVM and the Jetty configuration.
+____
+
+____
+[TIP]
+You can enable the `org.eclipse.jetty.util.ssl` named logger at DEBUG
+level to see what the list of selected Protocols and Cipher suites are
+at startup of Jetty.
+____
+
+Some other Include / Exclude examples:
+
+Example: Include all ciphers which support
+https://en.wikipedia.org/wiki/Forward_secrecy[Forward Secrecy] using
+regex:
+
+[source,xml]
+----
+  <!-- Enable Forward Secrecy Ciphers.
+       Note: this replaces the default Include Cipher list -->
+  <Set name="IncludeCipherSuites">
+    <Array type="String">
+      <Item>TLS_DHE_RSA.*</Item>
+      <Item>TLS_ECDHE.*</Item>
+    </Array>
+  </Set>              
+----
+
+Example: Exclude all old, insecure or anonymous cipher suites:
+
+[source,xml]
+----
+  <!-- Eliminate Old / Insecure / Anonymous Ciphers -->
+  <Call name="addExcludeCipherSuites">
+    <Arg>
+      <Array type="String">
+        <Item>.*NULL.*</Item>
+        <Item>.*RC4.*</Item>
+        <Item>.*MD5.*</Item>
+        <Item>.*DES.*</Item>
+        <Item>.*DSS.*</Item>
+      </Array>
+    </Arg>
+  </Call>            
+----
+
+Example: Since 2014 SSLv3 is considered insecure and should be disabled.
+
+[source,xml]
+----
+  <!-- Eliminate Insecure Protocols -->
+  <Call name="addExcludeProtocols">
+    <Arg>
+     <Array type="java.lang.String">
+       <Item>SSL</Item>
+       <Item>SSLv2</Item>
+       <Item>SSLv2Hello</Item>
+       <Item>SSLv3</Item>
+     </Array>
+    </Arg>
+  </Call>            
+----
+
+____
+[NOTE]
+Note that disabling SSLv3 prevents very old browsers like Internet Explorer 6 on Windows XP from connecting.
+____
+
+Example: TLS renegotiation could be disabled too to prevent an attack based on this feature.
+
+[source,xml]
+----
+  <Set name="renegotiationAllowed">FALSE</Set>          
+----

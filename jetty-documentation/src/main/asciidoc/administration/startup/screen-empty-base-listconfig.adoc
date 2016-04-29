@@ -1,0 +1,66 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+....
+[mybase]$ java -jar /opt/jetty-distribution/start.jar --list-config
+
+Java Environment:
+-----------------
+ java.home = /lib/jvm/jdk-8u45/jre
+ java.vm.vendor = Oracle Corporation
+ java.vm.version = 25.45-b02
+ java.vm.name = Java HotSpot(TM) 64-Bit Server VM
+ java.vm.info = mixed mode
+ java.runtime.name = Java(TM) SE Runtime Environment
+ java.runtime.version = 1.8.0_45-b14
+ java.io.tmpdir = /tmp
+ user.dir = /home/jetty/mybase
+ user.language = en
+ user.country = US
+
+Jetty Environment:
+-----------------
+ jetty.version = @project.version@
+ jetty.home = /opt/jetty-distribution
+ jetty.base = /home/jetty/mybase
+
+Config Search Order:
+--------------------
+ <command-line>
+ ${jetty.base} -> /home/jetty/mybase
+ ${jetty.home} -> /opt/jetty-distribution
+
+
+JVM Arguments:
+--------------
+ (no jvm args specified)
+
+System Properties:
+------------------
+ (no system properties specified)
+
+Properties:
+-----------
+ (no properties specified)
+
+Jetty Server Classpath:
+-----------------------
+No classpath entries and/or version information available show.
+
+Jetty Active XMLs:
+------------------
+ (no xml files specified)
+....

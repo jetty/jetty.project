@@ -1,0 +1,123 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[configuring-jetty-request-logs]]
+= Configuring Jetty Request Logs
+
+Request logs are a record of the requests that the server has processed.
+There is one entry per request received, and commonly in the standard
+NCSA format, so you can use tools like
+http://en.wikipedia.org/wiki/Webalizer[Webalizer] to analyze them
+conveniently.
+
+[[constructing-request-log-entry]]
+== Constructing a Request Log Entry
+
+A standard request log entry includes the client IP address, date,
+method, URL, result, size, referrer, and user agent, for example:
+
+....
+123.4.5.6 - - [27/Aug/2004:10:16:17 +0000]
+  "GET /jetty/tut/XmlConfiguration.html HTTP/1.1"
+  200 76793 "http://localhost:8080/jetty/tut/logging.html"
+  "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040614 Firefox/0.8"
+....
+
+[[implementing-request-log]]
+== Implementing a Request Log
+
+Jetty provides an implementation called _`NCSARequestLog`_ which
+supports the NCSA format in files that you can roll over on a daily
+basis.
+
+The http://logback.qos.ch/[Logback Project] offers
+http://logback.qos.ch/access.html[another implementation] of a
+RequestLog interface, providing rich and powerful HTTP-access log
+functionality.
+
+If neither of these options meets your needs, you can implement a custom
+request logger by implementing Jetty's
+link:{JDURL}/org/eclipse/jetty/server/RequestLog.html[`RequestLog.java`]
+interface and plugging it in similar to the NCSARequestLog, as shown
+below.
+
+[[configuring-request-log]]
+== Configuring a Request Log
+
+To configure a single request log for the entire Jetty Server instance:
+
+[source,xml]
+----
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Set name="RequestLog">
+    <New id="RequestLog" class="org.eclipse.jetty.server.AsyncNCSARequestLog">
+      <Set name="filename">/var/log/jetty/yyyy_mm_dd.request.log</Set>
+      <Set name="append">true</Set>
+      <Set name="extended">false</Set>
+      <Set name="LogTimeZone">GMT</Set>
+    </New>
+  </Set>
+</Configure>
+----
+
+The equivalent code is:
+
+[source,java]
+----
+NCSARequestLog requestLog = new NCSARequestLog("/var/logs/jetty/jetty-yyyy_mm_dd.request.log");
+requestLog.setAppend(true);
+requestLog.setExtended(false);
+requestLog.setLogTimeZone("GMT");
+
+server.setRequestLog(requestLog);
+----
+
+This configures a request log in `$JETTY_HOME/logs` with filenames
+including the date. Old log files are kept for 90 days before being
+deleted. Existing log files are appended to and the extended NCSA format
+is used in the GMT timezone.
+
+To examine many more configuration options, see
+link:{JDURL}/org/eclipse/jetty/server/NCSARequestLog.html[NCSARequestLog.java]
+
+[[configuring-separate-request-log-for-web-application]]
+== Configuring a Separate Request Log For a Web Application
+
+To configure a separate request log for a web application, add the
+following to the context XML file.
+
+[source,xml]
+----
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  ...
+  <Call name="insertHandler">
+    <Arg>
+      <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler">
+        <Set name="requestLog">
+          <New id="RequestLogImpl" class="org.eclipse.jetty.server.NCSARequestLog">
+            <Set name="filename"><Property name="jetty.logs" default="./logs"/>/test-yyyy_mm_dd.request.log</Set>
+            <Set name="filenameDateFormat">yyyy_MM_dd</Set>
+            <Set name="LogTimeZone">GMT</Set>
+            <Set name="retainDays">90</Set>
+            <Set name="append">true</Set>
+          </New>
+        </Set>
+      </New>
+    </Arg>
+  </Call>
+  ...
+</Configure>      
+----

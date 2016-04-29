@@ -1,0 +1,39 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[1xx-responses]]
+=== Managing 1xx Responses
+
+The http://www.ietf.org/rfc/rfc2616.txt[HTTP RFC] allows for 1xx informational responses to be sent before a real content response. 
+Unfortunately the servlet specification does not provide a way for these to be sent, so Jetty has had to provide non-standard handling of these headers.
+
+[[100-continue]]
+==== 100 Continue
+
+The 100 Continue response should be sent by the server when a client sends a request with a Expect: 100-continue header, as the client will not send the body of the request until the 100 continue response has been sent.
+
+The intent of this feature is to allow a server to inspect the headers and to tell the client to not send a request body that might be too large or insufficiently private or otherwise unable to be handled.
+
+Jetty achieves this by waiting until the input stream or reader is obtained by the filter/servlet, before sending the 100 continues response. 
+Thus a filter/servlet may inspect the headers of a request before getting the input stream and send an error response (or redirect etc.) rather than the 100 continues.
+
+[[102-processing]]
+==== 102 Processing
+
+http://www.ietf.org/rfc/rfc2518.txt[RFC 2518] defines the 102 processing response that can be sent "when the server has a reasonable expectation that the request will take significant time to complete.
+As guidance, if a method is taking longer than 20 seconds (a reasonable, but arbitrary value) to process the server SHOULD return a 102 (Processing) response".
+
+So if a request is received with the Expect: 102-processing header, then a filter/servlet may send a 102 response (without terminating further processing) by calling `servletResponse.sendError(102);`.
