@@ -8,7 +8,7 @@ session-store
 sessions
 
 [xml]
-etc/sessions/file-session-store.xml
+etc/sessions/file/session-store.xml
 
 [files]
 sessions/

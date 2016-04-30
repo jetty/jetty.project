@@ -9,7 +9,7 @@ use sessions, but their management cannot be configured.
 server
 
 [xml]
-etc/sessions/session-id-manager.xml
+etc/sessions/id-manager.xml
 
 [ini-template]
 ## The name to uniquely identify this server instance

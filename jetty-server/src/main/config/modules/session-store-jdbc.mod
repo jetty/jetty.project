@@ -9,7 +9,7 @@ sessions
 sessions/jdbc/${db-connection-type}
 
 [xml]
-etc/sessions/jdbc-session-store.xml
+etc/sessions/jdbc/session-store.xml
 
 [ini]
 db-connection-type=datasource
@@ -23,14 +23,14 @@ db-connection-type=datasource
 #jetty.session.deleteUnloadables=false
 #jetty.session.loadAttempts=-1
 
+## Connection type:Datasource
+db-connection-type=datasource
+#jetty.session.datasourceName=/jdbc/sessions
+
 ## Connection type:driver
 #db-connection-type=driver
 #jetty.session.driverClass=
 #jetty.session.driverUrl=
-
-## Connection type:Datasource
-#db-connection-type=datasource
-#jetty.session.datasourceName=/jdbc/sessions
 
 ## Session table schema
 #jetty.sessionTableSchema.accessTimeColumn=accessTime

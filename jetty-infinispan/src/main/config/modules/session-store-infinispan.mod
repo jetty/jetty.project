@@ -6,7 +6,7 @@ session-store
 
 [depend]
 session
-sessions/infinispan/infinispan-session-${cache-type}
+sessions/infinispan/${cache-type}
 
 [files]
 maven://org.infinispan/infinispan-core/7.1.1.Final|lib/infinispan/infinispan-core-7.1.1.Final.jar

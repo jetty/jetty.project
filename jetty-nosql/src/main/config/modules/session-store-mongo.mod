@@ -20,7 +20,7 @@ http://www.mongodb.org/
 http://www.apache.org/licenses/LICENSE-2.0.html
 
 [xml]
-etc/sessions/mongo/mongo-session-store.xml
+etc/sessions/mongo/session-store.xml
 
 [ini-template]
 #jetty.session.dbName=HttpSessions

@@ -2,4 +2,4 @@
 JDBC Driver connections for session storage
 
 [xml]
-etc/sessions/jdbc/session-store-driver.xml
+etc/sessions/jdbc/driver.xml

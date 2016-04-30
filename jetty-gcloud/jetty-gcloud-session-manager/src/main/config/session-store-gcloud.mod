@@ -8,7 +8,7 @@ session-store
 annotations
 webapp
 sessions
-sessions/gcloud/gcloud-${type}
+sessions/gcloud/${type}
 
 [files]
 maven://com.google.gcloud/gcloud-java-datastore/0.0.7|lib/gcloud/gcloud-java-datastore-0.0.7.jar
@@ -46,6 +46,9 @@ maven://com.google.apis/google-api-services-datastore/v1beta2-rev23-1.19.0|lib/g
 [lib]
 lib/jetty-gcloud-session-manager-${jetty.version}.jar
 lib/gcloud/*.jar
+
+[xml]
+sessions/gcloud/session-store.xml
 
 [license]
 GCloudDatastore is an open source project hosted on Github and released under the Apache 2.0 license.

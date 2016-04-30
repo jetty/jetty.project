@@ -2,4 +2,4 @@
 Enables session storage on a local GCloudDataStore dev server.
 
 [xml]
-etc/sessions/gcloud/gcloud-local.xml
+etc/sessions/gcloud/local.xml
