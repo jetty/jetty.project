@@ -1,27 +1,20 @@
 [description]
-Enables JDBC session storage.
+Enables JDBC peristent/distributed session storage.
 
-
-[name]
-jdbc-session-store
-
-
-
-[xml]
-etc/jetty-jdbc-session-store.xml
-
+[provides]
+session-store
 
 [depend]
 sessions
 sessions/jdbc/${db-connection-type}
 
-
+[xml]
+etc/sessions/jdbc/session-store.xml
 
 [ini]
 db-connection-type=datasource
 
-
-
+[ini-template]
 ##
 ##JDBC Session properties
 ##
@@ -30,14 +23,14 @@ db-connection-type=datasource
 #jetty.session.deleteUnloadables=false
 #jetty.session.loadAttempts=-1
 
+## Connection type:Datasource
+db-connection-type=datasource
+#jetty.session.datasourceName=/jdbc/sessions
+
 ## Connection type:driver
 #db-connection-type=driver
 #jetty.session.driverClass=
 #jetty.session.driverUrl=
-
-## Connection type:Datasource
-#db-connection-type=datasource
-#jetty.session.datasourceName=/jdbc/sessions
 
 ## Session table schema
 #jetty.sessionTableSchema.accessTimeColumn=accessTime
@@ -47,7 +40,7 @@ db-connection-type=datasource
 #jetty.sessionTableSchema.expiryTimeColumn=expiryTime
 #jetty.sessionTableSchema.lastAccessTimeColumn=lastAccessTime
 #jetty.sessionTableSchema.lastSavedTimeColumn=lastSavedTime
-#jetty.sessionTableSchema.idColumn="sessionId
+#jetty.sessionTableSchema.idColumn=sessionId
 #jetty.sessionTableSchema.lastNodeColumn=lastNode
 #jetty.sessionTableSchema.virtualHostColumn=virtualHost
 #jetty.sessionTableSchema.maxIntervalColumn=maxInterval

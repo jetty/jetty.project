@@ -33,16 +33,11 @@ public class Jetty
             VERSION = pkg.getImplementationVersion();
         else
             VERSION = System.getProperty("jetty.version", "9.4.z-SNAPSHOT");
-        
+
         POWERED_BY="<a href=\"http://eclipse.org/jetty\">Powered by Jetty:// "+VERSION+"</a>";
-        
-        boolean stable=true;
-        for (char c: VERSION.toCharArray())
-        {
-            if (c!='.' && !Character.isDigit(c))
-                stable=false;
-        }
-        STABLE=stable;
+
+        // Show warning when RC# or M# is in version string
+        STABLE = !VERSION.matches("^.*\\.(RC|M)[0-9]+$");
     }
 
     private Jetty()

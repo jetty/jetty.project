@@ -1,18 +1,17 @@
 [description]
-Enables session id management and scavenging.
+The session management. By enabling this module, it allows 
+session management to be configured via the ini templates
+created or by enabling other session-cache or session-store
+modules.  Without this module enabled, the server may still
+use sessions, but their management cannot be configured.
 
-
-[name]
-sessions
-
-
+[depends]
+server
 
 [xml]
-etc/jetty-sessions.xml
-
+etc/sessions/id-manager.xml
 
 [ini-template]
-
 ## The name to uniquely identify this server instance
 #jetty.sessionIdManager.workerName=node1
 
