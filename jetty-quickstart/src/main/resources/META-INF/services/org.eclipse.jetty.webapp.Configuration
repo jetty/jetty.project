@@ -1,0 +1,3 @@
+org.eclipse.jetty.quickstart.QuickStartConfiguration
+org.eclipse.jetty.quickstart.QuickStartGeneratorConfiguration
+org.eclipse.jetty.quickstart.StopContextConfiguration

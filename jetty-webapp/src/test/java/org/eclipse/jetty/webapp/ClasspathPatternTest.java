@@ -21,24 +21,22 @@ package org.eclipse.jetty.webapp;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Arrays;
-
 import org.junit.Before;
 import org.junit.Test;
 
 public class ClasspathPatternTest
 {
-    private final ClasspathPattern pattern = new ClasspathPattern();
+    private ClasspathPattern pattern = new ClasspathPattern();
     
     @Before
     public void before()
     {
-        pattern.clear();
+        pattern = new ClasspathPattern();
         pattern.add("org.package.");
         pattern.add("-org.excluded.");
         pattern.add("org.example.FooBar");
         pattern.add("-org.example.Excluded");
-        pattern.addAll(Arrays.asList(new String[]{"-org.example.Nested$Minus","org.example.Nested","org.example.Nested$Something"}));
+        pattern.add("-org.example.Nested$Minus","org.example.Nested","org.example.Nested$Something");
     }
     
     @Test
@@ -77,28 +75,6 @@ public class ClasspathPatternTest
         assertTrue(pattern.match("org.example.Nested$Other"));
     }
     
-    @Test
-    public void testAddBefore()
-    {
-        pattern.addBefore("-org.excluded.","org.excluded.ExceptionOne","org.excluded.ExceptionTwo");
-
-        assertTrue(pattern.match("org.excluded.ExceptionOne"));
-        assertTrue(pattern.match("org.excluded.ExceptionTwo"));
-        
-        assertFalse(pattern.match("org.example.Unknown"));
-    }
-    
-    @Test
-    public void testAddAfter()
-    {
-        pattern.addAfter("org.package.","org.excluded.ExceptionOne","org.excluded.ExceptionTwo");
-
-        assertTrue(pattern.match("org.excluded.ExceptionOne"));
-        assertTrue(pattern.match("org.excluded.ExceptionTwo"));
-        
-        assertFalse(pattern.match("org.example.Unknown"));
-    }
-
     @Test
     public void testDoubledNested()
     {
