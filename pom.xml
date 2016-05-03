@@ -559,6 +559,7 @@
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
     <module>jetty-alpn</module>
+    <module>jetty-documentation</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>
@@ -768,12 +769,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>documentation</id>
-      <modules>
-        <module>jetty-documentation</module>
-      </modules>
     </profile>
     <profile>
       <id>ci</id>

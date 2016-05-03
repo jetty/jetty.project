@@ -459,7 +459,7 @@ public class MultiPartInputStreamParser
     /**
      * Throws an exception if one has been latched.
      * 
-     * @throws IOException
+     * @throws IOException the exception (if present)
      */
     protected void throwIfError ()
     throws IOException

@@ -155,7 +155,6 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param useCaches controls URLConnection caching
      * @return A Resource object.
      * @throws MalformedURLException Problem accessing URI
-     * @throws IOException Problem handling resource as file.
      */
     public static Resource newResource(String resource, boolean useCaches)       
         throws MalformedURLException, IOException
