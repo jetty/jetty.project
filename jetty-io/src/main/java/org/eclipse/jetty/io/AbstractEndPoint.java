@@ -424,7 +424,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             name=c.getSimpleName();
         }
         
-        return String.format("%s@%x{%s<->%s,%s,%s|%s,%d/%d,%s}",
+        Connection connection = getConnection();
+        return String.format("%s@%x{%s<->%s,%s,%s|%s,%d/%d,%s@%x}",
                 name,
                 hashCode(),
                 getRemoteAddress(),
@@ -434,6 +435,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                 _writeFlusher.toStateString(),
                 getIdleFor(),
                 getIdleTimeout(),
-                getConnection()==null?null:getConnection().getClass().getSimpleName());
+                connection == null ? null : connection.getClass().getSimpleName(),
+                connection == null ? 0 : connection.hashCode());
     }
 }
