@@ -103,6 +103,8 @@ public interface ExecutionStrategy
         }
 
         /**
+         * @param producer the execution strategy producer
+         * @param executor the execution strategy executor
          * @deprecated use {@code getDefault().newExecutionStrategy(Producer, Executor)} instead
          */
         @Deprecated
