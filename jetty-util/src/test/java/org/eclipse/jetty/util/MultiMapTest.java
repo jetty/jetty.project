@@ -122,7 +122,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#putValues(String, String...)}
+     * Tests {@link MultiMap#putValues(String, Object[])}
      */
     @Test
     public void testPutValues_StringArray()
@@ -138,7 +138,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#putValues(String, String...)}
+     * Tests {@link MultiMap#putValues(String, List)}
      */
     @Test
     public void testPutValues_VarArgs()

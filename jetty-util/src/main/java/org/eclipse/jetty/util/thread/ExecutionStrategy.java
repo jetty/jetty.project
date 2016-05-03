@@ -101,6 +101,8 @@ public interface ExecutionStrategy
         {
             return DefaultExecutionStrategyFactory.INSTANCE;
         }
+         * @param producer the execution strategy producer
+         * @param executor the execution strategy executor
     }
 
     public static class DefaultExecutionStrategyFactory implements Factory
