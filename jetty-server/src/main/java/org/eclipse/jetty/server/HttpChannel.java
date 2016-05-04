@@ -94,21 +94,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _state = new HttpChannelState(this);
         _request = new Request(this, newHttpInput(_state));
         _response = new Response(this, newHttpOutput());
-        
-        if (connector==null)
-        {
-            // Testing mode
-            _executor=null;
-            _requestLog=null;
-        }
-        else
-        {
-            Server server=_connector.getServer();
-            _executor=server.getThreadPool();
-            _requestLog=server.getRequestLog();
-        }
-        
-        _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
+
+        _executor = connector == null ? null : connector.getServer().getThreadPool();
+        _requestLog = connector == null ? null : connector.getServer().getRequestLog();
+
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",this,_endPoint,_endPoint.getConnection(),_state);
     }
@@ -314,7 +303,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         try
                         {
                             _request.setDispatcherType(DispatcherType.REQUEST);
-                            
+
                             List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
                             if (!customizers.isEmpty())
                             {
@@ -654,7 +643,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             // to hopefull somebody that can handle
             throw new BadMessageException(status,reason);
         }
-        
+
         try
         {
             if (action==Action.DISPATCH)

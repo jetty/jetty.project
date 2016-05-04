@@ -53,7 +53,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     public HttpChannelOverFCGI(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
     {
         super(connector, configuration, endPoint, transport);
-        this.dispatcher = new Dispatcher(connector.getExecutor(), this);
+        this.dispatcher = new Dispatcher(connector.getServer().getThreadPool(), this);
     }
 
     protected void header(HttpField field)

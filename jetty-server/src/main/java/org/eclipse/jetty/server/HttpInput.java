@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
-import java.util.Queue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ReadListener;
@@ -119,7 +119,9 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     private void wake()
     {
-        _channelState.getHttpChannel().getConnector().getExecutor().execute(_channelState.getHttpChannel());
+        HttpChannel channel = _channelState.getHttpChannel();
+        Executor executor = channel.getConnector().getServer().getThreadPool();
+        executor.execute(channel);
     }
 
 
@@ -396,7 +398,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
         return woken;
     }
-    
+
     /**
      * Adds some content to this input stream.
      *
