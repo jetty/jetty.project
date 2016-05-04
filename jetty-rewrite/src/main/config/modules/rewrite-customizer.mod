@@ -1,9 +1,13 @@
 #
 # Jetty Rewrite Customizer module
 #
-# Apply rewrite rules as a request customizer applied to all
-# connectors sharing a HttpConfiguration
-#
+[description]
+Enables a rewrite Rules container as a request customizer on
+the servers default HttpConfiguration instance
+
+[provides]
+rewrite
+
 [depend]
 server
 
