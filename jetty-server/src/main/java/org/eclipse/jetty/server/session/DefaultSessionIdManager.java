@@ -104,7 +104,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     
     /* ------------------------------------------------------------ */
     /**
-     * @param inspector inspector of sessions
+     * @param houseKeeper the housekeeper
      */
     public void setSessionHouseKeeper (HouseKeeper houseKeeper)
     {

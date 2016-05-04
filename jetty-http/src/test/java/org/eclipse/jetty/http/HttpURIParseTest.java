@@ -71,7 +71,7 @@ public class HttpURIParseTest
         {"/path/info;param#fragment",null,null,null,"/path/info;param","param",null,"fragment"},
         {"/path/info;param?query",null,null,null,"/path/info;param","param","query",null},
         {"/path/info;param?query#fragment",null,null,null,"/path/info;param","param","query","fragment"},
-        // FIXME: {"/path/info;a=b/foo;c=d",null,null,null,"/data/info;a=b/foo;c=d","foo=bar1",null,null},
+        {"/path/info;a=b/foo;c=d",null,null,null,"/path/info;a=b/foo;c=d","c=d",null,null}, // TODO #405
 
         // Protocol Less (aka scheme-less) URIs
         {"//host/path/info",null,"host",null,"/path/info",null,null,null},
