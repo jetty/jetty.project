@@ -68,7 +68,7 @@ public class TopologicalSort<T>
     }
     
     /** 
-     * An alternative to {@link #addDependency(Object, Object)}, which is
+     * An alternative to {@link #addDependency(Object, Object[])}, which is
      * equivalent to addDependency(after,before) as the after item is dependent
      * of the before item.
      * @param before The item will be sorted before the after
@@ -80,7 +80,7 @@ public class TopologicalSort<T>
     }
     
     /** Sort the passed array according to dependencies previously set with
-     * {@link #addDependency(Object, Object)}.  Where possible, ordering will be
+     * {@link #addDependency(Object, Object[])}.  Where possible, ordering will be
      * preserved if no dependency
      * @param array The array to be sorted.
      */
@@ -98,7 +98,7 @@ public class TopologicalSort<T>
     }
 
     /** Sort the passed list according to dependencies previously set with
-     * {@link #addDependency(Object, Object)}.  Where possible, ordering will be
+     * {@link #addDependency(Object, Object[])}.  Where possible, ordering will be
      * preserved if no dependency
      * @param list The list to be sorted.
      */

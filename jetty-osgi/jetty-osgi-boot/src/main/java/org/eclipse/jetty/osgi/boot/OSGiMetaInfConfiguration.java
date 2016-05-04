@@ -157,8 +157,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
     /** 
      * Consider the fragment bundles associated with the bundle of the webapp being deployed.
      * 
-     * 
-     * @see org.eclipse.jetty.webapp.WebInfConfiguration#findJars(org.eclipse.jetty.webapp.WebAppContext)
+     * @see org.eclipse.jetty.webapp.MetaInfConfiguration#findJars(org.eclipse.jetty.webapp.WebAppContext)
      */
     @Override
     protected List<Resource> findJars (WebAppContext context) 

@@ -68,9 +68,6 @@ public class Configurations extends AbstractList<Configuration>
 
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
     public static synchronized List<Configuration> getKnown()
     {
         if (__known.isEmpty())
@@ -96,10 +93,6 @@ public class Configurations extends AbstractList<Configuration>
     
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param classes
-     * @throws Exception
-     */
     public static synchronized void setKnown (String ... classes)
     {
         if (!__known.isEmpty())

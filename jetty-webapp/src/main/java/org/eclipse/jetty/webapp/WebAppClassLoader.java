@@ -143,7 +143,8 @@ public class WebAppClassLoader extends URLClassLoader
      * configured so as to allow server classes to be visible</p>
      * @param action The action to run
      * @return The return from the action
-     * @throws Exception
+     * @throws Exception when not able to run with server classes
+     * @param <T> the type of PrivilegedExceptionAction
      */
     public static <T> T runWithServerClassAccess(PrivilegedExceptionAction<T> action) throws Exception
     {

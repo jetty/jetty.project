@@ -90,10 +90,8 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  * <blockquote>
  * {@link #doStart()}:
  *   <ul>
- *     <li>{@link #preConfigure()}</li>
+ *     <li>{@link #preConfigure()}
  *       <ul>
- *         <li>{@link #loadSystemClasses()}</li>
- *         <li>{@link #loadServerClasses()}</li>
  *         <li>Add all Server class inclusions from known {@link Configurations}</li>
  *         <li>{@link #loadConfigurations()} and sort</li>
  *         <li>Add all Server class exclusions from enabled {@link Configurations}</li>
@@ -116,8 +114,8 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  *                       </ul>
  *                     </li>
  *                     <li>{@link MetaData#resolve(WebAppContext)}</li>
- *                     <li>{@link #startWebapp()}
- *                       <li>QuickStart may generate here and/or abort start</li>
+ *                     <li>{@link #startContext()}
+ *                       <li>QuickStart may generate here and/or abort start
  *                       <ul>
  *                         <li>{@link ServletContextHandler#startContext}
  *                           <ul>
@@ -129,7 +127,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  *                                 <li>{@link #callContextInitialized(javax.servlet.ServletContextListener, javax.servlet.ServletContextEvent)}</li>
  *                               </ul>
  *                             </li>
- *                             <li>{@links ServletHandler#initialize()}</li>
+ *                             <li>{@link ServletHandler#initialize()}</li>
  *                           </ul>
  *                         </li>
  *                       </ul>
@@ -463,9 +461,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * specifically:
      * <ul>
      * <li>Instantiate the {@link Configuration} instances with a call to {@link #loadConfigurations()}.
-     * <li>Setup the default System classes by calling {@link #loadSystemClasses()}
-     * <li>Setup the default Server classes by calling <code>loadServerClasses()</code>
-     * <li>Instantiates a classload (if one is not already set)
+     * <li>Instantiates a classloader (if one is not already set)
      * <li>Calls the {@link Configuration#preConfigure(WebAppContext)} method of all
      * Configuration instances.
      * </ul>
@@ -696,7 +692,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * Server classes/packages are classes used to implement the server and are hidden
      * from the context.  If the context needs to load these classes, it must have its
      * own copy of them in WEB-INF/lib or WEB-INF/classes.
-     * @param serverClasses
+     * @param serverClasses the server classes pattern
      * 
      */
     public void setServerClasspathPattern(ClasspathPattern serverClasses)
@@ -712,7 +708,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * System classes/packages are classes provided by the JVM and that
      * cannot be replaced by classes of the same name from WEB-INF,
      * regardless of the value of {@link #setParentLoaderPriority(boolean)}.
-     * @param systemClasses
+     * @param systemClasses the system classes pattern
      */
     public void setSystemClasspathPattern(ClasspathPattern systemClasses)
     {

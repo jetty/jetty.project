@@ -148,7 +148,7 @@ public interface Configuration
     interface DisabledByDefault extends Configuration {}
     
     /**
-     * A Configuration that will cause {@link Configurations#configure(WebAppContext) to abort with a false return
+     * A Configuration that will cause {@link Configurations#configure(WebAppContext)} to abort with a false return
      */
     interface AbortConfiguration extends DisabledByDefault,Configuration {}
     
