@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 /**
  * Caching HttpContent.Factory
  */
-public class CachedContentFactory implements HttpContent.Factory
+public class CachedContentFactory implements HttpContent.ContentFactory
 {
     private static final Logger LOG = Log.getLogger(CachedContentFactory.class);
 

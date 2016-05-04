@@ -65,13 +65,14 @@ import org.eclipse.jetty.util.resource.Resource;
  * Abstract resource service, used by DefaultServlet and ResourceHandler
  *
  */
-public abstract class ResourceService
+public class ResourceService
 {       
     private static final Logger LOG = Log.getLogger(ResourceService.class);
     
     private static final PreEncodedHttpField ACCEPT_RANGES = new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes");
     
-    private HttpContent.Factory _contentFactory;
+    private HttpContent.ContentFactory _contentFactory;
+    private WelcomeFactory _welcomeFactory;
     private boolean _acceptRanges=true;
     private boolean _dirAllowed=true;
     private boolean _redirectWelcome=false;
@@ -83,15 +84,24 @@ public abstract class ResourceService
     private boolean _etags=false;
     private HttpField _cacheControl;
     private List<String> _gzipEquivalentFileExtensions;
-
-    public HttpContent.Factory getContentFactory()
+    
+    
+    public HttpContent.ContentFactory getContentFactory()
     {
         return _contentFactory;
     }
 
-    public void setContentFactory(HttpContent.Factory contentFactory)
+    public void setContentFactory(HttpContent.ContentFactory contentFactory)
     {
         _contentFactory = contentFactory;
+    }
+    
+    public WelcomeFactory getWelcomeFactory() {
+      return _welcomeFactory;
+    }
+
+    public void setWelcomeFactory(WelcomeFactory welcomeFactory) {
+      _welcomeFactory = welcomeFactory;
     }
 
     public boolean isAcceptRanges()
@@ -384,7 +394,7 @@ public abstract class ResourceService
         }
         
         // look for a welcome file
-        String welcome=getWelcomeFile(pathInContext);
+        String welcome=_welcomeFactory==null?null:_welcomeFactory.getWelcomeFile(pathInContext);
         if (welcome!=null)
         {
             if (LOG.isDebugEnabled())
@@ -440,14 +450,10 @@ public abstract class ResourceService
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * Finds a matching welcome file for the supplied {@link Resource}.
-     * @param pathInContext the path of the request
-     * @return The path of the matching welcome file in context or null.
-     */
-    protected abstract String getWelcomeFile(String pathInContext);
-   
-    protected abstract void notFound(HttpServletRequest request, HttpServletResponse response) throws IOException;
+    protected void notFound(HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+    }
     
     /* ------------------------------------------------------------ */
     /* Check modification date headers.
@@ -871,4 +877,18 @@ public abstract class ResourceService
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    public interface WelcomeFactory
+    {
+      /* ------------------------------------------------------------ */
+      /**
+       * Finds a matching welcome file for the supplied {@link Resource}.
+       * @param pathInContext the path of the request
+       * @return The path of the matching welcome file in context or null.
+       */
+      String getWelcomeFile(String pathInContext);
+
+    }
 }

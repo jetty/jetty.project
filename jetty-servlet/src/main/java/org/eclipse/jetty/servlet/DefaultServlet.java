@@ -40,6 +40,7 @@ import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.server.CachedContentFactory;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -126,7 +127,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  * </pre>
  *
  */
-public class DefaultServlet extends HttpServlet implements ResourceFactory
+public class DefaultServlet extends HttpServlet implements ResourceFactory, WelcomeFactory
 {
     private static final Logger LOG = Log.getLogger(DefaultServlet.class);
 
@@ -150,42 +151,16 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     private ServletHandler _servletHandler;
     private ServletHolder _defaultHolder;
 
+    /* ------------------------------------------------------------ */
+    public DefaultServlet(ResourceService resourceService)
+    {
+        _resourceService=resourceService;
+    }
+
+    /* ------------------------------------------------------------ */
     public DefaultServlet()
     {
-        _resourceService = new ResourceService()
-        {
-            @Override
-            protected String getWelcomeFile(String pathInContext)
-            {
-                if (_welcomes==null)
-                    return null;
-
-                String welcome_servlet=null;
-                for (int i=0;i<_welcomes.length;i++)
-                {
-                    String welcome_in_context=URIUtil.addPaths(pathInContext,_welcomes[i]);
-                    Resource welcome=getResource(welcome_in_context);
-                    if (welcome!=null && welcome.exists())
-                        return _welcomes[i];
-
-                    if ((_welcomeServlets || _welcomeExactServlets) && welcome_servlet==null)
-                    {
-                        MappedResource<ServletHolder> entry=_servletHandler.getHolderEntry(welcome_in_context);
-                        if (entry!=null && entry.getResource()!=_defaultHolder &&
-                                (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcome_in_context))))
-                            welcome_servlet=welcome_in_context;
-
-                    }
-                }
-                return welcome_servlet;
-            }
-            
-            @Override
-            protected void notFound(HttpServletRequest request, HttpServletResponse response) throws IOException
-            {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND);
-            }
-        };
+        this(new ResourceService());
     }
     
     /* ------------------------------------------------------------ */
@@ -299,7 +274,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             throw new UnavailableException(e.toString());
         }
 
-        HttpContent.Factory contentFactory=_cache;
+        HttpContent.ContentFactory contentFactory=_cache;
         if (contentFactory==null)
         {
             contentFactory=new ResourceContentFactory(this,_mimeTypes,_resourceService.getPrecompressedFormats());
@@ -307,6 +282,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 _servletContext.setAttribute(resourceCache,contentFactory);
         }
         _resourceService.setContentFactory(contentFactory);
+        _resourceService.setWelcomeFactory(this);
         
         List<String> gzip_equivalent_file_extensions = new ArrayList<String>();
         String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
@@ -518,4 +494,30 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         super.destroy();
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public String getWelcomeFile(String pathInContext)
+    {
+        if (_welcomes==null)
+            return null;
+
+        String welcome_servlet=null;
+        for (int i=0;i<_welcomes.length;i++)
+        {
+            String welcome_in_context=URIUtil.addPaths(pathInContext,_welcomes[i]);
+            Resource welcome=getResource(welcome_in_context);
+            if (welcome!=null && welcome.exists())
+                return _welcomes[i];
+
+            if ((_welcomeServlets || _welcomeExactServlets) && welcome_servlet==null)
+            {
+                MappedResource<ServletHolder> entry=_servletHandler.getHolderEntry(welcome_in_context);
+                if (entry!=null && entry.getResource()!=_defaultHolder &&
+                        (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcome_in_context))))
+                    welcome_servlet=welcome_in_context;
+
+            }
+        }
+        return welcome_servlet;
+    }
 }
