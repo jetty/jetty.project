@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -51,7 +52,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *
  *
  */
-public class ResourceHandler extends HandlerWrapper implements ResourceFactory
+public class ResourceHandler extends HandlerWrapper implements ResourceFactory,WelcomeFactory
 {
     private static final Logger LOG = Log.getLogger(ResourceHandler.class);
 
@@ -61,40 +62,47 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
     MimeTypes _mimeTypes;
     private final ResourceService _resourceService;
     Resource _stylesheet;
-    String[] _welcomes =
-    { "index.html" };
+    String[] _welcomes = { "index.html" };
+
+    /* ------------------------------------------------------------ */
+    public ResourceHandler(ResourceService resourceService)
+    {
+        _resourceService=resourceService;
+    }
 
     /* ------------------------------------------------------------ */
     public ResourceHandler()
     {
-        _resourceService = new ResourceService()
+        this(new ResourceService()
         {
-            @Override
-            protected String getWelcomeFile(String pathInContext)
-            {
-                if (_welcomes == null)
-                    return null;
-
-                String welcome_servlet = null;
-                for (int i = 0; i < _welcomes.length; i++)
-                {
-                    String welcome_in_context = URIUtil.addPaths(pathInContext,_welcomes[i]);
-                    Resource welcome = getResource(welcome_in_context);
-                    if (welcome != null && welcome.exists())
-                        return _welcomes[i];
-                }
-                return welcome_servlet;
-            }
-
             @Override
             protected void notFound(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
             }
-        };
-        _resourceService.setGzipEquivalentFileExtensions(new ArrayList<>(Arrays.asList(new String[]
-        { ".svgz" })));
+        });
+        _resourceService.setGzipEquivalentFileExtensions(new ArrayList<>(Arrays.asList(new String[] { ".svgz" })));
     }
 
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public String getWelcomeFile(String pathInContext)
+    {
+        if (_welcomes == null)
+            return null;
+
+        String welcome_servlet = null;
+        for (int i = 0; i < _welcomes.length; i++)
+        {
+            String welcome_in_context = URIUtil.addPaths(pathInContext,_welcomes[i]);
+            Resource welcome = getResource(welcome_in_context);
+            if (welcome != null && welcome.exists())
+                return _welcomes[i];
+        }
+        return welcome_servlet;
+    }
+
+    
     /* ------------------------------------------------------------ */
     @Override
     public void doStart() throws Exception
@@ -104,6 +112,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
         _mimeTypes = _context == null?new MimeTypes():_context.getMimeTypes();
 
         _resourceService.setContentFactory(new ResourceContentFactory(this,_mimeTypes,_resourceService.getPrecompressedFormats()));
+        _resourceService.setWelcomeFactory(this);
 
         super.doStart();
     }
