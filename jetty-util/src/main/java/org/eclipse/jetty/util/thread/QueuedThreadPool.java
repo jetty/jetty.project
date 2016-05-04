@@ -286,7 +286,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * Set the maximum number of threads.
+     * Get the maximum number of threads.
      * Delegated to the named or anonymous Pool.
      *
      * @return maximum number of threads.

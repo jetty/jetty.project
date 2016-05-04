@@ -87,3 +87,9 @@ https://raw.githubusercontent.com/eclipse/jetty.project/master/jetty-server/src/
 
 ## To configure Includes / Excludes for Cipher Suites or Protocols see tweak-ssl.xml example at
 ## https://www.eclipse.org/jetty/documentation/current/configuring-ssl.html#configuring-sslcontextfactory-cipherSuites
+
+## Set the size of the SslSession cache
+# jetty.sslContext.sslSessionCacheSize=-1
+
+## Set the timeout (in seconds) of the SslSession cache timeout
+# jetty.sslContext.sslSessionTimeout=-1
