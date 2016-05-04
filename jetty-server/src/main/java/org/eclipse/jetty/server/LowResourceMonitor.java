@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 
-/** 
+/**
  * A monitor for low resources
  * <p>
  * An instance of this class will monitor all the connectors of a server (or a set of connectors
@@ -254,11 +254,12 @@ public class LowResourceMonitor extends AbstractLifeCycle
         String reasons=null;
         String cause="";
         int connections=0;
-        
-        if (_monitorThreads && _server.getThreadPool().isLowOnThreads())
+
+        ThreadPool serverThreads = _server.getThreadPool();
+        if (_monitorThreads && serverThreads.isLowOnThreads())
         {
-            reasons=low(reasons,"Low on threads: "+_server.getThreadPool());
-            cause+="T";
+            reasons=low(reasons,"Server low on threads: "+serverThreads);
+            cause+="S";
         }
 
         for(Connector connector : getMonitoredOrServerConnectors())
@@ -266,12 +267,12 @@ public class LowResourceMonitor extends AbstractLifeCycle
             connections+=connector.getConnectedEndPoints().size();
 
             Executor executor = connector.getExecutor();
-            if (executor instanceof ThreadPool && executor!=_server.getThreadPool())
+            if (executor instanceof ThreadPool && executor!=serverThreads)
             {
-                ThreadPool threadpool=(ThreadPool) executor;
-                if (_monitorThreads && threadpool.isLowOnThreads())
+                ThreadPool connectorThreads=(ThreadPool)executor;
+                if (_monitorThreads && connectorThreads.isLowOnThreads())
                 {
-                    reasons=low(reasons,"Low on threads: "+threadpool);
+                    reasons=low(reasons,"Connector low on threads: "+connectorThreads);
                     cause+="T";
                 }
             }
