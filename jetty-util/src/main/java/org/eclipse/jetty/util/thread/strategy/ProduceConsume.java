@@ -34,6 +34,7 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
 
     private final Producer _producer;
     private final Executor _executor;
+    private State _state = State.IDLE;
 
     public ProduceConsume(Producer producer, Executor executor)
     {
@@ -44,16 +45,31 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
     @Override
     public void execute()
     {
+        synchronized (this)
+        {
+            _state = _state == State.IDLE ? State.PRODUCE : State.EXECUTE;
+            if (_state == State.EXECUTE)
+                return;
+        }
+
         // Iterate until we are complete.
         while (true)
         {
             // Produce a task.
             Runnable task = _producer.produce();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} produced {}", this, task);
+                LOG.debug("{} produced {}", _producer, task);
 
             if (task == null)
-                break;
+            {
+                synchronized (this)
+                {
+                    _state = _state == State.PRODUCE ? State.IDLE : State.PRODUCE;
+                    if (_state == State.PRODUCE)
+                        continue;
+                    return;
+                }
+            }
 
             // Run the task.
             task.run();
@@ -79,5 +95,10 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
         {
             return new ProduceConsume(producer, executor);
         }
+    }
+
+    private enum State
+    {
+        IDLE, PRODUCE, EXECUTE
     }
 }

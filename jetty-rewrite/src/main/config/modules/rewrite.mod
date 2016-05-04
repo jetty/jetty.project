@@ -1,8 +1,10 @@
 [description]
 Enables the jetty-rewrite handler.  Specific rewrite
-rules must be added to etc/jetty-rewrite.xml
-# Install rewrite rules as a handler applied to all requests on a server
-#
+rules must be added to either to etc/jetty-rewrite.xml or a custom xml/module
+
+[provides]
+rewrite
+
 [depend]
 server
 
