@@ -69,7 +69,7 @@ public class FileSessionStoreFactory extends AbstractSessionStoreFactory
 
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
+     * @see org.eclipse.jetty.server.session.SessionStoreFactory#getSessionStore(SessionHandler)
      */
     @Override
     public SessionStore getSessionStore(SessionHandler handler)

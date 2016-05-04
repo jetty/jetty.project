@@ -2182,8 +2182,8 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @param sessionManager
-     *            The sessionManager to set.
+     * @param sessionHandler
+     *            The SessionHandler to set.
      */
     public void setSessionHandler(SessionHandler sessionHandler)
     {

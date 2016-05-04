@@ -65,7 +65,7 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionCacheFactory#getSessionStore(org.eclipse.jetty.server.session.SessionHandler)
+     * @see org.eclipse.jetty.server.session.SessionCacheFactory#getSessionCache(SessionHandler) 
      */
     @Override
     public SessionCache getSessionCache (SessionHandler handler)

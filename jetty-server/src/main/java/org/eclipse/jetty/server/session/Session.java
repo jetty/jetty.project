@@ -920,9 +920,6 @@ public class Session implements SessionHandler.SessionIf
     
     
     /* ------------------------------------------------------------- */
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionManager.SessionIf#getSession()
-     */
     @Override
     public Session getSession()
     {

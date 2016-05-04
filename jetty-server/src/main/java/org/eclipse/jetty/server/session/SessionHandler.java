@@ -471,7 +471,7 @@ public class SessionHandler extends ScopedHandler
     /**
      * Returns the <code>HttpSession</code> with the given session id
      *
-     * @param id the session id
+     * @param extendedId the session id
      * @return the <code>HttpSession</code> with the corresponding id or null if no session with the given id exists
      */
     public HttpSession getHttpSession(String extendedId)
@@ -841,7 +841,7 @@ public class SessionHandler extends ScopedHandler
     /**
      * Sets the session id URL path parameter name.
      *
-     * @param parameterName the URL path parameter name for session id URL rewriting (null or "none" for no rewriting).
+     * @param param the URL path parameter name for session id URL rewriting (null or "none" for no rewriting).
      * @see #getSessionIdPathParameterName()
      * @see #getSessionIdPathParameterNamePrefix()
      */
