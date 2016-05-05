@@ -77,7 +77,7 @@ xmlns:date="http://exslt.org/dates-and-times"
     -->
     <xsl:element name="link">
       <xsl:attribute name="rel">stylesheet</xsl:attribute>
-      <xsl:attribute name="href">css/highlighter/github.css</xsl:attribute>
+      <xsl:attribute name="href">css/highlighter/darkula.css</xsl:attribute>
     </xsl:element>
     <xsl:element name="script">
       <xsl:attribute name="src">js/highlight.pack.js</xsl:attribute>
