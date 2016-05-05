@@ -60,6 +60,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.ServerConnector;
@@ -332,7 +333,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             @Override
             protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
-                return new SelectChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout())
+                return new SocketChannelEndPoint(channel,selectSet,key,getScheduler())
                 {
                     @Override
                     public void write(Callback callback, ByteBuffer... buffers) throws IllegalStateException
