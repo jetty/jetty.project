@@ -129,7 +129,6 @@ public class ThreadStarvationTest extends HttpServerTestFixture
             assertThat(response,containsString("200 OK"));
             assertThat(response,containsString("Read Input 10"));
         }
-        
     }
     
 

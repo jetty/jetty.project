@@ -43,32 +43,30 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * pressure on producers.
  * </p>
  */
-public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
+public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements ExecutionStrategy, Runnable
 {
     private static final Logger LOG = Log.getLogger(ExecuteProduceConsume.class);
 
     private final Locker _locker = new Locker();
     private final Runnable _runExecute = new RunExecute();
     private final Producer _producer;
-    private final Executor _executor;
     private boolean _idle=true;
     private boolean _execute;
     private boolean _producing;
     private boolean _pending;
     private final ThreadPool _threadpool;
-    private final ExecutionStrategy _lowresources;
 
     public ExecuteProduceConsume(Producer producer, Executor executor)
     {
-        this(producer,executor,(executor instanceof ThreadPool)?new ProduceExecuteConsume(producer,executor):null);
+        super(executor);
+        this._producer = producer;
+        _threadpool = (executor instanceof ThreadPool)?((ThreadPool)executor):null;
     }
 
+    @Deprecated
     public ExecuteProduceConsume(Producer producer, Executor executor, ExecutionStrategy lowResourceStrategy)
     {
-        this._producer = producer;
-        this._executor = executor;
-        _threadpool = (executor instanceof ThreadPool)?((ThreadPool)executor):null;
-        _lowresources = _threadpool==null?null:lowResourceStrategy;
+        this(producer,executor);
     }
 
     @Override
@@ -100,7 +98,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
         }
 
         if (produce)
-            produceAndRun();
+            produceConsume();
     }
 
     @Override
@@ -117,7 +115,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
                 _execute=true;
         }
         if (dispatch)
-            _executor.execute(_runExecute);
+            execute(_runExecute);
     }
 
     @Override
@@ -137,28 +135,50 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
 
         if (produce)
         {
-            // If we are low on resources, then switch to PEC strategy which does not
-            // suffer as badly from thread starvation
-            while (_threadpool!=null && _threadpool.isLowOnThreads())
-            {
-                LOG.debug("EPC low resources {}",this);
-                try
-                {
-                    _lowresources.execute();
-                }
-                catch(Throwable e)
-                {
-                    // just warn if lowresources execute fails and keep producing
-                    LOG.warn(e);
-                }
-            }
+            // If we are low on threads, this could be the last thread, so we must not consume. 
+            // So call produceExecuteConsume instead
+            if (_threadpool!=null && _threadpool.isLowOnThreads() && !produceExecuteConsume())
+                return;
 
-            // no longer low resources so produceAndRun normally
-            produceAndRun();
+            produceConsume();
         }
     }
 
-    private void produceAndRun()
+    /**
+     * @return true if we are still producing
+     */
+    private boolean produceExecuteConsume()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} Low Resources",this);
+        while (_threadpool.isLowOnThreads())
+        {
+            Runnable task = _producer.produce();
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} produced {}", _producer, task);
+
+            if (task == null)
+            {
+                // No task, so we are now idle
+                try (Lock locked = _locker.lock())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} Idle Low Resources",this);
+                    _producing=false;
+                    _idle=false;
+                }
+                return false;
+            }
+
+            // Execute the task.
+            execute(task);
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} No longer Low Resources",this);
+        return true;
+    }
+    
+    private void produceConsume()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} produce enter",this);
@@ -184,6 +204,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
                 if (task == null)
                 {
                     // There is no task.
+                    // Could another one just have been queued with an execute?
                     if (_execute)
                     {
                         _idle=false;
@@ -214,30 +235,8 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
                 // Spawn a new thread to continue production by running the produce loop.
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} dispatch",this);
-                try
-                {
-                    _executor.execute(this);
-                }
-                catch(RejectedExecutionException e)
-                {
-                    // If we cannot execute, then discard/reject the task and keep producing
-                    LOG.debug(e);
-                    LOG.warn("RejectedExecution {}",task);
-                    try
-                    {
-                        if (task instanceof Rejectable)
-                            ((Rejectable)task).reject();
-                    }
-                    catch (Exception x)
-                    {
-                        e.addSuppressed(x);
-                        LOG.warn(e);
-                    }
-                    finally
-                    {
-                        task=null;
-                    }
-                }
+                if (!execute(this))
+                    task=null;
             }
 
             // Run the task.
@@ -262,6 +261,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
             LOG.debug("{} produce exit",this);
     }
 
+    
     public Boolean isIdle()
     {
         try (Lock locked = _locker.lock())

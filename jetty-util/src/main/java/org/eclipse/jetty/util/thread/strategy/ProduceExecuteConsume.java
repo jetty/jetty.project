@@ -19,41 +19,50 @@
 package org.eclipse.jetty.util.thread.strategy;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Locker;
+import org.eclipse.jetty.util.thread.Locker.Lock;
 
 /**
  * <p>A strategy where the caller thread iterates over task production, submitting each
  * task to an {@link Executor} for execution.</p>
  */
-public class ProduceExecuteConsume implements ExecutionStrategy
+public class ProduceExecuteConsume extends ExecutingExecutionStrategy implements ExecutionStrategy
 {
     private static final Logger LOG = Log.getLogger(ProduceExecuteConsume.class);
 
+    private final Locker _locker = new Locker();
     private final Producer _producer;
-    private final Executor _executor;
     private State _state = State.IDLE;
 
     public ProduceExecuteConsume(Producer producer, Executor executor)
     {
+        super(executor);
         this._producer = producer;
-        this._executor = executor;
     }
 
     @Override
     public void execute()
     {
-        synchronized (this)
+        try (Lock locked = _locker.lock())
         {
-            _state = _state == State.IDLE ? State.PRODUCE : State.EXECUTE;
-            if (_state == State.EXECUTE)
-                return;
+            switch(_state)
+            {
+                case IDLE:
+                    _state=State.PRODUCE;
+                    break;
+
+                case PRODUCE:
+                case EXECUTE:
+                    _state=State.EXECUTE;
+                    return;
+            }
         }
 
-        // Iterate until we are complete.
+        // Produce until we no task is found.
         while (true)
         {
             // Produce a task.
@@ -63,37 +72,25 @@ public class ProduceExecuteConsume implements ExecutionStrategy
 
             if (task == null)
             {
-                synchronized (this)
+                try (Lock locked = _locker.lock())
                 {
-                    _state = _state == State.PRODUCE ? State.IDLE : State.PRODUCE;
-                    if (_state == State.PRODUCE)
-                        continue;
-                    return;
+                    switch(_state)
+                    {
+                        case IDLE:
+                            throw new IllegalStateException();
+                        case PRODUCE:
+                            _state=State.IDLE;
+                            return;
+                        case EXECUTE:
+                            _state=State.PRODUCE;
+                            continue;
+                    }
                 }
             }
 
             // Execute the task.
-            try
-            {
-                _executor.execute(task);
-            }
-            catch (RejectedExecutionException e)
-            {
-                //  Discard/reject tasks that cannot be executed
-                if (task instanceof Rejectable)
-                {
-                    try
-                    {
-                        ((Rejectable)task).reject();
-                    }
-                    catch (Throwable x)
-                    {
-                        e.addSuppressed(x);
-                        LOG.warn(e);
-                    }
-                }
-            }
-        }
+            execute(task);
+        }        
     }
 
     @Override
