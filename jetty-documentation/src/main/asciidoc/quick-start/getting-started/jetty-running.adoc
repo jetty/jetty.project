@@ -19,7 +19,7 @@
 
 To start Jetty on the default port of 8080, run the following command:
 
-[source, shell]
+[source, screen]
 ....
 > cd $JETTY_HOME
 > java -jar start.jar
@@ -41,7 +41,7 @@ Instead, see how to link:#creating-jetty-base[create a Jetty Base] below.
 
 Within the standard jetty distribution there is the `demo-base` directory, which demonstrates the recommended way to run Jetty in a directory separately from $JETTY_HOME:
 
-[source, shell]
+[source, screen]
 ....
 > cd $JETTY_HOME/demo-base/
 > java -jar $JETTY_HOME/start.jar
@@ -77,7 +77,7 @@ ____
 
 You can see the configuration of the demo-base by using the following commands:
 
-[source, shell]
+[source, screen]
 ....
 > cd $JETTY_HOME/demo-base/
 > java -jar $JETTY_HOME/start.jar --list-modules
@@ -100,7 +100,7 @@ jetty.base::
 
 The `jetty.home` and `jetty.base` properties may be explicitly set on the command line, or they can be inferred from the environment if used with commands like:
 
-[source, shell]
+[source, screen]
 ....
 > cd $JETTY_BASE
 > java -jar $JETTY_HOME/start.jar
@@ -108,7 +108,7 @@ The `jetty.home` and `jetty.base` properties may be explicitly set on the comman
 
 The following commands: create a new base directory; enables a HTTP connector and the web application deployer; copies a demo webapp to be deployed:
 
-[source, shell]
+[source, screen]
 ....
 > JETTY_BASE=/tmp/mybase
 > mkdir $JETTY_BASE
@@ -145,7 +145,7 @@ INFO: Base directory was modified
 
 You can configure Jetty to run on a different port by setting the `jetty.http.port` Property on the command line:
 
-[source, shell]
+[source, screen]
 ....
 > cd $JETTY_BASE
 > java -jar $JETTY_HOME/start.jar jetty.http.port=8081
@@ -173,7 +173,7 @@ ____
 
 To add the HTTPS connector to a jetty configuration, the https module can be activated by the following command:
 
-[source, shell]
+[source, screen]
 ....
 > java -jar $JETTY_HOME/start.jar --add-to-startd=https,http2
 [...]
@@ -201,7 +201,7 @@ ____
 
 You can configure the SSL connector to run on a different port by setting the `jetty.ssl.port` property on the command line:
 
-[source, shell]
+[source, screen]
 ....
 > cd $JETTY_BASE
 > java -jar $JETTY_HOME/start.jar jetty.ssl.port=8444
@@ -216,7 +216,7 @@ If you used --add-to-start command, then you can edit this property in the start
 The job of the `start.jar` is to interpret the command line, `start.ini` and `start.d` to build a Java classpath and list of properties and configuration files to pass to the main class of the Jetty XML configuration mechanism. 
 The `start.jar` mechanism has many options which are documented in the xref:startup[] administration section and you can see them in summary by using the command:
 
-[source, shell]
+[source, screen]
 ....
 > java -jar $JETTY_HOME/start.jar --help
 ....

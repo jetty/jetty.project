@@ -157,7 +157,7 @@ xmlns:date="http://exslt.org/dates-and-times"
       </h5>
       <p>
  private support for your internal/customer projects ... custom extensions and distributions ... versioned snapshots for indefinite support ...
- scalability guidance for your apps and Ajax/Comet projects ... development services from 1 day to full product delivery
+ scalability guidance for your apps and Ajax/Comet projects ... development services for sponsored feature development
       </p>
    </div>
 
@@ -220,45 +220,29 @@ xmlns:date="http://exslt.org/dates-and-times"
     </script>
   </xsl:template>
 
-
-  <xsl:template match="d:screen">
-    <xsl:element name="div">
-      <xsl:attribute name="class">screenexample</xsl:attribute>
-      <xsl:element name="pre">
-        <xsl:attribute name="class">screen</xsl:attribute>
-        <!--<xsl:value-of select="text()"/>-->
-        <xsl:apply-templates/>
-      </xsl:element>
-    </xsl:element>
-  </xsl:template>
-
  <!-- 
    - synxtax highlighting 
    -->
   <xsl:template match="d:programlisting">
-    <pre>
-      <code>
-        <xsl:value-of select="text()"/>
-      </code>
-    </pre>
-    <!--
-
-      <xsl:variable name="startinglinenumber">
-        <xsl:choose>
-          <xsl:when test="@startinglinenumber">; first-line: <xsl:value-of select="@startinglinenumber"/></xsl:when>
-          <xsl:otherwise></xsl:otherwise>
-        </xsl:choose>
-      </xsl:variable>
-
-      <xsl:variable name="linenumbering">
-        <xsl:choose>
-          <xsl:when test="@linenumbering='unnumbered'">; gutter: false</xsl:when>
-          <xsl:otherwise></xsl:otherwise>
-        </xsl:choose>
-      </xsl:variable>
-
-      <xsl:variable name="brushstyle">;toolbar: false<xsl:copy-of select="$highlight"/><xsl:copy-of select="$startinglinenumber"/><xsl:copy-of select="$linenumbering"/></xsl:variable>
-    -->
+    <xsl:choose>
+      <xsl:when test="@language = 'screen'">
+      <xsl:element name="div">
+        <xsl:attribute name="class">screenexample</xsl:attribute>
+        <xsl:element name="pre">
+          <xsl:attribute name="class">screen</xsl:attribute>
+            <xsl:value-of select="text()"/>
+          <xsl:apply-templates/>
+        </xsl:element>
+      </xsl:element>
+      </xsl:when>
+      <xsl:otherwise>
+        <pre>
+          <code>
+            <xsl:value-of select="text()"/>
+          </code>
+        </pre>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
   
 
