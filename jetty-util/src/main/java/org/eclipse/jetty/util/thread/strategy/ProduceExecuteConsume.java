@@ -29,18 +29,17 @@ import org.eclipse.jetty.util.thread.ExecutionStrategy;
  * <p>A strategy where the caller thread iterates over task production, submitting each
  * task to an {@link Executor} for execution.</p>
  */
-public class ProduceExecuteConsume implements ExecutionStrategy
+public class ProduceExecuteConsume extends ExecutingExecutionStrategy implements ExecutionStrategy
 {
     private static final Logger LOG = Log.getLogger(ProduceExecuteConsume.class);
 
     private final Producer _producer;
-    private final Executor _executor;
     private State _state = State.IDLE;
 
     public ProduceExecuteConsume(Producer producer, Executor executor)
     {
+        super(executor);
         this._producer = producer;
-        this._executor = executor;
     }
 
     @Override
@@ -73,26 +72,7 @@ public class ProduceExecuteConsume implements ExecutionStrategy
             }
 
             // Execute the task.
-            try
-            {
-                _executor.execute(task);
-            }
-            catch (RejectedExecutionException e)
-            {
-                //  Discard/reject tasks that cannot be executed
-                if (task instanceof Rejectable)
-                {
-                    try
-                    {
-                        ((Rejectable)task).reject();
-                    }
-                    catch (Throwable x)
-                    {
-                        e.addSuppressed(x);
-                        LOG.warn(e);
-                    }
-                }
-            }
+            execute(task);
         }
     }
 
