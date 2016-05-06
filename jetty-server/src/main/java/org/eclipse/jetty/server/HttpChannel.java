@@ -592,6 +592,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             // The bad message cannot be handled in the current state, so throw
             // to hopefull somebody that can handle
+            abort(e);
             throw new BadMessageException(status,reason);
         }
 

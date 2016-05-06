@@ -49,6 +49,7 @@ In a maven project this is done just by adding a dependency on the
 artifact ID jetty-quickstart or with a standard jetty distribution you
 can run the command:
 
+[source, screen]
 ....
 $ java -jar $JETTY_HOME/start.jar --add-to-startd=quickstart
 ....
@@ -60,7 +61,8 @@ web application already has a `webapps/myapp.xml` file, then you can
 simply change the class in the Configure element, otherwise you can
 create an `webapps/myapp.xml` file as follows:
 
-....
+[source, xml]
+____
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 <Configure class="org.eclipse.jetty.quickstart.QuickStartWebApp">
@@ -68,7 +70,7 @@ create an `webapps/myapp.xml` file as follows:
   <Set name="contextPath">/benchmark</Set>
   <Set name="autoPreconfigure">true</Set>
 </Configure>
-....
+____
 
 ==== Preconfiguring the web application
 
@@ -84,6 +86,7 @@ class
 link:{JDURL}/org/eclipse/jetty/quickstart/PreconfigureQuickStartWar.html[org.eclipse.jetty.quickstart.PreconfigureQuickStartWar]
 simply with the jetty-all-uber (aggregate) jar:
 
+[source, screen]
 ....
 $ java -cp jetty-all-@project.version@-uber.jar org.eclipse.jetty.quickstart.PreconfigureQuickStartWar myapp.war
 ....
@@ -103,12 +106,13 @@ scan to be skipped. This can be done by adding a context-param to the
 `web.xml` file (this is done automatically by the Jetty Maven JSPC
 plugin):
 
-....
+[source, xml]
+____
 <context-param>
   <param-name>org.eclipse.jetty.jsp.precompiled</param-name>
   <param-value>true</param-value>
 </context-param>
-....
+____
 
 ==== Bypassing start.jar
 
@@ -119,6 +123,7 @@ the classpath. The start.jar mechanism can be bypassed by using the
 `–dry-run` option to generate and reuse a complete command line to start
 jetty at a later time:
 
+[source, screen]
 ....
 $ RUN=$(java -jar $JETTY_HOME/start.jar --dry-run)
 $ eval $RUN

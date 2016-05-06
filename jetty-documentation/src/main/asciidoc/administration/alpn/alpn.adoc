@@ -257,6 +257,7 @@ This section is for Jetty developers that need to update the ALPN implementation
 
 Clone the OpenJDK repository with the following command:
 
+[source, screen]
 ....
 $ hg clone http://hg.openjdk.java.net/jdk7u/jdk7u jdk7u # OpenJDK 7
 $ hg clone http://hg.openjdk.java.net/jdk8u/jdk8u jdk8u # OpenJDK 8
@@ -267,6 +268,7 @@ $ ./get_source.sh
 
 To update the source to a specific tag, use the following command:
 
+[source, screen]
 ....
 $ ./make/scripts/hgforest.sh update <tag-name>
   

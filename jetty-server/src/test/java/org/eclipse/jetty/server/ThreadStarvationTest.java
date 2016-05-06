@@ -18,169 +18,259 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CountDownLatch;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.IO;
-import org.junit.Before;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
+import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
+import org.junit.After;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AdvancedRunner.class)
-public class ThreadStarvationTest extends HttpServerTestFixture
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+public class ThreadStarvationTest
 {
-    ServerConnector _connector;
-    
     @Rule
     public TestTracker tracker = new TestTracker();
+    private QueuedThreadPool _threadPool;
+    private Server _server;
+    private ServerConnector _connector;
+    private int _availableThreads;
 
-    @Before
-    public void init() throws Exception
+    private Server prepareServer(Handler handler)
     {
-        _threadPool.setMinThreads(4);
-        _threadPool.setMaxThreads(4);
-        _threadPool.setDetailedDump(false);
-        _connector = new ServerConnector(_server,1,1);
-        _connector.setIdleTimeout(10000);
+        int threads = 4;
+        _threadPool = new QueuedThreadPool();
+        _threadPool.setMinThreads(threads);
+        _threadPool.setMaxThreads(threads);
+        _threadPool.setDetailedDump(true);
+        _server = new Server(_threadPool);
+        int acceptors = 1;
+        int selectors = 1;
+        _connector = new ServerConnector(_server, acceptors, selectors);
+        _server.addConnector(_connector);
+        _server.setHandler(handler);
+        _availableThreads = threads - acceptors - selectors;
+        return _server;
+    }
+
+    @After
+    public void dispose() throws Exception
+    {
+        _server.stop();
     }
 
     @Test
     public void testReadInput() throws Exception
     {
-        startServer(_connector,new ReadHandler());
-        System.err.println(_threadPool.dump());
-        
-        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
-        client.setSoTimeout(10000);
+        prepareServer(new ReadHandler()).start();
 
-        OutputStream os=client.getOutputStream();
-        InputStream is=client.getInputStream();
+        Socket client = new Socket("localhost", _connector.getLocalPort());
 
-        os.write((
-                "GET / HTTP/1.0\r\n"+
-                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                "content-length: 10\r\n" +
+        OutputStream os = client.getOutputStream();
+        InputStream is = client.getInputStream();
+
+        String request = "" +
+                "GET / HTTP/1.0\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Length: 10\r\n" +
                 "\r\n" +
-                "0123456789\r\n").getBytes("utf-8"));
+                "0123456789\r\n";
+        os.write(request.getBytes(StandardCharsets.UTF_8));
         os.flush();
 
         String response = IO.toString(is);
         assertEquals(-1, is.read());
-        assertThat(response,containsString("200 OK"));
-        assertThat(response,containsString("Read Input 10"));
-
+        assertThat(response, containsString("200 OK"));
+        assertThat(response, containsString("Read Input 10"));
     }
-    
+
     @Test
-    public void testEWYKStarvation() throws Exception
+    public void testEPCStarvation() throws Exception
     {
-        System.setProperty("org.eclipse.jetty.io.ManagedSelector$SelectorProducer.ExecutionStrategy","org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume");
-        startServer(_connector,new ReadHandler());
-        
-        Socket[] client = new Socket[3];
-        OutputStream[] os = new OutputStream[client.length];
-        InputStream[] is = new InputStream[client.length];
-        
-        for (int i=0;i<client.length;i++)
-        {
-            client[i]=newSocket(_serverURI.getHost(),_serverURI.getPort());
-            client[i].setSoTimeout(10000);
-
-            os[i]=client[i].getOutputStream();
-            is[i]=client[i].getInputStream();
-
-            os[i].write((
-                    "PUT / HTTP/1.0\r\n"+
-                            "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                            "content-length: 10\r\n" +
-                    "\r\n1").getBytes("utf-8"));
-            os[i].flush();
-        }
-        Thread.sleep(500);
-        System.err.println(_threadPool.dump());
-
-        for (int i=0;i<client.length;i++)
-        {
-            os[i].write(("234567890\r\n").getBytes("utf-8"));
-            os[i].flush();
-        }
-
-        Thread.sleep(500);
-        System.err.println(_threadPool.dump());
-
-        for (int i=0;i<client.length;i++)
-        {
-            String response = IO.toString(is[i]);
-            assertEquals(-1, is[i].read());
-            assertThat(response,containsString("200 OK"));
-            assertThat(response,containsString("Read Input 10"));
-        }
+        testStarvation(new ExecuteProduceConsume.Factory());
     }
-    
 
     @Test
     public void testPECStarvation() throws Exception
     {
-        System.setProperty("org.eclipse.jetty.io.ManagedSelector$SelectorProducer.ExecutionStrategy","org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume");
+        testStarvation(new ProduceExecuteConsume.Factory());
+    }
 
-        startServer(_connector,new ReadHandler());
+    private void testStarvation(ExecutionStrategy.Factory executionFactory) throws Exception
+    {
+        prepareServer(new ReadHandler());
+        _connector.setExecutionStrategyFactory(executionFactory);
+        _server.start();
         System.err.println(_threadPool.dump());
-        
-        Socket[] client = new Socket[3];
+
+        Socket[] client = new Socket[_availableThreads + 1];
         OutputStream[] os = new OutputStream[client.length];
         InputStream[] is = new InputStream[client.length];
-        
-        for (int i=0;i<client.length;i++)
+
+        for (int i = 0; i < client.length; i++)
         {
-            client[i]=newSocket(_serverURI.getHost(),_serverURI.getPort());
+            client[i] = new Socket("localhost", _connector.getLocalPort());
             client[i].setSoTimeout(10000);
 
-            os[i]=client[i].getOutputStream();
-            is[i]=client[i].getInputStream();
+            os[i] = client[i].getOutputStream();
+            is[i] = client[i].getInputStream();
 
-            os[i].write((
-                    "PUT / HTTP/1.0\r\n"+
-                            "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                            "content-length: 10\r\n" +
-                    "\r\n1").getBytes("utf-8"));
+            String request = "" +
+                    "PUT / HTTP/1.0\r\n" +
+                    "host: localhost\r\n" +
+                    "content-length: 10\r\n" +
+                    "\r\n" +
+                    "1";
+            os[i].write(request.getBytes(StandardCharsets.UTF_8));
             os[i].flush();
         }
+
         Thread.sleep(500);
         System.err.println(_threadPool.dump());
 
-        for (int i=0;i<client.length;i++)
+        for (int i = 0; i < client.length; i++)
         {
-            os[i].write(("234567890\r\n").getBytes("utf-8"));
+            os[i].write(("234567890\r\n").getBytes(StandardCharsets.UTF_8));
             os[i].flush();
         }
 
         Thread.sleep(500);
         System.err.println(_threadPool.dump());
 
-        for (int i=0;i<client.length;i++)
+        for (int i = 0; i < client.length; i++)
         {
             String response = IO.toString(is[i]);
             assertEquals(-1, is[i].read());
-            assertThat(response,containsString("200 OK"));
-            assertThat(response,containsString("Read Input 10"));
+            assertThat(response, containsString("200 OK"));
+            assertThat(response, containsString("Read Input 10"));
         }
-        
     }
-    
+
+    @Test
+    public void testEPCExitsLowThreadsMode() throws Exception
+    {
+        prepareServer(new ReadHandler());
+        Assert.assertEquals(2, _availableThreads);
+        _connector.setExecutionStrategyFactory(new ExecuteProduceConsume.Factory());
+        _server.start();
+        System.err.println(_server.dump());
+
+        // Two idle threads in the pool here.
+        // The server will accept the socket in normal mode.
+        Socket client = new Socket("localhost", _connector.getLocalPort());
+        client.setSoTimeout(10000);
+
+        Thread.sleep(500);
+
+        // Now steal one thread.
+        CountDownLatch latch = new CountDownLatch(1);
+        _threadPool.execute(() ->
+        {
+            try
+            {
+                latch.await();
+            }
+            catch (InterruptedException ignored)
+            {
+            }
+        });
+
+        InputStream is = client.getInputStream();
+        OutputStream os = client.getOutputStream();
+
+        String request = "" +
+                "PUT / HTTP/1.0\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Length: 10\r\n" +
+                "\r\n" +
+                "1";
+        os.write(request.getBytes(StandardCharsets.UTF_8));
+        os.flush();
+
+        Thread.sleep(500);
+        System.err.println(_threadPool.dump());
+
+        // Request did not send the whole body, Handler
+        // is blocked reading, zero idle threads here,
+        // EPC is in low threads mode.
+        for (ManagedSelector selector : _connector.getSelectorManager().getBeans(ManagedSelector.class))
+        {
+            ExecuteProduceConsume executionStrategy = (ExecuteProduceConsume)selector.getExecutionStrategy();
+            assertTrue(executionStrategy.isLowOnThreads());
+        }
+
+        // Release the stolen thread.
+        latch.countDown();
+        Thread.sleep(500);
+
+        // Send the rest of the body to unblock the reader thread.
+        // This will be run directly by the selector thread,
+        // which therefore will remain in low threads mode.
+        os.write("234567890".getBytes(StandardCharsets.UTF_8));
+        os.flush();
+
+        Thread.sleep(500);
+        System.err.println(_threadPool.dump());
+
+        // Back to two idle threads here, but we are still in
+        // low threads mode because the SelectorProducer has
+        // not returned from the low threads mode.
+
+        String response = IO.toString(is);
+        assertThat(response, containsString("200 OK"));
+        assertThat(response, containsString("Read Input 10"));
+
+        // Send another request.
+        // Accepting a new connection will exit the low threads mode.
+        client = new Socket("localhost", _connector.getLocalPort());
+        client.setSoTimeout(10000);
+
+        Thread.sleep(500);
+        System.err.println(_threadPool.dump());
+
+        for (ManagedSelector selector : _connector.getSelectorManager().getBeans(ManagedSelector.class))
+        {
+            ExecuteProduceConsume executionStrategy = (ExecuteProduceConsume)selector.getExecutionStrategy();
+            assertFalse(executionStrategy.isLowOnThreads());
+        }
+
+        is = client.getInputStream();
+        os = client.getOutputStream();
+        request = "" +
+                "PUT / HTTP/1.0\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Length: 10\r\n" +
+                "\r\n" +
+                "1234567890";
+
+        os.write(request.getBytes(StandardCharsets.UTF_8));
+        os.flush();
+
+        response = IO.toString(is);
+        assertThat(response, containsString("200 OK"));
+        assertThat(response, containsString("Read Input 10"));
+    }
 
     protected static class ReadHandler extends AbstractHandler
     {
@@ -192,13 +282,13 @@ public class ThreadStarvationTest extends HttpServerTestFixture
 
             int l = request.getContentLength();
             int r = 0;
-            while (r<l)
+            while (r < l)
             {
-                if (request.getInputStream().read()>=0)
+                if (request.getInputStream().read() >= 0)
                     r++;
             }
-            
-            response.getOutputStream().write(("Read Input "+r+"\r\n").getBytes());
+
+            response.getOutputStream().write(("Read Input " + r + "\r\n").getBytes());
         }
     }
 }

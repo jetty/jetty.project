@@ -23,6 +23,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Locker;
 
 /**
  * <p>A strategy where the caller thread iterates over task production, submitting each
@@ -32,6 +33,7 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
 {
     private static final Logger LOG = Log.getLogger(ExecuteProduceConsume.class);
 
+    private final Locker _locker = new Locker();
     private final Producer _producer;
     private final Executor _executor;
     private State _state = State.IDLE;
@@ -45,11 +47,19 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
     @Override
     public void execute()
     {
-        synchronized (this)
+        try (Locker.Lock lock = _locker.lock())
         {
-            _state = _state == State.IDLE ? State.PRODUCE : State.EXECUTE;
-            if (_state == State.EXECUTE)
-                return;
+            switch(_state)
+            {
+                case IDLE:
+                    _state= State.PRODUCE;
+                    break;
+
+                case PRODUCE:
+                case EXECUTE:
+                    _state= State.EXECUTE;
+                    return;
+            }
         }
 
         // Iterate until we are complete.
@@ -62,12 +72,19 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
 
             if (task == null)
             {
-                synchronized (this)
+                try (Locker.Lock lock = _locker.lock())
                 {
-                    _state = _state == State.PRODUCE ? State.IDLE : State.PRODUCE;
-                    if (_state == State.PRODUCE)
-                        continue;
-                    return;
+                    switch(_state)
+                    {
+                        case IDLE:
+                            throw new IllegalStateException();
+                        case PRODUCE:
+                            _state= State.IDLE;
+                            return;
+                        case EXECUTE:
+                            _state= State.PRODUCE;
+                            continue;
+                    }
                 }
             }
 

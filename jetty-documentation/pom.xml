@@ -132,7 +132,8 @@
           <dependency>
             <groupId>net.sf.docbook</groupId>
             <artifactId>docbook-xml</artifactId>
-            <version>5.0-all</version>
+            <!--version>5.0-all</version-->
+            <version>5.1b4-all</version>
             <classifier>resources</classifier>
             <type>zip</type>
             <scope>runtime</scope>

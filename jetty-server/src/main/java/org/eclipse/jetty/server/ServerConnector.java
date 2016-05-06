@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -74,7 +75,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * The default number of selectors is equal to the number of processors available to the JVM,
  * which should allow optimal performance even if all the connections used are performing
  * significant non-blocking work in the callback tasks.
- *
  */
 @ManagedObject("HTTP connector using NIO ByteChannels and Selectors")
 public class ServerConnector extends AbstractNetworkConnector
@@ -87,24 +87,21 @@ public class ServerConnector extends AbstractNetworkConnector
     private volatile boolean _reuseAddress = true;
     private volatile int _lingerTime = -1;
 
-
-    /* ------------------------------------------------------------ */
-    /** HTTP Server Connection.
+    /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
-     * @param server The {@link Server} this connector will accept connection for. 
+     * @param server The {@link Server} this connector will accept connection for.
      */
     public ServerConnector(
         @Name("server") Server server)
     {
         this(server,null,null,null,-1,-1,new HttpConnectionFactory());
     }
-    
-    /* ------------------------------------------------------------ */
-    /** HTTP Server Connection.
+
+    /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
-     * @param server The {@link Server} this connector will accept connection for. 
-     * @param acceptors 
-     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
+     * @param server The {@link Server} this connector will accept connection for.
+     * @param acceptors
+     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
      *          the selector threads are used to accept connections.
      * @param selectors
      *          the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
@@ -116,13 +113,12 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         this(server,null,null,null,acceptors,selectors,new HttpConnectionFactory());
     }
-    
-    /* ------------------------------------------------------------ */
-    /** HTTP Server Connection.
+
+    /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
-     * @param server The {@link Server} this connector will accept connection for. 
-     * @param acceptors 
-     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
+     * @param server The {@link Server} this connector will accept connection for.
+     * @param acceptors
+     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
      *          the selector threads are used to accept connections.
      * @param selectors
      *          the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
@@ -137,10 +133,9 @@ public class ServerConnector extends AbstractNetworkConnector
         this(server,null,null,null,acceptors,selectors,factories);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Generic Server Connection with default configuration.
+    /**
      * <p>Construct a Server Connector with the passed Connection factories.</p>
-     * @param server The {@link Server} this connector will accept connection for. 
+     * @param server The {@link Server} this connector will accept connection for.
      * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public ServerConnector(
@@ -150,11 +145,10 @@ public class ServerConnector extends AbstractNetworkConnector
         this(server,null,null,null,-1,-1,factories);
     }
 
-    /* ------------------------------------------------------------ */
-    /** HTTP Server Connection.
+    /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the primary protocol</p>.
-     * @param server The {@link Server} this connector will accept connection for. 
-     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the 
+     * @param server The {@link Server} this connector will accept connection for.
+     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the
      * list of HTTP Connection Factory.
      */
     public ServerConnector(
@@ -164,14 +158,13 @@ public class ServerConnector extends AbstractNetworkConnector
         this(server,null,null,null,-1,-1,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
 
-    /* ------------------------------------------------------------ */
-    /** HTTP Server Connection.
+    /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the primary protocol</p>.
-     * @param server The {@link Server} this connector will accept connection for. 
-     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the 
+     * @param server The {@link Server} this connector will accept connection for.
+     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the
      * list of HTTP Connection Factory.
-     * @param acceptors 
-     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
+     * @param acceptors
+     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
      *          the selector threads are used to accept connections.
      * @param selectors
      *          the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
@@ -185,10 +178,9 @@ public class ServerConnector extends AbstractNetworkConnector
         this(server,null,null,null,acceptors,selectors,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
 
-    /* ------------------------------------------------------------ */
-    /** Generic SSL Server Connection.
-     * @param server The {@link Server} this connector will accept connection for. 
-     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the 
+    /**
+     * @param server The {@link Server} this connector will accept connection for.
+     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the
      * list of ConnectionFactories, with the first factory being the default protocol for the SslConnectionFactory.
      * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
@@ -200,22 +192,22 @@ public class ServerConnector extends AbstractNetworkConnector
         this(server, null, null, null, -1, -1, AbstractConnectionFactory.getFactories(sslContextFactory, factories));
     }
 
-    /** Generic Server Connection.
-     * @param server    
-     *          The server this connector will be accept connection for.  
-     * @param executor  
+    /**
+     * @param server
+     *          The server this connector will be accept connection for.
+     * @param executor
      *          An executor used to run tasks for handling requests, acceptors and selectors.
      *          If null then use the servers executor
-     * @param scheduler 
+     * @param scheduler
      *          A scheduler used to schedule timeouts. If null then use the servers scheduler
      * @param bufferPool
      *          A ByteBuffer pool used to allocate buffers.  If null then create a private pool with default configuration.
-     * @param acceptors 
-     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
+     * @param acceptors
+     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
      *          the selector threads are used to accept connections.
      * @param selectors
      *          the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
-     * @param factories 
+     * @param factories
      *          Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public ServerConnector(
@@ -277,7 +269,7 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         _manager.setSelectorPriorityDelta(selectorPriorityDelta);
     }
-    
+
     /**
      * @return whether this connector uses a channel inherited from the JVM.
      * @see System#inheritedChannel()
@@ -384,7 +376,7 @@ public class ServerConnector extends AbstractNetworkConnector
             accepted(channel);
         }
     }
-    
+
     private void accepted(SocketChannel channel) throws IOException
     {
         channel.configureBlocking(false);
@@ -484,6 +476,22 @@ public class ServerConnector extends AbstractNetworkConnector
     public void setReuseAddress(boolean reuseAddress)
     {
         _reuseAddress = reuseAddress;
+    }
+
+    /**
+     * @return the ExecutionStrategy factory to use for SelectorManager
+     */
+    public ExecutionStrategy.Factory getExecutionStrategyFactory()
+    {
+        return _manager.getExecutionStrategyFactory();
+    }
+
+    /**
+     * @param executionFactory the ExecutionStrategy factory to use for SelectorManager
+     */
+    public void setExecutionStrategyFactory(ExecutionStrategy.Factory executionFactory)
+    {
+        _manager.setExecutionStrategyFactory(executionFactory);
     }
 
     protected class ServerConnectorManager extends SelectorManager
