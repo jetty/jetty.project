@@ -113,7 +113,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             return SelectChannelEndPoint.this.toString()+":runCompleteWrite";
         }
     };
-    private final Runnable _runFillableCompleteWrite = new RejectableRunnable()
+    private final Runnable _runCompleteWriteFillable = new RejectableRunnable()
     {
         @Override
         public void run()
@@ -168,10 +168,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             _desiredInterestOps = newInterestOps;
         }
 
-
         boolean readable = (readyOps & SelectionKey.OP_READ) != 0;
         boolean writable = (readyOps & SelectionKey.OP_WRITE) != 0;
-
 
         if (LOG.isDebugEnabled())
             LOG.debug("onSelected {}->{} r={} w={} for {}", oldInterestOps, newInterestOps, readable, writable, this);
@@ -197,7 +195,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         }
 
         // return task to complete the job
-        Runnable task= readable ? (writable ? _runFillableCompleteWrite : _runFillable)
+        Runnable task= readable ? (writable ? _runCompleteWriteFillable : _runFillable)
                 : (writable ? _runCompleteWrite : null);
 
         if (LOG.isDebugEnabled())
