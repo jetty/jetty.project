@@ -281,6 +281,7 @@ implementation with the OpenJDK versions.
 
 Clone the OpenJDK repository with the following command:
 
+[source, screen]
 ....
 $ hg clone http://hg.openjdk.java.net/jdk7u/jdk7u jdk7u
 $ cd jdk7u
@@ -290,6 +291,7 @@ $ ./get_source.sh
 
 To update the source to a specific tag, use the following command:
 
+[source, screen]
 ....
 $ ./make/scripts/hgforest.sh update <tag-name>
   

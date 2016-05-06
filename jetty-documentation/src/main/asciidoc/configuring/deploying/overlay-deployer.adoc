@@ -88,6 +88,7 @@ demonstration are available in overlays-demo.tar.gz. You can expand it
 on top of the jetty distribution; this tutorial expands it to /tmp and
 installs the components step-by-step:
 
+[source, screen]
 ....
 
 $ cd /tmp
@@ -122,6 +123,7 @@ The smarts of this are in etc/jetty-deploy.xml, which installs the
 OverlayedAppProvider into the DeploymentManager. You can then start
 Jetty normally:
 
+[source, screen]
 ....
 
 $ java -jar start.jar
@@ -143,6 +145,7 @@ You can download and deploy the WAR file for this demo using the
 following commands, which essentially downloads and extracts the WAR
 file to the $JETTY_HOME/overlays/webapps directory.
 
+[source, screen]
 ....
 
 $ cd /tmp
@@ -179,6 +182,7 @@ the web application for all instances you plan to deploy.
 You can install the demo template from the downloaded files with the
 command:
 
+[source, screen]
 ....
 
 $ mv $OVERLAYS/jtracTemplate\=jtrac-2.1.0 $JETTY_HOME/overlays/templates/
@@ -308,6 +312,7 @@ the configuration, which facilitates easy multi-tenant deployment.
 Now that you have installed a template, you can install one or more
 instance overlays to deploy the actual web applications:
 
+[source, screen]
 ....
 
 $ mv /tmp/overlays/instances/jtracTemplate\=blue $JETTY_HOME/overlays/instances/
