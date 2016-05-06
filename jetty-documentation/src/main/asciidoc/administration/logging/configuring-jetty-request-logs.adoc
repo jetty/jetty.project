@@ -15,19 +15,15 @@
 //  ========================================================================
 
 [[configuring-jetty-request-logs]]
-= Configuring Jetty Request Logs
+=== Configuring Jetty Request Logs
 
 Request logs are a record of the requests that the server has processed.
-There is one entry per request received, and commonly in the standard
-NCSA format, so you can use tools like
-http://en.wikipedia.org/wiki/Webalizer[Webalizer] to analyze them
-conveniently.
+There is one entry per request received, and commonly in the standard NCSA format, so you can use tools like http://en.wikipedia.org/wiki/Webalizer[Webalizer] to analyze them conveniently.
 
 [[constructing-request-log-entry]]
-== Constructing a Request Log Entry
+==== Constructing a Request Log Entry
 
-A standard request log entry includes the client IP address, date,
-method, URL, result, size, referrer, and user agent, for example:
+A standard request log entry includes the client IP address, date, method, URL, result, size, referrer, and user agent, for example:
 
 ....
 123.4.5.6 - - [27/Aug/2004:10:16:17 +0000]
@@ -37,25 +33,16 @@ method, URL, result, size, referrer, and user agent, for example:
 ....
 
 [[implementing-request-log]]
-== Implementing a Request Log
+==== Implementing a Request Log
 
-Jetty provides an implementation called _`NCSARequestLog`_ which
-supports the NCSA format in files that you can roll over on a daily
-basis.
+Jetty provides an implementation called _`NCSARequestLog`_ which supports the NCSA format in files that you can roll over on a daily basis.
 
-The http://logback.qos.ch/[Logback Project] offers
-http://logback.qos.ch/access.html[another implementation] of a
-RequestLog interface, providing rich and powerful HTTP-access log
-functionality.
+The http://logback.qos.ch/[Logback Project] offers http://logback.qos.ch/access.html[another implementation] of a `RequestLog` interface, providing rich and powerful HTTP-access log functionality.
 
-If neither of these options meets your needs, you can implement a custom
-request logger by implementing Jetty's
-link:{JDURL}/org/eclipse/jetty/server/RequestLog.html[`RequestLog.java`]
-interface and plugging it in similar to the NCSARequestLog, as shown
-below.
+If neither of these options meets your needs, you can implement a custom request logger by implementing Jetty's link:{JDURL}/org/eclipse/jetty/server/RequestLog.html[`RequestLog.java`] interface and plugging it in similar to the `NCSARequestLog`, as shown below.
 
 [[configuring-request-log]]
-== Configuring a Request Log
+==== Configuring a Request Log
 
 To configure a single request log for the entire Jetty Server instance:
 
@@ -85,19 +72,16 @@ requestLog.setLogTimeZone("GMT");
 server.setRequestLog(requestLog);
 ----
 
-This configures a request log in `$JETTY_HOME/logs` with filenames
-including the date. Old log files are kept for 90 days before being
-deleted. Existing log files are appended to and the extended NCSA format
-is used in the GMT timezone.
+This configures a request log in `$JETTY_HOME/logs` with filenames including the date. 
+Old log files are kept for 90 days before being deleted. 
+Existing log files are appended to and the extended NCSA format is used in the GMT time zone.
 
-To examine many more configuration options, see
-link:{JDURL}/org/eclipse/jetty/server/NCSARequestLog.html[NCSARequestLog.java]
+To examine many more configuration options, see link:{JDURL}/org/eclipse/jetty/server/NCSARequestLog.html[NCSARequestLog.java].
 
 [[configuring-separate-request-log-for-web-application]]
-== Configuring a Separate Request Log For a Web Application
+==== Configuring a Separate Request Log For a Web Application
 
-To configure a separate request log for a web application, add the
-following to the context XML file.
+To configure a separate request log for a web application, add the following to the context XML file.
 
 [source,xml]
 ----

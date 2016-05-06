@@ -15,42 +15,25 @@
 //  ========================================================================
 
 [[example-logging-logback-centralized]]
-= Example: Centralized Logging with Logback
+=== Example: Centralized Logging with Logback
 
-The term _Centralized Logging_ refers to a forced logging configuration
-for the Jetty Server and all web applications that are deployed on the
-server. It routes all logging events from the web applications to a
-single configuration on the Server side.
+The term _Centralized Logging_ refers to a forced logging configuration for the Jetty Server and all web applications that are deployed on the server. 
+It routes all logging events from the web applications to a single configuration on the Server side.
 
-The example below shows how to accomplish this with Jetty and Slf4j,
-using Logback to manage the final writing of logs to disk.
+The example below shows how to accomplish this with Jetty and Slf4j, using `Logback` to manage the final writing of logs to disk.
 
 ____
 [IMPORTANT]
 This mechanism forces all webapps to use the server's configuration for logging, something that isn't 100% appropriate for all webapps.
-+
 An example would be having Jenkins-CI deployed as an webapp, if you force its logging configuration to the server side, you lose the ability on http://jenkins-ci.org/[Jenkins-CI] to see the logs from the various builds (as now those logs are actually going to the main server log).
 ____
 
-This configuration is essentially the multiple logger configuration with
-added configuration to the deployers to force a WebAppClassLoader change
-to use the server classpath over the webapps classpath for the logger
-specific classes.
+This configuration is essentially the multiple logger configuration with added configuration to the deployers to force a `WebAppClassLoader` change to use the server classpath over the webapps classpath for the logger specific classes.
 
-The technique used by this configuration is to provide an
-link:{JDURL}org/eclipse/jetty/deploy/AppLifeCycle.Binding.html[AppLifeCycle.Binding]
-against the
-link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.html[`"deploying"`
-node] that modifies the
-link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#addSystemClass(java.lang.String)[WebAppContext.addSystemClass(String)]
-for the common logging classes. (See
-https://github.com/jetty-project/jetty-webapp-logging/blob/master/src/main/java/org/eclipse/jetty/webapp/logging/CentralizedWebAppLoggingBinding.java[org.eclipse.jetty.logging.CentralizedWebAppLoggingBinding]
-for actual implementation)
+The technique used by this configuration is to provide an link:{JDURL}org/eclipse/jetty/deploy/AppLifeCycle.Binding.html[AppLifeCycle.Binding] against the link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.html[`"deploying"`node] that modifies the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#addSystemClass(java.lang.String)[WebAppContext.addSystemClass(String)] for the common logging classes. 
+See https://github.com/jetty-project/jetty-webapp-logging/blob/master/src/main/java/org/eclipse/jetty/webapp/logging/CentralizedWebAppLoggingBinding.java[org.eclipse.jetty.logging.CentralizedWebAppLoggingBinding] for actual implementation.
 
-A convenient replacement `logging` module has been created to bootstrap
-your `${jetty.base}` directory for capturing all Jetty server logging
-from multiple logging frameworks into a single logging output file
-managed by logback.
+A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for capturing all Jetty server logging from multiple logging frameworks into a single logging output file managed by Logback.
 
 ....
 [mybase]$ mkdir modules
@@ -96,71 +79,30 @@ INFO: resources       enabled in     ${jetty.base}/start.ini
 
 The replacement `logging.mod` performs a number of tasks.
 
-1.  `mybase` is a `${jetty.base}` directory
-2.  The jetty-distribution is unpacked (and untouched) into
-`/opt/jetty-dist/ `and becomes the `${jetty.home}` directory for this
-demonstration.
-3.  The `curl` command downloads the replacement `logging.mod` and puts
-it into the `${jetty.base}/modules/` directory for use by mybase only.
-4.  The `start.jar
-        --add-to-start=logging,webapp-logging` command performs a number
-of steps to make the logging module available to the `${jetty.base}`
-configuration.
-1.  Several entries are added to the `${jetty.base}/start.ini`
-configuration
-1.  `--module=logging` is added to enable the logging module
-2.  `--module=webapp-logging` is added to enable the webapp-logging
-module
-2.  Required `${jetty.base}` directories are created:
-`${jetty.base}/logs` and `${jetty.base}/resources`
-3.  Required logging libraries are downloaded (if not present already):
-* slf4j-api.jar - API jar for Slf4j (used by most of the rest of the
-jars)
-* log4j-over-slf4j.jar - Slf4j jar that captures all log4j emitted
-logging events
-* jul-to-slf4j.jar - Slf4j jar that captures all java.util.logging
-events
-* jcl-over-slf4j.jar - Slf4j jar that captures all commons-logging
-events
-* logback-classic.jar - the Slf4j adapter jar that routes all of the
-captured logging events to logback itself.
-* logback-core.jar - the logback implementation jar, that handles all of
-the filtering and output of the logging events.
-+
-These libraries are put in the `${jetty.base}/lib/logging/` directory.
-4.  Required webapp-logging library are downloaded (if not present
-already):
-* jetty-webapp-logging.jar - the jetty side deployment manger
-app-lifecycle bindings for modifying the WebAppClassloaders of deployed
-webapps.
-+
-This library is put in the `${jetty.base}/lib/webapp-logging/`
-directory.
-5.  Required configuration files are downloaded (if not present
-already): `jetty-logging.properties`, and `logback.xml`
-+
-The configuration files are put in the `${jetty.base}/resources/`
-directory.
-6.  Required initialization commands are downloaded (if not present
-already): `jetty-logging.xml`, `jetty-webapp-logging.xml`, and
-`jetty-mdc-handler.xml`
-+
-These xml files are put in the `${jetty.base}/etc/` directory.
-5.  At this point you have your `mybase` configured so that the jetty
-server itself will log using slf4j, and all other logging events from
-other Jetty Server components (such as database drivers, security
-layers, jsp, mail, and other 3rd party server components) are routed to
-logback for filtering and output.
-+
-All webapps deployed via the DeploymentManager have their
-WebAppClassLoader modified to use server side classes and configuration
-for all logging implementations.
+.  `mybase` is a `${jetty.base}` directory.
+.  The jetty-distribution is unpacked (and untouched) into `/opt/jetty-dist/ `and becomes the `${jetty.home}` directory for this demonstration.
+.  The `curl` command downloads the replacement `logging.mod` and puts it into the `${jetty.base}/modules/` directory for use by mybase only.
+.  The `start.jar --add-to-start=logging,webapp-logging` command performs a number of steps to make the logging module available to the `${jetty.base}` configuration.
+..  Several entries are added to the `${jetty.base}/start.ini` configuration.
+*  `--module=logging` is added to enable the logging module.
+*  `--module=webapp-logging` is added to enable the webapp-logging module.
+..  Required `${jetty.base}` directories are created: `${jetty.base}/logs` and `${jetty.base}/resources`.
+..  Required logging libraries are downloaded (if not present already) to the `${jetty.base}/lib/logging/` directory:
+* `slf4j-api.jar` - API jar for Slf4j (used by most of the rest of the jars)
+* `log4j-over-slf4j.jar` - Slf4j jar that captures all log4j emitted logging events
+* `jul-to-slf4j.jar` - Slf4j jar that captures all java.util.logging events
+* `jcl-over-slf4j.jar` - Slf4j jar that captures all commons-logging events
+* `logback-classic.jar` - the Slf4j adapter jar that routes all of the captured logging events to logback itself.
+* `logback-core.jar` - the logback implementation jar, that handles all of the filtering and output of the logging events.
+..  Required webapp-logging library is downloaded (if not present already) to the `${jetty.base}/lib/webapp-logging/` directory:
+* `jetty-webapp-logging.jar` - the Jetty side deployment manger app-lifecycle bindings for modifying the `WebAppClassloaders` of deployed webapps.
+..  Required configuration files are downloaded (if not present already) to the `${jetty.base}/resources/` directory: `jetty-logging.properties`, and `logback.xml`.
+..  Required initialization commands are downloaded (if not present already) to the `${jetty.base}/etc/` directory: `jetty-logging.xml`, `jetty-webapp-logging.xml`, and `jetty-mdc-handler.xml`.
 
-You can verify the server classpath by using the `start.jar
-    --list-config` command.
+At this point the Jetty `mybase` is configured so that the jetty server itself will log using slf4j, and all other logging events from other Jetty Server components (such as database drivers, security layers, jsp, mail, and other 3rd party server components) are routed to logback for filtering and output.
 
-In essence, Jetty is now configured to emit its own logging events to
-slf4j, and various slf4j bridge jars are acting on behalf of log4j,
-java.util.logging, and commons-logging, routing all of the logging
-events to logback (a slf4j adapter) for routing (to console, file,
-etc...)
+All webapps deployed via the `DeploymentManager` have their `WebAppClassLoader` modified to use server side classes and configuration for all logging implementations.
+
+The server classpath can be verified by using the `start.jar --list-config` command.
+
+In essence, Jetty is now configured to emit its own logging events to slf4j, and various slf4j bridge jars are acting on behalf of log4j, `java.util.logging`, and `commons-logging`, routing all of the logging events to logback (a slf4j adapter) for routing (to console, file, etc...).
