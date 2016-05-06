@@ -20,10 +20,10 @@
 ==== Maven Coordinates
 
 Jetty has existed in Maven Central almost since its inception, however under a couple of different coordinates over the years. 
-When Jetty was based at SourceForge and then The Codehaus it was located under the groupId of `org.mortbay.jetty`. 
+When Jetty was based at SourceForge and then The Codehaus it was located under the `groupId` of `org.mortbay.jetty`. 
 With Jetty 7 the project moved to the Eclipse foundation and to a new `groupId` at that time to reflect its new home.
 
-The top level POM for the Jetty project is located under the following coordinates.
+The top level Project Object Model (POM) for the Jetty project is located under the following coordinates.
 
 [source,xml]
 ----

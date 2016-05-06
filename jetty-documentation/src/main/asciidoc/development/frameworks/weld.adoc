@@ -43,6 +43,7 @@ The easiest way to configure weld is within the jetty distribution itself:
 
 That should be it so when you start up your jetty distribution with the webapp you should see output similar to the following (providing your logging is the default configuration):
 
+[source, screen]
 ....
 2015-06-18 12:13:54.924:INFO::main: Logging initialized @485ms
 2015-06-18 12:13:55.231:INFO:oejs.Server:main: jetty-9.3.1-SNAPSHOT

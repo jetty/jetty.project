@@ -142,6 +142,7 @@ for the http server. To do this use a process similar to this:
 
 On the windows active domain controller run:
 
+[source, screen]
 ....
 
 $ setspn -A HTTP/linux.mortbay.org ADUser
@@ -151,6 +152,7 @@ $ setspn -A HTTP/linux.mortbay.org ADUser
 
 To create the keytab file use the following process:
 
+[source, screen]
 ....
 
 $ ktpass -out c:\dir\krb5.keytab -princ HTTP/linux.mortbay.org@MORTBAY.ORG -mapUser ADUser -mapOp set -pass ADUserPWD -crypto RC4-HMAC-NT -pType KRB5_NT_PRINCIPAL

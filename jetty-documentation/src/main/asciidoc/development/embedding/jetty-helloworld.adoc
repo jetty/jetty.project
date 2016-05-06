@@ -34,6 +34,7 @@ ____
 
 Use curl as follows:
 
+[source, screen]
 ....
 > mkdir Demo
 > cd Demo
@@ -57,6 +58,7 @@ include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/Hel
 
 The following command compiles the HelloWorld class:
 
+[source, screen]
 ....
 > mkdir classes
 > javac -d classes -cp jetty-all-uber.jar HelloWorld.java
@@ -67,6 +69,7 @@ The following command compiles the HelloWorld class:
 
 The following command runs the HelloWorld example:
 
+[source, screen]
 ....
 > java -cp classes:jetty-all-uber.jar org.eclipse.jetty.embedded.HelloWorld
 ....

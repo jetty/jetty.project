@@ -18,26 +18,20 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
-import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,25 +45,20 @@ public class PostServletTest
         {
             try
             {
-                byte[] buffer = new byte[4096];
-                
-                ServletInputStream in = request.getInputStream();
-
-                int l = in.read(buffer);
-                while (l>0)
-                {
-                    String s=new String(buffer,0,l,StandardCharsets.ISO_8859_1);
-                    // System.err.println("READ: "+s);
-                    if (s.toLowerCase().contains("flush"))
-                        response.flushBuffer();
-                        
-                    l = in.read(buffer);
-                }
-                
+                response.flushBuffer();
+                request.getInputStream().read();
             }
-            catch (IOException e0)
+            catch (Exception e0)
             {
-                LOG.warn(e0);
+                try
+                {
+                    // this read-call should fail immediately
+                    request.getInputStream().read();
+                }
+                catch (Exception e1)
+                {
+                    LOG.warn(e1.toString());
+                }
             }
         }
     }
@@ -114,39 +103,37 @@ public class PostServletTest
         req.append("6\r\n");
         req.append("World\n");
         req.append("\r\n");
-        req.append("0\r\n"); 
+        req.append("0\r\n");
         req.append("\r\n");
 
         String resp = connector.getResponses(req.toString());
 
-        assertThat("resp", resp, containsString("HTTP/1.1 200 OK"));
+        Assert.assertThat("resp", resp, Matchers.containsString("HTTP/1.1 200 OK"));
     }
-    
+
     @Test
     public void testBadPost() throws Exception
     {
-        StringBuilder req = new StringBuilder();
+        StringBuilder req = new StringBuilder(16*1024);
         req.append("POST /post HTTP/1.1\r\n");
         req.append("Host: localhost\r\n");
-        req.append("Connection: close\r\n");
         req.append("Transfer-Encoding: chunked\r\n");
         req.append("\r\n");
-        req.append("6\r\n");
-        req.append("Hello ");
+        // intentionally bad (not a valid chunked char here)
+        for (int i=1024;i-->0;)
+            req.append("xxxxxxxxxxxx");
         req.append("\r\n");
-        req.append("x\r\n");
-        req.append("World\n");
-        req.append("\r\n");
-        req.append("0\r\n"); 
         req.append("\r\n");
 
         try (StacklessLogging scope = new StacklessLogging(ServletHandler.class))
         {
             String resp = connector.getResponses(req.toString());
-            assertThat("resp", resp, containsString("HTTP/1.1 400 "));
+            Assert.assertThat("resp", resp, Matchers.containsString("HTTP/1.1 200 "));
+            Assert.assertThat("resp", resp, Matchers.containsString("chunked"));
+            Assert.assertThat("resp", resp, Matchers.not(Matchers.containsString("\r\n0\r\n")));
         }
     }
-    
+
     @Test
     public void testBadSplitPost() throws Exception
     {
@@ -162,23 +149,23 @@ public class PostServletTest
 
         try (StacklessLogging scope = new StacklessLogging(ServletHandler.class))
         {
-            LocalEndPoint endp=connector.executeRequest(req.toString());
+            LocalConnector.LocalEndPoint endp=connector.executeRequest(req.toString());
             req.setLength(0);
 
             Thread.sleep(1000);
             req.append("x\r\n");
             req.append("World\n");
             req.append("\r\n");
-            req.append("0\r\n"); 
+            req.append("0\r\n");
             req.append("\r\n");
             endp.addInput(req.toString());
-            
+
             endp.waitUntilClosedOrIdleFor(1,TimeUnit.SECONDS);
             String resp = endp.takeOutputString();
-            assertThat("resp", resp, containsString("HTTP/1.1 400 "));
+            Assert.assertThat("resp", resp, Matchers.containsString("HTTP/1.1 400 "));
         }
     }
-    
+
     @Test
     public void testBadFlushedPost() throws Exception
     {
@@ -193,22 +180,22 @@ public class PostServletTest
 
         try (StacklessLogging scope = new StacklessLogging(ServletHandler.class))
         {
-            LocalEndPoint endp=connector.executeRequest(req.toString());
+            LocalConnector.LocalEndPoint endp=connector.executeRequest(req.toString());
             req.setLength(0);
 
             Thread.sleep(1000);
             req.append("x\r\n");
             req.append("World\n");
             req.append("\r\n");
-            req.append("0\r\n"); 
+            req.append("0\r\n");
             req.append("\r\n");
             endp.addInput(req.toString());
-            
+
             endp.waitUntilClosedOrIdleFor(1,TimeUnit.SECONDS);
             String resp = endp.takeOutputString();
-            assertThat("resp", resp, containsString("HTTP/1.1 200 "));
-            assertThat("resp", resp, containsString("Transfer-Encoding: chunked"));
-            assertThat("resp", resp, not(containsString("\r\n0\r\n")));
+            Assert.assertThat("resp", resp, Matchers.containsString("HTTP/1.1 200 "));
+            Assert.assertThat("resp", resp, Matchers.containsString("Transfer-Encoding: chunked"));
+            Assert.assertThat("resp", resp, Matchers.not(Matchers.containsString("\r\n0\r\n")));
         }
     }
 }

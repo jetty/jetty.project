@@ -78,11 +78,17 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         setStopTimeout(5000);
     }
 
+    public ExecutionStrategy getExecutionStrategy()
+    {
+        return _strategy;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
         super.doStart();
         _selector = _selectorManager.newSelector();
+        _selectorManager.execute(this);
     }
 
     public int size()

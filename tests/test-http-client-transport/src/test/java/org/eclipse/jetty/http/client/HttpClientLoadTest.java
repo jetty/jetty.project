@@ -202,6 +202,10 @@ public class HttpClientLoadTest extends AbstractTest
     {
         start(new LoadHandler());
 
+        client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+        client.setMaxConnectionsPerDestination(32768);
+        client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+
         int runs = 1;
         int iterations = 256;
         IntStream.range(0, 16).parallel().forEach(i ->
@@ -220,7 +224,9 @@ public class HttpClientLoadTest extends AbstractTest
         final Thread testThread = Thread.currentThread();
         Scheduler.Task task = client.getScheduler().schedule(() ->
         {
-            logger.warn("Interrupting test, it is taking too long{}{}", System.lineSeparator(), client.dump());
+            logger.warn("Interrupting test, it is taking too long{}{}{}{}",
+                    System.lineSeparator(), server.dump(),
+                    System.lineSeparator(), client.dump());
             testThread.interrupt();
         }, iterations * factor, TimeUnit.MILLISECONDS);
 
@@ -254,10 +260,10 @@ public class HttpClientLoadTest extends AbstractTest
 
         // Choose randomly whether to close the connection on the client or on the server
         boolean clientClose = false;
-        if (!ssl && random.nextBoolean())
+        if (!ssl && random.nextInt(100) < 5)
             clientClose = true;
         boolean serverClose = false;
-        if (!ssl && random.nextBoolean())
+        if (!ssl && random.nextInt(100) < 5)
             serverClose = true;
 
         int maxContentLength = 64 * 1024;
@@ -330,7 +336,11 @@ public class HttpClientLoadTest extends AbstractTest
             }
         });
         if (!await(requestLatch, 5, TimeUnit.SECONDS))
-            logger.warn("Request {} took too long", requestId);
+        {
+            logger.warn("Request {} took too long{}{}{}{}", requestId,
+                    System.lineSeparator(), server.dump(),
+                    System.lineSeparator(), client.dump());
+        }
     }
 
     private boolean await(CountDownLatch latch, long time, TimeUnit unit)

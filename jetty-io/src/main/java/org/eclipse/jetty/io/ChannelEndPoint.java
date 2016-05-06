@@ -122,7 +122,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     };
 
-    private final Runnable _runFillableCompleteWrite = new RejectableRunnable("runFillableCompleteWrite")
+    private final Runnable _runCompleteWriteFillable = new RejectableRunnable("runCompleteWriteFillable")
     {
         @Override
         public void run()
@@ -333,7 +333,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
 
         // return task to complete the job
-        Runnable task= readable ? (writable ? _runFillableCompleteWrite : _runFillable)
+        Runnable task= readable ? (writable ? _runCompleteWriteFillable : _runFillable)
                 : (writable ? _runCompleteWrite : null);
 
         if (LOG.isDebugEnabled())

@@ -66,6 +66,7 @@ include::{SRCDIR}/examples/embedded/src/main/resources/jetty-otherserver.xml[]
 To run the other server, simply add the extra configuration file(s) to
 the command line:
 
+[source, screen]
 ....
 java -jar start.jar jetty-otherserver.xml
 ....

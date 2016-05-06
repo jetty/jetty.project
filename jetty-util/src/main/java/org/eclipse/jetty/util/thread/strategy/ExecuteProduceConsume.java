@@ -19,7 +19,6 @@
 package org.eclipse.jetty.util.thread.strategy;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -50,32 +49,33 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
     private final Locker _locker = new Locker();
     private final Runnable _runExecute = new RunExecute();
     private final Producer _producer;
-    private boolean _idle=true;
+    private final ThreadPool _threadPool;
+    private boolean _idle = true;
     private boolean _execute;
     private boolean _producing;
     private boolean _pending;
-    private final ThreadPool _threadpool;
+    private boolean _lowThreads;
 
     public ExecuteProduceConsume(Producer producer, Executor executor)
     {
         super(executor);
         this._producer = producer;
-        _threadpool = (executor instanceof ThreadPool)?((ThreadPool)executor):null;
+        _threadPool = executor instanceof ThreadPool ? (ThreadPool)executor : null;
     }
 
     @Deprecated
     public ExecuteProduceConsume(Producer producer, Executor executor, ExecutionStrategy lowResourceStrategy)
     {
-        this(producer,executor);
+        this(producer, executor);
     }
 
     @Override
     public void execute()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} execute",this);
+            LOG.debug("{} execute", this);
 
-        boolean produce=false;
+        boolean produce = false;
         try (Lock locked = _locker.lock())
         {
             // If we are idle and a thread is not producing
@@ -85,15 +85,15 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
                     throw new IllegalStateException();
 
                 // Then this thread will do the producing
-                produce=_producing=true;
+                produce = _producing = true;
                 // and we are no longer idle
-                _idle=false;
+                _idle = false;
             }
             else
             {
                 // Otherwise, lets tell the producing thread
                 // that it should call produce again before going idle
-                _execute=true;
+                _execute = true;
             }
         }
 
@@ -105,14 +105,14 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
     public void dispatch()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} spawning",this);
-        boolean dispatch=false;
+            LOG.debug("{} spawning", this);
+        boolean dispatch = false;
         try (Lock locked = _locker.lock())
         {
             if (_idle)
-                dispatch=true;
+                dispatch = true;
             else
-                _execute=true;
+                _execute = true;
         }
         if (dispatch)
             execute(_runExecute);
@@ -122,26 +122,36 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
     public void run()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} run",this);
-        boolean produce=false;
+            LOG.debug("{} run", this);
+        boolean produce = false;
         try (Lock locked = _locker.lock())
         {
-            _pending=false;
+            _pending = false;
             if (!_idle && !_producing)
             {
-                produce=_producing=true;
+                produce = _producing = true;
             }
         }
 
         if (produce)
-        {
-            // If we are low on threads, this could be the last thread, so we must not consume. 
-            // So call produceExecuteConsume instead
-            if (_threadpool!=null && _threadpool.isLowOnThreads() && !produceExecuteConsume())
-                return;
-
             produceConsume();
+    }
+
+    private void produceConsume()
+    {
+        if (_threadPool != null && _threadPool.isLowOnThreads())
+        {
+            // If we are low on threads we must not produce and consume
+            // in the same thread, but produce and execute to consume.
+            if (!produceExecuteConsume())
+                return;
         }
+        executeProduceConsume();
+    }
+
+    public boolean isLowOnThreads()
+    {
+        return _lowThreads;
     }
 
     /**
@@ -150,55 +160,70 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
     private boolean produceExecuteConsume()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} Low Resources",this);
-        while (_threadpool.isLowOnThreads())
+            LOG.debug("{} enter low threads mode", this);
+        _lowThreads = true;
+        try
         {
-            Runnable task = _producer.produce();
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} produced {}", _producer, task);
-
-            if (task == null)
+            boolean idle = false;
+            while (_threadPool.isLowOnThreads())
             {
-                // No task, so we are now idle
-                try (Lock locked = _locker.lock())
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} Idle Low Resources",this);
-                    _producing=false;
-                    _idle=false;
-                }
-                return false;
-            }
+                Runnable task = _producer.produce();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} produced {}", _producer, task);
 
-            // Execute the task.
-            execute(task);
+                if (task == null)
+                {
+                    // No task, so we are now idle
+                    try (Lock locked = _locker.lock())
+                    {
+                        if (_execute)
+                        {
+                            _execute = false;
+                            _producing = true;
+                            _idle = false;
+                            continue;
+                        }
+
+                        _producing = false;
+                        idle = _idle = true;
+                        break;
+                    }
+                }
+
+                // Execute the task.
+                execute(task);
+            }
+            return !idle;
         }
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} No longer Low Resources",this);
-        return true;
+        finally
+        {
+            _lowThreads = false;
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} exit low threads mode", this);
+        }
     }
-    
-    private void produceConsume()
+
+    private void executeProduceConsume()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} produce enter",this);
+            LOG.debug("{} produce enter", this);
 
         while (true)
         {
             // If we got here, then we are the thread that is producing.
             if (LOG.isDebugEnabled())
-                LOG.debug("{} producing",this);
+                LOG.debug("{} producing", this);
 
             Runnable task = _producer.produce();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} produced {}",this,task);
+                LOG.debug("{} produced {}", this, task);
 
-            boolean dispatch=false;
+            boolean dispatch = false;
             try (Lock locked = _locker.lock())
             {
                 // Finished producing
-                _producing=false;
+                _producing = false;
 
                 // Did we produced a task?
                 if (task == null)
@@ -207,14 +232,14 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
                     // Could another one just have been queued with an execute?
                     if (_execute)
                     {
-                        _idle=false;
-                        _producing=true;
-                        _execute=false;
+                        _idle = false;
+                        _producing = true;
+                        _execute = false;
                         continue;
                     }
 
                     // ... and no additional calls to execute, so we are idle
-                    _idle=true;
+                    _idle = true;
                     break;
                 }
 
@@ -223,10 +248,10 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
                 if (!_pending)
                 {
                     // dispatch one
-                    dispatch=_pending=true;
+                    dispatch = _pending = true;
                 }
 
-                _execute=false;
+                _execute = false;
             }
 
             // If we became pending
@@ -234,18 +259,18 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
             {
                 // Spawn a new thread to continue production by running the produce loop.
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} dispatch",this);
+                    LOG.debug("{} dispatch", this);
                 if (!execute(this))
-                    task=null;
+                    task = null;
             }
 
             // Run the task.
             if (LOG.isDebugEnabled())
-                LOG.debug("{} run {}",this,task);
+                LOG.debug("{} run {}", this, task);
             if (task != null)
                 task.run();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} ran {}",this,task);
+                LOG.debug("{} ran {}", this, task);
 
             // Once we have run the task, we can try producing again.
             try (Lock locked = _locker.lock())
@@ -253,15 +278,14 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
                 // Is another thread already producing or we are now idle?
                 if (_producing || _idle)
                     break;
-                _producing=true;
+                _producing = true;
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} produce exit",this);
+            LOG.debug("{} produce exit", this);
     }
 
-    
     public Boolean isIdle()
     {
         try (Lock locked = _locker.lock())
@@ -276,10 +300,10 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
         builder.append("EPC ");
         try (Lock locked = _locker.lock())
         {
-            builder.append(_idle?"Idle/":"");
-            builder.append(_producing?"Prod/":"");
-            builder.append(_pending?"Pend/":"");
-            builder.append(_execute?"Exec/":"");
+            builder.append(_idle ? "Idle/" : "");
+            builder.append(_producing ? "Prod/" : "");
+            builder.append(_pending ? "Pend/" : "");
+            builder.append(_execute ? "Exec/" : "");
         }
         builder.append(_producer);
         return builder.toString();

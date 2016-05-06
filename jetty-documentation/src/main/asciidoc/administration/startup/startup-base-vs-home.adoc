@@ -61,6 +61,7 @@ enables the various demonstration webapps and server configurations.
 
 How to use the demo-base directory as a Jetty Base directory.
 
+[source, screen]
 ....
 [jetty-distribution-@project.version@]$ ls -la
 total 496
@@ -96,6 +97,7 @@ using the Jetty Base concepts.
 If you want to see what the Jetty Base looks like without executing
 Jetty, you can simply list the configuration
 
+[source, screen]
 ....
 [my-base]$ java -jar $JETTY_HOME/start.jar --list-config
 
@@ -221,6 +223,7 @@ elements came from, be it in either in `${jetty.home}` or
 If you look at the $\{jetty.base}/start.ini you will see something like
 the following.
 
+[source, screen]
 ....
 [my-base]$ cat start.ini
 # Enable security via jaas, and configure it
@@ -279,6 +282,7 @@ The Jetty start.jar and XML files always assume that both
 You can opt to manually define the `${jetty.home}` and `${jetty.base}`
 directories, such as this:
 
+[source, screen]
 ....
 [jetty-distribution-@project.version@]$ pwd
 /home/user/jetty-distribution-@project.version@
@@ -296,6 +300,7 @@ The following example uses default discovery of `${jetty.home}` by using
 the parent directory of wherever start.jar itself is, and a manual
 declaration of `${jetty.base}`.
 
+[source, screen]
 ....
 [jetty-distribution-@project.version@]$ pwd
 /home/user/jetty-distribution-@project.version@
@@ -313,6 +318,7 @@ The following demonstrates this by allowing default discovery of
 `${jetty.home}` via locating the `start.jar`, and using the `user.dir`
 System Property for `${jetty.base}`.
 
+[source, screen]
 ....
 [jetty-distribution-@project.version@]$ pwd
 /home/user/jetty-distribution-@project.version@
