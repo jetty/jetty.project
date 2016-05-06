@@ -51,15 +51,10 @@ public class ReaderMessageSink implements MessageSink
             stream.accept(payload,fin);
             if (first)
             {
-                executor.execute(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        // processing of errors is the responsibility
-                        // of the stream function
-                        onStreamFunction.apply(stream);
-                    }
+                executor.execute(() -> {
+                    // processing of errors is the responsibility
+                    // of the stream function
+                    onStreamFunction.apply(stream);
                 });
             }
         }
@@ -67,6 +62,7 @@ public class ReaderMessageSink implements MessageSink
         {
             if (fin)
             {
+                stream.awaitClose();
                 stream = null;
             }
         }

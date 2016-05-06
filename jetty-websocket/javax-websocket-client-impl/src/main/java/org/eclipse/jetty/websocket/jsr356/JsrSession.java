@@ -84,7 +84,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         
         this.container = container;
         
-        ConfiguredEndpoint cendpoint = (ConfiguredEndpoint)websocket;
+        ConfiguredEndpoint cendpoint = (ConfiguredEndpoint) websocket;
         this.config = cendpoint.getConfig();
 
         DecoderMetadataSet decoderSet = new DecoderMetadataSet();
@@ -92,14 +92,14 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         // TODO: figure out how to populate the decoderSet / encoderSet
         
         this.id = id;
-        this.decoderFactory = new DecoderFactory(this,decoderSet,container.getDecoderFactory());
-        this.encoderFactory = new EncoderFactory(this,encoderSet,container.getEncoderFactory());
+        this.decoderFactory = new DecoderFactory(this, decoderSet, container.getDecoderFactory());
+        this.encoderFactory = new EncoderFactory(this, encoderSet, container.getEncoderFactory());
     }
     
     @Override
     protected void discoverEndpointFunctions(Object obj)
     {
-        if(obj instanceof ConfiguredEndpoint)
+        if (!(obj instanceof ConfiguredEndpoint))
         {
             throw new IllegalArgumentException("JSR356 Implementation expects a " + ConfiguredEndpoint.class.getName() + " but got: " + obj.getClass().getName());
         }
@@ -109,21 +109,21 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         // Endpoint
         Object websocket = cendpoint.getEndpoint();
         
-        if(websocket instanceof Endpoint)
+        if (websocket instanceof Endpoint)
         {
-            Endpoint endpoint = (Endpoint)websocket;
+            Endpoint endpoint = (Endpoint) websocket;
             onOpenFunction = (sess) -> {
-                endpoint.onOpen(this,config);
+                endpoint.onOpen(this, config);
                 return null;
             };
             onCloseFunction = (closeinfo) -> {
                 CloseCode closeCode = CloseCodes.getCloseCode(closeinfo.getStatusCode());
-                CloseReason closeReason = new CloseReason(closeCode,closeinfo.getReason());
-                endpoint.onClose(this,closeReason);
+                CloseReason closeReason = new CloseReason(closeCode, closeinfo.getReason());
+                endpoint.onClose(this, closeReason);
                 return null;
             };
             onErrorFunction = (cause) -> {
-                endpoint.onError(this,cause);
+                endpoint.onError(this, cause);
                 return null;
             };
         }
@@ -132,7 +132,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         
         Class<?> websocketClass = websocket.getClass();
         ClientEndpoint clientEndpoint = websocketClass.getAnnotation(ClientEndpoint.class);
-        if(clientEndpoint != null)
+        if (clientEndpoint != null)
         {
             /*Method onmethod = null;
             
@@ -179,27 +179,27 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         Objects.requireNonNull(handler, "MessageHandler.Partial cannot be null");
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("MessageHandler.Partial class: {}",handler.getClass());
+            LOG.debug("MessageHandler.Partial class: {}", handler.getClass());
         }
         
         // No decoders for Partial messages per JSR-356 (PFD1 spec)
         
-        if(String.class.isAssignableFrom(clazz))
+        if (String.class.isAssignableFrom(clazz))
         {
             @SuppressWarnings("unchecked")
-            Partial<String> strhandler = (Partial<String>)handler;
+            Partial<String> strhandler = (Partial<String>) handler;
             setMessageAppender(MessageType.TEXT, new TextPartialMessage(strhandler));
         }
-        else if(ByteBuffer.class.isAssignableFrom(clazz))
+        else if (ByteBuffer.class.isAssignableFrom(clazz))
         {
             @SuppressWarnings("unchecked")
-            Partial<ByteBuffer> bufhandler = (Partial<ByteBuffer>)handler;
+            Partial<ByteBuffer> bufhandler = (Partial<ByteBuffer>) handler;
 //            setMessageAppender(MessageType.BINARY, new BinaryBufferPartialMessage(bufhandler));
         }
-        else if(byte[].class.isAssignableFrom(clazz))
+        else if (byte[].class.isAssignableFrom(clazz))
         {
             @SuppressWarnings("unchecked")
-            Partial<byte[]> arrhandler = (Partial<byte[]>)handler;
+            Partial<byte[]> arrhandler = (Partial<byte[]>) handler;
 //            setMessageAppender(MessageType.BINARY, new BinaryArrayPartialMessage(arrhandler));
         }
         else
@@ -217,7 +217,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         Objects.requireNonNull(handler, "MessageHandler.Whole cannot be null");
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("MessageHandler.Whole class: {}",handler.getClass());
+            LOG.debug("MessageHandler.Whole class: {}", handler.getClass());
         }
         
         // Determine Decoder
@@ -233,45 +233,45 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
             throw new IllegalStateException(err.toString());
         }
         
-        if(decoderWrapper.getMetadata().isStreamed())
+        if (decoderWrapper.getMetadata().isStreamed())
         {
             // Streaming 
-            if(InputStream.class.isAssignableFrom(clazz))
+            if (InputStream.class.isAssignableFrom(clazz))
             {
                 // Whole Text Streaming
                 @SuppressWarnings("unchecked")
-                Whole<Object> streamhandler = (Whole<Object>)handler;
-                Decoder.BinaryStream<?> streamdecoder = (Decoder.BinaryStream<?>)decoderWrapper.getDecoder();
+                Whole<Object> streamhandler = (Whole<Object>) handler;
+                Decoder.BinaryStream<?> streamdecoder = (Decoder.BinaryStream<?>) decoderWrapper.getDecoder();
 //                setMessageAppender(MessageType.TEXT,new JsrInputStreamMessage(streamhandler, streamdecoder, websocket, getExecutor()));
-            } 
-            else if(Reader.class.isAssignableFrom(clazz))
+            }
+            else if (Reader.class.isAssignableFrom(clazz))
             {
                 // Whole Reader Streaming
                 @SuppressWarnings("unchecked")
-                Whole<Object> streamhandler = (Whole<Object>)handler;
-                Decoder.TextStream<?> streamdecoder = (Decoder.TextStream<?>)decoderWrapper.getDecoder();
+                Whole<Object> streamhandler = (Whole<Object>) handler;
+                Decoder.TextStream<?> streamdecoder = (Decoder.TextStream<?>) decoderWrapper.getDecoder();
 //                setMessageAppender(MessageType.BINARY,new JsrReaderMessage(streamhandler, streamdecoder, websocket, getExecutor()));
             }
         }
     }
     
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void addMessageHandler(MessageHandler handler) throws IllegalStateException
     {
         Objects.requireNonNull(handler, "MessageHandler cannot be null");
-        Class<? extends MessageHandler> handlerClass = handler.getClass(); 
+        Class<? extends MessageHandler> handlerClass = handler.getClass();
         
         if (MessageHandler.Whole.class.isAssignableFrom(handlerClass))
         {
-            Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handlerClass,MessageHandler.Whole.class);
-            addMessageHandler(onMessageClass,(Whole)handler);
+            Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handlerClass, MessageHandler.Whole.class);
+            addMessageHandler(onMessageClass, (Whole) handler);
         }
         
         if (MessageHandler.Partial.class.isAssignableFrom(handlerClass))
         {
-            Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handlerClass,MessageHandler.Partial.class);
-            addMessageHandler(onMessageClass,(Partial)handler);
+            Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handlerClass, MessageHandler.Partial.class);
+            addMessageHandler(onMessageClass, (Partial) handler);
         }
     }
     
@@ -360,7 +360,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public void close(CloseReason closeReason) throws IOException
     {
-        close(closeReason.getCloseCode().getCode(),closeReason.getReasonPhrase());
+        close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());
     }
 
     @Override
@@ -582,5 +582,4 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         // JSR 356 specification mandates default batch mode to be off.
         return BatchMode.OFF;
     }
-
 }

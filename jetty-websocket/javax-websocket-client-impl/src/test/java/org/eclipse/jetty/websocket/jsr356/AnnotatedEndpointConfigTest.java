@@ -168,7 +168,7 @@ public class AnnotatedEndpointConfigTest
     public void testEncoders() throws Exception
     {
         List<Class<? extends Encoder>> encoders = config.getEncoders();
-        Assert.assertThat("Encoders",encoders,notNullValue());
+        Assert.assertThat("AvailableEncoders",encoders,notNullValue());
 
         Class<?> expectedClass = TimeEncoder.class;
         boolean hasExpectedEncoder = false;
@@ -180,7 +180,7 @@ public class AnnotatedEndpointConfigTest
             }
         }
 
-        Assert.assertTrue("Client Encoders has " + expectedClass.getName(),hasExpectedEncoder);
+        Assert.assertTrue("Client AvailableEncoders has " + expectedClass.getName(),hasExpectedEncoder);
     }
 
     @Test

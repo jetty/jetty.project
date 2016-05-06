@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.common.test.EventCapture;
 import org.junit.Assert;
 
 /**
@@ -47,6 +48,7 @@ public class TrackingSocket extends WebSocketAdapter
     public CountDownLatch dataLatch = new CountDownLatch(1);
     public EventQueue<String> messageQueue = new EventQueue<>();
     public EventQueue<Throwable> errorQueue = new EventQueue<>();
+    public EventCapture events = new EventCapture();
 
     public TrackingSocket()
     {
@@ -116,6 +118,7 @@ public class TrackingSocket extends WebSocketAdapter
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
         LOG.debug("{} onWebSocketBinary(byte[{}],{},{})",id,payload.length,offset,len);
+        events.add("onWebSocketBinary(byte[{}],{},{})",payload.length,offset,len);
         messageQueue.offer(MessageDebug.toDetailHint(payload,offset,len));
         dataLatch.countDown();
     }
@@ -124,6 +127,7 @@ public class TrackingSocket extends WebSocketAdapter
     public void onWebSocketClose(int statusCode, String reason)
     {
         LOG.debug("{} onWebSocketClose({},{})",id,statusCode,reason);
+        events.add("onWebSocketClose({},{})",statusCode,reason);
         super.onWebSocketClose(statusCode,reason);
         closeCode = statusCode;
         closeMessage.append(reason);
@@ -133,6 +137,7 @@ public class TrackingSocket extends WebSocketAdapter
     @Override
     public void onWebSocketConnect(Session session)
     {
+        events.add("onWebSocketConnect({})",session);
         super.onWebSocketConnect(session);
         openLatch.countDown();
     }
@@ -141,6 +146,7 @@ public class TrackingSocket extends WebSocketAdapter
     public void onWebSocketError(Throwable cause)
     {
         LOG.debug("{} onWebSocketError",id,cause);
+        events.add("onWebSocketError({})",cause);
         Assert.assertThat("Error capture",errorQueue.offer(cause),is(true));
     }
 
@@ -148,6 +154,7 @@ public class TrackingSocket extends WebSocketAdapter
     public void onWebSocketText(String message)
     {
         LOG.debug("{} onWebSocketText({})",id,message);
+        events.add("onWebSocketText({})",message);
         messageQueue.offer(message);
         dataLatch.countDown();
     }

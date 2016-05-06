@@ -37,9 +37,17 @@ public class DummyConnection implements LogicalConnection
 {
     private static final Logger LOG = Log.getLogger(DummyConnection.class);
     private IOState iostate;
+    private WebSocketPolicy policy;
 
+    @Deprecated
     public DummyConnection()
     {
+        this(WebSocketPolicy.newServerPolicy());
+    }
+
+    public DummyConnection(WebSocketPolicy policy)
+    {
+        this.policy = policy;
         this.iostate = new IOState();
     }
 
@@ -103,7 +111,7 @@ public class DummyConnection implements LogicalConnection
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return null;
+        return policy;
     }
 
     @Override
@@ -144,7 +152,7 @@ public class DummyConnection implements LogicalConnection
     public void setNextIncomingFrames(IncomingFrames incoming)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("setNextIncomingFrames({})",incoming);
+            LOG.debug("setNextIncomingFrames({})", incoming);
     }
 
     @Override

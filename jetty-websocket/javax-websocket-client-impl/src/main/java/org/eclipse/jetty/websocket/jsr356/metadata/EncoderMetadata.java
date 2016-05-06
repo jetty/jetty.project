@@ -25,6 +25,7 @@ import org.eclipse.jetty.websocket.jsr356.MessageType;
 /**
  * Immutable Metadata for a {@link Encoder}
  */
+@Deprecated
 public class EncoderMetadata extends CoderMetadata<Encoder>
 {
     public EncoderMetadata(Class<? extends Encoder> coderClass, Class<?> objType, MessageType messageType, boolean streamed)

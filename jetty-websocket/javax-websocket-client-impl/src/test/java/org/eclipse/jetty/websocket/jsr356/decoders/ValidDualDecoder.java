@@ -19,6 +19,8 @@
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
 import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
+import java.text.ParseException;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
@@ -32,13 +34,42 @@ public class ValidDualDecoder implements Decoder.Text<Integer>, Decoder.Binary<L
     @Override
     public Long decode(ByteBuffer bytes) throws DecodeException
     {
-        return bytes.getLong();
+        if (bytes.get() != '[')
+            throw new DecodeException(bytes, "Unexpected opening byte");
+        long val = bytes.getLong();
+        if (bytes.get() != ']')
+            throw new DecodeException(bytes, "Unexpected closing byte");
+        return val;
     }
 
     @Override
     public Integer decode(String s) throws DecodeException
     {
-        return Integer.parseInt(s);
+        DecimalFormat numberFormat = new DecimalFormat("[#,###]");
+        try
+        {
+            Number number = numberFormat.parse(s);
+            if (number instanceof Long)
+            {
+                Long val = (Long) number;
+                if (val > Integer.MAX_VALUE)
+                {
+                    throw new DecodeException(s, "Value exceeds Integer.MAX_VALUE");
+                }
+                return val.intValue();
+            }
+
+            if (number instanceof Integer)
+            {
+                return (Integer) number;
+            }
+
+            throw new DecodeException(s, "Unrecognized number format");
+        }
+        catch (ParseException e)
+        {
+            throw new DecodeException(s, "Unable to parse number", e);
+        }
     }
 
     @Override

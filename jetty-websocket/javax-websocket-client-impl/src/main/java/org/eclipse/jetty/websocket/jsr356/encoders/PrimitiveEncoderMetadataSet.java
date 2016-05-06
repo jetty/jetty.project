@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadataSet;
 
+@Deprecated
 public class PrimitiveEncoderMetadataSet extends EncoderMetadataSet
 {
     public static final EncoderMetadataSet INSTANCE = new PrimitiveEncoderMetadataSet();

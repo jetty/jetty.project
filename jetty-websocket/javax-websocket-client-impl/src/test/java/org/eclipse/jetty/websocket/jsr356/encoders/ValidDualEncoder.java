@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.encoders;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -38,23 +39,17 @@ public class ValidDualEncoder implements Encoder.Text<Integer>, Encoder.BinarySt
     @Override
     public String encode(Integer object) throws EncodeException
     {
-        return Integer.toString(object);
+        return String.format("[%,d]", object);
     }
 
     @Override
     public void encode(Long object, OutputStream os) throws EncodeException, IOException
     {
-        byte b[] = new byte[8];
-        long v = object;
-        b[0] = (byte)(v >>> 56);
-        b[1] = (byte)(v >>> 48);
-        b[2] = (byte)(v >>> 40);
-        b[3] = (byte)(v >>> 32);
-        b[4] = (byte)(v >>> 24);
-        b[5] = (byte)(v >>> 16);
-        b[6] = (byte)(v >>> 8);
-        b[7] = (byte)(v >>> 0);
-        os.write(b,0,8);
+        DataOutputStream data = new DataOutputStream(os);
+        data.writeByte((byte) '[');
+        data.writeLong(object);
+        data.writeByte((byte) ']');
+        data.flush();
     }
 
     @Override
