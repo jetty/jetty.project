@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -473,6 +474,22 @@ public class ServerConnector extends AbstractNetworkConnector
     public void setReuseAddress(boolean reuseAddress)
     {
         _reuseAddress = reuseAddress;
+    }
+
+    /**
+     * @return the ExecutionStrategy factory to use for SelectorManager
+     */
+    public ExecutionStrategy.Factory getExecutionStrategyFactory()
+    {
+        return _manager.getExecutionStrategyFactory();
+    }
+
+    /**
+     * @param executionFactory the ExecutionStrategy factory to use for SelectorManager
+     */
+    public void setExecutionStrategyFactory(ExecutionStrategy.Factory executionFactory)
+    {
+        _manager.setExecutionStrategyFactory(executionFactory);
     }
 
     protected class ServerConnectorManager extends SelectorManager
