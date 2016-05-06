@@ -53,7 +53,7 @@ public class EncoderMetadataSetTest
 
             // has duplicated support for the same target Type
             coders.add(BadDualEncoder.class);
-            Assert.fail("Should have thrown IllegalStateException for attempting to register Encoders with duplicate implementation");
+            Assert.fail("Should have thrown IllegalStateException for attempting to register AvailableEncoders with duplicate implementation");
         }
         catch (IllegalStateException e)
         {
@@ -73,7 +73,7 @@ public class EncoderMetadataSetTest
         {
             // Add TimeEncoder (which also wants to decode java.util.Date)
             coders.add(TimeEncoder.class);
-            Assert.fail("Should have thrown IllegalStateException for attempting to register Encoders with duplicate implementation");
+            Assert.fail("Should have thrown IllegalStateException for attempting to register AvailableEncoders with duplicate implementation");
         }
         catch (IllegalStateException e)
         {

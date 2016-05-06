@@ -39,12 +39,12 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
 
     public SimpleContainerScope(WebSocketPolicy policy)
     {
-        this(policy,new MappedByteBufferPool(),new DecoratedObjectFactory());
+        this(policy, new MappedByteBufferPool(), new DecoratedObjectFactory());
     }
 
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        this(policy,bufferPool,new DecoratedObjectFactory());
+        this(policy, bufferPool, new DecoratedObjectFactory());
     }
 
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
@@ -58,6 +58,15 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
         threadPool.setName(name);
         threadPool.setDaemon(true);
         this.executor = threadPool;
+
+        try
+        {
+            threadPool.start();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

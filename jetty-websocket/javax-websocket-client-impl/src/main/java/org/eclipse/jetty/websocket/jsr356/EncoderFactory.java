@@ -35,6 +35,7 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadataSet;
 /**
  * Represents all of the declared {@link Encoder}s that the Container is aware of.
  */
+@Deprecated
 public class EncoderFactory implements Configurable
 {
     public static class Wrapper implements Configurable

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,7 +33,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Support class for reading a (single) WebSocket BINARY message via a InputStream.
- * <p>
+ * <p/>
  * An InputStream that can access a queue of ByteBuffer payloads, along with expected InputStream blocking behavior.
  */
 public class MessageInputStream extends InputStream implements MessageSink
@@ -41,8 +42,11 @@ public class MessageInputStream extends InputStream implements MessageSink
     private static final ByteBuffer EOF = ByteBuffer.allocate(0).asReadOnlyBuffer();
 
     private final BlockingDeque<ByteBuffer> buffers = new LinkedBlockingDeque<>();
-    private AtomicBoolean closed = new AtomicBoolean(false);
+
+    private final AtomicBoolean closed = new AtomicBoolean(false);
     private final long timeoutMs;
+    private final CountDownLatch closedLatch = new CountDownLatch(1);
+
     private ByteBuffer activeBuffer = null;
 
     public MessageInputStream()
@@ -60,7 +64,7 @@ public class MessageInputStream extends InputStream implements MessageSink
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Appending {} chunk: {}",fin?"final":"non-final",BufferUtil.toDetailString(payload));
+            LOG.debug("Appending {} chunk: {}", fin ? "final" : "non-final", BufferUtil.toDetailString(payload));
         }
 
         // If closed, we should just toss incoming payloads into the bit bucket.
@@ -87,7 +91,7 @@ public class MessageInputStream extends InputStream implements MessageSink
                 return;
             }
             // TODO: the copy buffer should be pooled too, but no buffer pool available from here.
-            ByteBuffer copy = payload.isDirect()?ByteBuffer.allocateDirect(capacity):ByteBuffer.allocate(capacity);
+            ByteBuffer copy = payload.isDirect() ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
             copy.put(payload).flip();
             buffers.put(copy);
         }
@@ -111,6 +115,7 @@ public class MessageInputStream extends InputStream implements MessageSink
         {
             buffers.offer(EOF);
             super.close();
+            closedLatch.countDown();
         }
     }
 
@@ -164,6 +169,7 @@ public class MessageInputStream extends InputStream implements MessageSink
                         LOG.debug("Reached EOF");
                     // Be sure that this stream cannot be reused.
                     closed.set(true);
+                    closedLatch.countDown();
                     // Removed buffers that may have remained in the queue.
                     buffers.clear();
                     return -1;
@@ -177,6 +183,7 @@ public class MessageInputStream extends InputStream implements MessageSink
             if (LOG.isDebugEnabled())
                 LOG.debug("Interrupted while waiting to read", x);
             closed.set(true);
+            closedLatch.countDown();
             return -1;
         }
     }
@@ -185,5 +192,17 @@ public class MessageInputStream extends InputStream implements MessageSink
     public void reset() throws IOException
     {
         throw new IOException("reset() not supported");
+    }
+
+    public void awaitClose()
+    {
+        try
+        {
+            closedLatch.await();
+        }
+        catch (InterruptedException e)
+        {
+            throw new RuntimeException("Stream Close wait interrupted", e);
+        }
     }
 }

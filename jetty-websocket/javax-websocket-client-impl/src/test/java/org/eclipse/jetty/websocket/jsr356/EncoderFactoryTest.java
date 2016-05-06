@@ -38,7 +38,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Tests against the Encoders class
+ * Tests against the AvailableEncoders class
  */
 public class EncoderFactoryTest
 {

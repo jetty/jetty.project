@@ -20,10 +20,12 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import javax.websocket.EndpointConfig;
 
+import org.eclipse.jetty.websocket.common.ManagedEndpoint;
+
 /**
  * Associate a JSR Endpoint with its optional {@link EndpointConfig}
  */
-public class ConfiguredEndpoint
+public class ConfiguredEndpoint implements ManagedEndpoint
 {
     /** The instance of the Endpoint */
     private final Object endpoint;
@@ -42,6 +44,12 @@ public class ConfiguredEndpoint
     }
 
     public Object getEndpoint()
+    {
+        return endpoint;
+    }
+
+    @Override
+    public Object getRawEndpoint()
     {
         return endpoint;
     }

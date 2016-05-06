@@ -42,4 +42,9 @@ public class MessageReader extends InputStreamReader implements MessageSink
     {
         this.stream.accept(payload, fin);
     }
+
+    public void awaitClose()
+    {
+        stream.awaitClose();
+    }
 }

@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadataSet;
  * <li>Container declared DecoderMetadataSet (primitives)</li>
  * </ul>
  */
+@Deprecated
 public class DecoderFactory implements Configurable
 {
     public static class Wrapper implements Configurable

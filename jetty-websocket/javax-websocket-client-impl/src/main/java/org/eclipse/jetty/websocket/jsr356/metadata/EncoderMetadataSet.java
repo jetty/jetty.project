@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 
+@Deprecated
 public class EncoderMetadataSet extends CoderMetadataSet<Encoder, EncoderMetadata>
 {
     @Override

@@ -22,12 +22,33 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.common.util.DynamicArgs;
+import org.eclipse.jetty.websocket.common.reflect.DynamicArgs;
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 @SuppressWarnings("serial")
 public class InvalidSignatureException extends InvalidWebSocketException
 {
-    public static InvalidSignatureException build(Method method, Class<? extends Annotation> annoClass, DynamicArgs.Builder ... dynArgsBuilders)
+    public static InvalidSignatureException build(Class<?> pojo, Class<? extends Annotation> methodAnnotationClass, Method method)
+    {
+        StringBuilder err = new StringBuilder();
+        if (methodAnnotationClass != null)
+        {
+            err.append("@");
+            err.append(methodAnnotationClass.getSimpleName());
+            err.append(' ');
+        }
+        if (pojo != null)
+        {
+            ReflectUtils.append(err, method);
+        }
+        else
+        {
+            ReflectUtils.append(err, pojo, method);
+        }
+        return new InvalidSignatureException(err.toString());
+    }
+
+    public static InvalidSignatureException build(Method method, Class<? extends Annotation> annoClass, DynamicArgs.Builder... dynArgsBuilders)
     {
         // Build big detailed exception to help the developer
         StringBuilder err = new StringBuilder();
@@ -53,6 +74,6 @@ public class InvalidSignatureException extends InvalidWebSocketException
 
     public InvalidSignatureException(String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
     }
 }

@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.encoders;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
@@ -30,6 +31,8 @@ import javax.websocket.EndpointConfig;
  */
 public class TimeEncoder implements Encoder.Text<Date>
 {
+    private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
+
     @Override
     public void destroy()
     {
@@ -38,7 +41,9 @@ public class TimeEncoder implements Encoder.Text<Date>
     @Override
     public String encode(Date object) throws EncodeException
     {
-        return new SimpleDateFormat("HH:mm:ss z").format(object);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss z");
+        dateFormat.setTimeZone(GMT);
+        return dateFormat.format(object);
     }
 
     @Override

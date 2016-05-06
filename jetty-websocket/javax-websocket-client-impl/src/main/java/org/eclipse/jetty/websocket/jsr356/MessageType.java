@@ -27,5 +27,5 @@ public enum MessageType
 {
     TEXT,
     BINARY,
-    PONG;
+    PONG
 }

@@ -71,7 +71,7 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
             this.decoders = Collections.unmodifiableList(Arrays.asList(anno.decoders()));
         }
 
-        // Encoders (favor provided config over annotation)
+        // AvailableEncoders (favor provided config over annotation)
         if (baseConfig != null && baseConfig.getEncoders() != null && baseConfig.getEncoders().size() > 0)
         {
             this.encoders = Collections.unmodifiableList(baseConfig.getEncoders());
