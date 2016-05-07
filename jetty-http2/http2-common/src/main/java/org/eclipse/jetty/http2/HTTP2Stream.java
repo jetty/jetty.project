@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -87,14 +88,12 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
     {
         if (!checkWrite(callback))
             return;
-        notIdle();
         session.frames(this, this, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override
     public void push(PushPromiseFrame frame, Promise<Stream> promise, Listener listener)
     {
-        notIdle();
         session.push(this, promise, frame, listener);
     }
 
@@ -103,7 +102,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
     {
         if (!checkWrite(callback))
             return;
-        notIdle();
         session.data(this, this, frame);
     }
 
@@ -112,7 +110,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
     {
         if (isReset())
             return;
-        notIdle();
         localReset = true;
         session.frames(this, callback, frame, Frame.EMPTY_ARRAY);
     }
@@ -240,6 +237,11 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
                 onPush((PushPromiseFrame)frame, callback);
                 break;
             }
+            case WINDOW_UPDATE:
+            {
+                onWindowUpdate((WindowUpdateFrame)frame, callback);
+                break;
+            }
             default:
             {
                 throw new UnsupportedOperationException();
@@ -299,6 +301,11 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
         // Pushed streams are implicitly locally closed.
         // They are closed when receiving an end-stream DATA frame.
         updateClose(true, true);
+        callback.succeeded();
+    }
+
+    private void onWindowUpdate(WindowUpdateFrame frame, Callback callback)
+    {
         callback.succeeded();
     }
 
