@@ -10,7 +10,7 @@ jmx
 etc/jolokia.xml
 
 [files]
-maven://org.jolokia/jolokia-war/1.2.2/war|lib/jolokia/jolokia.war
+maven://org.jolokia/jolokia-war/1.3.3/war|lib/jolokia/jolokia.war
 
 [license]
 Jolokia is released under the Apache License 2.0
