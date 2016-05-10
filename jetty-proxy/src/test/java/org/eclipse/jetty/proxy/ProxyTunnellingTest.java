@@ -21,6 +21,7 @@ package org.eclipse.jetty.proxy;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
@@ -61,6 +63,8 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHENTICATE;
+import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHORIZATION;
 import static org.junit.Assert.assertEquals;
 
 public class ProxyTunnellingTest
@@ -270,6 +274,59 @@ public class ProxyTunnellingTest
             assertEquals(HttpStatus.OK_200, response2.getStatus());
             String content2 = response1.getContentAsString();
             assertEquals(body1, content2);
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
+    public void testProxyAuth() throws Exception
+    {
+        startSSLServer(new ServerHandler() {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException {
+                super.handle(target, request, httpRequest, httpResponse);
+            }
+        });
+        startProxy(new ConnectHandler() {
+            @Override
+            protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address) {
+                // validate proxy-authentication header
+                final String header = request.getHeader(PROXY_AUTHORIZATION.toString());
+                if (header == null || !header.startsWith("Basic ")) {
+                    LOG.warn("Missing header " + PROXY_AUTHORIZATION);
+                    // ask for authentication header
+                    response.setHeader(PROXY_AUTHENTICATE.toString(), String.format("Basic realm=\"%s\"", "test-realm"));
+                    return false;
+                } else {
+                    LOG.info("Request contains required header " + PROXY_AUTHORIZATION);
+                    return true;
+                }
+            }
+        });
+
+        HttpClient httpClient = new HttpClient(sslContextFactory);
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
+        httpClient.getAuthenticationStore().addAuthentication(
+            new BasicAuthentication(URI.create("http://localhost:" + proxyPort()), "test-realm", "user", "password"));
+        httpClient.start();
+
+        try
+        {
+            // Use a numeric host to test the URI of the CONNECT request.
+            String host = "127.0.0.1";
+            String body = "BODY";
+            ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .method(HttpMethod.GET)
+                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .send();
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = response.getContentAsString();
+            assertEquals(body, content);
         }
         finally
         {
