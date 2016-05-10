@@ -63,6 +63,12 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         
         Throwable th= (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
 
+        // Unwrap ServletException(s)
+        while (th != null && th instanceof ServletException)
+        {
+            th = ((ServletException) th).getRootCause();
+        }
+
         // Walk the cause hierarchy
         while (error_page == null && th != null )
         {
@@ -80,7 +86,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                 error_page= (String)_errorPages.get(exClass.getName());
             }
 
-            th=(th instanceof ServletException)?((ServletException)th).getRootCause():null;
+            th = (th.getCause() != null) ? th.getCause() : null;
         }
 
         Integer errorStatusCode = null;
