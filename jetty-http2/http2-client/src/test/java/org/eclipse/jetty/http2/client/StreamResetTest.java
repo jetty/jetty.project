@@ -37,6 +37,8 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -47,6 +49,7 @@ import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -221,7 +224,7 @@ public class StreamResetTest extends AbstractTest
 
                 response.setStatus(200);
                 response.setContentType("text/plain;charset=" + charset.name());
-                response.setContentLength(data.length*10);
+                response.setContentLength(data.length * 10);
                 response.flushBuffer();
 
                 try
@@ -238,7 +241,7 @@ public class StreamResetTest extends AbstractTest
                 {
                     // Write some content after the stream has
                     // been reset, it should throw an exception.
-                    for (int i=0;i<10;i++)
+                    for (int i = 0; i < 10; i++)
                     {
                         Thread.sleep(500);
                         response.getOutputStream().write(data);
@@ -349,5 +352,88 @@ public class StreamResetTest extends AbstractTest
         });
 
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testClientResetConsumesQueuedData() throws Exception
+    {
+        start(new EmptyHttpServlet());
+
+        Session client = newClient(new Session.Listener.Adapter());
+        MetaData.Request request = newRequest("GET", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(request, null, false);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        client.newStream(frame, promise, new Stream.Listener.Adapter());
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        CountDownLatch dataLatch = new CountDownLatch(1);
+        stream.data(new DataFrame(stream.getId(), data, false), new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                dataLatch.countDown();
+            }
+        });
+        // The server does not read the data, so the flow control window should be zero.
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(0, ((ISession)client).updateSendWindow(0));
+
+        // Now reset the stream.
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+
+        // Wait for the server to receive the reset and process
+        // it, and for the client to process the window updates.
+        Thread.sleep(1000);
+
+        Assert.assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
+    }
+
+    @Test
+    public void testServerExceptionConsumesQueuedData() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                try
+                {
+                    // Wait to let the data sent by the client to be queued.
+                    Thread.sleep(1000);
+                    throw new IllegalStateException();
+                }
+                catch (InterruptedException e)
+                {
+                    throw new InterruptedIOException();
+                }
+            }
+        });
+
+        Session client = newClient(new Session.Listener.Adapter());
+        MetaData.Request request = newRequest("GET", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(request, null, false);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        client.newStream(frame, promise, new Stream.Listener.Adapter());
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        CountDownLatch dataLatch = new CountDownLatch(1);
+        stream.data(new DataFrame(stream.getId(), data, false), new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                dataLatch.countDown();
+            }
+        });
+        // The server does not read the data, so the flow control window should be zero.
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(0, ((ISession)client).updateSendWindow(0));
+
+        // Wait for the server process the exception, and
+        // for the client to process the window updates.
+        Thread.sleep(2000);
+
+        Assert.assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
     }
 }
