@@ -167,7 +167,7 @@ public class HTTP2Connection extends AbstractConnection
 
                     task = tasks.poll();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Dequeued task {}", task);
+                        LOG.debug("Dequeued new task {}", task);
                     if (task != null)
                     {
                         release();
