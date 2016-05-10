@@ -425,13 +425,16 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * @return True if the pool is at maxThreads and there are not more idle threads than queued jobs
+     * @return whether the pool is at {@code maxThreads} and there are
+     * either one or less idle threads, or less idle threads than queued jobs
      */
     @Override
-    @ManagedAttribute("True if the pools is at maxThreads and there are not idle threads than queued jobs")
+    @ManagedAttribute("Whether the pools is at maxThreads and there are either one or less idle threads, or less idle threads than queued jobs")
     public boolean isLowOnThreads()
     {
-        return _threadsStarted.get() == _maxThreads && _jobs.size() >= _threadsIdle.get();
+        int idleThreads = _threadsIdle.get();
+        return _threadsStarted.get() == _maxThreads &&
+                (idleThreads <= 1 || idleThreads <= _jobs.size());
     }
 
     private boolean startThreads(int threadsToStart)
