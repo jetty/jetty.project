@@ -63,6 +63,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     private int _priority = Thread.NORM_PRIORITY;
     private boolean _daemon = false;
     private boolean _detailedDump = false;
+    private int _lowThreadsThreshold = 1;
 
     public QueuedThreadPool()
     {
@@ -360,6 +361,17 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         _detailedDump = detailedDump;
     }
 
+    @ManagedAttribute("threshold at which the pool is low on threads")
+    public int getLowThreadsThreshold()
+    {
+        return _lowThreadsThreshold;
+    }
+
+    public void setLowThreadsThreshold(int lowThreadsThreshold)
+    {
+        _lowThreadsThreshold = lowThreadsThreshold;
+    }
+
     @Override
     public void execute(Runnable job)
     {
@@ -424,16 +436,20 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * @return whether the pool is at {@code maxThreads} and there are
-     * either one or less idle threads, or less idle threads than queued jobs
+     * <p>Returns whether this thread pool is low on threads.</p>
+     * <p>The current formula is:</p>
+     * <pre>
+     * maxThreads - threads + idleThreads - queueSize <= lowThreadsThreshold
+     * </pre>
+     *
+     * @return whether the pool is low on threads
+     * @see #getLowThreadsThreshold()
      */
     @Override
-    @ManagedAttribute("Whether the pools is at maxThreads and there are either one or less idle threads, or less idle threads than queued jobs")
+    @ManagedAttribute(value = "thread pool is low on threads", readonly = true)
     public boolean isLowOnThreads()
     {
-        int idleThreads = _threadsIdle.get();
-        return _threadsStarted.get() == _maxThreads &&
-                (idleThreads <= 1 || idleThreads <= _jobs.size());
+        return getMaxThreads() - getThreads() + getIdleThreads() - getQueueSize() <= getLowThreadsThreshold();
     }
 
     private boolean startThreads(int threadsToStart)
