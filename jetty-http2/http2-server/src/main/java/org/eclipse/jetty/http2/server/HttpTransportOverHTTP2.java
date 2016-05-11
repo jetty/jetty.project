@@ -100,7 +100,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             {
                 if (hasContent)
                 {
-                    commit(info, false, new Callback()
+                    commit(info, false, new Callback.NonBlocking()
                     {
                         @Override
                         public void succeeded()
@@ -207,16 +207,20 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     @Override
     public void onCompleted()
     {
+        // If the stream is not closed, it is still reading the request content.
+        // Send a reset to the other end so that it stops sending data.
         if (!stream.isClosed())
-        {
-            // If the stream is not closed, it is still reading the request content.
-            // Send a reset to the other end so that it stops sending data.
             stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-            // Now that this stream is reset, in-flight data frames will be consumed and discarded.
-            // Consume the existing queued data frames to avoid stalling the flow control.
-            HttpChannel channel = (HttpChannel)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-            channel.getRequest().getHttpInput().consumeAll();
-        }
+
+        // Consume the existing queued data frames to
+        // avoid stalling the session flow control.
+        consumeInput();
+    }
+
+    protected void consumeInput()
+    {
+        HttpChannel channel = (HttpChannel)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+        channel.getRequest().getHttpInput().consumeAll();
     }
 
     @Override

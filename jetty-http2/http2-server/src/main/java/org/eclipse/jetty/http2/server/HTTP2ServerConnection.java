@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Request;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.SettingsBodyParser;
@@ -187,7 +189,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         return true;
     }
 
-    private class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2
+    private class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2 implements ExecutionStrategy.Rejectable
     {
         public ServerHttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
         {
@@ -195,11 +197,28 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
 
         @Override
+        public void recycle()
+        {
+            super.recycle();
+            channels.offer(this);
+        }
+
+        @Override
         public void onCompleted()
         {
             super.onCompleted();
             recycle();
-            channels.offer(this);
+        }
+
+        @Override
+        public void reject()
+        {
+            IStream stream = getStream();
+            stream.reset(new ResetFrame(stream.getId(), ErrorCode.ENHANCE_YOUR_CALM_ERROR.code), Callback.NOOP);
+            // Consume the existing queued data frames to
+            // avoid stalling the session flow control.
+            getHttpTransport().consumeInput();
+            recycle();
         }
     }
 }

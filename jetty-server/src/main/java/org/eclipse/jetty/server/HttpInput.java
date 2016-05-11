@@ -147,9 +147,9 @@ public class HttpInput extends ServletInputStream implements Runnable
                 Content item = nextContent();
                 if (item!=null)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} read {} from {}",this,len,item);
                     int l = get(item, b, off, len);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} read {} from {}",this,l,item);
 
                     consumeNonContent();
 
@@ -357,7 +357,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} blocking for content timeout={} ...", this,timeout);
+                LOG.debug("{} blocking for content timeout={}", this,timeout);
             if (timeout>0)
                 _inputQ.wait(timeout);
             else
@@ -845,5 +845,4 @@ public class HttpInput extends ServletInputStream implements Runnable
             return "AEOF";
         }
     };
-
 }
