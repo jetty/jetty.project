@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.thread.strategy;
 
+import java.io.Closeable;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.log.Log;
@@ -28,9 +29,8 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
- * <p>A strategy where the thread calls produce will always run the resulting task
- * itself.  The strategy may dispatches another thread to continue production.
- * </p>
+ * <p>A strategy where the thread that produces will always run the resulting task.</p>
+ * <p>The strategy may then dispatch another thread to continue production.</p>
  * <p>The strategy is also known by the nickname 'eat what you kill', which comes from
  * the hunting ethic that says a person should not kill anything he or she does not
  * plan on eating. In this case, the phrase is used to mean that a thread should
@@ -39,8 +39,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * down by running the task in the same core, with good chances of having a hot CPU
  * cache. It also avoids the creation of a queue of produced tasks that the system
  * does not yet have capacity to consume, which can save memory and exert back
- * pressure on producers.
- * </p>
+ * pressure on producers.</p>
  */
 public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements ExecutionStrategy, Runnable
 {
@@ -191,7 +190,7 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
                 }
 
                 // Execute the task.
-                executeTask(task);
+                executeProduct(task);
             }
             return !idle;
         }
@@ -203,9 +202,37 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
         }
     }
 
-    protected void executeTask(Runnable task)
+    /**
+     * <p>Only called when in {@link #isLowOnThreads() low threads mode}
+     * to execute the task produced by the producer.</p>
+     * <p>Because </p>
+     * <p>If the task implements {@link Rejectable}, then {@link Rejectable#reject()}
+     * is immediately called on the task object. If the task also implements
+     * {@link Closeable}, then {@link Closeable#close()} is called on the task object.</p>
+     * <p>If the task does not implement {@link Rejectable}, then it is
+     * {@link #execute(Runnable) executed}.</p>
+     *
+     * @param task the produced task to execute
+     */
+    protected void executeProduct(Runnable task)
     {
-        execute(task);
+        if (task instanceof Rejectable)
+        {
+            try
+            {
+                ((Rejectable)task).reject();
+                if (task instanceof Closeable)
+                    ((Closeable)task).close();
+            }
+            catch (Throwable x)
+            {
+                LOG.debug(x);
+            }
+        }
+        else
+        {
+            execute(task);
+        }
     }
 
     private void executeProduceConsume()

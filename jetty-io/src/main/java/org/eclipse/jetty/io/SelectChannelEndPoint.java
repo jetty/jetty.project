@@ -26,13 +26,11 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
- * An ChannelEndpoint that can be scheduled by {@link SelectorManager}.
+ * @deprecated use {@link SocketChannelEndPoint} instead
  */
 @Deprecated
-public class SelectChannelEndPoint extends SocketChannelEndPoint implements ManagedSelector.Selectable
+public class SelectChannelEndPoint extends SocketChannelEndPoint
 {
-    public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
-
     public SelectChannelEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler, long idleTimeout)
     {
         super(channel,selector,key,scheduler);

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
@@ -28,7 +29,6 @@ import java.nio.channels.SelectionKey;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ExecutionStrategy.Rejectable;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -61,8 +61,9 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
 
     private abstract class RunnableTask  implements Runnable
     {
-        final String _operation;
-        RunnableTask(String op)
+        private final String _operation;
+
+        protected RunnableTask(String op)
         {
             _operation=op;
         }
@@ -74,19 +75,19 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     }
 
-    private abstract class RejectableRunnable extends RunnableTask implements Rejectable
+    private abstract class RunnableCloseable extends RunnableTask implements Closeable
     {
-        RejectableRunnable(String op)
+        protected RunnableCloseable(String op)
         {
             super(op);
         }
 
         @Override
-        public void reject()
+        public void close()
         {
             try
             {
-                close();
+                ChannelEndPoint.this.close();
             }
             catch (Throwable x)
             {
@@ -104,7 +105,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     };
 
-    private final Runnable _runFillable = new RejectableRunnable("runFillable")
+    private final Runnable _runFillable = new RunnableCloseable("runFillable")
     {
         @Override
         public void run()
@@ -113,7 +114,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     };
 
-    private final Runnable _runCompleteWrite = new RejectableRunnable("runCompleteWrite")
+    private final Runnable _runCompleteWrite = new RunnableCloseable("runCompleteWrite")
     {
         @Override
         public void run()
@@ -122,7 +123,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     };
 
-    private final Runnable _runCompleteWriteFillable = new RejectableRunnable("runCompleteWriteFillable")
+    private final Runnable _runCompleteWriteFillable = new RunnableCloseable("runCompleteWriteFillable")
     {
         @Override
         public void run()
