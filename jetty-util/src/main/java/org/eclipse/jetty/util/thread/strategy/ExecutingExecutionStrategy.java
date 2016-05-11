@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.thread.strategy;
 
+import java.io.Closeable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -25,6 +26,12 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 
+/**
+ * <p>Base class for strategies that need to execute a task by submitting it to an {@link Executor}.</p>
+ * <p>If the submission to the {@code Executor} is rejected (via a {@link RejectedExecutionException}),
+ * the task is tested whether it implements {@link Closeable}; if it does, then {@link Closeable#close()}
+ * is called on the task object.</p>
+ */
 public abstract class ExecutingExecutionStrategy implements ExecutionStrategy
 {
     private static final Logger LOG = Log.getLogger(ExecutingExecutionStrategy.class);
@@ -45,13 +52,13 @@ public abstract class ExecutingExecutionStrategy implements ExecutionStrategy
         }
         catch(RejectedExecutionException e)
         {
-            // If we cannot execute, then discard/reject the task and keep producing
+            // If we cannot execute, then close the task and keep producing.
             LOG.debug(e);
-            LOG.warn("RejectedExecution {}",task);
+            LOG.warn("Rejected execution of {}",task);
             try
             {
-                if (task instanceof Rejectable)
-                    ((Rejectable)task).reject();
+                if (task instanceof Closeable)
+                    ((Closeable)task).close();
             }
             catch (Exception x)
             {

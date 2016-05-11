@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,17 +41,14 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -75,25 +71,6 @@ public class SmallThreadPoolLoadTest extends AbstractTest
     public void testConcurrentWithSmallServerThreadPool() throws Exception
     {
         start(new LoadServlet());
-        AbstractHTTP2ServerConnectionFactory factory = connector.getBean(AbstractHTTP2ServerConnectionFactory.class);
-        factory.setExecutionStrategyFactory(new ExecuteProduceConsume.Factory()
-        {
-            @Override
-            public ExecutionStrategy newExecutionStrategy(ExecutionStrategy.Producer producer, Executor executor)
-            {
-                return new ExecuteProduceConsume(producer, executor)
-                {
-                    @Override
-                    protected void executeTask(Runnable task)
-                    {
-                        if (task instanceof Rejectable)
-                            ((Rejectable)task).reject();
-                        else
-                            super.executeTask(task);
-                    }
-                };
-            }
-        });
 
         // Only one connection to the server.
         Session session = newClient(new Session.Listener.Adapter());
