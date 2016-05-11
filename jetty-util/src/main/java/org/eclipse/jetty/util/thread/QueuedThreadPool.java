@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
-@ManagedObject("A thread pool with no max bound by default")
+@ManagedObject("A thread pool")
 public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPool, Dumpable
 {
     private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
@@ -333,24 +333,23 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      *
      * @return Number of jobs queued waiting for a thread
      */
-    @ManagedAttribute("Size of the job queue")
+    @ManagedAttribute("size of the job queue")
     public int getQueueSize()
     {
         return _jobs.size();
     }
 
     /**
-     * Is thread pool using daemon threading
-     *
-     * @return true if delegating to named or anonymous pool
+     * @return whether this thread pool is using daemon threads
      * @see Thread#setDaemon(boolean)
      */
-    @ManagedAttribute("thead pool using a daemon thread")
+    @ManagedAttribute("thread pool uses daemon threads")
     public boolean isDaemon()
     {
         return _daemon;
     }
 
+    @ManagedAttribute("reports additional details in the dump")
     public boolean isDetailedDump()
     {
         return _detailedDump;
@@ -396,29 +395,29 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * @return The total number of threads currently in the pool
+     * @return the total number of threads currently in the pool
      */
     @Override
-    @ManagedAttribute("total number of threads currently in the pool")
+    @ManagedAttribute("number of threads in the pool")
     public int getThreads()
     {
         return _threadsStarted.get();
     }
 
     /**
-     * @return The number of idle threads in the pool
+     * @return the number of idle threads in the pool
      */
     @Override
-    @ManagedAttribute("total number of idle threads in the pool")
+    @ManagedAttribute("number of idle threads in the pool")
     public int getIdleThreads()
     {
         return _threadsIdle.get();
     }
 
     /**
-     * @return The number of busy threads in the pool
+     * @return the number of busy threads in the pool
      */
-    @ManagedAttribute("total number of busy threads in the pool")
+    @ManagedAttribute("number of busy threads in the pool")
     public int getBusyThreads()
     {
         return getThreads() - getIdleThreads();
@@ -476,7 +475,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     @Override
-    @ManagedOperation("dump thread state")
+    @ManagedOperation("dumps thread pool state")
     public String dump()
     {
         return ContainerLifeCycle.dump(this);
@@ -675,10 +674,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * @param id The thread ID to interrupt.
+     * @param id the thread ID to interrupt.
      * @return true if the thread was found and interrupted.
      */
-    @ManagedOperation("interrupt a pool thread")
+    @ManagedOperation("interrupts a pool thread")
     public boolean interruptThread(@Name("id") long id)
     {
         for (Thread thread : _threads)
@@ -693,10 +692,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * @param id The thread ID to interrupt.
-     * @return true if the thread was found and interrupted.
+     * @param id the thread ID to interrupt.
+     * @return the stack frames dump
      */
-    @ManagedOperation("dump a pool thread stack")
+    @ManagedOperation("dumps a pool thread stack")
     public String dumpThread(@Name("id") long id)
     {
         for (Thread thread : _threads)
