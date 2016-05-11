@@ -191,7 +191,7 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
                 }
 
                 // Execute the task.
-                execute(task);
+                executeTask(task);
             }
             return !idle;
         }
@@ -201,6 +201,11 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
             if (LOG.isDebugEnabled())
                 LOG.debug("{} exit low threads mode", this);
         }
+    }
+
+    protected void executeTask(Runnable task)
+    {
+        execute(task);
     }
 
     private void executeProduceConsume()
