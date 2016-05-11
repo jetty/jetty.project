@@ -35,6 +35,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
+
 public class PostServletTest
 {
     private static final Logger LOG = Log.getLogger(PostServletTest.class);
@@ -108,7 +112,7 @@ public class PostServletTest
 
         String resp = connector.getResponses(req.toString());
 
-        Assert.assertThat("resp", resp, Matchers.containsString("HTTP/1.1 200 OK"));
+        assertThat("resp", resp, Matchers.containsString("HTTP/1.1 200 OK"));
     }
 
     @Test
@@ -128,9 +132,9 @@ public class PostServletTest
         try (StacklessLogging scope = new StacklessLogging(ServletHandler.class))
         {
             String resp = connector.getResponses(req.toString());
-            Assert.assertThat("resp", resp, Matchers.containsString("HTTP/1.1 200 "));
-            Assert.assertThat("resp", resp, Matchers.containsString("chunked"));
-            Assert.assertThat("resp", resp, Matchers.not(Matchers.containsString("\r\n0\r\n")));
+            assertThat("resp", resp, Matchers.containsString("HTTP/1.1 200 "));
+            assertThat("resp", resp, Matchers.containsString("chunked"));
+            assertThat("resp", resp, not(containsString("\r\n0\r\n")));
         }
     }
 
@@ -162,7 +166,7 @@ public class PostServletTest
 
             endp.waitUntilClosedOrIdleFor(1,TimeUnit.SECONDS);
             String resp = endp.takeOutputString();
-            Assert.assertThat("resp", resp, Matchers.containsString("HTTP/1.1 400 "));
+            assertThat("resp", resp, Matchers.containsString("HTTP/1.1 400 "));
         }
     }
 
@@ -193,9 +197,9 @@ public class PostServletTest
 
             endp.waitUntilClosedOrIdleFor(1,TimeUnit.SECONDS);
             String resp = endp.takeOutputString();
-            Assert.assertThat("resp", resp, Matchers.containsString("HTTP/1.1 200 "));
-            Assert.assertThat("resp", resp, Matchers.containsString("Transfer-Encoding: chunked"));
-            Assert.assertThat("resp", resp, Matchers.not(Matchers.containsString("\r\n0\r\n")));
+            assertThat("resp", resp, Matchers.containsString("HTTP/1.1 200 "));
+            assertThat("resp", resp, Matchers.containsString("Transfer-Encoding: chunked"));
+            assertThat("resp", resp, not(Matchers.containsString("\r\n0\r\n")));
         }
     }
 }

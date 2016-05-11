@@ -232,7 +232,7 @@ public class GracefulStopTest
                         assertThat(response2, containsString(" 503 "));
 
                         now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                        Thread.sleep(end-now);
+                        Thread.sleep(Math.max(1,end-now));
                         client1.getOutputStream().write("567890".getBytes());
                     }
                     catch(Exception e)
