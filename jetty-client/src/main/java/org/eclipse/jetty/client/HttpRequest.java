@@ -59,7 +59,6 @@ import org.eclipse.jetty.util.Fields;
 public class HttpRequest implements Request
 {
     private static final URI NULL_URI = URI.create("null:0");
-    static final String CONNECTION_ATTRIBUTE = HttpRequest.class.getName() + ".connection";
 
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields(true);
