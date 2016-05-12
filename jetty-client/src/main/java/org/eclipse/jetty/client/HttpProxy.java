@@ -146,7 +146,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         @Override
         public void failed(Throwable x)
         {
-            promise.failed(x);
+            tunnelFailed(endPoint, x);
         }
 
         private void tunnel(HttpDestination destination, Connection connection)
@@ -223,7 +223,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         private void tunnelFailed(EndPoint endPoint, Throwable failure)
         {
             endPoint.close();
-            failed(failure);
+            promise.failed(failure);
         }
     }
 
