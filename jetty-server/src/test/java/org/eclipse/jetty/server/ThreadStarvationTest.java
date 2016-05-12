@@ -37,10 +37,7 @@ import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
 import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -168,6 +165,7 @@ public class ThreadStarvationTest
     }
 
     @Test
+    @Ignore
     public void testEPCExitsLowThreadsMode() throws Exception
     {
         prepareServer(new ReadHandler());
