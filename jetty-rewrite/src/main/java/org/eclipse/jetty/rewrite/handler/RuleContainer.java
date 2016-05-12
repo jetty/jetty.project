@@ -161,9 +161,6 @@ public class RuleContainer extends Rule
     {
         boolean original_set=_originalPathAttribute==null;
         
-        // TODO why is this always done?
-        target = URIUtil.compactPath(target);
-            
         if (_rules==null)
             return target;
         
@@ -172,9 +169,6 @@ public class RuleContainer extends Rule
             String applied=rule.matchAndApply(target,request, response);
             if (applied!=null)
             {
-                // TODO why is this always done?
-                applied = URIUtil.compactPath(applied);
-                
                 LOG.debug("applied {}",rule);
                 LOG.debug("rewrote {} to {}",target,applied);
                 if (!original_set)
