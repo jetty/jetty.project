@@ -439,7 +439,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * <p>Returns whether this thread pool is low on threads.</p>
      * <p>The current formula is:</p>
      * <pre>
-     * maxThreads - threads + idleThreads - queueSize <= lowThreadsThreshold
+     * maxThreads - threads + idleThreads - queueSize &lt;= lowThreadsThreshold
      * </pre>
      *
      * @return whether the pool is low on threads

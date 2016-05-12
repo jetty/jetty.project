@@ -208,11 +208,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         destination.release(this);
     }
 
-    public boolean isClosed()
-    {
-        return closed.get();
-    }
-
     @Override
     public void close()
     {
@@ -234,6 +229,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             if (LOG.isDebugEnabled())
                 LOG.debug("Closed {}", this);
         }
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return closed.get();
     }
 
     protected boolean closeByHTTP(HttpFields fields)
@@ -330,6 +331,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         protected void close(Throwable failure)
         {
             HttpConnectionOverFCGI.this.close(failure);
+        }
+
+        @Override
+        public boolean isClosed()
+        {
+            return HttpConnectionOverFCGI.this.isClosed();
         }
 
         @Override

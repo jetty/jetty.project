@@ -87,11 +87,6 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         return false;
     }
 
-    public boolean isClosed()
-    {
-        return closed.get();
-    }
-
     @Override
     public void close()
     {
@@ -108,6 +103,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
             session.close(ErrorCode.NO_ERROR.code, failure.getMessage(), Callback.NOOP);
         }
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return closed.get();
     }
 
     private void abort(Throwable failure)
