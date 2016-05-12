@@ -26,12 +26,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -114,12 +116,12 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
             Authentication authentication = null;
             Authentication.HeaderInfo headerInfo = null;
-            URI uri = getAuthenticationURI(request);
-            if (uri != null)
+            URI authURI = getAuthenticationURI(request);
+            if (authURI != null)
             {
                 for (Authentication.HeaderInfo element : headerInfos)
                 {
-                    authentication = client.getAuthenticationStore().findAuthentication(element.getType(), uri, element.getRealm());
+                    authentication = client.getAuthenticationStore().findAuthentication(element.getType(), authURI, element.getRealm());
                     if (authentication != null)
                     {
                         headerInfo = element;
@@ -148,8 +150,23 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
                 conversation.setAttribute(AUTHENTICATION_ATTRIBUTE, true);
 
-                Request newRequest = client.copyRequest(request, request.getURI());
+                URI requestURI = request.getURI();
+                String path = null;
+                if (HttpMethod.CONNECT.is(request.getMethod()))
+                {
+                    String uri = request.getScheme() + "://" + request.getHost();
+                    int port = request.getPort();
+                    if (port > 0)
+                        uri += ":" + port;
+                    requestURI = URI.create(uri);
+                    path = request.getPath();
+                }
+                Request newRequest = client.copyRequest(request, requestURI);
+                if (path != null)
+                    newRequest.path(path);
+
                 authnResult.apply(newRequest);
+
                 newRequest.onResponseSuccess(new Response.SuccessListener()
                 {
                     @Override
@@ -157,7 +174,13 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                     {
                         client.getAuthenticationStore().addAuthenticationResult(authnResult);
                     }
-                }).send(null);
+                });
+
+                Connection connection = (Connection)request.getAttributes().get(Connection.class.getName());
+                if (connection != null)
+                    connection.send(newRequest, null);
+                else
+                    newRequest.send(null);
             }
             catch (Throwable x)
             {

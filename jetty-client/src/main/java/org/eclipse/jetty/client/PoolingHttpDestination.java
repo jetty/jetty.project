@@ -191,7 +191,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     {
         super.close(oldConnection);
 
-        connectionPool.remove(oldConnection);
+        boolean removed = connectionPool.remove(oldConnection);
 
         if (getHttpExchanges().isEmpty())
         {
@@ -206,7 +206,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
                 getHttpClient().removeDestination(this);
             }
         }
-        else
+        else if (removed)
         {
             // We need to execute queued requests even if this connection failed.
             // We may create a connection that is not needed, but it will eventually

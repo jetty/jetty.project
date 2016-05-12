@@ -43,4 +43,10 @@ public interface Connection extends Closeable
 
     @Override
     void close();
+
+    /**
+     * @return whether this connection has been closed
+     * @see #close()
+     */
+    boolean isClosed();
 }
