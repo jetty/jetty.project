@@ -559,12 +559,12 @@ public class HttpClient extends ContainerLifeCycle
 
             private void connect(List<InetSocketAddress> socketAddresses, int index, Map<String, Object> context)
             {
-                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise<Connection>()
+                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<Connection>(promise)
                 {
                     @Override
                     public void succeeded(Connection result)
                     {
-                        promise.succeeded(result);
+                        getPromise().succeeded(result);
                     }
 
                     @Override
@@ -572,7 +572,7 @@ public class HttpClient extends ContainerLifeCycle
                     {
                         int nextIndex = index + 1;
                         if (nextIndex == socketAddresses.size())
-                            promise.failed(x);
+                            getPromise().failed(x);
                         else
                             connect(socketAddresses, nextIndex, context);
                     }

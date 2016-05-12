@@ -90,6 +90,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         promise.succeeded(this);
     }
 
+    @Override
     public boolean isClosed()
     {
         return closed.get();
@@ -205,6 +206,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         public void close()
         {
             HttpConnectionOverHTTP.this.close();
+        }
+
+        @Override
+        public boolean isClosed()
+        {
+            return HttpConnectionOverHTTP.this.isClosed();
         }
 
         @Override

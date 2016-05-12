@@ -61,7 +61,7 @@ public abstract class AbstractAuthentication implements Authentication
     public static boolean matchesURI(URI uri1, URI uri2)
     {
         String scheme = uri1.getScheme();
-        if (uri1.getScheme().equalsIgnoreCase(scheme))
+        if (scheme.equalsIgnoreCase(uri2.getScheme()))
         {
             if (uri1.getHost().equalsIgnoreCase(uri2.getHost()))
             {

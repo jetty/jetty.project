@@ -102,6 +102,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
         }
     }
 
+    @Override
+    public boolean isClosed()
+    {
+        return closed.get();
+    }
+
     private void abort(Throwable failure)
     {
         for (HttpChannel channel : channels)
