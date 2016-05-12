@@ -134,7 +134,7 @@ public class PostServletTest
             String resp = connector.getResponses(req.toString());
             assertThat("resp", resp, containsString("HTTP/1.1 200 "));
             assertThat("resp", resp, containsString("chunked"));
-            assertThat("resp", resp, not(containsString("HTTP/1.1 200 ")));
+            assertThat("resp", resp, not(containsString("\r\n0\r\n")));
         }
     }
 }
