@@ -20,6 +20,7 @@ package org.eclipse.jetty.spdy.client.http;
 
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpConnection;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 public class HttpConnectionOverSPDY extends HttpConnection
 {
     private final Set<HttpChannel> channels = new ConcurrentHashSet<>();
+    private final AtomicBoolean closed = new AtomicBoolean();
     private final Session session;
 
     public HttpConnectionOverSPDY(HttpDestination destination, Session session)
@@ -62,11 +64,20 @@ public class HttpConnectionOverSPDY extends HttpConnection
     @Override
     public void close()
     {
-        // First close then abort, to be sure that the connection cannot be reused
-        // from an onFailure() handler or by blocking code waiting for completion.
-        getHttpDestination().close(this);
-        session.goAway(new GoAwayInfo(), Callback.Adapter.INSTANCE);
-        abort(new AsynchronousCloseException());
+        if (closed.compareAndSet(false, true))
+        {
+            // First close then abort, to be sure that the connection cannot be reused
+            // from an onFailure() handler or by blocking code waiting for completion.
+            getHttpDestination().close(this);
+            session.goAway(new GoAwayInfo(), Callback.Adapter.INSTANCE);
+            abort(new AsynchronousCloseException());
+        }
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return closed.get();
     }
 
     private void abort(Throwable failure)

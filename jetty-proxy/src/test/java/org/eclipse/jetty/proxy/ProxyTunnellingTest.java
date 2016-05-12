@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -62,10 +63,6 @@ import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHENTICATE;
-import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHORIZATION;
-import static org.junit.Assert.assertEquals;
 
 public class ProxyTunnellingTest
 {
@@ -160,9 +157,9 @@ public class ProxyTunnellingTest
                     .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
                     .send();
 
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
-            assertEquals(body, content);
+            Assert.assertEquals(body, content);
         }
         finally
         {
@@ -189,9 +186,9 @@ public class ProxyTunnellingTest
                     .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
                     .send();
 
-            assertEquals(HttpStatus.OK_200, response1.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response1.getStatus());
             String content = response1.getContentAsString();
-            assertEquals(body, content);
+            Assert.assertEquals(body, content);
 
             content = "body=" + body;
             ContentResponse response2 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
@@ -203,9 +200,9 @@ public class ProxyTunnellingTest
                     .content(new StringContentProvider(content))
                     .send();
 
-            assertEquals(HttpStatus.OK_200, response2.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response2.getStatus());
             content = response2.getContentAsString();
-            assertEquals(body, content);
+            Assert.assertEquals(body, content);
         }
         finally
         {
@@ -251,9 +248,9 @@ public class ProxyTunnellingTest
                     })
                     .send();
 
-            assertEquals(HttpStatus.OK_200, response1.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response1.getStatus());
             String content = response1.getContentAsString();
-            assertEquals(body1, content);
+            Assert.assertEquals(body1, content);
 
             Assert.assertTrue(connectionLatch.await(5, TimeUnit.SECONDS));
 
@@ -271,62 +268,9 @@ public class ProxyTunnellingTest
             connection.get().send(request2, listener2);
             ContentResponse response2 = listener2.get(5, TimeUnit.SECONDS);
 
-            assertEquals(HttpStatus.OK_200, response2.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response2.getStatus());
             String content2 = response1.getContentAsString();
-            assertEquals(body1, content2);
-        }
-        finally
-        {
-            httpClient.stop();
-        }
-    }
-
-    @Test
-    public void testProxyAuth() throws Exception
-    {
-        startSSLServer(new ServerHandler() {
-            @Override
-            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException {
-                super.handle(target, request, httpRequest, httpResponse);
-            }
-        });
-        startProxy(new ConnectHandler() {
-            @Override
-            protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address) {
-                // validate proxy-authentication header
-                final String header = request.getHeader(PROXY_AUTHORIZATION.toString());
-                if (header == null || !header.startsWith("Basic ")) {
-                    LOG.warn("Missing header " + PROXY_AUTHORIZATION);
-                    // ask for authentication header
-                    response.setHeader(PROXY_AUTHENTICATE.toString(), String.format("Basic realm=\"%s\"", "test-realm"));
-                    return false;
-                } else {
-                    LOG.info("Request contains required header " + PROXY_AUTHORIZATION);
-                    return true;
-                }
-            }
-        });
-
-        HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
-        httpClient.getAuthenticationStore().addAuthentication(
-            new BasicAuthentication(URI.create("http://localhost:" + proxyPort()), "test-realm", "user", "password"));
-        httpClient.start();
-
-        try
-        {
-            // Use a numeric host to test the URI of the CONNECT request.
-            String host = "127.0.0.1";
-            String body = "BODY";
-            ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
-                .scheme(HttpScheme.HTTPS.asString())
-                .method(HttpMethod.GET)
-                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
-                .send();
-
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            String content = response.getContentAsString();
-            assertEquals(body, content);
+            Assert.assertEquals(body1, content2);
         }
         finally
         {
@@ -433,6 +377,83 @@ public class ProxyTunnellingTest
     }
 
     @Test
+    public void testProxyAuthentication() throws Exception
+    {
+        final String realm = "test-realm";
+        testProxyAuthentication(realm, new ConnectHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                String proxyAuth = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                if (proxyAuth == null)
+                {
+                    baseRequest.setHandled(true);
+                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
+                    return;
+                }
+                super.handle(target, baseRequest, request, response);
+            }
+        });
+    }
+
+    @Test
+    public void testProxyAuthenticationClosesConnection() throws Exception
+    {
+        final String realm = "test-realm";
+        testProxyAuthentication(realm, new ConnectHandler()
+        {
+            @Override
+            protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address)
+            {
+                final String header = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.toString());
+                if (header == null || !header.startsWith("Basic "))
+                {
+                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.toString(), "Basic realm=\"" + realm + "\"");
+                    // Returning false adds Connection: close to the 407 response.
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+        });
+    }
+
+    private void testProxyAuthentication(String realm, ConnectHandler connectHandler) throws Exception
+    {
+        startSSLServer(new ServerHandler());
+        startProxy(connectHandler);
+
+        HttpClient httpClient = new HttpClient(sslContextFactory);
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
+        httpClient.getAuthenticationStore().addAuthentication(
+                new BasicAuthentication(URI.create("http://localhost:" + proxyPort()), realm, "proxyUser", "proxyPassword"));
+        httpClient.start();
+
+        try
+        {
+            String host = "localhost";
+            String body = "BODY";
+            ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
+                    .scheme(HttpScheme.HTTPS.asString())
+                    .method(HttpMethod.GET)
+                    .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                    .send();
+
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = response.getContentAsString();
+            Assert.assertEquals(body, content);
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
     @Ignore("External Proxy Server no longer stable enough for testing")
     public void testExternalProxy() throws Exception
     {
@@ -461,7 +482,7 @@ public class ProxyTunnellingTest
                     // Use a longer timeout, sometimes the proxy takes a while to answer
                     .timeout(20, TimeUnit.SECONDS)
                     .send();
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
         }
         finally
         {
