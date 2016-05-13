@@ -40,7 +40,6 @@ public class URIUtilTest
         // test basic encode/decode
         StringBuilder buf = new StringBuilder();
 
-
         buf.setLength(0);
         URIUtil.encodePath(buf,"/foo%23+;,:=/b a r/?info ");
         assertEquals("/foo%2523+%3B,:=/b%20a%20r/%3Finfo%20",buf.toString());
@@ -54,6 +53,14 @@ public class URIUtilTest
         buf.setLength(0);
         URIUtil.encodePath(buf,"/context/'list'/\"me\"/;<script>window.alert('xss');</script>");
         assertEquals("/context/%27list%27/%22me%22/%3B%3Cscript%3Ewindow.alert(%27xss%27)%3B%3C/script%3E", buf.toString());
+
+        buf.setLength(0);
+        URIUtil.encodePath(buf, "test\u00f6?\u00f6:\u00df");
+        assertEquals("test%C3%B6%3F%C3%B6:%C3%9F", buf.toString());
+
+        buf.setLength(0);
+        URIUtil.encodePath(buf, "test?\u00f6?\u00f6:\u00df");
+        assertEquals("test%3F%C3%B6%3F%C3%B6:%C3%9F", buf.toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -64,12 +71,12 @@ public class URIUtilTest
         assertEquals("/foo/bar",URIUtil.decodePath("/foo/bar"));
         assertEquals("/f o/b r",URIUtil.decodePath("/f%20o/b%20r"));
         assertEquals("/foo/bar",URIUtil.decodePath("/foo;ignore/bar;ignore"));
-        assertEquals("/fää/bar",URIUtil.decodePath("/fää;ignore/bar;ignore"));
+        assertEquals("/fää/bar",URIUtil.decodePath("/f\u00e4\u00e4;ignore/bar;ignore"));
         assertEquals("/f\u0629\u0629%23/bar",URIUtil.decodePath("/f%d8%a9%d8%a9%2523;ignore/bar;ignore"));
         
         assertEquals("foo%23;,:=b a r",URIUtil.decodePath("foo%2523%3b%2c:%3db%20a%20r;rubbish"));
         assertEquals("/foo/bar%23;,:=b a r=",URIUtil.decodePath("xxx/foo/bar%2523%3b%2c:%3db%20a%20r%3Dxxx;rubbish",3,35));
-        assertEquals("fää%23;,:=b a r=",URIUtil.decodePath("fää%2523%3b%2c:%3db%20a%20r%3D"));
+        assertEquals("f\u00e4\u00e4%23;,:=b a r=", URIUtil.decodePath("fää%2523%3b%2c:%3db%20a%20r%3D"));
         assertEquals("f\u0629\u0629%23;,:=b a r",URIUtil.decodePath("f%d8%a9%d8%a9%2523%3b%2c:%3db%20a%20r"));
         
         // Test for null character (real world ugly test case)
