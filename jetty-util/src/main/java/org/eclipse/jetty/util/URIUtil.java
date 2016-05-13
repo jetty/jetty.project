@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -46,9 +47,7 @@ public class URIUtil
     private static final Logger LOG = Log.getLogger(URIUtil.class);
     public static final String SLASH="/";
     public static final String HTTP="http";
-    public static final String HTTP_COLON="http:";
     public static final String HTTPS="https";
-    public static final String HTTPS_COLON="https:";
 
     // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
     public static final Charset __CHARSET=StandardCharsets.UTF_8 ;
@@ -68,10 +67,10 @@ public class URIUtil
         if (path==null || path.length()==0)
             return path;
         
-        StringBuilder buf = encodePath(null,path);
+        StringBuilder buf = encodePath(null,path,0);
         return buf==null?path:buf.toString();
     }
-        
+
     /* ------------------------------------------------------------ */
     /** Encode a URI path.
      * @param path The path the encode
@@ -80,10 +79,21 @@ public class URIUtil
      */
     public static StringBuilder encodePath(StringBuilder buf, String path)
     {
+        return encodePath(buf,path,0);
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Encode a URI path.
+     * @param path The path the encode
+     * @param buf StringBuilder to encode path into (or null)
+     * @return The StringBuilder or null if no substitutions required.
+     */
+    private static StringBuilder encodePath(StringBuilder buf, String path, int offset)
+    {
         byte[] bytes=null;
         if (buf==null)
         {
-            loop: for (int i=0;i<path.length();i++)
+            loop: for (int i=offset;i<path.length();i++)
             {
                 char c=path.charAt(i);
                 switch(c)
@@ -92,13 +102,19 @@ public class URIUtil
                     case '?':
                     case ';':
                     case '#':
-                    case '\'':
                     case '"':
+                    case '\'':
                     case '<':
                     case '>':
                     case ' ':
                     case '[':
+                    case '\\':
                     case ']':
+                    case '^':
+                    case '`':
+                    case '{':
+                    case '|':
+                    case '}':
                         buf=new StringBuilder(path.length()*2);
                         break loop;
                     default:
@@ -114,11 +130,80 @@ public class URIUtil
                 return null;
         }
 
+        int i;
+
+        loop: for (i=offset;i<path.length();i++)
+        {
+            char c=path.charAt(i);
+            switch(c)
+            {
+                case '%':
+                    buf.append("%25");
+                    continue;
+                case '?':
+                    buf.append("%3F");
+                    continue;
+                case ';':
+                    buf.append("%3B");
+                    continue;
+                case '#':
+                    buf.append("%23");
+                    continue;
+                case '"':
+                    buf.append("%22");
+                    continue;
+                case '\'':
+                    buf.append("%27");
+                    continue;
+                case '<':
+                    buf.append("%3C");
+                    continue;
+                case '>':
+                    buf.append("%3E");
+                    continue;
+                case ' ':
+                    buf.append("%20");
+                    continue;
+                case '[':
+                    buf.append("%5B");
+                    continue;
+                case '\\':
+                    buf.append("%5C");
+                    continue;
+                case ']':
+                    buf.append("%5D");
+                    continue;
+                case '^':
+                    buf.append("%5E");
+                    continue;
+                case '`':
+                    buf.append("%60");
+                    continue;
+                case '{':
+                    buf.append("%7B");
+                    continue;
+                case '|':
+                    buf.append("%7C");
+                    continue;
+                case '}':
+                    buf.append("%7D");
+                    continue;
+
+                default:
+                    if (c>127)
+                    {
+                        bytes=path.getBytes(URIUtil.__CHARSET);
+                        break loop;
+                    }
+                    buf.append(c);
+            }
+        }
+
         if (bytes!=null)
         {
-            for (int i=0;i<bytes.length;i++)
+            for (;i<bytes.length;i++)
             {
-                byte c=bytes[i];       
+                byte c=bytes[i];
                 switch(c)
                 {
                     case '%':
@@ -151,8 +236,26 @@ public class URIUtil
                     case '[':
                         buf.append("%5B");
                         continue;
+                    case '\\':
+                        buf.append("%5C");
+                        continue;
                     case ']':
                         buf.append("%5D");
+                        continue;
+                    case '^':
+                        buf.append("%5E");
+                        continue;
+                    case '`':
+                        buf.append("%60");
+                        continue;
+                    case '{':
+                        buf.append("%7B");
+                        continue;
+                    case '|':
+                        buf.append("%7C");
+                        continue;
+                    case '}':
+                        buf.append("%7D");
                         continue;
                     default:
                         if (c<0)
@@ -162,57 +265,9 @@ public class URIUtil
                         }
                         else
                             buf.append((char)c);
-                        continue;
                 }
             }
         }
-        else
-        {
-            for (int i=0;i<path.length();i++)
-            {
-                char c=path.charAt(i);       
-                switch(c)
-                {
-                    case '%':
-                        buf.append("%25");
-                        continue;
-                    case '?':
-                        buf.append("%3F");
-                        continue;
-                    case ';':
-                        buf.append("%3B");
-                        continue;
-                    case '#':
-                        buf.append("%23");
-                        continue;
-                    case '"':
-                        buf.append("%22");
-                        continue;
-                    case '\'':
-                        buf.append("%27");
-                        continue;
-                    case '<':
-                        buf.append("%3C");
-                        continue;
-                    case '>':
-                        buf.append("%3E");
-                        continue;
-                    case ' ':
-                        buf.append("%20");
-                        continue;
-                    case '[':
-                        buf.append("%5B");
-                        continue;
-                    case ']':
-                        buf.append("%5D");
-                        continue;
-                    default:
-                        buf.append(c);
-                        continue;
-                }
-            }
-        }
-
 
         return buf;
     }
@@ -230,33 +285,29 @@ public class URIUtil
     {
         if (buf==null)
         {
-        loop:
             for (int i=0;i<path.length();i++)
             {
                 char c=path.charAt(i);
                 if (c=='%' || encode.indexOf(c)>=0)
                 {    
                     buf=new StringBuilder(path.length()<<1);
-                    break loop;
+                    break;
                 }
             }
             if (buf==null)
                 return null;
         }
-        
-        synchronized(buf)
+
+        for (int i=0;i<path.length();i++)
         {
-            for (int i=0;i<path.length();i++)
+            char c=path.charAt(i);
+            if (c=='%' || encode.indexOf(c)>=0)
             {
-                char c=path.charAt(i);
-                if (c=='%' || encode.indexOf(c)>=0)
-                {
-                    buf.append('%');
-                    StringUtil.append(buf,(byte)(0xff&c),16);
-                }
-                else
-                    buf.append(c);
+                buf.append('%');
+                StringUtil.append(buf,(byte)(0xff&c),16);
             }
+            else
+                buf.append(c);
         }
 
         return buf;
@@ -666,7 +717,7 @@ public class URIUtil
         if (state<2)
             return path;
         
-        StringBuffer buf = new StringBuffer(path.length());
+        StringBuilder buf = new StringBuilder(path.length());
         buf.append(path,0,i);
         
         loop2:
@@ -849,6 +900,45 @@ public class URIUtil
                 return URIUtil.decodePath(uriA).equals(URIUtil.decodePath(uriB));
         }
         return a==lenA && b==lenB;
+    }
+
+    public static boolean equalsIgnoreEncodings(URI uriA, URI uriB)
+    {
+        if (uriA.equals(uriB))
+            return true;
+
+        if (uriA.getScheme()==null)
+        {
+            if (uriB.getScheme()!=null)
+                return false;
+        }
+        else if (!uriA.getScheme().equals(uriB.getScheme()))
+            return false;
+
+        if (uriA.getAuthority()==null)
+        {
+            if (uriB.getAuthority()!=null)
+                return false;
+        }
+        else if (!uriA.getAuthority().equals(uriB.getAuthority()))
+            return false;
+
+        return equalsIgnoreEncodings(uriA.getPath(),uriB.getPath());
+    }
+
+    public static URI addDecodedPath(URI uri, String path)
+    {
+        String base = uri.toASCIIString();
+        StringBuilder buf = new StringBuilder(base.length()+path.length()*3);
+        buf.append(base);
+        if (buf.charAt(base.length()-1)!='/')
+            buf.append('/');
+
+        byte[] bytes=null;
+        int offset=path.charAt(0)=='/'?1:0;
+        encodePath(buf,path,offset);
+
+        return URI.create(buf.toString());
     }
 }
 
