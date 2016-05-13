@@ -941,6 +941,3 @@ public class URIUtil
         return URI.create(buf.toString());
     }
 }
-
-
-
