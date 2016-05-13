@@ -70,6 +70,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
@@ -1065,9 +1066,14 @@ public class AsyncMiddleManServletTest
         {
             Assert.assertFalse(paths.iterator().hasNext());
         }
-        try (DirectoryStream<Path> paths = Files.newDirectoryStream(targetTestsDir, outputPrefix + "*.*"))
+
+        // File deletion is delayed on windows, testing for deletion is not going to work
+        if(!OS.IS_WINDOWS)
         {
-            Assert.assertFalse(paths.iterator().hasNext());
+            try (DirectoryStream<Path> paths = Files.newDirectoryStream(targetTestsDir, outputPrefix + "*.*"))
+            {
+                Assert.assertFalse(paths.iterator().hasNext());
+            }
         }
     }
 
