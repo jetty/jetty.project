@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -321,15 +321,15 @@ public class ContextHandlerGetResourceTest
         
         String path="//subdir/data.txt";
         Resource resource=context.getResource(path);
-        assertThat("Resource: " + resource, resource.getFile(), is(expected));
+        assertThat("Resource: " + resource, resource, nullValue());
         URL url=context.getServletContext().getResource(path);
-        assertThat("Resource: " + url, url, is(expectedUrl));
-        
+        assertThat("Resource: " + url, url, nullValue());
+
         path="/subdir//data.txt";
         resource=context.getResource(path);
-        assertThat("Resource: " + resource, resource.getFile(), is(expected));
+        assertThat("Resource: " + resource, resource, nullValue());
         url=context.getServletContext().getResource(path);
-        assertThat("Resource: " + url, url, is(expectedUrl));
+        assertThat("Resource: " + url, url, nullValue());
     }
 
     @Test
@@ -416,7 +416,7 @@ public class ContextHandlerGetResourceTest
         {
             allowSymlinks.set(false);
         } 
-        
+
     }
 
     @Test
