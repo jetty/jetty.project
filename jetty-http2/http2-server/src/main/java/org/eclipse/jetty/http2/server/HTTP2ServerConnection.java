@@ -184,7 +184,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             upgradeFrames.add(new PrefaceFrame());
             upgradeFrames.add(settingsFrame);
             // Remember the request to send a response from onOpen().
-            upgradeFrames.add(new HeadersFrame(1, request, null, true));
+            upgradeFrames.add(new HeadersFrame(1, new Request(request), null, true));
         }
         return true;
     }

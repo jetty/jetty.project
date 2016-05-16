@@ -141,6 +141,7 @@ public class HTTP2Connection extends AbstractConnection
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
+        private final Callback fillCallback = new FillCallback();
         private ByteBuffer buffer;
 
         @Override
@@ -182,7 +183,7 @@ public class HTTP2Connection extends AbstractConnection
                 if (filled == 0)
                 {
                     release();
-                    fillInterested();
+                    getEndPoint().fillInterested(fillCallback);
                     return null;
                 }
                 else if (filled < 0)
@@ -203,6 +204,21 @@ public class HTTP2Connection extends AbstractConnection
                 byteBufferPool.release(buffer);
                 buffer = null;
             }
+        }
+    }
+
+    private class FillCallback implements Callback.NonBlocking
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
         }
     }
 }
