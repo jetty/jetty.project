@@ -84,6 +84,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private int maxLocalStreams;
     private int maxRemoteStreams;
     private long streamIdleTimeout;
+    private int initialSessionRecvWindow;
     private boolean pushEnabled;
     private long idleTime;
 
@@ -147,6 +148,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void setStreamIdleTimeout(long streamIdleTimeout)
     {
         this.streamIdleTimeout = streamIdleTimeout;
+    }
+
+    @ManagedAttribute("The initial size of session's flow control receive window")
+    public int getInitialSessionRecvWindow()
+    {
+        return initialSessionRecvWindow;
+    }
+
+    public void setInitialSessionRecvWindow(int initialSessionRecvWindow)
+    {
+        this.initialSessionRecvWindow = initialSessionRecvWindow;
     }
 
     public EndPoint getEndPoint()
