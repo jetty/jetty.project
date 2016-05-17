@@ -35,6 +35,7 @@ See https://github.com/jetty-project/jetty-webapp-logging/blob/master/src/main/j
 
 A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for capturing all Jetty server logging from multiple logging frameworks into a single logging output file managed by Logback.
 
+[source, screen]
 ....
 [mybase]$ mkdir modules
 [mybase]$ cd modules

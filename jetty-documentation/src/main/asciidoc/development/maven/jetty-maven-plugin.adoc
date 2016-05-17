@@ -50,6 +50,7 @@ First, add `jetty-maven-plugin` to your `pom.xml` definition:
 
 Then, from the same directory as your root `pom.xml`, type:
 
+[source, screen]
 ....
 mvn jetty:run
 ....
@@ -77,12 +78,14 @@ There are different goals to accomplish these tasks, as well as several others.
 
 To see a list of all goals supported by the Jetty Maven plugin, do:
 
+[source, screen]
 ....
 mvn jetty:help
 ....
 
 To see the detailed list of parameters that can be configured for a particular goal, in addition to its description, do:
 
+[source, screen]
 ....
 mvn jetty:help -Ddetail=true -Dgoal= goal-name
 ....
@@ -628,6 +631,7 @@ systemProperties::
 
 To deploy your unassembled web app to Jetty running in a new JVM:
 
+[source, screen]
 ....
 mvn jetty:run-forked
 ....
@@ -726,6 +730,7 @@ Here's a configuration example:
 
 Then, while Jetty is running (in another window), type:
 
+[source, screen]
 ....
 mvn jetty:stop
 ....

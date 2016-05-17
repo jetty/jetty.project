@@ -248,6 +248,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         {
             // Need to call onRequest, so RequestLog can reports as much as possible
             onRequest(_metadata);
+            getRequest().getHttpInput().earlyEOF();
         }
         catch (Exception e)
         {

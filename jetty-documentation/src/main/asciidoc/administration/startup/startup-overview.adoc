@@ -87,6 +87,7 @@ XML Files::
 The simplest way to start Jetty is via the `start.jar` mechanism using
 the following Java command line:
 
+[source, screen]
 ....
 [user]$ cd jetty-distribution-@project.version@
 [jetty-distribution-@project.version@]$ java -jar start.jar --module=http jetty.http.port=8080
@@ -97,6 +98,7 @@ properties, and XML files with the metadata obtained from the `http`
 module. Specifically the `http` module is defined in the
 `${jetty.home}/modules/http.mod` file, and includes the following:
 
+[source, screen]
 ....
 [jetty-distribution-@project.version@]$ cat modules/http.mod
 [depend]
@@ -119,6 +121,7 @@ section is not actually used by the command above, so the
 Following the server dependency, the `${jetty.home}/modules/server.mod`
 file includes:
 
+[source, screen]
 ....
 [jetty-distribution-@project.version@]$ cat modules/server.mod
 [lib]
@@ -145,6 +148,7 @@ line required to start Jetty.
 Another way to see this is by asking Jetty what its configuration looks
 like:
 
+[source, screen]
 ....
 [jetty-distribution-@project.version@]$ java -jar start.jar --module=http jetty.http.port=9099 --list-config
 
@@ -206,6 +210,7 @@ using a traditional Java command line.
 The following is the equivalent `java` command line for what the
 `start.jar` bootstrap above performs.
 
+[source, screen]
 ....
 [user]$ cd jetty-distribution-@project.version@
 [jetty-distribution-@project.version@]$ echo jetty.http.port=8080 > /tmp/jetty.properties
@@ -237,6 +242,7 @@ You can further simplify the startup of this server by using the INI
 template defined by the modules to create a `start.ini` file with the
 command:
 
+[source, screen]
 ....
 [user]$ cd jetty-distribution-@project.version@
 [jetty-distribution-@project.version@]$ mkdir example-base
@@ -260,6 +266,7 @@ drwxrwxr-x 12 user webgroup 4096 Oct  4 11:49 ../
 Once complete, you can edit the `start.ini` file to modify any
 parameters and you can run the server with the simple command:
 
+[source, screen]
 ....
 [example-base]$ java -jar $JETTY_HOME/start.jar
 ....

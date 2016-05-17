@@ -98,6 +98,7 @@ This is the minimal configuration you need. You can now start Jetty on the defau
 
 At the command line enter:
 
+[source, screen]
 ....
 > ant jetty.run
 ....
@@ -345,6 +346,7 @@ stopping:::
 +
 To stop jetty via Ant, enter:
 +
+[source, screen]
 ....
 > ant jetty.stop
 ....

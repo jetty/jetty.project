@@ -31,6 +31,7 @@ On some Linux systems you can use the _ipchains REDIRECT_ mechanism to
 redirect from one port to another inside the kernel (if ipchains is not
 available, then usually iptables is):
 
+[source, screen]
 ....
 # /sbin/ipchains -I input --proto TCP --dport 80 -j REDIRECT 8080
 ....
@@ -54,6 +55,7 @@ available, then usually ipchains is).
 You need to add something like the following to the startup scripts or
 your firewall rules:
 
+[source, screen]
 ....
 # /sbin/iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
 ....
@@ -92,6 +94,7 @@ the http port] to 80 (and link:#quickstart-changing-https-port[changed
 the https port] to 443 if you are using SSL).
 3.  Enable the setuid.mod module:
 +
+[source, screen]
 ....
 # java -jar start.jar --add-to-start=setuid
 ....
@@ -127,6 +130,7 @@ https://github.com/eclipse/jetty.toolchain/jetty-setuid[jetty-setuid]
 project. Build it locally, which will produce a native library
 appropriate for the operating system:
 +
+[source, screen]
 ....
 # mvn clean install
 ....
@@ -142,6 +146,7 @@ location of the native library to java. Here's an example of how to do
 it on the command line, assuming were are in the
 link:#demo-webapps-base[demo-base] directory:
 +
+[source, screen]
 ....
 # sudo java -Djava.library.path=libsetuid-linux -jar $JETTY_HOME/start.jar
 ....
@@ -152,6 +157,7 @@ link:#demo-webapps-base[demo-base] directory:
 Solaris 10 provides a User Rights Management framework that can permit
 users and processes superuser-like abilities:
 
+[source, screen]
 ....
 usermod -K defaultpriv=basic,net_privaddr myself
 ....

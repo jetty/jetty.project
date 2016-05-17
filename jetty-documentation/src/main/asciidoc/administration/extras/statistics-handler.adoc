@@ -95,6 +95,7 @@ Typically this can be done as the top level handler, but you may choose to confi
 Please note that `jetty-stats.xml` has to appear in the command line after the main Jetty configuration file as shown below. 
 It should be able to be uncommented in the start.ini file.
 
+[source, screen]
 ....
 $ java -jar start.jar OPTIONS=default etc/jetty.xml etc/jetty-stats.xml
     
