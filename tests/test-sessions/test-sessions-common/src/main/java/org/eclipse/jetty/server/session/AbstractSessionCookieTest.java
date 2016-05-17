@@ -43,7 +43,7 @@ import junit.framework.Assert;
  */
 public abstract class AbstractSessionCookieTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivateInterval);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
     public void pause(int scavenge)
     {

@@ -33,9 +33,9 @@ public class HashTestServer extends AbstractTestServer
         super(port, 30, 10, 2);
     }
 
-    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod)
+    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy)
     {
-        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, evictionPolicy);
     }
 
 
@@ -44,8 +44,8 @@ public class HashTestServer extends AbstractTestServer
     {
         SessionHandler handler = new SessionHandler();
         DefaultSessionCache ss = new DefaultSessionCache(handler);
-        handler.setSessionStore(ss);
-        ss.setSessionStore(new NullSessionStore());
+        handler.setSessionCache(ss);
+        ss.setSessionDataStore(new NullSessionDataStore());
         return handler;
     }
 

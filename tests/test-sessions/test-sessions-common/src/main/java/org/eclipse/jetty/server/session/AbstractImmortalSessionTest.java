@@ -43,7 +43,7 @@ import org.junit.Test;
  */
 public abstract class AbstractImmortalSessionTest
 {
-    public abstract AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs, int idlePassivatePeriod);
+    public abstract AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs, int evictionPolicy);
 
     @Test
     public void testImmortalSession() throws Exception
@@ -51,9 +51,8 @@ public abstract class AbstractImmortalSessionTest
         String contextPath = "";
         String servletMapping = "/server";
         int scavengePeriod = 2;
-        int idlePeriod = -1;
         //turn off session expiry by setting maxInactiveInterval to -1
-        AbstractTestServer server = createServer(0, -1, scavengePeriod, idlePeriod);
+        AbstractTestServer server = createServer(0, -1, scavengePeriod, SessionCache.NEVER_EVICT);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
 
@@ -82,6 +81,7 @@ public abstract class AbstractImmortalSessionTest
                 // Be sure the session is still there
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=get");
                 request.header("Cookie", sessionCookie);
+
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 resp = response.getContentAsString();

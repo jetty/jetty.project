@@ -42,11 +42,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * JDBCSessionStore
+ * JDBCSessionDataStore
  *
  * Session data stored in database
  */
-public class JDBCSessionStore extends AbstractSessionStore
+public class JDBCSessionDataStore extends AbstractSessionDataStore
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
@@ -610,7 +610,7 @@ public class JDBCSessionStore extends AbstractSessionStore
     
    
   
-    public JDBCSessionStore ()
+    public JDBCSessionDataStore ()
     {
         super ();
     }
@@ -662,7 +662,7 @@ public class JDBCSessionStore extends AbstractSessionStore
 
  
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#load(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
      */
     @Override
     public SessionData load(String id) throws Exception
@@ -758,7 +758,7 @@ public class JDBCSessionStore extends AbstractSessionStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#delete(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
      */
     @Override
     public boolean delete(String id) throws Exception
@@ -779,7 +779,7 @@ public class JDBCSessionStore extends AbstractSessionStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doStore(String, SessionData, long)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long)
      */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
@@ -884,7 +884,7 @@ public class JDBCSessionStore extends AbstractSessionStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#getExpired(Set)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
@@ -1083,7 +1083,7 @@ public class JDBCSessionStore extends AbstractSessionStore
 
 
    /** 
-    * @see org.eclipse.jetty.server.session.SessionStore#isPassivating()
+    * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
     */
    @Override
    public boolean isPassivating()
@@ -1096,7 +1096,7 @@ public class JDBCSessionStore extends AbstractSessionStore
 
 
    /** 
-    * @see org.eclipse.jetty.server.session.SessionStore#exists(java.lang.String)
+    * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
     */
    @Override
    public boolean exists(String id)

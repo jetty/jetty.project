@@ -35,7 +35,7 @@ import org.junit.Ignore;
 public class InvalidationSessionTest extends AbstractInvalidationSessionTest
 {
     static GCloudSessionTestSupport _testSupport;
-    public static final int IDLE_PASSIVATE_SEC = 3;
+    public static final int EVICT_SEC = 3;
 
     @BeforeClass
     public static void setup () throws Exception
@@ -54,9 +54,9 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
      * @see org.eclipse.jetty.server.session.AbstractInvalidationSessionTest#createServer(int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int idlePassivateInterval)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
     {
-        GCloudTestServer server =  new GCloudTestServer(port, maxInactive, scavengeInterval, idlePassivateInterval, _testSupport.getConfiguration()) 
+        GCloudTestServer server =  new GCloudTestServer(port, maxInactive, scavengeInterval, evictionPolicy, _testSupport.getConfiguration()) 
         {
             /** 
              * @see org.eclipse.jetty.gcloud.session.GCloudTestServer#newSessionManager()
@@ -65,7 +65,7 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
             public SessionHandler newSessionHandler()
             {
                 SessionHandler handler = super.newSessionHandler();
-                handler.getSessionStore().setIdlePassivationTimeoutSec(IDLE_PASSIVATE_SEC);
+                handler.getSessionCache().setEvictionPolicy(EVICT_SEC);
                 return handler;
             }
 
@@ -84,7 +84,7 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
         //has expired on node2 for it to reload the session and discover it has been deleted.
         try
         {
-            Thread.currentThread().sleep((2*IDLE_PASSIVATE_SEC)*1000);
+            Thread.currentThread().sleep((2*EVICT_SEC)*1000);
         }
         catch (Exception e)
         {

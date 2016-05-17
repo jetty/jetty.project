@@ -43,7 +43,7 @@ import org.junit.Test;
  */
 public abstract class AbstractNewSessionTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivatePeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
     public void pause(int scavenge)
     {

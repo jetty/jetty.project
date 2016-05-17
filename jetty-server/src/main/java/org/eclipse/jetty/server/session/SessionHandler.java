@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.SessionCookieConfig;
@@ -144,6 +146,49 @@ public class SessionHandler extends ScopedHandler
      * max number of minutes that you can set.
      */
     public final static java.math.BigDecimal MAX_INACTIVE_MINUTES = new java.math.BigDecimal(Integer.MAX_VALUE/60);
+    
+    
+    /**
+     * SessionAsyncListener
+     *
+     * Used to ensure that a request for which async has been started
+     * has its session completed as the request exits the context.
+     */
+    public class SessionAsyncListener implements AsyncListener
+    {
+        private Session _session;
+        
+        public SessionAsyncListener(Session session)
+        {
+           _session = session;
+        }
+
+        @Override
+        public void onComplete(AsyncEvent event) throws IOException
+        {
+            //An async request has completed, so we can complete the session
+            complete(((HttpServletRequest)event.getAsyncContext().getRequest()).getSession(false));
+        }
+
+        @Override
+        public void onTimeout(AsyncEvent event) throws IOException
+        {
+            
+        }
+
+        @Override
+        public void onError(AsyncEvent event) throws IOException
+        {
+            complete(((HttpServletRequest)event.getAsyncContext().getRequest()).getSession(false));
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+           event.getAsyncContext().addListener(this);
+        }
+        
+    }
 
     static final HttpSessionContext __nullSessionContext=new HttpSessionContext()
     {
@@ -161,6 +206,8 @@ public class SessionHandler extends ScopedHandler
         }
     };
 
+    
+   
    
     /**
      * Setting of max inactive interval for new sessions
@@ -310,6 +357,9 @@ public class SessionHandler extends ScopedHandler
      */
     public void complete(HttpSession session)
     {
+        if (session == null)
+            return;
+        
         Session s = ((SessionIf)session).getSession();
     
         try
@@ -321,6 +371,24 @@ public class SessionHandler extends ScopedHandler
         {
             LOG.warn(e);
         }
+    }
+    
+    
+    public void complete (Session session, Request request)
+    {
+        if (request.isAsyncStarted() && request.getDispatcherType() == DispatcherType.REQUEST)
+        {
+            request.getAsyncContext().addListener(new SessionAsyncListener(session));
+        }
+        else
+        {
+            complete(session);
+        }
+        //if dispatcher type is not async and not request, complete immediately (its a forward or an include)
+        
+        //else if dispatcher type is request and not async, complete immediately
+        
+        //else register an async callback completion listener that will complete the session
     }
 
 
@@ -341,7 +409,7 @@ public class SessionHandler extends ScopedHandler
 
         synchronized (server)
         {
-            //Get a SessionStore and a SessionDataStore, falling back to in-memory sessions only
+            //Get a SessionDataStore and a SessionDataStore, falling back to in-memory sessions only
             if (_sessionCache == null)
             {
                 SessionCacheFactory ssFactory = server.getBean(SessionCacheFactory.class);
@@ -350,14 +418,14 @@ public class SessionHandler extends ScopedHandler
                 else
                     _sessionCache = new DefaultSessionCache(this);
 
-                SessionStore sds = null;
-                SessionStoreFactory sdsFactory = server.getBean(SessionStoreFactory.class);
+                SessionDataStore sds = null;
+                SessionDataStoreFactory sdsFactory = server.getBean(SessionDataStoreFactory.class);
                 if (sdsFactory != null)
-                    sds = sdsFactory.getSessionStore(this);
+                    sds = sdsFactory.getSessionDataStore(this);
                 else
-                    sds = new NullSessionStore();
+                    sds = new NullSessionDataStore();
                 
-                _sessionCache.setSessionStore(sds);
+                _sessionCache.setSessionDataStore(sds);
             }
 
          
@@ -730,11 +798,12 @@ public class SessionHandler extends ScopedHandler
         Session session = _sessionCache.newSession(request, id, created,  (_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000L:-1));
         session.setExtendedId(_sessionIdManager.getExtendedId(id, request));
         session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());
-        session.setMaxInactiveInterval(_dftMaxIdleSecs>0?_dftMaxIdleSecs:-1); //TODO awkward: needed to kick off timer and calc expiry
+        
         if (request.isSecure())
             session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
         try
         {
+
             _sessionCache.put(id, session);
             _sessionsCreatedStats.increment();         
             
@@ -934,15 +1003,15 @@ public class SessionHandler extends ScopedHandler
     /**
      * @return the session store
      */
-    public SessionCache getSessionStore ()
+    public SessionCache getSessionCache ()
     {
         return _sessionCache;
     }
     
     
-    public void setSessionStore (SessionCache store)
+    public void setSessionCache (SessionCache cache)
     {
-        _sessionCache = store;
+        _sessionCache = cache;
     }
     
     /* ------------------------------------------------------------ */
@@ -1214,7 +1283,18 @@ public class SessionHandler extends ScopedHandler
     }
     
     
-    public void inspect (Session session)
+    /**
+     * Each session has a timer that is configured to go off
+     * when either the session has not been accessed for a 
+     * configurable amount of time, or the session itself
+     * has passed its expiry.
+     * <ul>
+     * <li> for being expired </li>
+     * <li> for being idle </li>
+     * </ul>
+     * @param session
+     */
+    public void sessionInactivityTimerExpired (Session session)
     {
         if (session == null)
             return;
@@ -1223,8 +1303,8 @@ public class SessionHandler extends ScopedHandler
         //check if the session is:
         //1. valid
         //2. expired
-        //3. passivatable
-        boolean passivate = false;
+        //3. idle
+        boolean expired = false;
         try (Lock lock = session.lock())
         {
             if (LOG.isDebugEnabled())
@@ -1233,22 +1313,24 @@ public class SessionHandler extends ScopedHandler
             if (!session.isValid())
                 return; //do nothing, session is no longer valid
             
-            if (session.isExpiredAt(System.currentTimeMillis()))
-            {
-                _candidateSessionIdsForExpiry.add(session.getId());
-                if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
-            }
-            else if (_sessionCache.getIdlePassivationTimeoutSec() > 0 && session.isIdleLongerThan(_sessionCache.getIdlePassivationTimeoutSec()))
-            {
-                passivate = true;
-                if (LOG.isDebugEnabled())LOG.debug("Session {} will be passivated", session.getId());
-            }
+            if (session.isExpiredAt(System.currentTimeMillis()) && session.getRequests() <=0)
+                expired = true;
         }
-        
-        if (passivate)
-            _sessionCache.passivateIdleSession(session.getId()); //TODO call passivate inside lock
-      
+
+        if (expired)
+        {
+            //instead of expiring the session directly here, accumulate a list of 
+            //session ids that need to be expired. This is an efficiency measure: as
+            //the expiration involves the SessionDataStore doing a delete, it is 
+            //most efficient if it can be done as a bulk operation to eg reduce
+            //roundtrips to the persistent store.
+            _candidateSessionIdsForExpiry.add(session.getId());
+            if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
+        }
+        else 
+            _sessionCache.checkInactiveSession(session); //if inactivity eviction is enabled the session will be deleted from the cache
     }
+
     
     
     
@@ -1449,7 +1531,8 @@ public class SessionHandler extends ScopedHandler
     {
         SessionHandler old_session_manager = null;
         HttpSession old_session = null;
-        HttpSession access = null;
+        HttpSession existingSession = null;
+
         try
         {
             old_session_manager = baseRequest.getSessionHandler();
@@ -1463,54 +1546,39 @@ public class SessionHandler extends ScopedHandler
                 checkRequestedSessionId(baseRequest,request);
             }
 
-            // access any existing session
-            HttpSession session = null;
-
-            session = baseRequest.getSession(false);
-            if (session != null)
+            // access any existing session for this context
+            existingSession = baseRequest.getSession(false);
+            
+            if ((existingSession != null) && (old_session_manager != this))
             {
-                if ((session != old_session) && (request.getDispatcherType() == DispatcherType.ASYNC || request.getDispatcherType() == DispatcherType.REQUEST))
-                {
-                    access = session;
-                    HttpCookie cookie = access(session,request.isSecure());
-                    if (cookie != null) // Handle changed ID or max-age refresh
-                        baseRequest.getResponse().addCookie(cookie);
-                }
-            }
-            else
-            {
-                session = baseRequest.recoverNewSession(this);
-                if (session != null)
-                    baseRequest.setSession(session);
+                HttpCookie cookie = access(existingSession,request.isSecure());
+                // Handle changed ID or max-age refresh, but only if this is not a redispatched request
+                if ((cookie != null) && (request.getDispatcherType() == DispatcherType.ASYNC || request.getDispatcherType() == DispatcherType.REQUEST))
+                    baseRequest.getResponse().addCookie(cookie);
             }
 
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("sessionHandler=" + this);
-                LOG.debug("session=" + session);
+                LOG.debug("session=" + existingSession);
             }
 
-            // start manual inline of nextScope(target,baseRequest,request,response);
             if (_nextScope != null)
                 _nextScope.doScope(target,baseRequest,request,response);
             else if (_outerScope != null)
                 _outerScope.doHandle(target,baseRequest,request,response);
             else
                 doHandle(target,baseRequest,request,response);
-            // end manual inline (pathentic attempt to reduce stack depth)
-
         }
         finally
         {
-            //if we accessed an existing session entering this context, then complete it
-            if (access != null)
-                complete(access);
-
-            
             //if there is a session that was created during handling this context, then complete it
-            HttpSession session = baseRequest.getSession(false);
-            if ((session != null && old_session == null && session != access) && (request.getDispatcherType() == DispatcherType.ASYNC || request.getDispatcherType() == DispatcherType.REQUEST))
-                complete(session);
+            HttpSession finalSession = baseRequest.getSession(false);
+            if ((finalSession != null) && (old_session_manager != this))
+            {
+                complete((Session)finalSession, baseRequest);
+            }
+         
 
             if (old_session_manager != null && old_session_manager != this)
             {

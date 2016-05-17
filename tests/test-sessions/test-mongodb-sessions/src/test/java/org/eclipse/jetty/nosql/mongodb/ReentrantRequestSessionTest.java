@@ -55,9 +55,9 @@ public class ReentrantRequestSessionTest extends AbstractReentrantRequestSession
      * @see org.eclipse.jetty.server.session.AbstractReentrantRequestSessionTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivatePeriod)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
     {
-        return new MongoTestServer(port, max, scavenge,  idlePassivatePeriod);
+        return new MongoTestServer(port, max, scavenge,  evictionPolicy);
     }
 
 }

@@ -65,11 +65,11 @@ public class GCloudTestServer extends AbstractTestServer
     {
         SessionHandler handler =  new SessionHandler();
         handler.setSessionIdManager(_sessionIdManager);
-        GCloudSessionStore ds = new GCloudSessionStore();
+        GCloudSessionDataStore ds = new GCloudSessionDataStore();
         ds.setGCloudConfiguration((GCloudConfiguration)_config);
         DefaultSessionCache ss = new DefaultSessionCache(handler);
-        ss.setSessionStore(ds);
-        handler.setSessionStore(ss);
+        ss.setSessionDataStore(ds);
+        handler.setSessionCache(ss);
         return handler;
     }
 

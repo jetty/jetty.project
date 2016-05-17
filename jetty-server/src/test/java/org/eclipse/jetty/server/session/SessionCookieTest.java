@@ -165,13 +165,13 @@ public class SessionCookieTest
         idMgr.setWorkerName("node1");
         SessionHandler mgr = new SessionHandler();
         MockSessionStore store = new MockSessionStore(mgr);
-        store.setSessionStore(new NullSessionStore());
-        mgr.setSessionStore(store);
+        store.setSessionDataStore(new NullSessionDataStore());
+        mgr.setSessionCache(store);
         mgr.setSessionIdManager(idMgr);
         
         long now = System.currentTimeMillis();
         
-        Session session = new Session(new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30)); 
+        Session session = new Session(null, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30)); 
 
         SessionCookieConfig sessionCookieConfig = mgr.getSessionCookieConfig();
         sessionCookieConfig.setSecure(true);

@@ -26,9 +26,9 @@ public class SessionInvalidateAndCreateTest extends AbstractSessionInvalidateAnd
 {
 
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivate)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
     {
-        return new JdbcTestServer(port,max,scavenge,idlePassivate);
+        return new JdbcTestServer(port,max,scavenge,evictionPolicy);
     }
 
     @Test

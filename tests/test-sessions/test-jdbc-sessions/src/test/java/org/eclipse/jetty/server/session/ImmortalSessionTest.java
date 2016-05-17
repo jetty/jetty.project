@@ -29,9 +29,9 @@ import org.junit.Test;
 
 public class ImmortalSessionTest extends AbstractImmortalSessionTest
 {
-    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs, int idlePassivate)
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs, int evictionPolicy)
     {
-        return new JdbcTestServer(port, maxInactiveMs, scavengeMs, idlePassivate);
+        return new JdbcTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy);
     }
 
     @Test

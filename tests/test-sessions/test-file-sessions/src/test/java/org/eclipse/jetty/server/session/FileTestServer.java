@@ -70,15 +70,16 @@ public class FileTestServer extends AbstractTestServer
             assertFalse(files.length==0);
         }
     }
-    
-    
+
+
     public static void assertFileExists (String sessionId, boolean exists)
     {
         assertNotNull(_tmpDir);
         assertTrue(_tmpDir.exists());
         String[] files = _tmpDir.list();
         assertNotNull(files);
-        assertFalse(files.length == 0);
+        if (exists)
+            assertFalse(files.length == 0);
         boolean found = false;
         for (String name:files)
         {
@@ -143,10 +144,10 @@ public class FileTestServer extends AbstractTestServer
     {
         SessionHandler handler =  new SessionHandler();
         DefaultSessionCache ss = new DefaultSessionCache(handler);
-        handler.setSessionStore(ss);
-        FileSessionStore ds = new FileSessionStore();
+        handler.setSessionCache(ss);
+        FileSessionDataStore ds = new FileSessionDataStore();
         ds.setStoreDir(_tmpDir);
-        ss.setSessionStore(ds);
+        ss.setSessionDataStore(ds);
         return handler;
     }
 

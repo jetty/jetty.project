@@ -25,18 +25,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.session.AbstractSessionStore;
+import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.infinispan.commons.api.BasicCache;
 
 /**
- * InfinispanSessionStore
+ * InfinispanSessionDataStore
  *
  *
  */
-public class InfinispanSessionStore extends AbstractSessionStore
+public class InfinispanSessionDataStore extends AbstractSessionDataStore
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
@@ -76,7 +76,7 @@ public class InfinispanSessionStore extends AbstractSessionStore
     
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#load(String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#load(String)
      */
     @Override
     public SessionData load(String id) throws Exception
@@ -114,7 +114,7 @@ public class InfinispanSessionStore extends AbstractSessionStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#delete(String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(String)
      */
     @Override
     public boolean delete(String id) throws Exception
@@ -125,7 +125,7 @@ public class InfinispanSessionStore extends AbstractSessionStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#getExpired(Set)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
@@ -138,7 +138,7 @@ public class InfinispanSessionStore extends AbstractSessionStore
        Set<String> expired = new HashSet<String>();
        
        //TODO if there is NOT an idle timeout set on entries in infinispan, need to check other sessions
-       //that are not currently in the SessionStore (eg they've been passivated)
+       //that are not currently in the SessionDataStore (eg they've been passivated)
        
        for (String candidate:candidates)
        {
@@ -196,7 +196,7 @@ public class InfinispanSessionStore extends AbstractSessionStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doStore(String, SessionData, long)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long)
      */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
@@ -224,7 +224,7 @@ public class InfinispanSessionStore extends AbstractSessionStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#isPassivating()
+     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
      */
     @Override
     public boolean isPassivating()
@@ -248,7 +248,7 @@ public class InfinispanSessionStore extends AbstractSessionStore
     
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#exists(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
      */
     @Override
     public boolean exists(String id) throws Exception

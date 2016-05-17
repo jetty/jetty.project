@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.server.session.AbstractSessionStore;
+import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
@@ -51,11 +51,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * GCloudSessionStore
+ * GCloudSessionDataStore
  *
  *
  */
-public class GCloudSessionStore extends AbstractSessionStore
+public class GCloudSessionDataStore extends AbstractSessionDataStore
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
@@ -85,7 +85,7 @@ public class GCloudSessionStore extends AbstractSessionStore
     
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doStart()
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStart()
      */
     @Override
     protected void doStart() throws Exception
@@ -138,7 +138,7 @@ public class GCloudSessionStore extends AbstractSessionStore
     
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#load(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
      */
     @Override
     public SessionData load(String id) throws Exception
@@ -159,7 +159,7 @@ public class GCloudSessionStore extends AbstractSessionStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#delete(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
      */
     @Override
     public boolean delete(String id) throws Exception
@@ -170,7 +170,7 @@ public class GCloudSessionStore extends AbstractSessionStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#getExpired(Set)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
@@ -221,7 +221,7 @@ public class GCloudSessionStore extends AbstractSessionStore
                 }
             }
 
-            //reconcile against ids that the SessionStore thinks are expired
+            //reconcile against ids that the SessionDataStore thinks are expired
             Set<String> tmp = new HashSet<String>(candidates);
             tmp.removeAll(expired);       
             if (!tmp.isEmpty())
@@ -264,7 +264,7 @@ public class GCloudSessionStore extends AbstractSessionStore
     
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#exists(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
      */
     @Override
     public boolean exists(String id) throws Exception
@@ -290,7 +290,7 @@ public class GCloudSessionStore extends AbstractSessionStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
      */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
@@ -431,7 +431,7 @@ public class GCloudSessionStore extends AbstractSessionStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#isPassivating()
+     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
      */
     @Override
     public boolean isPassivating()

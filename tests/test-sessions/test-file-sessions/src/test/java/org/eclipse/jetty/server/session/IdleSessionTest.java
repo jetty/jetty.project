@@ -47,9 +47,9 @@ public class IdleSessionTest extends AbstractIdleSessionTest
      * @see org.eclipse.jetty.server.session.AbstractIdleSessionTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int idleSec)
+    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int evictionPolicy)
     {
-       return new FileTestServer(port,max,scavenge, idleSec);
+       return new FileTestServer(port,max,scavenge, evictionPolicy);
     }
 
     
@@ -71,7 +71,7 @@ public class IdleSessionTest extends AbstractIdleSessionTest
     public void checkSessionDeIdled(String sessionId)
     {
         //Can't check absence of file to indicate session is de-idled 
-        //because the FileSessionStore writes out the session to a file if anything changes.
+        //because the FileSessionDataStore writes out the session to a file if anything changes.
         //The test changes an attribute so the file will probably exist.
     }
 
@@ -83,6 +83,7 @@ public class IdleSessionTest extends AbstractIdleSessionTest
     public void deleteSessionData(String sessionId)
     {
         FileTestServer.deleteFile(sessionId);
+        FileTestServer.assertFileExists(sessionId, false);
     }
 
 

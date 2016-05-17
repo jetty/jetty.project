@@ -57,9 +57,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
      * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
     {
-        return  new GCloudTestServer(port, max, scavenge, idlePassivationPeriod, _testSupport.getConfiguration());
+        return  new GCloudTestServer(port, max, scavenge, evictionPolicy, _testSupport.getConfiguration());
     }
 
     @Test

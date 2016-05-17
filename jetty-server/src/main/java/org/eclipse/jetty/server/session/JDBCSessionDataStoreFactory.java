@@ -20,11 +20,11 @@
 package org.eclipse.jetty.server.session;
 
 /**
- * JDBCSessionStoreFactory
+ * JDBCSessionDataStoreFactory
  *
  *
  */
-public class JDBCSessionStoreFactory extends AbstractSessionStoreFactory
+public class JDBCSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
     
     /**
@@ -34,7 +34,7 @@ public class JDBCSessionStoreFactory extends AbstractSessionStoreFactory
     /**
      * 
      */
-    JDBCSessionStore.SessionTableSchema _schema;
+    JDBCSessionDataStore.SessionTableSchema _schema;
     /**
      * 
      */
@@ -82,12 +82,12 @@ public class JDBCSessionStoreFactory extends AbstractSessionStoreFactory
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStoreFactory#getSessionStore(SessionHandler)
+     * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
-    public SessionStore getSessionStore(SessionHandler handler)
+    public SessionDataStore getSessionDataStore(SessionHandler handler)
     {
-        JDBCSessionStore ds = new JDBCSessionStore();
+        JDBCSessionDataStore ds = new JDBCSessionDataStore();
         ds.setDatabaseAdaptor(_adaptor);
         ds.setSessionTableSchema(_schema);
         ds.setDeleteUnloadableSessions(_deleteUnloadableSessions);
@@ -109,7 +109,7 @@ public class JDBCSessionStoreFactory extends AbstractSessionStoreFactory
     /**
      * @param schema
      */
-    public void setSessionTableSchema (JDBCSessionStore.SessionTableSchema schema)
+    public void setSessionTableSchema (JDBCSessionDataStore.SessionTableSchema schema)
     {
         _schema = schema;
     }

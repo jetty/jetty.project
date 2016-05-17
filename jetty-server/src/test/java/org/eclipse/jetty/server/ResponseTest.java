@@ -56,7 +56,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
-import org.eclipse.jetty.server.session.NullSessionStore;
+import org.eclipse.jetty.server.session.NullSessionDataStore;
 import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -514,8 +514,8 @@ public class ResponseTest
         request.setRequestedSessionIdFromCookie(false);
         SessionHandler handler = new SessionHandler();
         DefaultSessionCache ss = new DefaultSessionCache(handler);
-        NullSessionStore ds = new NullSessionStore();
-        ss.setSessionStore(ds);
+        NullSessionDataStore ds = new NullSessionDataStore();
+        ss.setSessionDataStore(ds);
         handler.setSessionIdManager(new DefaultSessionIdManager(_server));
         request.setSessionHandler(handler);
         TestSession tsession = new TestSession(handler, "12345");
@@ -594,10 +594,10 @@ public class ResponseTest
                     request.setRequestedSessionIdFromCookie(i>2);
                     SessionHandler handler = new SessionHandler();
                     
-                    NullSessionStore ds = new NullSessionStore();
+                    NullSessionDataStore ds = new NullSessionDataStore();
                     DefaultSessionCache ss = new DefaultSessionCache(handler);
-                    handler.setSessionStore(ss);
-                    ss.setSessionStore(ds);
+                    handler.setSessionCache(ss);
+                    ss.setSessionDataStore(ds);
                     handler.setSessionIdManager(new DefaultSessionIdManager(_server));
                     request.setSessionHandler(handler);
                     request.setSession(new TestSession(handler, "12345"));
@@ -898,8 +898,7 @@ public class ResponseTest
     {
         protected TestSession(SessionHandler handler, String id)
         {
-            super(new SessionData(id, "", "0.0.0.0", 0, 0, 0, 300));
-            setSessionHandler(handler);
+            super(handler, new SessionData(id, "", "0.0.0.0", 0, 0, 0, 300));
         }
     }
 }

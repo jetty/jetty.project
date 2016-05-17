@@ -53,7 +53,7 @@ public abstract class AbstractSameNodeLoadTest
     protected boolean _stress = Boolean.getBoolean( "STRESS" );
 
     
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
 
     @Test

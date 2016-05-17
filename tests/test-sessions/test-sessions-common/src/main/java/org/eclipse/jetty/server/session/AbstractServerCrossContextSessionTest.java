@@ -88,8 +88,6 @@ public abstract class AbstractServerCrossContextSessionTest
             if (session == null) session = request.getSession(true);
             // Add something to the session
             session.setAttribute("A", "A");
-           
-
             // Perform cross context dispatch to another context
             // Over there we will check that the session attribute added above is not visible
             ServletContext contextB = getServletContext().getContext("/contextB");

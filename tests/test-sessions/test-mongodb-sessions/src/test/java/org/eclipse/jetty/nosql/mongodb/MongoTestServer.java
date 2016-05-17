@@ -86,12 +86,13 @@ public class MongoTestServer extends AbstractTestServer
         SessionHandler handler = new SessionHandler();
         try
         {
-            MongoSessionStore ds = new MongoSessionStore();
+            MongoSessionDataStore ds = new MongoSessionDataStore();
             ds.setDBCollection(getCollection());
             ds.setGracePeriodSec(_scavengePeriod);
             
             DefaultSessionCache ss = new DefaultSessionCache(handler);
-            handler.setSessionStore(ss);
+            handler.setSessionCache(ss);
+            ss.setSessionDataStore(ds);
             return handler;
         }
         catch (Exception e)

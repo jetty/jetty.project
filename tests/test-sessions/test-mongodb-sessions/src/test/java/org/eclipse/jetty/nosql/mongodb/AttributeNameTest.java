@@ -36,6 +36,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.server.session.SessionCache;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,14 +81,12 @@ public class AttributeNameTest
         String servletMapping = "/server";
         int maxInactivePeriod = 10000;
         int scavengePeriod = 20000;
-        int inspectPeriod = 60;
-        int idlePassivatePeriod = -1;
-        AbstractTestServer server1 = createServer(0,maxInactivePeriod,scavengePeriod, idlePassivatePeriod);
+        AbstractTestServer server1 = createServer(0,maxInactivePeriod,scavengePeriod, SessionCache.NEVER_EVICT);
         server1.addContext(contextPath).addServlet(TestServlet.class,servletMapping);
         server1.start();
         int port1 = server1.getPort();
         
-        AbstractTestServer server2 = createServer(0,maxInactivePeriod,scavengePeriod, idlePassivatePeriod);
+        AbstractTestServer server2 = createServer(0,maxInactivePeriod,scavengePeriod, SessionCache.NEVER_EVICT);
         server2.addContext(contextPath).addServlet(TestServlet.class,servletMapping);
         server2.start();
         int port2 = server2.getPort();

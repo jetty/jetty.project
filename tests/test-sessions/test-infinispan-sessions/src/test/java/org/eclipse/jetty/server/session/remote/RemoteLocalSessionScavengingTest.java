@@ -53,9 +53,9 @@ public class RemoteLocalSessionScavengingTest extends AbstractLocalSessionScaven
      * @see org.eclipse.jetty.server.session.AbstractLocalSessionScavengingTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivateInterval)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
     {
-        return new InfinispanTestSessionServer(port, max, scavenge, idlePassivateInterval, __testSupport.getCache());
+        return new InfinispanTestSessionServer(port, max, scavenge, evictionPolicy, __testSupport.getCache());
     }
 
 }

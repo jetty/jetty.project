@@ -103,14 +103,14 @@ public class JdbcTestServer extends AbstractTestServer
     {
         SessionHandler handler = new SessionHandler();
         DefaultSessionCache sessionStore = new DefaultSessionCache(handler);
-        handler.setSessionStore(sessionStore);
-        JDBCSessionStore ds = new JDBCSessionStore();
-        sessionStore.setSessionStore(ds);
+        handler.setSessionCache(sessionStore);
+        JDBCSessionDataStore ds = new JDBCSessionDataStore();
+        sessionStore.setSessionDataStore(ds);
         ds.setGracePeriodSec(_scavengePeriod);
         DatabaseAdaptor da = new DatabaseAdaptor();
         da.setDriverInfo(DRIVER_CLASS, (_config==null?DEFAULT_CONNECTION_URL:(String)_config));
         ds.setDatabaseAdaptor(da);
-        JDBCSessionStore.SessionTableSchema sessionTableSchema = new JDBCSessionStore.SessionTableSchema();
+        JDBCSessionDataStore.SessionTableSchema sessionTableSchema = new JDBCSessionDataStore.SessionTableSchema();
         sessionTableSchema.setTableName(TABLE);
         sessionTableSchema.setIdColumn(ID_COL);
         sessionTableSchema.setAccessTimeColumn(ACCESS_COL);

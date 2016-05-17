@@ -21,20 +21,20 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import java.net.UnknownHostException;
 
-import org.eclipse.jetty.server.session.AbstractSessionStoreFactory;
+import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.server.session.SessionStore;
+import org.eclipse.jetty.server.session.SessionDataStore;
 
 
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 
 /**
- * MongoSessionStoreFactory
+ * MongoSessionDataStoreFactory
  *
  *
  */
-public class MongoSessionStoreFactory extends AbstractSessionStoreFactory
+public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
     String _dbName;  
     String _collectionName;
@@ -76,12 +76,12 @@ public class MongoSessionStoreFactory extends AbstractSessionStoreFactory
     /** 
      * @throws MongoException 
      * @throws UnknownHostException 
-     * @see org.eclipse.jetty.server.session.SessionStoreFactory#getSessionStore(org.eclipse.jetty.server.session.SessionHandler)
+     * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
-    public SessionStore getSessionStore(SessionHandler handler) throws Exception
+    public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
     {
-        MongoSessionStore store = new MongoSessionStore();
+        MongoSessionDataStore store = new MongoSessionDataStore();
         store.setGracePeriodSec(getGracePeriodSec());
         store.setDBCollection(new Mongo().getDB(getDbName()).getCollection(getCollectionName()));
         return store;

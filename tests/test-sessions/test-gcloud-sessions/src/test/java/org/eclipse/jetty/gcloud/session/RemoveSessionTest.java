@@ -54,9 +54,9 @@ public class RemoveSessionTest extends AbstractRemoveSessionTest
      * @see org.eclipse.jetty.server.session.AbstractRemoveSessionTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge,int idlePassivatePeriod)
+    public AbstractTestServer createServer(int port, int max, int scavenge,int evictionPolicy)
     { 
-        return new GCloudTestServer(port, max, scavenge, idlePassivatePeriod, _testSupport.getConfiguration());
+        return new GCloudTestServer(port, max, scavenge, evictionPolicy, _testSupport.getConfiguration());
     }
 
     @Test

@@ -44,7 +44,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.session.FileSessionStore;
+import org.eclipse.jetty.server.session.FileSessionDataStore;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -133,10 +133,10 @@ public class TestServer
         sessiondir.mkdir();
         sessiondir.deleteOnExit();
         DefaultSessionCache ss = new DefaultSessionCache(webapp.getSessionHandler());
-        FileSessionStore sds = new FileSessionStore();
-        ss.setSessionStore(sds);
+        FileSessionDataStore sds = new FileSessionDataStore();
+        ss.setSessionDataStore(sds);
         sds.setStoreDir(sessiondir);
-        webapp.getSessionHandler().setSessionStore(ss);
+        webapp.getSessionHandler().setSessionCache(ss);
 
         contexts.addHandler(webapp);
 

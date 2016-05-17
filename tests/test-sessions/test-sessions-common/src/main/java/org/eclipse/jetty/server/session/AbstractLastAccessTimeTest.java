@@ -100,9 +100,9 @@ public abstract class AbstractLastAccessTimeTest
                     assertEquals("test", response1.getContentAsString());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue( sessionCookie != null );
-                    assertEquals(1, ((DefaultSessionCache)m1.getSessionStore()).getSessionsCurrent());
-                    assertEquals(1, ((DefaultSessionCache)m1.getSessionStore()).getSessionsMax());
-                    assertEquals(1, ((DefaultSessionCache)m1.getSessionStore()).getSessionsTotal());
+                    assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsCurrent());
+                    assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsMax());
+                    assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsTotal());
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");        
                     
@@ -164,9 +164,9 @@ public abstract class AbstractLastAccessTimeTest
     
     public void assertSessionCounts (int current, int max, int total, SessionHandler manager)
     {
-        assertEquals(current, ((DefaultSessionCache)manager.getSessionStore()).getSessionsCurrent());
-        assertEquals(max, ((DefaultSessionCache)manager.getSessionStore()).getSessionsMax());
-        assertEquals(total, ((DefaultSessionCache)manager.getSessionStore()).getSessionsTotal());
+        assertEquals(current, ((DefaultSessionCache)manager.getSessionCache()).getSessionsCurrent());
+        assertEquals(max, ((DefaultSessionCache)manager.getSessionCache()).getSessionsMax());
+        assertEquals(total, ((DefaultSessionCache)manager.getSessionCache()).getSessionsTotal());
     }
 
     public static class TestSessionListener implements HttpSessionListener

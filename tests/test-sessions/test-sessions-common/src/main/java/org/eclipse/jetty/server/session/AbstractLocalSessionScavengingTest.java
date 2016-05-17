@@ -40,7 +40,7 @@ import org.junit.Test;
  */
 public abstract class AbstractLocalSessionScavengingTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
     public void pause(int scavengePeriod)
     {
@@ -61,9 +61,8 @@ public abstract class AbstractLocalSessionScavengingTest
         String servletMapping = "/server";
         int inactivePeriod = 1;
         int scavengePeriod = 2;
-        int inspectionPeriod = 2;
-        int idlePeriod = 20;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, idlePeriod);
+        int evictionSec = 20;
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, evictionSec);
         ServletContextHandler context1 = server1.addContext(contextPath);
         context1.addServlet(TestServlet.class, servletMapping);
 
@@ -71,7 +70,7 @@ public abstract class AbstractLocalSessionScavengingTest
         {
             server1.start();
             int port1 = server1.getPort();
-            AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod * 3, idlePeriod);
+            AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod * 3, evictionSec);
             ServletContextHandler context2 = server2.addContext(contextPath);
             context2.addServlet(TestServlet.class, servletMapping);
 

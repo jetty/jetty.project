@@ -59,7 +59,7 @@ public class SaveIntervalTest
     @Test
     public void testSaveInterval() throws Exception
     {
-        AbstractTestServer server = new JdbcTestServer(0,INACTIVE,SCAVENGE, -1);
+        AbstractTestServer server = new JdbcTestServer(0,INACTIVE,SCAVENGE, SessionCache.NEVER_EVICT);
 
         ServletContextHandler ctxA = server.addContext("/mod");
         ServletHolder holder = new ServletHolder();

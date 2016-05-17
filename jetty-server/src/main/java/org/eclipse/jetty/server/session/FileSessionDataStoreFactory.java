@@ -22,11 +22,11 @@ package org.eclipse.jetty.server.session;
 import java.io.File;
 
 /**
- * FileSessionStoreFactory
+ * FileSessionDataStoreFactory
  *
  *
  */
-public class FileSessionStoreFactory extends AbstractSessionStoreFactory
+public class FileSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
     boolean _deleteUnrestorableFiles;
     File _storeDir;
@@ -69,12 +69,12 @@ public class FileSessionStoreFactory extends AbstractSessionStoreFactory
 
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStoreFactory#getSessionStore(SessionHandler)
+     * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
-    public SessionStore getSessionStore(SessionHandler handler)
+    public SessionDataStore getSessionDataStore(SessionHandler handler)
     {
-        FileSessionStore fsds = new FileSessionStore();
+        FileSessionDataStore fsds = new FileSessionDataStore();
         fsds.setDeleteUnrestorableFiles(isDeleteUnrestorableFiles());
         fsds.setStoreDir(getStoreDir());
         fsds.setGracePeriodSec(getGracePeriodSec());

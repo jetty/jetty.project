@@ -24,34 +24,34 @@ package org.eclipse.jetty.server.session;
  *
  *
  */
-public class CachingSessionStoreFactory extends AbstractSessionStoreFactory
+public class CachingSessionStoreFactory extends AbstractSessionDataStoreFactory
 {
 
     /**
-     * The SessionStore that will store session data.
+     * The SessionDataStore that will store session data.
      */
-    protected  SessionStoreFactory _backingSessionStoreFactory;
+    protected  SessionDataStoreFactory _backingSessionStoreFactory;
     
     
     
     
     /**
-     * @param factory The factory for the actual SessionStore that the
+     * @param factory The factory for the actual SessionDataStore that the
      * CachingSessionStore will delegate to
      */
-    public void setBackingSessionStoreFactory (SessionStoreFactory factory)
+    public void setBackingSessionStoreFactory (SessionDataStoreFactory factory)
     {
         _backingSessionStoreFactory = factory;
     }
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStoreFactory#getSessionStore(org.eclipse.jetty.server.session.SessionHandler)
+     * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
-    public SessionStore getSessionStore(SessionHandler handler) throws Exception
+    public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
     {
         // TODO configure and create a cache!
-        return new CachingSessionStore(null, _backingSessionStoreFactory.getSessionStore(handler));    
+        return new CachingSessionStore(null, _backingSessionStoreFactory.getSessionDataStore(handler));    
     }
 
 }

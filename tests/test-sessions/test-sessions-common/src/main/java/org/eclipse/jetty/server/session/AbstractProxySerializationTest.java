@@ -46,7 +46,7 @@ import org.junit.Test;
  */
 public abstract class AbstractProxySerializationTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivatePeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
     
     public abstract void customizeContext (ServletContextHandler c);
     
