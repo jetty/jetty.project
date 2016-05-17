@@ -4,7 +4,7 @@
  <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.9-SNAPSHOT</version>
+    <version>9.3.9.v20160517</version>
  </parent>
   <artifactId>jetty-documentation</artifactId>
   <name>Jetty :: Documentation</name>
@@ -65,7 +65,7 @@
               <doctype>book</doctype>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <attributes>
-                <imagesdir></imagesdir>
+                <imagesdir />
                 <version>${project.version}</version>
                 <linkcss>true</linkcss>
                 <allow-uri-read>true</allow-uri-read>
@@ -98,10 +98,10 @@
                 <!-- pull over the images from the source material -->
                 <copy todir="target/docbkx/html/index/images" flatten="true">
                   <fileset dir="src/main/asciidoc">
-                    <include name="**/*.png"/>
-                    <include name="**/*.jpg"/>
-                    <include name="**/*.svg"/>
-                    <include name="**/*.dot"/>
+                    <include name="**/*.png" />
+                    <include name="**/*.jpg" />
+                    <include name="**/*.svg" />
+                    <include name="**/*.dot" />
                   </fileset>
                 </copy>
                 <copy todir="target/docbkx/html/index/images">
@@ -230,7 +230,7 @@
                   <sourceHighlighter>rouge</sourceHighlighter>
                   <sourceDocumentName>index.adoc</sourceDocumentName>
                   <attributes>
-                    <imagesdir></imagesdir>
+                    <imagesdir />
                     <version>${project.version}</version>
                     <linkcss>true</linkcss>
                     <allow-uri-read>true</allow-uri-read>
@@ -241,9 +241,9 @@
                     <SRCDIR>${basedir}/../jetty.project/</SRCDIR>
                     <GITBROWSEURL>https://github.com/eclipse/jetty.project/master</GITBROWSEURL>
                     <icons>font</icons>
-                    <pagenums/>
-                    <toc/>
-                    <idprefix/>
+                    <pagenums />
+                    <toc />
+                    <idprefix />
                     <idseparator>-</idseparator>
                   </attributes>
                 </configuration>
