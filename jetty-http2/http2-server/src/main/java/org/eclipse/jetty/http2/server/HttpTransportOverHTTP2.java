@@ -62,7 +62,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         // copying we can defer to the endpoint
         return connection.getEndPoint().isOptimizedForDirectBuffers();
     }
-    
+
     public IStream getStream()
     {
         return stream;
@@ -145,7 +145,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP/2 Push {}",request);
-        
+
         stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Promise<Stream>()
         {
             @Override
@@ -190,16 +190,20 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     @Override
     public void onCompleted()
     {
+        // If the stream is not closed, it is still reading the request content.
+        // Send a reset to the other end so that it stops sending data.
         if (!stream.isClosed())
-        {
-            // If the stream is not closed, it is still reading the request content.
-            // Send a reset to the other end so that it stops sending data.
             stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-            // Now that this stream is reset, in-flight data frames will be consumed and discarded.
-            // Consume the existing queued data frames to avoid stalling the flow control.
-            HttpChannel channel = (HttpChannel)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-            channel.getRequest().getHttpInput().consumeAll();
-        }
+
+        // Consume the existing queued data frames to
+        // avoid stalling the session flow control.
+        consumeInput();
+    }
+
+    protected void consumeInput()
+    {
+        HttpChannel channel = (HttpChannel)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+        channel.getRequest().getHttpInput().consumeAll();
     }
 
     @Override
@@ -213,7 +217,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     }
 
     private class CommitCallback implements Callback.NonBlocking
-    {   
+    {
         @Override
         public void succeeded()
         {

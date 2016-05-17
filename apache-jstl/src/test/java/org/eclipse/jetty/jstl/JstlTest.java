@@ -76,16 +76,6 @@ public class JstlTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         
-        /* TODO: Bug #486530 - sub-handler on WebAppContext prevents startup
-        context.setHandler(new AbstractHandler()
-        {
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                    throws IOException, ServletException
-            {
-            }
-        });
-         */
-        
         File scratchDir = MavenTestingUtils.getTargetFile("tests/" + JstlTest.class.getSimpleName() + "-scratch");
         FS.ensureEmpty(scratchDir);
         JspConfig.init(context,testWebAppDir.toURI(),scratchDir);

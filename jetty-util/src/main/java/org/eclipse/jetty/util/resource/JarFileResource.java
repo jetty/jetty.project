@@ -121,7 +121,7 @@ class JarFileResource extends JarResource
         _jarFile=null;
         _list=null;
         
-        int sep = _urlString.indexOf("!/");
+        int sep = _urlString.lastIndexOf("!/");
         _jarUrl=_urlString.substring(0,sep+2);
         _path=_urlString.substring(sep+2);
         if (_path.length()==0)
@@ -322,7 +322,7 @@ class JarFileResource extends JarResource
         }
         
         Enumeration<JarEntry> e=jarFile.entries();
-        String dir=_urlString.substring(_urlString.indexOf("!/")+2);
+        String dir=_urlString.substring(_urlString.lastIndexOf("!/")+2);
         while(e.hasMoreElements())
         {
             JarEntry entry = e.nextElement();               
@@ -392,7 +392,6 @@ class JarFileResource extends JarResource
         
         JarFileResource newResource = new JarFileResource(oldResource.getURL(), false);
         return newResource;
-        
     }
     
     /**
@@ -407,12 +406,12 @@ class JarFileResource extends JarResource
     throws MalformedURLException
     {
         String string = _urlString;
-        int index = string.indexOf("!/");
+        int index = string.lastIndexOf("!/");
         if (index > 0)
             string = string.substring(0,index);
         if (string.startsWith("jar:"))
             string = string.substring(4);
         URL url = new URL(string);
-        return url.sameFile(resource.getURL());     
+        return url.sameFile(resource.getURI().toURL());     
     }
 }

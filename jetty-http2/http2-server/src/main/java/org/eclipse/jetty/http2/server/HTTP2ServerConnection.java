@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Request;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.SettingsBodyParser;
@@ -51,6 +53,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 
 public class HTTP2ServerConnection extends HTTP2Connection implements Connection.UpgradeTo
 {
@@ -61,7 +64,12 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
-        super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize);
+        this(byteBufferPool, executor, endPoint, httpConfig, parser, session, inputBufferSize, ExecutionStrategy.Factory.getDefault(), listener);
+    }
+
+    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ExecutionStrategy.Factory executionFactory, ServerSessionListener listener)
+    {
+        super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize, executionFactory);
         this.listener = listener;
         this.httpConfig = httpConfig;
     }
@@ -181,12 +189,12 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             upgradeFrames.add(new PrefaceFrame());
             upgradeFrames.add(settingsFrame);
             // Remember the request to send a response from onOpen().
-            upgradeFrames.add(new HeadersFrame(1, request, null, true));
+            upgradeFrames.add(new HeadersFrame(1, new Request(request), null, true));
         }
         return true;
     }
 
-    private class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2
+    private class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2 implements ExecutionStrategy.Rejectable
     {
         public ServerHttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
         {
@@ -194,11 +202,28 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
 
         @Override
+        public void recycle()
+        {
+            super.recycle();
+            channels.offer(this);
+        }
+
+        @Override
         public void onCompleted()
         {
             super.onCompleted();
             recycle();
-            channels.offer(this);
+        }
+
+        @Override
+        public void reject()
+        {
+            IStream stream = getStream();
+            stream.reset(new ResetFrame(stream.getId(), ErrorCode.ENHANCE_YOUR_CALM_ERROR.code), Callback.NOOP);
+            // Consume the existing queued data frames to
+            // avoid stalling the session flow control.
+            getHttpTransport().consumeInput();
+            recycle();
         }
     }
 }

@@ -1,0 +1,38 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[balancer-servlet]]
+=== Balancer Servlet
+
+[[balancer-servlet-metadata]]
+==== Info
+
+* Classname: `org.eclipse.jetty.proxy.BalancerServlet`
+* Maven Artifact: org.eclipse.jetty:jetty-proxy
+* Javadoc: {JDURL}/org/eclipse/jetty/proxy/BalancerServlet.html
+* Xref: {JXURL}/org/eclipse/jetty/proxy/BalancerServlet.html
+
+[[balancer-servlet-usage]]
+==== Usage
+
+The Balancer servlet allows for simple, sticky round robin load balancing leveraging the ProxyServlet that is distributed with Jetty.
+
+In addition to the parameters for ProxyServlet, the following are available for the balancer servlet:
+
+stickySessions::
+  true if sessions should be sticky for subsequent requests
+balancerMember.<name>.proxyTo::
+  One of more of these are required and will be the locations that are used to proxy traffic to.

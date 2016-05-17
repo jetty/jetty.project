@@ -59,7 +59,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         super(connector, configuration, endPoint, transport);
     }
 
-    private IStream getStream()
+    protected IStream getStream()
     {
         return getHttpTransport().getStream();
     }

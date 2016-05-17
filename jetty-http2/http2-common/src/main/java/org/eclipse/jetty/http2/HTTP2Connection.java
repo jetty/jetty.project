@@ -46,14 +46,14 @@ public class HTTP2Connection extends AbstractConnection
     private final HTTP2Producer producer = new HTTP2Producer();
     private final ExecutionStrategy executionStrategy;
 
-    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize, ExecutionStrategy.Factory executionFactory)
     {
         super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.executionStrategy = ExecutionStrategy.Factory.instanceFor(producer, executor);
+        this.executionStrategy = executionFactory.newExecutionStrategy(producer, executor);
     }
 
     public ISession getSession()
@@ -141,6 +141,7 @@ public class HTTP2Connection extends AbstractConnection
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
+        private final Callback fillCallback = new FillCallback();
         private ByteBuffer buffer;
 
         @Override
@@ -167,7 +168,7 @@ public class HTTP2Connection extends AbstractConnection
 
                     task = tasks.poll();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Dequeued task {}", task);
+                        LOG.debug("Dequeued new task {}", task);
                     if (task != null)
                     {
                         release();
@@ -182,7 +183,7 @@ public class HTTP2Connection extends AbstractConnection
                 if (filled == 0)
                 {
                     release();
-                    fillInterested();
+                    getEndPoint().fillInterested(fillCallback);
                     return null;
                 }
                 else if (filled < 0)
@@ -203,6 +204,21 @@ public class HTTP2Connection extends AbstractConnection
                 byteBufferPool.release(buffer);
                 buffer = null;
             }
+        }
+    }
+
+    private class FillCallback implements Callback.NonBlocking
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
         }
     }
 }

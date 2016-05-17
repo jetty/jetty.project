@@ -35,6 +35,8 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 
 @ManagedObject
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
@@ -42,10 +44,12 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private final Connection.Listener connectionListener = new ConnectionListener();
     private final HttpConfiguration httpConfiguration;
     private int maxDynamicTableSize = 4096;
-    private int initialStreamSendWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+    private int initialStreamRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+    private int initialSessionRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
     private int maxConcurrentStreams = -1;
     private int maxHeaderBlockFragment = 0;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
+    private ExecutionStrategy.Factory executionStrategyFactory = new ProduceExecuteConsume.Factory();
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -70,15 +74,46 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.maxDynamicTableSize = maxDynamicTableSize;
     }
 
-    @ManagedAttribute("The initial size of stream's flow control send window")
-    public int getInitialStreamSendWindow()
+    @ManagedAttribute("The initial size of session's flow control receive window")
+    public int getInitialSessionRecvWindow()
     {
-        return initialStreamSendWindow;
+        return initialSessionRecvWindow;
     }
 
+    public void setInitialSessionRecvWindow(int initialSessionRecvWindow)
+    {
+        this.initialSessionRecvWindow = initialSessionRecvWindow;
+    }
+
+    @ManagedAttribute("The initial size of stream's flow control receive window")
+    public int getInitialStreamRecvWindow()
+    {
+        return initialStreamRecvWindow;
+    }
+
+    public void setInitialStreamRecvWindow(int initialStreamRecvWindow)
+    {
+        this.initialStreamRecvWindow = initialStreamRecvWindow;
+    }
+
+    /**
+     * @deprecated use {@link #getInitialStreamRecvWindow()} instead,
+     * since "send" is meant on the client, but this is the server configuration
+     */
+    @Deprecated
+    public int getInitialStreamSendWindow()
+    {
+        return getInitialStreamRecvWindow();
+    }
+
+    /**
+     * @deprecated use {@link #setInitialStreamRecvWindow(int)} instead,
+     * since "send" is meant on the client, but this is the server configuration
+     */
+    @Deprecated
     public void setInitialStreamSendWindow(int initialStreamSendWindow)
     {
-        this.initialStreamSendWindow = initialStreamSendWindow;
+        setInitialStreamRecvWindow(initialStreamSendWindow);
     }
 
     @ManagedAttribute("The max number of concurrent streams per session")
@@ -112,6 +147,16 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.flowControlStrategyFactory = flowControlStrategyFactory;
     }
 
+    public ExecutionStrategy.Factory getExecutionStrategyFactory()
+    {
+        return executionStrategyFactory;
+    }
+
+    public void setExecutionStrategyFactory(ExecutionStrategy.Factory executionStrategyFactory)
+    {
+        this.executionStrategyFactory = executionStrategyFactory;
+    }
+
     public HttpConfiguration getHttpConfiguration()
     {
         return httpConfiguration;
@@ -134,10 +179,11 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         // the typical case is that the connection will be busier and the
         // stream idle timeout will expire earlier that the connection's.
         session.setStreamIdleTimeout(endPoint.getIdleTimeout());
+        session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
 
         ServerParser parser = newServerParser(connector, session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
-                        endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
+                        endPoint, httpConfiguration, parser, session, getInputBufferSize(), getExecutionStrategyFactory(), listener);
         connection.addListener(connectionListener);
         return configure(connection, connector, endPoint);
     }

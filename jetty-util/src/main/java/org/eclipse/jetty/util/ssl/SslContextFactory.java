@@ -60,6 +60,7 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.StandardConstants;
@@ -209,9 +210,9 @@ public class SslContextFactory extends AbstractLifeCycle
     /** Set to true to enable SSL Session caching */
     private boolean _sessionCachingEnabled = true;
     /** SSL session cache size */
-    private int _sslSessionCacheSize;
+    private int _sslSessionCacheSize=-1;
     /** SSL session timeout */
-    private int _sslSessionTimeout;
+    private int _sslSessionTimeout=-1;
 
     /** SSL context */
     private SSLContext _setContext;
@@ -387,6 +388,16 @@ public class SslContextFactory extends AbstractLifeCycle
             }
         }
 
+        // Initialize cache
+        SSLSessionContext serverContext=context.getServerSessionContext();
+        if (serverContext!=null)
+        {
+            if (getSslSessionCacheSize()>-1)
+                serverContext.setSessionCacheSize(getSslSessionCacheSize());
+            if (getSslSessionTimeout()>-1)
+            serverContext.setSessionTimeout(getSslSessionTimeout());
+        }
+        
         // select the protocols and ciphers
         SSLEngine sslEngine=context.createSSLEngine();
         selectCipherSuites(
@@ -1401,14 +1412,20 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /** Set the flag to enable SSL Session caching.
-    * @param enableSessionCaching the value of the flag
-    */
+     * If set to true, then the {@link SSLContext#createSSLEngine(String, int)} method is
+     * used to pass host and port information as a hint for session reuse.  Note that
+     * this is only a hint and session may not be reused. Moreover, the hint is typically
+     * only used on client side implementations and setting this to false does not 
+     * stop a server from accepting an offered session ID to reuse.
+     * @param enableSessionCaching the value of the flag
+     */
     public void setSessionCachingEnabled(boolean enableSessionCaching)
     {
         _sessionCachingEnabled = enableSessionCaching;
     }
 
     /** Get SSL session cache size.
+     * Passed directly to {@link SSLSessionContext#setSessionCacheSize(int)}
      * @return SSL session cache size
      */
     public int getSslSessionCacheSize()
@@ -1416,8 +1433,11 @@ public class SslContextFactory extends AbstractLifeCycle
         return _sslSessionCacheSize;
     }
 
-    /** SEt SSL session cache size.
-     * @param sslSessionCacheSize SSL session cache size to set
+    /** Set SSL session cache size.
+     * <p>Set the max cache size to be set on {@link SSLSessionContext#setSessionCacheSize(int)}
+     * when this factory is started.</p>
+     * @param sslSessionCacheSize SSL session cache size to set. A value  of -1 (default) uses
+     * the JVM default, 0 means unlimited and positive number is a max size.
      */
     public void setSslSessionCacheSize(int sslSessionCacheSize)
     {
@@ -1433,7 +1453,10 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /** Set SSL session timeout.
-     * @param sslSessionTimeout SSL session timeout to set
+     * <p>Set the timeout in seconds to be set on {@link SSLSessionContext#setSessionTimeout(int)}
+     * when this factory is started.</p>
+     * @param sslSessionTimeout SSL session timeout to set in seconds. A value of -1 (default) uses
+     * the JVM default, 0 means unlimited and positive number is a timeout in seconds.
      */
     public void setSslSessionTimeout(int sslSessionTimeout)
     {

@@ -25,6 +25,17 @@ package org.eclipse.jetty.start;
  */
 public class Version implements Comparable<Version>
 {
+    
+    /**
+     * Original String version
+     */
+    private String string = null;
+    
+    /**
+     * Short String version
+     */
+    private String shortString = null;
+    
     /**
      * The major version for java is always "1" (per
      * <a href="http://www.oracle.com/technetwork/java/javase/namechange-140185.html">legacy versioning history</a>)
@@ -45,6 +56,12 @@ public class Version implements Comparable<Version>
      * The update (where bug fixes are placed)
      */
     private int update = -1;
+    
+    /**
+     * Update strings may be zero padded!
+     */
+    private String updateString = null;
+    
     /**
      * Extra versioning information present on the version string, but not relevant for version comparison reason.
      * (eg: with "1.8.0_45-internal", the suffix would be "-internal")
@@ -181,6 +198,7 @@ public class Version implements Comparable<Version>
      */
     private void parse(String versionStr)
     {
+        string = versionStr;
         legacyMajor = 0;
         major = -1;
         revision = -1;
@@ -194,6 +212,8 @@ public class Version implements Comparable<Version>
         while (offset < len)
         {
             char c = versionStr.charAt(offset);
+            if (c=='-')
+                shortString=versionStr.substring(0,offset);
             boolean isSeparator = !Character.isLetterOrDigit(c);
             if (isSeparator)
             {
@@ -206,7 +226,7 @@ public class Version implements Comparable<Version>
             else if (Character.isLetter(c))
             {
                 suffix = versionStr.substring(offset);
-                return;
+                break;
             }
 
             switch (state)
@@ -231,12 +251,16 @@ public class Version implements Comparable<Version>
                     break;
                 case UPDATE:
                     if (!isSeparator)
+                    {
                         update = val;
+                    }
                     break;
             }
 
             offset++;
         }
+        if (shortString==null)
+            shortString=versionStr;
     }
 
     /**
@@ -245,25 +269,7 @@ public class Version implements Comparable<Version>
     @Override
     public String toString()
     {
-        StringBuffer sb = new StringBuffer(10);
-        sb.append(legacyMajor);
-        if (major >= 0)
-        {
-            sb.append('.').append(major);
-            if (revision >= 0)
-            {
-                sb.append('.').append(revision);
-                if (update >= 0)
-                {
-                    sb.append('_').append(update);
-                }
-            }
-        }
-        if (Utils.isNotBlank(suffix))
-        {
-            sb.append('-').append(suffix);
-        }
-        return sb.toString();
+        return string;
     }
     
     /**
@@ -272,20 +278,6 @@ public class Version implements Comparable<Version>
      */
     public String toShortString()
     {
-        StringBuffer sb = new StringBuffer(10);
-        sb.append(legacyMajor);
-        if (major >= 0)
-        {
-            sb.append('.').append(major);
-            if (revision >= 0)
-            {
-                sb.append('.').append(revision);
-                if (update >= 0)
-                {
-                    sb.append('_').append(update);
-                }
-            }
-        }
-        return sb.toString();
+        return shortString;
     }
 }

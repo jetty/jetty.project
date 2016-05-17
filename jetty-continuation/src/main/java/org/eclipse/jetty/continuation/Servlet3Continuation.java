@@ -218,6 +218,7 @@ public class Servlet3Continuation implements Continuation, AsyncListener
     {
         if (isSuspended())
         {
+            _initial=false;
             if (ContinuationFilter.__debug)
                 throw new ContinuationThrowable();
             throw __exception;
@@ -244,14 +245,12 @@ public class Servlet3Continuation implements Continuation, AsyncListener
     @Override
     public void onStartAsync(AsyncEvent event) throws IOException
     {
-        _initial=false;
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void onTimeout(AsyncEvent event) throws IOException
     {
-        _initial=false;
         _expired=true;
         for (ContinuationListener listener:_listeners)
             listener.onTimeout(this);

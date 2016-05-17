@@ -1,36 +1,41 @@
-jetty-9.3.9.M0 - 05 April 2016
- + 184 Empty Realm for BasicAuthentication
- + 371 update apache jsp to 8.0.27
- + 418 Add osgi capability for endpoint configurator
+jetty-9.3.9-SNAPSHOT
+
+jetty-9.2.16.v20160414 - 14 April 2016
+ + 85 Expose TLS protocol used for connection in SecureRequestCustomizer
+ + 316 add chm mime mapping to mime.properties
+ + 353 Jetty Client doesn't forward authentication headers with redirects when
+   using proxy
+ + 365 Potential connection leakage in case of aborted request
+ + 367 Build downloads from git.eclipse.org
+ + 371 jasper dependencies are outdated in 9.2.x
+ + 377 HttpClient - No supported cipher suites leads to stuck requests.
+ + 418 Javax websocket server impl does not expose all required services as
+   OSGi capabilities
  + 424 Jetty impl. of Websocket ServerEndpointConfig.Configurator lifecycle out
-   of spec
- + 427 Squelch intentional exceptions seen during websocket testing
- + 431 
- + 434 RequestTest stack traces
- + 435 adjust debug log message
- + 437 Avoid NPE on receiving empty message though MessageHandler.Partial
+   of spec.
+ + 437 NPE is raised inside Jetty websocket client on receiving empty message
+   through MessageHandler.Partial<>
  + 438 File and Path Resources with control characters should be rejected
- + 446 jetty-quickstart path normalization uses improper paths on Windows
- + 448 RFC2616 Compliance Mode should track and report RFC7230 violations
- + 450 Client AuthenticationProtocolHandler sends request failures to response
-   failure listener
- + 451 RFC2616 Compliance mode should support empty headers
- + 453 Change logging of setting session maxInactiveInterval to DEBUG from WARN
- + 454 DoSFilter does not send an error status code when closing a connection,
-   because of timeout
- + 458 Improve Quality list handling
- + 467 Compact // rule
- + 469 Update to Apache Jasper 8.0.33
- + 470 AsyncContextState NPE if called after reset
- + 472 Use LongAdder for statistics
- + 476 HttpClient should not send absolute-form target with non HttpProxy
+ + 469 Update to support apache jasper 8.0.33
+ + 510 Module [depend] property expansion should support eg
+   foo/${bar}/${bar}-xxx
+
+jetty-9.3.9.M1 - 11 April 2016
+ + 481 Event response.success notified without waiting for content callback for
+   HTTP/2 transport
+ + 490 serverClasses set from jetty-web.xml
+ + 491 Do not assume gzip acceptable for HTTP/2
+ + 503 Wrong request-per-connection counting in MultiplexHttpDestination in
+   case of failures
+ + 504 HTTP/2 client transport cannot send request after idle timeout
+
+ jetty-9.3.9.M0 - 05 April 2016
  + 184 Empty Realm for BasicAuthentication
  + 371 update apache jsp to 8.0.27
  + 418 Add osgi capability for endpoint configurator
  + 424 Jetty impl. of Websocket ServerEndpointConfig.Configurator lifecycle out
    of spec
  + 427 Squelch intentional exceptions seen during websocket testing
- + 431
  + 434 RequestTest stack traces
  + 435 adjust debug log message
  + 437 Avoid NPE on receiving empty message though MessageHandler.Partial
@@ -151,16 +156,6 @@ jetty-9.2.15.v20160210 - 10 February 2016
  + 484621 Client hangs till timeout when Authentication.authenticate() throws
    exception.
  + 487511 Jetty HTTP won't work on turkish systems
- + 485535 jetty.sh results in FAILED when running service restart
- + 485663 NullPointerException in WebSocketSession during upgrade with DEBUG
-   logging
- + jetty-9.3.7.v20160115 - 15 January 2016
- + 471171 Support SYNC_FLUSH in GzipHandler
- + 485469 permessage-deflate extension causes protocol error in Firefox/Chrome
- + 485714 Update SSL configuration to mitigate SLOTH vulnerability
- + 485884 WebAppContext defaults should be same for xml or war deployment
- + 485969 WebSocket upgrade response should honor HttpConfiguration server
-   version settings
 
 jetty-9.3.7.RC1 - 13 January 2016
  + 481986 Dead JSR 356 Server Session still being tracked after
@@ -1168,13 +1163,9 @@ jetty-9.2.4.v20141103 - 03 November 2014
  + 446559 Avoid spin consuming extra data
  + 446563 Null HttpChannel.getCurrentHttpChannel() in
    ServletHandler.doFilter().
- + 446564 Refactored RequestLog Mechanism
  + 446672 NPN Specification issue in the case no protocols are selected
  + 446923 SharedBlockingCallback does not handle connector max idle time of
    Long.MAX_VALUE; BlockerTimeoutException not serializable
- + 446944 ServletTester and HttpTester should be in
-   <classifier>tests</classifier>
- + 447216 putAll Properties in XmlConfiguration
  + 447381 Disable SSLv3 by default
  + 447472 test harness for slow large writes
  + 447515 Remove GzipFilter
@@ -3490,7 +3481,7 @@ jetty-8.1.2.v20120308 - 08 March 2012
  + 373603 NullPointer in WebServletAnnotation
  + JETTY-1409 GzipFilter will double-compress application/x-gzip content
  + JETTY-1489 WebAppProvider attempts to deploy .svn folder
- + JETTY-1494
+ + JETTY-1494 
 
 jetty-7.6.2.v20120308 - 08 March 2012
  + 370387 SafariWebsocketDraft0Test failure during build
@@ -3511,7 +3502,7 @@ jetty-7.6.2.v20120308 - 08 March 2012
    validating turned on fixed
  + JETTY-1409 GzipFilter will double-compress application/x-gzip content
  + JETTY-1489 WebAppProvider attempts to deploy .svn folder
- + JETTY-1494
+ + JETTY-1494 
 
 jetty-8.1.1.v20120215 - 15 February 2012
  + 369121 simplified test

@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.ExecutionStrategy.Rejectable;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -68,10 +67,20 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
+        this(selectorManager, id, ExecutionStrategy.Factory.getDefault());
+    }
+
+    public ManagedSelector(SelectorManager selectorManager, int id, ExecutionStrategy.Factory executionFactory)
+    {
         _selectorManager = selectorManager;
         _id = id;
-        _strategy = ExecutionStrategy.Factory.instanceFor(new SelectorProducer(), selectorManager.getExecutor());
+        _strategy = executionFactory.newExecutionStrategy(new SelectorProducer(), selectorManager.getExecutor());
         setStopTimeout(5000);
+    }
+
+    public ExecutionStrategy getExecutionStrategy()
+    {
+        return _strategy;
     }
 
     @Override
@@ -79,6 +88,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     {
         super.doStart();
         _selector = newSelector();
+        _selectorManager.execute(this);
     }
 
     protected Selector newSelector() throws IOException
@@ -542,7 +552,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    class Accept implements Runnable, Rejectable
+    class Accept implements Runnable, Closeable
     {
         private final SocketChannel channel;
         private final Object attachment;
@@ -554,12 +564,12 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
 
         @Override
-        public void reject()
+        public void close()
         {
-            LOG.debug("rejected accept {}",channel);
+            LOG.debug("closed accept of {}", channel);
             closeNoExceptions(channel);
         }
-        
+
         @Override
         public void run()
         {
@@ -576,7 +586,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    private class CreateEndPoint implements Product, Rejectable
+    private class CreateEndPoint implements Product, Closeable
     {
         private final SocketChannel channel;
         private final SelectionKey key;
@@ -602,9 +612,9 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
 
         @Override
-        public void reject()
+        public void close()
         {
-            LOG.debug("rejected create {}",channel);
+            LOG.debug("closed creation of {}", channel);
             closeNoExceptions(channel);
         }
 

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -70,6 +71,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final AtomicBoolean _committed = new AtomicBoolean();
     private final AtomicInteger _requests = new AtomicInteger();
     private final Connector _connector;
+    private final Executor _executor;
     private final HttpConfiguration _configuration;
     private final EndPoint _endPoint;
     private final HttpTransport _transport;
@@ -92,7 +94,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _state = new HttpChannelState(this);
         _request = new Request(this, newHttpInput(_state));
         _response = new Response(this, newHttpOutput());
-        _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
+
+        _executor = connector == null ? null : connector.getServer().getThreadPool();
+        _requestLog = connector == null ? null : connector.getServer().getRequestLog();
+
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",this,_endPoint,_endPoint.getConnection(),_state);
     }
@@ -298,7 +303,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         try
                         {
                             _request.setDispatcherType(DispatcherType.REQUEST);
-                            
+
                             List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
                             if (!customizers.isEmpty())
                             {
@@ -627,9 +632,22 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (status < 400 || status > 599)
             status = HttpStatus.BAD_REQUEST_400;
 
+        Action action;
         try
         {
-            if (_state.handling()==Action.DISPATCH)
+           action=_state.handling();
+        }
+        catch(IllegalStateException e)
+        {
+            // The bad message cannot be handled in the current state, so throw
+            // to hopefull somebody that can handle
+            abort(e);
+            throw new BadMessageException(status,reason);
+        }
+
+        try
+        {
+            if (action==Action.DISPATCH)
             {
                 ByteBuffer content=null;
                 HttpFields fields=new HttpFields();
@@ -735,7 +753,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     protected void execute(Runnable task)
     {
-        _connector.getExecutor().execute(task);
+        _executor.execute(task);
     }
 
     public Scheduler getScheduler()

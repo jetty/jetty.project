@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -83,7 +84,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private int maxLocalStreams;
     private int maxRemoteStreams;
     private long streamIdleTimeout;
+    private int initialSessionRecvWindow;
     private boolean pushEnabled;
+    private long idleTime;
 
     public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
@@ -100,6 +103,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         this.sendWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.recvWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.pushEnabled = true; // SPEC: by default, push is enabled.
+        this.idleTime = System.nanoTime();
     }
 
     @Override
@@ -146,6 +150,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         this.streamIdleTimeout = streamIdleTimeout;
     }
 
+    @ManagedAttribute("The initial size of session's flow control receive window")
+    public int getInitialSessionRecvWindow()
+    {
+        return initialSessionRecvWindow;
+    }
+
+    public void setInitialSessionRecvWindow(int initialSessionRecvWindow)
+    {
+        this.initialSessionRecvWindow = initialSessionRecvWindow;
+    }
+
     public EndPoint getEndPoint()
     {
         return endPoint;
@@ -183,7 +198,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     @Override
                     public void succeeded()
                     {
-                        flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
+                        complete();
                     }
 
                     @Override
@@ -191,6 +206,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     {
                         // Consume also in case of failures, to free the
                         // session flow control window for other streams.
+                        complete();
+                    }
+
+                    private void complete()
+                    {
+                        notIdle();
+                        stream.notIdle();
                         flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
                     }
                 });
@@ -408,7 +430,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             IStream stream = getStream(streamId);
             if (stream != null)
+            {
+                stream.process(frame, Callback.NOOP);
                 onWindowUpdate(stream, frame);
+            }
         }
         else
         {
@@ -619,7 +644,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         // Ping frames are prepended to process them as soon as possible.
         boolean queued = entry.frame.getType() == FrameType.PING ? flusher.prepend(entry) : flusher.append(entry);
         if (queued && flush)
+        {
+            if (entry.stream != null)
+                entry.stream.notIdle();
             flusher.iterate();
+        }
     }
 
     protected IStream createLocalStream(int streamId, Promise<Stream> promise)
@@ -866,6 +895,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             case NOT_CLOSED:
             {
+                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - idleTime);
+                if (elapsed < endPoint.getIdleTimeout())
+                    return false;
                 return notifyIdleTimeout(this);
             }
             case LOCALLY_CLOSED:
@@ -879,6 +911,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 return false;
             }
         }
+    }
+
+    private void notIdle()
+    {
+        idleTime = System.nanoTime();
     }
 
     @Override

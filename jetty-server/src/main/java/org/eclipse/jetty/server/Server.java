@@ -343,6 +343,12 @@ public class Server extends HandlerWrapper implements Attributes
         ShutdownMonitor.getInstance().start(); // initialize
 
         LOG.info("jetty-" + getVersion());
+        if (!Jetty.STABLE)
+        {
+            LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
+            LOG.warn("Download a stable release from http://download.eclipse.org/jetty/");
+        }
+        
         HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
         MultiException mex=new MultiException();
 

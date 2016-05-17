@@ -27,9 +27,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.nio.ByteBuffer;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentMap;
 
+import org.eclipse.jetty.io.ByteBufferPool.Bucket;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Test;
@@ -40,51 +40,56 @@ public class MappedByteBufferPoolTest
     public void testAcquireRelease() throws Exception
     {
         MappedByteBufferPool bufferPool = new MappedByteBufferPool();
-        ConcurrentMap<Integer,Queue<ByteBuffer>> buffers = bufferPool.buffersFor(true);
+        ConcurrentMap<Integer,Bucket> buckets = bufferPool.bucketsFor(true);
 
         int size = 512;
         ByteBuffer buffer = bufferPool.acquire(size, true);
 
         assertTrue(buffer.isDirect());
         assertThat(buffer.capacity(), greaterThanOrEqualTo(size));
-        assertTrue(buffers.isEmpty());
+        assertTrue(buckets.isEmpty());
 
         bufferPool.release(buffer);
 
-        assertEquals(1, buffers.size());
+        assertEquals(1, buckets.size());
+        assertEquals(1, buckets.values().iterator().next().size());
     }
 
     @Test
     public void testAcquireReleaseAcquire() throws Exception
     {
         MappedByteBufferPool bufferPool = new MappedByteBufferPool();
-        ConcurrentMap<Integer,Queue<ByteBuffer>> buffers = bufferPool.buffersFor(false);
+        ConcurrentMap<Integer,Bucket> buckets = bufferPool.bucketsFor(false);
 
         ByteBuffer buffer1 = bufferPool.acquire(512, false);
         bufferPool.release(buffer1);
         ByteBuffer buffer2 = bufferPool.acquire(512, false);
 
         assertSame(buffer1, buffer2);
+        assertEquals(1, buckets.size());
+        assertEquals(0, buckets.values().iterator().next().size());
 
         bufferPool.release(buffer2);
 
-        assertEquals(1, buffers.size());
+        assertEquals(1, buckets.size());
+        assertEquals(1, buckets.values().iterator().next().size());
     }
 
     @Test
     public void testAcquireReleaseClear() throws Exception
     {
         MappedByteBufferPool bufferPool = new MappedByteBufferPool();
-        ConcurrentMap<Integer,Queue<ByteBuffer>> buffers = bufferPool.buffersFor(true);
+        ConcurrentMap<Integer,Bucket> buckets = bufferPool.bucketsFor(true);
 
         ByteBuffer buffer = bufferPool.acquire(512, true);
         bufferPool.release(buffer);
 
-        assertEquals(1, buffers.size());
+        assertEquals(1, buckets.size());
+        assertEquals(1, buckets.values().iterator().next().size());
 
         bufferPool.clear();
 
-        assertTrue(buffers.isEmpty());
+        assertTrue(buckets.isEmpty());
     }
     
     /**
@@ -127,5 +132,31 @@ public class MappedByteBufferPoolTest
         assertThat(BufferUtil.toDetailString(buffer),containsString("@T00000001"));
         buffer = pool.acquire(1024,false);
         assertThat(BufferUtil.toDetailString(buffer),containsString("@T00000002"));
+    }
+    
+
+
+    @Test
+    public void testMaxQueue() throws Exception
+    {
+        MappedByteBufferPool bufferPool = new MappedByteBufferPool(-1,2);
+        ConcurrentMap<Integer,Bucket> buckets = bufferPool.bucketsFor(false);
+
+        ByteBuffer buffer1 = bufferPool.acquire(512, false);
+        ByteBuffer buffer2 = bufferPool.acquire(512, false);
+        ByteBuffer buffer3 = bufferPool.acquire(512, false);
+        assertEquals(0, buckets.size());
+
+        bufferPool.release(buffer1);
+        assertEquals(1, buckets.size());
+        Bucket bucket=buckets.values().iterator().next();
+        assertEquals(1, bucket.size());
+
+        bufferPool.release(buffer2);
+        assertEquals(2, bucket.size());
+        
+        bufferPool.release(buffer3);
+        assertEquals(2, bucket.size());
+
     }
 }

@@ -1,0 +1,222 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[quickstart-running-jetty]]
+=== Running Jetty
+
+To start Jetty on the default port of 8080, run the following command:
+
+[source, screen]
+....
+> cd $JETTY_HOME
+> java -jar start.jar
+2015-06-04 10:50:44.806:INFO::main: Logging initialized @334ms
+2015-06-04 10:50:44.858:WARN:oejs.HomeBaseWarning:main: This instance of Jetty is not running from a separate {jetty.base} directory, this is not recommended.  See documentation at http://www.eclipse.org/jetty/documentation/current/startup.html
+2015-06-04 10:50:44.995:INFO:oejs.Server:main: jetty-9.3.0.v20150601
+2015-06-04 10:50:45.012:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:///opt/jetty-distribution-9.3.0.v20150601/webapps/] at interval 1
+2015-06-04 10:50:45.030:INFO:oejs.ServerConnector:main: Started ServerConnector@19dfb72a{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
+2015-06-04 10:50:45.030:INFO:oejs.Server:main: Started @558ms
+....
+
+You can point a browser at this server at link:http://localhost:8080[]. 
+However, as there are no webapps deployed in the $JETTY_HOME directory, you will see a 404 error page served by Jetty. 
+*Note* the HomeBase warning - it is _not_ recommended to run Jetty from the $JETTY_HOME directory. 
+Instead, see how to link:#creating-jetty-base[create a Jetty Base] below.
+
+[[demo-webapps-base]]
+==== Demo Base
+
+Within the standard jetty distribution there is the `demo-base` directory, which demonstrates the recommended way to run Jetty in a directory separately from $JETTY_HOME:
+
+[source, screen]
+....
+> cd $JETTY_HOME/demo-base/
+> java -jar $JETTY_HOME/start.jar
+2015-06-04 10:55:24.161:INFO::main: Logging initialized @308ms
+2015-06-04 10:55:24.431:WARN::main: demo test-realm is deployed. DO NOT USE IN PRODUCTION!
+2015-06-04 10:55:24.434:INFO:oejs.Server:main: jetty-9.3.0.v20150601
+2015-06-04 10:55:24.457:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:///opt/jetty-distribution-9.3.0.v20150601/demo-base/webapps/] at interval 1
+2015-06-04 10:55:24.826:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@c038203{/,file:///opt/jetty-distribution-9.3.0.v20150601/demo-base/webapps/ROOT/,AVAILABLE}{/ROOT}
+2015-06-04 10:55:24.929:WARN::main: test-jaas webapp is deployed. DO NOT USE IN PRODUCTION!
+2015-06-04 10:55:24.978:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@46238e3f{/test-jaas,file:///tmp/jetty-0.0.0.0-8080-test-jaas.war-_test-jaas-any-9105214562680121772.dir/webapp/,AVAILABLE}{/test-jaas.war}
+2015-06-04 10:55:25.162:WARN::main: async-rest webapp is deployed. DO NOT USE IN PRODUCTION!
+2015-06-04 10:55:25.208:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@6b67034{/async-rest,[file:///tmp/jetty-0.0.0.0-8080-async-rest.war-_async-rest-any-1023939491558622183.dir/webapp/, jar:file:///tmp/jetty-0.0.0.0-8080-async-rest.war-_async-rest-any-1023939491558622183.dir/webapp/WEB-INF/lib/example-async-rest-jar-9.3.0.v20150601.jar!/META-INF/resources],AVAILABLE}{/async-rest.war}
+2015-06-04 10:55:25.311:WARN::main: test-jndi webapp is deployed. DO NOT USE IN PRODUCTION!
+2015-06-04 10:55:25.386:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@8b96fde{/test-jndi,file:///tmp/jetty-0.0.0.0-8080-test-jndi.war-_test-jndi-any-1692053319754270133.dir/webapp/,AVAILABLE}{/test-jndi.war}
+2015-06-04 10:55:25.508:WARN::main: test-spec webapp is deployed. DO NOT USE IN PRODUCTION!
+2015-06-04 10:55:25.594:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@69930714{/test-spec,[file:///tmp/jetty-0.0.0.0-8080-test-spec.war-_test-spec-any-5518740932795802823.dir/webapp/, jar:file:///tmp/jetty-0.0.0.0-8080-test-spec.war-_test-spec-any-5518740932795802823.dir/webapp/WEB-INF/lib/test-web-fragment-9.3.0.v20150601.jar!/META-INF/resources],AVAILABLE}{/test-spec.war}
+2015-06-04 10:55:25.781:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@3eb7fc54{/proxy,file:///tmp/jetty-0.0.0.0-8080-xref-proxy.war-_xref-proxy-any-3068657547009829038.dir/webapp/,AVAILABLE}{/xref-proxy.war}
+2015-06-04 10:55:25.786:INFO:oejsh.ContextHandler:main: Started o.e.j.s.h.MovedContextHandler@59662a0b{/oldContextPath,null,AVAILABLE}
+2015-06-04 10:55:25.951:WARN::main: test webapp is deployed. DO NOT USE IN PRODUCTION!
+2015-06-04 10:55:26.248:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@4f83df68{/test,file:///tmp/jetty-0.0.0.0-8080-test.war-_test-any-5238659347611323540.dir/webapp/,AVAILABLE}{/test.war}
+2015-06-04 10:55:26.255:INFO:oejs.ServerConnector:main: Started ServerConnector@5a9c4ad9{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
+2015-06-04 10:55:26.259:INFO:oejus.SslContextFactory:main: x509={jetty.eclipse.org=jetty} wild={} alias=null for SslContextFactory@23941fb4(file:///opt/jetty-distribution-9.3.0.v20150601/demo-base/etc/keystore,file:///opt/jetty-distribution-9.3.0.v20150601/demo-base/etc/keystore)
+2015-06-04 10:55:26.269:INFO:oejs.ServerConnector:main: Started ServerConnector@5d908d47{SSL,[ssl, http/1.1]}{0.0.0.0:8443}
+2015-06-04 10:55:26.270:INFO:oejs.Server:main: Started @2417ms
+....
+
+You can see this demo server by pointing a browser at link:http://localhost:8080[], will now show a welcome page and several demo/test web applications.
+
+____
+[WARNING]
+The demonstration web applications are not necessarily secure and should not be deployed in production web servers.
+____
+
+You can see the configuration of the demo-base by using the following commands:
+
+[source, screen]
+....
+> cd $JETTY_HOME/demo-base/
+> java -jar $JETTY_HOME/start.jar --list-modules
+...
+> java -jar %JETTY_HOME/start.jar --list-config
+...
+....
+
+[[creating-jetty-base]]
+==== Creating a new Jetty Base
+
+The `demo-base` directory described above is an example of the link:#startup-base-and-home[jetty.base] mechanism added in Jetty 9.1. 
+A jetty base allows the configuration and web applications of a server instance to be stored separately from the jetty distribution, so that upgrades can be done with minimal disruption. 
+Jetty's default configuration is based on two properties:
+
+jetty.home::
+  The property that defines the location of the jetty distribution, its libs, default modules and default XML files (typically start.jar, lib, etc)
+jetty.base::
+  The property that defines the location of a specific instance of a jetty server, its configuration, logs and web applications (typically start.ini, start.d, logs and webapps)
+
+The `jetty.home` and `jetty.base` properties may be explicitly set on the command line, or they can be inferred from the environment if used with commands like:
+
+[source, screen]
+....
+> cd $JETTY_BASE
+> java -jar $JETTY_HOME/start.jar
+....
+
+The following commands: create a new base directory; enables a HTTP connector and the web application deployer; copies a demo webapp to be deployed:
+
+[source, screen]
+....
+> JETTY_BASE=/tmp/mybase
+> mkdir $JETTY_BASE
+> cd $JETTY_BASE
+> java -jar $JETTY_HOME/start.jar
+WARNING: Nothing to start, exiting ...
+
+Usage: java -jar start.jar [options] [properties] [configs]
+       java -jar start.jar --help  # for more information
+
+> java -jar $JETTY_HOME/start.jar --add-to-startd=http,deploy
+INFO: server          initialised (transitively) in ${jetty.base}/start.d/server.ini
+INFO: http            initialised in ${jetty.base}/start.d/http.ini
+INFO: security        initialised (transitively) in ${jetty.base}/start.d/security.ini
+INFO: servlet         initialised (transitively) in ${jetty.base}/start.d/servlet.ini
+INFO: webapp          initialised (transitively) in ${jetty.base}/start.d/webapp.ini
+INFO: deploy          initialised in ${jetty.base}/start.d/deploy.ini
+MKDIR: ${jetty.base}/webapps
+INFO: Base directory was modified
+> cp $JETTY_HOME/demo-base/webapps/async-rest.war webapps/ROOT.war
+> java -jar $JETTY_HOME/start.jar
+2015-06-04 11:10:16.286:INFO::main: Logging initialized @274ms
+2015-06-04 11:10:16.440:INFO:oejs.Server:main: jetty-9.3.0.v20150601
+2015-06-04 11:10:16.460:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:///tmp/mybase/webapps/] at interval 1
+2015-06-04 11:10:16.581:WARN::main: async-rest webapp is deployed. DO NOT USE IN PRODUCTION!
+2015-06-04 11:10:16.589:INFO:oejw.StandardDescriptorProcessor:main: NO JSP Support for /, did not find org.eclipse.jetty.jsp.JettyJspServlet
+2015-06-04 11:10:16.628:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@1a407d53{/,[file:///tmp/jetty-0.0.0.0-8080-ROOT.war-_-any-4510228025526425427.dir/webapp/, jar:file:///tmp/jetty-0.0.0.0-8080-ROOT.war-_-any-4510228025526425427.dir/webapp/WEB-INF/lib/example-async-rest-jar-9.3.0.v20150601.jar!/META-INF/resources],AVAILABLE}{/ROOT.war}
+2015-06-04 11:10:16.645:INFO:oejs.ServerConnector:main: Started ServerConnector@3abbfa04{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
+2015-06-04 11:10:16.646:INFO:oejs.Server:main: Started @634ms
+....
+
+[[quickstart-changing-jetty-port]]
+==== Changing the Jetty Port
+
+You can configure Jetty to run on a different port by setting the `jetty.http.port` Property on the command line:
+
+[source, screen]
+....
+> cd $JETTY_BASE
+> java -jar $JETTY_HOME/start.jar jetty.http.port=8081
+...
+....
+
+Alternatively, property values can be added to the effective command line built from either the `start.ini` file or `start.d/http.ini` files. 
+By default, the jetty distribution defines the jetty.http.port property in the `start.d/http.ini` file, which may be edited to set another value.
+
+____
+[NOTE]
+--
+The configuration by properties works via the following chain:
+
+* The start.d/http.ini file is part of the effective command line and contains the --module=http argument which activates the http module.
+* The modules/http.mod file defines the http module which specifies the etc/jetty-http.xml configuration file and the template ini properties it uses.
+* The jetty.http.port property is used by the Property XML element in etc/jetty.http.xml to inject the ServerConnector instance with the port.
+
+For more information see the link:#quickstart-config[Quickstart Configuration Guide] and link:#configuring-connectors[Configuring Connectors].
+--
+____
+
+[[quickstart-starting-https]]
+==== Adding SSL for HTTPS & HTTP2
+
+To add the HTTPS connector to a jetty configuration, the https module can be activated by the following command:
+
+[source, screen]
+....
+> java -jar $JETTY_HOME/start.jar --add-to-startd=https,http2
+[...]
+> java -jar $JETTY_HOME/start.jar
+[...]
+2015-06-04 13:52:01.933:INFO:oejs.ServerConnector:main: Started ServerConnector@6f1fba17{SSL,[ssl, alpn, h2, http/1.1]}{0.0.0.0:8443}
+[...]
+....
+
+The --add-to-startd command sets up the effective command line in the ini files to run an ssl connection that supports the HTTPS and HTTP2 protocols as follows:
+
+* creates `start.d/ssl.ini` that configures an SSL connector (eg port, keystore etc.) by adding `etc/jetty-ssl.xml` and `etc/jetty-ssl-context.xml` to the effective command line.
+* creates `start.d/alpn.ini` that configures protocol negotiation on the SSL connector by adding `etc/jetty-alpn.xml` to the effective command line.
+* creates `start.d/https.ini` that configures the HTTPS protocol on the SSL connector by adding `etc/jetty-https.xml` to the effective command line.
+* creates `start.d/http2.ini` that configures the HTTP/2 protocol on the SSL connector by adding `etc/jetty-http2.xml` to the effective command line.
+* checks for the existence of a `etc/keystore` file and if not present, downloads a demonstration keystore file.
+
+____
+[NOTE]
+If a single start.ini file is preferred over individual `start.d/*.ini` files, then the option --add-to-start=module may be used to append the module activation to the start.ini file rather than create a file in start.d
+____
+
+[[quickstart-changing-https-port]]
+===== Changing the Jetty HTTPS Port
+
+You can configure the SSL connector to run on a different port by setting the `jetty.ssl.port` property on the command line:
+
+[source, screen]
+....
+> cd $JETTY_BASE
+> java -jar $JETTY_HOME/start.jar jetty.ssl.port=8444
+....
+
+Alternatively, property values can be added to the effective command line built from the `start.ini` file and `start.d/*.ini` files. 
+If you used the --add-to-startd command to enable https, then you can edit this property in the `start.d/https.ini` file. 
+If you used --add-to-start command, then you can edit this property in the start.ini file.
+
+==== More start.jar options
+
+The job of the `start.jar` is to interpret the command line, `start.ini` and `start.d` to build a Java classpath and list of properties and configuration files to pass to the main class of the Jetty XML configuration mechanism. 
+The `start.jar` mechanism has many options which are documented in the xref:startup[] administration section and you can see them in summary by using the command:
+
+[source, screen]
+....
+> java -jar $JETTY_HOME/start.jar --help
+....

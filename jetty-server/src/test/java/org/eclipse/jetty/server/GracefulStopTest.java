@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -43,6 +44,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -167,6 +169,7 @@ public class GracefulStopTest
     @Test
     public void testGracefulComplete() throws Exception
     {
+        assumeTrue(!OS.IS_WINDOWS);
         Server server= new Server();
         server.setStopTimeout(10000);
 
@@ -232,7 +235,7 @@ public class GracefulStopTest
                         assertThat(response2, containsString(" 503 "));
 
                         now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                        Thread.sleep(end-now);
+                        Thread.sleep(Math.max(1,end-now));
                         client1.getOutputStream().write("567890".getBytes());
                     }
                     catch(Exception e)

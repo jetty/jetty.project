@@ -454,9 +454,8 @@ public class ForwardProxyTLSServerTest
     @Test
     public void testProxyAuthentication() throws Exception
     {
-        startTLSServer(new ServerHandler());
-        String proxyRealm = "ProxyRealm";
-        startProxy(new ConnectHandler()
+        final String realm = "test-realm";
+        testProxyAuthentication(realm, new ConnectHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -466,27 +465,57 @@ public class ForwardProxyTLSServerTest
                 {
                     baseRequest.setHandled(true);
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + proxyRealm + "\"");
+                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
                     return;
                 }
                 super.handle(target, baseRequest, request, response);
             }
         });
+    }
+
+    @Test
+    public void testProxyAuthenticationClosesConnection() throws Exception
+    {
+        final String realm = "test-realm";
+        testProxyAuthentication(realm, new ConnectHandler()
+        {
+            @Override
+            protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address)
+            {
+                final String header = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.toString());
+                if (header == null || !header.startsWith("Basic "))
+                {
+                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.toString(), "Basic realm=\"" + realm + "\"");
+                    // Returning false adds Connection: close to the 407 response.
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+        });
+    }
+
+    private void testProxyAuthentication(String realm, ConnectHandler connectHandler) throws Exception
+    {
+        startTLSServer(new ServerHandler());
+        startProxy(connectHandler);
 
         HttpClient httpClient = new HttpClient(newSslContextFactory());
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
-        URI proxyURI = URI.create("https://localhost:" + proxyConnector.getLocalPort());
-        httpClient.getAuthenticationStore().addAuthentication(new BasicAuthentication(proxyURI, proxyRealm, "proxyUser", "proxyPassword"));
+        URI uri = URI.create((proxySslContextFactory == null ? "http" : "https") + "://localhost:" + proxyConnector.getLocalPort());
+        httpClient.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "proxyUser", "proxyPassword"));
         httpClient.start();
 
         try
         {
+            String host = "localhost";
             String body = "BODY";
-            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
                     .scheme(HttpScheme.HTTPS.asString())
                     .method(HttpMethod.GET)
-                    .path("/echo")
-                    .param("body", body)
+                    .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
                     .send();
 
             Assert.assertEquals(HttpStatus.OK_200, response.getStatus());

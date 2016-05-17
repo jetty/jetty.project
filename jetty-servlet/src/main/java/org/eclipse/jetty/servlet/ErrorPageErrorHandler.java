@@ -60,7 +60,8 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         String error_page= null;
 
         PageLookupTechnique pageSource = null;
-        
+
+        Class<?> matchedThrowable = null;
         Throwable th= (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
 
         // Walk the cause hierarchy
@@ -69,7 +70,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             pageSource = PageLookupTechnique.THROWABLE;
             
             Class<?> exClass=th.getClass();
-            error_page= (String)_errorPages.get(exClass.getName());
+            error_page= _errorPages.get(exClass.getName());
 
             // walk the inheritance hierarchy
             while (error_page == null)
@@ -77,8 +78,11 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                 exClass= exClass.getSuperclass();
                 if (exClass==null)
                     break;
-                error_page= (String)_errorPages.get(exClass.getName());
+                error_page = _errorPages.get(exClass.getName());
             }
+
+            if(error_page != null)
+                matchedThrowable = exClass;
 
             th=(th instanceof ServletException)?((ServletException)th).getRootCause():null;
         }
@@ -129,8 +133,11 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             switch (pageSource)
             {
                 case THROWABLE:
-                    dbg.append(" (from Throwable ");
-                    dbg.append(th.getClass().getName());
+                    dbg.append(" (using matched Throwable ");
+                    dbg.append(matchedThrowable.getName());
+                    dbg.append(" / actually thrown as ");
+                    Throwable originalThrowable = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+                    dbg.append(originalThrowable.getClass().getName());
                     dbg.append(')');
                     LOG.debug(dbg.toString(),th);
                     break;

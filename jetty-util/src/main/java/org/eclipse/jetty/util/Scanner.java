@@ -596,7 +596,7 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Report a file addition to the registered FileAddedListeners
-     * @param filename
+     * @param filename the filename
      */
     private void reportAddition (String filename)
     {
@@ -623,7 +623,7 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Report a file removal to the FileRemovedListeners
-     * @param filename
+     * @param filename the filename
      */
     private void reportRemoval (String filename)
     {
@@ -650,7 +650,7 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Report a file change to the FileChangedListeners
-     * @param filename
+     * @param filename the filename
      */
     private void reportChange (String filename)
     {

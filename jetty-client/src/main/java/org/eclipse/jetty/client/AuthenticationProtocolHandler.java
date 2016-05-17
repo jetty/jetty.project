@@ -173,7 +173,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
                 newRequest.onResponseSuccess(r -> client.getAuthenticationStore().addAuthenticationResult(authnResult));
 
-                Connection connection = (Connection)request.getAttributes().get(HttpRequest.CONNECTION_ATTRIBUTE);
+                Connection connection = (Connection)request.getAttributes().get(Connection.class.getName());
                 if (connection != null)
                     connection.send(newRequest, null);
                 else

@@ -46,9 +46,11 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.strategy.ProduceConsume;
 
 /**
  * <p>{@link HTTP2Client} provides an asynchronous, non-blocking implementation
@@ -126,6 +128,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private int initialSessionRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
     private int initialStreamRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
+    private ExecutionStrategy.Factory executionStrategyFactory = new ProduceConsume.Factory();
 
     @Override
     protected void doStart() throws Exception
@@ -222,6 +225,16 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setFlowControlStrategyFactory(FlowControlStrategy.Factory flowControlStrategyFactory)
     {
         this.flowControlStrategyFactory = flowControlStrategyFactory;
+    }
+
+    public ExecutionStrategy.Factory getExecutionStrategyFactory()
+    {
+        return executionStrategyFactory;
+    }
+
+    public void setExecutionStrategyFactory(ExecutionStrategy.Factory executionStrategyFactory)
+    {
+        this.executionStrategyFactory = executionStrategyFactory;
     }
 
     @ManagedAttribute("The number of selectors")

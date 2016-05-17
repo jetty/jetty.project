@@ -99,4 +99,10 @@ public interface IStream extends Stream, Closeable
      * @return the previous value of the stream receive window
      */
     public int updateRecvWindow(int delta);
+
+    /**
+     * <p>Marks this stream as not idle so that the
+     * {@link #getIdleTimeout() idle timeout} is postponed.</p>
+     */
+    public void notIdle();
 }

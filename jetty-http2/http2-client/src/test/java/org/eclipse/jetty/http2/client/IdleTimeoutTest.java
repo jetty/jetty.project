@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -44,11 +46,10 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.log.Log;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
 
 public class IdleTimeoutTest extends AbstractTest
 {
@@ -364,7 +365,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onTimeout(Stream stream, Throwable x)
             {
-                assertThat(x, instanceOf(TimeoutException.class));
+                Assert.assertThat(x, Matchers.instanceOf(TimeoutException.class));
                 timeoutLatch.countDown();
             }
         });
@@ -521,6 +522,55 @@ public class IdleTimeoutTest extends AbstractTest
         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.NOOP);
 
         Assert.assertFalse(resetLatch.await(0, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testBufferedReadsResetStreamIdleTimeout() throws Exception
+    {
+        long delay = 1000;
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                ServletInputStream input = request.getInputStream();
+                byte[] buffer = new byte[8192];
+                while (true)
+                {
+                    int read = input.read(buffer);
+                    Log.getLogger(IdleTimeoutTest.class).info("Read {} bytes", read);
+                    if (read < 0)
+                        break;
+                    sleep(delay);
+                }
+            }
+        });
+        connector.setIdleTimeout(2 * delay);
+
+        Session session = newClient(new Session.Listener.Adapter());
+        MetaData.Request metaData = newRequest("POST", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        session.newStream(requestFrame, promise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                if (frame.isEndStream())
+                    latch.countDown();
+            }
+        });
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+
+        // Send data larger than the flow control window.
+        // The client will send bytes up to the flow control window immediately
+        // and they will be buffered by the server, which will read them slowly.
+        // Server reads should reset the idle timeout.
+        ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1);
+        stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
+
+        Assert.assertTrue(latch.await(555, TimeUnit.SECONDS));
     }
 
     private void sleep(long value)

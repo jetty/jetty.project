@@ -1,0 +1,64 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[http2-configuring]]
+=== Configuring HTTP/2
+
+Enabling the HTTP/2 module in the jetty server does not create a HTTP/2 specific connector, but rather it adds a HTTP/2 Connection factory to an
+existing connector. 
+Thus configuring HTTP/2 is a combination of configuring common properties on the connector and HTTP/2 specific properties on the connection factory. 
+The modules and XML files involved can be seen with the following commands:
+
+[source,shell]
+----
+$ java -jar $JETTY_HOME/start.jar --list-modules
+    ...
+    1) protonego-boot  <transitive> 
+    ...
+    2) http            ${jetty.base}/start.d/http.ini
+    2) ssl             ${jetty.base}/start.d/ssl.ini
+    3) alpn            ${jetty.base}/start.d/alpn.ini
+    3) http2c          ${jetty.base}/start.d/http2c.ini
+    ...
+    4) http2           ${jetty.base}/start.d/http2.ini
+    5) https           ${jetty.base}/start.d/https.ini
+
+$ java -jar $JETTY_HOME/start.jar --list-config
+ ...
+ ${jetty.home}/etc/jetty-ssl.xml
+ ${jetty.home}/etc/jetty-ssl-context.xml
+ ${jetty.home}/etc/jetty-alpn.xml
+ ${jetty.home}/etc/jetty-http2c.xml
+ ${jetty.home}/etc/jetty-http.xml
+ ...
+ ${jetty.home}/etc/jetty-http2.xml
+ ${jetty.home}/etc/jetty-https.xml
+        
+----
+
+The common properties associated with connectors (host,port, timeouts, etc.) can be set in the module ini files (or start.ini if --add-to-start was used): `${jetty.base}/start.d/http.ini` `${jetty.base}/start.d/ssl.ini`. 
+These properties are instantiated in the associated XML files: `${jetty.home}/etc/jetty-http.xml`; `${jetty.home}/etc/jetty-ssl.xml`, plus the SSL keystore is instantiated in `${jetty.home}/etc/jetty-ssl-context.xml`.
+
+HTTP/2 specific properties can be set in the module ini files: `${jetty.base}/start.d/http2.ini`; `${jetty.base}/start.d/http2c.ini`, which are instantiated in the associated XML files: `${jetty.home}/etc/jetty-http2.xml`; `${jetty.home}/etc/jetty-http2c.xml`. 
+Currently there are very few HTTP/2 configuration properties and the default values are reasonable:
+
+.HTTP/2 Configuration Properties
+[cols=",",options="header",]
+|=======================================================================
+|Property |Description
+|jetty.http2.maxConcurrentStreams |The maximum number of concurrently open streams allowed on a single HTTP/2 connection (default 1024). Larger values increase parallelism but cost a memory commitment.
+|jetty.http2.initialStreamSendWindow |The initial flow control window size for a new stream (default 65535). Larger values may allow greater throughput but also risk head of line blocking if TCP/IP flow control is triggered.
+|=======================================================================
