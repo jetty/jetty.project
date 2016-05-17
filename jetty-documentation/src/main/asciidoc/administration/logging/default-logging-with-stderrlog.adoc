@@ -82,8 +82,9 @@ There are a number of properties that can be defined in the configuration that w
   When true, outputs logging events to `STDERR` using long form, fully qualified class names. 
   When false, uses abbreviated package names.
   Default is false.
+  +
   * Example when set to false:
-
+  +
 [source, screen]
 ....
 2014-06-03 14:36:16.013:INFO:oejs.Server:main: jetty-9.2.0.v20140526
