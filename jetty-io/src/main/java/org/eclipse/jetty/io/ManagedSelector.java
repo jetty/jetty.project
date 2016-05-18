@@ -426,7 +426,6 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     public void onClose(final EndPoint endPoint)
     {
         final Connection connection = endPoint.getConnection();
-        if (connection!=null)
             submit(new Product()
             {
                 @Override
@@ -436,6 +435,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                         LOG.debug("Destroyed {}", endPoint);
                     if (connection != null)
                         _selectorManager.connectionClosed(connection);
+                    endPoint.close();
                 }
             });
     }
