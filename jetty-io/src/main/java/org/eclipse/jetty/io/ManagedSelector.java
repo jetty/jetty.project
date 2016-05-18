@@ -145,7 +145,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
      * A {@link Selectable} is an {@link EndPoint} that wish to be
      * notified of non-blocking events by the {@link ManagedSelector}.
      */
-    public interface Selectable 
+    public interface Selectable
     {
         /**
          * Callback method invoked when a read or write events has been
@@ -341,7 +341,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
 
     private Runnable processConnect(SelectionKey key, final Connect connect)
     {
-        SelectableChannel channel = (SelectableChannel)key.channel();
+        SelectableChannel channel = key.channel();
         try
         {
             key.attach(connect.attachment);

@@ -45,7 +45,6 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     private final GatheringByteChannel _gather;
     protected final ManagedSelector _selector;
     protected final SelectionKey _key;
-
     private boolean _updatePending;
 
     /**
@@ -57,7 +56,6 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
      * The desired value for {@link SelectionKey#interestOps()}.
      */
     protected int _desiredInterestOps;
-
 
     private abstract class RunnableTask  implements Runnable
     {
@@ -186,7 +184,6 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
                 _selector.onClose(this);
         }
     }
-
 
     @Override
     public int fill(ByteBuffer buffer) throws IOException
@@ -428,5 +425,4 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             return String.format("%s{io=%s,kio=-2,kro=-2}", super.toString(), _desiredInterestOps);
         }
     }
-
 }
