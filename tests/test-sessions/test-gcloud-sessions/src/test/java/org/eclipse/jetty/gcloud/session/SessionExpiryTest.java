@@ -78,7 +78,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     public void testSessionExpiry() throws Exception
     {
         super.testSessionExpiry();
-        try{_testSupport.assertSessions(0);}catch(Exception e){ Assert.fail(e.getMessage());}
+        _testSupport.deleteSessions();
     }
 
     @Override
@@ -92,7 +92,6 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     public void verifySessionDestroyed(TestHttpSessionListener listener, String sessionId)
     {
         super.verifySessionDestroyed(listener, sessionId);
-        try{_testSupport.assertSessions(0);}catch(Exception e){ Assert.fail(e.getMessage());}
     }
 
     

@@ -65,8 +65,7 @@ public abstract class AbstractLastAccessTimeTest
         String servletMapping = "/server";
         int maxInactivePeriod = 8; //session will timeout after 8 seconds
         int scavengePeriod = 2; //scavenging occurs every 2 seconds
-        int idlePassivatePeriod = -1; //dont check for idle sessions to passivate
-        AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
+        AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
         TestServlet servlet1 = new TestServlet();
         ServletHolder holder1 = new ServletHolder(servlet1);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -80,7 +79,7 @@ public abstract class AbstractLastAccessTimeTest
         {
             server1.start();
             int port1=server1.getPort();
-            AbstractTestServer server2 = createServer(0, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
+            AbstractTestServer server2 = createServer(0, maxInactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
             ServletContextHandler context2 = server2.addContext(contextPath);
             context2.addServlet(TestServlet.class, servletMapping);
             SessionHandler m2 = context2.getSessionHandler();
@@ -130,7 +129,7 @@ public abstract class AbstractLastAccessTimeTest
                     
                     // At this point, session1 should be eligible for expiration.
                     // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
-                    Thread.sleep(scavengePeriod * 2500L);
+                    Thread.sleep(maxInactivePeriod+(scavengePeriod * 2500L));
                     
                     //check that the session was not scavenged over on server1 by ensuring that the SessionListener destroy method wasn't called
                     assertFalse(listener1._destroys.contains(AbstractTestServer.extractSessionId(sessionCookie)));

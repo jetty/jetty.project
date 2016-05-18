@@ -54,7 +54,7 @@ import org.junit.Test;
  * AbstractCreateAndInvalidateTest
  *
  * Test that creating a session and invalidating it before the request exits the session
- * does not result in the session being in mongo
+ * does not result in the session being persisted
  */
 public abstract class AbstractCreateAndInvalidateTest{
 
@@ -88,7 +88,7 @@ public abstract class AbstractCreateAndInvalidateTest{
      * Create and then invalidate a session in the same request.
      * @throws Exception
      */
-    //@Test
+    @Test
     public void testSessionCreateAndInvalidate() throws Exception
     {
         String contextPath = "";
@@ -132,7 +132,7 @@ public abstract class AbstractCreateAndInvalidateTest{
      * completes.
      * @throws Exception
      */
-    //@Test
+    @Test
     public void testSessionCreateForward () throws Exception
     {
         String contextPath = "";
@@ -162,7 +162,7 @@ public abstract class AbstractCreateAndInvalidateTest{
             ContentResponse response = client.GET(url+"?action=forward");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
   
-            //check that the sessions exist in mongo
+            //check that the sessions exist persisted
             checkSession(_servlet._id, true);
             checkSessionByKey (_servlet._id, "0_0_0_0:", true);
             checkSessionByKey (_servlet._id, "0_0_0_0:_contextB", true);

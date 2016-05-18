@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -46,7 +47,7 @@ public abstract class AbstractLocalSessionScavengingTest
     {
         try
         {
-            Thread.sleep(scavengePeriod * 2500L);
+            Thread.sleep(scavengePeriod * 1000L);
         }
         catch (InterruptedException e)
         {
@@ -59,10 +60,9 @@ public abstract class AbstractLocalSessionScavengingTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 1;
-        int scavengePeriod = 2;
-        int evictionSec = 20;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, evictionSec);
+        int inactivePeriod = 4;
+        int scavengePeriod = 1;
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
         ServletContextHandler context1 = server1.addContext(contextPath);
         context1.addServlet(TestServlet.class, servletMapping);
 
@@ -70,7 +70,7 @@ public abstract class AbstractLocalSessionScavengingTest
         {
             server1.start();
             int port1 = server1.getPort();
-            AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod * 3, evictionSec);
+            AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod * 2, SessionCache.NEVER_EVICT);
             ServletContextHandler context2 = server2.addContext(contextPath);
             context2.addServlet(TestServlet.class, servletMapping);
 
@@ -103,8 +103,8 @@ public abstract class AbstractLocalSessionScavengingTest
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                     SessionHandler m2 = context2.getSessionHandler();
 
-                    // Wait for the scavenger to run on node1, waiting 2.5 times the scavenger period
-                    pause(scavengePeriod);
+                    // Wait for the scavenger to run on node1
+                    pause(inactivePeriod+(2*scavengePeriod));
 
                     assertEquals(1,  m1.getSessionsCreated());
 
@@ -116,9 +116,9 @@ public abstract class AbstractLocalSessionScavengingTest
                     
                     assertEquals(1,  m1.getSessionsCreated());
 
-                    // Wait for the scavenger to run on node2, waiting 2 times the scavenger period
+                    // Wait for the scavenger to run on node2, waiting 3 times the scavenger period
                     // This ensures that the scavenger on node2 runs at least once.
-                    pause(scavengePeriod);
+                    pause(inactivePeriod+(2*scavengePeriod));
                     
                     // Check that node2 does not have any local session cached
                     request = client.newRequest(urls[1] + "?action=check");
@@ -156,6 +156,7 @@ public abstract class AbstractLocalSessionScavengingTest
             else if ("test".equals(action))
             {
                 HttpSession session = request.getSession(false);
+                assertNotNull(session);
                 session.setAttribute("test", "test");
             }
             else if ("check".equals(action))

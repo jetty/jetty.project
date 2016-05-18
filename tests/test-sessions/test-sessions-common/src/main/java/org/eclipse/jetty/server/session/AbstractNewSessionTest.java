@@ -62,7 +62,7 @@ public abstract class AbstractNewSessionTest
     {
         String servletMapping = "/server";
         int scavengePeriod = 3;
-        AbstractTestServer server = createServer(0, 1, scavengePeriod, 4);
+        AbstractTestServer server = createServer(0, 1, scavengePeriod, SessionCache.NEVER_EVICT);
         ServletContextHandler context = server.addContext("/");
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "";

@@ -55,9 +55,7 @@ public abstract class AbstractRemoveSessionTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int scavengePeriod = 3;
-        int inspectionPeriod = 1;
-        AbstractTestServer server = createServer(0, 1, scavengePeriod, -1);
+        AbstractTestServer server = createServer(0, -1, -1, SessionCache.NEVER_EVICT);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
         TestEventListener testListener = new TestEventListener();

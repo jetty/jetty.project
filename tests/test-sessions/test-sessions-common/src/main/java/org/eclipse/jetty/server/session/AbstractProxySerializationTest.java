@@ -73,7 +73,7 @@ public abstract class AbstractProxySerializationTest
         String contextPath = "";
         String servletMapping = "/server";
         int scavengePeriod = 10;
-        AbstractTestServer server = createServer(0, 20, scavengePeriod, 20);
+        AbstractTestServer server = createServer(0, 20, scavengePeriod, SessionCache.NEVER_EVICT);
         ServletContextHandler context = server.addContext(contextPath);
 
         InputStream is = this.getClass().getClassLoader().getResourceAsStream("proxy-serialization.jar");

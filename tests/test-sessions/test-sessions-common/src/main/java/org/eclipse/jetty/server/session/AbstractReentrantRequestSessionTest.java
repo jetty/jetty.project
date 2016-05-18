@@ -50,7 +50,7 @@ public abstract class AbstractReentrantRequestSessionTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        AbstractTestServer server = createServer(0, 100, 400, 10);
+        AbstractTestServer server = createServer(0, 100, 400, SessionCache.NEVER_EVICT);
         server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         try
         {
