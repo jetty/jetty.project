@@ -314,8 +314,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     protected void endPointClosed(EndPoint endpoint)
     {
-        // TODO fix this
-        // endpoint.onClose();
+        endpoint.onClose();
     }
 
     /**
