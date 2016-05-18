@@ -36,6 +36,7 @@ import javax.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.server.session.Session.SessionInactivityTimeout;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
@@ -47,13 +48,13 @@ import org.junit.Test;
  */
 public abstract class AbstractSessionExpiryTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
     public void pause(int scavengePeriod)
     {
         try
         {
-            Thread.sleep(scavengePeriod * 2500L);
+            Thread.sleep(scavengePeriod * 1000L);
         }
         catch (InterruptedException e)
         {
@@ -78,6 +79,10 @@ public abstract class AbstractSessionExpiryTest
     };
     
 
+    /**
+     * Check session is preserved over stop/start
+     * @throws Exception
+     */
     @Test
     public void testSessionNotExpired() throws Exception
     {
@@ -85,9 +90,7 @@ public abstract class AbstractSessionExpiryTest
         String servletMapping = "/server";
         int inactivePeriod = 20;
         int scavengePeriod = 10;
-        int inspectPeriod = 1;
-        int idlePassivatePeriod = 8;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, idlePassivatePeriod);
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         server1.addContext(contextPath).addServlet(holder, servletMapping);
@@ -133,6 +136,11 @@ public abstract class AbstractSessionExpiryTest
     }
     
 
+    /**
+     * Check that a session that expires whilst the server is stopped will not be
+     * able to be used when the server restarts
+     * @throws Exception
+     */
     @Test
     public void testSessionExpiry() throws Exception
     {
@@ -140,10 +148,9 @@ public abstract class AbstractSessionExpiryTest
         
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 2;
+        int inactivePeriod = 4;
         int scavengePeriod = 1;
-        int inspectPeriod = 1;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, -1);
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -176,11 +183,14 @@ public abstract class AbstractSessionExpiryTest
             //now stop the server
             server1.stop();
             
-            //and wait until the expiry time has passed
+            //and wait until the session should have expired
             pause(inactivePeriod);
 
             //restart the server
             server1.start();
+            
+            //and wait until the scavenger has run
+            pause(inactivePeriod+(scavengePeriod*2));
             
             port1 = server1.getPort();
             url = "http://localhost:" + port1 + contextPath + servletMapping;
@@ -189,11 +199,10 @@ public abstract class AbstractSessionExpiryTest
             Request request = client.newRequest(url + "?action=test");
             request.getHeaders().add("Cookie", sessionCookie);
             ContentResponse response2 = request.send();
+
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-            
-            //and wait until the expiry time has passed
-            pause(inactivePeriod);
-            
+            String cookie2 = response2.getHeaders().get("Set-Cookie");
+            assertTrue (!cookie2.equals(sessionCookie));
             verifySessionDestroyed (listener, sessionId);
         }
         finally

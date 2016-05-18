@@ -27,6 +27,8 @@ import org.eclipse.jetty.server.session.AbstractIdleSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.util.thread.Locker.Lock;
+import org.junit.After;
+import org.junit.Before;
 
 /**
  * IdleSessionTest
@@ -35,14 +37,28 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
  */
 public class IdleSessionTest extends AbstractIdleSessionTest
 {
+    @Before
+    public  void beforeTest() throws Exception
+    {
+        MongoTestServer.dropCollection();
+        MongoTestServer.createCollection();
+    }
+
+    @After
+    public  void afterTest() throws Exception
+    {
+        MongoTestServer.dropCollection();
+    }
+    
+    
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractIdleSessionTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int idleSec)
+    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int evictionPolicy)
     {
-        return  new MongoTestServer(port,max,scavenge, idleSec);
+        return  new MongoTestServer(port,max,scavenge, evictionPolicy);
     }
 
     /** 
@@ -55,7 +71,7 @@ public class IdleSessionTest extends AbstractIdleSessionTest
         assertNotNull(_servlet._session);
         try (Lock lock = ((Session)_servlet._session).lock())
         {
-            assertTrue(((Session)_servlet._session).isPassivated());
+            assertTrue(!((Session)_servlet._session).isResident());
         }
     }
 
@@ -69,7 +85,7 @@ public class IdleSessionTest extends AbstractIdleSessionTest
         assertNotNull(_servlet._session);
         try (Lock lock = ((Session)_servlet._session).lock())
         {
-            assertTrue(((Session)_servlet._session).isActive());
+            assertTrue(((Session)_servlet._session).isResident());
         }
     }
 

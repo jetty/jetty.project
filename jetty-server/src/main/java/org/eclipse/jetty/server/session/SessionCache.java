@@ -26,16 +26,39 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
- * SessionStore
+ * SessionCache
  *
- * A store of Session objects.  This store of Session objects can be backed by
- * a SessionDataStore to persist/distribute the data contained in the Session objects.
+ * A set of Session objects for a context that are actively being
+ * managed by this context instance. 
  * 
- * This store of Session objects ensures that all threads within the same context on
- * the same node with the same session id will share exactly the same Session object.
+ * Multiple requests for the same session id on the same context should always 
+ * share the same Session object from the SessionCache.
+ * 
+ * The data for the Session objects is obtained from, and written to a SessionDataStore. 
+ * It is assumed that the SessionDataStore is the authoritative source of session data:
+ * <ul>
+ * <li>if the session data is not present in the SessionDataStore the session does not exist.</li>
+ * <li>if the session data is present in the SessionDataStore but its expiry time has passed then 
+ * the session is deemed to have expired</li>
+ *</ul>
+ * 
+ * Examples of SessionDataStores are relational or nosql databases, filesystems, or other
+ * distributed mechanisms.
+ * 
+ * A SessionCache is optionally able to passivate a managed Session to the SessionDataStore and 
+ * evict it from the cache if it has been in memory, but not accessed for a configurable amount of time.
+ * 
+ * Implementations of the SessionCache may also implement different strategies for writing out
+ * Session data to the SessionDataStore.
  */
 public interface SessionCache extends LifeCycle
 {
+    public static final int NEVER_EVICT = -1;
+    public static final int EVICT_ON_SESSION_EXIT = 0;
+    public static final int EVICT_ON_INACTIVITY = 1; //any number equal or greater is time in seconds
+    
+    
+    
     void initialize(SessionContext context);
     SessionHandler getSessionHandler();
     Session newSession (HttpServletRequest request, String id,  long time, long maxInactiveMs);
@@ -47,9 +70,11 @@ public interface SessionCache extends LifeCycle
     Session delete (String id) throws Exception;
     void shutdown ();
     Set<String> checkExpiration (Set<String> candidates);
-    void setIdlePassivationTimeoutSec(int sec);
-    int getIdlePassivationTimeoutSec();
-    SessionStore getSessionStore();
-    void setSessionStore(SessionStore sds);
-    void passivateIdleSession(String id);
+    SessionDataStore getSessionDataStore();
+    void setSessionDataStore(SessionDataStore sds);
+    void checkInactiveSession(Session session);  
+    void setEvictionPolicy (int policy);
+    int getEvictionPolicy ();
+    void setSaveOnInactiveEviction (boolean saveOnEvict);
+    boolean isSaveOnInactiveEviction ();
 }

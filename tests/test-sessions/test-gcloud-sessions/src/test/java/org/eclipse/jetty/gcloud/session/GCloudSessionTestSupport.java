@@ -297,7 +297,7 @@ public class GCloudSessionTestSupport
     public void listSessions () throws Exception
     {
         ensureDatastore();
-        GqlQuery.Builder builder = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+GCloudSessionStore.KIND);
+        GqlQuery.Builder builder = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+GCloudSessionDataStore.KIND);
        
         Query<Entity> query = builder.build();
     
@@ -317,7 +317,7 @@ public class GCloudSessionTestSupport
     {
         HashSet<String> ids = new HashSet<String>();
         ensureDatastore();
-        GqlQuery.Builder builder = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+GCloudSessionStore.KIND);
+        GqlQuery.Builder builder = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+GCloudSessionDataStore.KIND);
        
         Query<Entity> query = builder.build();
     
@@ -336,7 +336,7 @@ public class GCloudSessionTestSupport
     {
         ensureDatastore();
         StructuredQuery<ProjectionEntity> keyOnlyProjectionQuery = Query.projectionEntityQueryBuilder()
-                .kind(GCloudSessionStore.KIND)
+                .kind(GCloudSessionDataStore.KIND)
                 .projection(Projection.property("__key__"))
                 .limit(100)
                 .build();  
@@ -355,7 +355,7 @@ public class GCloudSessionTestSupport
     {
        ensureDatastore();
         StructuredQuery<ProjectionEntity> keyOnlyProjectionQuery = Query.projectionEntityQueryBuilder()
-                .kind(GCloudSessionStore.KIND)
+                .kind(GCloudSessionDataStore.KIND)
                 .projection(Projection.property("__key__"))
                 .limit(100)
                 .build();  

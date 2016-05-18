@@ -26,53 +26,54 @@ package org.eclipse.jetty.server.session;
  */
 public class DefaultSessionCacheFactory implements SessionCacheFactory
 {
-    int _idlePassivationTimeoutSec;
-    boolean _passivateOnComplete;
+    int _evictionTimeout;
+    boolean _saveOnInactiveEvict;
 
     
-    /**
-     * @return the passivateOnComplete
-     */
-    public boolean isPassivateOnComplete()
+    
+    
+    public int getEvictionTimeout()
     {
-        return _passivateOnComplete;
+        return _evictionTimeout;
     }
 
 
-    /**
-     * @param passivateOnComplete the passivateOnComplete to set
-     */
-    public void setPassivateOnComplete(boolean passivateOnComplete)
-    {
-        _passivateOnComplete = passivateOnComplete;
-    }
 
-    /**
-     * @return the idlePassivationTimeoutSec
-     */
-    public int getIdlePassivationTimeoutSec()
+
+    public void setEvictionTimeout(int evictionTimeout)
     {
-        return _idlePassivationTimeoutSec;
+        _evictionTimeout = evictionTimeout;
     }
 
 
-    /**
-     * @param idlePassivationTimeoutSec the idlePassivationTimeoutSec to set
-     */
-    public void setIdlePassivationTimeoutSec(int idlePassivationTimeoutSec)
+
+
+    public boolean isSaveOnInactiveEvict()
     {
-        _idlePassivationTimeoutSec = idlePassivationTimeoutSec;
+        return _saveOnInactiveEvict;
     }
+
+
+
+
+    public void setSaveOnInactiveEvict(boolean saveOnInactiveEvict)
+    {
+        _saveOnInactiveEvict = saveOnInactiveEvict;
+    }
+
+
+    
+
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionCacheFactory#getSessionCache(SessionHandler) 
+     * @see org.eclipse.jetty.server.session.SessionCacheFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
     public SessionCache getSessionCache (SessionHandler handler)
     {
         DefaultSessionCache cache = new DefaultSessionCache(handler);
-        cache.setIdlePassivationTimeoutSec(_idlePassivationTimeoutSec);
-        cache.setPassivateOnComplete(_passivateOnComplete);
+        cache.setEvictionPolicy(_evictionTimeout);
+        cache.setSaveOnInactiveEviction(_saveOnInactiveEvict);
         return cache;
     }
 

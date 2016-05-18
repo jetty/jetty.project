@@ -38,9 +38,9 @@ public class SessionInvalidateAndCreateTest extends AbstractSessionInvalidateAnd
     }
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge,int idlePassivatePeriod)
+    public AbstractTestServer createServer(int port, int max, int scavenge,int evictionPolicy)
     {
-        return new FileTestServer(port,max,scavenge,idlePassivatePeriod);
+        return new FileTestServer(port,max,scavenge,evictionPolicy);
     }
     
     @Test

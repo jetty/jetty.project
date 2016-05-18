@@ -59,11 +59,11 @@ public class GCloudSessionTester
         webapp.setContextPath("/");
         webapp.setWar("../../jetty-distribution/target/distribution/demo-base/webapps/test.war");
         webapp.addAliasCheck(new AllowSymLinkAliasChecker());
-        GCloudSessionStore ds = new GCloudSessionStore();
+        GCloudSessionDataStore ds = new GCloudSessionDataStore();
         ds.setGCloudConfiguration(config);
         DefaultSessionCache ss = new DefaultSessionCache(webapp.getSessionHandler());
-        webapp.getSessionHandler().setSessionStore(ss);
-        ss.setSessionStore(ds);
+        webapp.getSessionHandler().setSessionCache(ss);
+        ss.setSessionDataStore(ds);
         webapp.getSessionHandler().setSessionIdManager(idmgr);
 
         // A WebAppContext is a ContextHandler as well so it needs to be set to

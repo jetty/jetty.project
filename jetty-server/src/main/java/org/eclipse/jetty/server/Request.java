@@ -191,7 +191,6 @@ public class Request implements HttpServletRequest
     private String _readerEncoding;
     private InetSocketAddress _remote;
     private String _requestedSessionId;
-    private Map<Object, HttpSession> _savedNewSessions;
     private UserIdentity.Scope _scope;
     private HttpSession _session;
     private SessionHandler _sessionHandler;
@@ -1716,13 +1715,6 @@ public class Request implements HttpServletRequest
         return false;
     }
 
-    /* ------------------------------------------------------------ */
-    public HttpSession recoverNewSession(Object key)
-    {
-        if (_savedNewSessions == null)
-            return null;
-        return _savedNewSessions.get(key);
-    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -1840,10 +1832,6 @@ public class Request implements HttpServletRequest
         _parameters = null;
         _paramsExtracted = false;
         _inputState = __NONE;
-
-        if (_savedNewSessions != null)
-            _savedNewSessions.clear();
-        _savedNewSessions=null;
         _multiPartInputStream = null;
         _remote=null;
         _input.recycle();
@@ -1875,13 +1863,6 @@ public class Request implements HttpServletRequest
         _requestAttributeListeners.remove(listener);
     }
 
-    /* ------------------------------------------------------------ */
-    public void saveNewSession(Object key, HttpSession session)
-    {
-        if (_savedNewSessions == null)
-            _savedNewSessions = new HashMap<>();
-        _savedNewSessions.put(key,session);
-    }
 
     /* ------------------------------------------------------------ */
     public void setAsyncSupported(boolean supported,String source)

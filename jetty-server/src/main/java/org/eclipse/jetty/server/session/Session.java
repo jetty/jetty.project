@@ -68,12 +68,7 @@ public class Session implements SessionHandler.SessionIf
     public enum State {VALID, INVALID, INVALIDATING};
     
     
-    /**
-     * PassivationState
-     *
-     * States of a session - either active in memory or passivated to persistent store
-     */
-    public enum PassivationState {PASSIVATED, ACTIVE};
+    
 
     
     protected SessionData _sessionData; //the actual data associated with a session
@@ -84,22 +79,25 @@ public class Session implements SessionHandler.SessionIf
     private boolean _newSession;
     private State _state = State.VALID; //state of the session:valid,invalid or being invalidated
     private Locker _lock = new Locker(); //sync lock
-    private PassivationState _passivationState = PassivationState.ACTIVE; //passivated or not
-    private InspectionTimeout _inspectionTimeout = null;
+    private boolean _resident = false;
+    private SessionInactivityTimeout _sessionInactivityTimer = null;
     
     
 
     /* ------------------------------------------------------------- */
     /**
-     * InspectionTimeout
+     * SessionInactivityTimeout
      *
      *
      */
-    public class InspectionTimeout extends IdleTimeout
+    public class SessionInactivityTimeout extends IdleTimeout
     {
 
 
-        public InspectionTimeout()
+        /**
+         * 
+         */
+        public SessionInactivityTimeout()
         {
             super(getSessionHandler().getScheduler());
         }
@@ -112,7 +110,7 @@ public class Session implements SessionHandler.SessionIf
         {
             //called when the timer goes off
             if (LOG.isDebugEnabled()) LOG.debug("Timer expired for session {}", getId());
-           getSessionHandler().inspect(Session.this);
+           getSessionHandler().sessionInactivityTimerExpired(Session.this);
         }
 
         /** 
@@ -127,7 +125,7 @@ public class Session implements SessionHandler.SessionIf
             // BUT if passivated out to disk, do we really want this timer to keep going off?
             try (Lock lock = _lock.lockIfNotHeld())
             {
-                return isValid() && !isPassivated();
+                return isValid() && isResident();
             }
         }
 
@@ -148,12 +146,13 @@ public class Session implements SessionHandler.SessionIf
     /* ------------------------------------------------------------- */
     /**
      * Create a new session
-     * 
+     * @param handler TODO
      * @param request the request the session should be based on
      * @param data the session data
      */
-    public Session (HttpServletRequest request, SessionData data)
+    public Session (SessionHandler handler, HttpServletRequest request, SessionData data)
     {
+        _handler = handler;
         _sessionData = data;
         _newSession = true;
         _requests = 1; //access will not be called on this new session, but we are obviously in a request
@@ -164,10 +163,12 @@ public class Session implements SessionHandler.SessionIf
     /* ------------------------------------------------------------- */
     /**
      * Re-create an existing session
+     * @param handler TODO
      * @param data the session data
      */
-    public Session (SessionData data)
+    public Session (SessionHandler handler, SessionData data)
     {
+        _handler = handler;
         _sessionData = data;
     }
     
@@ -189,11 +190,6 @@ public class Session implements SessionHandler.SessionIf
     
     
 
-    /* ------------------------------------------------------------- */
-    public void setSessionHandler (SessionHandler manager)
-    {
-        _handler = manager;
-    }
     
 
     /* ------------------------------------------------------------- */
@@ -455,9 +451,9 @@ public class Session implements SessionHandler.SessionIf
         try (Lock lock = _lock.lockIfNotHeld())
         {
             _sessionData.setMaxInactiveMs((long)secs*1000L);  
-            _sessionData.setExpiry(_sessionData.calcExpiry());
+            _sessionData.calcAndSetExpiry();
             _sessionData.setDirty(true);
-            setTimeout();
+            updateInactivityTimer();
             if (LOG.isDebugEnabled())
             {
                 if (secs <= 0)
@@ -470,53 +466,77 @@ public class Session implements SessionHandler.SessionIf
     
     
     /**
-     * 
+     * Set the inactivity timer to the smaller of the session maxInactivity
+     * (ie session-timeout from web.xml), or the inactive eviction time.
      */
-    public void setTimeout ()
+    public void updateInactivityTimer ()
     {
         try (Lock lock = _lock.lockIfNotHeld())
         {
-            if (LOG.isDebugEnabled())LOG.debug("Set timeout called");
-            long maxInactive =  _sessionData.getMaxInactiveMs();
-            long maxIdle = TimeUnit.SECONDS.toMillis(getSessionHandler().getSessionStore().getIdlePassivationTimeoutSec());
+            if (LOG.isDebugEnabled())LOG.debug("updateInactivityTimer");
 
+            long maxInactive =  _sessionData.getMaxInactiveMs();        
+            int evictionPolicy = getSessionHandler().getSessionCache().getEvictionPolicy();
 
-            if (maxInactive <= 0 && maxIdle <=0)
-            {
-                //session is immortal and idle passivation is not supported
-                if (_inspectionTimeout != null)
-                    _inspectionTimeout.setIdleTimeout(-1);
-                
-                if (LOG.isDebugEnabled()) LOG.debug("Session maxInactive <= 0 && idlePassivation <=0: timer cancelled");
-                return;
-            }
-
-            if (_inspectionTimeout == null)
-                _inspectionTimeout = new InspectionTimeout();
-
-            //set the inspection timer to the smaller of the maxIdle interval or the idlePassivation interval
-            long timeout = 0;
             if (maxInactive <= 0)
-                timeout = maxIdle;
-            else if (maxIdle <= 0)
-                timeout = maxInactive;
+            {
+                //sessions are immortal, they never expire
+                if (evictionPolicy < SessionCache.EVICT_ON_INACTIVITY)
+                {
+                    //we do not want to evict inactive sessions
+                    setInactivityTimer(-1L);
+                    if (LOG.isDebugEnabled()) LOG.debug("Session is immortal && never evict: timer cancelled");
+                }
+                else
+                {
+                    //sessions are immortal but we want to evict after inactivity
+                    setInactivityTimer(TimeUnit.SECONDS.toMillis(evictionPolicy));
+                    if (LOG.isDebugEnabled()) LOG.debug("Session is immortal; evict after {} sec inactivity", evictionPolicy);
+                }                    
+            }
             else
-               timeout = Math.min(maxInactive, maxIdle);
-            
-            _inspectionTimeout.setIdleTimeout(timeout);
-            if (LOG.isDebugEnabled()) LOG.debug("Session timer(ms)={}", timeout);
+            {
+                //sessions are not immortal
+                if (evictionPolicy < SessionCache.EVICT_ON_INACTIVITY)
+                {
+                    //don't want to evict inactive sessions, set the timer for the session's maxInactive setting
+                    setInactivityTimer(_sessionData.getMaxInactiveMs());
+                    if (LOG.isDebugEnabled()) LOG.debug("No inactive session eviction");
+                }
+                else
+                {
+                    //set the time to the lesser of the session's maxInactive and eviction timeout
+                    setInactivityTimer(Math.min(maxInactive, TimeUnit.SECONDS.toMillis(evictionPolicy)));
+                    if (LOG.isDebugEnabled()) LOG.debug("Inactivity timer set to lesser of maxInactive={} and inactivityEvict={}", maxInactive, evictionPolicy);
+                }
+            }
         }
+    }
+    
+    /**
+     * Set the inactivity timer
+     * 
+     * @param ms value in millisec, -1 disables it
+     */
+    private void setInactivityTimer (long ms)
+    {
+        if (_sessionInactivityTimer == null)
+            _sessionInactivityTimer = new SessionInactivityTimeout();
+        _sessionInactivityTimer.setIdleTimeout(ms);
     }
 
 
-    public void stopTimeout ()
+    /**
+     * 
+     */
+    public void stopInactivityTimer ()
     {
         try (Lock lock = _lock.lockIfNotHeld())
         {
-            if (_inspectionTimeout != null)
+            if (_sessionInactivityTimer != null)
             {
-                _inspectionTimeout.setIdleTimeout(-1);
-                _inspectionTimeout = null;
+                _sessionInactivityTimer.setIdleTimeout(-1);
+                _sessionInactivityTimer = null;
                 if (LOG.isDebugEnabled()) LOG.debug("Session timer stopped");
             }
         }
@@ -563,8 +583,8 @@ public class Session implements SessionHandler.SessionIf
         if (_state != State.VALID)
             throw new IllegalStateException("Not valid for write: id="+_sessionData.getId()+" created="+_sessionData.getCreated()+" accessed="+_sessionData.getAccessed()+" lastaccessed="+_sessionData.getLastAccessed()+" maxInactiveMs="+_sessionData.getMaxInactiveMs()+" expiry="+_sessionData.getExpiry());
         
-        if (_passivationState == PassivationState.PASSIVATED)
-            throw new IllegalStateException("Not valid for write: id="+_sessionData.getId()+" passivated");
+        if (!isResident())
+            throw new IllegalStateException("Not valid for write: id="+_sessionData.getId()+" not resident");
     }
     
     
@@ -580,8 +600,8 @@ public class Session implements SessionHandler.SessionIf
         if (_state == State.INVALID)
             throw new IllegalStateException("Invalid for read: id="+_sessionData.getId()+" created="+_sessionData.getCreated()+" accessed="+_sessionData.getAccessed()+" lastaccessed="+_sessionData.getLastAccessed()+" maxInactiveMs="+_sessionData.getMaxInactiveMs()+" expiry="+_sessionData.getExpiry());
         
-        if (_passivationState == PassivationState.PASSIVATED)
-            throw new IllegalStateException("Invalid for read: id="+_sessionData.getId()+" passivated");
+        if (!isResident())
+            throw new IllegalStateException("Invalid for read: id="+_sessionData.getId()+" not resident");
     }
     
     
@@ -762,32 +782,7 @@ public class Session implements SessionHandler.SessionIf
         setIdChanged(true);
     }
        
-    
-    /* ------------------------------------------------------------- */
-    /* * Swap the id on a session from old to new, keeping the object
-     * the same.
-     * 
-     * @param oldId
-     * @param oldExtendedId
-     * @param newId
-     * @param newExtendedId
-     */
-   /* public void renewId (String oldId, String oldExtendedId, String newId, String newExtendedId)
-    {
-        try (Lock lock = _lock.lockIfNotHeld())
-        {
-            checkValidForWrite(); //can't change id on invalid session
-            
-            if (!oldId.equals(getId()))
-                throw new IllegalStateException("Id clash detected on renewal: was "+oldId+" but is "+ getId());
-            
-            _sessionData.setId(newId);
-            setExtendedId(newExtendedId);
-            _sessionData.setLastSaved(0); //forces an insert
-            _sessionData.setDirty(true);  //forces an insert
-        }
-    }*/
-
+   
     /* ------------------------------------------------------------- */
     /** Called by users to invalidate a session, or called by the
      * access method as a request enters the session if the session
@@ -934,36 +929,14 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-
-
+    public void setResident (boolean resident)
+    {
+        _resident = resident;
+    }
     
-    /**
-     * 
-     */
-    public void setPassivated ()
+    public boolean isResident ()
     {
-        checkLocked();
-        _passivationState = PassivationState.PASSIVATED;
+        return _resident;
     }
-
-    /**
-     * 
-     */
-    public void setActive ()
-    {
-        checkLocked();
-        _passivationState = PassivationState.ACTIVE;
-    }
-
-    public boolean isActive ()
-    {
-        checkLocked();
-        return _passivationState == PassivationState.ACTIVE;
-    }
-
-    public boolean isPassivated ()
-    {
-        checkLocked();
-        return _passivationState == PassivationState.PASSIVATED;
-    }
+    
 }

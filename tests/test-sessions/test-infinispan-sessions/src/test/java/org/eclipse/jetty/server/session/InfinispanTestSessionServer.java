@@ -20,7 +20,7 @@
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.session.infinispan.InfinispanSessionStore;
+import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.infinispan.Cache;
 import org.infinispan.commons.api.BasicCache;
@@ -37,9 +37,9 @@ public class InfinispanTestSessionServer extends AbstractTestServer
     
   
     
-    public InfinispanTestSessionServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, BasicCache config)
+    public InfinispanTestSessionServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy, BasicCache config)
     {
-        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod, config);
+        super(port, maxInactivePeriod, scavengePeriod, evictionPolicy, config);
     }
     
  
@@ -48,11 +48,11 @@ public class InfinispanTestSessionServer extends AbstractTestServer
     public SessionHandler newSessionHandler()
     {
         SessionHandler handler =  new SessionHandler();
-        InfinispanSessionStore sds = new InfinispanSessionStore();
+        InfinispanSessionDataStore sds = new InfinispanSessionDataStore();
         sds.setCache((BasicCache)_config);
         DefaultSessionCache ss = new DefaultSessionCache(handler);
-        ss.setSessionStore(sds);
-        handler.setSessionStore(ss);
+        ss.setSessionDataStore(sds);
+        handler.setSessionCache(ss);
         return handler;
     }
 
@@ -61,7 +61,7 @@ public class InfinispanTestSessionServer extends AbstractTestServer
         BasicCache cache = (BasicCache)_config;
         if (cache != null)
         {
-            return cache.containsKey(((InfinispanSessionStore)(context.getSessionHandler().getSessionStore().getSessionStore())).getCacheKey(id));      
+            return cache.containsKey(((InfinispanSessionDataStore)(context.getSessionHandler().getSessionCache().getSessionDataStore())).getCacheKey(id));      
         }
         
         return false;
@@ -72,7 +72,7 @@ public class InfinispanTestSessionServer extends AbstractTestServer
         BasicCache cache = (BasicCache)_config;
         if (cache != null)
         {
-            return cache.get(((InfinispanSessionStore)(context.getSessionHandler().getSessionStore().getSessionStore())).getCacheKey(id));      
+            return cache.get(((InfinispanSessionDataStore)(context.getSessionHandler().getSessionCache().getSessionDataStore())).getCacheKey(id));      
         }
         
         return null;

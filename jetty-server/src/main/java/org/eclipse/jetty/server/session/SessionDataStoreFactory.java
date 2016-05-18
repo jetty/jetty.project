@@ -20,11 +20,11 @@
 package org.eclipse.jetty.server.session;
 
 /**
- * SessionStoreFactory
+ * SessionDataStoreFactory
  *
  *
  */
-public interface SessionStoreFactory
+public interface SessionDataStoreFactory
 {
-    SessionStore getSessionStore (SessionHandler handler) throws Exception;
+    SessionDataStore getSessionDataStore (SessionHandler handler) throws Exception;
 }

@@ -43,7 +43,7 @@ import org.junit.Test;
  */
 public abstract class AbstractNewSessionTest
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivatePeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
     public void pause(int scavenge)
     {
@@ -62,7 +62,7 @@ public abstract class AbstractNewSessionTest
     {
         String servletMapping = "/server";
         int scavengePeriod = 3;
-        AbstractTestServer server = createServer(0, 1, scavengePeriod, 4);
+        AbstractTestServer server = createServer(0, 1, scavengePeriod, SessionCache.NEVER_EVICT);
         ServletContextHandler context = server.addContext("/");
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "";

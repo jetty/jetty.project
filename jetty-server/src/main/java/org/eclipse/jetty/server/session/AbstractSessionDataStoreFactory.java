@@ -20,11 +20,11 @@
 package org.eclipse.jetty.server.session;
 
 /**
- * AbstractSessionStoreFactory
+ * AbstractSessionDataStoreFactory
  *
  *
  */
-public abstract class AbstractSessionStoreFactory implements SessionStoreFactory
+public abstract class AbstractSessionDataStoreFactory implements SessionDataStoreFactory
 {
 
     int _gracePeriodSec;

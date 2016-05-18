@@ -36,13 +36,13 @@ public abstract class AbstractTestServer
     public static int DEFAULT_MAX_INACTIVE = 30;
  
     public static int DEFAULT_SCAVENGE_SEC = 10;
-    public static int DEFAULT_IDLE_PASSIVATE_SEC = 2;
+    public static int DEFAULT_EVICTIONPOLICY = SessionCache.NEVER_EVICT;
     
     protected static int __workers=0;
     
     protected final Server _server;
     protected final int _maxInactivePeriod;
-    protected final int _idlePassivatePeriod;
+    protected final int _evictionPolicy;
     protected final int _scavengePeriod;
     protected final ContextHandlerCollection _contexts;
     protected SessionIdManager _sessionIdManager;
@@ -71,20 +71,20 @@ public abstract class AbstractTestServer
     
     public AbstractTestServer(int port)
     {
-        this(port, DEFAULT_MAX_INACTIVE, DEFAULT_SCAVENGE_SEC, DEFAULT_IDLE_PASSIVATE_SEC);
+        this(port, DEFAULT_MAX_INACTIVE, DEFAULT_SCAVENGE_SEC, DEFAULT_EVICTIONPOLICY);
     }
 
-    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod)
+    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy)
     {
-        this (port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod, null);
+        this (port, maxInactivePeriod, scavengePeriod, evictionPolicy, null);
     }
     
-    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, Object cfg)
+    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy, Object cfg)
     {
         _server = new Server(port);
         _maxInactivePeriod = maxInactivePeriod;
         _scavengePeriod = scavengePeriod;
-        _idlePassivatePeriod = idlePassivatePeriod;
+        _evictionPolicy = evictionPolicy;
         _contexts = new ContextHandlerCollection();
         _config = cfg;
         _sessionIdManager = newSessionIdManager();
@@ -134,7 +134,7 @@ public abstract class AbstractTestServer
         SessionHandler sessionHandler = newSessionHandler();
         sessionHandler.setSessionIdManager(_sessionIdManager);
         sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);
-        sessionHandler.getSessionStore().setIdlePassivationTimeoutSec(_idlePassivatePeriod);
+        sessionHandler.getSessionCache().setEvictionPolicy(_evictionPolicy);
         context.setSessionHandler(sessionHandler);
 
         return context;
@@ -156,7 +156,7 @@ public abstract class AbstractTestServer
         SessionHandler sessionHandler = newSessionHandler();
         sessionHandler.setSessionIdManager(_sessionIdManager);
         sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);   
-        sessionHandler.getSessionStore().setIdlePassivationTimeoutSec(_idlePassivatePeriod);
+        sessionHandler.getSessionCache().setEvictionPolicy(_evictionPolicy);
         context.setSessionHandler(sessionHandler);
 
         return context;

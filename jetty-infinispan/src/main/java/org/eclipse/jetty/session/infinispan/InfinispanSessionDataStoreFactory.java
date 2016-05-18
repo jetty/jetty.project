@@ -19,17 +19,17 @@
 
 package org.eclipse.jetty.session.infinispan;
 
-import org.eclipse.jetty.server.session.AbstractSessionStoreFactory;
+import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.server.session.SessionStore;
+import org.eclipse.jetty.server.session.SessionDataStore;
 import org.infinispan.commons.api.BasicCache;
 
 /**
- * InfinispanSessionStoreFactory
+ * InfinispanSessionDataStoreFactory
  *
  *
  */
-public class InfinispanSessionStoreFactory extends AbstractSessionStoreFactory
+public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
     int _infinispanIdleTimeoutSec;
     BasicCache<String, Object> _cache;
@@ -52,12 +52,12 @@ public class InfinispanSessionStoreFactory extends AbstractSessionStoreFactory
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStoreFactory#getSessionStore(org.eclipse.jetty.server.session.SessionHandler)
+     * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
-    public SessionStore getSessionStore (SessionHandler handler) throws Exception
+    public SessionDataStore getSessionDataStore (SessionHandler handler) throws Exception
     {
-        InfinispanSessionStore store = new InfinispanSessionStore();
+        InfinispanSessionDataStore store = new InfinispanSessionDataStore();
         store.setGracePeriodSec(getGracePeriodSec());
         store.setInfinispanIdleTimeoutSec(getInfinispanIdleTimeoutSec());
         store.setCache(getCache());

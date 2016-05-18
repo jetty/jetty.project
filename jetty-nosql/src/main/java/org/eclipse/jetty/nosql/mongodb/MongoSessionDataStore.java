@@ -24,6 +24,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.WriteConcern;
+import com.mongodb.WriteResult;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -36,14 +37,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.nosql.NoSqlSessionStore;
+import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * MongoSessionStore
+ * MongoSessionDataStore
  *
  *  The document model is an outer object that contains the elements:
  * <ul>
@@ -88,7 +89,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <code>"context".unique_context_name.attribute_name</code>
  *  Eg  <code>"context"."::/contextA"."A"</code>
  */
-public class MongoSessionStore extends NoSqlSessionStore
+public class MongoSessionDataStore extends NoSqlSessionDataStore
 {
     
     private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
@@ -166,7 +167,7 @@ public class MongoSessionStore extends NoSqlSessionStore
   
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#load(String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#load(String)
      */
     @Override
     public SessionData load(String id) throws Exception
@@ -258,7 +259,7 @@ public class MongoSessionStore extends NoSqlSessionStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#delete(String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(String)
      */
     @Override
     public boolean delete(String id) throws Exception
@@ -272,7 +273,8 @@ public class MongoSessionStore extends NoSqlSessionStore
          */
         BasicDBObject mongoKey = new BasicDBObject(__ID, id);
         
-        DBObject sessionDocument = _dbSessions.findOne(mongoKey,_version_1);
+        //DBObject sessionDocument = _dbSessions.findOne(mongoKey,_version_1);
+        DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
 
         if (sessionDocument != null)
         {
@@ -280,7 +282,7 @@ public class MongoSessionStore extends NoSqlSessionStore
             if (c == null)
             {
                 //delete whole doc
-                _dbSessions.remove(mongoKey);
+                _dbSessions.remove(mongoKey, WriteConcern.SAFE);
                 return false;
             }
 
@@ -288,14 +290,14 @@ public class MongoSessionStore extends NoSqlSessionStore
             if (contexts.isEmpty())
             {
                 //delete whole doc
-                _dbSessions.remove(mongoKey);
+                _dbSessions.remove(mongoKey, WriteConcern.SAFE);
                 return false;
             }
 
             if (contexts.size() == 1 && contexts.iterator().next().equals(getCanonicalContextId()))
             {
                 //delete whole doc
-                 _dbSessions.remove(mongoKey);
+                _dbSessions.remove(new BasicDBObject(__ID, id), WriteConcern.SAFE);
                 return true;
             }
             
@@ -304,8 +306,7 @@ public class MongoSessionStore extends NoSqlSessionStore
             BasicDBObject unsets = new BasicDBObject();
             unsets.put(getContextField(),1);
             remove.put("$unset",unsets);
-            _dbSessions.update(mongoKey,remove,false,false,WriteConcern.SAFE);
-            
+            WriteResult result = _dbSessions.update(mongoKey,remove,false,false,WriteConcern.SAFE);            
             return true;
         }
         else
@@ -318,7 +319,7 @@ public class MongoSessionStore extends NoSqlSessionStore
     
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#exists(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
      */
     @Override
     public boolean exists(String id) throws Exception
@@ -345,7 +346,7 @@ public class MongoSessionStore extends NoSqlSessionStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#getExpired(Set)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
      */
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
@@ -409,7 +410,7 @@ public class MongoSessionStore extends NoSqlSessionStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionStore#doStore(String, SessionData, long) 
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long) 
      */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
@@ -492,12 +493,9 @@ public class MongoSessionStore extends NoSqlSessionStore
             update.put("$set",sets);
         if (!unsets.isEmpty())
             update.put("$unset",unsets);
-
-        _dbSessions.update(key,update,upsert,false,WriteConcern.SAFE);
-
-
+        WriteResult res = _dbSessions.update(key,update,upsert,false,WriteConcern.SAFE);
         if (LOG.isDebugEnabled())
-            LOG.debug("Save:db.sessions.update( {}, {} )", key, update); 
+            LOG.debug("Save:db.sessions.update( {}, {},{} )", key, update, res); 
     }
 
 
@@ -648,7 +646,7 @@ public class MongoSessionStore extends NoSqlSessionStore
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#isPassivating()
+     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
      */
     @Override
     public boolean isPassivating()

@@ -208,6 +208,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
                     return cluster_id;
             }
 
+ 
             // Else reuse any new session ID already defined for this request.
             String new_id=(String)request.getAttribute(__NEW_SESSION_ID);
             if (new_id!=null&&isIdInUse(new_id))

@@ -25,11 +25,11 @@ import java.util.Set;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /**
- * AbstractSessionStore
+ * AbstractSessionDataStore
  *
  *
  */
-public abstract class AbstractSessionStore extends AbstractLifeCycle implements SessionStore
+public abstract class AbstractSessionDataStore extends AbstractLifeCycle implements SessionDataStore
 {
     protected SessionContext _context; //context associated with this session data store
     protected int _gracePeriodSec = 60 * 60; //default of 1hr 
@@ -51,14 +51,14 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
      * Implemented by subclasses to resolve which sessions this node
      * should attempt to expire.
      * 
-     * @param candidates the ids of sessions the SessionStore thinks has expired
+     * @param candidates the ids of sessions the SessionDataStore thinks has expired
      * @return the reconciled set of session ids that this node should attempt to expire
      */
     public abstract Set<String> doGetExpired (Set<String> candidates);
 
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#initialize(org.eclipse.jetty.server.session.SessionContext)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
      */
     public void initialize (SessionContext context)
     {
@@ -68,7 +68,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#store(java.lang.String, org.eclipse.jetty.server.session.SessionData)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#store(java.lang.String, org.eclipse.jetty.server.session.SessionData)
      */
     @Override
     public void store(String id, SessionData data) throws Exception
@@ -94,7 +94,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#getExpired(java.util.Set)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
      */
     @Override
     public Set<String> getExpired(Set<String> candidates)
@@ -113,7 +113,7 @@ public abstract class AbstractSessionStore extends AbstractLifeCycle implements 
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionStore#newSessionData(java.lang.String, long, long, long, long)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(java.lang.String, long, long, long, long)
      */
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)

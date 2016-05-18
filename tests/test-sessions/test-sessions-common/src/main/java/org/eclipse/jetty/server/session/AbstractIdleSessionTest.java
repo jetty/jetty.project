@@ -60,10 +60,10 @@ public abstract class AbstractIdleSessionTest
      * @param port
      * @param max
      * @param scavenge
-     * @param idleSec
+     * @param evictionPolicy
      * @return
      */
-    public  abstract AbstractTestServer createServer (int port, int max, int scavenge,  int idleSec);
+    public  abstract AbstractTestServer createServer (int port, int max, int scavenge,  int evictionPolicy);
  
 
     /**
@@ -113,11 +113,11 @@ public abstract class AbstractIdleSessionTest
         String servletMapping = "/server";
         int inactivePeriod = 20;
         int scavengePeriod = 3;
-        int idlePeriod = 5;
+        int evictionSec = 5;
   
 
 
-        _server1 = createServer(0, inactivePeriod, scavengePeriod, idlePeriod);
+        _server1 = createServer(0, inactivePeriod, scavengePeriod, evictionSec);
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
@@ -139,8 +139,8 @@ public abstract class AbstractIdleSessionTest
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
             //and wait until the session should be idled out
-            pause(idlePeriod*3);
-            
+            pause(evictionSec*3);
+
             //check that the session has been idled
             checkSessionIdled(AbstractTestServer.extractSessionId(sessionCookie));
 
@@ -152,18 +152,17 @@ public abstract class AbstractIdleSessionTest
 
             //check session de-idled
             checkSessionDeIdled(AbstractTestServer.extractSessionId(sessionCookie));
-
+            
             //wait again for the session to be idled
-            pause(idlePeriod*3);
+            pause(evictionSec*3);
             
             //check that it is
             checkSessionIdled(AbstractTestServer.extractSessionId(sessionCookie));
-            
+
             //While idle, take some action to ensure that a deidle won't work, like
             //deleting all sessions in mongo
             deleteSessionData(AbstractTestServer.extractSessionId(sessionCookie));
 
-            
             //make a request
             request = client.newRequest(url + "?action=testfail");
             request.getHeaders().add("Cookie", sessionCookie);
@@ -171,7 +170,6 @@ public abstract class AbstractIdleSessionTest
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
             
             //Test trying to de-idle an expired session (ie before the scavenger can get to it)
-
             //make a request to set up a session on the server
             response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
@@ -181,7 +179,7 @@ public abstract class AbstractIdleSessionTest
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
             //and wait until the session should be idled out
-            pause(idlePeriod * 3);
+            pause(evictionSec * 3);
 
             //stop the scavenger
             if (_server1.getHouseKeeper() != null)
@@ -226,7 +224,7 @@ public abstract class AbstractIdleSessionTest
                 Session s = (Session)session;
                 try (Lock lock = s.lock())
                 {
-                    assertTrue(!s.isPassivated());
+                    assertTrue(s.isResident());
                 }
                 _session = s;
             }
@@ -238,8 +236,7 @@ public abstract class AbstractIdleSessionTest
                 Session s = (Session)session;
                 try (Lock lock = s.lock();)
                 {
-                   assertTrue(s.isActive());
-                   assertFalse(s.isPassivated());
+                   assertTrue(s.isResident());
                 }
                 Integer v = (Integer)session.getAttribute("value");
                 session.setAttribute("value", new Integer(v.intValue()+1));

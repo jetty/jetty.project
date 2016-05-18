@@ -65,11 +65,11 @@ public class FileSessionManagerTest
         idmgr.setServer(server);
         server.setSessionIdManager(idmgr);
         
-        FileSessionStore ds = new FileSessionStore();
+        FileSessionDataStore ds = new FileSessionDataStore();
         ds.setDeleteUnrestorableFiles(true);
         DefaultSessionCache ss = new DefaultSessionCache(handler);
-        handler.setSessionStore(ss);
-        ss.setSessionStore(ds);
+        handler.setSessionCache(ss);
+        ss.setSessionDataStore(ds);
         //manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         testDir.mkdirs();
@@ -101,9 +101,9 @@ public class FileSessionManagerTest
         server.setSessionIdManager(idmgr);
       
         DefaultSessionCache ss = new DefaultSessionCache(handler);
-        FileSessionStore ds = new FileSessionStore();
-        ss.setSessionStore(ds);
-        handler.setSessionStore(ss);
+        FileSessionDataStore ds = new FileSessionDataStore();
+        ss.setSessionDataStore(ds);
+        handler.setSessionCache(ss);
         ds.setDeleteUnrestorableFiles(true);
         handler.setSessionIdManager(idmgr);
       
@@ -136,9 +136,9 @@ public class FileSessionManagerTest
         handler.setServer(server);
 
         DefaultSessionCache ss = new DefaultSessionCache(handler);
-        FileSessionStore ds = new FileSessionStore();
-        ss.setSessionStore(ds);
-        handler.setSessionStore(ss);
+        FileSessionDataStore ds = new FileSessionDataStore();
+        ss.setSessionDataStore(ds);
+        handler.setSessionCache(ss);
         ds.setStoreDir(testDir);
         handler.setMaxInactiveInterval(5);
         Assert.assertTrue(testDir.exists());

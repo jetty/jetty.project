@@ -24,32 +24,13 @@ import java.util.Set;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
- * SessionStore
+ * SessionDataStore
  *
  * A store for the data contained in a Session object. The store
  * would usually be persistent.
  */
-public interface SessionStore extends LifeCycle
-{
-    /**
-     * Initialize this session data store for the
-     * given context. A SessionDataStore can only 
-     * be used by one context(/session manager).
-     * 
-     * @param context context associated
-     */
-    void initialize(SessionContext context);
-    
-    
-    
-    /**
-     * Read in session data from storage
-     * @param id identity of session to load
-     * @return the SessionData matching the id
-     * @throws Exception if unable to load session data
-     */
-    public SessionData load (String id) throws Exception;
-    
+public interface SessionDataStore extends SessionDataMap, LifeCycle
+{  
     
     /**
      * Create a new SessionData 
@@ -63,35 +44,13 @@ public interface SessionStore extends LifeCycle
     public SessionData newSessionData (String id, long created, long accessed, long lastAccessed, long maxInactiveMs);
     
     
-    
-    
-    /**
-     * Write out session data to storage
-     * @param id identity of session to store
-     * @param data info of session to store
-     * @throws Exception if unable to write session data
-     */
-    public void store (String id, SessionData data) throws Exception;
-    
-    
-    
-    /**
-     * Delete session data from storage
-     * @param id identity of session to delete
-     * @return true if the session was deleted from the permanent store
-     * @throws Exception if unable to delete session data
-     */
-    public boolean delete (String id) throws Exception;
-    
-    
-    
    
     /**
      * Called periodically, this method should search the data store
      * for sessions that have been expired for a 'reasonable' amount 
      * of time. 
      * @param candidates if provided, these are keys of sessions that
-     * the SessionStore thinks has expired and should be verified by the
+     * the SessionDataStore thinks has expired and should be verified by the
      * SessionDataStore
      * @return set of session ids
      */

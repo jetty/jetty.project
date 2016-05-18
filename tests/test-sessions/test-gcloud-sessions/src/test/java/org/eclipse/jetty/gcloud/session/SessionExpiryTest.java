@@ -57,9 +57,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
      * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
     {
-        return  new GCloudTestServer(port, max, scavenge, idlePassivationPeriod, _testSupport.getConfiguration());
+        return  new GCloudTestServer(port, max, scavenge, evictionPolicy, _testSupport.getConfiguration());
     }
 
     @Test
@@ -78,7 +78,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     public void testSessionExpiry() throws Exception
     {
         super.testSessionExpiry();
-        try{_testSupport.assertSessions(0);}catch(Exception e){ Assert.fail(e.getMessage());}
+        _testSupport.deleteSessions();
     }
 
     @Override
@@ -92,7 +92,6 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     public void verifySessionDestroyed(TestHttpSessionListener listener, String sessionId)
     {
         super.verifySessionDestroyed(listener, sessionId);
-        try{_testSupport.assertSessions(0);}catch(Exception e){ Assert.fail(e.getMessage());}
     }
 
     

@@ -66,7 +66,7 @@ public class SessionData implements Serializable
         _accessed = accessed;
         _lastAccessed = lastAccessed;
         _maxInactiveMs = maxInactiveMs;
-        _expiry = calcExpiry();
+        calcAndSetExpiry();
     }
 
     
@@ -249,6 +249,11 @@ public class SessionData implements Serializable
     public long calcExpiry ()
     {
         return (getMaxInactiveMs() <= 0 ? 0 : (System.currentTimeMillis() + getMaxInactiveMs()));
+    }
+    
+    public void calcAndSetExpiry ()
+    {
+        setExpiry(calcExpiry());
     }
 
     public long getCreated()

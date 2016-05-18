@@ -146,14 +146,14 @@ public class DefaultSessionCache extends AbstractSessionCache
             for (Session session: _sessions.values())
             {
                 //if we have a backing store and the session is dirty make sure it is written out
-                if (_sessionStore != null)
+                if (_sessionDataStore != null)
                 {
                     if (session.getSessionData().isDirty())
                     {
                         session.willPassivate();
                         try
                         {
-                            _sessionStore.store(session.getId(), session.getSessionData());
+                            _sessionDataStore.store(session.getId(), session.getSessionData());
                         }
                         catch (Exception e)
                         {
@@ -186,7 +186,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     @Override
     public Session newSession(HttpServletRequest request, SessionData data)
     {
-        Session s =  new Session(request,data);
+        Session s =  new Session(getSessionHandler(),request, data);
         return s;
     }
 
@@ -199,7 +199,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     @Override
     public Session newSession(SessionData data)
     {
-        Session s = new Session (data);
+        Session s = new Session (getSessionHandler(), data);
         return s;
     }
 

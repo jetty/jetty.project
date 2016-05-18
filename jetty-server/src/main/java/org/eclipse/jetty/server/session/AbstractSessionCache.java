@@ -33,19 +33,57 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
 /**
  * AbstractSessionCache
  *
- * Basic behaviour for maintaining an in-memory store of Session objects and 
- * making sure that any backing SessionDataStore is kept in sync.
+ * A base implementation of the SessionCache interface for managing a set of
+ * Session objects pertaining to a context in memory.
+ * 
+ * This implementation ensures that multiple requests for the same session id
+ * always return the same Session object.
+ * 
+ * It will delay writing out a session to the SessionDataStore until the
+ * last request exists the session. If the SessionDataStore supports passivation
+ * then the session passivation and activation listeners are called appropriately as
+ * the session is written. Additionally the session can be evicted from the 
+ * AbstractSessionCache after passivation on write.
+ * 
+ * This implementation also supports evicting idle Session objects. An idle Session
+ * is one that is still valid, has not expired, but has not been accessed by a
+ * request for a configurable amount of time.  An idle session will be first
+ * passivated before eviction from the cache.
+ * 
  */
 public abstract class AbstractSessionCache extends AbstractLifeCycle implements SessionCache
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
-    protected SessionStore _sessionStore;
-    protected final SessionHandler _handler;
-    protected SessionContext _context;
-    protected int _idlePassivationTimeoutSec;
-    private boolean _passivateOnComplete;
+    /**
+     * The authoritative source of session data
+     */
+    protected SessionDataStore _sessionDataStore;
     
+    /**
+     * The SessionHandler related to this SessionCache
+     */
+    protected final SessionHandler _handler;
+    
+    /**
+     * Information about the context to which this SessionCache pertains
+     */
+    protected SessionContext _context;
+    
+    
+    /**
+     * When, if ever, to evict sessions: never; only when the last request for them finishes; after inactivity time (expressed as secs)
+     */
+    protected int _evictionPolicy; 
+    
+    
+    /**
+     * If true, a session that will be evicted from the cache because it has been
+     * inactive too long will be saved before being evicted.
+     */
+    protected boolean _saveOnInactiveEviction;
+    
+ 
 
     /**
      * Create a new Session object from pre-existing session data
@@ -115,7 +153,7 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
          */
         public PlaceHolderSession(SessionData data)
         {
-            super(data);
+            super(null, data);
         }
     }
     
@@ -124,9 +162,9 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
     /**
      * 
      */
-    public AbstractSessionCache (SessionHandler manager)
+    public AbstractSessionCache (SessionHandler handler)
     {
-        _handler = manager;
+        _handler = handler;
     }
     
     
@@ -157,7 +195,7 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
     @Override
     protected void doStart() throws Exception
     {
-        if (_sessionStore == null)
+        if (_sessionDataStore == null)
             throw new IllegalStateException ("No session data store configured");
         
         if (_handler == null)
@@ -166,8 +204,8 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
         if (_context == null)
             throw new IllegalStateException ("No ContextId");
 
-        _sessionStore.initialize(_context);
-        _sessionStore.start();
+        _sessionDataStore.initialize(_context);
+        _sessionDataStore.start();
 
         
         super.doStart();
@@ -179,50 +217,51 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
     @Override
     protected void doStop() throws Exception
     {
-        _sessionStore.stop();
+        _sessionDataStore.stop();
         super.doStop();
     }
 
     /**
-     * @return the SessionStore or null if there isn't one
+     * @return the SessionDataStore or null if there isn't one
      */
-    public SessionStore getSessionStore()
+    public SessionDataStore getSessionDataStore()
     {
-        return _sessionStore;
+        return _sessionDataStore;
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionCache#setSessionStore(org.eclipse.jetty.server.session.SessionStore)
+     * @see org.eclipse.jetty.server.session.SessionCache#setSessionDataStore(org.eclipse.jetty.server.session.SessionDataStore)
      */
-    public void setSessionStore(SessionStore sessionStore)
+    public void setSessionDataStore(SessionDataStore sessionStore)
     {
-        _sessionStore = sessionStore;
+        _sessionDataStore = sessionStore;
     }
     
-  
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionCache#getIdlePassivationTimeoutSec()
-     */
-    public int getIdlePassivationTimeoutSec()
-    {
-        return _idlePassivationTimeoutSec;
-    }
+
 
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionCache#setIdlePassivationTimeoutSec(int)
+     * @see org.eclipse.jetty.server.session.SessionCache#getEvictionPolicy()
      */
-    public void setIdlePassivationTimeoutSec(int idleTimeoutSec)
+    public int getEvictionPolicy()
     {
-       _idlePassivationTimeoutSec = idleTimeoutSec;
-
+        return _evictionPolicy;
     }
 
 
-
-
+    /** 
+     * -1 means we never evict inactive sessions.
+     * 0 means we evict a session after the last request for it exits
+     * >0 is the number of seconds after which we evict inactive sessions from the cache
+     * 
+     * @see org.eclipse.jetty.server.session.SessionCache#setEvictionPolicy(int)
+     */
+    public void setEvictionPolicy(int evictionTimeout)
+    {
+        _evictionPolicy = evictionTimeout;
+    }
 
 
     /** 
@@ -244,14 +283,14 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
         {
             session = doGet(id);
             
-            if (_sessionStore == null)
+            if (_sessionDataStore == null)
                 break; //can't load any session data so just return null or the session object
             
             if (session == null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Session not found locally, attempting to load");
-                
+                    LOG.debug("Session {} not found locally, attempting to load", id);
+       
                 //didn't get a session, try and create one and put in a placeholder for it
                 PlaceHolderSession phs = new PlaceHolderSession (new SessionData(id, null, null,0,0,0,0));
                 Lock phsLock = phs.lock();
@@ -286,7 +325,8 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
                             else
                             {
                                 //successfully swapped in the session
-                                session.setTimeout (); //TODO start the session timer
+                                session.setResident(true);
+                                session.updateInactivityTimer();
                                 phsLock.close();
                                 break;
                             }
@@ -307,8 +347,8 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
                     phsLock.close();
                     try (Lock lock = s.lock())
                     {
-                        //is it a placeholder? or is it passivated? In both cases, chuck it away and start again
-                        if (s.isPassivated() || s instanceof PlaceHolderSession)
+                        //is it a placeholder? or is a non-resident session? In both cases, chuck it away and start again
+                        if (!s.isResident() || s instanceof PlaceHolderSession)
                         {
                             session = null;
                             continue;
@@ -323,14 +363,14 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
             {
                 //check the session returned
                 try (Lock lock = session.lock())
-                {
+                {                    
                     //is it a placeholder? or is it passivated? In both cases, chuck it away and start again
-                    if (session.isPassivated() || session instanceof PlaceHolderSession)
+                    if (!session.isResident()|| session instanceof PlaceHolderSession)
                     {
                         session = null;
                         continue;
                     }
-                    
+
                     //got the session
                     break;
                 }
@@ -355,24 +395,23 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
         SessionData data = null;
         Session session = null;
 
-        if (_sessionStore == null)
+        if (_sessionDataStore == null)
             return null; //can't load it
 
         try
         {
-            data =_sessionStore.load(id);
+            data =_sessionDataStore.load(id);
 
             if (data == null) //session doesn't exist
                 return null;
 
             session = newSession(data);
-            session.setSessionHandler(_handler);
             return session;
         }
         catch (UnreadableSessionDataException e)
         {
             //can't load the session, delete it
-            _sessionStore.delete(id);
+            _sessionDataStore.delete(id);
             throw e;
         }
     }
@@ -380,10 +419,15 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
     /** 
      * Put the Session object back into the session store. 
      * 
-     * This should be called by Session.complete when a request exists the session.
+     * This should be called when a request exists the session. Only when the last
+     * simultaneous request exists the session will any action be taken.
      * 
-     * If the session manager supports a session data store, write the
-     * session data through to the session data store.
+     * If there is a SessionDataStore write the  session data through to it.
+     * 
+     * If the SessionDataStore supports passivation, call the passivate/active listeners.
+     * 
+     * If the evictionPolicy == SessionCache.EVICT_ON_SESSION_EXIT then after we have saved
+     * the session, we evict it from the cache.
      * 
      * @see org.eclipse.jetty.server.session.SessionCache#put(java.lang.String, org.eclipse.jetty.server.session.Session)
      */
@@ -393,55 +437,71 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
         if (id == null || session == null)
             throw new IllegalArgumentException ("Put key="+id+" session="+(session==null?"null":session.getId()));
        
-
-
-        //if the session is new or data has changed write it to any backing store
         try (Lock lock = session.lock())
-        {
-            session.setSessionHandler(_handler);
-            
-            if (session.isPassivated())
-                throw new IllegalStateException ("Session "+id+" is passivated and cannot be saved");
+        {   
+            if (session.getSessionHandler() == null)
+                throw new IllegalStateException("Session "+id+" is not managed");
             
             if (!session.isValid())
                 return;
             
-            if (_sessionStore == null)
+            if (_sessionDataStore == null)
             {
-                doPutIfAbsent(id, session); //ensure it is in our map
+                session.setResident(true);
+                if (doPutIfAbsent(id, session) == null) //ensure it is in our map
+                    session.updateInactivityTimer();
                 return;
-            }
+            }       
 
+            //don't do anything with the session until the last request for it has finished
             if ((session.getRequests() <= 0))
-            {
-                //only save if all requests have finished
-                if (!_sessionStore.isPassivating())
+            {    
+                //save the session
+                if (!_sessionDataStore.isPassivating())
                 {
                     //if our backing datastore isn't the passivating kind, just save the session
-                    _sessionStore.store(id, session.getSessionData());
+                    _sessionDataStore.store(id, session.getSessionData());
+                    //if we evict on session exit, boot it from the cache
+                    if (getEvictionPolicy() == EVICT_ON_SESSION_EXIT)
+                    {
+                        doDelete(session.getId());
+                        session.setResident(false);
+                    }
+                    else
+                    {
+                        session.setResident(true);
+                        if (doPutIfAbsent(id,session) == null) //ensure it is in our map 
+                            session.updateInactivityTimer();
+                    }
                 }
                 else
                 {
-                    //backing store supports passivation
+                    //backing store supports passivation, call the listeners
                     session.willPassivate();
-                    _sessionStore.store(id, session.getSessionData());
-                    session.setPassivated();
-                    if (isPassivateOnComplete())
+                    _sessionDataStore.store(id, session.getSessionData());
+               
+                    if (getEvictionPolicy() == EVICT_ON_SESSION_EXIT)
                     {
                         //throw out the passivated session object from the map
                         doDelete(id);
+                        session.setResident(false);
                     }
                     else
                     {
                         //reactivate the session
-                        session.setActive();
-                        session.didActivate();
-
+                        session.didActivate();    
+                        session.setResident(true);
+                        if (doPutIfAbsent(id,session) == null) //ensure it is in our map  
+                            session.updateInactivityTimer();
                     }
                 }
             }
-            
-            doPutIfAbsent(id,session); //ensure it is in our map  
+            else
+            {
+                session.setResident(true);
+                if (doPutIfAbsent(id, session) == null) //ensure it is the map, but don't save it to the backing store until the last request exists
+                    session.updateInactivityTimer();
+            }
         }
     }
 
@@ -470,7 +530,7 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
         }
         
         //not there, so find out if session data exists for it
-        return _sessionStore.exists (id);
+        return _sessionDataStore.exists (id);
     }
 
 
@@ -486,16 +546,21 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
         //get the session, if its not in memory, this will load it
         Session session = get(id); 
 
+ 
         //Always delete it from the backing data store
-        if (_sessionStore != null)
+        if (_sessionDataStore != null)
         {
-            boolean dsdel = _sessionStore.delete(id);
+
+            boolean dsdel = _sessionDataStore.delete(id);
             if (LOG.isDebugEnabled()) LOG.debug("Session {} deleted in db {}",id, dsdel);                   
         }
         
         //delete it from the session object store
         if (session != null)
-            session.stopTimeout();
+        {
+            session.stopInactivityTimer();
+            session.setResident(false);
+        }
         
         return doDelete(id);
     }
@@ -515,70 +580,64 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
            return Collections.emptySet();
        
        if (LOG.isDebugEnabled())
-           LOG.debug("SessionStore checking expiration on {}", candidates);
-       return _sessionStore.getExpired(candidates);
+           LOG.debug("SessionDataStore checking expiration on {}", candidates);
+       return _sessionDataStore.getExpired(candidates);
     }
 
     
     
-    
-  
-
-    
     /**
-     * If the SessionDataStore supports passivation, 
-     * write the session to the backing data store.
+     * Check a session for being inactive and
+     * thus being able to be evicted, if eviction
+     * is enabled.
      * 
-     * @param id identity of session to passivate
+     * 
+     * @param session
      */
-    @Override
-    public void passivateIdleSession(String id)
+    public void checkInactiveSession (Session session)
     {
-        if (!isStarted())
+        if (session == null)
             return;
-        
-        if (_sessionStore == null || !_sessionStore.isPassivating())
-            return; //no data store to passivate or it doesn't passivate 
 
-        //get the session locally
-        Session s = doGet(id);
-        
-        if (s == null)
+        try (Lock s = session.lock())
         {
-            LOG.warn("Session {} not in this session store", s);
-            return;
-        }
-
-
-        //lock the session during passivation
-        try (Lock lock = s.lock())
-        {
-            //check the session is still idle and that it doesn't have requests using it
-            if (s.isValid() && s.isIdleLongerThan(_idlePassivationTimeoutSec) && s.isActive() && (s.getRequests() <= 0))
-            {
-                //TODO - do we need to check that the session exists in the session data store
-                //before we passivate it? If it doesn't exist, we can assume another node 
-                //invalidated it. If the session was new, it shouldn't have been idle passivated.
+            if (getEvictionPolicy() > 0 && session.isIdleLongerThan(getEvictionPolicy()) && session.isValid() && session.isResident() && session.getRequests() <= 0)
+            {       
+                //Be careful with saveOnInactiveEviction - you may be able to re-animate a session that was
+                //being managed on another node and has expired.
                 try
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Passivating idle session {}", id);
-                    s.willPassivate();
-                    _sessionStore.store(id, s.getSessionData());
-                    s.setPassivated();
-                    s.stopTimeout();
-                    doDelete(id); //Take the session object of this session store
+                        LOG.debug("Evicting idle session {}", session.getId());
+
+                    //save before evicting
+                    if (isSaveOnInactiveEviction() && _sessionDataStore != null)
+                    {
+                        if (_sessionDataStore.isPassivating())
+                            session.willPassivate();
+
+                        _sessionDataStore.store(session.getId(), session.getSessionData());
+                    }
+                    
+                    //evict
+                   // session.stopInactivityTimer();
+               
+                    doDelete(session.getId()); //detach from this cache
+                    session.setResident(false);
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Passivation of idle session {} failed", id, e);
-                    s.setPassivated(); //set it as passivated so it can't be used
-                    doDelete(id); //detach it
+                    LOG.warn("Passivation of idle session {} failed", session.getId(), e);
+                    doDelete(session.getId()); //detach it
+                    session.setResident(false);
                 }
             }
         }
-       
     }
+    
+ 
+
+    
 
 
     /** 
@@ -604,10 +663,10 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
             session.getSessionData().setDirty(true);  //ensure we will try to write the session out
             doPutIfAbsent(newId, session); //put the new id into our map
             doDelete (oldId); //take old out of map
-            if (_sessionStore != null)
+            if (_sessionDataStore != null)
             {
-                _sessionStore.delete(oldId);  //delete the session data with the old id
-                _sessionStore.store(newId, session.getSessionData()); //save the session data with the new id
+                _sessionDataStore.delete(oldId);  //delete the session data with the old id
+                _sessionDataStore.store(newId, session.getSessionData()); //save the session data with the new id
             }
             LOG.info("Session id {} swapped for new id {}", oldId, newId);
             return session;
@@ -615,25 +674,37 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
     }
     
     
-    public void setPassivateOnComplete (boolean passivateOnComplete)
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionCache#setSaveOnInactiveEviction(boolean)
+     */
+    @Override
+    public void setSaveOnInactiveEviction (boolean saveOnEvict)
     {
-        _passivateOnComplete = passivateOnComplete;
+        _saveOnInactiveEviction = saveOnEvict;
     }
     
     
-    public boolean isPassivateOnComplete ()
+    /**
+     * Whether we should save a session that has been inactive before
+     * we boot it from the cache.
+     * 
+     * @return true if an inactive session will be saved before being evicted
+     */
+    @Override
+    public boolean isSaveOnInactiveEviction ()
     {
-        return _passivateOnComplete;
+        return _saveOnInactiveEviction;
     }
-
+    
+    
     /** 
      * @see org.eclipse.jetty.server.session.SessionCache#newSession(javax.servlet.http.HttpServletRequest, java.lang.String, long, long)
      */
     @Override
     public Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs)
     {
-        Session session = newSession(request, _sessionStore.newSessionData(id, time, time, time, maxInactiveMs));
-        session.setSessionHandler(_handler);
+        if (LOG.isDebugEnabled()) LOG.debug("Creating new session id="+id);
+        Session session = newSession(request, _sessionDataStore.newSessionData(id, time, time, time, maxInactiveMs));
         return session;
     }
 }

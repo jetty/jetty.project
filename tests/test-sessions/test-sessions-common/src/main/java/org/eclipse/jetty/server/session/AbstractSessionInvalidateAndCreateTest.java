@@ -57,7 +57,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
 {
     public class MySessionListener implements HttpSessionListener
     {
-        List<String> destroys;
+        List<Integer> destroys;
 
         public void sessionCreated(HttpSessionEvent e)
         {
@@ -69,11 +69,11 @@ public abstract class AbstractSessionInvalidateAndCreateTest
             if (destroys == null)
                 destroys = new ArrayList<>();
 
-            destroys.add((String)e.getSession().getAttribute("identity"));
+            destroys.add(e.getSession().hashCode());
         }
     }
 
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod);
+    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
 
 
@@ -81,7 +81,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
     {
         try
         {
-            Thread.sleep(scavengePeriod * 3000L);
+            Thread.sleep(scavengePeriod * 1000L);
         }
         catch (InterruptedException e)
         {
@@ -94,10 +94,9 @@ public abstract class AbstractSessionInvalidateAndCreateTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 1;
-        int scavengePeriod = 2;
-        int idlePassivatePeriod = -1;
-        AbstractTestServer server = createServer(0, inactivePeriod, scavengePeriod, idlePassivatePeriod);
+        int inactivePeriod = 6;
+        int scavengePeriod = 3;
+        AbstractTestServer server = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
         ServletContextHandler context = server.addContext(contextPath);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -124,20 +123,20 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
+                
                 // Make a request which will invalidate the existing session and create a new one
                 Request request2 = client.newRequest(url + "?action=test");
                 request2.header("Cookie", sessionCookie);
                 ContentResponse response2 = request2.send();
                 assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
          
-                // Wait for the scavenger to run, waiting 3 times the scavenger period
-                pause(scavengePeriod);
+                // Wait for the scavenger to run
+                pause(inactivePeriod+scavengePeriod);
 
                 //test that the session created in the last test is scavenged:
                 //the HttpSessionListener should have been called when session1 was invalidated and session2 was scavenged
-                assertTrue(listener.destroys.contains("session1"));
-                assertTrue(listener.destroys.contains("session2"));
+                assertTrue(listener.destroys.size() == 2);
+                assertTrue(listener.destroys.get(0) != listener.destroys.get(1)); //ensure 2 different objects
                 //session2's HttpSessionBindingListener should have been called when it was scavenged
                 assertTrue(servlet.listener.unbound);
             }
@@ -193,6 +192,8 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 HttpSession session = request.getSession(false);
                 if (session != null)
                 {
+                    String oldId = session.getId();
+
                     //invalidate existing session
                     session.invalidate();
                     
@@ -210,6 +211,9 @@ public abstract class AbstractSessionInvalidateAndCreateTest
 
                     //now make a new session
                     session = request.getSession(true);
+                    String newId = session.getId();
+                    assertTrue(!newId.equals(oldId));
+                    assertTrue (session.getAttribute("identity")==null);
                     session.setAttribute("identity", "session2");
                     session.setAttribute("listener", listener);
                 }

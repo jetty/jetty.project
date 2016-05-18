@@ -53,9 +53,9 @@ public class ImmortalSessionTest extends AbstractImmortalSessionTest
      * @see org.eclipse.jetty.server.session.AbstractImmortalSessionTest#createServer(int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int idlePassivatePeriod)
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy)
     {
-       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, idlePassivatePeriod, _testSupport.getConfiguration());
+       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy, _testSupport.getConfiguration());
     }
 
     @Test
