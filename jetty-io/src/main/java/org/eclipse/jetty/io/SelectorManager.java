@@ -304,7 +304,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     protected void endPointOpened(EndPoint endpoint)
     {
-        endpoint.onOpen();
     }
 
     /**
@@ -314,7 +313,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     protected void endPointClosed(EndPoint endpoint)
     {
-        endpoint.onClose();
     }
 
     /**

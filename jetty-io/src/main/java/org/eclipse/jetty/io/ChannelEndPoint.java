@@ -181,7 +181,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         finally
         {
             if (_selector!=null)
-                _selector.onClose(this);
+                _selector.destroyEndPoint(this);
         }
     }
 

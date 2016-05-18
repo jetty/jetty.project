@@ -413,6 +413,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     private EndPoint createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
     {
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
+        endPoint.onOpen();
         _selectorManager.endPointOpened(endPoint);
         Connection connection = _selectorManager.newConnection(channel, endPoint, selectionKey.attachment());
         endPoint.setConnection(connection);
@@ -423,21 +424,17 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         return endPoint;
     }
 
-    public void onClose(final EndPoint endPoint)
+    public void destroyEndPoint(final EndPoint endPoint)
     {
         final Connection connection = endPoint.getConnection();
-            submit(new Product()
-            {
-                @Override
-                public void run()
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Destroyed {}", endPoint);
-                    if (connection != null)
-                        _selectorManager.connectionClosed(connection);
-                    endPoint.close();
-                }
-            });
+        submit((Product)() ->
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Destroyed {}", endPoint);
+            if (connection != null)
+                _selectorManager.connectionClosed(connection);
+            _selectorManager.endPointClosed(endPoint);
+        });
     }
 
     @Override
