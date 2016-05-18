@@ -145,7 +145,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
      * A {@link Selectable} is an {@link EndPoint} that wish to be
      * notified of non-blocking events by the {@link ManagedSelector}.
      */
-    public interface Selectable 
+    public interface Selectable
     {
         /**
          * Callback method invoked when a read or write events has been
@@ -341,7 +341,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
 
     private Runnable processConnect(SelectionKey key, final Connect connect)
     {
-        SelectableChannel channel = (SelectableChannel)key.channel();
+        SelectableChannel channel = key.channel();
         try
         {
             key.attach(connect.attachment);
@@ -413,6 +413,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     private EndPoint createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
     {
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
+        endPoint.onOpen();
         _selectorManager.endPointOpened(endPoint);
         Connection connection = _selectorManager.newConnection(channel, endPoint, selectionKey.attachment());
         endPoint.setConnection(connection);
@@ -423,21 +424,17 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         return endPoint;
     }
 
-    public void onClose(final EndPoint endPoint)
+    public void destroyEndPoint(final EndPoint endPoint)
     {
         final Connection connection = endPoint.getConnection();
-        if (connection!=null)
-            submit(new Product()
-            {
-                @Override
-                public void run()
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Destroyed {}", endPoint);
-                    if (connection != null)
-                        _selectorManager.connectionClosed(connection);
-                }
-            });
+        submit((Product)() ->
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Destroyed {}", endPoint);
+            if (connection != null)
+                _selectorManager.connectionClosed(connection);
+            _selectorManager.endPointClosed(endPoint);
+        });
     }
 
     @Override

@@ -31,8 +31,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 {
-    enum State {OPEN, ISHUTTING, ISHUT, OSHUTTING, OSHUT, CLOSED};
     private static final Logger LOG = Log.getLogger(AbstractEndPoint.class);
+
     private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
     private final long _created=System.currentTimeMillis();
     private volatile Connection _connection;
@@ -60,14 +60,13 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         super(scheduler);
     }
 
-
     protected final void shutdownInput()
     {
         while(true)
         {
             State s = _state.get();
             switch(s)
-            {       
+            {
                 case OPEN:
                     if (!_state.compareAndSet(s,State.ISHUTTING))
                         continue;
@@ -88,17 +87,17 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                         }
                     }
                     return;
-                
+
                 case ISHUTTING:  // Somebody else ishutting
                 case ISHUT: // Already ishut
                     return;
-                    
+
                 case OSHUTTING:
                     if (!_state.compareAndSet(s,State.CLOSED))
                         continue;
                     // The thread doing the OSHUT will close
                     return;
-                    
+
                 case OSHUT:
                     if (!_state.compareAndSet(s,State.CLOSED))
                         continue;
@@ -140,20 +139,20 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                         }
                     }
                     return;
-                    
+
                 case ISHUTTING:
                     if (!_state.compareAndSet(s,State.CLOSED))
                         continue;
                     // The thread doing the ISHUT will close
                     return;
-                    
+
                 case ISHUT:
                     if (!_state.compareAndSet(s,State.CLOSED))
                         continue;
                     // Already ISHUT so we close
                     doOnClose();
                     return;
-                
+
                 case OSHUTTING:  // Somebody else oshutting
                 case OSHUT: // Already oshut
                     return;
@@ -185,23 +184,23 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                     if (!_state.compareAndSet(s,State.CLOSED))
                         continue;
                     // The thread doing the IO SHUT will call doOnClose
-                    return;                
+                    return;
 
                 case CLOSED: // already closed
                     return;
             }
         }
     }
-    
+
     protected void doShutdownInput()
     {}
-    
+
     protected void doShutdownOutput()
     {}
-    
+
     protected void doClose()
     {}
-    
+
     private void doOnClose()
     {
         try
@@ -213,7 +212,6 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             onClose();
         }
     }
-        
 
     @Override
     public boolean isOutputShutdown()
@@ -225,7 +223,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             case OSHUTTING:
                 return true;
             default:
-                return false;            
+                return false;
         }
     }
     @Override
@@ -238,7 +236,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             case ISHUTTING:
                 return true;
             default:
-                return false;            
+                return false;
         }
     }
 
@@ -250,10 +248,10 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             case CLOSED:
                 return false;
             default:
-                return true;            
+                return true;
         }
     }
-    
+
     public void checkFlush() throws IOException
     {
         State s=_state.get();
@@ -267,7 +265,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                 break;
         }
     }
-    
+
     public void checkFill() throws IOException
     {
         State s=_state.get();
@@ -306,15 +304,13 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         return false;
     }
 
-
-    
     protected void reset()
     {
         _state.set(State.OPEN);
         _writeFlusher.onClose();
         _fillInterest.onClose();
     }
-    
+
     @Override
     public void onOpen()
     {
@@ -423,7 +419,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             c=c.getSuperclass();
             name=c.getSimpleName();
         }
-        
+
         Connection connection = getConnection();
         return String.format("%s@%x{%s<->%s,%s,%s|%s,%d/%d,%s@%x}",
                 name,
@@ -437,5 +433,10 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                 getIdleTimeout(),
                 connection == null ? null : connection.getClass().getSimpleName(),
                 connection == null ? 0 : connection.hashCode());
+    }
+
+    private enum State
+    {
+        OPEN, ISHUTTING, ISHUT, OSHUTTING, OSHUT, CLOSED
     }
 }
