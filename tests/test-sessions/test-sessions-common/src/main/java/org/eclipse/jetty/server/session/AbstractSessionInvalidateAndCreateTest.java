@@ -57,7 +57,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
 {
     public class MySessionListener implements HttpSessionListener
     {
-        List<Integer> destroys;
+        List<Integer> destroys = new ArrayList<>();
 
         public void sessionCreated(HttpSessionEvent e)
         {
@@ -66,9 +66,6 @@ public abstract class AbstractSessionInvalidateAndCreateTest
 
         public void sessionDestroyed(HttpSessionEvent e)
         {
-            if (destroys == null)
-                destroys = new ArrayList<>();
-
             destroys.add(e.getSession().hashCode());
         }
     }
@@ -129,9 +126,9 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 request2.header("Cookie", sessionCookie);
                 ContentResponse response2 = request2.send();
                 assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-         
+
                 // Wait for the scavenger to run
-                pause(inactivePeriod+scavengePeriod);
+                pause(inactivePeriod+(2*scavengePeriod));
 
                 //test that the session created in the last test is scavenged:
                 //the HttpSessionListener should have been called when session1 was invalidated and session2 was scavenged
@@ -186,6 +183,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
             {
                 HttpSession session = request.getSession(true);
                 session.setAttribute("identity", "session1");
+                session.setMaxInactiveInterval(-1); //don't let this session expire, we want to explicitly invalidate it
             }
             else if ("test".equals(action))
             {
@@ -196,7 +194,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
 
                     //invalidate existing session
                     session.invalidate();
-                    
+
                     //now try to access the invalid session
                     try
                     {
