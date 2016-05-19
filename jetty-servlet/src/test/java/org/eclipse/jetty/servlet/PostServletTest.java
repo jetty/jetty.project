@@ -19,7 +19,9 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.http.HttpServlet;
@@ -39,18 +41,23 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class PostServletTest
 {
     private static final Logger LOG = Log.getLogger(PostServletTest.class);
+    private static final AtomicBoolean posted = new AtomicBoolean(false);
     private static final AtomicReference<Throwable> ex0=new AtomicReference<>();
     private static final AtomicReference<Throwable> ex1=new AtomicReference<>();
+    private static CountDownLatch complete;
 
     public static class BasicReadPostServlet extends HttpServlet
     {
         protected void doPost(HttpServletRequest request, HttpServletResponse response)
         {
+            posted.set(true);
             byte[] buffer = new byte[1024];
             try
             {
@@ -76,6 +83,10 @@ public class PostServletTest
                     LOG.warn(e1.toString());
                 }
             }
+            finally
+            {
+                complete.countDown();
+            }
         }
     }
 
@@ -85,8 +96,10 @@ public class PostServletTest
     @Before
     public void startServer() throws Exception
     {
+        complete=new CountDownLatch(1);
         ex0.set(null);
         ex1.set(null);
+        posted.set(false);
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
@@ -154,6 +167,7 @@ public class PostServletTest
             String resp = connector.getResponses(req.toString());
             assertThat(resp,is("")); // Aborted before response committed
         }
+        assertTrue(complete.await(5,TimeUnit.SECONDS));
         assertThat(ex0.get(),not(nullValue()));
         assertThat(ex1.get(),not(nullValue()));
     }
@@ -171,6 +185,8 @@ public class PostServletTest
         {
             LocalConnector.LocalEndPoint endp=connector.executeRequest(req.toString());
             Thread.sleep(1000);
+            assertFalse(posted.get());
+
             req.setLength(0);
             // intentionally bad (not a valid chunked char here)
             for (int i=1024;i-->0;)
@@ -211,7 +227,9 @@ public class PostServletTest
             LocalConnector.LocalEndPoint endp=connector.executeRequest(req.toString());
             req.setLength(0);
 
-            Thread.sleep(1000);
+            while(!posted.get())
+                Thread.sleep(100);
+            Thread.sleep(100);
             req.append("x\r\n");
             req.append("World\n");
             req.append("\r\n");
@@ -224,6 +242,7 @@ public class PostServletTest
             assertThat("resp", resp, containsString("HTTP/1.1 200 "));
             assertThat("resp", resp, not(containsString("\r\n0\r\n"))); // aborted
         }
+        assertTrue(complete.await(5,TimeUnit.SECONDS));
         assertThat(ex0.get(),not(nullValue()));
         assertThat(ex1.get(),not(nullValue()));
     }
