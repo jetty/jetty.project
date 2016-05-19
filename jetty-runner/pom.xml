@@ -51,7 +51,7 @@
             <instructions>
               <Main-Class>org.eclipse.jetty.runner.Runner</Main-Class>
               <Import-Package>!*</Import-Package>
-              <Export-Package></Export-Package>
+              <Export-Package />
             </instructions>
           </configuration>
         </plugin>

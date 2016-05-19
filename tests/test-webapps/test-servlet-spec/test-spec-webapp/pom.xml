@@ -84,7 +84,7 @@
               com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}",
               *
             </Import-Package>
-            <_nouses/>
+            <_nouses />
             <Export-Package>com.acme.test;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}";-noimport:=true</Export-Package>
             <Web-ContextPath>/</Web-ContextPath>
             <Bundle-ClassPath>.,WEB-INF/classes,WEB-INF/lib</Bundle-ClassPath>
