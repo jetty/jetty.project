@@ -536,22 +536,22 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 LOG.warn(current);
             else
                 LOG.debug(current);
+            try
+            {
+                // Arbitrary sleep to avoid spin looping.
+                // Subclasses may decide for a different
+                // sleep policy or closing the connector.
+                Thread.sleep(1000);
+                return true;
+            }
+            catch (Throwable x)
+            {
+                return false;
+            }
         }
         else
         {
             LOG.ignore(current);
-        }
-
-        try
-        {
-            // Arbitrary sleep to avoid spin looping.
-            // Subclasses may decide for a different
-            // sleep policy or closing the connector.
-            Thread.sleep(1000);
-            return true;
-        }
-        catch (Throwable x)
-        {
             return false;
         }
     }
