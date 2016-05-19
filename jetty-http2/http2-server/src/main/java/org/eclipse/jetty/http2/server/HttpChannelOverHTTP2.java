@@ -276,4 +276,10 @@ public class HttpChannelOverHTTP2 extends HttpChannel
             }
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s#%d", super.toString(), getStream().getId());
+    }
 }
