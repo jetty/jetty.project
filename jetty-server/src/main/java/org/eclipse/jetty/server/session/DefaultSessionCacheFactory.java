@@ -26,23 +26,23 @@ package org.eclipse.jetty.server.session;
  */
 public class DefaultSessionCacheFactory implements SessionCacheFactory
 {
-    int _evictionTimeout;
+    int _evictionPolicy;
     boolean _saveOnInactiveEvict;
 
     
     
     
-    public int getEvictionTimeout()
+    public int getEvictionPolicy()
     {
-        return _evictionTimeout;
+        return _evictionPolicy;
     }
 
 
 
 
-    public void setEvictionTimeout(int evictionTimeout)
+    public void setEvictionPolicy(int evictionPolicy)
     {
-        _evictionTimeout = evictionTimeout;
+        _evictionPolicy = evictionPolicy;
     }
 
 
@@ -72,7 +72,7 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
     public SessionCache getSessionCache (SessionHandler handler)
     {
         DefaultSessionCache cache = new DefaultSessionCache(handler);
-        cache.setEvictionPolicy(_evictionTimeout);
+        cache.setEvictionPolicy(_evictionPolicy);
         cache.setSaveOnInactiveEviction(_saveOnInactiveEvict);
         return cache;
     }

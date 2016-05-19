@@ -10,8 +10,8 @@
   <Call name="addBean">
    <Arg>
     <New class="org.eclipse.jetty.server.session.DefaultSessionCacheFactory">
-     <Set name="idlePassivationTimeoutSec"><Property name="jetty.session.idlePassivationTimeout.seconds" default="0" /></Set>
-     <Set name="passivateOnComplete"><Property name="jetty.session.passivateOnComplete" default="false" /></Set>
+     <Set name="evictionPolicy"><Property name="jetty.session.evictionPolicy" default="-1" /></Set>
+     <Set name="saveOnInactiveEvict"><Property name="jetty.session.saveOnInactiveEvict" default="false" /></Set>
     </New>
    </Arg>
   </Call>

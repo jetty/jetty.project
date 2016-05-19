@@ -14,5 +14,5 @@ sessions
 etc/sessions/hash-session-cache.xml
 
 [ini-template]
-#jetty.session.idlePassivationTimeout.seconds=0
-#jetty.session.passivateOnComplete=false
+#jetty.session.evictionPolicy=-1
+#jetty.session.saveOnInactiveEvict=false
