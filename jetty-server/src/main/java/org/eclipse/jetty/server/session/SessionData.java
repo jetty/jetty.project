@@ -354,8 +354,7 @@ public class SessionData implements Serializable
             LOG.debug("Testing expiry on session {}: Never expires? {} Is expired?{}", _id, (getExpiry()<= 0), (getExpiry() < time));
         if (getExpiry() <= 0)
             return false; //never expires
-        
-        return (getExpiry() < time);
+        return (getExpiry() <= time);
     }
     
     /** 

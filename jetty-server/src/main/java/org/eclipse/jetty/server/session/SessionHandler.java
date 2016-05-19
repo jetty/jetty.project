@@ -402,7 +402,6 @@ public class SessionHandler extends ScopedHandler
         //check if session management is set up, if not set up HashSessions
         final Server server=getServer();
 
-        
         _context=ContextHandler.getCurrentContext();
         _loader=Thread.currentThread().getContextClassLoader();
 
@@ -413,11 +412,7 @@ public class SessionHandler extends ScopedHandler
             if (_sessionCache == null)
             {
                 SessionCacheFactory ssFactory = server.getBean(SessionCacheFactory.class);
-                if (ssFactory != null)
-                    _sessionCache = ssFactory.getSessionCache(this);
-                else
-                    _sessionCache = new DefaultSessionCache(this);
-
+                setSessionCache(ssFactory != null?ssFactory.getSessionCache(this):new DefaultSessionCache(this));
                 SessionDataStore sds = null;
                 SessionDataStoreFactory sdsFactory = server.getBean(SessionDataStoreFactory.class);
                 if (sdsFactory != null)
@@ -500,10 +495,8 @@ public class SessionHandler extends ScopedHandler
                 _checkingRemoteSessionIdEncoding=Boolean.parseBoolean(tmp);
         }
        
-        _sessionContext = new SessionContext(_sessionIdManager.getWorkerName(), _context);       
-       
+        _sessionContext = new SessionContext(_sessionIdManager.getWorkerName(), _context);             
        _sessionCache.initialize(_sessionContext);
-       _sessionCache.start();
         super.doStart();
     }
 
@@ -1009,8 +1002,12 @@ public class SessionHandler extends ScopedHandler
     }
     
     
+    /**
+     * @param cache
+     */
     public void setSessionCache (SessionCache cache)
     {
+        updateBean(_sessionCache, cache);
         _sessionCache = cache;
     }
     
@@ -1361,18 +1358,6 @@ public class SessionHandler extends ScopedHandler
 
 
 
-    /** 
-     * @see java.lang.Object#toString()
-     */
-    @Override
-    public String toString()
-    {
-        return (_context==null?super.toString():_context.toString());
-    }
-
-
-
-
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -1574,12 +1559,12 @@ public class SessionHandler extends ScopedHandler
         {
             //if there is a session that was created during handling this context, then complete it
             HttpSession finalSession = baseRequest.getSession(false);
+            if (LOG.isDebugEnabled()) LOG.debug("FinalSession="+finalSession+" old_session_manager="+old_session_manager+" this="+this);
             if ((finalSession != null) && (old_session_manager != this))
             {
                 complete((Session)finalSession, baseRequest);
             }
          
-
             if (old_session_manager != null && old_session_manager != this)
             {
                 baseRequest.setSessionHandler(old_session_manager);

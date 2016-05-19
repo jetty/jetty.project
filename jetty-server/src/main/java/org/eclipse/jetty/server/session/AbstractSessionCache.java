@@ -25,7 +25,7 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker.Lock;
@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
  * passivated before eviction from the cache.
  * 
  */
-public abstract class AbstractSessionCache extends AbstractLifeCycle implements SessionCache
+public abstract class AbstractSessionCache extends ContainerLifeCycle implements SessionCache
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
@@ -74,7 +74,7 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
     /**
      * When, if ever, to evict sessions: never; only when the last request for them finishes; after inactivity time (expressed as secs)
      */
-    protected int _evictionPolicy; 
+    protected int _evictionPolicy = SessionCache.NEVER_EVICT; 
     
     
     /**
@@ -204,10 +204,7 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
         if (_context == null)
             throw new IllegalStateException ("No ContextId");
 
-        _sessionDataStore.initialize(_context);
-        _sessionDataStore.start();
-
-        
+        _sessionDataStore.initialize(_context);      
         super.doStart();
     }
 
@@ -234,6 +231,7 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
      */
     public void setSessionDataStore(SessionDataStore sessionStore)
     {
+        updateBean(_sessionDataStore, sessionStore);
         _sessionDataStore = sessionStore;
     }
     
@@ -447,6 +445,7 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
             
             if (_sessionDataStore == null)
             {
+                if (LOG.isDebugEnabled()) LOG.debug("No SessionDataStore, putting into SessionCache only id={}", id);
                 session.setResident(true);
                 if (doPutIfAbsent(id, session) == null) //ensure it is in our map
                     session.updateInactivityTimer();
@@ -464,6 +463,7 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
                     //if we evict on session exit, boot it from the cache
                     if (getEvictionPolicy() == EVICT_ON_SESSION_EXIT)
                     {
+                        if (LOG.isDebugEnabled()) LOG.debug("Eviction on request exit id={}", id);
                         doDelete(session.getId());
                         session.setResident(false);
                     }
@@ -472,12 +472,14 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
                         session.setResident(true);
                         if (doPutIfAbsent(id,session) == null) //ensure it is in our map 
                             session.updateInactivityTimer();
+                        if (LOG.isDebugEnabled())LOG.debug("Non passivating SessionDataStore, session in SessionCache only id={}",id);
                     }
                 }
                 else
                 {
                     //backing store supports passivation, call the listeners
                     session.willPassivate();
+                    if (LOG.isDebugEnabled()) LOG.debug("Session passivating id={}", id);
                     _sessionDataStore.store(id, session.getSessionData());
                
                     if (getEvictionPolicy() == EVICT_ON_SESSION_EXIT)
@@ -485,6 +487,7 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
                         //throw out the passivated session object from the map
                         doDelete(id);
                         session.setResident(false);
+                        if (LOG.isDebugEnabled()) LOG.debug("Evicted on request exit id={}", id);
                     }
                     else
                     {
@@ -493,11 +496,13 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
                         session.setResident(true);
                         if (doPutIfAbsent(id,session) == null) //ensure it is in our map  
                             session.updateInactivityTimer();
+                        if (LOG.isDebugEnabled())LOG.debug("Session reactivated id={}",id);
                     }
                 }
             }
             else
             {
+                if (LOG.isDebugEnabled()) LOG.debug("Req count={} for id={}",session.getRequests(),id);
                 session.setResident(true);
                 if (doPutIfAbsent(id, session) == null) //ensure it is the map, but don't save it to the backing store until the last request exists
                     session.updateInactivityTimer();
