@@ -421,25 +421,26 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         CountDownLatch successLatch = new CountDownLatch(1);
         CountDownLatch resultLatch = new CountDownLatch(1);
         DeferredContentProvider content = new DeferredContentProvider();
-        client.newRequest("localhost", connector.getLocalPort())
+        Request request = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .path("/secure")
-                .onRequestContent((request, buffer) -> request.abort(new Exception()))
                 .content(content)
-                .onResponseSuccess(response -> successLatch.countDown())
-                .send(result ->
-                {
-                    if (result.isFailed() && result.getResponseFailure() == null)
-                        resultLatch.countDown();
-                });
+                .onResponseSuccess(response -> successLatch.countDown());
+        request.send(result ->
+        {
+            if (result.isFailed() && result.getResponseFailure() == null)
+                resultLatch.countDown();
+        });
+
+        // Send some content to make sure the request is dispatched on the server.
+        content.offer(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
 
         // Wait for the response to arrive to
         // the authentication protocol handler.
         Thread.sleep(1000);
 
-        // Send some content to trigger request failure.
-        content.offer(ByteBuffer.wrap("test".getBytes(StandardCharsets.UTF_8)));
-        content.close();
+        // Trigger request failure.
+        request.abort(new Exception());
 
         // Verify that the response was successful, it's the request that failed.
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
