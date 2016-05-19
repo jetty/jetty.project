@@ -17,24 +17,16 @@
 [[setting-deployment-bindings]]
 === Setting Deployment Bindings
 
-Jetty provides __deployment bindings__, which let you tap into the
-application lifecycle of the DeploymentManager.
+Jetty provides __deployment bindings__, which allows access to the application lifecycle of `DeploymentManager`.
 
-There are a handful of bindings that exist within the core distribution
-of jetty:
+There are a handful of bindings that exist within the core distribution of Jetty:
 
-* `StandardDeployer` (deploying)–Standard binding that deals with
-deploying a webapp.
-* `StandardStarter` (starting)–Standard binding that deals with starting
-a webapp.
-* `StandardStopper` (stopping)–Standard binding that deals with stopping
-a webapp.
-* `StandardUndeployer` (undeploying)–Standard undeployer that deals with
-undeploying a webapp.
-* `DebugBinding` (any specified)–Attaches a binding and prints logging
-information of a context going through the specified binding target.
-* `GlobalWebappConfigBinding` (deploying)–Allows the user to override
-various settings of a webapp's context globally for all contexts.
+* `StandardDeployer` (deploying)–Standard binding that deals with deploying a webapp.
+* `StandardStarter` (starting)–Standard binding that deals with starting a webapp.
+* `StandardStopper` (stopping)–Standard binding that deals with stopping a webapp.
+* `StandardUndeployer` (undeploying)–Standard undeployer that deals with undeploying a webapp.
+* `DebugBinding` (any specified)–Attaches a binding and prints logging information of a context going through the specified binding target.
+* `GlobalWebappConfigBinding` (deploying)–Allows the user to override various settings of a webapp's context globally for all contexts.
 +
 [source,xml]
 ----
@@ -47,5 +39,4 @@ various settings of a webapp's context globally for all contexts.
         </Call>
 
 ----
-* OrderedGroupBinding (any specified)–Allows the user to set a specific
-order for bindings to process in a given binding target.
+* OrderedGroupBinding (any specified)–Allows the user to set a specific order for bindings to process in a given binding target.

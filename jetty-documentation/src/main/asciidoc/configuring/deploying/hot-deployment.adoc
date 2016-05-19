@@ -17,27 +17,20 @@
 [[hot-deployment]]
 === Hot Deployment
 
-Jetty lets you deploy an arbitrary context or web application by
-monitoring a directory for changes. If you add a web application or a
-context descriptor to the directory, Jetty's DeploymentManager (DM)
-deploys a new context. If you touch or update a context descriptor, the
-DM stops, reconfigures, and redeploys its context. If you remove a
-context, the DM stops it and removes it from the server.
+Jetty allows for deploying an arbitrary context or web application by monitoring a directory for changes. 
+If a web application or a context descriptor is added to the directory, Jetty's DeploymentManager (DM) deploys a new context. 
+If a context descriptor is touched or updated, the DM stops, reconfigures, and redeploys its context. 
+If a context is removed, the DM stops it and removes it from the server.
 
-To control this behavior, you'll want to configure some WebAppProvider
-properties.
+This behavior can be controlled by configuring `WebAppProvider` properties.
 
 monitoredDirName::
-  The directory to scan for possible deployable Web Applications (or
-  Deployment Descriptor XML files)
+  The directory to scan for possible deployable Web Applications (or Deployment Descriptor XML files).
 scanInterval::
   Number of seconds between scans of the provided `monitoredDirName`.
-  +
-  A value of `0` disables the continuous hot deployment scan, Web
-  Applications will be deployed on startup only.
+  A value of `0` disables the continuous hot deployment scan, Web Applications will be deployed on startup only.
 
-The default location for this configuration is in the
-`${jetty.home}/etc/jetty-deploy.xml` file.
+The default location for this configuration is in the `${jetty.home}/etc/jetty-deploy.xml` file.
 
 [source,xml]
 ----
@@ -74,5 +67,4 @@ The default location for this configuration is in the
 
 See xref:default-web-app-provider[] for more configuration details.
 
-See also xref:deployment-architecture[] for detailed conceptual
-information.
+See also xref:deployment-architecture[] for detailed conceptual information.
