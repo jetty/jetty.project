@@ -485,7 +485,7 @@ public class Session implements SessionHandler.SessionIf
                 {
                     //we do not want to evict inactive sessions
                     setInactivityTimer(-1L);
-                    if (LOG.isDebugEnabled()) LOG.debug("Session is immortal && never evict: timer cancelled");
+                    if (LOG.isDebugEnabled()) LOG.debug("Session is immortal && bo inactivity eviction: timer cancelled");
                 }
                 else
                 {
