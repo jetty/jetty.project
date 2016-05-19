@@ -17,37 +17,25 @@
 [[anatomy-of-a-webapp]]
 === Anatomy of a Web Application
 
-The standard Jetty distribution is capable of deploying standard Servlet
-Spec Web Applications, and Jetty internal ContextHandler deployment
-descriptors, or even a mix of the two.
+The standard Jetty distribution is capable of deploying standard Servlet Spec Web Applications and Jetty internal ContextHandler deployment descriptors, or even a mix of the two.
 
-Web Applications are deployable collections of dynamic (servlets,
-filters, jsps, etc..) and static content, support libraries, and
-descriptive metadata that are bound to a specific context path on Jetty.
+Web Applications are deployable collections of dynamic (servlets, filters, jsps, etc..) and static content, support libraries, and descriptive metadata that are bound to a specific context path on Jetty.
 
-Ultimately the format and layout are defined by the Servlet Spec, and
-you should consult the official Servlet Spec documentation for a more
-detailed understanding of Web Application layout and structure, however
-this will outline basics about how Jetty views these requirements.
+Ultimately the format and layout are defined by the Servlet Spec, and the official Servlet Spec documentation should be consulted for a more detailed understanding of Web Application layout and structure; however, this will outline basics about how Jetty views these requirements.
 
-Web Applications can be bundled into a single Web Archive (WAR file) or
-as a directory tree.
+Web Applications can be bundled into a single Web Archive (WAR file) or as a directory tree.
 
 `/WEB-INF/`::
-  Special Servlet API defined directory used to store anything related
-  to the Web Application that are not part of the public access of the
-  Web Application.
-  +
-  If you have content that is accessed by your Web Application
-  internally, but that should also never be accessed directly by a web
-  browser, this is the directory you would place them in.
+  Special Servlet API defined directory used to store anything related to the Web Application that are not part of the public access of the Web Application.
+  
+  If there is content that is accessed by a Web Application internally, but that should also never be accessed directly by a web browser, this is the directory it would placed in.
+  
 `/WEB-INF/web.xml`::
-  *Required* deployment descriptor defining various behavior of your Web
-  Application.
+  *Required* deployment descriptor defining various behavior of the Web Application.
+  
 `/WEB-INF/classes/`::
   Location for Web Application specific compiled java classes
 `/WEB-INF/lib/`::
   Directory for JAR files (libraries)
 
-The Jetty internal WebAppClassloader will load classes from
-`/WEB-INF/classes/` first, then from jar files found in `/WEB-INF/lib/`.
+The Jetty internal `WebAppClassloader` will load classes from `/WEB-INF/classes/` first, then from jar files found in `/WEB-INF/lib/`.
