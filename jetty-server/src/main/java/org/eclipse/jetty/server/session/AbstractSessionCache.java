@@ -25,7 +25,7 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker.Lock;
@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
  * passivated before eviction from the cache.
  * 
  */
-public abstract class AbstractSessionCache extends AbstractLifeCycle implements SessionCache
+public abstract class AbstractSessionCache extends ContainerLifeCycle implements SessionCache
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
@@ -204,10 +204,7 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
         if (_context == null)
             throw new IllegalStateException ("No ContextId");
 
-        _sessionDataStore.initialize(_context);
-        _sessionDataStore.start();
-
-        
+        _sessionDataStore.initialize(_context);      
         super.doStart();
     }
 
@@ -234,6 +231,7 @@ public abstract class AbstractSessionCache extends AbstractLifeCycle implements 
      */
     public void setSessionDataStore(SessionDataStore sessionStore)
     {
+        updateBean(_sessionDataStore, sessionStore);
         _sessionDataStore = sessionStore;
     }
     

@@ -412,11 +412,7 @@ public class SessionHandler extends ScopedHandler
             if (_sessionCache == null)
             {
                 SessionCacheFactory ssFactory = server.getBean(SessionCacheFactory.class);
-                if (ssFactory != null)
-                    _sessionCache = ssFactory.getSessionCache(this);
-                else
-                    _sessionCache = new DefaultSessionCache(this);
-
+                setSessionCache(ssFactory != null?ssFactory.getSessionCache(this):new DefaultSessionCache(this));
                 SessionDataStore sds = null;
                 SessionDataStoreFactory sdsFactory = server.getBean(SessionDataStoreFactory.class);
                 if (sdsFactory != null)
@@ -499,10 +495,8 @@ public class SessionHandler extends ScopedHandler
                 _checkingRemoteSessionIdEncoding=Boolean.parseBoolean(tmp);
         }
        
-        _sessionContext = new SessionContext(_sessionIdManager.getWorkerName(), _context);       
-       
+        _sessionContext = new SessionContext(_sessionIdManager.getWorkerName(), _context);             
        _sessionCache.initialize(_sessionContext);
-       _sessionCache.start();
         super.doStart();
     }
 
@@ -1008,8 +1002,12 @@ public class SessionHandler extends ScopedHandler
     }
     
     
+    /**
+     * @param cache
+     */
     public void setSessionCache (SessionCache cache)
     {
+        updateBean(_sessionCache, cache);
         _sessionCache = cache;
     }
     
