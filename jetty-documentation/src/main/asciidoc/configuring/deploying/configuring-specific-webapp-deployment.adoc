@@ -17,41 +17,29 @@
 [[configuring-specific-webapp-deployment]]
 === Configuring a Specific Web Application Deployment
 
-Using the Automatic Web Application Deployment model is quick and easy,
-but sometimes you might need to tune certain deployment properties (for
-example, you want to deploy with a context path that is not based on the
-file name, or you want to define a special database connection pool just
-for this web application). You can use a
-xref:deployable-descriptor-file[] to accomplish such
-tuning.
+Using the Automatic Web Application Deployment model is quick and easy, but sometimes you might need to tune certain deployment properties (for example, you want to deploy with a context path that is not based on the file name, or you want to define a special database connection pool just for this web application). 
+You can use a xref:deployable-descriptor-file[] to accomplish such tuning.
 
 [[deployable-descriptor-file]]
 ==== Jetty Deployable Descriptor XML File
 
-Jetty supports deploying Web Applications via XML files which will build
-an instance of a
-link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler]
-that Jetty can then deploy.
+Jetty supports deploying Web Applications via XML files which will build an instance of a link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler] that Jetty can then deploy.
 
 [[using-basic-descriptor-files]]
 ==== Using Basic Descriptor Files
 
-In a default Jetty installation, Jetty scans its `$JETTY_HOME/webapps`
-directory for context deployment descriptor files. To deploy a web
-application using such a file, simply place the file in that directory.
+In a default Jetty installation, Jetty scans its `$JETTY_HOME/webapps` directory for context deployment descriptor files. 
+To deploy a web application using such a file, simply place the file in that directory.
 
-The deployment descriptor file itself is an xml file that configures a
-link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`]
-class. For a basic installation you probably need to set only two
-properties:
+The deployment descriptor file itself is an xml file that configures a link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`] class. 
+For a basic installation only two properties need configured:
 
 war::
-  the filesystem path to the web application file (or directory)
+  The filesystem path to the web application file (or directory)
 contextPath::
-  the context path to use for the web application
+  The context path to use for the web application
 
-For example, here is a descriptor file that deploys the file
-`/opt/myapp/myapp.war` to the context path `/wiki`:
+For example, here is a descriptor file that deploys the file `/opt/myapp/myapp.war` to the context path `/wiki`:
 
 [source,xml]
 ----
@@ -66,8 +54,8 @@ For example, here is a descriptor file that deploys the file
 
 ____
 [NOTE]
-You can use the `SystemProperty` and `Property` elements in your descriptor file.
-For example, if you set the system property `myapp.home=/opt/myapp`, you can rewrite the previous example as:
+Both `SystemProperty` and `Property` elements can be used in the descriptor file.
+For example, if the system property is set tp `myapp.home=/opt/myapp`, the previous example can be rewritten as:
 ____
 
 [source,xml]
@@ -81,23 +69,17 @@ ____
 </Configure>
 ----
 
-If you need to change the home path for your application, you can simply
-change the system property. This is useful if you frequently switch
-among multiple versions of an app.
+If the home path for an application needs altered, only the system property needs changed. 
+This is useful if the version of an app is frequently changed.
 
 [[configuring-advanced-descriptor-files]]
 ==== Configuring Advanced Descriptor Files
 
-If you look at the documentation for the
-link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`]
-class, you notice that there are a lot more properties than just the two
-mentioned above. Here are some examples that configure advanced options
-with your descriptor file.
+Official documentation for the for the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`] class lists all the properties that can be set.
+Here are some examples that configure advanced options in the descriptor file.
 
-This first example tells Jetty not to expand the WAR file when deploying
-it. This can help make it clear that people should not be making changes
-to the temporary unpacked WAR because such changes do not persist, and
-therefore do not apply the next time the web application deploys.
+This first example tells Jetty not to expand the WAR file when deploying it. 
+This can help make it clear that users should not make changes to the temporary unpacked WAR because such changes do not persist, and therefore do not apply the next time the web application deploys.
 
 [source,xml]
 ----
@@ -111,13 +93,9 @@ therefore do not apply the next time the web application deploys.
 </Configure>
 ----
 
-The next example retrieves the JavaEE Servlet context and sets an
-initialization parameter on it. You can also use the `setAttribute`
-method to set a Servlet context attribute. However, since the ` web.xml`
-for the web application is processed after the deployment descriptor,
-the `
-      web.xml` values overwrite identically named attributes from the
-deployment descriptor.
+The next example retrieves the JavaEE Servlet context and sets an initialization parameter on it. 
+The `setAttribute` method can also be used to set a Servlet context attribute. 
+However, since the `web.xml` for the web application is processed after the deployment descriptor, the `web.xml` values overwrite identically named attributes from the deployment descriptor.
 
 [source,xml]
 ----
@@ -136,11 +114,9 @@ deployment descriptor.
 </Configure>
 ----
 
-The following example sets a special `web.xml` override descriptor. This
-descriptor is processed after the web application's `web.xml`, so it may
-override identically named attributes. This feature is useful if you
-want to add parameters or additional Servlet mappings without breaking
-open a packed WAR file.
+The following example sets a special `web.xml` override descriptor. 
+This descriptor is processed after the web application's `web.xml`, so it may override identically named attributes. 
+This feature is useful when adding parameters or additional Servlet mappings without breaking open a packed WAR file.
 
 [source,xml]
 ----
@@ -154,11 +130,8 @@ open a packed WAR file.
 </Configure>
 ----
 
-The next example configures not only the web application context, but
-also a database connection pool (see xref:jndi-datasource-examples[]
-that our application can then use. If the ` web.xml` does not include a
-reference to this data source, you can use the override descriptor
-mechanism (the previous example), to include it.
+The next example configures not only the web application context, but also a database connection pool (see xref:jndi-datasource-examples[] that the application can then use. 
+If the `web.xml` does not include a reference to this data source, an override descriptor mechanism (as shown in the previous example) can be used to include it.
 
 [source,xml]
 ----
@@ -184,12 +157,6 @@ mechanism (the previous example), to include it.
 </Configure>
 ----
 
-There are many other settings that you can change on a
-link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`].
-The link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[javadoc]
-for WebAppContext is a good source of information. Also see the
-documentation on link:#troubleshooting-zip-exceptions[avoiding zip file
-exceptions] for a description of WebAppContext settings that determine
-such things as whether or not the war is automatically unpacked during
-deployment, or whether certain sections of a webapp are copied to a
-temporary location.
+There are many other settings that can be changed in a link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`].
+The link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[javadoc] for `WebAppContext` is a good source of information. 
+Also see the documentation on link:#troubleshooting-zip-exceptions[avoiding zip file exceptions] for a description of `WebAppContext` settings that determine such things as whether or not the war is automatically unpacked during deployment, or whether certain sections of a webapp are copied to a temporary location.

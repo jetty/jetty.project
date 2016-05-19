@@ -17,11 +17,8 @@
 [[static-content-deployment]]
 === Configuring Static Content Deployment
 
-Should you want to serve purely static content, you can use the Jetty
-Deployment Descriptor XML concepts and the internal ResourceHandler to
-setup simple serving of static content. Just create a file called
-`scratch.xml` in the `${jetty.home}/webapps` directory and paste these
-file contents in it.
+To serve purely static content, the Jetty Deployment Descriptor XML concepts and the internal `ResourceHandler` can be used. 
+Create a file called `scratch.xml` in the `${jetty.home}/webapps` directory and paste the following file contents in it.
 
 [source,xml]
 ----
@@ -41,6 +38,5 @@ file contents in it.
 
 ----
 
-This is a very basic setup for serving static files, if you want
-advanced static file serving, use the
-link:{JXURL}/org/eclipse/jetty/servlet/DefaultServlet.html[DefaultServlet].
+This is a very basic setup for serving static files.
+For advanced static file serving, use the link:{JXURL}/org/eclipse/jetty/servlet/DefaultServlet.html[DefaultServlet].
