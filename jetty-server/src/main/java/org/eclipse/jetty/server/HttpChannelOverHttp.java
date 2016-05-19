@@ -49,7 +49,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ComplianceHandler
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
-    private final static HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE,"h2c");
+    private final static HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
     private static final String ATTR_COMPLIANCE_VIOLATIONS = "org.eclipse.jetty.http.compliance.violations";
 
     private final HttpFields _fields = new HttpFields();
@@ -65,7 +65,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
     {
-        super(connector,config,endPoint,transport);
+        super(connector, config, endPoint, transport);
         _httpConnection = httpConnection;
         _metadata.setURI(new HttpURI());
     }
@@ -84,9 +84,9 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         _expect100Continue = false;
         _expect102Processing = false;
         _metadata.recycle();
-        _connection=null;
+        _connection = null;
         _fields.clear();
-        _upgrade=null;
+        _upgrade = null;
     }
 
     @Override
@@ -105,7 +105,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     public boolean startRequest(String method, String uri, HttpVersion version)
     {
         _metadata.setMethod(method);
-        _metadata.getURI().parseRequestTarget(method,uri);
+        _metadata.getURI().parseRequestTarget(method, uri);
         _metadata.setHttpVersion(version);
         _unknownExpectation = false;
         _expect100Continue = false;
@@ -116,27 +116,27 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public void parsedHeader(HttpField field)
     {
-        HttpHeader header=field.getHeader();
-        String value=field.getValue();
-        if (header!=null)
+        HttpHeader header = field.getHeader();
+        String value = field.getValue();
+        if (header != null)
         {
-            switch(header)
+            switch (header)
             {
                 case CONNECTION:
-                    _connection=field;
+                    _connection = field;
                     break;
 
                 case HOST:
                     if (!_metadata.getURI().isAbsolute() && field instanceof HostPortHttpField)
                     {
                         HostPortHttpField hp = (HostPortHttpField)field;
-                        _metadata.getURI().setAuthority(hp.getHost(),hp.getPort());
+                        _metadata.getURI().setAuthority(hp.getHost(), hp.getPort());
                     }
                     break;
 
                 case EXPECT:
                 {
-                    if (_metadata.getVersion()==HttpVersion.HTTP_1_1)
+                    if (_metadata.getVersion() == HttpVersion.HTTP_1_1)
                     {
                         HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
                         switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
@@ -177,7 +177,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                 }
 
                 case UPGRADE:
-                    _upgrade=field;
+                    _upgrade = field;
                     break;
 
                 default:
@@ -220,7 +220,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     public void earlyEOF()
     {
         // If we have no request yet, just close
-        if (_metadata.getMethod()==null)
+        if (_metadata.getMethod() == null)
             _httpConnection.close();
         else
             onEarlyEOF();
@@ -231,7 +231,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     {
         HttpInput.Content c = _httpConnection.newContent(content);
         boolean handle = onContent(c) || _delayedForContent;
-        _delayedForContent=false;
+        _delayedForContent = false;
         return handle;
     }
 
@@ -255,40 +255,40 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             LOG.ignore(e);
         }
 
-        onBadMessage(status,reason);
+        onBadMessage(status, reason);
     }
 
     @Override
     public boolean headerComplete()
     {
-        if(_complianceViolations != null)
+        if (_complianceViolations != null)
             this.getRequest().setAttribute(ATTR_COMPLIANCE_VIOLATIONS, _complianceViolations);
-        
+
         boolean persistent;
 
         switch (_metadata.getVersion())
         {
             case HTTP_0_9:
             {
-                persistent=false;
+                persistent = false;
                 break;
             }
             case HTTP_1_0:
             {
                 if (getHttpConfiguration().isPersistentConnectionsEnabled())
                 {
-                    if (_connection!=null)
+                    if (_connection != null)
                     {
                         if (_connection.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
-                            persistent=true;
+                            persistent = true;
                         else
-                            persistent=_fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+                            persistent = _fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
                     }
                     else
-                        persistent=false;
+                        persistent = false;
                 }
                 else
-                    persistent=false;
+                    persistent = false;
 
                 if (!persistent)
                     persistent = HttpMethod.CONNECT.is(_metadata.getMethod());
@@ -302,31 +302,31 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             {
                 if (_unknownExpectation)
                 {
-                    badMessage(HttpStatus.EXPECTATION_FAILED_417,null);
+                    badMessage(HttpStatus.EXPECTATION_FAILED_417, null);
                     return false;
                 }
 
                 if (getHttpConfiguration().isPersistentConnectionsEnabled())
                 {
-                    if (_connection!=null)
+                    if (_connection != null)
                     {
                         if (_connection.contains(HttpHeaderValue.CLOSE.asString()))
-                            persistent=false;
+                            persistent = false;
                         else
-                            persistent=!_fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()); // handle multiple connection fields
+                            persistent = !_fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()); // handle multiple connection fields
                     }
                     else
-                        persistent=true;
+                        persistent = true;
                 }
                 else
-                    persistent=false;
+                    persistent = false;
 
                 if (!persistent)
                     persistent = HttpMethod.CONNECT.is(_metadata.getMethod());
                 if (!persistent)
                     getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
 
-                if (_upgrade!=null && upgrade())
+                if (_upgrade != null && upgrade())
                     return true;
 
                 break;
@@ -335,22 +335,22 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             case HTTP_2:
             {
                 // Allow direct "upgrade" to HTTP_2_0 only if the connector supports h2c.
-                _upgrade=PREAMBLE_UPGRADE_H2C;
+                _upgrade = PREAMBLE_UPGRADE_H2C;
 
                 if (HttpMethod.PRI.is(_metadata.getMethod()) &&
-                    "*".equals(_metadata.getURI().toString()) &&
-                    _fields.size()==0 &&
-                    upgrade())
+                        "*".equals(_metadata.getURI().toString()) &&
+                        _fields.size() == 0 &&
+                        upgrade())
                     return true;
 
-                badMessage(HttpStatus.UPGRADE_REQUIRED_426,null);
+                badMessage(HttpStatus.UPGRADE_REQUIRED_426, null);
                 _httpConnection.getParser().close();
                 return false;
             }
 
             default:
             {
-                throw new IllegalStateException("unsupported version "+_metadata.getVersion());
+                throw new IllegalStateException("unsupported version " + _metadata.getVersion());
             }
         }
 
@@ -361,11 +361,11 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
         // Should we delay dispatch until we have some content?
         // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
-        _delayedForContent =  (getHttpConfiguration().isDelayDispatchUntilContent()
-                               && (_httpConnection.getParser().getContentLength()>0 || _httpConnection.getParser().isChunking() )
-                               && !isExpecting100Continue()
-                               && !isCommitted()
-                               && _httpConnection.isRequestBufferEmpty());
+        _delayedForContent = (getHttpConfiguration().isDelayDispatchUntilContent()
+                && (_httpConnection.getParser().getContentLength() > 0 || _httpConnection.getParser().isChunking())
+                && !isExpecting100Continue()
+                && !isCommitted()
+                && _httpConnection.isRequestBufferEmpty());
 
         return !_delayedForContent;
     }
@@ -377,62 +377,63 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
      * matching the protocol specified in the {@code Upgrade} header.</p>
      * <p>The upgrade may succeed, be ignored (which can allow a later handler to implement)
      * or fail with a {@link BadMessageException}.</p>
+     *
      * @return true if the upgrade was performed, false if it was ignored
      * @throws BadMessageException if the upgrade failed
      */
     private boolean upgrade() throws BadMessageException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("upgrade {} {}",this,_upgrade);
+            LOG.debug("upgrade {} {}", this, _upgrade);
 
-        if (_upgrade!=PREAMBLE_UPGRADE_H2C && (_connection==null || !_connection.contains("upgrade")))
+        if (_upgrade != PREAMBLE_UPGRADE_H2C && (_connection == null || !_connection.contains("upgrade")))
             throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
 
         // Find the upgrade factory
-        ConnectionFactory.Upgrading factory=null;
+        ConnectionFactory.Upgrading factory = null;
         for (ConnectionFactory f : getConnector().getConnectionFactories())
         {
             if (f instanceof ConnectionFactory.Upgrading)
             {
                 if (f.getProtocols().contains(_upgrade.getValue()))
                 {
-                    factory=(ConnectionFactory.Upgrading)f;
+                    factory = (ConnectionFactory.Upgrading)f;
                     break;
                 }
             }
         }
 
-        if (factory==null)
+        if (factory == null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("No factory for {} in {}",_upgrade,getConnector());
+                LOG.debug("No factory for {} in {}", _upgrade, getConnector());
             return false;
         }
 
         // Create new connection
         HttpFields response101 = new HttpFields();
-        Connection upgrade_connection = factory.upgradeConnection(getConnector(),getEndPoint(),_metadata,response101);
-        if (upgrade_connection==null)
+        Connection upgrade_connection = factory.upgradeConnection(getConnector(), getEndPoint(), _metadata, response101);
+        if (upgrade_connection == null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Upgrade ignored for {} by {}",_upgrade,factory);
+                LOG.debug("Upgrade ignored for {} by {}", _upgrade, factory);
             return false;
         }
 
         // Send 101 if needed
         try
         {
-            if (_upgrade!=PREAMBLE_UPGRADE_H2C)
-                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1,HttpStatus.SWITCHING_PROTOCOLS_101,response101,0),null,true);
+            if (_upgrade != PREAMBLE_UPGRADE_H2C)
+                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1, HttpStatus.SWITCHING_PROTOCOLS_101, response101, 0), null, true);
         }
-        catch(IOException e)
+        catch (IOException e)
         {
-            throw new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500,null,e);
+            throw new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, e);
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(),upgrade_connection);
-        getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,upgrade_connection);
+            LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgrade_connection);
+        getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, upgrade_connection);
         getResponse().setStatus(101);
         getHttpTransport().onCompleted();
         return true;
@@ -465,7 +466,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public void onComplianceViolation(HttpCompliance compliance,HttpCompliance required, String reason)
+    public void onComplianceViolation(HttpCompliance compliance, HttpCompliance required, String reason)
     {
         if (_httpConnection.isRecordHttpComplianceViolations())
         {
