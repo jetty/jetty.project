@@ -227,16 +227,6 @@ public class AsyncContextTest
         Assert.assertEquals("query string attr is correct","async:run:attr:queryString:dispatch=true",br.readLine());
         Assert.assertEquals("context path attr is correct","async:run:attr:contextPath:/ctx",br.readLine());
         Assert.assertEquals("request uri attr is correct","async:run:attr:requestURI:/ctx/servletPath",br.readLine());
-
-        try
-        {
-            __asyncContext.getRequest();
-            Assert.fail();
-        }
-        catch (IllegalStateException e)
-        {
-            
-        }
     }
 
     @Test
@@ -348,8 +338,6 @@ public class AsyncContextTest
         }
     }
 
-    public static volatile AsyncContext __asyncContext; 
-    
     private class AsyncDispatchingServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
@@ -370,12 +358,10 @@ public class AsyncContextTest
                 {
                     wrapped = true;
                     asyncContext = request.startAsync(request, new Wrapper(response));
-                    __asyncContext=asyncContext;
                 }
                 else
                 {
                     asyncContext = request.startAsync();
-                    __asyncContext=asyncContext;
                 }
 
                 new Thread(new DispatchingRunnable(asyncContext, wrapped)).start();
@@ -530,14 +516,12 @@ public class AsyncContextTest
             if (request.getParameter("dispatch") != null)
             {
                 AsyncContext asyncContext = request.startAsync(request,response);
-                __asyncContext=asyncContext;
                 asyncContext.dispatch("/servletPath2");
             }
             else
             {
                 response.getOutputStream().print("doGet:getServletPath:" + request.getServletPath() + "\n");
                 AsyncContext asyncContext = request.startAsync(request,response);
-                __asyncContext=asyncContext;
                 response.getOutputStream().print("doGet:async:getServletPath:" + ((HttpServletRequest)asyncContext.getRequest()).getServletPath() + "\n");
                 asyncContext.start(new AsyncRunnable(asyncContext));
 
@@ -554,7 +538,6 @@ public class AsyncContextTest
         {
             response.getOutputStream().print("doGet:getServletPath:" + request.getServletPath() + "\n");
             AsyncContext asyncContext = request.startAsync(request, response);
-            __asyncContext=asyncContext;
             response.getOutputStream().print("doGet:async:getServletPath:" + ((HttpServletRequest)asyncContext.getRequest()).getServletPath() + "\n");
             asyncContext.start(new AsyncRunnable(asyncContext));
         }
