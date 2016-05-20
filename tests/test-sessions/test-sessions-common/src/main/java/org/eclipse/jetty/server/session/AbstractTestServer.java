@@ -34,7 +34,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public abstract class AbstractTestServer
 {
     public static int DEFAULT_MAX_INACTIVE = 30;
- 
     public static int DEFAULT_SCAVENGE_SEC = 10;
     public static int DEFAULT_EVICTIONPOLICY = SessionCache.NEVER_EVICT;
     
@@ -68,11 +67,6 @@ public abstract class AbstractTestServer
     }
 
     
-    
-    public AbstractTestServer(int port)
-    {
-        this(port, DEFAULT_MAX_INACTIVE, DEFAULT_SCAVENGE_SEC, DEFAULT_EVICTIONPOLICY);
-    }
 
     public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy)
     {

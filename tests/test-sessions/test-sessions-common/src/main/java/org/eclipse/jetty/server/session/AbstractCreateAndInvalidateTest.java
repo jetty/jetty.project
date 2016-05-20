@@ -56,17 +56,11 @@ import org.junit.Test;
  * Test that creating a session and invalidating it before the request exits the session
  * does not result in the session being persisted
  */
-public abstract class AbstractCreateAndInvalidateTest{
+public abstract class AbstractCreateAndInvalidateTest extends AbstractTestBase
+{
 
     protected TestServlet _servlet = new TestServlet();
     protected AbstractTestServer _server1 = null;
-    
-
-
-
-
-    public  abstract AbstractTestServer createServer (int port, int max, int scavenge,  int evictionPolicy);
-    
     
     
     /**

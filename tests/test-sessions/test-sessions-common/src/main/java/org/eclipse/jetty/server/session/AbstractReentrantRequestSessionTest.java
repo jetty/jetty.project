@@ -41,9 +41,9 @@ import org.junit.Test;
  * While a request is still active in a context, make another 
  * request to it to ensure both share same session.
  */
-public abstract class AbstractReentrantRequestSessionTest
+public abstract class AbstractReentrantRequestSessionTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
+    
 
     @Test
     public void testReentrantRequestSession() throws Exception

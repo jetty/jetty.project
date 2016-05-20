@@ -46,11 +46,10 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  * Test that changes the session id during a request.
  */
-public abstract class AbstractSessionRenewTest
+public abstract class AbstractSessionRenewTest extends AbstractTestBase
 {
     protected AbstractTestServer _server;
     
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
     public abstract boolean verifyChange (WebAppContext context, String oldSessionId, String newSessionId);
     

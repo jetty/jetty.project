@@ -29,9 +29,11 @@ import org.junit.Test;
 
 public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
 {
-    public AbstractTestServer createServer(int port)
+ 
+    @Override
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
     {
-        return new JdbcTestServer(port);
+        return new JdbcTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
     }
 
     @Test

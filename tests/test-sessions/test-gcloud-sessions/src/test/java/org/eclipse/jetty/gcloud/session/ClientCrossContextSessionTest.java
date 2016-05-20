@@ -47,13 +47,10 @@ public class ClientCrossContextSessionTest extends AbstractClientCrossContextSes
         _testSupport.tearDown();
     }
     
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractClientCrossContextSessionTest#createServer(int)
-     */
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy)
     {
-        return new GCloudTestServer(port, _testSupport.getConfiguration());
+       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy, _testSupport.getConfiguration());
     }
 
     @Test

@@ -44,9 +44,10 @@ public class ScatterGunLoadTest extends AbstractScatterGunLoadTest
     }
     
 
-    public AbstractTestServer createServer(int port)
+    @Override
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
     {
-        return new MongoTestServer(port);
+        return new MongoTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
     }
 
     @Test

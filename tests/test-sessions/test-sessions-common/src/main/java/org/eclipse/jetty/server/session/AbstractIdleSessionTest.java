@@ -49,21 +49,11 @@ import org.junit.Test;
  *
  *
  */
-public abstract class AbstractIdleSessionTest
+public abstract class AbstractIdleSessionTest extends AbstractTestBase
 {
 
     protected TestServlet _servlet = new TestServlet();
     protected AbstractTestServer _server1 = null;
-    
-    
-    /**
-     * @param port
-     * @param max
-     * @param scavenge
-     * @param evictionPolicy
-     * @return
-     */
-    public  abstract AbstractTestServer createServer (int port, int max, int scavenge,  int evictionPolicy);
  
 
     /**

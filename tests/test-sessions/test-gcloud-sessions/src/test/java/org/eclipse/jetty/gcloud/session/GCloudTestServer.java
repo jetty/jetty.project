@@ -30,11 +30,6 @@ import org.eclipse.jetty.server.session.SessionHandler;
  */
 public class GCloudTestServer extends AbstractTestServer
 {
-    static protected int __maxInactivePeriod = 30;
-    static protected int __scavengePeriod = 10;
-    static protected int __idlePeriod = 2;
-
-    
 
     /**
      * @param port
@@ -42,19 +37,11 @@ public class GCloudTestServer extends AbstractTestServer
      * @param scavengePeriod
      * @param sessionIdMgrConfig
      */
-    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, GCloudConfiguration config)
+    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy, GCloudConfiguration config)
     {
-        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod, config);
+        super(port, maxInactivePeriod, scavengePeriod, evictionPolicy, config);
     }
 
-    /**
-     * @param port
-     * @param configuration
-     */
-    public GCloudTestServer(int port, GCloudConfiguration configuration)
-    {
-        super(port, 30,10, __idlePeriod, configuration);
-    }
 
 
     /** 

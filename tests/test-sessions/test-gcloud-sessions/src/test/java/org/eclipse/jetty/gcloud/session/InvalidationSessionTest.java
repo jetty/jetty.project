@@ -35,7 +35,7 @@ import org.junit.Ignore;
 public class InvalidationSessionTest extends AbstractInvalidationSessionTest
 {
     static GCloudSessionTestSupport _testSupport;
-    public static final int EVICT_SEC = 3;
+
 
     @BeforeClass
     public static void setup () throws Exception
@@ -65,45 +65,12 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
             public SessionHandler newSessionHandler()
             {
                 SessionHandler handler = super.newSessionHandler();
-                handler.getSessionCache().setEvictionPolicy(EVICT_SEC);
+                handler.getSessionCache().setEvictionPolicy(evictionPolicy);
                 return handler;
             }
 
         };
         return server;
     }
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractInvalidationSessionTest#pause()
-     */
-    @Override
-    public void pause()
-    {
-        //This test moves around a session between 2 nodes. After it is invalidated on the 1st node,
-        //it will still be in the memory of the 2nd node. We need to wait until after the stale time
-        //has expired on node2 for it to reload the session and discover it has been deleted.
-        try
-        {
-            Thread.currentThread().sleep((2*EVICT_SEC)*1000);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        
-    }
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractInvalidationSessionTest#testInvalidation()
-     */
-    @Ignore
-    @Override
-    public void testInvalidation() throws Exception
-    {
-        // Ignore
-        //super.testInvalidation();
-    }
-    
-    
 
 }

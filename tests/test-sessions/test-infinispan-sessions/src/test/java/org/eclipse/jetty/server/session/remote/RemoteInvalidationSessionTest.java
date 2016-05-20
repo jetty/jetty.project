@@ -35,7 +35,7 @@ public class RemoteInvalidationSessionTest extends AbstractInvalidationSessionTe
 {
 
     public static RemoteInfinispanTestSupport __testSupport;
-    public static final int IDLE_PASSIVATE_SEC = 3;
+
    
     
     
@@ -61,35 +61,6 @@ public class RemoteInvalidationSessionTest extends AbstractInvalidationSessionTe
         return new InfinispanTestSessionServer(port, maxInterval, scavengeInterval, evictionPolicy, __testSupport.getCache());
     }
 
-    
-    
-    @Ignore
-    @Override
-    public void testInvalidation() throws Exception
-    {
-        //Ignore 
-        //super.testInvalidation();
-    }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractInvalidationSessionTest#pause()
-     */
-    @Override
-    public void pause()
-    {
-        //This test moves a session from node 1 to node 2, then invalidates the session back on node1. This
-        //should never happen with a decent load balancer.
-        //The infinispan session manager on node 2 will hold the session in local memory for a specific (configurable)
-        //amount of time. We've set the stale session time to 3 sec, so we need to pause for at least this long before making
-        //another request to node2 so 
-        //that the node will re-load the session from the database and discover that it has gone.
-        try
-        {
-            Thread.sleep(2 * IDLE_PASSIVATE_SEC * 1000);
-        }
-        catch (InterruptedException e)
-        {
-        }
-    }
 
 }

@@ -48,17 +48,14 @@ import org.junit.Test;
  * This test requires that the sessions will be persisted, as the server is stopped and
  * then restarted in order to check that all the attributes were saved.
  */
-public abstract class AbstractForwardedSessionTest
+public abstract class AbstractForwardedSessionTest extends AbstractTestBase
 {
-   
 
-    public abstract AbstractTestServer createServer(int port);
-    
     
     @Test
     public void testSessionCreateInForward() throws Exception
     {
-        AbstractTestServer testServer = createServer(0);
+        AbstractTestServer testServer = createServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE,  AbstractTestServer.DEFAULT_SCAVENGE_SEC,  AbstractTestServer.DEFAULT_EVICTIONPOLICY);
         ServletContextHandler testServletContextHandler = testServer.addContext("/context");
         testServletContextHandler.addServlet(Servlet1.class, "/one");
         testServletContextHandler.addServlet(Servlet2.class, "/two");

@@ -29,13 +29,12 @@ import org.junit.Test;
  */
 public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
 {
-
-    public AbstractTestServer createServer(int port)
+    @Override
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
     {
         Resource.setDefaultUseCaches(false);
-        return new JdbcTestServer(port);
+        return new JdbcTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
     }
-
     @Test
     public void testWebappObjectInSession() throws Exception
     {

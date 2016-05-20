@@ -40,15 +40,14 @@ import org.junit.Test;
  *
  *
  */
-public abstract class AbstractStopSessionManagerPreserveSessionTest
+public abstract class AbstractStopSessionManagerPreserveSessionTest extends AbstractTestBase
 {
     public String _id;
     
     
-    public abstract void checkSessionPersisted (boolean expected);
+    public abstract void checkSessionPersisted (String id, boolean expected);
     
-    public abstract AbstractTestServer createServer (int port);
-    
+
     public abstract void configureSessionManagement(ServletContextHandler context);
     
     @Test
@@ -57,7 +56,7 @@ public abstract class AbstractStopSessionManagerPreserveSessionTest
         String contextPath = "";
         String servletMapping = "/server";
         
-        AbstractTestServer server = createServer(0);
+        AbstractTestServer server = createServer(0, -1,  AbstractTestServer.DEFAULT_SCAVENGE_SEC,  AbstractTestServer.DEFAULT_EVICTIONPOLICY);
         ServletContextHandler context = server.addContext(contextPath);
         ServletHolder holder = new ServletHolder();
         TestServlet servlet = new TestServlet();
@@ -87,7 +86,7 @@ public abstract class AbstractStopSessionManagerPreserveSessionTest
                 context.getSessionHandler().stop();
                 
                 //check the database to see that the session is still valid
-                checkSessionPersisted(true);
+                checkSessionPersisted(_id, true);
                 
             }
             finally

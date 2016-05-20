@@ -30,13 +30,10 @@ import org.junit.Test;
 public class ForwardedSessionTest extends AbstractForwardedSessionTest
 {
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractForwardedSessionTest#createServer(int)
-     */
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
     {
-        return new JdbcTestServer(port);
+        return new JdbcTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
     }
 
     @Test

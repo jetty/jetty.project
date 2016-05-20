@@ -76,6 +76,11 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      */
     protected int _evictionPolicy = SessionCache.NEVER_EVICT; 
     
+    /**
+     * If true, as soon as a new session is created, it will be persisted to the SessionDataStore
+     */
+    protected boolean _saveOnCreate = false;
+    
     
     /**
      * If true, a session that will be evicted from the cache because it has been
@@ -262,6 +267,20 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     }
 
 
+    @Override
+    public boolean isSaveOnCreate()
+    {
+        return _saveOnCreate;
+    }
+
+
+    @Override
+    public void setSaveOnCreate(boolean saveOnCreate)
+    {
+        _saveOnCreate = saveOnCreate;
+    }
+
+
     /** 
      *  Get a session object.
      * 
@@ -402,7 +421,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
             if (data == null) //session doesn't exist
                 return null;
-
+            
+            data.setLastNode(_context.getWorkerName());//we are going to manage the node
             session = newSession(data);
             return session;
         }
@@ -536,6 +556,19 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         
         //not there, so find out if session data exists for it
         return _sessionDataStore.exists (id);
+    }
+    
+    /** 
+     * Check to see if this cache contains an entry for the session
+     * corresponding to the session id.
+     * 
+     * @see org.eclipse.jetty.server.session.SessionCache#contains(java.lang.String)
+     */
+    @Override
+    public boolean contains (String id) throws Exception
+    {
+        //just ask our object cache, not the store
+        return (doGet(id) != null);
     }
 
 
@@ -700,8 +733,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     {
         return _saveOnInactiveEviction;
     }
-    
-    
+
+
     /** 
      * @see org.eclipse.jetty.server.session.SessionCache#newSession(javax.servlet.http.HttpServletRequest, java.lang.String, long, long)
      */
@@ -710,6 +743,16 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     {
         if (LOG.isDebugEnabled()) LOG.debug("Creating new session id="+id);
         Session session = newSession(request, _sessionDataStore.newSessionData(id, time, time, time, maxInactiveMs));
+        session.getSessionData().setLastNode(_context.getWorkerName());
+        try
+        {
+            if (isSaveOnCreate() && _sessionDataStore != null)
+                _sessionDataStore.store(id, session.getSessionData());
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Save of new session {} failed", id, e);
+        }
         return session;
     }
 }

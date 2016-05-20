@@ -16,27 +16,26 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
+
+
 
 /**
- * ForwardedSessionTest
+ * ImmediateSaveTest
  *
  *
  */
-public class ForwardedSessionTest extends AbstractForwardedSessionTest
-{ 
-    
+public class ImmediateSaveTest extends AbstractImmediateSaveTest
+{
     @Before
     public void before() throws Exception
     {
-       FileTestServer.setup();
+        FileTestServer.setup();
     }
-    
+
     @After 
     public void after()
     {
@@ -44,21 +43,16 @@ public class ForwardedSessionTest extends AbstractForwardedSessionTest
     }
 
 
-    @Override
-    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int evictionPolicy)
+    public  AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
+    {        return new FileTestServer(port, max, scavenge, evictionPolicy) 
     {
-       return new FileTestServer(port,max,scavenge, evictionPolicy);
+        public SessionHandler newSessionHandler()
+        {
+            SessionHandler h = super.newSessionHandler();
+            h.getSessionCache().setSaveOnCreate(true);
+            return h;
+        }
+    };
     }
-
-    
-    
-    @Test
-    public void testSessionCreateInForward() throws Exception
-    {
-        super.testSessionCreateInForward();
-    }
-
-  
-
 
 }

@@ -954,7 +954,7 @@ public class SessionHandler extends ScopedHandler
                 }
                 
                 session.setExtendedId(_sessionIdManager.getExtendedId(id, null));
-                session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());  //TODO write through the change of node?
+                //session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());  //TODO write through the change of node?
             }
             return session;
         }

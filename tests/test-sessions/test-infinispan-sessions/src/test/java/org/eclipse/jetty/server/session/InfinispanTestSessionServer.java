@@ -29,12 +29,6 @@ import org.infinispan.commons.util.CloseableIteratorSet;
 public class InfinispanTestSessionServer extends AbstractTestServer
 {
     
-    
-    public InfinispanTestSessionServer(int port, BasicCache config)
-    {
-        this(port, 30, 10, 2, config);
-    }
-    
   
     
     public InfinispanTestSessionServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy, BasicCache config)

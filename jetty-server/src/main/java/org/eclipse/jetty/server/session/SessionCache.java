@@ -66,6 +66,7 @@ public interface SessionCache extends LifeCycle
     Session renewSessionId (String oldId, String newId) throws Exception;
     Session get(String id) throws Exception;
     void put(String id, Session session) throws Exception;
+    boolean contains (String id) throws Exception;
     boolean exists (String id) throws Exception;
     Session delete (String id) throws Exception;
     void shutdown ();
@@ -77,4 +78,6 @@ public interface SessionCache extends LifeCycle
     int getEvictionPolicy ();
     void setSaveOnInactiveEviction (boolean saveOnEvict);
     boolean isSaveOnInactiveEviction ();
+    void setSaveOnCreate(boolean saveOnCreate);
+    boolean isSaveOnCreate();
 }

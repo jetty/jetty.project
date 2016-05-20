@@ -44,10 +44,9 @@ import org.junit.Test;
  *
  * This test is only appropriate for clustered session managers.
  */
-public abstract class AbstractWebAppObjectInSessionTest
+public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port);
-
+ 
     @Test
     public void testWebappObjectInSession() throws Exception
     {
@@ -94,7 +93,7 @@ public abstract class AbstractWebAppObjectInSessionTest
         //copy(sourceFile, targetFile);
         IO.copy(resource.getInputStream(), new FileOutputStream(targetFile));
 
-        AbstractTestServer server1 = createServer(0);
+        AbstractTestServer server1 = createServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE,  AbstractTestServer.DEFAULT_SCAVENGE_SEC,  AbstractTestServer.DEFAULT_EVICTIONPOLICY);
         server1.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
         try
@@ -102,7 +101,7 @@ public abstract class AbstractWebAppObjectInSessionTest
             server1.start();
             int port1 = server1.getPort();
             
-            AbstractTestServer server2 = createServer(0);
+            AbstractTestServer server2 = createServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE,  AbstractTestServer.DEFAULT_SCAVENGE_SEC,  AbstractTestServer.DEFAULT_EVICTIONPOLICY);
             server2.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
             try

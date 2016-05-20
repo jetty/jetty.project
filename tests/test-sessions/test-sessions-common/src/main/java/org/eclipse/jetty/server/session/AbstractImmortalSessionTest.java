@@ -41,9 +41,8 @@ import org.junit.Test;
 /**
  * AbstractImmortalSessionTest
  */
-public abstract class AbstractImmortalSessionTest
+public abstract class AbstractImmortalSessionTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs, int evictionPolicy);
 
     @Test
     public void testImmortalSession() throws Exception
