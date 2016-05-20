@@ -212,33 +212,39 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     public ContextHandler()
     {
-        this((Context)null);
+        this(null,null,null);
     }
 
     /* ------------------------------------------------------------ */
     protected ContextHandler(Context context)
     {
-        super();
+        this(context,null,null);
+    }
+
+    /* ------------------------------------------------------------ */
+    public ContextHandler(String contextPath)
+    {
+        this(null,null,contextPath);
+    }
+
+    /* ------------------------------------------------------------ */
+    public ContextHandler(HandlerContainer parent, String contextPath)
+    {
+        this(null,parent,contextPath);
+    }
+
+    /* ------------------------------------------------------------ */
+    private ContextHandler(Context context, HandlerContainer parent, String contextPath)
+    {
         _scontext = context==null?new Context():context;
         _attributes = new AttributesMap();
         _initParams = new HashMap<String, String>();
         addAliasCheck(new ApproveNonExistentDirectoryAliases());
         if (File.separatorChar=='/')
             addAliasCheck(new AllowSymLinkAliasChecker());
-    }
 
-    /* ------------------------------------------------------------ */
-    public ContextHandler(String contextPath)
-    {
-        this();
-        setContextPath(contextPath);
-    }
-
-    /* ------------------------------------------------------------ */
-    public ContextHandler(HandlerContainer parent, String contextPath)
-    {
-        this();
-        setContextPath(contextPath);
+        if (contextPath!=null)
+            setContextPath(contextPath);
         if (parent instanceof HandlerWrapper)
             ((HandlerWrapper)parent).setHandler(this);
         else if (parent instanceof HandlerCollection)
