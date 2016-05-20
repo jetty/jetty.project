@@ -44,13 +44,11 @@ import org.junit.Test;
  *
  *
  */
-public abstract class AbstractProxySerializationTest
+public abstract class AbstractProxySerializationTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
     
     public abstract void customizeContext (ServletContextHandler c);
-    
-   
+     
     
     /**
      * @param msec milliseconds to sleep

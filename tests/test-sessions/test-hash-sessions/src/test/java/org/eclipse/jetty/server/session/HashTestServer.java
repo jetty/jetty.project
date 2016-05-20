@@ -18,20 +18,12 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.server.SessionIdManager;
-
-
 /**
  * @version $Revision$ $Date$
  */
 public class HashTestServer extends AbstractTestServer
 {
-    static int __workers=0;
     
-    public HashTestServer(int port)
-    {
-        super(port, 30, 10, 2);
-    }
 
     public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy)
     {

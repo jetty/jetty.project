@@ -27,11 +27,11 @@ import org.junit.Test;
 public class SessionMigrationTest extends AbstractSessionMigrationTest
 {
 
-    public AbstractTestServer createServer(int port)
+    @Override
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
     {
-       return new JdbcTestServer(port);
+        return new JdbcTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
     }
-
     @Test
     public void testSessionMigration() throws Exception
     {

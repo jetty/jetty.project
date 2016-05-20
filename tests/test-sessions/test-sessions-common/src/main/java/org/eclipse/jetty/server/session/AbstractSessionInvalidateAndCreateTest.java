@@ -53,7 +53,7 @@ import org.junit.Test;
  * newly created session correctly (removed from the server and session listeners called).
  * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=377610
  */
-public abstract class AbstractSessionInvalidateAndCreateTest
+public abstract class AbstractSessionInvalidateAndCreateTest extends AbstractTestBase
 {
     public class MySessionListener implements HttpSessionListener
     {
@@ -69,8 +69,6 @@ public abstract class AbstractSessionInvalidateAndCreateTest
             destroys.add(e.getSession().hashCode());
         }
     }
-
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
 
 

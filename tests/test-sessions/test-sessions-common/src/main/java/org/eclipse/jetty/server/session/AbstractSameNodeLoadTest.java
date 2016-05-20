@@ -48,12 +48,10 @@ import org.junit.Test;
  * This test performs multiple concurrent requests for the same session on the same node.
  * 
  */
-public abstract class AbstractSameNodeLoadTest
+public abstract class AbstractSameNodeLoadTest extends AbstractTestBase
 {
     protected boolean _stress = Boolean.getBoolean( "STRESS" );
 
-    
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
 
     @Test

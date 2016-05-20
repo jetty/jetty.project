@@ -39,9 +39,8 @@ import org.junit.Test;
 /**
  * AbstractLocalSessionScavengingTest
  */
-public abstract class AbstractLocalSessionScavengingTest
+public abstract class AbstractLocalSessionScavengingTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
     public void pause(int scavengePeriod)
     {

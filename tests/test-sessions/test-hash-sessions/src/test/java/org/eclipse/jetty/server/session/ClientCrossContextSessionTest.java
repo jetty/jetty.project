@@ -35,13 +35,10 @@ public class ClientCrossContextSessionTest extends AbstractClientCrossContextSes
         super.testCrossContextDispatch();
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractClientCrossContextSessionTest#createServer(int)
-     */
-    @Override
-    public AbstractTestServer createServer(int port)
-    {
-        return new HashTestServer(port);
-    }
 
+    @Override
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
+    {
+        return new HashTestServer(port,max,scavenge,evictionPolicy);
+    }
 }

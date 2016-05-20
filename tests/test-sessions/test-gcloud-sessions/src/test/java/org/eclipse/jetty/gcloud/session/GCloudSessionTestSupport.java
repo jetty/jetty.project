@@ -345,7 +345,7 @@ public class GCloudSessionTestSupport
         int actual = 0;
         while (results.hasNext())
         { 
-            results.next();
+            ProjectionEntity e = results.next();
             ++actual;
         }       
         assertEquals(count, actual);

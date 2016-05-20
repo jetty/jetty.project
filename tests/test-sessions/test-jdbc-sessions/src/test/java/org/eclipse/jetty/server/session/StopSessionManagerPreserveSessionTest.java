@@ -37,23 +37,24 @@ public class StopSessionManagerPreserveSessionTest extends AbstractStopSessionMa
     }
     
     @Override
-    public void checkSessionPersisted(boolean expected)
+    public void checkSessionPersisted(String id, boolean expected)
     {
         try
         {
-            boolean actual = _server.existsInSessionTable(_id, true);
+            boolean actual = _server.existsInSessionTable(id, true);
             assertEquals(expected, actual);
         }
         catch (Exception e)
         {
+            e.printStackTrace();
             fail(e.getMessage());
         }
     }
 
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
     {
-        _server = new JdbcTestServer(0);
+        _server = new JdbcTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
         return _server;
     }
 

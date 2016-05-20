@@ -27,7 +27,6 @@ import org.junit.Test;
 
 public class InvalidateSessionTest extends AbstractInvalidationSessionTest
 {
-    public final static int IDLE_PASSIVATE_SEC = 1;
     
     @BeforeClass
     public static void beforeClass() throws Exception
@@ -47,23 +46,4 @@ public class InvalidateSessionTest extends AbstractInvalidationSessionTest
     {
         return new MongoTestServer(port, maxInterval, scavengeInterval, evictionPolicy);
     }
-
-    @Override
-    public void pause()
-    {
-        try
-        {
-            Thread.sleep(2 * IDLE_PASSIVATE_SEC * 1000);
-        }
-        catch (InterruptedException e)
-        {
-        }
-    }
-    
-    @Test
-    public void testInvalidation() throws Exception
-    {
-        super.testInvalidation();
-    }  
-    
 }

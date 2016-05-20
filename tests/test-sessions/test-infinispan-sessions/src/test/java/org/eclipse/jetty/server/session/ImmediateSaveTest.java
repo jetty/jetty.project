@@ -16,40 +16,49 @@
 //  ========================================================================
 //
 
+package org.eclipse.jetty.server.session;
 
-package org.eclipse.jetty.gcloud.session;
-
-import org.eclipse.jetty.server.session.AbstractForwardedSessionTest;
-import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+
+
 /**
- * ForwardedSessionTest
+ * RemoteImmediateSaveTest
  *
  *
  */
-public class ForwardedSessionTest extends AbstractForwardedSessionTest
+public class ImmediateSaveTest extends AbstractImmediateSaveTest
 {
-    static GCloudSessionTestSupport _testSupport;
-
+    InfinispanTestSessionServer _server;
+    public static InfinispanTestSupport __testSupport;
+   
     @BeforeClass
     public static void setup () throws Exception
     {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
+        __testSupport = new InfinispanTestSupport();
+        __testSupport.setup();
     }
     
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+        __testSupport.teardown();
     }
     
-
-    @Override
-    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy)
+    
+    public  AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
     {
-       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy, _testSupport.getConfiguration());
+        _server = new InfinispanTestSessionServer(port, max, scavenge, evictionPolicy, __testSupport.getCache())
+        {
+            public SessionHandler newSessionHandler()
+            {
+                SessionHandler h = super.newSessionHandler();
+                h.getSessionCache().setSaveOnCreate(true);
+                return h;
+            }
+        };
+        return _server;
     }
+
 }

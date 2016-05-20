@@ -57,21 +57,12 @@ public class MongoTestServer extends AbstractTestServer
     }
     
     
-    public MongoTestServer(int port)
-    {
-        super(port);
-    }
-
-    
-    public MongoTestServer(int port, int idlePassivatePeriod)
-    {
-        super(port, 30, 10, idlePassivatePeriod);
-    }
-
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod,int idlePassivatePeriod)
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod)
     {
         super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }
+
+   
     
     
     public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, boolean saveAllAttributes)
@@ -105,7 +96,7 @@ public class MongoTestServer extends AbstractTestServer
     
     public static void main(String... args) throws Exception
     {
-        MongoTestServer server8080 = new MongoTestServer(8080);
+/*        MongoTestServer server8080 = new MongoTestServer(8080);
         server8080.addContext("/").addServlet(SessionDump.class,"/");
         server8080.start();
         
@@ -114,7 +105,7 @@ public class MongoTestServer extends AbstractTestServer
         server8081.start();
         
         server8080.join();
-        server8081.join();
+        server8081.join();*/
     }
 
 }

@@ -38,10 +38,8 @@ import org.junit.Test;
 /**
  * AbstractOrphanedSessionTest
  */
-public abstract class AbstractOrphanedSessionTest
+public abstract class AbstractOrphanedSessionTest extends AbstractTestBase
 {
-
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
     /**
      * If nodeA creates a session, and just afterwards crashes, it is the only node that knows about the session.

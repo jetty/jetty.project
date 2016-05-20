@@ -38,20 +38,25 @@ import org.junit.Test;
 
 /**
  * AbstractInvalidationSessionTest
+ * 
  * Goal of the test is to be sure that invalidating a session on one node
- * result in the session being unavailable in the other node also.
+ * result in the session being unavailable in the other node also. This
+ * simulates an environment without a sticky load balancer. In this case,
+ * you must use session eviction, to try to ensure that as the session 
+ * bounces around it gets a fresh load of data from the SessionDataStore.
  */
-public abstract class AbstractInvalidationSessionTest
+public abstract class AbstractInvalidationSessionTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy);
-    public abstract void pause();
+
 
     @Test
     public void testInvalidation() throws Exception
     {
         String contextPath = "";
         String servletMapping = "/server";
-        AbstractTestServer server1 = createServer(0, 30, 1, 1);
+        int maxInactiveInterval = 30;
+        int scavengeInterval = 1;
+        AbstractTestServer server1 = createServer(0, maxInactiveInterval, scavengeInterval, SessionCache.EVICT_ON_SESSION_EXIT);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
 
@@ -59,7 +64,7 @@ public abstract class AbstractInvalidationSessionTest
         {
             server1.start();
             int port1 = server1.getPort();
-            AbstractTestServer server2 = createServer(0, 30, 1, 1);
+            AbstractTestServer server2 = createServer(0, maxInactiveInterval, scavengeInterval, SessionCache.EVICT_ON_SESSION_EXIT);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
             try
@@ -96,9 +101,7 @@ public abstract class AbstractInvalidationSessionTest
                     Request request1 = client.newRequest(urls[0] + "?action=invalidate");
                     request1.header("Cookie", sessionCookie);
                     response1 = request1.send();
-                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
-
-                    pause();
+                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());         
 
                     // Be sure on node2 we don't see the session anymore
                     request2 = client.newRequest(urls[1] + "?action=test");

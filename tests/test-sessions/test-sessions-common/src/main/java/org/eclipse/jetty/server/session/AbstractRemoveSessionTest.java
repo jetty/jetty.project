@@ -45,9 +45,8 @@ import org.junit.Test;
  * Test that invalidating a session does not return the session on the next request.
  * 
  */
-public abstract class AbstractRemoveSessionTest
+public abstract class AbstractRemoveSessionTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivationPeriod);
 
 
     @Test

@@ -19,10 +19,11 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -35,16 +36,25 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
+
 /**
- * AbstractNewSessionTest
- * 
- * Create a session, wait for it to be scavenged, re-present the cookie and check that  a
- * new session is created.
+ * AbstractImmediateSaveTest
+ *
+ *
  */
-public abstract class AbstractNewSessionTest extends AbstractTestBase
+public abstract class AbstractImmediateSaveTest extends AbstractTestBase
 {
+    protected ServletContextHandler _context;
+    
+    
+    public void checkSessionSaved (String id) throws Exception
+    {
+        assertTrue(_context.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+    }
+
 
     public void pause(int scavenge)
     {
@@ -59,14 +69,16 @@ public abstract class AbstractNewSessionTest extends AbstractTestBase
     }
 
     @Test
-    public void testNewSession() throws Exception
+    public void testSaveNewSession() throws Exception
     {
         String servletMapping = "/server";
         int scavengePeriod = 3;
-        int maxInactivePeriod = 1;
+        int maxInactivePeriod = -1;
         AbstractTestServer server = createServer(0, maxInactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
-        ServletContextHandler context = server.addContext("/");
-        context.addServlet(TestServlet.class, servletMapping);
+        _context = server.addContext("/");
+        ServletHolder h = new ServletHolder();
+        h.setServlet(new TestServlet());
+        _context.addServlet(h, servletMapping);
         String contextPath = "";
 
         try
@@ -83,16 +95,61 @@ public abstract class AbstractNewSessionTest extends AbstractTestBase
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+            }
+            finally
+            {
+                client.stop();
+            }
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+    
+    
+    
+    @Test
+    public void testSaveNewSessionWithEviction() throws Exception
+    {
+        String servletMapping = "/server";
+        int scavengePeriod = 3;
+        int maxInactivePeriod = 1;
+        AbstractTestServer server = createServer(0, maxInactivePeriod, scavengePeriod, SessionCache.EVICT_ON_SESSION_EXIT);
+        _context = server.addContext("/");
+        ServletHolder h = new ServletHolder();
+        h.setServlet(new TestServlet());
+        _context.addServlet(h, servletMapping);
+        String contextPath = "";
 
-                // Let's wait for the scavenger to run
-                pause(maxInactivePeriod + scavengePeriod);
+        try
+        {
+            server.start();
+            int port=server.getPort();
+            HttpClient client = new HttpClient();
+            client.start();
+            try
+            {
+                //make request to make a save-on-create session
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                String sessionCookie = response.getHeaders().get("Set-Cookie");
+                assertTrue(sessionCookie != null);
+                // Mangle the cookie, replacing Path with $Path, etc.
+                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-                // The session should not be there anymore, but we present an old cookie
-                // The server should create a new session.
-                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=old-create");
+                //session should now be evicted from the cache
+                assertFalse(_context.getSessionHandler().getSessionCache().contains(AbstractTestServer.extractSessionId(sessionCookie)));
+                
+                //make another request for the same session
+                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=test");
                 request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                
+                //session should now be evicted from the cache again
+                assertFalse(_context.getSessionHandler().getSessionCache().contains(AbstractTestServer.extractSessionId(sessionCookie)));
+                
             }
             finally
             {
@@ -105,10 +162,11 @@ public abstract class AbstractNewSessionTest extends AbstractTestBase
         }
 
     }
-    public static class TestServlet extends HttpServlet
+    
+    public class TestServlet extends HttpServlet
     {
         String id;
-        
+
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
@@ -116,20 +174,20 @@ public abstract class AbstractNewSessionTest extends AbstractTestBase
             if ("create".equals(action))
             {
                 HttpSession session = request.getSession(true);
-                assertTrue(session.isNew());
-                id = session.getId();
+                assertNotNull(session);
+                try
+                {
+                    checkSessionSaved(session.getId());
+                }
+                catch (Exception e)
+                {
+                    fail(e.getMessage());
+                }
             }
-            else if ("old-create".equals(action))
+            else if ("test".equals(action))
             {
-                HttpSession s = request.getSession(false);
-                assertNull(s);
-                s = request.getSession(true);
-                assertNotNull(s);
-                assertFalse(s.getId().equals(id));
-            }
-            else
-            {
-                assertTrue(false);
+                HttpSession session = request.getSession(false);
+                assertNotNull(session);
             }
         }
     }

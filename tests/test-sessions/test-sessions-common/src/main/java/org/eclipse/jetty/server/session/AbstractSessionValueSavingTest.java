@@ -39,9 +39,8 @@ import org.junit.Test;
 /**
  * AbstractSessionValueSavingTest
  */
-public abstract class AbstractSessionValueSavingTest
+public abstract class AbstractSessionValueSavingTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
     @Test
     public void testSessionValueSaving() throws Exception

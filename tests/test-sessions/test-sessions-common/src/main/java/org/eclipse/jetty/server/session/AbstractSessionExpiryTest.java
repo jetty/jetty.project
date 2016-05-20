@@ -46,9 +46,8 @@ import org.junit.Test;
  *
  *
  */
-public abstract class AbstractSessionExpiryTest
+public abstract class AbstractSessionExpiryTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy);
 
     public void pause(int scavengePeriod)
     {

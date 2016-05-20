@@ -51,13 +51,9 @@ import org.junit.Test;
  * scavenged by node A. In other words, it tests that a session that migrates from one node
  * to another is not timed out on the original node.
  */
-public abstract class AbstractLastAccessTimeTest
+public abstract class AbstractLastAccessTimeTest extends AbstractTestBase
 {
-    
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge, int idlePassivatePeriod);
- 
    
-
     @Test
     public void testLastAccessTime() throws Exception
     {

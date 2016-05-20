@@ -47,15 +47,12 @@ public class ForwardedSessionTest extends AbstractForwardedSessionTest
     }
     
     
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractForwardedSessionTest#createServer(int)
-     */
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
     {
-        return new MongoTestServer(port);
+       return new MongoTestServer(port,maxInactive, scavengeInterval, evictionPolicy);
     }
-    
+
     @Test
     public void testSessionCreateInForward() throws Exception
     {

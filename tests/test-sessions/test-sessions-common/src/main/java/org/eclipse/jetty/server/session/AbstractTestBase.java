@@ -19,46 +19,12 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 /**
- * ForwardedSessionTest
+ * AbstractTestBase
  *
  *
  */
-public class ForwardedSessionTest extends AbstractForwardedSessionTest
-{ 
-    
-    @Before
-    public void before() throws Exception
-    {
-       FileTestServer.setup();
-    }
-    
-    @After 
-    public void after()
-    {
-        FileTestServer.teardown();
-    }
-
-
-    @Override
-    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int evictionPolicy)
-    {
-       return new FileTestServer(port,max,scavenge, evictionPolicy);
-    }
-
-    
-    
-    @Test
-    public void testSessionCreateInForward() throws Exception
-    {
-        super.testSessionCreateInForward();
-    }
-
-  
-
-
+public abstract class AbstractTestBase
+{
+    public abstract AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy);
 }

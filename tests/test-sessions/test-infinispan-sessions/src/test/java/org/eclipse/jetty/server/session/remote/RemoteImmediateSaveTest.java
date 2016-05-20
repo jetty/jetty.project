@@ -16,40 +16,51 @@
 //  ========================================================================
 //
 
+package org.eclipse.jetty.server.session.remote;
 
-package org.eclipse.jetty.gcloud.session;
-
-import org.eclipse.jetty.server.session.AbstractForwardedSessionTest;
+import org.eclipse.jetty.server.session.AbstractImmediateSaveTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.InfinispanTestSessionServer;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+
+
 /**
- * ForwardedSessionTest
+ * RemoteImmediateSaveTest
  *
  *
  */
-public class ForwardedSessionTest extends AbstractForwardedSessionTest
+public class RemoteImmediateSaveTest extends AbstractImmediateSaveTest
 {
-    static GCloudSessionTestSupport _testSupport;
+    public static RemoteInfinispanTestSupport __testSupport;
+
 
     @BeforeClass
     public static void setup () throws Exception
     {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
+        __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
+        __testSupport.setup();
     }
-    
+
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+        __testSupport.teardown();
     }
     
-
-    @Override
-    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy)
+    public  AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
     {
-       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy, _testSupport.getConfiguration());
+        return new InfinispanTestSessionServer(port, max, scavenge, evictionPolicy, __testSupport.getCache())
+        {
+            public SessionHandler newSessionHandler()
+            {
+                SessionHandler h = super.newSessionHandler();
+                h.getSessionCache().setSaveOnCreate(true);
+                return h;
+            }
+        };
     }
+
 }

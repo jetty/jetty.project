@@ -18,39 +18,50 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
-import org.eclipse.jetty.server.session.AbstractSessionMigrationTest;
+import static org.junit.Assert.assertNotNull;
+
+import org.eclipse.jetty.server.session.AbstractImmediateSaveTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.eclipse.jetty.server.session.SessionHandler;
+import org.junit.After;
+import org.junit.Before;
 
-public class SessionMigrationTest extends AbstractSessionMigrationTest
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+
+/**
+ * ImmediateSaveTest
+ *
+ *
+ */
+public class ImmediateSaveTest extends AbstractImmediateSaveTest
 {
-
     
-    @BeforeClass
-    public static void beforeClass() throws Exception
+    @Before
+    public  void beforeTest() throws Exception
     {
         MongoTestServer.dropCollection();
         MongoTestServer.createCollection();
     }
 
-    @AfterClass
-    public static void afterClass() throws Exception
+    @After
+    public  void afterTest() throws Exception
     {
         MongoTestServer.dropCollection();
     }
-    
-    @Override
-    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
-    {
-        return new MongoTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
-    }
 
 
-    @Test
-    public void testSessionMigration() throws Exception
+
+    public  AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
     {
-        super.testSessionMigration();
+        return new MongoTestServer(port, max, scavenge, evictionPolicy)
+        {
+            public SessionHandler newSessionHandler()
+            {
+                SessionHandler h = super.newSessionHandler();
+                h.getSessionCache().setSaveOnCreate(true);
+                return h;
+            }
+        };
     }
 }

@@ -89,7 +89,8 @@ public class ReloadedSessionMissingClassTest
         URLClassLoader loaderWithoutFoo = new URLClassLoader(barUrls, Thread.currentThread().getContextClassLoader());
 
        
-        AbstractTestServer server1 = new JdbcTestServer(0);
+        AbstractTestServer server1 = new JdbcTestServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE, AbstractTestServer.DEFAULT_SCAVENGE_SEC, AbstractTestServer.DEFAULT_EVICTIONPOLICY);
+        
         WebAppContext webApp = server1.addWebAppContext(unpackedWarDir.getCanonicalPath(), contextPath);
         webApp.setClassLoader(loaderWithFoo);
         webApp.addServlet("Bar", "/bar");

@@ -47,15 +47,12 @@ public class SessionMigrationTest extends AbstractSessionMigrationTest
         _testSupport.tearDown();
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionMigrationTest#createServer(int)
-     */
-    @Override
-    public AbstractTestServer createServer(int port)
-    {
-        return  new GCloudTestServer(port, _testSupport.getConfiguration());
-    }
 
+    @Override
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy)
+    {
+       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy, _testSupport.getConfiguration());
+    }
     
     @Test
     @Override

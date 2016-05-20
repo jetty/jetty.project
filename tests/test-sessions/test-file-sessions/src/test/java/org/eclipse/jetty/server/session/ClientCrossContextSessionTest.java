@@ -40,10 +40,14 @@ public class ClientCrossContextSessionTest extends AbstractClientCrossContextSes
        FileTestServer.teardown();
     }
     
-    public AbstractTestServer createServer(int port)
+
+    @Override
+    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int evictionPolicy)
     {
-        return new FileTestServer(port);
+       return new FileTestServer(port,max,scavenge, evictionPolicy);
     }
+
+    
 
     @Test
     public void testCrossContextDispatch() throws Exception

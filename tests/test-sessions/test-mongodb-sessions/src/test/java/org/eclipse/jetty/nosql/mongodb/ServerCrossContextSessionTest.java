@@ -41,11 +41,13 @@ public class ServerCrossContextSessionTest extends AbstractServerCrossContextSes
         MongoTestServer.dropCollection();
     }
     
-    
-    public AbstractTestServer createServer(int port)
+
+    @Override
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
     {
-        return new MongoTestServer(port);
+        return new MongoTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
     }
+
 
     @Test
     public void testCrossContextDispatch() throws Exception
