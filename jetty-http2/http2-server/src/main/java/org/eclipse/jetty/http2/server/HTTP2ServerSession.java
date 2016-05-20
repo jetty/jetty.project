@@ -66,7 +66,10 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         WindowUpdateFrame windowFrame = null;
         int sessionWindow = getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
         if (sessionWindow > 0)
+        {
+            updateRecvWindow(sessionWindow);
             windowFrame = new WindowUpdateFrame(0, sessionWindow);
+        }
 
         if (windowFrame == null)
             frames(null, Callback.NOOP, settingsFrame, Frame.EMPTY_ARRAY);
