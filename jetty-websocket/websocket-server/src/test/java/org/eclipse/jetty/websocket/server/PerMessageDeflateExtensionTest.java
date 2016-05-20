@@ -171,7 +171,7 @@ public class PerMessageDeflateExtensionTest
             // Client sends first message
             session.getRemote().sendBytes(ByteBuffer.wrap(msg));
 
-            clientSocket.messages.awaitEventCount(1,1,TimeUnit.SECONDS);
+            clientSocket.messages.awaitEventCount(1,5,TimeUnit.SECONDS);
             String echoMsg = clientSocket.messages.poll();
             Assert.assertThat("Echo'd Message",echoMsg,is("binary[sha1="+sha1+"]"));
         }
