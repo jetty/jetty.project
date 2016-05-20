@@ -41,6 +41,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -65,6 +66,9 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         serverThreads.setDetailedDump(true);
         serverThreads.setMaxThreads(5);
         serverThreads.setLowThreadsThreshold(1);
+
+        AbstractHTTP2ServerConnectionFactory h2 = connector.getBean(AbstractHTTP2ServerConnectionFactory.class);
+        h2.setInitialSessionRecvWindow(Integer.MAX_VALUE);
     }
 
     @Test
