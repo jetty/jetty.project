@@ -57,6 +57,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
@@ -547,6 +548,7 @@ public class HttpClient extends ContainerLifeCycle
             public void succeeded(List<InetSocketAddress> socketAddresses)
             {
                 Map<String, Object> context = new HashMap<>();
+                context.put(ClientConnectionFactory.CONNECTOR_CONTEXT_KEY, HttpClient.this);
                 context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
                 connect(socketAddresses, 0, context);
             }
