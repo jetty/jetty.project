@@ -24,10 +24,13 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SslConnectionFactory extends AbstractConnectionFactory
@@ -92,6 +95,22 @@ public class SslConnectionFactory extends AbstractConnectionFactory
     protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
     {
         return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine);
+    }
+
+    @Override
+    protected AbstractConnection configure(AbstractConnection connection, Connector connector, EndPoint endPoint)
+    {
+        if (connection instanceof SslConnection)
+        {
+            SslConnection sslConnection = (SslConnection)connection;
+            if (connector instanceof ContainerLifeCycle)
+            {
+                ContainerLifeCycle container = (ContainerLifeCycle)connector;
+                container.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
+            }
+            getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
+        }
+        return super.configure(connection, connector, endPoint);
     }
 
     @Override

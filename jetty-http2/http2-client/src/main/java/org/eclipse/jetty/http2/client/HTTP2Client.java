@@ -374,6 +374,7 @@ public class HTTP2Client extends ContainerLifeCycle
             context.put(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY, sslContextFactory);
         context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, address.getHostString());
         context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, address.getPort());
+        context.putIfAbsent(ClientConnectionFactory.CONNECTOR_CONTEXT_KEY, this);
         return context;
     }
 
