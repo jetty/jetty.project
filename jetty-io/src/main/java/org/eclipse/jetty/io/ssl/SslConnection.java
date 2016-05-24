@@ -939,7 +939,9 @@ public class SslConnection extends AbstractConnection
                         _sslEngine.closeOutbound();
                         // Send the TLS close message.
                         flush(BufferUtil.EMPTY_BUFFER);
-                        if (!ishut)
+                        if (ishut)
+                            getEndPoint().close();
+                        else
                             ensureFillInterested();
                     }
                 }

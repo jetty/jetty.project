@@ -184,7 +184,6 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             customizeSecure(request);
     }
 
-
     /**
      * Customizes the request attributes for general secure settings.
      * The default impl calls {@link Request#setSecure(boolean)} with true
@@ -199,8 +198,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         if (_stsField!=null)
             request.getResponse().getHttpFields().add(_stsField);
     }
-    
-    
+
     /**
      * <p>
      * Customizes the request attributes to be set for SSL requests.
@@ -272,7 +270,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             request.setAttribute("javax.servlet.request.cipher_suite",cipherSuite);
             request.setAttribute("javax.servlet.request.key_size",keySize);
             request.setAttribute("javax.servlet.request.ssl_session_id", idStr);
-            request.setAttribute(getSslSessionAttribute(), sslSession);
+            String sessionAttribute = getSslSessionAttribute();
+            if (sessionAttribute != null && sessionAttribute.isEmpty())
+                request.setAttribute(sessionAttribute, sslSession);
         }
         catch (Exception e)
         {
