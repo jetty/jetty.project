@@ -677,7 +677,7 @@ public class SslConnection extends AbstractConnection
             }
             catch (Exception e)
             {
-                close();
+                getEndPoint().close();
                 throw e;
             }
             finally

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import javax.net.ssl.SSLHandshakeException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -178,6 +179,30 @@ public class HttpClientTLSTest
         catch (ExecutionException x)
         {
             // Expected.
+        }
+    }
+
+    @Test
+    public void testHostnameMismatch() throws Exception
+    {
+        SslContextFactory serverTLSFactory = createSslContextFactory();
+        startServer(serverTLSFactory, new EmptyServerHandler());
+
+        SslContextFactory clientTLSFactory = createSslContextFactory();
+        clientTLSFactory.setEndpointIdentificationAlgorithm("HTTPS");
+        startClient(clientTLSFactory);
+
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(HttpScheme.HTTPS.asString())
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
+            Assert.fail();
+        }
+        catch (ExecutionException x)
+        {
+            Assert.assertEquals(SSLHandshakeException.class, x.getCause().getClass());
         }
     }
 }
