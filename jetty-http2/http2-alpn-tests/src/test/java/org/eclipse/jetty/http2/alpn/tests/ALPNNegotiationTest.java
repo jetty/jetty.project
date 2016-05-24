@@ -31,6 +31,7 @@ import java.util.List;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.alpn.ALPN;
@@ -96,7 +97,8 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             read = channel.read(encrypted);
             // Sending a TLS Close Alert during handshake results in an exception when
             // unwrapping that the server react to by closing the connection abruptly.
-            Assert.assertTrue(read < 0);
+            Assert.assertTrue(read > 0);
+            Assert.assertEquals(21, encrypted.get(0));
         }
     }
 
@@ -146,11 +148,12 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             ByteBuffer decrypted = ByteBuffer.allocate(sslEngine.getSession().getApplicationBufferSize());
             sslEngine.unwrap(encrypted, decrypted);
 
-            // Now if we read more, we should either read the TLS Close Alert, or directly -1
+            // Now if we read more, we should read the TLS Close Alert.
             encrypted.clear();
             read = channel.read(encrypted);
-            // Since we have close the connection abruptly, the server also does so
-            Assert.assertTrue(read < 0);
+            encrypted.flip();
+            Assert.assertTrue(read > 0);
+            Assert.assertEquals(21, encrypted.get(0));
         }
     }
 

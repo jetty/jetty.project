@@ -495,8 +495,6 @@ abstract public class WriteFlusher
 
     public void onClose()
     {
-        if (_state.get()==__IDLE)
-            return;
         onFail(new ClosedChannelException());
     }
 

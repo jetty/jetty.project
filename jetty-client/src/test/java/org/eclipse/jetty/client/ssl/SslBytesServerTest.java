@@ -360,7 +360,10 @@ public class SslBytesServerTest extends SslBytesTest
         // Close the raw socket
         proxy.flushToServer(null);
 
-        // Expect the server to send a FIN as well
+        // Expect the server to send a TLS Alert.
+        record = proxy.readFromServer();
+        Assert.assertNotNull(record);
+        Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
         record = proxy.readFromServer();
         Assert.assertNull(record);
 
@@ -1752,9 +1755,12 @@ public class SslBytesServerTest extends SslBytesTest
         // Instead of passing the Client Hello, we simulate plain text was passed in
         proxy.flushToServer(0, "GET / HTTP/1.1\r\n".getBytes(StandardCharsets.UTF_8));
 
-        // We expect that the server closes the connection immediately
+        // We expect that the server sends the TLS Alert.
         TLSRecord record = proxy.readFromServer();
-        Assert.assertNull(String.valueOf(record), record);
+        Assert.assertNotNull(record);
+        Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
+        record = proxy.readFromServer();
+        Assert.assertNull(record);
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);

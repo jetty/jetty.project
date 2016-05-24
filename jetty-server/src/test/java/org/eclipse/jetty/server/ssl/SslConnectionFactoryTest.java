@@ -151,8 +151,8 @@ public class SslConnectionFactoryTest
         {
             out.write("Rubbish".getBytes());
             out.flush();
-
-            Assert.assertThat(socket.getInputStream().read(),Matchers.equalTo(-1));
+            // Expect TLS message type == 21: Alert
+            Assert.assertThat(socket.getInputStream().read(),Matchers.equalTo(21));
         }
     }
 

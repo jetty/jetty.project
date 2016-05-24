@@ -342,6 +342,9 @@ public class SslBytesClientTest extends SslBytesTest
         Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
         proxy.flushToClient(record);
 
+        // Client sends close alert.
+        record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
         record = proxy.readFromClient();
         Assert.assertNull(record);
 
