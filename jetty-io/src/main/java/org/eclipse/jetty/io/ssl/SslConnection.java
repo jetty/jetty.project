@@ -576,7 +576,7 @@ public class SslConnection extends AbstractConnection
                                 {
                                     _handshaken = true;
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("{} {} handshook {}/{}", SslConnection.this,
+                                        LOG.debug("{} {} handshake succeeded {}/{}", SslConnection.this,
                                                 _sslEngine.getUseClientMode() ? "client" : "resumed server",
                                                 _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
                                 }
@@ -758,6 +758,7 @@ public class SslConnection extends AbstractConnection
                     switch (wrapResultStatus)
                     {
                         case CLOSED:
+                        {
                             // The SSL engine has close, but there may be close handshake that needs to be written
                             if (BufferUtil.hasContent(_encryptedOutput))
                             {
@@ -777,11 +778,13 @@ public class SslConnection extends AbstractConnection
                                 getEndPoint().shutdownOutput();
                             }
                             return allConsumed;
-
+                        }
                         case BUFFER_UNDERFLOW:
+                        {
                             throw new IllegalStateException();
-
+                        }
                         default:
+                        {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("{} wrap {} {}", SslConnection.this, wrapResultStatus, BufferUtil.toHexSummary(_encryptedOutput));
 
@@ -789,7 +792,7 @@ public class SslConnection extends AbstractConnection
                             {
                                 _handshaken = true;
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("{} server handshook complete {}/{}", SslConnection.this, _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
+                                    LOG.debug("{} server handshake succeeded {}/{}", SslConnection.this, _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
                             }
 
                             HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
@@ -847,6 +850,7 @@ public class SslConnection extends AbstractConnection
                                 case FINISHED:
                                     throw new IllegalStateException();
                             }
+                        }
                     }
                 }
             }
