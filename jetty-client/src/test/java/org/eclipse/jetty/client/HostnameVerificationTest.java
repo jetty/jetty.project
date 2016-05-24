@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.nio.channels.ClosedChannelException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
 
@@ -109,23 +108,10 @@ public class HostnameVerificationTest
         }
         catch (ExecutionException x)
         {
-            // The test may fail in 2 ways, since the CertificateException thrown because of the hostname
-            // verification failure is not rethrown immediately by the JDK SSL implementation, but only
-            // rethrown on the next read or write.
-            // Therefore this test may catch a SSLHandshakeException, or a ClosedChannelException.
-            // If it is the former, we verify that its cause is a CertificateException.
-
-            // ExecutionException wraps an SSLHandshakeException
             Throwable cause = x.getCause();
-            if (cause==null)
-            {
-                x.printStackTrace();
-                Assert.fail("No cause?");
-            }
-            if (cause instanceof SSLHandshakeException)
-                Assert.assertThat(cause.getCause().getCause(), Matchers.instanceOf(CertificateException.class));
-            else
-                Assert.assertThat(cause, Matchers.instanceOf(ClosedChannelException.class));
+            Assert.assertThat(cause, Matchers.instanceOf(SSLHandshakeException.class));
+            Throwable root = cause.getCause().getCause();
+            Assert.assertThat(root, Matchers.instanceOf(CertificateException.class));
         }
     }
 
@@ -134,7 +120,7 @@ public class HostnameVerificationTest
      * work fine.
      *
      * @throws Exception on test failure
-     * 
+     *
      */
     @Test
     public void simpleGetWithHostnameVerificationDisabledTest() throws Exception

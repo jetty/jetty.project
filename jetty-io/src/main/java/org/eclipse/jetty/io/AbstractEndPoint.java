@@ -81,7 +81,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                             // If somebody else switched to CLOSED while we were ishutting,
                             // then we do the close for them
                             if (_state.get()==State.CLOSED)
-                                doOnClose();
+                                doOnClose(null);
                             else
                                 throw new IllegalStateException();
                         }
@@ -102,7 +102,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                     if (!_state.compareAndSet(s,State.CLOSED))
                         continue;
                     // Already OSHUT so we close
-                    doOnClose();
+                    doOnClose(null);
                     return;
 
                 case CLOSED: // already closed
@@ -133,7 +133,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                             // If somebody else switched to CLOSED while we were oshutting,
                             // then we do the close for them
                             if (_state.get()==State.CLOSED)
-                                doOnClose();
+                                doOnClose(null);
                             else
                                 throw new IllegalStateException();
                         }
@@ -150,7 +150,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                     if (!_state.compareAndSet(s,State.CLOSED))
                         continue;
                     // Already ISHUT so we close
-                    doOnClose();
+                    doOnClose(null);
                     return;
 
                 case OSHUTTING:  // Somebody else oshutting
@@ -166,6 +166,11 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public final void close()
     {
+        close(null);
+    }
+
+    protected final void close(Throwable failure)
+    {
         while(true)
         {
             State s = _state.get();
@@ -176,7 +181,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                 case OSHUT: // Already oshut
                     if (!_state.compareAndSet(s,State.CLOSED))
                         continue;
-                    doOnClose();
+                    doOnClose(failure);
                     return;
 
                 case ISHUTTING: // Somebody else ishutting
@@ -193,15 +198,14 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     protected void doShutdownInput()
-    {}
+    {
+    }
 
     protected void doShutdownOutput()
-    {}
+    {
+    }
 
-    protected void doClose()
-    {}
-
-    private void doOnClose()
+    private void doOnClose(Throwable failure)
     {
         try
         {
@@ -209,8 +213,22 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         }
         finally
         {
-            onClose();
+            if (failure == null)
+                onClose();
+            else
+                onClose(failure);
         }
+    }
+
+    protected void doClose()
+    {
+    }
+
+    protected void onClose(Throwable failure)
+    {
+        super.onClose();
+        _writeFlusher.onFail(failure);
+        _fillInterest.onFail(failure);
     }
 
     @Override
@@ -324,8 +342,6 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     public void onClose()
     {
         super.onClose();
-        if (LOG.isDebugEnabled())
-            LOG.debug("onClose {}",this);
         _writeFlusher.onClose();
         _fillInterest.onClose();
     }

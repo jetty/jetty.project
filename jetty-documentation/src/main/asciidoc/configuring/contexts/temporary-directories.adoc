@@ -17,18 +17,13 @@
 [[ref-temporary-directories]]
 === Temporary Directories
 
-Jetty itself has no temporary directories, but you can assign a
-directory for each web application, into which the WAR is unpacked, JSPs
-compiled on-the-fly, etc. If you do not assign a specific temporary
-directory, Jetty will create one as needed when your web application
-starts. Whether you set the location of the temporary directory - or you
-let Jetty create one for you - you also have a choice to either keep or
-delete the temporary directory when the web application stops.
+Jetty itself has no temporary directories, but you can assign a directory for each web application, into which the WAR is unpacked, JSPs compiled on-the-fly, etc. 
+If you do not assign a specific temporary directory, Jetty will create one as needed when your web application starts.
+Whether you set the location of the temporary directory - or you let Jetty create one for you - you also have a choice to either keep or delete the temporary directory when the web application stops.
 
 ==== The default temp directory
 
-By default, Jetty will create a temporary directory for each web
-application. The name of the directory will be of the form:
+By default, Jetty will create a temporary directory for each web application. The name of the directory will be of the form:
 
 ....
 "jetty-"+host+"-"+port+"-"+resourceBase+"-_"+context+"-"+virtualhost+"-"+randomdigits+".dir"
@@ -40,26 +35,19 @@ For example:
 jetty-0.0.0.0-8080-test.war-_test-any-8900275691885214790.dir
 ....
 
-Where `0.0.0.0` is the host address, `8080` is the port, `test.war` is
-the resourceBase, `test` is the context path (with / converted to _),
-`any` is the virtual host, and `randomdigits` are a string of digits
-guaranteed to be unique.
+Where `0.0.0.0` is the host address, `8080` is the port, `test.war` is the resourceBase, `test` is the context path (with / converted to _), `any` is the virtual host, and `randomdigits` are a string of digits guaranteed to be unique.
 
-Once the temp directory is created, it is retrievable as the value (as a
-File) of the context attribute `javax.servlet.context.tempdir.`
+Once the temp directory is created, it is retrievable as the value (as a File) of the context attribute `javax.servlet.context.tempdir.`
 
 ===== The location of the temp directory
 
-By default, jetty will create this directory inside the directory named
-by the `java.io.tmpdir` System property. You can instruct Jetty to use a
-different parent directory by setting the context attribute
-`org.eclipse.jetty.webapp.basetempdir` to the name of the desired parent
-directory. The directory named by this attribute _must_ exist and be
-__writeable__.
+By default, Jetty will create this directory inside the directory named by the `java.io.tmpdir` System property. 
+You can instruct Jetty to use a different parent directory by setting the context attribute `org.eclipse.jetty.webapp.basetempdir` to the name of the desired parent directory. 
+The directory named by this attribute _must_ exist and be __writeable__.
 
-As usual with Jetty, you can either set this attribute in a context xml
-file, or you can do it in code. Here's an example of setting it in an
-xml file:
+As usual with Jetty, you can either set this attribute in a context xml file, or you can do it in code. 
+
+Here's an example of setting it in an xml file:
 
 [source,xml]
 ----
@@ -87,12 +75,10 @@ context.setAttribute("org.eclipse.jetty.webapp.basetempdir", "/tmp/foo");
 
 ==== Setting a specific temp directory
 
-To use a particular directory as the temporary directory you can do
-either:
+There are several ways to use a particular directory as the temporary directory:
 
 call WebAppContext.setTempDirectory(String dir)::
-  As usual with Jetty, you can do this with an xml file or directly in
-  code. Here's an example of setting the temp directory in xml:
+  Like before this can be accomplished with an xml file or directly in code. Here's an example of setting the temp directory in xml:
   +
 [source,xml]
 ----
@@ -116,8 +102,7 @@ context.setTempDirectory(new File("/some/dir/foo"));
 ----
 
 set the `javax.servlet.context.tempdir` context attribute::
-  You should set this context attribute with the name of directory you
-  want to use as the temp directory. Again, you can do this in xml:
+  You should set this context attribute with the name of directory you want to use as the temp directory. Again, you can do this in xml:
 
 [source,xml]
 ----
@@ -144,9 +129,7 @@ context.setWar("foo.war");
 context.setAttribute("javax.servlet.context.tempdir", "/some/dir/foo");
 ----
 
-Once a temporary directory has been created by either of these methods,
-a File instance for it is set as the value of the
-`javax.servlet.context.tempdir` attribute of the web application.
+Once a temporary directory has been created by either of these methods, a File instance for it is set as the value of the `javax.servlet.context.tempdir` attribute of the web application.
 
 ____
 [NOTE]
@@ -156,27 +139,20 @@ ____
 
 ==== The "work" directory
 
-Mostly for backward compatibility, from jetty-9.1.1 onwards, it will be
-possible to create a directory named "work" in the $\{jetty.base}
-directory. If such a directory is found, it is assumed you want to use
-it as the parent directory for all of the temporary directories of the
-webapps in that $\{jetty.base}. Moreover, as has historically been the
-case, these temp directories inside the work directory are not cleaned
-up when jetty exists (or more correctly speaking, the temp dir
-corresponding to a context is not cleaned up when that context stops).
+Mostly for backward compatibility, from jetty-9.1.1 onwards, it is be possible to create a directory named "work" in the `$\{jetty.base}` directory. 
+If such a directory is found, it is assumed you want to use it as the parent directory for all of the temporary directories of the webapps in that `$\{jetty.base}`. 
+Moreover, as has historically been the case, these temp directories inside the work directory are not cleaned up when jetty exists (or more correctly speaking, the `temp` directory corresponding to a context is not cleaned up when that context stops).
 
-When a work directory is used, the algorithm for generating the name of
-the context-specific temp dirs omits the random digit string. This
-ensures the name of the dir remains consistent across context restarts.
+When a work directory is used, the algorithm for generating the name of the context-specific temp directories omits the random digit string. 
+This ensures the name of the directory remains consistent across context restarts.
 
 ==== Persisting the temp directory
 
-Sometimes you may find it useful to keep the contents of the temporary
-directory between restarts of the web application. By default, Jetty
-will _not_ persist the temp directory. To cause Jetty to keep it, use
-link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[WebAppContext.setPersistTempDirectory(true)].
+Sometimes you may find it useful to keep the contents of the temporary directory between restarts of the web application. 
+By default, Jetty will _not_ persist the temp directory. 
+To configure Jetty to keep it, use link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[WebAppContext.setPersistTempDirectory(true)].
 
-Be aware that if you call setPersistTempDirectory(true), but let Jetty
-create a new temp directory each time (ie you do NOT set an explicit
-temp directory), then you will accumulate temp directories in your
-chosen temp directory location.
+____
+[NOTE]
+Be aware that if you call `setPersistTempDirectory(true)`, but let Jetty create a new temp directory each time (i.e. you do NOT set an explicit temp directory), then you will accumulate temp directories in your chosen temp directory location.
+____
