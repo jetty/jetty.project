@@ -26,7 +26,6 @@ import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -105,13 +104,10 @@ public class SslBytesClientTest extends SslBytesTest
         final SSLSocket server = (SSLSocket)acceptor.accept();
         server.setUseClientMode(false);
 
-        Future<Object> handshake = threadPool.submit(new Callable<Object>()
+        Future<Object> handshake = threadPool.submit(() ->
         {
-            public Object call() throws Exception
-            {
-                server.startHandshake();
-                return null;
-            }
+            server.startHandshake();
+            return null;
         });
 
         // Client Hello
@@ -185,13 +181,10 @@ public class SslBytesClientTest extends SslBytesTest
         final SSLSocket server = (SSLSocket)acceptor.accept();
         server.setUseClientMode(false);
 
-        Future<Object> handshake = threadPool.submit(new Callable<Object>()
+        Future<Object> handshake = threadPool.submit(() ->
         {
-            public Object call() throws Exception
-            {
-                server.startHandshake();
-                return null;
-            }
+            server.startHandshake();
+            return null;
         });
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
@@ -222,13 +215,10 @@ public class SslBytesClientTest extends SslBytesTest
         Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
         // Renegotiate
-        Future<Object> renegotiation = threadPool.submit(new Callable<Object>()
+        Future<Object> renegotiation = threadPool.submit(() ->
         {
-            public Object call() throws Exception
-            {
-                server.startHandshake();
-                return null;
-            }
+            server.startHandshake();
+            return null;
         });
 
         // Renegotiation Handshake
@@ -307,13 +297,10 @@ public class SslBytesClientTest extends SslBytesTest
         final SSLSocket server = (SSLSocket)acceptor.accept();
         server.setUseClientMode(false);
 
-        Future<Object> handshake = threadPool.submit(new Callable<Object>()
+        Future<Object> handshake = threadPool.submit(() ->
         {
-            public Object call() throws Exception
-            {
-                server.startHandshake();
-                return null;
-            }
+            server.startHandshake();
+            return null;
         });
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
@@ -344,13 +331,10 @@ public class SslBytesClientTest extends SslBytesTest
         Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
         // Renegotiate
-        threadPool.submit(new Callable<Object>()
+        threadPool.submit(() ->
         {
-            public Object call() throws Exception
-            {
-                server.startHandshake();
-                return null;
-            }
+            server.startHandshake();
+            return null;
         });
 
         // Renegotiation Handshake
@@ -358,6 +342,9 @@ public class SslBytesClientTest extends SslBytesTest
         Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
         proxy.flushToClient(record);
 
+        // Client sends close alert.
+        record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
         record = proxy.readFromClient();
         Assert.assertNull(record);
 

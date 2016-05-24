@@ -29,6 +29,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
@@ -589,7 +590,7 @@ public class SslConnection extends AbstractConnection
                                 {
                                     _handshaken = true;
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("{} {} handshook {}/{}", SslConnection.this,
+                                        LOG.debug("{} {} handshake succeeded {}/{}", SslConnection.this,
                                                 _sslEngine.getUseClientMode() ? "client" : "resumed server",
                                                 _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
                                 }
@@ -668,17 +669,22 @@ public class SslConnection extends AbstractConnection
                     }
                 }
             }
-            catch (IllegalStateException e)
+            catch (SSLHandshakeException x)
             {
-                // Some internal error in SSLEngine
-                LOG.debug(e);
-                close();
-                throw new EofException(e);
+                close(x);
+                throw x;
             }
-            catch (Exception e)
+            catch (SSLException x)
             {
-                close();
-                throw e;
+                if (!_handshaken)
+                    x = (SSLException)new SSLHandshakeException(x.getMessage()).initCause(x);
+                close(x);
+                throw x;
+            }
+            catch (Throwable x)
+            {
+                close(x);
+                throw x;
             }
             finally
             {
@@ -771,6 +777,7 @@ public class SslConnection extends AbstractConnection
                     switch (wrapResultStatus)
                     {
                         case CLOSED:
+                        {
                             // The SSL engine has close, but there may be close handshake that needs to be written
                             if (BufferUtil.hasContent(_encryptedOutput))
                             {
@@ -790,11 +797,13 @@ public class SslConnection extends AbstractConnection
                                 getEndPoint().shutdownOutput();
                             }
                             return allConsumed;
-
+                        }
                         case BUFFER_UNDERFLOW:
+                        {
                             throw new IllegalStateException();
-
+                        }
                         default:
+                        {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("{} wrap {} {}", SslConnection.this, wrapResultStatus, BufferUtil.toHexSummary(_encryptedOutput));
 
@@ -802,7 +811,7 @@ public class SslConnection extends AbstractConnection
                             {
                                 _handshaken = true;
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("{} server handshook complete {}/{}", SslConnection.this, _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
+                                    LOG.debug("{} server handshake succeeded {}/{}", SslConnection.this, _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
                             }
 
                             HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
@@ -862,6 +871,17 @@ public class SslConnection extends AbstractConnection
                             }
                     }
                 }
+                }
+            }
+            catch (SSLHandshakeException x)
+            {
+                close(x);
+                throw x;
+            }
+            catch (Throwable x)
+            {
+                close(x);
+                throw x;
             }
             finally
             {
@@ -884,32 +904,27 @@ public class SslConnection extends AbstractConnection
         public void doShutdownOutput()
         {
             boolean ishut = isInputShutdown();
+            boolean oshut = isOutputShutdown();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} shutdownOutput: ishut={}", SslConnection.this, ishut);
-            if (ishut)
+                LOG.debug("{} shutdownOutput: oshut={}, ishut={}", SslConnection.this, oshut, ishut);
+            try
             {
-                // Aggressively close, since inbound close alert has already been processed
-                // and the TLS specification allows to close the connection directly, which
-                // is what most other implementations expect: a FIN rather than a TLS close
-                // reply. If a TLS close reply is sent, most implementations send a RST.
-                getEndPoint().close();
-            }
-            else
-            {
-                try
+                synchronized (this)
                 {
-                    synchronized (this) // TODO review synchronized boundary
+                    if (!oshut)
                     {
                         _sslEngine.closeOutbound();
-                        flush(BufferUtil.EMPTY_BUFFER); // Send close handshake
-                        ensureFillInterested();
+                        // Send the TLS close message.
+                        flush(BufferUtil.EMPTY_BUFFER);
+                        if (!ishut)
+                            ensureFillInterested();
                     }
                 }
-                catch (Exception e)
-                {
-                    LOG.ignore(e);
-                    getEndPoint().close();
-                }
+            }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+                getEndPoint().close();
             }
         }
 
@@ -928,23 +943,8 @@ public class SslConnection extends AbstractConnection
         @Override
         public void doClose()
         {
-            // First send the TLS Close Alert, then the FIN
-            if (!_sslEngine.isOutboundDone())
-            {
-                try
-                {
-                    synchronized (this) // TODO review synchronized boundary
-                    {
-                        _sslEngine.closeOutbound();
-                        flush(BufferUtil.EMPTY_BUFFER); // Send close handshake
-                        ensureFillInterested();
-                    }
-                }
-                catch (Exception e)
-                {
-                    LOG.ignore(e);
-                }
-            }
+            // First send the TLS Close Alert, then the FIN.
+            doShutdownOutput();
             getEndPoint().close();
             super.doClose();
         }

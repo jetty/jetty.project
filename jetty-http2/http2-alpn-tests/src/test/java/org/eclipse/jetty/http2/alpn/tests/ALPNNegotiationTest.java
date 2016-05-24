@@ -94,14 +94,10 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             // Now if we read more, we should read a TLS Alert.
             encrypted.clear();
             read = channel.read(encrypted);
-            if (read > 0)
-            {
-                encrypted.flip();
-                // TLS Alert message type == 21.
-                Assert.assertEquals(21, encrypted.get() & 0xFF);
-                encrypted.clear();
-                Assert.assertEquals(-1, channel.read(encrypted));
-            }
+            Assert.assertTrue(read > 0);
+            Assert.assertEquals(21, encrypted.get(0));
+            encrypted.clear();
+            Assert.assertEquals(-1, channel.read(encrypted));
         }
     }
 
@@ -151,11 +147,12 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             ByteBuffer decrypted = ByteBuffer.allocate(sslEngine.getSession().getApplicationBufferSize());
             sslEngine.unwrap(encrypted, decrypted);
 
-            // Now if we read more, we should either read the TLS Close Alert, or directly -1
+            // Now if we read more, we should read the TLS Close Alert.
             encrypted.clear();
             read = channel.read(encrypted);
-            // Since we have close the connection abruptly, the server also does so
-            Assert.assertTrue(read < 0);
+            encrypted.flip();
+            Assert.assertTrue(read > 0);
+            Assert.assertEquals(21, encrypted.get(0));
         }
     }
 
