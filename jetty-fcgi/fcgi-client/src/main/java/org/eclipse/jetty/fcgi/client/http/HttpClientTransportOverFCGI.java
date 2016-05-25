@@ -78,7 +78,7 @@ public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
         HttpConnectionOverFCGI connection = newHttpConnection(endPoint, destination, promise);
         if (LOG.isDebugEnabled())
             LOG.debug("Created {}", connection);
-        return connection;
+        return customize(connection, context);
     }
 
     protected HttpConnectionOverFCGI newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)

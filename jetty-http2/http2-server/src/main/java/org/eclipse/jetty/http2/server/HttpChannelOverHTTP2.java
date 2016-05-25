@@ -280,6 +280,10 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     @Override
     public String toString()
     {
-        return String.format("%s#%d", super.toString(), getStream().getId());
+        IStream stream = getStream();
+        long streamId = -1;
+        if (stream != null)
+            streamId = stream.getId();
+        return String.format("%s#%d", super.toString(), getStream() == null ? -1 : streamId);
     }
 }
