@@ -48,7 +48,8 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        return new ALPNClientConnection(endPoint, executor, getClientConnectionFactory(),
+        ALPNClientConnection connection = new ALPNClientConnection(endPoint, executor, getClientConnectionFactory(),
                 (SSLEngine)context.get(SslClientConnectionFactory.SSL_ENGINE_CONTEXT_KEY), context, protocols);
+        return customize(connection, context);
     }
 }

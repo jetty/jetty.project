@@ -139,7 +139,8 @@ public class HttpClientCustomProxyTest
         {
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
-            return new CAFEBABEConnection(endPoint, executor, connectionFactory, context);
+            CAFEBABEConnection connection = new CAFEBABEConnection(endPoint, executor, connectionFactory, context);
+            return customize(connection, context);
         }
     }
 

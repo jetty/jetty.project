@@ -134,6 +134,8 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
+        endPoint.setIdleTimeout(httpClient.getIdleTimeout());
+
         ClientConnectionFactory factory = connectionFactory;
         HttpDestinationOverHTTP2 destination = (HttpDestinationOverHTTP2)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         ProxyConfiguration.Proxy proxy = destination.getProxy();

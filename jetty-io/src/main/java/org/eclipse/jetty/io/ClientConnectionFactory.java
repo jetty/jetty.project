@@ -21,6 +21,8 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.util.Map;
 
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+
 /**
  * Factory for client-side {@link Connection} instances.
  */
@@ -36,4 +38,11 @@ public interface ClientConnectionFactory
      * @throws IOException if the connection cannot be created
      */
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException;
+
+    public default Connection customize(Connection connection, Map<String, Object> context)
+    {
+        ContainerLifeCycle connector = (ContainerLifeCycle)context.get(CONNECTOR_CONTEXT_KEY);
+        connector.getBeans(Connection.Listener.class).forEach(connection::addListener);
+        return connection;
+    }
 }
