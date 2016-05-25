@@ -20,7 +20,7 @@
 To start Jetty on the default port of 8080, run the following command:
 
 [source, screen]
-....
+----
 > cd $JETTY_HOME
 > java -jar start.jar
 2015-06-04 10:50:44.806:INFO::main: Logging initialized @334ms
@@ -29,7 +29,7 @@ To start Jetty on the default port of 8080, run the following command:
 2015-06-04 10:50:45.012:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:///opt/jetty-distribution-9.3.0.v20150601/webapps/] at interval 1
 2015-06-04 10:50:45.030:INFO:oejs.ServerConnector:main: Started ServerConnector@19dfb72a{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
 2015-06-04 10:50:45.030:INFO:oejs.Server:main: Started @558ms
-....
+----
 
 You can point a browser at this server at link:http://localhost:8080[]. 
 However, as there are no webapps deployed in the $JETTY_HOME directory, you will see a 404 error page served by Jetty. 
@@ -42,7 +42,7 @@ Instead, see how to link:#creating-jetty-base[create a Jetty Base] below.
 Within the standard jetty distribution there is the `demo-base` directory, which demonstrates the recommended way to run Jetty in a directory separately from $JETTY_HOME:
 
 [source, screen]
-....
+----
 > cd $JETTY_HOME/demo-base/
 > java -jar $JETTY_HOME/start.jar
 2015-06-04 10:55:24.161:INFO::main: Logging initialized @308ms
@@ -66,7 +66,7 @@ Within the standard jetty distribution there is the `demo-base` directory, which
 2015-06-04 10:55:26.259:INFO:oejus.SslContextFactory:main: x509={jetty.eclipse.org=jetty} wild={} alias=null for SslContextFactory@23941fb4(file:///opt/jetty-distribution-9.3.0.v20150601/demo-base/etc/keystore,file:///opt/jetty-distribution-9.3.0.v20150601/demo-base/etc/keystore)
 2015-06-04 10:55:26.269:INFO:oejs.ServerConnector:main: Started ServerConnector@5d908d47{SSL,[ssl, http/1.1]}{0.0.0.0:8443}
 2015-06-04 10:55:26.270:INFO:oejs.Server:main: Started @2417ms
-....
+----
 
 You can see this demo server by pointing a browser at link:http://localhost:8080[], will now show a welcome page and several demo/test web applications.
 
@@ -78,13 +78,13 @@ ____
 You can see the configuration of the demo-base by using the following commands:
 
 [source, screen]
-....
+----
 > cd $JETTY_HOME/demo-base/
 > java -jar $JETTY_HOME/start.jar --list-modules
 ...
 > java -jar %JETTY_HOME/start.jar --list-config
 ...
-....
+----
 
 [[creating-jetty-base]]
 ==== Creating a new Jetty Base
@@ -101,15 +101,15 @@ jetty.base::
 The `jetty.home` and `jetty.base` properties may be explicitly set on the command line, or they can be inferred from the environment if used with commands like:
 
 [source, screen]
-....
+----
 > cd $JETTY_BASE
 > java -jar $JETTY_HOME/start.jar
-....
+----
 
 The following commands: create a new base directory; enables a HTTP connector and the web application deployer; copies a demo webapp to be deployed:
 
 [source, screen]
-....
+----
 > JETTY_BASE=/tmp/mybase
 > mkdir $JETTY_BASE
 > cd $JETTY_BASE
@@ -138,7 +138,7 @@ INFO: Base directory was modified
 2015-06-04 11:10:16.628:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@1a407d53{/,[file:///tmp/jetty-0.0.0.0-8080-ROOT.war-_-any-4510228025526425427.dir/webapp/, jar:file:///tmp/jetty-0.0.0.0-8080-ROOT.war-_-any-4510228025526425427.dir/webapp/WEB-INF/lib/example-async-rest-jar-9.3.0.v20150601.jar!/META-INF/resources],AVAILABLE}{/ROOT.war}
 2015-06-04 11:10:16.645:INFO:oejs.ServerConnector:main: Started ServerConnector@3abbfa04{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
 2015-06-04 11:10:16.646:INFO:oejs.Server:main: Started @634ms
-....
+----
 
 [[quickstart-changing-jetty-port]]
 ==== Changing the Jetty Port
@@ -146,11 +146,11 @@ INFO: Base directory was modified
 You can configure Jetty to run on a different port by setting the `jetty.http.port` Property on the command line:
 
 [source, screen]
-....
+----
 > cd $JETTY_BASE
 > java -jar $JETTY_HOME/start.jar jetty.http.port=8081
 ...
-....
+----
 
 Alternatively, property values can be added to the effective command line built from either the `start.ini` file or `start.d/http.ini` files. 
 By default, the jetty distribution defines the jetty.http.port property in the `start.d/http.ini` file, which may be edited to set another value.
@@ -174,14 +174,14 @@ ____
 To add the HTTPS connector to a jetty configuration, the https module can be activated by the following command:
 
 [source, screen]
-....
+----
 > java -jar $JETTY_HOME/start.jar --add-to-startd=https,http2
 [...]
 > java -jar $JETTY_HOME/start.jar
 [...]
 2015-06-04 13:52:01.933:INFO:oejs.ServerConnector:main: Started ServerConnector@6f1fba17{SSL,[ssl, alpn, h2, http/1.1]}{0.0.0.0:8443}
 [...]
-....
+----
 
 The --add-to-startd command sets up the effective command line in the ini files to run an ssl connection that supports the HTTPS and HTTP2 protocols as follows:
 
@@ -202,10 +202,10 @@ ____
 You can configure the SSL connector to run on a different port by setting the `jetty.ssl.port` property on the command line:
 
 [source, screen]
-....
+----
 > cd $JETTY_BASE
 > java -jar $JETTY_HOME/start.jar jetty.ssl.port=8444
-....
+----
 
 Alternatively, property values can be added to the effective command line built from the `start.ini` file and `start.d/*.ini` files. 
 If you used the --add-to-startd command to enable https, then you can edit this property in the `start.d/https.ini` file. 
@@ -217,6 +217,6 @@ The job of the `start.jar` is to interpret the command line, `start.ini` and `st
 The `start.jar` mechanism has many options which are documented in the xref:startup[] administration section and you can see them in summary by using the command:
 
 [source, screen]
-....
+----
 > java -jar $JETTY_HOME/start.jar --help
-....
+----

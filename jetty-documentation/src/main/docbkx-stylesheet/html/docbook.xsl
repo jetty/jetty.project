@@ -231,7 +231,6 @@ xmlns:date="http://exslt.org/dates-and-times"
         <xsl:element name="pre">
           <xsl:attribute name="class">screen</xsl:attribute>
             <xsl:value-of select="text()"/>
-          <xsl:apply-templates/>
         </xsl:element>
       </xsl:element>
       </xsl:when>
