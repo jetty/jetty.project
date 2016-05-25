@@ -57,7 +57,7 @@ public class HttpClientTransportOverHTTP extends AbstractHttpClientTransport
         HttpConnectionOverHTTP connection = newHttpConnection(endPoint, destination, promise);
         if (LOG.isDebugEnabled())
             LOG.debug("Created {}", connection);
-        return connection;
+        return customize(connection, context);
     }
 
     protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)

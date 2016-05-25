@@ -74,7 +74,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
                 parser, session, client.getInputBufferSize(), client.getExecutionStrategyFactory(), promise, listener);
         connection.addListener(connectionListener);
-        return connection;
+        return customize(connection, context);
     }
 
     /**
