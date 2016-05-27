@@ -56,10 +56,10 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
 
     public ExecuteProduceConsume(Producer producer, Executor executor)
     {
-        this(producer,executor,Invocable.InvocationType.BLOCKING);
+        this(producer,executor,InvocationType.BLOCKING);
     }
     
-    public ExecuteProduceConsume(Producer producer, Executor executor, Invocable.InvocationType preferred )
+    public ExecuteProduceConsume(Producer producer, Executor executor, InvocationType preferred )
     {
         super(executor,preferred);
         this._producer = producer;
@@ -178,7 +178,7 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
                 if (!_pending)
                 {
                     // dispatch one
-                    dispatch = _pending = true;
+                    dispatch = _pending = Invocable.getInvocationType(task)!=InvocationType.NON_BLOCKING;
                 }
 
                 _execute = false;

@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
@@ -240,7 +241,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
                 if (task != null)
                     return task;
 
-                Runnable action = runActions();
+                Runnable action = nextAction();
                 if (action != null)
                     return action;
 
@@ -251,7 +252,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
             }
         }
 
-        private Runnable runActions()
+        private Runnable nextAction()
         {
             while (true)
             {
@@ -267,25 +268,20 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
                     }
                 }
 
-                if (action instanceof Product)
+                if (Invocable.getInvocationType(action)==InvocationType.BLOCKING)
                     return action;
 
-                // Running the change may queue another action.
-                runChange(action);
-            }
-        }
-
-        private void runChange(Runnable change)
-        {
-            try
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Running change {}", change);
-                change.run();
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Could not run change " + change, x);
+                try
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Running action {}", action);
+                    // Running the change may queue another action.
+                    action.run();
+                }
+                catch (Throwable x)
+                {
+                    LOG.debug("Could not run action " + action, x);
+                }
             }
         }
 
@@ -398,9 +394,14 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
                 ((Selectable)attachment).updateKey();
         }
     }
-
-    private interface Product extends Runnable
+    
+    private abstract static class NonBlockingAction implements Runnable, Invocable
     {
+        @Override
+        public final InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
     }
 
     private Runnable processConnect(SelectionKey key, final Connect connect)
@@ -491,7 +492,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
     public void destroyEndPoint(final EndPoint endPoint)
     {
         final Connection connection = endPoint.getConnection();
-        submit((Product)() ->
+        submit((Runnable)() ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Destroyed {}", endPoint);
@@ -582,7 +583,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    class Acceptor implements Runnable
+    class Acceptor extends NonBlockingAction
     {
         private final SelectableChannel _channel;
 
@@ -608,7 +609,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    class Accept implements Runnable, Closeable
+    class Accept extends NonBlockingAction implements Closeable
     {
         private final SelectableChannel channel;
         private final Object attachment;
@@ -642,7 +643,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    private class CreateEndPoint implements Product, Closeable
+    private class CreateEndPoint implements Runnable, Closeable
     {
         private final SelectableChannel channel;
         private final SelectionKey key;
@@ -681,7 +682,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    class Connect implements Runnable
+    class Connect extends NonBlockingAction
     {
         private final AtomicBoolean failed = new AtomicBoolean();
         private final SelectableChannel channel;
@@ -719,7 +720,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    private class ConnectTimeout implements Runnable
+    private class ConnectTimeout extends NonBlockingAction
     {
         private final Connect connect;
 
@@ -741,7 +742,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    private class CloseEndPoints implements Runnable
+    private class CloseEndPoints extends NonBlockingAction
     {
         private final CountDownLatch _latch = new CountDownLatch(1);
         private CountDownLatch _allClosed;
@@ -788,7 +789,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    private class EndPointCloser implements Product
+    private class EndPointCloser implements Runnable
     {
         private final EndPoint _endPoint;
         private final CountDownLatch _latch;
@@ -807,7 +808,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    private class CloseSelector implements Runnable
+    private class CloseSelector extends NonBlockingAction
     {
         private CountDownLatch _latch = new CountDownLatch(1);
 
