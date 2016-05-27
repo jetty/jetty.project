@@ -4,10 +4,11 @@
   <formats>
     <format>zip</format>
   </formats>
+  <baseDirectory>${project.version}</baseDirectory>
   <fileSets>
     <fileSet>
       <directory>${project.basedir}/target/docbkx/html/index</directory>
-      <outputDirectory>html</outputDirectory>
+      <outputDirectory></outputDirectory>
       <includes>
         <include>**</include>
       </includes>
