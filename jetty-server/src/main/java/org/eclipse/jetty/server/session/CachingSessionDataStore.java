@@ -24,7 +24,7 @@ import java.util.Set;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /**
- * CachingSessionStore
+ * CachingSessionDataStore
  *
  * A SessionDataStore is a mechanism for (persistently) storing data associated with sessions.
  * This implementation delegates to a pluggable SessionDataStore for actually storing the 
@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  * possible that failures can result in cache inconsistency.
  * 
  */
-public class CachingSessionStore extends AbstractLifeCycle implements SessionDataStore
+public class CachingSessionDataStore extends AbstractLifeCycle implements SessionDataStore
 {
 
     /**
@@ -61,7 +61,7 @@ public class CachingSessionStore extends AbstractLifeCycle implements SessionDat
      * @param cache
      * @param store
      */
-    public CachingSessionStore (SessionDataMap cache, SessionDataStore store)
+    public CachingSessionDataStore (SessionDataMap cache, SessionDataStore store)
     {
         _cache = cache;
         _store = store;
@@ -143,7 +143,6 @@ public class CachingSessionStore extends AbstractLifeCycle implements SessionDat
     {
         //write to the SessionDataStore first
         _store.store(id, data);
-        
         //then update the cache with written data
         _cache.store(id,data);
     }
@@ -191,7 +190,7 @@ public class CachingSessionStore extends AbstractLifeCycle implements SessionDat
      * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
      */
     @Override
-    public void initialize(SessionContext context)
+    public void initialize(SessionContext context) throws Exception
     {
         //pass through
         _store.initialize(context);
@@ -206,6 +205,4 @@ public class CachingSessionStore extends AbstractLifeCycle implements SessionDat
     {
         return _store.newSessionData(id, created, accessed, lastAccessed, maxInactiveMs);
     }
-
-
 }

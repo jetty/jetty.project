@@ -297,6 +297,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     {
         if (LOG.isDebugEnabled()) LOG.debug("Writing session {} to DataStore", data.getId());
     
+        //TODO implement backoff strategy
         Entity entity = entityFromSession(data, makeKey(id, _context));
         _datastore.put(entity);
     }
