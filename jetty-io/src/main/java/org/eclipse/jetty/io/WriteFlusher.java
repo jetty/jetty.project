@@ -32,6 +32,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 
 /**
@@ -269,16 +271,18 @@ abstract public class WriteFlusher
                 _callback.succeeded();
         }
 
-        boolean isCallbackNonBlocking()
+        InvocationType getCallbackInvocationType()
         {
-            return _callback!=null && _callback.isNonBlocking();
+            return Invocable.getInvocationType(_callback);
         }
     }
 
-    public boolean isCallbackNonBlocking()
+    public InvocationType getCallbackInvocationType()
     {
         State s = _state.get();
-        return (s instanceof PendingState) && ((PendingState)s).isCallbackNonBlocking();
+        return (s instanceof PendingState)
+                ?((PendingState)s).getCallbackInvocationType()
+                :Invocable.InvocationType.BLOCKING;
     }
 
     /**

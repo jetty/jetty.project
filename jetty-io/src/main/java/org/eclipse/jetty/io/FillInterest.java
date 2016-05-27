@@ -28,6 +28,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * A Utility class to help implement {@link EndPoint#fillInterested(Callback)}
@@ -105,10 +107,10 @@ public abstract class FillInterest
         return _interested.get() != null;
     }
     
-    public boolean isCallbackNonBlocking()
+    public InvocationType getCallbackInvocationType()
     {
         Callback callback = _interested.get();
-        return callback!=null && callback.isNonBlocking();
+        return Invocable.getInvocationType(callback);
     }
 
     /**

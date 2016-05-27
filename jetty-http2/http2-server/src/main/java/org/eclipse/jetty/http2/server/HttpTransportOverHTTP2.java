@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 public class HttpTransportOverHTTP2 implements HttpTransport
 {
@@ -100,8 +101,15 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             {
                 if (hasContent)
                 {
-                    commit(info, false, new Callback.NonBlocking()
+                    commit(info, false, new Callback()
                     {
+                        @Override
+                        public InvocationType getInvocationType()
+                        {
+                            // TODO is this dependent on the callback itself?
+                            return InvocationType.NON_BLOCKING;
+                        }
+                        
                         @Override
                         public void succeeded()
                         {
