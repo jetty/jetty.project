@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.omg.CORBA.Environment;
 
 
 
@@ -313,8 +314,8 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
             return false;
         }
     }
-    
-    
+
+
 
     /* ------------------------------------------------------------ */
     /** 
@@ -324,18 +325,27 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     protected void doStart() throws Exception
     {
         if (_server == null)
-            throw new IllegalStateException("No Server for SessionIdManager");
-       initRandom();
-       _workerAttr=(_workerName!=null && _workerName.startsWith("$"))?_workerName.substring(1):null;
-       
-       if (_houseKeeper == null)
-       {
-           LOG.warn("No SessionScavenger set, using defaults");
-           _houseKeeper = new HouseKeeper();
-           _houseKeeper.setSessionIdManager(this);
-       }
-       
-       _houseKeeper.start();
+            throw new IllegalStateException ("No Server for SessionIdManager");
+
+        initRandom();
+
+        if (_workerName == null)
+        {
+            String inst = System.getenv("JETTY_WORKER_INSTANCE");
+            _workerName = "node"+ (inst==null?"0":inst);
+            LOG.warn("No workerName configured for DefaultSessionIdManager, using {}",_workerName);
+        }
+        
+        _workerAttr=(_workerName!=null && _workerName.startsWith("$"))?_workerName.substring(1):null;
+
+        if (_houseKeeper == null)
+        {
+            LOG.warn("No SessionScavenger set, using defaults");
+            _houseKeeper = new HouseKeeper();
+            _houseKeeper.setSessionIdManager(this);
+        }
+
+        _houseKeeper.start();
     }
 
     /* ------------------------------------------------------------ */

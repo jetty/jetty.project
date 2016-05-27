@@ -666,6 +666,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 catch (Exception e)
                 {
                     LOG.warn("Passivation of idle session {} failed", session.getId(), e);
+                    //TODO reset the timer so it can be retried later and leave it in the cache
                     doDelete(session.getId()); //detach it
                     session.setResident(false);
                 }

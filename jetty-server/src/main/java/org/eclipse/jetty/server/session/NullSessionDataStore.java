@@ -24,7 +24,7 @@ import java.util.Set;
 /**
  * NullSessionDataStore
  *
- *
+ * Does not actually store anything, useful for testing.
  */
 public class NullSessionDataStore extends AbstractSessionDataStore
 {

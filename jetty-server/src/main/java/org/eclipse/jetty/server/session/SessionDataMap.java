@@ -26,17 +26,17 @@ package org.eclipse.jetty.server.session;
 public interface SessionDataMap
 {
     /**
-     * Initialize this session data store for the
-     * given context. A SessionDataStore can only 
+     * Initialize this data map for the
+     * given context. A SessionDataMap can only 
      * be used by one context(/session manager).
      * 
      * @param context context associated
      */
-    void initialize(SessionContext context);
+    void initialize(SessionContext context) throws Exception;
     
     
     /**
-     * Read in session data from storage
+     * Read in session data.
      * @param id identity of session to load
      * @return the SessionData matching the id
      * @throws Exception if unable to load session data
@@ -46,7 +46,7 @@ public interface SessionDataMap
   
     
     /**
-     * Write out session data to storage
+     * Store the session data.
      * @param id identity of session to store
      * @param data info of session to store
      * @throws Exception if unable to write session data
@@ -56,9 +56,9 @@ public interface SessionDataMap
     
     
     /**
-     * Delete session data from storage
+     * Delete session data
      * @param id identity of session to delete
-     * @return true if the session was deleted from the permanent store
+     * @return true if the session was deleted
      * @throws Exception if unable to delete session data
      */
     public boolean delete (String id) throws Exception;
