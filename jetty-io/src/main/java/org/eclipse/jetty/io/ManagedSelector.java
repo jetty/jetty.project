@@ -87,10 +87,19 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
             int priority = current.getPriority();
             try
             {
-                current.setPriority(Math.max(Thread.MIN_PRIORITY,Math.min(Thread.MAX_PRIORITY,priority-1)));
-                current.setPriority(Thread.MIN_PRIORITY);
-                current.setName(name+"-lowPrioSelector");
-                _lowPriorityStrategy.produce();
+                while (isRunning())
+                {
+                    try
+                    {
+                        current.setPriority(Thread.MIN_PRIORITY);
+                        current.setName(name+"-lowPrioSelector");
+                        _lowPriorityStrategy.produce(); 
+                    }
+                    catch (Throwable th)
+                    {
+                        LOG.warn(th);
+                    }
+                }
             }
             finally
             {

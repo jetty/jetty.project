@@ -30,12 +30,18 @@ public interface Invocable
 {
     enum InvocationType { BLOCKING, NON_BLOCKING, EITHER };
     
-    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
+    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<Boolean>()
+    {
+        @Override
+        protected Boolean initialValue()
+        {
+            return Boolean.FALSE;
+        }
+    };
     
     public static boolean isNonBlockingInvocation()
     {
-        Boolean nb = __nonBlocking.get();
-        return nb!=null && nb.booleanValue();
+        return __nonBlocking.get();
     }
 
     public static void invokeNonBlocking(Runnable task)
@@ -44,14 +50,12 @@ public interface Invocable
         Boolean was_non_blocking = __nonBlocking.get();
         try
         {
-            if (was_non_blocking==null || !was_non_blocking.booleanValue())
-                __nonBlocking.set(Boolean.TRUE);
+            __nonBlocking.set(Boolean.TRUE);
             task.run();
         }
         finally
         {
-            if (was_non_blocking==null || !was_non_blocking.booleanValue())
-                __nonBlocking.remove();
+            __nonBlocking.set(was_non_blocking);
         }
     }
     

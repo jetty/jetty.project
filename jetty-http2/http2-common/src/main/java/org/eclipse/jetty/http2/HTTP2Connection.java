@@ -48,7 +48,7 @@ public class HTTP2Connection extends AbstractConnection
     private final ISession session;
     private final int bufferSize;
     private final HTTP2Producer producer = new HTTP2Producer();
-    private final ExecutionStrategy strategy;
+    private final ExecutionStrategy blockingStrategy;
     private final ExecutionStrategy nonBlockingStrategy;
 
     public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
@@ -58,7 +58,7 @@ public class HTTP2Connection extends AbstractConnection
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.strategy = new ExecuteProduceConsume(producer, executor);
+        this.blockingStrategy = new ExecuteProduceConsume(producer, executor);
         this.nonBlockingStrategy = new ProduceExecuteConsume(producer, executor);
     }
 
@@ -84,7 +84,7 @@ public class HTTP2Connection extends AbstractConnection
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Open {} ", this);
         super.onOpen();
-        strategy.produce();
+        blockingStrategy.produce();
     }
 
     @Override
@@ -95,15 +95,25 @@ public class HTTP2Connection extends AbstractConnection
         super.onClose();
     }
 
+
     @Override
     public void onFillable()
     {
+        throw new UnsupportedOperationException();
+    }
+    
+    private void onFillableBlocking()
+    {
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 onFillable {} ", this);
-        if (Invocable.isNonBlockingInvocation())
-            nonBlockingStrategy.produce();
-        else
-            strategy.produce();
+            LOG.debug("HTTP2 onFillableBlocking {} ", this);
+        blockingStrategy.produce();
+    }
+    
+    private void onFillableNonBlocking()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 onFillableNonBlocking {} ", this);
+        nonBlockingStrategy.produce();
     }
 
     private int fill(EndPoint endPoint, ByteBuffer buffer)
@@ -138,7 +148,7 @@ public class HTTP2Connection extends AbstractConnection
         // Because producing calls parse and parse can call offerTask, we have to make sure
         // we use the same strategy otherwise produce can be reentrant and that messes with 
         // the release mechanism.  TODO is this test sufficient to protect from this?
-        ExecutionStrategy s = Invocable.isNonBlockingInvocation()?nonBlockingStrategy:strategy;
+        ExecutionStrategy s = Invocable.isNonBlockingInvocation()?nonBlockingStrategy:blockingStrategy;
         if (dispatch)
             // TODO Why again is this necessary?
             s.dispatch();
@@ -233,7 +243,10 @@ public class HTTP2Connection extends AbstractConnection
         @Override
         public void succeeded()
         {
-            onFillable();
+            if (Invocable.isNonBlockingInvocation())
+                onFillableNonBlocking();
+            else
+                onFillableBlocking();
         }
 
         @Override

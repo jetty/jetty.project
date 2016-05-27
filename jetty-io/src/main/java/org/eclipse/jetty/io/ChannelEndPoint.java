@@ -338,15 +338,11 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             _desiredInterestOps = newInterestOps;
         }
 
-
         boolean fillable = (readyOps & SelectionKey.OP_READ) != 0;
         boolean flushable = (readyOps & SelectionKey.OP_WRITE) != 0;
 
-
         if (LOG.isDebugEnabled())
             LOG.debug("onSelected {}->{} r={} w={} for {}", oldInterestOps, newInterestOps, fillable, flushable, this);
-
-       
 
         // return task to complete the job
         Runnable task= fillable 

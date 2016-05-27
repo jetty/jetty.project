@@ -178,7 +178,7 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
                 if (!_pending)
                 {
                     // dispatch one
-                    dispatch = _pending = Invocable.getInvocationType(task)!=InvocationType.NON_BLOCKING;
+                    dispatch = _pending = true;
                 }
 
                 _execute = false;

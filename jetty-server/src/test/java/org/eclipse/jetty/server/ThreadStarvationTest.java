@@ -207,7 +207,7 @@ public class ThreadStarvationTest
         }
 
         Thread.sleep(100);
-        // System.err.println(_threadPool.dump());
+        System.err.println(_threadPool.dump());
 
         final AtomicLong total=new AtomicLong();
         final CountDownLatch latch=new CountDownLatch(client.length);
