@@ -58,8 +58,8 @@ public class HTTP2Connection extends AbstractConnection
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.strategy = new ProduceExecuteConsume(producer, executor);
-        this.nonBlockingStrategy = new ExecuteProduceConsume(producer, executor);
+        this.strategy = new ExecuteProduceConsume(producer, executor);
+        this.nonBlockingStrategy = new ProduceExecuteConsume(producer, executor);
     }
 
     public ISession getSession()
