@@ -63,6 +63,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -834,8 +835,14 @@ public abstract class FlowControlStrategyTest
         Stream stream = completable.get(5, TimeUnit.SECONDS);
         ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, false), new Callback.NonBlocking()
+        stream.data(new DataFrame(stream.getId(), data, false), new Callback()
         {
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
+            
             @Override
             public void succeeded()
             {
@@ -899,8 +906,14 @@ public abstract class FlowControlStrategyTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
         ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, false), new Callback.NonBlocking()
+        stream.data(new DataFrame(stream.getId(), data, false), new Callback()
         {
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
+            
             @Override
             public void succeeded()
             {
@@ -974,8 +987,14 @@ public abstract class FlowControlStrategyTest
         // Perform a big upload that will stall the flow control windows.
         ByteBuffer data = ByteBuffer.allocate(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, true), new Callback.NonBlocking()
+        stream.data(new DataFrame(stream.getId(), data, true), new Callback()
         {
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
+            
             @Override
             public void failed(Throwable x)
             {

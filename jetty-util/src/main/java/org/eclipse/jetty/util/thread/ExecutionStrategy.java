@@ -35,32 +35,25 @@ import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
  * execute tasks until the producer continues to produce them.</p>
  */
 public interface ExecutionStrategy
-{
+{    
     /**
-     * <p>Initiates (or resumes) the task production and execution.</p>
+     * <p>Initiates (or resumes) the task production and consumption.</p>
      * <p>This method guarantees that the task is never run by the
      * thread that called this method.</p>
      *
-     * @see #execute()
+     * TODO review the need for this (only used by HTTP2 push)
+     * @see #produce()
      */
     public void dispatch();
 
     /**
-     * <p>Initiates (or resumes) the task production and execution.</p>
+     * <p>Initiates (or resumes) the task production and consumption.</p>
      * <p>The produced task may be run by the same thread that called
      * this method.</p>
      *
      * @see #dispatch()
      */
-    public void execute();
-
-    /**
-     * A task that can handle {@link RejectedExecutionException}
-     */
-    public interface Rejectable
-    {
-        public void reject();
-    }
+    public void produce();
     
     /**
      * <p>A producer of {@link Runnable} tasks to run.</p>

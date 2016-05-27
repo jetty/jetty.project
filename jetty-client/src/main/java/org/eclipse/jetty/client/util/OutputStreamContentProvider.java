@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * A {@link ContentProvider} that provides content asynchronously through an {@link OutputStream}
@@ -79,9 +80,9 @@ public class OutputStreamContentProvider implements AsyncContentProvider, Callba
     private final OutputStream output = new DeferredOutputStream();
 
     @Override
-    public boolean isNonBlocking()
+    public InvocationType getInvocationType()
     {
-        return deferred.isNonBlocking();
+        return deferred.getInvocationType();
     }
     
     @Override

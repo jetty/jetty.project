@@ -251,26 +251,6 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
-     * @return the selector priority delta
-     * @deprecated not implemented
-     */
-    @Deprecated
-    public int getSelectorPriorityDelta()
-    {
-        return _manager.getSelectorPriorityDelta();
-    }
-
-    /**
-     * @param selectorPriorityDelta the selector priority delta
-     * @deprecated not implemented
-     */
-    @Deprecated
-    public void setSelectorPriorityDelta(int selectorPriorityDelta)
-    {
-        _manager.setSelectorPriorityDelta(selectorPriorityDelta);
-    }
-
-    /**
      * @return whether this connector uses a channel inherited from the JVM.
      * @see System#inheritedChannel()
      */
@@ -476,22 +456,6 @@ public class ServerConnector extends AbstractNetworkConnector
     public void setReuseAddress(boolean reuseAddress)
     {
         _reuseAddress = reuseAddress;
-    }
-
-    /**
-     * @return the ExecutionStrategy factory to use for SelectorManager
-     */
-    public ExecutionStrategy.Factory getExecutionStrategyFactory()
-    {
-        return _manager.getExecutionStrategyFactory();
-    }
-
-    /**
-     * @param executionFactory the ExecutionStrategy factory to use for SelectorManager
-     */
-    public void setExecutionStrategyFactory(ExecutionStrategy.Factory executionFactory)
-    {
-        _manager.setExecutionStrategyFactory(executionFactory);
     }
 
     protected class ServerConnectorManager extends SelectorManager

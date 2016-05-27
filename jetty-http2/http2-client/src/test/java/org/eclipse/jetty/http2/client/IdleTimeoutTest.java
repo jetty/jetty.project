@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -463,8 +464,13 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 sleep(idleTimeout / 2);
                 final boolean last = ++sends == 2;
-                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), last), !last ? this : new Callback.NonBlocking()
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), last), !last ? this : new Callback()
                 {
+                    @Override
+                    public InvocationType getInvocationType()
+                    {
+                        return InvocationType.NON_BLOCKING;
+                    }
                     @Override
                     public void succeeded()
                     {

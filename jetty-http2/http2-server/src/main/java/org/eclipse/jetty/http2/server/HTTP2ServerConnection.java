@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,9 +63,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final HttpConfiguration httpConfig;
     private final List<Frame> upgradeFrames = new ArrayList<>();
 
-    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ExecutionStrategy.Factory executionFactory, ServerSessionListener listener)
+    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
-        super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize, executionFactory);
+        super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize);
         this.listener = listener;
         this.httpConfig = httpConfig;
     }
@@ -189,7 +190,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         return true;
     }
 
-    private class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2 implements ExecutionStrategy.Rejectable
+    private class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2 implements Closeable
     {
         public ServerHttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
         {
@@ -211,7 +212,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
 
         @Override
-        public void reject()
+        public void close()
         {
             IStream stream = getStream();
             stream.reset(new ResetFrame(stream.getId(), ErrorCode.ENHANCE_YOUR_CALM_ERROR.code), Callback.NOOP);

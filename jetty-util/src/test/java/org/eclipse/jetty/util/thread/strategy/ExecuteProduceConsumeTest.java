@@ -85,7 +85,7 @@ public class ExecuteProduceConsumeTest
     public void testIdle()
     {
         _produce.add(NULLTASK);
-        _ewyk.execute();
+        _ewyk.produce();
     }
 
     @Test
@@ -94,7 +94,7 @@ public class ExecuteProduceConsumeTest
         Task t0 = new Task();
         _produce.add(t0);
         _produce.add(NULLTASK);
-        _ewyk.execute();
+        _ewyk.produce();
         Assert.assertThat(t0.hasRun(), Matchers.equalTo(true));
         Assert.assertEquals(_ewyk,_executions.poll());
     }
@@ -109,7 +109,7 @@ public class ExecuteProduceConsumeTest
             _produce.add(tasks[i]);
         }
         _produce.add(NULLTASK);
-        _ewyk.execute();
+        _ewyk.produce();
 
         for (Task task : tasks)
             Assert.assertThat(task.hasRun(), Matchers.equalTo(true));
@@ -127,7 +127,7 @@ public class ExecuteProduceConsumeTest
             {
                 _produce.add(t0);
                 _produce.add(NULLTASK);
-                _ewyk.execute();
+                _ewyk.produce();
             }
         };
         thread.start();
@@ -160,7 +160,7 @@ public class ExecuteProduceConsumeTest
             {
                 _produce.add(t0);
                 _produce.add(NULLTASK);
-                _ewyk.execute();
+                _ewyk.produce();
             }
         };
         thread.start();
@@ -191,7 +191,7 @@ public class ExecuteProduceConsumeTest
             public void run()
             {
                 _produce.add(t0);
-                _ewyk.execute();
+                _ewyk.produce();
             }
         };
         thread0.start();
@@ -218,7 +218,7 @@ public class ExecuteProduceConsumeTest
         _ewyk.run();
 
         // ditto with execute
-        _ewyk.execute();
+        _ewyk.produce();
 
         // Now if unblock the production by the dispatched thread
         final Task t1 = new Task(true);
@@ -264,7 +264,7 @@ public class ExecuteProduceConsumeTest
             public void run()
             {
                 _produce.add(t0);
-                _ewyk.execute();
+                _ewyk.produce();
             }
         };
         thread0.start();
@@ -280,7 +280,7 @@ public class ExecuteProduceConsumeTest
         _produce.add(NULLTASK);
 
         // execute will return immediately because it did not yet see the idle.
-        _ewyk.execute();
+        _ewyk.produce();
 
         // When we unblock t0, thread1 will see the idle,
         t0.unblock();
