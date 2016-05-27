@@ -151,7 +151,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
     private String _name;
-    private int _acceptorPriorityDelta;
+    private int _acceptorPriorityDelta=-2;
 
 
     /**

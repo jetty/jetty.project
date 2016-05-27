@@ -27,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>A convenience base implementation of {@link Connection}.</p>
@@ -82,50 +83,45 @@ public abstract class AbstractConnection implements Connection
         return _executor;
     }
 
-    @Deprecated
-    public boolean isDispatchIO()
-    {
-        return false;
-    }
-
     protected void failedCallback(final Callback callback, final Throwable x)
     {
-        if (callback.isNonBlocking())
+        Runnable failCallback = new Runnable()
         {
-            try
+            @Override
+            public void run()
             {
-                callback.failed(x);
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e);
-            }
-        }
-        else
-        {
-            try
-            {
-                getExecutor().execute(new Runnable()
+                try
                 {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            callback.failed(x);
-                        }
-                        catch (Exception e)
-                        {
-                            LOG.warn(e);
-                        }
-                    }
-                });
+                    callback.failed(x);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn(e);
+                }
             }
-            catch(RejectedExecutionException e)
-            {
-                LOG.debug(e);
-                callback.failed(x);
-            }
+        };
+        
+        switch(Invocable.getInvocationType(callback))
+        {
+            case BLOCKING:
+                try
+                {
+                    getExecutor().execute(failCallback); 
+                }
+                catch(RejectedExecutionException e)
+                {
+                    LOG.debug(e);
+                    callback.failed(x);
+                }
+                break;
+                
+            case NON_BLOCKING:
+                failCallback.run();
+                break;
+                
+            case EITHER:
+                Invocable.invokeNonBlocking(failCallback);
+
         }
     }
 

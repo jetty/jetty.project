@@ -43,8 +43,11 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
+import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 
 /**
  * <p>{@link ManagedSelector} wraps a {@link Selector} simplifying non-blocking operations on channels.</p>
@@ -52,7 +55,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * happen for registered channels. When events happen, it notifies the {@link EndPoint} associated
  * with the channel.</p>
  */
-public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
+public class ManagedSelector extends AbstractLifeCycle implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
 
@@ -62,24 +65,81 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     private final SelectorManager _selectorManager;
     private final int _id;
     private final ExecutionStrategy _strategy;
+    private final ExecutionStrategy _lowPriorityStrategy;
     private Selector _selector;
+
+    private final Runnable _runStrategy = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            _strategy.produce();
+        }
+    };
+    
+    private final Runnable _runLowPriorityStrategy = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            Thread current = Thread.currentThread();
+            String name = current.getName();
+            int priority = current.getPriority();
+            try
+            {
+                current.setPriority(Math.max(Thread.MIN_PRIORITY,Math.min(Thread.MAX_PRIORITY,priority-1)));
+                current.setPriority(Thread.MIN_PRIORITY);
+                current.setName(name+"-lowPrioSelector");
+                _lowPriorityStrategy.produce();
+            }
+            finally
+            {
+                current.setPriority(priority);
+                current.setName(name);
+            }
+        }
+    };
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
-        this(selectorManager, id, ExecutionStrategy.Factory.getDefault());
-    }
-
-    public ManagedSelector(SelectorManager selectorManager, int id, ExecutionStrategy.Factory executionFactory)
-    {
         _selectorManager = selectorManager;
         _id = id;
-        _strategy = executionFactory.newExecutionStrategy(new SelectorProducer(), selectorManager.getExecutor());
-        setStopTimeout(5000);
-    }
+        SelectorProducer producer = new SelectorProducer();
+        _strategy = new ExecuteProduceConsume(producer, selectorManager.getExecutor(), Invocable.InvocationType.BLOCKING);
+        _lowPriorityStrategy = new ProduceExecuteConsume(producer, selectorManager.getExecutor(), Invocable.InvocationType.BLOCKING)
+        {
+            @Override
+            protected boolean execute(Runnable task)
+            {
+                try
+                {
+                    Invocable.InvocationType invocation=Invocable.getInvocationType(task);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Low Prio Selector execute {} {}",invocation,task);                    
+                    switch (Invocable.getInvocationType(task))
+                    {
+                        case NON_BLOCKING:
+                            task.run();
+                            return true;
 
-    public ExecutionStrategy getExecutionStrategy()
-    {
-        return _strategy;
+                        case EITHER:
+                            Invocable.invokeNonBlocking(task);
+                            return true;
+
+                        default:
+                    }
+                    return super.execute(task);
+                }
+                finally
+                {
+                    // Allow opportunity for main strategy to take over
+                    Thread.yield();
+                }
+            }
+            
+
+        };
+        setStopTimeout(5000);
     }
 
     @Override
@@ -87,7 +147,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     {
         super.doStart();
         _selector = _selectorManager.newSelector();
-        _selectorManager.execute(this);
+        _selectorManager.execute(_runStrategy);
+        _selectorManager.execute(_runLowPriorityStrategy);
     }
 
     public int size()
@@ -135,12 +196,6 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             selector.wakeup();
     }
 
-    @Override
-    public void run()
-    {
-        _strategy.execute();
-    }
-
     /**
      * A {@link Selectable} is an {@link EndPoint} that wish to be
      * notified of non-blocking events by the {@link ManagedSelector}.
@@ -168,7 +223,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         private Iterator<SelectionKey> _cursor = Collections.emptyIterator();
 
         @Override
-        public Runnable produce()
+        public synchronized Runnable produce()
         {
             while (true)
             {

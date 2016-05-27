@@ -228,16 +228,6 @@ public class HTTP2Client extends ContainerLifeCycle
         this.flowControlStrategyFactory = flowControlStrategyFactory;
     }
 
-    public ExecutionStrategy.Factory getExecutionStrategyFactory()
-    {
-        return executionStrategyFactory;
-    }
-
-    public void setExecutionStrategyFactory(ExecutionStrategy.Factory executionStrategyFactory)
-    {
-        this.executionStrategyFactory = executionStrategyFactory;
-    }
-
     @ManagedAttribute("The number of selectors")
     public int getSelectors()
     {

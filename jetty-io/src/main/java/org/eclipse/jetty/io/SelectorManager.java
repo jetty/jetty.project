@@ -51,7 +51,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
-    private ExecutionStrategy.Factory _executionFactory = ExecutionStrategy.Factory.getDefault();
     private long _selectorIndex;
 
     protected SelectorManager(Executor executor, Scheduler scheduler)
@@ -96,43 +95,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     public void setConnectTimeout(long milliseconds)
     {
         _connectTimeout = milliseconds;
-    }
-
-    /**
-     * @return the {@link ExecutionStrategy.Factory} used by {@link ManagedSelector}
-     */
-    public ExecutionStrategy.Factory getExecutionStrategyFactory()
-    {
-        return _executionFactory;
-    }
-
-    /**
-     * @param _executionFactory the {@link ExecutionStrategy.Factory} used by {@link ManagedSelector}
-     */
-    public void setExecutionStrategyFactory(ExecutionStrategy.Factory _executionFactory)
-    {
-        if (isRunning())
-            throw new IllegalStateException("Cannot change " + ExecutionStrategy.Factory.class.getSimpleName() + " after start()");
-        this._executionFactory = _executionFactory;
-    }
-
-    /**
-     * @return the selector priority delta
-     * @deprecated not implemented
-     */
-    @Deprecated
-    public int getSelectorPriorityDelta()
-    {
-        return 0;
-    }
-
-    /**
-     * @param selectorPriorityDelta the selector priority delta
-     * @deprecated not implemented
-     */
-    @Deprecated
-    public void setSelectorPriorityDelta(int selectorPriorityDelta)
-    {
     }
 
     /**
@@ -286,7 +248,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     protected ManagedSelector newSelector(int id)
     {
-        return new ManagedSelector(this, id, getExecutionStrategyFactory());
+        return new ManagedSelector(this, id);
     }
 
     @Override

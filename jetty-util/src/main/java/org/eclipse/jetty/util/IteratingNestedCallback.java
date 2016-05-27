@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util;
 
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /* ------------------------------------------------------------ */
 /** Iterating Nested Callback.
@@ -48,9 +49,9 @@ public abstract class IteratingNestedCallback extends IteratingCallback
     }
 
     @Override
-    public boolean isNonBlocking()
+    public InvocationType getInvocationType()
     { 
-        return _callback.isNonBlocking();
+        return _callback.getInvocationType();
     }
     
     @Override
