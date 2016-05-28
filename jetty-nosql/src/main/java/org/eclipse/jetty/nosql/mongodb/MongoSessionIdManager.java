@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
-
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Random;
