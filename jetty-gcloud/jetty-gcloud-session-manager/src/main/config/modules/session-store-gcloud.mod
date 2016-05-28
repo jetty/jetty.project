@@ -48,7 +48,7 @@ lib/jetty-gcloud-session-manager-${jetty.version}.jar
 lib/gcloud/*.jar
 
 [xml]
-sessions/gcloud/session-store.xml
+etc/sessions/gcloud/session-store.xml
 
 [license]
 GCloudDatastore is an open source project hosted on Github and released under the Apache 2.0 license.
@@ -61,6 +61,8 @@ type=remote
 [ini-template]
 
 ## GCloudDatastore Session config
+#jetty.gcloudSession.maxRetries=
+#jetty.gcloudSession.backoffMs=
 
 
 ## Remote datastore
