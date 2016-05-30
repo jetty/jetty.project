@@ -21,6 +21,7 @@ package org.eclipse.jetty.gcloud.session;
 
 import com.google.gcloud.datastore.Blob;
 import com.google.gcloud.datastore.Datastore;
+import com.google.gcloud.datastore.DatastoreException;
 import com.google.gcloud.datastore.DatastoreFactory;
 import com.google.gcloud.datastore.Entity;
 import com.google.gcloud.datastore.Key;
@@ -45,6 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.server.session.UnwriteableSessionDataException;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -73,16 +75,40 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
 
     public static final String KIND = "GCloudSession";
     public static final int DEFAULT_MAX_QUERY_RESULTS = 100;
+    public static final int DEFAULT_MAX_RETRIES = 5;
+    public static final int DEFAULT_BACKOFF_MS = 50;
 
     private GCloudConfiguration _config;
     private Datastore _datastore;
     private KeyFactory _keyFactory;
     private int _maxResults = DEFAULT_MAX_QUERY_RESULTS;
+    private int _maxRetries = DEFAULT_MAX_RETRIES;
+    private int _backoff = DEFAULT_BACKOFF_MS;
     
     
     
+    public void setBackoffMs (int ms)
+    {
+        _backoff = ms;
+    }
     
     
+    public int getBackoffMs ()
+    {
+        return _backoff;
+    }
+    
+    
+    public void setMaxRetries (int retries)
+    {
+        _maxRetries = retries;
+    }
+    
+    
+    public int getMaxRetries ()
+    {
+        return _maxRetries;
+    }
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStart()
@@ -296,9 +322,43 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         if (LOG.isDebugEnabled()) LOG.debug("Writing session {} to DataStore", data.getId());
-    
+
         Entity entity = entityFromSession(data, makeKey(id, _context));
-        _datastore.put(entity);
+
+        //attempt the update with exponential back-off
+        int backoff = getBackoffMs();
+        int attempts;
+        for (attempts = 0; attempts < getMaxRetries(); attempts++)
+        {
+            try
+            {
+                _datastore.put(entity);
+                return;
+            }
+            catch (DatastoreException e)
+            {
+                if (e.code().retryable())
+                {
+                    if (LOG.isDebugEnabled()) LOG.debug("Datastore put retry {} waiting {}ms", attempts, backoff);
+                        
+                    try
+                    {
+                        Thread.currentThread().sleep(backoff);
+                    }
+                    catch (InterruptedException x)
+                    {
+                    }
+                    backoff *= 2;
+                }
+                else
+                {
+                   throw e;
+                }
+            }
+        }
+        
+        //retries have been exceeded
+        throw new UnwriteableSessionDataException(id, _context, null);
     }
 
     /**

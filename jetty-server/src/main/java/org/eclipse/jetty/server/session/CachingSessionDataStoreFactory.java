@@ -20,11 +20,11 @@
 package org.eclipse.jetty.server.session;
 
 /**
- * CachingSessionStoreFactory
+ * CachingSessionDataStoreFactory
  *
  *
  */
-public class CachingSessionStoreFactory extends AbstractSessionDataStoreFactory
+public class CachingSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
 
     /**
@@ -32,12 +32,24 @@ public class CachingSessionStoreFactory extends AbstractSessionDataStoreFactory
      */
     protected  SessionDataStoreFactory _backingSessionStoreFactory;
     
+    protected SessionDataMapFactory _mapFactory;
     
     
     
+    
+    public SessionDataMapFactory getMapFactory()
+    {
+        return _mapFactory;
+    }
+
+    public void setMapFactory(SessionDataMapFactory map)
+    {
+        _mapFactory = map;
+    }
+
     /**
      * @param factory The factory for the actual SessionDataStore that the
-     * CachingSessionStore will delegate to
+     * CachingSessionDataStore will delegate to
      */
     public void setBackingSessionStoreFactory (SessionDataStoreFactory factory)
     {
@@ -51,7 +63,7 @@ public class CachingSessionStoreFactory extends AbstractSessionDataStoreFactory
     public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
     {
         // TODO configure and create a cache!
-        return new CachingSessionStore(null, _backingSessionStoreFactory.getSessionDataStore(handler));    
+        return new CachingSessionDataStore(_mapFactory.getSessionDataMap(), _backingSessionStoreFactory.getSessionDataStore(handler));    
     }
 
 }

@@ -257,7 +257,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     /** 
      * -1 means we never evict inactive sessions.
      * 0 means we evict a session after the last request for it exits
-     * >0 is the number of seconds after which we evict inactive sessions from the cache
+     * &gt;0 is the number of seconds after which we evict inactive sessions from the cache
      * 
      * @see org.eclipse.jetty.server.session.SessionCache#setEvictionPolicy(int)
      */
@@ -536,7 +536,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * This method will first check with the object store. If it
      * doesn't exist in the object store (might be passivated etc),
      * it will check with the data store.
-     * @throws Exception 
+     * @throws Exception the Exception
      * 
      * @see org.eclipse.jetty.server.session.SessionCache#exists(java.lang.String)
      */
@@ -630,7 +630,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * is enabled.
      * 
      * 
-     * @param session
+     * @param session session to check
      */
     public void checkInactiveSession (Session session)
     {
@@ -666,6 +666,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 catch (Exception e)
                 {
                     LOG.warn("Passivation of idle session {} failed", session.getId(), e);
+                    //TODO reset the timer so it can be retried later and leave it in the cache
                     doDelete(session.getId()); //detach it
                     session.setResident(false);
                 }

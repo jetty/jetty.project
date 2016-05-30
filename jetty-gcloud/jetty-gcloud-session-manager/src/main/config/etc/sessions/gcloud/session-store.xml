@@ -5,13 +5,15 @@
 
 
   <!-- ===================================================================== -->
-  <!-- Configure a factory for GCloudSessionStores                           -->
+  <!-- Configure a factory for GCloudSessionDataStores                       -->
   <!-- ===================================================================== -->
   <Call name="addBean">
    <Arg>
-    <New class="org.eclipse.jetty.server.session.GCloudSessionStoreFactory">      
-       <Set name="gcloudConfiguration"><Ref id="gconf"/></Set>
-       <Set name="gracePeriod"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+    <New class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory">      
+       <Set name="gCloudConfiguration"><Ref id="gconf"/></Set>
+       <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+       <Set name="maxRetries"><Property name="jetty.gcloudSession.maxRetries" default="5"/></Set>
+       <Set name="backoffMs"><Property name="jetty.gcloudSession.backoffMs" default="50"/></Set>
     </New>
    </Arg>
   </Call>

@@ -60,7 +60,7 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
      */
-    public void initialize (SessionContext context)
+    public void initialize (SessionContext context) throws Exception
     {
         if (isStarted())
             throw new IllegalStateException("Context set after SessionDataStore started");
