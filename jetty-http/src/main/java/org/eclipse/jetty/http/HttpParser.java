@@ -299,6 +299,12 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
+    public HttpHandler getHandler()
+    {
+        return _handler;
+    }
+    
+    /* ------------------------------------------------------------------------------- */
     /** Check RFC compliance violation
      * @param compliance The compliance level violated
      * @param reason The reason for the violation
