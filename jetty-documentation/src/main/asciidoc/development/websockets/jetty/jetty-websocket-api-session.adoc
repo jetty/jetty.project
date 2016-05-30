@@ -61,10 +61,3 @@ Get and Set the Idle Timeout
 ----
 session.setIdleTimeout(2000); // 2 second timeout
 ----
-
-Get and Set the Maximum Message Size
-
-[source,java]
-----
-session.setMaximumMessageSize(64*1024); // accept messages up to 64k, fail if larger
-----
