@@ -58,7 +58,7 @@ import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 /**
  * Provides the implementation of {@link LogicalConnection} within the framework of the new {@link org.eclipse.jetty.io.Connection} framework of {@code jetty-io}.
  */
-public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, ConnectionStateListener, Dumpable 
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, ConnectionStateListener, Dumpable
 {
     private class Flusher extends FrameFlusher
     {
@@ -190,7 +190,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             return countOnFillableEvents.get();
         }
     }
-    
+
     private static enum ReadMode
     {
         PARSE,
@@ -267,7 +267,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * <p>                    fillInterested();
 
      * This can result in a close handshake over the network, or a simple local abnormal close
-     * 
+     *
      * @param statusCode
      *            the WebSocket status code.
      * @param reason
@@ -341,7 +341,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Get the list of extensions in use.
      * <p>
      * This list is negotiated during the WebSocket Upgrade Request/Response handshake.
-     * 
+     *
      * @return the list of negotiated extensions in use.
      */
     public List<ExtensionConfig> getExtensions()
@@ -353,7 +353,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         return generator;
     }
-    
+
     @Override
     public String getId()
     {
@@ -437,7 +437,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         if (LOG_CLOSE.isDebugEnabled())
             LOG_CLOSE.debug("{} Connection State Change: {}",policy.getBehavior(),state);
-        
+
         switch (state)
         {
             case OPEN:
@@ -493,9 +493,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         if (LOG.isDebugEnabled())
             LOG.debug("{} onFillable()",policy.getBehavior());
         stats.countOnFillableEvents.incrementAndGet();
-        
+
         ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),true);
-        
+
         try
         {
             isFilling = true;
@@ -503,7 +503,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             if(readMode == ReadMode.PARSE)
             {
                 readMode = readParse(buffer);
-            } 
+            }
             else
             {
                 readMode = readDiscard(buffer);
@@ -523,8 +523,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             isFilling = false;
         }
     }
-
-    
 
     @Override
     protected void onFillInterestedFailed(Throwable cause)
@@ -548,12 +546,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
         prefillBuffer = prefilled;
     }
-    
+
     private void notifyError(Throwable t)
     {
         getParser().getIncomingFramesHandler().incomingError(t);
     }
-    
+
     @Override
     public void onOpen()
     {
@@ -646,7 +644,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             return ReadMode.DISCARD;
         }
     }
-    
+
     private ReadMode readParse(ByteBuffer buffer)
     {
         EndPoint endPoint = getEndPoint();
@@ -667,7 +665,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                     // Done reading, wait for next onFillable
                     return ReadMode.PARSE;
                 }
-                
+
                 if (LOG.isDebugEnabled())
                 {
                     LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
@@ -695,7 +693,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             return ReadMode.DISCARD;
         }
     }
-    
+
     @Override
     public void resume()
     {
@@ -709,7 +707,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Get the list of extensions in use.
      * <p>
      * This list is negotiated during the WebSocket Upgrade Request/Response handshake.
-     * 
+     *
      * @param extensions
      *            the list of negotiated extensions in use.
      */
@@ -764,7 +762,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         final int prime = 31;
         int result = 1;
-        
+
         EndPoint endp = getEndPoint();
         if(endp != null)
         {

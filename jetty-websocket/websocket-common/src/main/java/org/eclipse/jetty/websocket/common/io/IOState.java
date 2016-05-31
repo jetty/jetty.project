@@ -44,7 +44,7 @@ public class IOState
     /**
      * The source of a close handshake. (ie: who initiated it).
      */
-    private static enum CloseHandshakeSource
+    private enum CloseHandshakeSource
     {
         /** No close handshake initiated (yet) */
         NONE,
@@ -53,7 +53,7 @@ public class IOState
         /** Remote side initiated the close handshake */
         REMOTE,
         /** An abnormal close situation (disconnect, timeout, etc...) */
-        ABNORMAL;
+        ABNORMAL
     }
 
     public static interface ConnectionStateListener
@@ -65,17 +65,17 @@ public class IOState
     private ConnectionState state;
     private final List<ConnectionStateListener> listeners = new CopyOnWriteArrayList<>();
 
-    /** 
+    /**
      * Is input on websocket available (for reading frames).
      * Used to determine close handshake completion, and track half-close states
      */
     private boolean inputAvailable;
-    /** 
+    /**
      * Is output on websocket available (for writing frames).
      * Used to determine close handshake completion, and track half-closed states.
      */
     private boolean outputAvailable;
-    /** 
+    /**
      * Initiator of the close handshake.
      * Used to determine who initiated a close handshake for reply reasons.
      */
@@ -294,8 +294,7 @@ public class IOState
         if (event != null)
         {
             notifyStateListeners(event);
-            
-            if(abnormalEvent != null) 
+            if (abnormalEvent != null)
             {
                 notifyStateListeners(abnormalEvent);
             }
@@ -406,7 +405,7 @@ public class IOState
     {
         if(LOG.isDebugEnabled())
             LOG.debug(" onOpened()");
-        
+
         ConnectionState event = null;
         synchronized (this)
         {
