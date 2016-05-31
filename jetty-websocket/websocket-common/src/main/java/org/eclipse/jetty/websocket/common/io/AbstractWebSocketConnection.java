@@ -60,6 +60,8 @@ import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
  */
 public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, ConnectionStateListener, Dumpable
 {
+    private final AtomicBoolean closed = new AtomicBoolean();
+
     private class Flusher extends FrameFlusher
     {
         private Flusher(ByteBufferPool bufferPool, Generator generator, EndPoint endpoint)
@@ -256,10 +258,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void close()
     {
-        if(LOG_CLOSE.isDebugEnabled())
-            LOG_CLOSE.debug(".close()");
-        CloseInfo close = new CloseInfo();
-        this.outgoingFrame(close.asFrame(),new OnCloseLocalCallback(close),BatchMode.OFF);
+        if (LOG_CLOSE.isDebugEnabled())
+            LOG_CLOSE.debug("close()");
+        close(new CloseInfo());
     }
 
     /**
@@ -278,9 +279,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void close(int statusCode, String reason)
     {
         if (LOG_CLOSE.isDebugEnabled())
-            LOG_CLOSE.debug("close({},{})",statusCode,reason);
-        CloseInfo close = new CloseInfo(statusCode,reason);
-        this.outgoingFrame(close.asFrame(),new OnCloseLocalCallback(close),BatchMode.OFF);
+            LOG_CLOSE.debug("close({},{})", statusCode, reason);
+        close(new CloseInfo(statusCode, reason));
+    }
+
+    private void close(CloseInfo closeInfo)
+    {
+        if (closed.compareAndSet(false, true))
+            outgoingFrame(closeInfo.asFrame(), new OnCloseLocalCallback(closeInfo), BatchMode.OFF);
     }
 
     @Override
@@ -408,7 +414,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public boolean isOpen()
     {
-        return getIOState().isOpen() && getEndPoint().isOpen();
+        return !closed.get();
     }
 
     @Override

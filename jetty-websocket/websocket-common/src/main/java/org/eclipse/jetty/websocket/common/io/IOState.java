@@ -150,7 +150,7 @@ public class IOState
 
     public boolean isClosed()
     {
-        synchronized (state)
+        synchronized (this)
         {
             return (state == ConnectionState.CLOSED);
         }
@@ -163,7 +163,7 @@ public class IOState
 
     public boolean isOpen()
     {
-        return (getConnectionState() != ConnectionState.CLOSED);
+        return !isClosed();
     }
 
     public boolean isOutputAvailable()
@@ -221,67 +221,87 @@ public class IOState
 
     /**
      * A close handshake has been issued from the local endpoint
-     * @param close the close information
+     * @param closeInfo the close information
      */
-    public void onCloseLocal(CloseInfo close)
+    public void onCloseLocal(CloseInfo closeInfo)
+    {
+        boolean open = false;
+        synchronized (this)
+        {
+            ConnectionState initialState = this.state;
+            if (LOG.isDebugEnabled())
+                LOG.debug("onCloseLocal({}) : {}", closeInfo, initialState);
+            if (initialState == ConnectionState.CLOSED)
+            {
+                // already closed
+                if (LOG.isDebugEnabled())
+                    LOG.debug("already closed");
+                return;
+            }
+
+            if (initialState == ConnectionState.CONNECTED)
+            {
+                // fast close. a local close request from end-user onConnect/onOpen method
+                if (LOG.isDebugEnabled())
+                    LOG.debug("FastClose in CONNECTED detected");
+                open = true;
+            }
+        }
+
+        if (open)
+            openAndCloseLocal(closeInfo);
+        else
+            closeLocal(closeInfo);
+    }
+
+    private void openAndCloseLocal(CloseInfo closeInfo)
+    {
+        // Force the state open (to allow read/write to endpoint)
+        onOpened();
+        if (LOG.isDebugEnabled())
+            LOG.debug("FastClose continuing with Closure");
+        closeLocal(closeInfo);
+    }
+
+    private void closeLocal(CloseInfo closeInfo)
     {
         ConnectionState event = null;
         ConnectionState abnormalEvent = null;
-        ConnectionState initialState = this.state;
-        if (LOG.isDebugEnabled())
-            LOG.debug("onCloseLocal({}) : {}",close,initialState);
-        if (initialState == ConnectionState.CLOSED)
-        {
-            // already closed
-            LOG.debug("already closed");
-            return;
-        }
-
-        if (initialState == ConnectionState.CONNECTED)
-        {
-            // fast close. a local close request from end-user onConnect/onOpen method
-            LOG.debug("FastClose in CONNECTED detected");
-            // Force the state open (to allow read/write to endpoint)
-            onOpened();
-            if (LOG.isDebugEnabled())
-                LOG.debug("FastClose continuing with Closure");
-        }
-
         synchronized (this)
         {
-            closeInfo = close;
-            
-            // Turn off further output
+            if (LOG.isDebugEnabled())
+                LOG.debug("onCloseLocal(), input={}, output={}", inputAvailable, outputAvailable);
+
+            this.closeInfo = closeInfo;
+
+            // Turn off further output.
             outputAvailable = false;
 
-            boolean in = inputAvailable;
-            boolean out = outputAvailable;
             if (closeHandshakeSource == CloseHandshakeSource.NONE)
             {
                 closeHandshakeSource = CloseHandshakeSource.LOCAL;
             }
-            
-            LOG.debug("onCloseLocal(), input={}, output={}",in,out);
 
-            if (!in && !out)
+            if (!inputAvailable)
             {
-                LOG.debug("Close Handshake satisfied, disconnecting");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Close Handshake satisfied, disconnecting");
                 cleanClose = true;
                 this.state = ConnectionState.CLOSED;
-                finalClose.compareAndSet(null,close);
+                finalClose.compareAndSet(null,closeInfo);
                 event = this.state;
             }
             else if (this.state == ConnectionState.OPEN)
             {
-                // We are now entering CLOSING (or half-closed)
+                // We are now entering CLOSING (or half-closed).
                 this.state = ConnectionState.CLOSING;
                 event = this.state;
-                
-                // if abnormal, we don't expect an answer.
-                if (close.isAbnormal())
+
+                // If abnormal, we don't expect an answer.
+                if (closeInfo.isAbnormal())
                 {
                     abnormalEvent = ConnectionState.CLOSED;
-                    finalClose.compareAndSet(null,close);
+                    finalClose.compareAndSet(null,closeInfo);
                     cleanClose = false;
                     outputAvailable = false;
                     inputAvailable = false;
@@ -303,12 +323,12 @@ public class IOState
 
     /**
      * A close handshake has been received from the remote endpoint
-     * @param close the close information
+     * @param closeInfo the close information
      */
-    public void onCloseRemote(CloseInfo close)
+    public void onCloseRemote(CloseInfo closeInfo)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onCloseRemote({})",close);
+            LOG.debug("onCloseRemote({})", closeInfo);
         ConnectionState event = null;
         synchronized (this)
         {
@@ -318,27 +338,25 @@ public class IOState
                 return;
             }
 
-            closeInfo = close;
-            
+            if (LOG.isDebugEnabled())
+                LOG.debug("onCloseRemote(), input={}, output={}", inputAvailable, outputAvailable);
+
+            this.closeInfo = closeInfo;
+
             // turn off further input
             inputAvailable = false;
 
-            boolean in = inputAvailable;
-            boolean out = outputAvailable;
             if (closeHandshakeSource == CloseHandshakeSource.NONE)
             {
                 closeHandshakeSource = CloseHandshakeSource.REMOTE;
             }
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("onCloseRemote(), input={}, output={}",in,out);
-
-            if (!in && !out)
+            if (!outputAvailable)
             {
                 LOG.debug("Close Handshake satisfied, disconnecting");
                 cleanClose = true;
                 state = ConnectionState.CLOSED;
-                finalClose.compareAndSet(null,close);
+                finalClose.compareAndSet(null,closeInfo);
                 event = this.state;
             }
             else if (this.state == ConnectionState.OPEN)

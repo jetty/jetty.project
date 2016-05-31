@@ -103,13 +103,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     public void close()
     {
         /* This is assumed to always be a NORMAL closure, no reason phrase */
-        connection.close(StatusCode.NORMAL, null);
+        close(StatusCode.NORMAL, null);
     }
 
     @Override
     public void close(CloseStatus closeStatus)
     {
-        this.close(closeStatus.getCode(),closeStatus.getPhrase());
+        close(closeStatus.getCode(),closeStatus.getPhrase());
     }
 
     @Override
@@ -149,17 +149,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     {
         if(LOG.isDebugEnabled())
             LOG.debug("stopping - {}",this);
-        
-        if (getConnection() != null)
+        try
         {
-            try
-            {
-                getConnection().close(StatusCode.SHUTDOWN,"Shutdown");
-            }
-            catch (Throwable t)
-            {
-                LOG.debug("During Connection Shutdown",t);
-            }
+            close(StatusCode.SHUTDOWN,"Shutdown");
+        }
+        catch (Throwable t)
+        {
+            LOG.debug("During Connection Shutdown",t);
         }
         super.doStop();
     }
