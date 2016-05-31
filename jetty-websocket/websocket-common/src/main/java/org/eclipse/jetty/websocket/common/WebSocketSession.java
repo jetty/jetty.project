@@ -94,7 +94,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         this.incomingHandler = websocket;
         this.connection.getIOState().addListener(this);
         this.policy = containerScope.getPolicy();
-        
+
         addBean(this.connection);
         addBean(this.websocket);
     }
@@ -103,13 +103,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     public void close()
     {
         /* This is assumed to always be a NORMAL closure, no reason phrase */
-        connection.close(StatusCode.NORMAL, null);
+        close(StatusCode.NORMAL, null);
     }
 
     @Override
     public void close(CloseStatus closeStatus)
     {
-        this.close(closeStatus.getCode(),closeStatus.getPhrase());
+        close(closeStatus.getCode(),closeStatus.getPhrase());
     }
 
     @Override
@@ -134,7 +134,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     {
         executor.execute(runnable);
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
@@ -143,27 +143,23 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
 
         super.doStart();
     }
-    
+
     @Override
     protected void doStop() throws Exception
     {
         if(LOG.isDebugEnabled())
             LOG.debug("stopping - {}",this);
-        
-        if (getConnection() != null)
+        try
         {
-            try
-            {
-                getConnection().close(StatusCode.SHUTDOWN,"Shutdown");
-            }
-            catch (Throwable t)
-            {
-                LOG.debug("During Connection Shutdown",t);
-            }
+            close(StatusCode.SHUTDOWN,"Shutdown");
+        }
+        catch (Throwable t)
+        {
+            LOG.debug("During Connection Shutdown",t);
         }
         super.doStop();
     }
-    
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -223,7 +219,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     {
         return this.connection.getBufferPool();
     }
-    
+
     public ClassLoader getClassLoader()
     {
         return this.getClass().getClassLoader();
@@ -321,7 +317,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     {
         return this.upgradeResponse;
     }
-    
+
 
     @Override
     public WebSocketSession getWebSocketSession()
@@ -409,12 +405,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     {
         incomingError(cause);
     }
-    
+
     @Override
     public void onClosed(Connection connection)
     {
     }
-    
+
     @Override
     public void onOpened(Connection connection)
     {
@@ -460,7 +456,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
                 break;
         }
     }
-    
+
     /**
      * Open/Activate the session
      */
@@ -474,17 +470,17 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
             // already opened
             return;
         }
-        
-        try(ThreadClassLoaderScope scope = new ThreadClassLoaderScope(classLoader)) 
+
+        try(ThreadClassLoaderScope scope = new ThreadClassLoaderScope(classLoader))
         {
             // Upgrade success
             connection.getIOState().onConnected();
-    
+
             // Connect remote
             remote = new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
             if(LOG_OPEN.isDebugEnabled())
                 LOG_OPEN.debug("[{}] {}.open() remote={}",policy.getBehavior(),this.getClass().getSimpleName(),remote);
-            
+
             // Open WebSocket
             websocket.openSession(this);
 
@@ -514,7 +510,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
             close(statusCode,t.getMessage());
         }
     }
-    
+
     public void setExtensionFactory(ExtensionFactory extensionFactory)
     {
         this.extensionFactory = extensionFactory;
