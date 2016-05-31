@@ -187,8 +187,8 @@ If you need to configure something within a web application, often you do so by 
 However, both the servlet standard and some Jetty features allow for other configuration to be applied to a web
 application externally from the WAR:
 
-* You configure datasources and security realms in the server and inject them into a web application either explicitly or by name matching.
-* Jetty allows one or more override deployment descriptors, in `web.xml` format, to be set on a context (via code or IoC XML) to amend the configuration set by the default and standard ` web.xml`.
+* You configure data sources and security realms in the server and inject them into a web application either explicitly or by name matching.
+* Jetty allows one or more override deployment descriptors, in `web.xml` format, to be set on a context (via code or IoC XML) to amend the configuration set by the default and standard `web.xml`.
 * The normal Jetty Java API may be called by code or IoC XML to amend the configuration of a web application.
 
 ===== Setting the Context Path
@@ -232,7 +232,7 @@ An example of setting the context path is included with the Jetty distribution i
 
 ===== Setting an Authentication Realm
 
-The authentication method and realm name for a standard web application may be set in the ` web.xml` deployment descriptor with elements like:
+The authentication method and realm name for a standard web application may be set in the `web.xml` deployment descriptor with elements like:
 
 [source,xml]
 ----

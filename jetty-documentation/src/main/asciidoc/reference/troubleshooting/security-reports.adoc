@@ -23,6 +23,9 @@ The following sections provide information about Jetty security issues.
 [width="99%",cols="11%,19%,14%,9%,14%,14%,19%",options="header",]
 |=======================================================================
 |yyyy/mm/dd |ID |Exploitable |Severity |Affects |Fixed Version |Comment
+|2016/05/31 |CVE-2016-4800 |high |high |>= 9.3.0, < = 9.3.8 |9.3.9
+|http://www.ocert.org/advisories/ocert-2016-001.html[Alias vulnerability allowing access to protected resources within a webapp on Windows.]
+
 |2015/02/24 |CVE-2015-2080 |high |high |>=9.2.3 <9.2.9 |9.2.9
 |http://blog.gdssecurity.com/labs/2015/2/25/jetleak-vulnerability-remote-leakage-of-shared-buffers-in-je.html[JetLeak exposure of past buffers during HttpParser error]
 
@@ -34,7 +37,7 @@ https://bugs.eclipse.org/bugs/show_bug.cgi?id=418014[418014] |Alias checking dis
 |https://bugs.eclipse.org/bugs/show_bug.cgi?id=413684[413684] |low
 |medium |>=7.6.9 <9.0.5 |7.6.13,8.1.13,9.0.5
 https://bugs.eclipse.org/bugs/show_bug.cgi?id=413684[413684]
-|Constraints bypassed if unix symlink alias checker used on windows
+|Constraints bypassed if Unix symlink alias checker used on Windows.
 
 |2011/12/29
 |http://www.ocert.org/advisories/ocert-2011-003.html[CERT2011-003] http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2011-4461[CVE-2011-4461]
@@ -49,11 +52,11 @@ around by turning off SSL renegotiation in Jetty. If using JVM > 1.6u19
 setAllowRenegotiate(true) may be called on connectors.
 
 |2009/06/18 |http://jira.codehaus.org/browse/JETTY-1042[Jetty-1042] |low
-|high |<=6.1.18, <=7.0.0.M4 |6.1.19, 7.0.0.Rc0 |Cookie leak between
+|high |< = 6.1.18, < = 7.0.0.M4 |6.1.19, 7.0.0.Rc0 |Cookie leak between
 requests sharing a connection.
 
 |2009/04/30 |http://www.kb.cert.org/vuls/id/402580[CERT402580] |medium
-|high |<=6.1.16, <=7.0.0.M2 a|
+|high |< = 6.1.16, < = 7.0.0.M2 a|
 5.1.15, 6.1.18, 7.0.0.M2
 
 http://jira.codehaus.org/browse/JETTY-1004[Jetty-1004]
