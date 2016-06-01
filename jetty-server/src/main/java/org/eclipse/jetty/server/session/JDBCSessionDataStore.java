@@ -51,13 +51,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
     protected boolean _initialized = false;
-    protected Map<String, AtomicInteger> _unloadables = new ConcurrentHashMap<>();
-
     private DatabaseAdaptor _dbAdaptor;
     private SessionTableSchema _sessionTableSchema;
 
-    private int _attempts = -1; // <= 0 means unlimited attempts to load a session
-    private boolean _deleteUnloadables = false; //true means if attempts exhausted delete the session
+
     
     /**
      * SessionTableSchema
@@ -625,7 +622,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         if (_dbAdaptor == null)
             throw new IllegalStateException("No jdbc config");
         
-        _unloadables.clear();
         initialize();
         super.doStart();
     }
@@ -636,7 +632,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     @Override
     protected void doStop() throws Exception
     {
-        _unloadables.clear();
         super.doStop();
     }
 
@@ -667,9 +662,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     @Override
     public SessionData load(String id) throws Exception
     {
-        if (getLoadAttempts() > 0 && loadAttemptsExhausted(id))
-            throw new UnreadableSessionDataException(id, _context, true);
-            
         final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
         final AtomicReference<Exception> exception = new AtomicReference<Exception>();
         
@@ -704,15 +696,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         }
                         catch (Exception e)
                         {
-                            if (getLoadAttempts() > 0)
-                            {
-                                incLoadAttempt (id);
-                            }
                             throw new UnreadableSessionDataException (id, _context, e);
                         }
-                        
-                        //if the session successfully loaded, remove failed attempts
-                        _unloadables.remove(id);
                         
                         if (LOG.isDebugEnabled())
                             LOG.debug("LOADED session {}", data);
@@ -722,23 +707,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                             LOG.debug("No session {}", id);
                     
                     reference.set(data);
-                }
-                catch (UnreadableSessionDataException e)
-                {
-                    if (getLoadAttempts() > 0 && loadAttemptsExhausted(id) && isDeleteUnloadableSessions())
-                    {
-                        try
-                        {
-                            delete (id);
-                            _unloadables.remove(id);
-                        }
-                        catch (Exception x)
-                        {
-                            LOG.warn("Problem deleting unloadable session {}", id);
-                        }
-
-                    }
-                    exception.set(e);
                 }
                 catch (Exception e)
                 {
@@ -762,7 +730,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
      */
     @Override
     public boolean delete(String id) throws Exception
-    {
+    {   
         try (Connection connection = _dbAdaptor.getConnection();
              PreparedStatement statement = _sessionTableSchema.getDeleteStatement(connection, id, _context))
         {
@@ -1008,78 +976,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         _sessionTableSchema = schema;
     }
 
-    public void setLoadAttempts (int attempts)
-    {
-        checkStarted();
-        _attempts = attempts;
-    }
-
-    public int getLoadAttempts ()
-    {
-        return _attempts;
-    }
-    
-    public boolean loadAttemptsExhausted (String id)
-    {
-        AtomicInteger i = _unloadables.get(id);
-        if (i == null)
-            return false;
-        return (i.get() >= _attempts);
-    }
-    
-    public void setDeleteUnloadableSessions (boolean delete)
-    {
-        checkStarted();
-        _deleteUnloadables = delete;
-    }
-    
-    /**
-     * @return true if we should delete data for sessions that we cant reconstitute
-     */
-    public boolean isDeleteUnloadableSessions ()
-    {
-        return _deleteUnloadables;
-    }
-    
-    
-    protected void incLoadAttempt (String id)
-    {
-        AtomicInteger i = new AtomicInteger(0);
-        AtomicInteger count = _unloadables.putIfAbsent(id, i);
-        if (count == null)
-            count = i;
-        count.incrementAndGet();
-    }
-    
   
-    
-    /**
-     * @param id the id
-     * @return number of attempts to load the given id
-     */
-    public int getLoadAttempts (String id)
-    {
-        AtomicInteger i = _unloadables.get(id);
-        if (i == null)
-            return 0;
-        return i.get();
-    }
-    
-    /**
-     * @return how many sessions we've failed to load
-     */
-    public Set<String> getUnloadableSessions ()
-    {
-        return new HashSet<String>(_unloadables.keySet());
-    }
-
-    /**
-     * 
-     */
-    public void clearUnloadableSessions()
-    {
-        _unloadables.clear();
-    }
 
 
    /** 
@@ -1090,7 +987,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
    {
        return true;
    }
-
 
 
 

@@ -80,4 +80,6 @@ public interface SessionCache extends LifeCycle
     boolean isSaveOnInactiveEviction ();
     void setSaveOnCreate(boolean saveOnCreate);
     boolean isSaveOnCreate();
+    void setRemoveUnloadableSessions(boolean removeUnloadableSessions);
+    boolean isRemoveUnloadableSessions();
 }

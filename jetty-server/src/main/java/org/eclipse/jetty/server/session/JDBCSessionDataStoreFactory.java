@@ -31,54 +31,11 @@ public class JDBCSessionDataStoreFactory extends AbstractSessionDataStoreFactory
      * 
      */
     DatabaseAdaptor _adaptor;
+    
     /**
      * 
      */
     JDBCSessionDataStore.SessionTableSchema _schema;
-    /**
-     * 
-     */
-    boolean _deleteUnloadableSessions;
-    /**
-     * 
-     */
-    int _loadAttempts;
-
-
-    /**
-     * @return
-     */
-    public boolean isDeleteUnloadableSessions()
-    {
-        return _deleteUnloadableSessions;
-    }
-
-
-    /**
-     * @param deleteUnloadableSessions
-     */
-    public void setDeleteUnloadableSessions(boolean deleteUnloadableSessions)
-    {
-        _deleteUnloadableSessions = deleteUnloadableSessions;
-    }
-
-
-    /**
-     * @return
-     */
-    public int getLoadAttempts()
-    {
-        return _loadAttempts;
-    }
-
-
-    /**
-     * @param loadAttempts
-     */
-    public void setLoadAttempts(int loadAttempts)
-    {
-        _loadAttempts = loadAttempts;
-    }
 
 
     /** 
@@ -90,9 +47,7 @@ public class JDBCSessionDataStoreFactory extends AbstractSessionDataStoreFactory
         JDBCSessionDataStore ds = new JDBCSessionDataStore();
         ds.setDatabaseAdaptor(_adaptor);
         ds.setSessionTableSchema(_schema);
-        ds.setDeleteUnloadableSessions(_deleteUnloadableSessions);
-        ds.setGracePeriodSec(_gracePeriodSec);
-        ds.setLoadAttempts(_loadAttempts);
+        ds.setGracePeriodSec(getGracePeriodSec());
         return ds;
     }
 

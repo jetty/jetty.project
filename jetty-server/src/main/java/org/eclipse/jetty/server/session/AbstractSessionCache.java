@@ -88,6 +88,9 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      */
     protected boolean _saveOnInactiveEviction;
     
+    
+    protected boolean _removeUnloadableSessions;
+    
  
 
     /**
@@ -281,6 +284,29 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     }
 
 
+    /**
+     * @return true if sessions that can't be loaded are deleted from the store
+     */
+    @Override
+    public boolean isRemoveUnloadableSessions()
+    {
+        return _removeUnloadableSessions;
+    }
+
+
+    /**
+     * If a session's data cannot be loaded from the store without error, remove
+     * it from the persistent store.
+     * 
+     * @param removeUnloadableSessions 
+     */
+    @Override
+    public void setRemoveUnloadableSessions(boolean removeUnloadableSessions)
+    {
+        _removeUnloadableSessions = removeUnloadableSessions;
+    }
+
+
     /** 
      *  Get a session object.
      * 
@@ -429,7 +455,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         catch (UnreadableSessionDataException e)
         {
             //can't load the session, delete it
-            _sessionDataStore.delete(id);
+            if (isRemoveUnloadableSessions())
+                _sessionDataStore.delete(id);
             throw e;
         }
     }
@@ -580,7 +607,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      */
     @Override
     public Session delete(String id) throws Exception
-    {   
+    {
         //get the session, if its not in memory, this will load it
         Session session = get(id); 
 

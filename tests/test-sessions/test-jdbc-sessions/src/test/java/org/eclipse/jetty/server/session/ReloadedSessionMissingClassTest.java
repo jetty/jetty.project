@@ -92,6 +92,7 @@ public class ReloadedSessionMissingClassTest
         AbstractTestServer server1 = new JdbcTestServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE, AbstractTestServer.DEFAULT_SCAVENGE_SEC, AbstractTestServer.DEFAULT_EVICTIONPOLICY);
         
         WebAppContext webApp = server1.addWebAppContext(unpackedWarDir.getCanonicalPath(), contextPath);
+        webApp.getSessionHandler().getSessionCache().setRemoveUnloadableSessions(true);
         webApp.setClassLoader(loaderWithFoo);
         webApp.addServlet("Bar", "/bar");
         server1.start();
@@ -120,7 +121,7 @@ public class ReloadedSessionMissingClassTest
                 
                 //restart webapp
                 webApp.start();
-                
+
                 Request request = client.newRequest("http://localhost:" + port1 + contextPath + "/bar?action=get");
                 request.header("Cookie", sessionCookie);
                 response = request.send();

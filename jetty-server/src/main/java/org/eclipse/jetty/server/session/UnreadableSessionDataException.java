@@ -20,40 +20,46 @@
 package org.eclipse.jetty.server.session;
 
 /**
- * UnreadableSessionData
+ * UnreadableSessionDataException
  *
  *
  */
 public class UnreadableSessionDataException extends Exception
 {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1806303483488966566L;
     private String _id;
     private SessionContext _sessionContext;
     
     
+    /** 
+     * @return the session id 
+     */
     public String getId()
     {
         return _id;
     }
     
+    /**
+     * @return the SessionContext to which the unreadable session belongs
+     */
     public SessionContext getSessionContext()
     {
         return _sessionContext;
     }
 
 
+    /**
+     * @param id
+     * @param contextId
+     * @param t
+     */
     public UnreadableSessionDataException (String id, SessionContext contextId, Throwable t)
     {
         super ("Unreadable session "+id+" for "+contextId, t);
         _sessionContext = contextId;
         _id = id;
     }
-    
-    public UnreadableSessionDataException (String id, SessionContext contextId, boolean loadAttemptsExhausted)
-    {
-        super("Unreadable session "+id+" for "+contextId+(loadAttemptsExhausted?" max load attempts":""));
-        _sessionContext = contextId;
-        _id = id;
-    }
-    
-
 }
