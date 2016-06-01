@@ -637,6 +637,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         if (session == null)
             return;
 
+      if (LOG.isDebugEnabled()) LOG.debug("Checking for idle {}", session.getId());
         try (Lock s = session.lock())
         {
             if (getEvictionPolicy() > 0 && session.isIdleLongerThan(getEvictionPolicy()) && session.isValid() && session.isResident() && session.getRequests() <= 0)
@@ -656,9 +657,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
                         _sessionDataStore.store(session.getId(), session.getSessionData());
                     }
-                    
-                    //evict
-                   // session.stopInactivityTimer();
                
                     doDelete(session.getId()); //detach from this cache
                     session.setResident(false);
@@ -666,9 +664,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 catch (Exception e)
                 {
                     LOG.warn("Passivation of idle session {} failed", session.getId(), e);
-                    //TODO reset the timer so it can be retried later and leave it in the cache
-                    doDelete(session.getId()); //detach it
-                    session.setResident(false);
+                    session.updateInactivityTimer();
                 }
             }
         }

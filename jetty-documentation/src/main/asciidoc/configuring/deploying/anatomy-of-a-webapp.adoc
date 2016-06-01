@@ -27,7 +27,6 @@ Web Applications can be bundled into a single Web Archive (WAR file) or as a dir
 
 `/WEB-INF/`::
   Special Servlet API defined directory used to store anything related to the Web Application that are not part of the public access of the Web Application.
-  
   If there is content that is accessed by a Web Application internally, but that should also never be accessed directly by a web browser, this is the directory it would placed in.
   
 `/WEB-INF/web.xml`::
