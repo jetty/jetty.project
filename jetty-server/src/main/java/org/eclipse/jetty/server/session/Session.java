@@ -259,7 +259,7 @@ public class Session implements SessionHandler.SessionIf
         long now = System.currentTimeMillis();
         try (Lock lock = _lock.lockIfNotHeld())
         {
-            return ((_sessionData.getAccessed() + (sec*1000)) < now);
+            return ((_sessionData.getAccessed() + (sec*1000)) <= now);
         }
     }
     
@@ -485,7 +485,7 @@ public class Session implements SessionHandler.SessionIf
                 {
                     //we do not want to evict inactive sessions
                     setInactivityTimer(-1L);
-                    if (LOG.isDebugEnabled()) LOG.debug("Session is immortal && bo inactivity eviction: timer cancelled");
+                    if (LOG.isDebugEnabled()) LOG.debug("Session is immortal && no inactivity eviction: timer cancelled");
                 }
                 else
                 {
