@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,23 +35,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
-import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class ThreadStarvationTest
 {
@@ -87,8 +81,6 @@ public class ThreadStarvationTest
     {
         prepareServer(new ReadHandler()).start();
         
-        System.err.println(_threadPool.dump());
-
         try(Socket client = new Socket("localhost", _connector.getLocalPort()))
         {
             client.setSoTimeout(10000);
@@ -207,7 +199,6 @@ public class ThreadStarvationTest
         }
 
         Thread.sleep(100);
-        System.err.println(_threadPool.dump());
 
         final AtomicLong total=new AtomicLong();
         final CountDownLatch latch=new CountDownLatch(client.length);
