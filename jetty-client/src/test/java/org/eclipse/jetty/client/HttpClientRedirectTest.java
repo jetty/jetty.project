@@ -262,6 +262,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     }
 
     @Test
+    @Ignore
     public void testRedirectWithWrongScheme() throws Exception
     {
         start(new AbstractHandler()
