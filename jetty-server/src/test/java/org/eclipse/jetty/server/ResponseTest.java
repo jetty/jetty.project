@@ -165,7 +165,7 @@ public class ResponseTest
         assertEquals("text/html", response.getContentType());
         response.getWriter();
         assertEquals("text/html;charset=utf-8", response.getContentType());
-        response.setContentType("foo2/bar2");
+        response.setContentType("foo2/bar2;charset=utf-8");
         assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
 
         response.recycle();
@@ -357,6 +357,38 @@ public class ResponseTest
         assertEquals("text/xml;charset=utf-8", response.getContentType());
     }
 
+    @Test
+    public void testResetContentTypeWithoutCharacterEncoding() throws Exception
+    {
+        Response response = newResponse();
+
+        response.setCharacterEncoding("utf-8");
+        response.setContentType("wrong/answer");
+        response.setContentType("foo/bar");
+        assertEquals("foo/bar;charset=utf-8", response.getContentType());
+        response.getWriter();
+        response.setContentType("foo2/bar2");
+        assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
+    }
+
+
+    @Test
+    public void testResetContentTypeWithCharacterEncoding() throws Exception
+    {
+        Response response = newResponse();
+
+        response.setContentType("wrong/answer;charset=utf-8");
+        response.setContentType("foo/bar");
+        assertEquals("foo/bar", response.getContentType());
+        response.setContentType("wrong/answer;charset=utf-8");
+        response.getWriter();
+        response.setContentType("foo2/bar2;charset=utf-16");
+        assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
+    }
+
+    
+    
+    
     @Test
     public void testContentTypeWithOther() throws Exception
     {

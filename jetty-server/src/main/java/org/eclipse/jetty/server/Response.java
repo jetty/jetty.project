@@ -24,6 +24,7 @@ import java.nio.channels.IllegalSelectorException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
@@ -108,11 +109,14 @@ public class Response implements HttpServletResponse
     private Locale _locale;
     private MimeTypes.Type _mimeType;
     private String _characterEncoding;
-    private boolean _explicitEncoding;
+    private EncodingFrom _encodingFrom=EncodingFrom.NOT_SET;
     private String _contentType;
     private OutputType _outputType = OutputType.NONE;
     private ResponseWriter _writer;
     private long _contentLength = -1;
+    
+    private enum EncodingFrom { NOT_SET, INFERRED, SET_LOCALE, SET_CONTENT_TYPE, SET_CHARACTER_ENCODING };
+    private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET,EncodingFrom.INFERRED);
     
 
     public Response(HttpChannel channel, HttpOutput out)
@@ -138,7 +142,7 @@ public class Response implements HttpServletResponse
         _contentLength = -1;
         _out.recycle();
         _fields.clear();
-        _explicitEncoding=false;
+        _encodingFrom=EncodingFrom.NOT_SET;
     }
     
     public HttpOutput getHttpOutput()
@@ -899,7 +903,7 @@ public class Response implements HttpServletResponse
                     encoding = MimeTypes.inferCharsetFromContentType(_contentType);
                     if (encoding == null)
                         encoding = StringUtil.__ISO_8859_1;
-                    setCharacterEncoding(encoding,false);
+                    setCharacterEncoding(encoding,EncodingFrom.INFERRED);
                 }
             }
             
@@ -1015,10 +1019,10 @@ public class Response implements HttpServletResponse
     @Override
     public void setCharacterEncoding(String encoding)
     {
-        setCharacterEncoding(encoding,true);
+        setCharacterEncoding(encoding,EncodingFrom.SET_CHARACTER_ENCODING);
     }
     
-    private void setCharacterEncoding(String encoding, boolean explicit)
+    private void setCharacterEncoding(String encoding, EncodingFrom from)
     {
         if (isIncluding() || isWriting())
             return;
@@ -1027,7 +1031,7 @@ public class Response implements HttpServletResponse
         {
             if (encoding == null)
             {
-                _explicitEncoding=false;
+                _encodingFrom=EncodingFrom.NOT_SET;
                 
                 // Clear any encoding.
                 if (_characterEncoding != null)
@@ -1050,7 +1054,7 @@ public class Response implements HttpServletResponse
             else
             {
                 // No, so just add this one to the mimetype
-                _explicitEncoding = explicit;
+                _encodingFrom = from;
                 _characterEncoding = HttpGenerator.__STRICT?encoding:StringUtil.normalizeCharset(encoding);
                 if (_mimeType!=null)
                 {
@@ -1100,10 +1104,29 @@ public class Response implements HttpServletResponse
 
             if (charset == null)
             {
-                if (_characterEncoding != null)
+                switch (_encodingFrom)
                 {
-                    _contentType = contentType + ";charset=" + _characterEncoding;
-                    _mimeType = null;
+                    case NOT_SET:
+                        break;
+                    case INFERRED:
+                    case SET_CONTENT_TYPE:
+                        if (isWriting())
+                        {
+                            _mimeType=null;
+                            _contentType = _contentType + ";charset=" + _characterEncoding;
+                        }
+                        else
+                        {
+                            _encodingFrom=EncodingFrom.NOT_SET;
+                            _characterEncoding=null;
+                        }
+                        break;
+                    case SET_LOCALE:
+                    case SET_CHARACTER_ENCODING:
+                    {
+                        _contentType = contentType + ";charset=" + _characterEncoding;
+                        _mimeType = null;
+                    }
                 }
             }
             else if (isWriting() && !charset.equalsIgnoreCase(_characterEncoding))
@@ -1117,7 +1140,7 @@ public class Response implements HttpServletResponse
             else
             {
                 _characterEncoding = charset;
-                _explicitEncoding = true;
+                _encodingFrom = EncodingFrom.SET_CONTENT_TYPE;
             }
 
             if (HttpGenerator.__STRICT || _mimeType==null)
@@ -1268,8 +1291,8 @@ public class Response implements HttpServletResponse
 
         String charset = _channel.getRequest().getContext().getContextHandler().getLocaleEncoding(locale);
 
-        if (charset != null && charset.length() > 0 && !_explicitEncoding)
-            setCharacterEncoding(charset,false);
+        if (charset != null && charset.length() > 0 && __localeOverride.contains(_encodingFrom))
+            setCharacterEncoding(charset,EncodingFrom.SET_LOCALE);
     }
 
     @Override
