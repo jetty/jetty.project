@@ -20,8 +20,6 @@ db-connection-type=datasource
 ##
 
 #jetty.session.gracePeriod.seconds=3600
-#jetty.session.deleteUnloadables=false
-#jetty.session.loadAttempts=-1
 
 ## Connection type:Datasource
 db-connection-type=datasource

@@ -20,18 +20,35 @@
 package org.eclipse.jetty.server.session;
 
 /**
- * MemorySessionStoreFactory
+ * DefaultSessionCacheFactory
  *
- *
+ * Factory for creating new DefaultSessionCaches.
  */
 public class DefaultSessionCacheFactory implements SessionCacheFactory
 {
     int _evictionPolicy;
     boolean _saveOnInactiveEvict;
+    boolean _removeUnloadableSessions;
 
     
     
     
+    public boolean isRemoveUnloadableSessions()
+    {
+        return _removeUnloadableSessions;
+    }
+
+
+
+
+    public void setRemoveUnloadableSessions(boolean removeUnloadableSessions)
+    {
+        _removeUnloadableSessions = removeUnloadableSessions;
+    }
+
+
+
+
     public int getEvictionPolicy()
     {
         return _evictionPolicy;
@@ -64,7 +81,6 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
 
     
 
-
     /** 
      * @see org.eclipse.jetty.server.session.SessionCacheFactory#getSessionCache(org.eclipse.jetty.server.session.SessionHandler)
      */
@@ -72,8 +88,9 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
     public SessionCache getSessionCache (SessionHandler handler)
     {
         DefaultSessionCache cache = new DefaultSessionCache(handler);
-        cache.setEvictionPolicy(_evictionPolicy);
-        cache.setSaveOnInactiveEviction(_saveOnInactiveEvict);
+        cache.setEvictionPolicy(getEvictionPolicy());
+        cache.setSaveOnInactiveEviction(isSaveOnInactiveEvict());
+        cache.setRemoveUnloadableSessions(isRemoveUnloadableSessions());
         return cache;
     }
 
