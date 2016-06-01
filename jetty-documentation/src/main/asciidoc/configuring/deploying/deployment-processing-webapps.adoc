@@ -52,15 +52,15 @@ META-INF/web-fragment.xml
 
 ===== Anatomy of a Configuration Class
 
-A Configuration class is called 5 times in different phases of the WebAppContext's lifecycle:
+A Configuration class is called 5 times in different phases of the `WebAppContext's` lifecycle:
 
 preConfigure::
-  As the WebAppContext is starting up this phase is executed. 
-  The Configuration should discover any of the resources it will need during the subsequent phases.
+  As the `WebAppContext` is starting up this phase is executed. 
+  The `Configuration` should discover any of the resources it will need during the subsequent phases.
 configure::
-  This phase is where the work of the class is done, usually using the resources discovered during the preConfigure phase.
+  This phase is where the work of the class is done, usually using the resources discovered during the `preConfigure` phase.
 postConfigure::
-  This phase allows the Configuration to clear down any resources that may have been created during the previous 2 phases that are not needed for the lifetime of the `WebAppContext`.
+  This phase allows the `Configuration` to clear down any resources that may have been created during the previous 2 phases that are not needed for the lifetime of the `WebAppContext`.
 deconfigure::
   This phase occurs whenever a `WebAppContext` is being stopped and allows the Configuration to undo any resources/metadata that it created. 
   A `WebAppContext` should be able to be cleanly start/stopped multiple times without resources being held.
@@ -68,8 +68,8 @@ destroy::
   This phase is called when a `WebAppContext` is actually removed from service. 
   For example, the war file associated with it is deleted from the $JETTY_HOME/webapps directory.
 
-Each phase is called on each Configuration class in the order in which the `Configuration` class is listed. 
-Using the default Configuration classes as an example, preConfigure() will be called on `WebInfConfiguration`, `WebXmlConfiguration`, `MetaInfConfiguration`, `FragmentConfiguration` and then `JettyWebXmlConfiguration`. 
+Each phase is called on each `Configuration` class in the order in which the `Configuration` class is listed. 
+Using the default `Configuration` classes as an example, `preConfigure()` will be called on `WebInfConfiguration`, `WebXmlConfiguration`, `MetaInfConfiguration`, `FragmentConfiguration` and then `JettyWebXmlConfiguration`. 
 The cycle begins again for the `configure()` phase and again for the `postConfigure()` phases. 
 The cycle is repeated _in reverse order_ for the `deconfigure()` and eventually the `destroy()` phases.
 
@@ -96,10 +96,10 @@ To achieve that, we use 2 extra Configurations:
 [cols=",",]
 |=======================================================================
 |link:{JDURL}/org/eclipse/jetty/plus/webapp/EnvConfiguration.html[org.eclipse.jetty.plus.webapp.EnvConfiguration]
-|Creates java:comp/env for the webapp, applies a WEB-INF/jetty-env.xml file
+|Creates `java:comp/env` for the webapp, applies a `WEB-INF/jetty-env.xml` file
 
 |link:{JDURL}/org/eclipse/jetty/plus/webapp/PlusConfiguration.html[org.eclipse.jetty.plus.webapp.PlusConfiguration]
-|Processes JNDI related aspects of WEB-INF/web.xml and hooks up naming entries
+|Processes JNDI related aspects of `WEB-INF/web.xml` and hooks up naming entries
 |=======================================================================
 
 These configurations must be added in _exactly_ the order shown above and should be inserted _immediately before_ the link:{JDURL}/org/eclipse/jetty/webapp/JettyWebXmlConfiguration.html[org.eclipse.jetty.webapp.JettyWebXmlConfiguration] class in the list of configurations. 
@@ -117,7 +117,7 @@ We need just one extra Configuration class to help provide servlet annotation sc
 @WebListener etc
 |=======================================================================
 
-The above configuration class must be _inserted immediately before_ the link:{JDURL}/org/eclipse/jetty/webapp/JettWebXmlConfiguration.html[org.eclipse.jetty.webapp.JettyWebXmlConfiguration] class in the list of configurations. 
+The above configuration class must be _inserted immediately before_ the link:{JDURL}/org/eclipse/jetty/webapp/JettyWebXmlConfiguration.html[org.eclipse.jetty.webapp.JettyWebXmlConfiguration] class in the list of configurations. 
 To fully support annotations, you need to do a couple of other things, details of which can be found below.
 
 ===== How to Set the List of Configurations
@@ -204,7 +204,7 @@ They will then be applied to each `WebAppContext` deployed by the deployer:
 
 Instead of having to enumerate the list in its entirety, you can simply nominate classes that you want to add, and indicate whereabouts in the list you want them inserted. 
 Let's look at an example of using this method to add in Configuration support for JNDI - as usual you can either do this in an xml file, or via equivalent code. 
-This example uses an xml file, in fact it is the $JETTY_HOME/etc/jetty-plus.xml file from the Jetty distribution:
+This example uses an xml file, in fact it is the `$JETTY_HOME/etc/jetty-plus.xml` file from the Jetty distribution:
 
 [source,xml]
 ----
@@ -235,9 +235,9 @@ This example uses an xml file, in fact it is the $JETTY_HOME/etc/jetty-plus.xml 
 The link:{JDURL}/org/eclipse/jetty/webapp/Configuration.html[org.eclipse.jetty.webapp.Configuration.ClassList] class provides these methods for insertion:
 
 addAfter::
-  Inserts the supplied list of Configuration class names after the given Configuration class name.
+  Inserts the supplied list of `Configuration` class names after the given Configuration class name.
 addBefore::
-  Inserts the supplied list of Configuration class names before the given Configuration class name.
+  Inserts the supplied list of `Configuration` class names before the given Configuration class name.
 
 [[webapp-context-attributes]]
 ==== Other Configuration
@@ -280,7 +280,7 @@ Similarly to the previous link:#context_attributes[context attribute], this attr
 However, this attribute controls which jars from the _webapp's_ classpath (usually `WEB-INF/lib`) are processed. 
 This can be particularly useful when you have dozens of jars in `WEB-INF/lib`, but you know that only a few need to be scanned.
 
-Here's an example in a xml file of a pattern that matches any jar that starts with "spring-":
+Here's an example in a xml file of a pattern that matches any jar that starts with `spring-`:
 
 [source,xml]
 ----
