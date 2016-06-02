@@ -147,16 +147,6 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.flowControlStrategyFactory = flowControlStrategyFactory;
     }
 
-    public ExecutionStrategy.Factory getExecutionStrategyFactory()
-    {
-        return executionStrategyFactory;
-    }
-
-    public void setExecutionStrategyFactory(ExecutionStrategy.Factory executionStrategyFactory)
-    {
-        this.executionStrategyFactory = executionStrategyFactory;
-    }
-
     public HttpConfiguration getHttpConfiguration()
     {
         return httpConfiguration;
@@ -181,7 +171,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         ServerParser parser = newServerParser(connector, session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
-                        endPoint, httpConfiguration, parser, session, getInputBufferSize(), getExecutionStrategyFactory(), listener);
+                        endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
         connection.addListener(connectionListener);
         return configure(connection, connector, endPoint);
     }

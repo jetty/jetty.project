@@ -20,13 +20,15 @@ package org.eclipse.jetty.util;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jetty.util.thread.Invocable;
+
 /**
  * <p>A callback abstraction that handles completed/failed events of asynchronous operations.</p>
  *
  * <p>Semantically this is equivalent to an optimise Promise&lt;Void&gt;, but callback is a more meaningful
  * name than EmptyPromise</p>
  */
-public interface Callback
+public interface Callback extends Invocable
 {
     /**
      * Instance of Adapter that can be used when the callback methods need an empty
@@ -54,14 +56,6 @@ public interface Callback
     }
 
     /**
-     * @return True if the callback is known to never block the caller
-     */
-    default boolean isNonBlocking()
-    {
-        return false;
-    }
-
-    /**
      * <p>Creates a non-blocking callback from the given incomplete CompletableFuture.</p>
      * <p>When the callback completes, either succeeding or failing, the
      * CompletableFuture is also completed, respectively via
@@ -73,7 +67,7 @@ public interface Callback
      */
     static Callback from(CompletableFuture<?> completable)
     {
-        return from(completable, false);
+        return from(completable, InvocationType.NON_BLOCKING);
     }
 
     /**
@@ -81,10 +75,10 @@ public interface Callback
      * with the given {@code blocking} characteristic.</p>
      *
      * @param completable the CompletableFuture to convert into a callback
-     * @param blocking whether the callback is blocking
+     * @param invocation whether the callback is blocking
      * @return a callback that when completed, completes the given CompletableFuture
      */
-    static Callback from(CompletableFuture<?> completable, boolean blocking)
+    static Callback from(CompletableFuture<?> completable, InvocationType invocation)
     {
         if (completable instanceof Callback)
             return (Callback)completable;
@@ -104,23 +98,11 @@ public interface Callback
             }
 
             @Override
-            public boolean isNonBlocking()
+            public InvocationType getInvocationType()
             {
-                return !blocking;
+                return invocation;
             }
         };
-    }
-
-    /**
-     * Callback interface that declares itself as non-blocking
-     */
-    interface NonBlocking extends Callback
-    {
-        @Override
-        default boolean isNonBlocking()
-        {
-            return true;
-        }
     }
 
     class Nested implements Callback
@@ -150,9 +132,9 @@ public interface Callback
         }
 
         @Override
-        public boolean isNonBlocking()
+        public InvocationType getInvocationType()
         {
-            return callback.isNonBlocking();
+            return callback.getInvocationType();
         }
     }
     /**
@@ -160,16 +142,16 @@ public interface Callback
      */
     class Completable extends CompletableFuture<Void> implements Callback
     {
-        private final boolean blocking;
+        private final InvocationType invocation;
 
         public Completable()
         {
-            this(false);
+            this(Invocable.InvocationType.NON_BLOCKING);
         }
 
-        public Completable(boolean blocking)
+        public Completable(InvocationType invocation)
         {
-            this.blocking = blocking;
+            this.invocation = invocation;
         }
 
         @Override
@@ -185,9 +167,9 @@ public interface Callback
         }
 
         @Override
-        public boolean isNonBlocking()
+        public InvocationType getInvocationType()
         {
-            return !blocking;
+            return invocation;
         }
     }
 }

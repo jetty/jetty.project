@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -549,7 +550,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             jobs = new ArrayList<>(getQueue());
 
         ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out, indent, threads, jobs);
+        ContainerLifeCycle.dump(out, indent, threads, Collections.singletonList(new DumpableCollection("jobs",jobs)));
     }
 
     @Override

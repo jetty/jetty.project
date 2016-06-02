@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * Provides a reusable {@link Callback} that can block the thread
@@ -128,12 +129,18 @@ public class SharedBlockingCallback
      * callback do not blocak, rather they wakeup the thread that is blocked
      * in {@link #block()}
      */
-    public class Blocker implements Callback.NonBlocking, Closeable
+    public class Blocker implements Callback, Closeable
     {
         private Throwable _state = IDLE;
         
         protected Blocker()
         {
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
         }
         
         @Override
