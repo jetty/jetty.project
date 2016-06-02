@@ -53,8 +53,10 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class SmallThreadPoolLoadTest extends AbstractTest
 {
     private final Logger logger = Log.getLogger(SmallThreadPoolLoadTest.class);
