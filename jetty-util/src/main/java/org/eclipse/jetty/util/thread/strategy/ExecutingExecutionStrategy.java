@@ -25,6 +25,7 @@ import java.util.concurrent.RejectedExecutionException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>Base class for strategies that need to execute a task by submitting it to an {@link Executor}.</p>
@@ -37,17 +38,33 @@ public abstract class ExecutingExecutionStrategy implements ExecutionStrategy
     private static final Logger LOG = Log.getLogger(ExecutingExecutionStrategy.class);
 
     private final Executor _executor;
+    private final Invocable.InvocationType _preferredInvocationType;
 
-    protected ExecutingExecutionStrategy(Executor executor)
+    protected ExecutingExecutionStrategy(Executor executor,Invocable.InvocationType preferred)
     {
         _executor=executor;
+        _preferredInvocationType=preferred;
     }
 
+    public Invocable.InvocationType getPreferredInvocationType()
+    {
+        return _preferredInvocationType;
+    }
+
+    public void invoke(Runnable task)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} invoke  {}", this, task);
+        Invocable.invokePreferred(task,_preferredInvocationType);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} invoked {}", this, task);
+    }
+    
     protected boolean execute(Runnable task)
     {
         try
         {
-            _executor.execute(task);
+            _executor.execute(Invocable.asPreferred(task,_preferredInvocationType));
             return true;
         }
         catch(RejectedExecutionException e)

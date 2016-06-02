@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * {@link HttpSender} abstracts the algorithm to send HTTP requests, so that subclasses only implement
@@ -675,9 +676,9 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     {
 
         @Override
-        public boolean isNonBlocking()
+        public InvocationType getInvocationType()
         {
-            return content.isNonBlocking();
+            return content.getInvocationType();
         }
 
         @Override
@@ -891,9 +892,9 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     private class LastContentCallback implements Callback
     {
         @Override
-        public boolean isNonBlocking()
+        public InvocationType getInvocationType()
         {
-            return content.isNonBlocking();
+            return content.getInvocationType();
         }
 
         @Override

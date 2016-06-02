@@ -69,7 +69,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
-                parser, session, client.getInputBufferSize(), client.getExecutionStrategyFactory(), promise, listener);
+                parser, session, client.getInputBufferSize(), promise, listener);
         connection.addListener(connectionListener);
         return customize(connection, context);
     }
@@ -80,9 +80,9 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         private final Promise<Session> promise;
         private final Session.Listener listener;
 
-        private HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, ExecutionStrategy.Factory executionFactory, Promise<Session> promise, Session.Listener listener)
+        private HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise, Session.Listener listener)
         {
-            super(byteBufferPool, executor, endpoint, parser, session, bufferSize, executionFactory);
+            super(byteBufferPool, executor, endpoint, parser, session, bufferSize);
             this.client = client;
             this.promise = promise;
             this.listener = listener;
