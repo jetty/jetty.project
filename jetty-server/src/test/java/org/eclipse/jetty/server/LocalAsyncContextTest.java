@@ -44,17 +44,19 @@ import org.junit.Test;
 
 public class LocalAsyncContextTest
 {
-    protected Server _server = new Server();
-    protected SuspendHandler _handler = new SuspendHandler();
+    protected Server _server;
+    protected SuspendHandler _handler;
     protected Connector _connector;
 
     @Before
     public void init() throws Exception
     {
+        _server = new Server();
         _connector = initConnector();
         _server.setConnectors(new Connector[]{ _connector });
 
         SessionHandler session = new SessionHandler();
+        _handler = new SuspendHandler();
         session.setHandler(_handler);
 
         _server.setHandler(session);
@@ -547,7 +549,6 @@ public class LocalAsyncContextTest
 
     private static AsyncListener __asyncListener = new AsyncListener()
     {
-
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
