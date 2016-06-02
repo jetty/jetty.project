@@ -13,7 +13,7 @@
        <Set name="gCloudConfiguration"><Ref id="gconf"/></Set>
        <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
        <Set name="maxRetries"><Property name="jetty.gcloudSession.maxRetries" default="5"/></Set>
-       <Set name="backoffMs"><Property name="jetty.gcloudSession.backoffMs" default="50"/></Set>
+       <Set name="backoffMs"><Property name="jetty.gcloudSession.backoffMs" default="1000"/></Set>
     </New>
    </Arg>
   </Call>

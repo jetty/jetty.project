@@ -309,7 +309,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
         }
         catch (Exception e)
         {
-            LOG.warn("Problem checking if id {} is in use", e);
+            LOG.warn("Problem checking if id {} is in use", id, e);
             return false;
         }
     }
