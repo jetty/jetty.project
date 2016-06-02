@@ -16,3 +16,4 @@ etc/sessions/hash-session-cache.xml
 [ini-template]
 #jetty.session.evictionPolicy=-1
 #jetty.session.saveOnInactiveEvict=false
+#jetty.session.removeUnloadableSessions=false

@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.server.session.UnwriteableSessionDataException;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
@@ -471,6 +472,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     {
                         Object o = ois.readObject();
                         session.putAllAttributes((Map<String,Object>)o);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new UnreadableSessionDataException (id, _context, e);
                     }
                     reference.set(session);
                 }
