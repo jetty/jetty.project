@@ -20,6 +20,7 @@
 package org.eclipse.jetty.gcloud.session;
 
 import com.google.gcloud.datastore.Blob;
+import com.google.gcloud.datastore.BlobValue;
 import com.google.gcloud.datastore.Datastore;
 import com.google.gcloud.datastore.DatastoreException;
 import com.google.gcloud.datastore.DatastoreFactory;
@@ -77,7 +78,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     public static final String KIND = "GCloudSession";
     public static final int DEFAULT_MAX_QUERY_RESULTS = 100;
     public static final int DEFAULT_MAX_RETRIES = 5;
-    public static final int DEFAULT_BACKOFF_MS = 50;
+    public static final int DEFAULT_BACKOFF_MS = 1000;
 
     private GCloudConfiguration _config;
     private Datastore _datastore;
@@ -209,7 +210,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         {        
             //get up to maxResult number of sessions that have expired
             ProjectionEntityQueryBuilder pbuilder = Query.projectionEntityQueryBuilder();
-            pbuilder.addProjection(Projection.property(ID), Projection.property(LASTNODE), Projection.property(EXPIRY));
+            pbuilder.projection(Projection.property(ID), Projection.property(LASTNODE), Projection.property(EXPIRY));
             pbuilder.filter(CompositeFilter.and(PropertyFilter.gt(EXPIRY, 0), PropertyFilter.le(EXPIRY, now)));
             pbuilder.limit(_maxResults);
             pbuilder.kind(KIND);
@@ -295,11 +296,12 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      */
     @Override
     public boolean exists(String id) throws Exception
-    {     
+    {
         ProjectionEntityQueryBuilder pbuilder = Query.projectionEntityQueryBuilder();
-        pbuilder.addProjection(Projection.property(EXPIRY));
-        pbuilder.filter(PropertyFilter.eq(ID, id));
         pbuilder.kind(KIND);
+        pbuilder.projection(Projection.property(EXPIRY));
+        pbuilder.filter(PropertyFilter.eq(ID, id));
+
         StructuredQuery<ProjectionEntity> pquery = pbuilder.build();
         QueryResults<ProjectionEntity> presults = _datastore.run(pquery);
 
@@ -404,9 +406,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         oos.writeObject(session.getAllAttributes());
         oos.flush();
         
-        try
-        {
-        //turn a session into an entity
+        //turn a session into an entity         
         entity = Entity.builder(key)
                 .set(ID, session.getId())
                 .set(CONTEXTPATH, session.getContextPath())
@@ -418,13 +418,8 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 .set(LASTNODE,session.getLastNode())
                 .set(EXPIRY, session.getExpiry())
                 .set(MAXINACTIVE, session.getMaxInactiveMs())
-                .set(ATTRIBUTES, Blob.copyFrom(baos.toByteArray())).build();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            throw e;
-        }
+                .set(ATTRIBUTES, BlobValue.builder(Blob.copyFrom(baos.toByteArray())).indexed(false).build()).build();
+
                  
         return entity;
     }
