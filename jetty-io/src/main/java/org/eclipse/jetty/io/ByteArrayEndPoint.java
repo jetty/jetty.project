@@ -26,6 +26,8 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
@@ -55,6 +57,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     };
 
     private final Locker _locker = new Locker();
+    private final Condition _hasOutput = _locker.newCondition();
     private final Queue<ByteBuffer> _inQ = new ArrayQueue<>();
     private ByteBuffer _out;
     private boolean _ishut;
@@ -182,6 +185,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             _runFillable.run();
     }
 
+    /* ------------------------------------------------------------ */
     public void addInputAndExecute(ByteBuffer in)
     {
         boolean fillable=false;
@@ -223,7 +227,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteBuffer getOutput()
     {
-        return _out;
+        try(Locker.Lock lock = _locker.lock())
+        {
+            return _out;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -251,8 +258,36 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteBuffer takeOutput()
     {
-        ByteBuffer b=_out;
-        _out=BufferUtil.allocate(b.capacity());
+        ByteBuffer b;
+
+        try(Locker.Lock lock = _locker.lock())
+        {
+            b=_out;
+            _out=BufferUtil.allocate(b.capacity());
+        }
+        getWriteFlusher().completeWrite();
+        return b;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Wait for some output
+     * @param time Time to wait
+     * @param unit Units for time to wait
+     * @return The buffer of output
+     * @throws InterruptedException
+     */
+    public ByteBuffer waitForOutput(long time,TimeUnit unit) throws InterruptedException
+    {
+        ByteBuffer b;
+
+        try(Locker.Lock lock = _locker.lock())
+        {
+            if (BufferUtil.isEmpty(_out))
+                _hasOutput.await(time,unit);
+               
+            b=_out;
+            _out=BufferUtil.allocate(b.capacity());
+        }
         getWriteFlusher().completeWrite();
         return b;
     }
@@ -283,7 +318,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void setOutput(ByteBuffer out)
     {
-        _out = out;
+        try(Locker.Lock lock = _locker.lock())
+        {
+            _out = out;
+        }
         getWriteFlusher().completeWrite();
     }
 
@@ -349,6 +387,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         try(Locker.Lock lock = _locker.lock())
         {
             _oshut=true;
+            _hasOutput.signalAll();
             if (_ishut && !_closed)
                 close=_closed=true;
         }
@@ -368,6 +407,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         {
             if (!_closed)
                 close=_closed=_ishut=_oshut=true;
+
+            _hasOutput.signalAll();
         }
         if (close)
             super.close();
@@ -439,41 +480,47 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
-        if (_closed)
-            throw new IOException("CLOSED");
-        if (_oshut)
-            throw new IOException("OSHUT");
-
         boolean flushed=true;
-        boolean idle=true;
-
-        for (ByteBuffer b : buffers)
+        try(Locker.Lock lock = _locker.lock())
         {
-            if (BufferUtil.hasContent(b))
+            if (_closed)
+                throw new IOException("CLOSED");
+            if (_oshut)
+                throw new IOException("OSHUT");
+
+            boolean idle=true;
+
+            for (ByteBuffer b : buffers)
             {
-                if (_growOutput && b.remaining()>BufferUtil.space(_out))
-                {
-                    BufferUtil.compact(_out);
-                    if (b.remaining()>BufferUtil.space(_out))
-                    {
-                        ByteBuffer n = BufferUtil.allocate(_out.capacity()+b.remaining()*2);
-                        BufferUtil.append(n,_out);
-                        _out=n;
-                    }
-                }
-
-                if (BufferUtil.append(_out,b)>0)
-                    idle=false;
-
                 if (BufferUtil.hasContent(b))
                 {
-                    flushed=false;
-                    break;
+                    if (_growOutput && b.remaining()>BufferUtil.space(_out))
+                    {
+                        BufferUtil.compact(_out);
+                        if (b.remaining()>BufferUtil.space(_out))
+                        {
+                            ByteBuffer n = BufferUtil.allocate(_out.capacity()+b.remaining()*2);
+                            BufferUtil.append(n,_out);
+                            _out=n;
+                        }
+                    }
+
+                    if (BufferUtil.append(_out,b)>0)
+                        idle=false;
+
+                    if (BufferUtil.hasContent(b))
+                    {
+                        flushed=false;
+                        break;
+                    }
                 }
             }
+            if (!idle)
+            {
+                notIdle();
+                _hasOutput.signalAll();
+            }
         }
-        if (!idle)
-            notIdle();
         return flushed;
     }
 
@@ -483,13 +530,16 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void reset()
     {
-        getFillInterest().onClose();
-        getWriteFlusher().onClose();
-        _ishut=false;
-        _oshut=false;
-        _closed=false;
-        _inQ.clear();
-        BufferUtil.clear(_out);
+        try(Locker.Lock lock = _locker.lock())
+        {
+            getFillInterest().onClose();
+            getWriteFlusher().onClose();
+            _ishut=false;
+            _oshut=false;
+            _closed=false;
+            _inQ.clear();
+            BufferUtil.clear(_out);
+        }
     }
 
     /* ------------------------------------------------------------ */

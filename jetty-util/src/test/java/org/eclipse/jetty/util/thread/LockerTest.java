@@ -18,38 +18,24 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(Parameterized.class)
 public class LockerTest
 {
-    @Parameterized.Parameters
-    public static Collection<Object[]> parameters()
+    public LockerTest()
     {
-        return Arrays.asList(new Object[]{true}, new Object[]{false});
-    }
-
-    private boolean spin;
-
-    public LockerTest(boolean spin)
-    {
-        this.spin = spin;
     }
 
     @Test
     public void testLocked()
     {
-        Locker lock = new Locker(spin);
+        Locker lock = new Locker();
         assertFalse(lock.isLocked());
 
         try(Locker.Lock l = lock.lock())
@@ -67,7 +53,7 @@ public class LockerTest
     @Test
     public void testLockedException()
     {
-        Locker lock = new Locker(spin);
+        Locker lock = new Locker();
         assertFalse(lock.isLocked());
 
         try(Locker.Lock l = lock.lock())
@@ -90,7 +76,7 @@ public class LockerTest
     @Test
     public void testContend() throws Exception
     {
-        final Locker lock = new Locker(spin);
+        final Locker lock = new Locker();
 
         final CountDownLatch held0 = new CountDownLatch(1);
         final CountDownLatch hold0 = new CountDownLatch(1);
