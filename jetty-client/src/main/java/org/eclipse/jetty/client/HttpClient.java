@@ -491,6 +491,11 @@ public class HttpClient extends ContainerLifeCycle
 
     protected HttpDestination destinationFor(String scheme, String host, int port)
     {
+        if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme))
+            throw new IllegalArgumentException("Invalid protocol " + scheme);
+
+        scheme = scheme.toLowerCase(Locale.ENGLISH);
+        host = host.toLowerCase(Locale.ENGLISH);
         port = normalizePort(scheme, port);
 
         Origin origin = new Origin(scheme, host, port);
@@ -525,17 +530,12 @@ public class HttpClient extends ContainerLifeCycle
      */
     public List<Destination> getDestinations()
     {
-        return new ArrayList<Destination>(destinations.values());
+        return new ArrayList<>(destinations.values());
     }
 
     protected void send(final HttpRequest request, List<Response.ResponseListener> listeners)
     {
-        String scheme = request.getScheme().toLowerCase(Locale.ENGLISH);
-        if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme))
-            throw new IllegalArgumentException("Invalid protocol " + scheme);
-
-        String host = request.getHost().toLowerCase(Locale.ENGLISH);
-        HttpDestination destination = destinationFor(scheme, host, request.getPort());
+        HttpDestination destination = destinationFor(request.getScheme(), request.getHost(), request.getPort());
         destination.send(request, listeners);
     }
 
