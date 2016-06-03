@@ -2,6 +2,8 @@
 
 set
 
+export PATH=$M3/bin:$PATH
+
 mvn clean install -DskipTests
 
 cd $MODULE
