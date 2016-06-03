@@ -271,7 +271,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             {
                 baseRequest.setHandled(true);
                 response.setStatus(303);
-                response.setHeader("Location", "ssh://localhost/path");
+                response.setHeader("Location", "ssh://localhost:" + connector.getLocalPort() + "/path");
             }
         });
 
