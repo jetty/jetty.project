@@ -1,10 +1,6 @@
 #!/bin/bash
 
-git fetch origin
-
-git reset HEAD
-
-git checkout $BRANCH
+set
 
 mvn clean install -DskipTests
 
