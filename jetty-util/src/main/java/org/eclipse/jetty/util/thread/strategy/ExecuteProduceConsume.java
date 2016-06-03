@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.util.thread.strategy;
 
-import java.io.Closeable;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Locker.Lock;
-import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
  * <p>A strategy where the thread that produces will always run the resulting task.</p>
@@ -46,30 +46,27 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
     private static final Logger LOG = Log.getLogger(ExecuteProduceConsume.class);
 
     private final Locker _locker = new Locker();
-    private final Runnable _runExecute = new RunExecute();
+    private final Runnable _runProduce = new RunProduce();
     private final Producer _producer;
-    private final ThreadPool _threadPool;
     private boolean _idle = true;
     private boolean _execute;
     private boolean _producing;
     private boolean _pending;
-    private boolean _lowThreads;
+
 
     public ExecuteProduceConsume(Producer producer, Executor executor)
     {
-        super(executor);
-        this._producer = producer;
-        _threadPool = executor instanceof ThreadPool ? (ThreadPool)executor : null;
+        this(producer,executor,InvocationType.BLOCKING);
     }
-
-    @Deprecated
-    public ExecuteProduceConsume(Producer producer, Executor executor, ExecutionStrategy lowResourceStrategy)
+    
+    public ExecuteProduceConsume(Producer producer, Executor executor, InvocationType preferred )
     {
-        this(producer, executor);
+        super(executor,preferred);
+        this._producer = producer;
     }
 
     @Override
-    public void execute()
+    public void produce()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} execute", this);
@@ -114,7 +111,7 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
                 _execute = true;
         }
         if (dispatch)
-            execute(_runExecute);
+            execute(_runProduce);
     }
 
     @Override
@@ -137,105 +134,6 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
     }
 
     private void produceConsume()
-    {
-        if (_threadPool != null && _threadPool.isLowOnThreads())
-        {
-            // If we are low on threads we must not produce and consume
-            // in the same thread, but produce and execute to consume.
-            if (!produceExecuteConsume())
-                return;
-        }
-        executeProduceConsume();
-    }
-
-    public boolean isLowOnThreads()
-    {
-        return _lowThreads;
-    }
-
-    /**
-     * @return true if we are still producing
-     */
-    private boolean produceExecuteConsume()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} enter low threads mode", this);
-        _lowThreads = true;
-        try
-        {
-            boolean idle = false;
-            while (_threadPool.isLowOnThreads())
-            {
-                Runnable task = _producer.produce();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} produced {}", _producer, task);
-
-                if (task == null)
-                {
-                    // No task, so we are now idle
-                    try (Lock locked = _locker.lock())
-                    {
-                        if (_execute)
-                        {
-                            _execute = false;
-                            _producing = true;
-                            _idle = false;
-                            continue;
-                        }
-
-                        _producing = false;
-                        idle = _idle = true;
-                        break;
-                    }
-                }
-
-                // Execute the task.
-                executeProduct(task);
-            }
-            return !idle;
-        }
-        finally
-        {
-            _lowThreads = false;
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} exit low threads mode", this);
-        }
-    }
-
-    /**
-     * <p>Only called when in {@link #isLowOnThreads() low threads mode}
-     * to execute the task produced by the producer.</p>
-     * <p>Because </p>
-     * <p>If the task implements {@link Rejectable}, then {@link Rejectable#reject()}
-     * is immediately called on the task object. If the task also implements
-     * {@link Closeable}, then {@link Closeable#close()} is called on the task object.</p>
-     * <p>If the task does not implement {@link Rejectable}, then it is
-     * {@link #execute(Runnable) executed}.</p>
-     *
-     * @param task the produced task to execute
-     */
-    protected void executeProduct(Runnable task)
-    {
-        if (task instanceof Rejectable)
-        {
-            try
-            {
-                ((Rejectable)task).reject();
-                if (task instanceof Closeable)
-                    ((Closeable)task).close();
-            }
-            catch (Throwable x)
-            {
-                LOG.debug(x);
-            }
-        }
-        else
-        {
-            execute(task);
-        }
-    }
-
-    private void executeProduceConsume()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} produce enter", this);
@@ -280,7 +178,7 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
                 if (!_pending)
                 {
                     // dispatch one
-                    dispatch = _pending = true;
+                    dispatch = _pending = Invocable.getInvocationType(task)!=InvocationType.NON_BLOCKING;
                 }
 
                 _execute = false;
@@ -300,7 +198,7 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
             if (LOG.isDebugEnabled())
                 LOG.debug("{} run {}", this, task);
             if (task != null)
-                task.run();
+                invoke(task);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} ran {}", this, task);
 
@@ -341,12 +239,12 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
         return builder.toString();
     }
 
-    private class RunExecute implements Runnable
+    private class RunProduce implements Runnable
     {
         @Override
         public void run()
         {
-            execute();
+            produce();
         }
     }
 

@@ -29,6 +29,7 @@ import java.nio.channels.SelectionKey;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -57,7 +58,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
      */
     protected int _desiredInterestOps;
 
-    private abstract class RunnableTask  implements Runnable
+    private abstract class RunnableTask  implements Runnable, Invocable
     {
         private final String _operation;
 
@@ -97,6 +98,12 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     private final Runnable _runUpdateKey = new RunnableTask("runUpdateKey")
     {
         @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        @Override
         public void run()
         {
             updateKey();
@@ -105,6 +112,12 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
 
     private final Runnable _runFillable = new RunnableCloseable("runFillable")
     {
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getFillInterest().getCallbackInvocationType();
+        }
+        
         @Override
         public void run()
         {
@@ -115,6 +128,12 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     private final Runnable _runCompleteWrite = new RunnableCloseable("runCompleteWrite")
     {
         @Override
+        public InvocationType getInvocationType()
+        {
+            return getWriteFlusher().getCallbackInvocationType();
+        }
+        
+        @Override
         public void run()
         {
             getWriteFlusher().completeWrite();
@@ -123,6 +142,23 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
 
     private final Runnable _runCompleteWriteFillable = new RunnableCloseable("runCompleteWriteFillable")
     {
+        @Override
+        public InvocationType getInvocationType()
+        {
+            InvocationType fillT = getFillInterest().getCallbackInvocationType();
+            InvocationType flushT = getWriteFlusher().getCallbackInvocationType();
+            if (fillT==flushT)
+                return fillT;
+            
+            if (fillT==InvocationType.EITHER && flushT==InvocationType.NON_BLOCKING)
+                return InvocationType.EITHER;
+            
+            if (fillT==InvocationType.NON_BLOCKING && flushT==InvocationType.EITHER)
+                return InvocationType.EITHER;
+            
+            return InvocationType.BLOCKING;
+        }
+        
         @Override
         public void run()
         {
@@ -302,37 +338,20 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             _desiredInterestOps = newInterestOps;
         }
 
-
-        boolean readable = (readyOps & SelectionKey.OP_READ) != 0;
-        boolean writable = (readyOps & SelectionKey.OP_WRITE) != 0;
-
+        boolean fillable = (readyOps & SelectionKey.OP_READ) != 0;
+        boolean flushable = (readyOps & SelectionKey.OP_WRITE) != 0;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("onSelected {}->{} r={} w={} for {}", oldInterestOps, newInterestOps, readable, writable, this);
-
-        // Run non-blocking code immediately.
-        // This producer knows that this non-blocking code is special
-        // and that it must be run in this thread and not fed to the
-        // ExecutionStrategy, which could not have any thread to run these
-        // tasks (or it may starve forever just after having run them).
-        if (readable && getFillInterest().isCallbackNonBlocking())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Direct readable run {}",this);
-            _runFillable.run();
-            readable = false;
-        }
-        if (writable && getWriteFlusher().isCallbackNonBlocking())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Direct writable run {}",this);
-            _runCompleteWrite.run();
-            writable = false;
-        }
+            LOG.debug("onSelected {}->{} r={} w={} for {}", oldInterestOps, newInterestOps, fillable, flushable, this);
 
         // return task to complete the job
-        Runnable task= readable ? (writable ? _runCompleteWriteFillable : _runFillable)
-                : (writable ? _runCompleteWrite : null);
+        Runnable task= fillable 
+                ? (flushable 
+                        ? _runCompleteWriteFillable 
+                        : _runFillable)
+                : (flushable 
+                        ? _runCompleteWrite 
+                        : null);
 
         if (LOG.isDebugEnabled())
             LOG.debug("task {}",task);

@@ -43,6 +43,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
@@ -52,8 +53,10 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class SmallThreadPoolLoadTest extends AbstractTest
 {
     private final Logger logger = Log.getLogger(SmallThreadPoolLoadTest.class);
@@ -101,9 +104,9 @@ public class SmallThreadPoolLoadTest extends AbstractTest
             final Thread testThread = Thread.currentThread();
             Scheduler.Task task = client.getScheduler().schedule(() ->
             {
-                logger.warn("Interrupting test, it is taking too long{}{}{}{}",
-                        System.lineSeparator(), server.dump(),
-                        System.lineSeparator(), client.dump());
+                logger.warn("Interrupting test, it is taking too long{}Server:{}{}{}Client:{}{}",
+                        System.lineSeparator(), System.lineSeparator(), server.dump(),
+                        System.lineSeparator(), System.lineSeparator(), client.dump());
                 testThread.interrupt();
             }, iterations * factor, TimeUnit.MILLISECONDS);
 
@@ -186,9 +189,9 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         if (success)
             latch.countDown();
         else
-            logger.warn("Request {} took too long{}{}{}{}", requestId,
-                    System.lineSeparator(), server.dump(),
-                    System.lineSeparator(), client.dump());
+            logger.warn("Request {} took too long{}Server:{}{}{}Client:{}{}", requestId,
+                    System.lineSeparator(), System.lineSeparator(), server.dump(),
+                    System.lineSeparator(), System.lineSeparator(), client.dump());
         return !reset.get();
     }
 
@@ -209,7 +212,10 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                 }
                 case "POST":
                 {
-                    IO.copy(request.getInputStream(), response.getOutputStream());
+                    int content_length=request.getContentLength();
+                    ByteArrayOutputStream2 bout = new ByteArrayOutputStream2(content_length>0?content_length:16*1024);
+                    IO.copy(request.getInputStream(), bout);
+                    response.getOutputStream().write(bout.getBuf(),0,bout.getCount());
                     break;
                 }
             }
