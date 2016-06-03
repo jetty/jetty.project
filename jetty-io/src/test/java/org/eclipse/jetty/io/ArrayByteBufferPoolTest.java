@@ -25,11 +25,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.io.ByteBufferPool.Bucket;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class ArrayByteBufferPoolTest
