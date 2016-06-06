@@ -10,7 +10,7 @@ cd $MODULE
 
 let count=0
 
-while mvn test -Dtest=$TESTNAME 2>&1 > target/lastbuild.log
+while mvn $OPTS test -Dtest=$TESTNAME 2>&1 > target/lastbuild.log
 do
     now=`date`
     echo "Test Run $count - $now" 
