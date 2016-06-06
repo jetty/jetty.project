@@ -75,7 +75,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private RemoteEndpointFactory remoteEndpointFactory;
     private String protocolVersion;
     private Map<String, String[]> parameterMap = new HashMap<>();
-    private WebSocketRemoteEndpoint remote;
+    private RemoteEndpoint remote;
     private IncomingFrames incomingHandler;
     private OutgoingFrames outgoingHandler;
     private WebSocketPolicy policy;

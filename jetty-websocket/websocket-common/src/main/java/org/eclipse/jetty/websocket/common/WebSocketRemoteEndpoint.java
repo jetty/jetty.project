@@ -216,9 +216,15 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
     }
 
-
+    /**
+     * Get the InetSocketAddress for the established connection.
+     *
+     * @return the InetSocketAddress for the established connection. (or null, if the connection is no longer established)
+     */
     public InetSocketAddress getInetSocketAddress()
     {
+        if(connection == null)
+            return null;
         return connection.getRemoteAddress();
     }
 
