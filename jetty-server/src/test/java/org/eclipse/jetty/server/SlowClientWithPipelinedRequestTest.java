@@ -54,7 +54,7 @@ public class SlowClientWithPipelinedRequestTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return configure(new HttpConnection(getHttpConfiguration(),connector,endPoint,getHttpCompliance())
+                return configure(new HttpConnection(getHttpConfiguration(),connector,endPoint,getHttpCompliance(),isRecordHttpComplianceViolations())
                 {
                     @Override
                     public void onFillable()

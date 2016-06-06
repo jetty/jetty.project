@@ -36,7 +36,6 @@ public class ListenerRuntimeOnConnectSocket extends WebSocketAdapter
     {
         super.onWebSocketConnect(sess);
 
-        // Intentional runtime exception.
         throw new RuntimeException("Intentional Exception from onWebSocketConnect");
     }
 

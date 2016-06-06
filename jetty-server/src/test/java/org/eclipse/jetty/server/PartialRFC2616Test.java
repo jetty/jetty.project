@@ -35,9 +35,11 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -535,21 +537,24 @@ public class PartialRFC2616Test
     @Test
     public void test14_23() throws Exception
     {
-        int offset=0;
-        String response = connector.getResponses("GET /R1 HTTP/1.0\n" + "Connection: close\n" + "\n");
-        offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
+        try (StacklessLogging stackless = new StacklessLogging(HttpParser.class))
+        {
+            int offset=0;
+            String response = connector.getResponses("GET /R1 HTTP/1.0\n" + "Connection: close\n" + "\n");
+            offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
 
-        offset=0;
-        response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Connection: close\n"+"\n");
-        offset=checkContains(response,offset,"HTTP/1.1 400","400")+1;
+            offset=0;
+            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Connection: close\n"+"\n");
+            offset=checkContains(response,offset,"HTTP/1.1 400","400")+1;
 
-        offset=0;
-        response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
-        offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
+            offset=0;
+            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
+            offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
 
-        offset=0;
-        response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host:\n"+"Connection: close\n"+"\n");
-        offset=checkContains(response,offset,"HTTP/1.1 400","400")+1;
+            offset=0;
+            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host:\n"+"Connection: close\n"+"\n");
+            offset=checkContains(response,offset,"HTTP/1.1 400","400")+1;
+        }
     }
 
     @Test

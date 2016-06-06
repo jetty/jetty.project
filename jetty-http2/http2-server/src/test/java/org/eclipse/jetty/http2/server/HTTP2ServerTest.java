@@ -64,7 +64,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -369,9 +369,7 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testNonISOHeader() throws Exception
     {
-        StdErrLog logger = StdErrLog.getLogger(HttpChannel.class);
-        logger.setHideStacks(true);
-        try
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             startServer(new HttpServlet()
             {
@@ -401,10 +399,6 @@ public class HTTP2ServerTest extends AbstractServerTest
 
                 Assert.assertTrue(closed);
             }
-        }
-        finally
-        {
-            logger.setHideStacks(false);
         }
     }
 

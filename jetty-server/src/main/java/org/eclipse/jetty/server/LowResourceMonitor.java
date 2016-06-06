@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 
-/** 
+/**
  * A monitor for low resources
  * <p>
  * An instance of this class will monitor all the connectors of a server (or a set of connectors
@@ -78,7 +78,6 @@ public class LowResourceMonitor extends AbstractLifeCycle
     private String _cause;
     private String _reasons;
     private long _lowStarted;
-
 
     private final Runnable _monitor = new Runnable()
     {
@@ -256,17 +255,24 @@ public class LowResourceMonitor extends AbstractLifeCycle
         String cause="";
         int connections=0;
 
+        ThreadPool serverThreads = _server.getThreadPool();
+        if (_monitorThreads && serverThreads.isLowOnThreads())
+        {
+            reasons=low(reasons,"Server low on threads: "+serverThreads);
+            cause+="S";
+        }
+
         for(Connector connector : getMonitoredOrServerConnectors())
         {
             connections+=connector.getConnectedEndPoints().size();
 
             Executor executor = connector.getExecutor();
-            if (executor instanceof ThreadPool)
+            if (executor instanceof ThreadPool && executor!=serverThreads)
             {
-                ThreadPool threadpool=(ThreadPool) executor;
-                if (_monitorThreads && threadpool.isLowOnThreads())
+                ThreadPool connectorThreads=(ThreadPool)executor;
+                if (_monitorThreads && connectorThreads.isLowOnThreads())
                 {
-                    reasons=low(reasons,"Low on threads: "+threadpool);
+                    reasons=low(reasons,"Connector low on threads: "+connectorThreads);
                     cause+="T";
                 }
             }
@@ -284,7 +290,6 @@ public class LowResourceMonitor extends AbstractLifeCycle
             reasons=low(reasons,"Max memory exceeded: "+memory+">"+_maxMemory);
             cause+="M";
         }
-
 
         if (reasons!=null)
         {

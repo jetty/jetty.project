@@ -23,19 +23,29 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.annotation.Name;
+
 /**
  * Sends the response code whenever the rule finds a match.
  */
 public class ResponsePatternRule extends PatternRule
 {
     private String _code;
-    private String _reason = "";
+    private String _reason;
 
     /* ------------------------------------------------------------ */
     public ResponsePatternRule()
     {
+        this(null,null,"");
+    }
+
+    /* ------------------------------------------------------------ */
+    public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") String code, @Name("reason") String reason)
+    {
         _handling = true;
         _terminating = true;
+        setCode(code);
+        setReason(reason);
     }
 
     /* ------------------------------------------------------------ */

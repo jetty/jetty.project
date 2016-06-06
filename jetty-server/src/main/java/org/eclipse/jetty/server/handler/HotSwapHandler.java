@@ -62,8 +62,10 @@ public class HotSwapHandler extends AbstractHandlerContainer
     @Override
     public Handler[] getHandlers()
     {
-        return new Handler[]
-        { _handler };
+        Handler handler=_handler;
+        if (handler==null)
+            return new Handler[0];
+        return new Handler[] { handler };
     }
 
     /* ------------------------------------------------------------ */
@@ -73,14 +75,13 @@ public class HotSwapHandler extends AbstractHandlerContainer
      */
     public void setHandler(Handler handler)
     {
-        if (handler == null)
-            throw new IllegalArgumentException("Parameter handler is null.");
         try
         {
+            Server server = getServer();
+            if (handler!=null)
+                handler.setServer(server);
             updateBean(_handler,handler,true);
             _handler=handler;
-            Server server = getServer();
-            handler.setServer(server);
 
         }
         catch (Exception e)
@@ -116,9 +117,10 @@ public class HotSwapHandler extends AbstractHandlerContainer
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (_handler != null && isStarted())
+        Handler handler=_handler;
+        if (handler != null && isStarted() && handler.isStarted())
         {
-            _handler.handle(target,baseRequest,request,response);
+            handler.handle(target,baseRequest,request,response);
         }
     }
 
@@ -126,7 +128,9 @@ public class HotSwapHandler extends AbstractHandlerContainer
     @Override
     protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
-        expandHandler(_handler,list,byClass);
+        Handler handler=_handler;
+        if (handler!=null)
+            expandHandler(handler,list,byClass);
     }
 
     /* ------------------------------------------------------------ */

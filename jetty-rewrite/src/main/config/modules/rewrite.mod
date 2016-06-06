@@ -1,7 +1,8 @@
 #
 # Jetty Rewrite module
 #
-
+# Install rewrite rules as a handler applied to all requests on a server
+#
 [depend]
 server
 

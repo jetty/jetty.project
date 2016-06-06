@@ -210,33 +210,39 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     public ContextHandler()
     {
-        this((Context)null);
+        this(null,null,null);
     }
 
     /* ------------------------------------------------------------ */
     protected ContextHandler(Context context)
     {
-        super();
+        this(context,null,null);
+    }
+
+    /* ------------------------------------------------------------ */
+    public ContextHandler(String contextPath)
+    {
+        this(null,null,contextPath);
+    }
+
+    /* ------------------------------------------------------------ */
+    public ContextHandler(HandlerContainer parent, String contextPath)
+    {
+        this(null,parent,contextPath);
+    }
+
+    /* ------------------------------------------------------------ */
+    private ContextHandler(Context context, HandlerContainer parent, String contextPath)
+    {
         _scontext = context==null?new Context():context;
         _attributes = new AttributesMap();
         _initParams = new HashMap<String, String>();
         addAliasCheck(new ApproveNonExistentDirectoryAliases());
         if (File.separatorChar=='/')
             addAliasCheck(new AllowSymLinkAliasChecker());
-    }
 
-    /* ------------------------------------------------------------ */
-    public ContextHandler(String contextPath)
-    {
-        this();
-        setContextPath(contextPath);
-    }
-
-    /* ------------------------------------------------------------ */
-    public ContextHandler(HandlerContainer parent, String contextPath)
-    {
-        this();
-        setContextPath(contextPath);
+        if (contextPath!=null)
+            setContextPath(contextPath);
         if (parent instanceof HandlerWrapper)
             ((HandlerWrapper)parent).setHandler(this);
         else if (parent instanceof HandlerCollection)
@@ -752,22 +758,20 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         _attributes.setAttribute("org.eclipse.jetty.server.Executor",getServer().getThreadPool());
 
+        if (_mimeTypes == null)
+            _mimeTypes = new MimeTypes();
+        
         try
         {
-            // Set the classloader
+            // Set the classloader, context and enter scope
             if (_classLoader != null)
             {
                 current_thread = Thread.currentThread();
                 old_classloader = current_thread.getContextClassLoader();
                 current_thread.setContextClassLoader(_classLoader);
             }
-
-            if (_mimeTypes == null)
-                _mimeTypes = new MimeTypes();
-
             old_context = __context.get();
             __context.set(_scontext);
-
             enterScope(null, getState());
 
             // defers the calling of super.doStart()
@@ -778,8 +782,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         finally
         {
+            if (_availability==Availability.STARTING)
+                _availability=Availability.UNAVAILABLE;
+            exitScope(null);
             __context.set(old_context);
-
             // reset the classloader
             if (_classLoader != null && current_thread!=null)
                 current_thread.setContextClassLoader(old_classloader);
@@ -857,8 +863,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         ClassLoader old_classloader = null;
         ClassLoader old_webapploader = null;
         Thread current_thread = null;
-        exitScope(null);
         Context old_context = __context.get();
+        enterScope(null,"doStop");
         __context.set(_scontext);
         try
         {
@@ -881,13 +887,27 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 _errorHandler.stop();
 
             for (EventListener l : _programmaticListeners)
+            {
                 removeEventListener(l);
+                if (l instanceof ContextScopeListener)
+                {
+                    try
+                    {
+                        ((ContextScopeListener)l).exitScope(_scontext,null);
+                    }
+                    catch(Throwable e)
+                    {
+                        LOG.warn(e);
+                    }
+                }
+            }
             _programmaticListeners.clear();
         }
         finally
         {
-            LOG.info("Stopped {}", this);
             __context.set(old_context);
+            exitScope(null);
+            LOG.info("Stopped {}", this);
             // reset the classloader
             if ((old_classloader == null || (old_classloader != old_webapploader)) && current_thread != null)
                 current_thread.setContextClassLoader(old_classloader);

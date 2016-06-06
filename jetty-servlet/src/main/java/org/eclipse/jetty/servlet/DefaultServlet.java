@@ -43,7 +43,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.DateParser;
-import org.eclipse.jetty.http.GzipHttpContent;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -52,7 +51,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PathMap.MappedEntry;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.ResourceHttpContent;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.InclusiveByteRange;
@@ -65,7 +64,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -748,12 +746,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         boolean match=false;
                         if (etag!=null)
                         {
-                            QuotedStringTokenizer quoted = new QuotedStringTokenizer(ifm,", ",false,true);
-                            while (!match && quoted.hasMoreTokens())
+                            QuotedCSV quoted = new QuotedCSV(true,ifm);
+                            for (String tag : quoted)
                             {
-                                String tag = quoted.nextToken();
                                 if (etag.equals(tag) || tag.endsWith(ETAG_GZIP_QUOTE) && etag.equals(removeGzipFromETag(tag)))
+                                {
                                     match=true;
+                                    break;
+                                }
                             }
                         }
 
@@ -775,10 +775,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         }
                         
                         // Handle list of tags
-                        QuotedStringTokenizer quoted = new QuotedStringTokenizer(ifnm,", ",false,true);
-                        while (quoted.hasMoreTokens())
+                        QuotedCSV quoted = new QuotedCSV(true,ifnm);
+                        for (String tag : quoted)
                         {
-                            String tag = quoted.nextToken();
                             if (etag.equals(tag) || tag.endsWith(ETAG_GZIP_QUOTE) && etag.equals(removeGzipFromETag(tag))) 
                             {
                                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);

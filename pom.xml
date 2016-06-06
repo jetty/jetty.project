@@ -6,7 +6,7 @@
     <version>25</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.3.8-SNAPSHOT</version>
+  <version>9.3.10-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -17,7 +17,7 @@
     <slf4j-version>1.6.6</slf4j-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
     <alpn.api.version>1.1.2.v20150522</alpn.api.version>
-    <jsp.version>8.0.27</jsp.version>
+    <jsp.version>8.0.33</jsp.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
   </properties>
@@ -268,7 +268,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>1.0.10</version>
+          <version>2.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -540,6 +540,7 @@
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
     <module>jetty-alpn</module>
+    <module>jetty-documentation</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>
@@ -1045,6 +1046,42 @@
       </activation>
       <properties>
         <alpn.version>8.1.7.v20160121</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u77</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_77</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.7.v20160121</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u91</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_91</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.7.v20160121</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u92</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_92</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.8.v20160420</alpn.version>
       </properties>
     </profile>
   </profiles>

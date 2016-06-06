@@ -35,7 +35,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -89,7 +89,6 @@ public abstract class HttpConnection implements Connection
 
     protected void normalizeRequest(Request request)
     {
-        String method = request.getMethod();
         HttpVersion version = request.getVersion();
         HttpFields headers = request.getHeaders();
         ContentProvider content = request.getContent();
@@ -102,14 +101,17 @@ public abstract class HttpConnection implements Connection
             path = "/";
             request.path(path);
         }
-        if (proxy != null && !HttpMethod.CONNECT.is(method))
+
+        URI uri = request.getURI();
+
+        if (proxy instanceof HttpProxy && !HttpScheme.HTTPS.is(request.getScheme()) && uri != null)
         {
-            path = request.getURI().toString();
+            path = uri.toString();
             request.path(path);
         }
 
         // If we are HTTP 1.1, add the Host header
-        if (version.getVersion() > 10)
+        if (version.getVersion() == 11)
         {
             if (!headers.containsKey(HttpHeader.HOST.asString()))
                 headers.put(getHttpDestination().getHostField());
@@ -144,7 +146,6 @@ public abstract class HttpConnection implements Connection
         CookieStore cookieStore = getHttpClient().getCookieStore();
         if (cookieStore != null)
         {
-            URI uri = request.getURI();
             StringBuilder cookies = null;
             if (uri != null)
                 cookies = convertCookies(cookieStore.get(uri), null);
@@ -155,7 +156,7 @@ public abstract class HttpConnection implements Connection
 
         // Authentication
         applyAuthentication(request, proxy != null ? proxy.getURI() : null);
-        applyAuthentication(request, request.getURI());
+        applyAuthentication(request, uri);
     }
 
     private StringBuilder convertCookies(List<HttpCookie> cookies, StringBuilder builder)

@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.EndPoint;
@@ -60,9 +61,20 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         Map<Integer, Integer> settings = notifyPreface(this);
         if (settings == null)
             settings = Collections.emptyMap();
-        SettingsFrame frame = new SettingsFrame(settings, false);
-        // TODO: consider sending a WINDOW_UPDATE to enlarge the session send window of the client.
-        frames(null, Callback.NOOP, frame, Frame.EMPTY_ARRAY);
+        SettingsFrame settingsFrame = new SettingsFrame(settings, false);
+
+        WindowUpdateFrame windowFrame = null;
+        int sessionWindow = getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+        if (sessionWindow > 0)
+        {
+            updateRecvWindow(sessionWindow);
+            windowFrame = new WindowUpdateFrame(0, sessionWindow);
+        }
+
+        if (windowFrame == null)
+            frames(null, Callback.NOOP, settingsFrame, Frame.EMPTY_ARRAY);
+        else
+            frames(null, Callback.NOOP, settingsFrame, windowFrame);
     }
 
     @Override

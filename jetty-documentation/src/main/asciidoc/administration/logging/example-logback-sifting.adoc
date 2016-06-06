@@ -1,0 +1,39 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[example-logging-logback-sifting]]
+=== Example: MDC Based Sifting of Logs with Logback
+
+This page describes how to create log files at the server level and name them based on an arbitrary context. 
+This can be done with SLF4J + Logback + Jetty Webapp Logging in the mix. 
+Find example projects for this feature at github:
+
+....
+https://github.com/jetty-project/jetty-and-logback-example
+....
+
+.GitHub Example Project
+[cols=",",options="header",]
+|=======================================================================
+|Modules |Description
+|/jetty-distro-with-logback-basic/ |Configures the jetty distribution with logback enabled at the server level with an example logback configuration.
+
+|/jetty-distro-with-logback-sifting/ |Configures the jetty distribution with logback, centralized webapp logging, an MDC handler, and a sample logback configuration that performs sifting based on the incoming Host header on the requests.
+
+|/jetty-slf4j-mdc-handler/ |Provides the SLF4J MDC key/value pairs that Jetty needs to perform the sample sifting.
+
+|/jetty-slf4j-test-webapp/ |A sample webapp+servlet that accepts arbitrary values on a form POST and logs them via SLF4J, so that you can see the results of this example.
+|=======================================================================

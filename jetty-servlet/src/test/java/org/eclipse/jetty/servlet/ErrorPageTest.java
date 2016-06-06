@@ -31,8 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -45,6 +44,7 @@ public class ErrorPageTest
 {
     private Server _server;
     private LocalConnector _connector;
+    private StacklessLogging _stackless;
 
     @Before
     public void init() throws Exception
@@ -69,13 +69,13 @@ public class ErrorPageTest
         error.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE,"/error/GlobalErrorPage");
         
         _server.start();
-        ((StdErrLog)Log.getLogger(ServletHandler.class)).setHideStacks(true);
+        _stackless=new StacklessLogging(ServletHandler.class);
     }
 
     @After
     public void destroy() throws Exception
     {
-        ((StdErrLog)Log.getLogger(ServletHandler.class)).setHideStacks(false);
+        _stackless.close();
         _server.stop();
         _server.join();
     }

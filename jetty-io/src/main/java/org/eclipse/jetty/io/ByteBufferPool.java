@@ -21,8 +21,11 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ConcurrentArrayQueue;
 
 /**
  * <p>A {@link ByteBuffer} pool.</p>
@@ -115,4 +118,71 @@ public interface ByteBufferPool
             recycles.clear();
         }
     }
+
+    class Bucket
+    {
+        private final int _capacity;
+        private final AtomicInteger _space;
+        private final Queue<ByteBuffer> _queue= new ConcurrentArrayQueue<>();
+
+        public Bucket(int bufferSize,int maxSize)
+        {
+            _capacity=bufferSize;
+            _space=maxSize>0?new AtomicInteger(maxSize):null;
+        }
+    
+        public void release(ByteBuffer buffer)
+        {
+            BufferUtil.clear(buffer);
+            if (_space==null)
+                _queue.offer(buffer);
+            else if (_space.decrementAndGet()>=0)
+                _queue.offer(buffer);
+            else
+                _space.incrementAndGet();
+        }
+    
+        public ByteBuffer acquire(boolean direct)
+        {
+            ByteBuffer buffer = _queue.poll();
+            if (buffer == null) 
+               return direct ? BufferUtil.allocateDirect(_capacity) : BufferUtil.allocate(_capacity);
+            if (_space!=null)
+                _space.incrementAndGet();
+            return buffer;        
+        }
+    
+        public void clear()
+        {
+            if (_space==null)
+                _queue.clear();
+            else
+            {
+                int s=_space.getAndSet(0);
+                while(s-->0)
+                {
+                    if (_queue.poll()==null)
+                        _space.incrementAndGet();
+                }
+            }
+        }
+        
+        boolean isEmpty()
+        {
+            return _queue.isEmpty();
+        }
+        
+        int size()
+        {
+            return _queue.size();
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("Bucket@%x{%d,%d}",hashCode(),_capacity,_queue.size());
+        }
+    }
+    
+    
 }

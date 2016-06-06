@@ -107,19 +107,18 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
-    public void onClose()
+    public void close()
     {
-        super.onClose();
-        if (LOG.isDebugEnabled())
-            LOG.debug("onClose {}",this);
+        onClose();
         _writeFlusher.onClose();
         _fillInterest.onClose();
     }
 
-    @Override
-    public void close()
+    protected void close(Throwable failure)
     {
         onClose();
+        _writeFlusher.onFail(failure);
+        _fillInterest.onFail(failure);
     }
 
     @Override
@@ -212,7 +211,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             name=c.getSimpleName();
         }
 
-        return String.format("%s@%x{%s<->%d,%s,%s,%s,%s,%s,%d/%d,%s}",
+        Connection connection = getConnection();
+        return String.format("%s@%x{%s<->%d,%s,%s,%s,%s,%s,%d/%d,%s@%x}",
                 name,
                 hashCode(),
                 getRemoteAddress(),
@@ -224,6 +224,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                 _writeFlusher.toStateString(),
                 getIdleFor(),
                 getIdleTimeout(),
-                getConnection()==null?null:getConnection().getClass().getSimpleName());
+                connection == null ? null : connection.getClass().getSimpleName(),
+                connection == null ? 0 : connection.hashCode());
     }
 }

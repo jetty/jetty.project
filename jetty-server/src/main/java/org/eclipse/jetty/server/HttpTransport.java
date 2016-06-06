@@ -28,13 +28,31 @@ import org.eclipse.jetty.util.Callback;
 /** Abstraction of the outbound HTTP transport.
  */
 public interface HttpTransport
-{    
+{
+    /** Asynchronous call to send a response (or part) over the transport
+     * @param info The header info to send, or null if just sending more data.
+     *             The first call to send for a response must have a non null info.
+     * @param head True if the response if for a HEAD request (and the data should not be sent).
+     * @param content A buffer of content to be sent.
+     * @param lastContent True if the content is the last content for the current response.
+     * @param callback The Callback instance that success or failure of the send is notified on
+     */
     void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback);
 
+    /**
+     * @return true if responses can be pushed over this transport
+     */
     boolean isPushSupported();
-    
+
+    /**
+     * @param request A request to use as the basis for generating a pushed response.
+     */
     void push(MetaData.Request request);
-    
+
+    /**
+     * Called to indicated the end of the current request/response cycle (which may be
+     * some time after the last content is sent).
+     */
     void onCompleted();
     
     /**
@@ -46,7 +64,8 @@ public interface HttpTransport
      * <p>
      * This method is called when an error response needs to be sent,
      * but the response is already committed, or when a write failure
-     * is detected.
+     * is detected.  If abort is called, {@link #onCompleted()} is not
+     * called
      *
      * @param failure the failure that caused the abort.
      */

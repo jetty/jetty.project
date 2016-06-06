@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.Closeable;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -25,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ExecutionStrategy.Rejectable;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -69,14 +69,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         }
     };
 
-    private abstract class RejectableRunnable implements Runnable,Rejectable
+    private abstract class RunnableCloseable implements Runnable, Closeable
     {
         @Override
-        public void reject()
+        public void close()
         {
             try
             {
-                close();
+                SelectChannelEndPoint.this.close();
             }
             catch (Throwable x)
             {
@@ -85,7 +85,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         }
     }
 
-    private final Runnable _runFillable = new RejectableRunnable()
+    private final Runnable _runFillable = new RunnableCloseable()
     {
         @Override
         public void run()
@@ -99,7 +99,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             return SelectChannelEndPoint.this.toString()+":runFillable";
         }
     };
-    private final Runnable _runCompleteWrite = new RejectableRunnable()
+    private final Runnable _runCompleteWrite = new RunnableCloseable()
     {
         @Override
         public void run()
@@ -113,7 +113,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             return SelectChannelEndPoint.this.toString()+":runCompleteWrite";
         }
     };
-    private final Runnable _runFillableCompleteWrite = new RejectableRunnable()
+    private final Runnable _runCompleteWriteFillable = new RunnableCloseable()
     {
         @Override
         public void run()
@@ -168,10 +168,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             _desiredInterestOps = newInterestOps;
         }
 
-
         boolean readable = (readyOps & SelectionKey.OP_READ) != 0;
         boolean writable = (readyOps & SelectionKey.OP_WRITE) != 0;
-
 
         if (LOG.isDebugEnabled())
             LOG.debug("onSelected {}->{} r={} w={} for {}", oldInterestOps, newInterestOps, readable, writable, this);
@@ -197,7 +195,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         }
 
         // return task to complete the job
-        Runnable task= readable ? (writable ? _runFillableCompleteWrite : _runFillable)
+        Runnable task= readable ? (writable ? _runCompleteWriteFillable : _runFillable)
                 : (writable ? _runCompleteWrite : null);
 
         if (LOG.isDebugEnabled())

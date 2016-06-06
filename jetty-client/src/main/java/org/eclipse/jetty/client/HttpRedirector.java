@@ -229,7 +229,18 @@ public class HttpRedirector
     private Request redirect(Request request, Response response, Response.CompleteListener listener, URI newURI)
     {
         if (!newURI.isAbsolute())
-            newURI = request.getURI().resolve(newURI);
+        {
+            URI requestURI = request.getURI();
+            if (requestURI == null)
+            {
+                String uri = request.getScheme() + "://" + request.getHost();
+                int port = request.getPort();
+                if (port > 0)
+                    uri += ":" + port;
+                requestURI = URI.create(uri);
+            }
+            newURI = requestURI.resolve(newURI);
+        }
 
         int status = response.getStatus();
         switch (status)

@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.browser;
 
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Objects;
+
 import javax.servlet.ServletException;
 import javax.websocket.DeploymentException;
 
@@ -30,6 +35,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 
@@ -78,7 +84,7 @@ public class JsrBrowserDebugTool
         server.join();
     }
 
-    private void setupServer(int port) throws DeploymentException, ServletException
+    private void setupServer(int port) throws DeploymentException, ServletException, URISyntaxException, MalformedURLException
     {
         server = new Server();
         
@@ -89,10 +95,16 @@ public class JsrBrowserDebugTool
         connector.setPort(port);
         server.addConnector(connector);
 
+        String resourcePath = "/jsr-browser-debug-tool/index.html";
+        URL urlStatics = JsrBrowserDebugTool.class.getResource(resourcePath);
+        Objects.requireNonNull(urlStatics,"Unable to find " + resourcePath + " in classpath");
+        String urlBase = urlStatics.toURI().toASCIIString().replaceFirst("/[^/]*$","/");
+
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
+        context.setBaseResource(Resource.newResource(urlBase));
+
         ServletHolder holder = context.addServlet(DefaultServlet.class,"/");
-        holder.setInitParameter("resourceBase","src/test/resources/jsr-browser-debug-tool");
         holder.setInitParameter("dirAllowed","true");
         server.setHandler(context);
 

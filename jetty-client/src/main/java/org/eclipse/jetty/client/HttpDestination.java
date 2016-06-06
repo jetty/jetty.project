@@ -73,6 +73,8 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         if (proxy != null)
         {
             connectionFactory = proxy.newClientConnectionFactory(connectionFactory);
+            if (proxy.isSecure())
+                connectionFactory = newSslClientConnectionFactory(connectionFactory);
         }
         else
         {

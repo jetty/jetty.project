@@ -38,11 +38,8 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Exchanger;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
@@ -61,8 +58,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
@@ -245,10 +241,8 @@ public class ThreadStarvationTest
     @Test
     public void testFailureStarvation() throws Exception
     {
-        try
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
-
             int acceptors = 0;
             int selectors = 1;
             int maxThreads = 10;
@@ -410,10 +404,6 @@ public class ThreadStarvationTest
                 socket.close();
             
             _server.stop();
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         }
     }
 }

@@ -28,6 +28,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.HTTP2Session;
@@ -38,7 +39,6 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -51,6 +51,7 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     private final HTTP2Client client;
     private ClientConnectionFactory connectionFactory;
     private HttpClient httpClient;
+    private boolean useALPN = true;
 
     public HttpClientTransportOverHTTP2(HTTP2Client client)
     {
@@ -61,6 +62,16 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     public int getSelectors()
     {
         return client.getSelectors();
+    }
+
+    public boolean isUseALPN()
+    {
+        return useALPN;
+    }
+
+    public void setUseALPN(boolean useALPN)
+    {
+        this.useALPN = useALPN;
     }
 
     @Override
@@ -110,12 +121,9 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     {
         client.setConnectTimeout(httpClient.getConnectTimeout());
 
+        SessionListenerPromise listenerPromise = new SessionListenerPromise(context);
+
         HttpDestinationOverHTTP2 destination = (HttpDestinationOverHTTP2)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        @SuppressWarnings("unchecked")
-        Promise<Connection> connectionPromise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-
-        SessionListenerPromise listenerPromise = new SessionListenerPromise(destination, connectionPromise);
-
         SslContextFactory sslContextFactory = null;
         if (HttpScheme.HTTPS.is(destination.getScheme()))
             sslContextFactory = httpClient.getSslContextFactory();
@@ -126,9 +134,13 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
+        endPoint.setIdleTimeout(httpClient.getIdleTimeout());
+
         ClientConnectionFactory factory = connectionFactory;
-        SslContextFactory sslContextFactory = (SslContextFactory)context.get(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
-        if (sslContextFactory != null)
+        HttpDestinationOverHTTP2 destination = (HttpDestinationOverHTTP2)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        ProxyConfiguration.Proxy proxy = destination.getProxy();
+        boolean ssl = proxy == null ? HttpScheme.HTTPS.is(destination.getScheme()) : proxy.isSecure();
+        if (ssl && isUseALPN())
             factory = new ALPNClientConnectionFactory(client.getExecutor(), factory, client.getProtocols());
         return factory.newConnection(endPoint, context);
     }
@@ -138,29 +150,43 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         return new HttpConnectionOverHTTP2(destination, session);
     }
 
+    protected void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
+    {
+        connection.close();
+    }
+
     private class SessionListenerPromise extends Session.Listener.Adapter implements Promise<Session>
     {
-        private final HttpDestinationOverHTTP2 destination;
-        private final Promise<Connection> promise;
+        private final Map<String, Object> context;
         private HttpConnectionOverHTTP2 connection;
 
-        public SessionListenerPromise(HttpDestinationOverHTTP2 destination, Promise<Connection> promise)
+        private SessionListenerPromise(Map<String, Object> context)
         {
-            this.destination = destination;
-            this.promise = promise;
+            this.context = context;
         }
 
         @Override
         public void succeeded(Session session)
         {
-            connection = newHttpConnection(destination, session);
-            promise.succeeded(connection);
+            connection = newHttpConnection(destination(), session);
+            promise().succeeded(connection);
         }
 
         @Override
         public void failed(Throwable failure)
         {
-            promise.failed(failure);
+            promise().failed(failure);
+        }
+
+        private HttpDestinationOverHTTP2 destination()
+        {
+            return (HttpDestinationOverHTTP2)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        }
+
+        @SuppressWarnings("unchecked")
+        private Promise<Connection> promise()
+        {
+            return (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
         }
 
         @Override
@@ -176,13 +202,13 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         {
             Map<Integer, Integer> settings = frame.getSettings();
             if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
-                destination.setMaxRequestsPerConnection(settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS));
+                destination().setMaxRequestsPerConnection(settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS));
         }
 
         @Override
         public void onClose(Session session, GoAwayFrame frame)
         {
-            connection.close();
+            HttpClientTransportOverHTTP2.this.onClose(connection, frame);
         }
 
         @Override
@@ -194,7 +220,9 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         @Override
         public void onFailure(Session session, Throwable failure)
         {
-            connection.close(failure);
+            HttpConnectionOverHTTP2 c = connection;
+            if (c != null)
+                c.close(failure);
         }
     }
 }

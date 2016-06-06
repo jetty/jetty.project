@@ -87,6 +87,11 @@ public class MultiPartInputStreamParser
             _filename = filename;
         }
 
+        @Override
+        public String toString()
+        {
+            return String.format("Part{n=%s,fn=%s,ct=%s,s=%d,t=%b,f=%s}",_name,_filename,_contentType,_size,_temporary,_file);
+        }
         protected void setContentType (String contentType)
         {
             _contentType = contentType;
@@ -447,7 +452,7 @@ public class MultiPartInputStreamParser
     /**
      * Throws an exception if one has been latched.
      * 
-     * @throws IOException
+     * @throws IOException the exception (if present)
      */
     protected void throwIfError ()
     throws IOException
@@ -764,11 +769,15 @@ public class MultiPartInputStreamParser
                 }
                 finally
                 {
-
                     part.close();
                 }
             }
-            if (!lastPart)
+            if (lastPart)
+            {
+                while(line!=null)
+                    line=((ReadLineInputStream)_in).readLine();
+            }
+            else
                 throw new IOException("Incomplete parts");
         }
         catch (Exception e)

@@ -31,6 +31,7 @@ public class EchoHandler extends WebSocketHandler implements WebSocketCreator
     @Override
     public void configure(WebSocketServletFactory factory)
     {
+        factory.getPolicy().setMaxTextMessageSize(2 * 1024 * 1024);
         factory.setCreator(this);
     }
 

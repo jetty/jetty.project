@@ -312,17 +312,16 @@ public class HTTP2Flusher extends IteratingCallback
         entry.failed(failure);
     }
 
-    public static abstract class Entry implements Callback
+    public static abstract class Entry extends Callback.Nested
     {
         protected final Frame frame;
         protected final IStream stream;
-        protected final Callback callback;
 
         protected Entry(Frame frame, IStream stream, Callback callback)
         {
+            super(callback);
             this.frame = frame;
             this.stream = stream;
-            this.callback = callback;
         }
 
         public int dataRemaining()
@@ -348,7 +347,7 @@ public class HTTP2Flusher extends IteratingCallback
                 stream.close();
                 stream.getSession().removeStream(stream);
             }
-            callback.failed(x);
+            super.failed(x);
         }
 
         public boolean isProtocol()

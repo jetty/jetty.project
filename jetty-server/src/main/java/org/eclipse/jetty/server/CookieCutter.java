@@ -23,7 +23,7 @@ import java.util.Locale;
 
 import javax.servlet.http.Cookie;
 
-import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.log.Logger;
  * call to {@link #getCookies()}.
  * If the added fields are identical to those last added (as strings), then the 
  * cookies are not re parsed.
- * 
  *
  */
 public class CookieCutter
@@ -274,8 +273,9 @@ public class CookieCutter
                 // If after processing the current character we have a value and a name, then it is a cookie
                 if (value!=null && name!=null)
                 {
-                    name=QuotedStringTokenizer.unquoteOnly(name);
-                    value=QuotedStringTokenizer.unquoteOnly(value);
+                   
+                    name=QuotedCSV.unquote(name);
+                    value=QuotedCSV.unquote(value);
                     
                     try
                     {

@@ -147,6 +147,23 @@ public class AttributeNormalizer
         }
     }
 
+    public static String uriSeparators(String path)
+    {
+        StringBuilder ret = new StringBuilder();
+        for (char c : path.toCharArray())
+        {
+            if ((c == '/') || (c == '\\'))
+            {
+                ret.append('/');
+            }
+            else
+            {
+                ret.append(c);
+            }
+        }
+        return ret.toString();
+    }
+
     private URI warURI;
     private List<PathAttribute> attributes = new ArrayList<>();
 
@@ -166,6 +183,15 @@ public class AttributeNormalizer
             attributes.add(new PathAttribute("user.dir", "user.dir").weight(6));
             
             Collections.sort(attributes, new PathAttributeComparator());
+
+            if (LOG.isDebugEnabled())
+            {
+                int i = 0;
+                for (PathAttribute attr : attributes)
+                {
+                    LOG.debug(" [{}] {}", i++, attr);
+                }
+            }
         }
         catch (Exception e)
         {
@@ -203,7 +229,7 @@ public class AttributeNormalizer
             }
             else if ("file".equalsIgnoreCase(uri.getScheme()))
             {
-                return "file:" + normalizePath(new File(uri).toPath());
+                return "file:" + normalizePath(new File(uri.getRawSchemeSpecificPart()).toPath());
             }
             else
             {
@@ -242,7 +268,7 @@ public class AttributeNormalizer
             {
                 if (path.startsWith(attr.path) || path.equals(attr.path) || Files.isSameFile(path,attr.path))
                 {
-                    return URIUtil.addPaths("${" + attr.key + "}",attr.path.relativize(path).toString());
+                    return uriSeparators(URIUtil.addPaths("${" + attr.key + "}",attr.path.relativize(path).toString()));
                 }
             }
             catch (IOException ignore)
@@ -251,7 +277,7 @@ public class AttributeNormalizer
             }
         }
 
-        return path.toString();
+        return uriSeparators(path.toString());
     }
 
     public String expand(String str)
@@ -333,6 +359,11 @@ public class AttributeNormalizer
 
     private String getString(String property)
     {
+        if(property == null)
+        {
+            return null;
+        }
+
         // Use war path (if known)
         if("WAR".equalsIgnoreCase(property))
         {
@@ -344,10 +375,10 @@ public class AttributeNormalizer
         {
             if (attr.key.equalsIgnoreCase(property))
             {
-                return attr.path.toString();
+                return uriSeparators(attr.path.toString());
             }
         }
-        
+
         // Use system properties next
         return System.getProperty(property);
     }

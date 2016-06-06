@@ -1,0 +1,24 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[fedora]]
+=== Fedora
+
+As of Fedora 19, Jetty 9 is the version of Jetty available.
+This distribution of Jetty is not created or maintained by the Jetty project though we have had a fair amount of communication with the folks behind it and we are very pleased with how this Linux distribution has stayed current.
+Releases are kept largely in sync with our releases as there is a wonderful automatic notification mechanism in place for Fedora that detects our releases and immediately opens an issue for them to update.
+
+* https://admin.fedoraproject.org/pkgdb/acls/name/jetty[Jetty on Fedora]

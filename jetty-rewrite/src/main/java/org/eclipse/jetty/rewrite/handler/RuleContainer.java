@@ -161,15 +161,14 @@ public class RuleContainer extends Rule
     {
         boolean original_set=_originalPathAttribute==null;
         
-        target = URIUtil.compactPath(target);
-                
+        if (_rules==null)
+            return target;
+        
         for (Rule rule : _rules)
         {
             String applied=rule.matchAndApply(target,request, response);
             if (applied!=null)
             {
-                applied = URIUtil.compactPath(applied);
-                
                 LOG.debug("applied {}",rule);
                 LOG.debug("rewrote {} to {}",target,applied);
                 if (!original_set)

@@ -70,6 +70,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
@@ -77,7 +78,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
@@ -94,6 +95,7 @@ public class AsyncMiddleManServletTest
     private ServerConnector proxyConnector;
     private Server server;
     private ServerConnector serverConnector;
+    private StacklessLogging stackless;
 
     private void startServer(HttpServlet servlet) throws Exception
     {
@@ -136,8 +138,8 @@ public class AsyncMiddleManServletTest
         proxyContext.addServlet(proxyServletHolder, "/*");
 
         proxy.start();
-
-        ((StdErrLog)proxyServlet._log).setHideStacks(true);
+        
+        stackless=new StacklessLogging(proxyServlet._log);
     }
 
     private void startClient() throws Exception
@@ -156,6 +158,7 @@ public class AsyncMiddleManServletTest
         client.stop();
         proxy.stop();
         server.stop();
+        stackless.close();
     }
 
     @Test
@@ -1063,9 +1066,14 @@ public class AsyncMiddleManServletTest
         {
             Assert.assertFalse(paths.iterator().hasNext());
         }
-        try (DirectoryStream<Path> paths = Files.newDirectoryStream(targetTestsDir, outputPrefix + "*.*"))
+
+        // File deletion is delayed on windows, testing for deletion is not going to work
+        if(!OS.IS_WINDOWS)
         {
-            Assert.assertFalse(paths.iterator().hasNext());
+            try (DirectoryStream<Path> paths = Files.newDirectoryStream(targetTestsDir, outputPrefix + "*.*"))
+            {
+                Assert.assertFalse(paths.iterator().hasNext());
+            }
         }
     }
 

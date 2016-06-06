@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.After;
 import org.junit.Test;
 
@@ -45,7 +46,10 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     @Test
     public void testSessionExpiry() throws Exception
     {
-        super.testSessionExpiry();
+        try(StacklessLogging stackless=new StacklessLogging(JDBCSessionManager.class))
+        {
+            super.testSessionExpiry();
+        }
     }
     
     

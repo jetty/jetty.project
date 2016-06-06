@@ -21,6 +21,8 @@ package org.eclipse.jetty.io.ssl;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import javax.net.ssl.SSLEngine;
@@ -28,6 +30,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
@@ -78,6 +81,8 @@ public class SslConnection extends AbstractConnection
     private static final Logger LOG = Log.getLogger(SslConnection.class);
     private static final ByteBuffer __FILL_CALLED_FLUSH= BufferUtil.allocate(0);
     private static final ByteBuffer __FLUSH_CALLED_FILL= BufferUtil.allocate(0);
+
+    private final List<SslHandshakeListener> handshakeListeners = new ArrayList<>();
     private final ByteBufferPool _bufferPool;
     private final SSLEngine _sslEngine;
     private final DecryptedEndPoint _decryptedEndPoint;
@@ -112,6 +117,16 @@ public class SslConnection extends AbstractConnection
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = newDecryptedEndPoint();
+    }
+
+    public void addHandshakeListener(SslHandshakeListener listener)
+    {
+        handshakeListeners.add(listener);
+    }
+
+    public boolean removeHandshakeListener(SslHandshakeListener listener)
+    {
+        return handshakeListeners.remove(listener);
     }
 
     protected DecryptedEndPoint newDecryptedEndPoint()
@@ -304,18 +319,12 @@ public class SslConnection extends AbstractConnection
                 failedCallback(new Callback()
                 {
                     @Override
-                    public void succeeded()
-                    {
-                    }
-
-                    @Override
                     public void failed(Throwable x)
                     {
                         if (filler_failed)
                             getFillInterest().onFail(x);
                         getWriteFlusher().onFail(x);
                     }
-
                 },x);
             }
         };
@@ -582,9 +591,10 @@ public class SslConnection extends AbstractConnection
                                 {
                                     _handshaken = true;
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("{} {} handshook {}/{}", SslConnection.this,
+                                        LOG.debug("{} {} handshake succeeded {}/{}", SslConnection.this,
                                                 _sslEngine.getUseClientMode() ? "client" : "resumed server",
                                                 _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
+                                    notifyHandshakeSucceeded(_sslEngine);
                                 }
 
                                 // Check whether renegotiation is allowed
@@ -661,17 +671,26 @@ public class SslConnection extends AbstractConnection
                     }
                 }
             }
-            catch (IllegalStateException e)
+            catch (SSLHandshakeException x)
             {
-                // Some internal error in SSLEngine
-                LOG.debug(e);
-                getEndPoint().close();
-                throw new EofException(e);
+                notifyHandshakeFailed(_sslEngine, x);
+                close(x);
+                throw x;
             }
-            catch (Exception e)
+            catch (SSLException x)
             {
-                getEndPoint().close();
-                throw e;
+                if (!_handshaken)
+                {
+                    x = (SSLException)new SSLHandshakeException(x.getMessage()).initCause(x);
+                    notifyHandshakeFailed(_sslEngine, x);
+                }
+                close(x);
+                throw x;
+            }
+            catch (Throwable x)
+            {
+                close(x);
+                throw x;
             }
             finally
             {
@@ -764,6 +783,7 @@ public class SslConnection extends AbstractConnection
                     switch (wrapResultStatus)
                     {
                         case CLOSED:
+                        {
                             // The SSL engine has close, but there may be close handshake that needs to be written
                             if (BufferUtil.hasContent(_encryptedOutput))
                             {
@@ -783,11 +803,13 @@ public class SslConnection extends AbstractConnection
                                 getEndPoint().shutdownOutput();
                             }
                             return allConsumed;
-
+                        }
                         case BUFFER_UNDERFLOW:
+                        {
                             throw new IllegalStateException();
-
+                        }
                         default:
+                        {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("{} wrap {} {}", SslConnection.this, wrapResultStatus, BufferUtil.toHexSummary(_encryptedOutput));
 
@@ -795,7 +817,10 @@ public class SslConnection extends AbstractConnection
                             {
                                 _handshaken = true;
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("{} server handshook complete {}/{}", SslConnection.this, _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
+                                    LOG.debug("{} {} handshake succeeded {}/{}", SslConnection.this,
+                                            _sslEngine.getUseClientMode() ? "resumed client" : "server",
+                                            _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
+                                notifyHandshakeSucceeded(_sslEngine);
                             }
 
                             HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
@@ -853,8 +878,20 @@ public class SslConnection extends AbstractConnection
                                 case FINISHED:
                                     throw new IllegalStateException();
                             }
+                        }
                     }
                 }
+            }
+            catch (SSLHandshakeException x)
+            {
+                notifyHandshakeFailed(_sslEngine, x);
+                close(x);
+                throw x;
+            }
+            catch (Throwable x)
+            {
+                close(x);
+                throw x;
             }
             finally
             {
@@ -880,30 +917,26 @@ public class SslConnection extends AbstractConnection
             boolean oshut = isOutputShutdown();
             if (LOG.isDebugEnabled())
                 LOG.debug("{} shutdownOutput: oshut={}, ishut={}", SslConnection.this, oshut, ishut);
-            if (ishut)
+            try
             {
-                // Aggressively close, since inbound close alert has already been processed
-                // and the TLS specification allows to close the connection directly, which
-                // is what most other implementations expect: a FIN rather than a TLS close
-                // reply. If a TLS close reply is sent, most implementations send a RST.
-                getEndPoint().close();
-            }
-            else if (!oshut)
-            {
-                try
+                synchronized (this)
                 {
-                    synchronized (this) // TODO review synchronized boundary
+                    if (!oshut)
                     {
                         _sslEngine.closeOutbound();
-                        flush(BufferUtil.EMPTY_BUFFER); // Send close handshake
-                        ensureFillInterested();
+                        // Send the TLS close message.
+                        flush(BufferUtil.EMPTY_BUFFER);
+                        if (ishut)
+                            getEndPoint().close();
+                        else
+                            ensureFillInterested();
                     }
                 }
-                catch (Exception e)
-                {
-                    LOG.ignore(e);
-                    getEndPoint().close();
-                }
+            }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+                getEndPoint().close();
             }
         }
 
@@ -922,10 +955,18 @@ public class SslConnection extends AbstractConnection
         @Override
         public void close()
         {
-            // First send the TLS Close Alert, then the FIN
+            // First send the TLS Close Alert, then the FIN.
             shutdownOutput();
             getEndPoint().close();
             super.close();
+        }
+
+        protected void close(Throwable failure)
+        {
+            // First send the TLS Close Alert, then the FIN.
+            shutdownOutput();
+            getEndPoint().close();
+            super.close(failure);
         }
 
         @Override
@@ -938,6 +979,42 @@ public class SslConnection extends AbstractConnection
         public boolean isInputShutdown()
         {
             return _sslEngine.isInboundDone();
+        }
+
+        private void notifyHandshakeSucceeded(SSLEngine sslEngine)
+        {
+            SslHandshakeListener.Event event = null;
+            for (SslHandshakeListener listener : handshakeListeners)
+            {
+                if (event == null)
+                    event = new SslHandshakeListener.Event(sslEngine);
+                try
+                {
+                    listener.handshakeSucceeded(event);
+                }
+                catch (Throwable x)
+                {
+                    LOG.info("Exception while notifying listener " + listener, x);
+                }
+            }
+        }
+
+        private void notifyHandshakeFailed(SSLEngine sslEngine, Throwable failure)
+        {
+            SslHandshakeListener.Event event = null;
+            for (SslHandshakeListener listener : handshakeListeners)
+            {
+                if (event == null)
+                    event = new SslHandshakeListener.Event(sslEngine);
+                try
+                {
+                    listener.handshakeFailed(event, failure);
+                }
+                catch (Throwable x)
+                {
+                    LOG.info("Exception while notifying listener " + listener, x);
+                }
+            }
         }
 
         @Override

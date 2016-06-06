@@ -55,6 +55,8 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      */
     public static final String CACHED_INFO_ATTR = CachedInfo.class.getName();
 
+    private String sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session";
+
     private boolean _sniHostCheck;
     private long _stsMaxAge=-1;
     private boolean _stsIncludeSubDomains;
@@ -69,7 +71,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     {
         this(sniHostCheck,-1,false);
     }
-    
+
     /**
      * @param sniHostCheck True if the SNI Host name must match.
      * @param stsMaxAgeSeconds The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
@@ -95,7 +97,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
-     * @param sniHostCheck  True if the SNI Host name must match. 
+     * @param sniHostCheck  True if the SNI Host name must match.
      */
     public void setSniHostCheck(boolean sniHostCheck)
     {
@@ -161,10 +163,10 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     {
         if (request.getHttpChannel().getEndPoint() instanceof DecryptedEndPoint)
         {
-            
+
             if (request.getHttpURI().getScheme()==null)
                 request.setScheme(HttpScheme.HTTPS.asString());
-            
+
             SslConnection.DecryptedEndPoint ssl_endp = (DecryptedEndPoint)request.getHttpChannel().getEndPoint();
             SslConnection sslConnection = ssl_endp.getSslConnection();
             SSLEngine sslEngine=sslConnection.getSSLEngine();
@@ -179,19 +181,18 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     /**
      * Customizes the request attributes for general secure settings.
      * The default impl calls {@link Request#setSecure(boolean)} with true
-     * and sets a response header if the Strict-Transport-Security options 
+     * and sets a response header if the Strict-Transport-Security options
      * are set.
      * @param request the request being customized
      */
     protected void customizeSecure(Request request)
     {
         request.setSecure(true);
-        
+
         if (_stsField!=null)
             request.getResponse().getHttpFields().add(_stsField);
     }
-    
-    
+
     /**
      * <p>
      * Customizes the request attributes to be set for SSL requests.
@@ -208,7 +209,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      * trust. The first certificate in the chain is the one set by the client, the next is the one used to authenticate
      * the first, and so on.</li>
      * </ul>
-     * 
+     *
      * @param sslEngine
      *            the sslEngine to be customized.
      * @param request
@@ -264,11 +265,24 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             request.setAttribute("javax.servlet.request.cipher_suite",cipherSuite);
             request.setAttribute("javax.servlet.request.key_size",keySize);
             request.setAttribute("javax.servlet.request.ssl_session_id", idStr);
+            String sessionAttribute = getSslSessionAttribute();
+            if (sessionAttribute != null && sessionAttribute.isEmpty())
+                request.setAttribute(sessionAttribute, sslSession);
         }
         catch (Exception e)
         {
             LOG.warn(Log.EXCEPTION,e);
         }
+    }
+
+    public void setSslSessionAttribute(String attribute)
+    {
+        this.sslSessionAttribute = attribute;
+    }
+
+    public String getSslSessionAttribute()
+    {
+        return sslSessionAttribute;
     }
 
     @Override

@@ -70,7 +70,8 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         {
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
-            return new Socks4ProxyConnection(endPoint, executor, connectionFactory, context);
+            Socks4ProxyConnection connection = new Socks4ProxyConnection(endPoint, executor, connectionFactory, context);
+            return customize(connection, context);
         }
     }
 

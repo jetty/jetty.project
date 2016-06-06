@@ -30,8 +30,9 @@ public interface Callback
      * Instance of Adapter that can be used when the callback methods need an empty
      * implementation without incurring in the cost of allocating a new Adapter object.
      */
-    static Callback NOOP = new Callback(){};
-
+    Callback NOOP = new Callback()
+    {
+    };
 
     /**
      * <p>Callback invoked when the operation completes.</p>
@@ -39,14 +40,16 @@ public interface Callback
      * @see #failed(Throwable)
      */
     default void succeeded()
-    {}
+    {
+    }
 
     /**
      * <p>Callback invoked when the operation fails.</p>
      * @param x the reason for the operation failure
      */
     default void failed(Throwable x)
-    {}
+    {
+    }
 
     /**
      * @return True if the callback is known to never block the caller
@@ -55,25 +58,57 @@ public interface Callback
     {
         return false;
     }
-    
-    
+
     /**
      * Callback interface that declares itself as non-blocking
      */
     interface NonBlocking extends Callback
     {
         @Override
-        public default boolean isNonBlocking()
+        default boolean isNonBlocking()
         {
             return true;
         }
     }
-    
-    
+
+    class Nested implements Callback
+    {
+        private final Callback callback;
+
+        public Nested(Callback callback)
+        {
+            this.callback = callback;
+        }
+
+        public Nested(Nested nested)
+        {
+            this.callback = nested.callback;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            callback.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            callback.failed(x);
+        }
+
+        @Override
+        public boolean isNonBlocking()
+        {
+            return callback.isNonBlocking();
+        }
+    }
+
     /**
      * <p>Empty implementation of {@link Callback}</p>
      */
     @Deprecated
-    static class Adapter implements Callback
-    {}
+    class Adapter implements Callback
+    {
+    }
 }

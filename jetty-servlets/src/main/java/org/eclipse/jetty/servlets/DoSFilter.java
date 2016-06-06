@@ -51,6 +51,7 @@ import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionEvent;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -116,11 +117,11 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler#MANAGED_ATTRIBUTES}) to
  * manage the configuration of the filter.</dd>
  * <dt>tooManyCode</dt>
- * <dd>The status code to send if there are too many requests.  By default is 429 (too many requests), but 503 (Unavailable) is 
+ * <dd>The status code to send if there are too many requests.  By default is 429 (too many requests), but 503 (Unavailable) is
  * another option</dd>
  * </dl>
  * <p>
- * This filter should be configured for {@link DispatcherType#REQUEST} and {@link DispatcherType#ASYNC} and with 
+ * This filter should be configured for {@link DispatcherType#REQUEST} and {@link DispatcherType#ASYNC} and with
  * <code>&lt;async-supported&gt;true&lt;/async-supported&gt;</code>.
  * </p>
  */
@@ -258,10 +259,10 @@ public class DoSFilter implements Filter
 
         parameter = filterConfig.getInitParameter(ENABLED_INIT_PARAM);
         setEnabled(parameter == null || Boolean.parseBoolean(parameter));
-        
+
         parameter = filterConfig.getInitParameter(TOO_MANY_CODE);
         setTooManyCode(parameter==null?429:Integer.parseInt(parameter));
-        
+
         _scheduler = startScheduler();
 
         ServletContext context = filterConfig.getServletContext();
@@ -479,38 +480,37 @@ public class DoSFilter implements Filter
     }
 
     /**
-     * Takes drastic measures to return this response and stop this thread.
-     * Due to the way the connection is interrupted, may return mixed up headers.
+     * Invoked when the request handling exceeds {@link #getMaxRequestMs()}.
+     * <p>
+     * By default, a HTTP 503 response is returned and the handling thread is interrupted.
      *
-     * @param request  current request
-     * @param response current response, which must be stopped
-     * @param thread   the handling thread
+     * @param request  the current request
+     * @param response the current response
+     * @param handlingThread the handling thread
      */
-    protected void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
+    protected void onRequestTimeout(HttpServletRequest request, HttpServletResponse response, Thread handlingThread)
     {
-        // take drastic measures to return this response and stop this thread.
-        if (!response.isCommitted())
-        {
-            response.setHeader("Connection", "close");
-        }
         try
         {
-            try
-            {
-                response.getWriter().close();
-            }
-            catch (IllegalStateException e)
-            {
-                response.getOutputStream().close();
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("Timing out {}", request);
+            response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
         }
-        catch (IOException e)
+        catch (Throwable x)
         {
-            LOG.warn(e);
+            LOG.info(x);
         }
 
-        // interrupt the handling thread
-        thread.interrupt();
+        handlingThread.interrupt();
+    }
+
+    /**
+     * @deprecated use {@link #onRequestTimeout(HttpServletRequest, HttpServletResponse, Thread)} instead
+     */
+    @Deprecated
+    protected void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
+    {
+        onRequestTimeout(request, response, thread);
     }
 
     /**
@@ -726,10 +726,10 @@ public class DoSFilter implements Filter
             prefix -= 8;
             ++index;
         }
-        
+
         if (index == result.length)
             return result;
-               
+
         // Sets the _prefix_ most significant bits to 1
         result[index] = (byte)~((1 << (8 - prefix)) - 1);
         return result;
@@ -1012,7 +1012,7 @@ public class DoSFilter implements Filter
     {
         _enabled = enabled;
     }
-    
+
     public int getTooManyCode()
     {
         return _tooManyCode;

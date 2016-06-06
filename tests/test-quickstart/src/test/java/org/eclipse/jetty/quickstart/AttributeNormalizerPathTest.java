@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.quickstart;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -38,8 +35,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
 public class AttributeNormalizerPathTest
@@ -66,7 +65,7 @@ public class AttributeNormalizerPathTest
      * <p>
      * Eg: on fedora /etc/init.d is a symlink to /etc/rc.d/init.d
      */
-    private static String toSystemPath(String rawpath)
+    public static String toSystemPath(String rawpath)
     {
         Path path = FileSystems.getDefault().getPath(rawpath);
         if (Files.exists(path))
@@ -121,17 +120,16 @@ public class AttributeNormalizerPathTest
         if(origUserDir != null) System.setProperty("user.dir",origUserDir);
     }
 
-    @Parameter(0)
     public String key;
-
-    @Parameter(1)
     public String path;
 
     private AttributeNormalizer normalizer;
 
-    public AttributeNormalizerPathTest() throws MalformedURLException
+    public AttributeNormalizerPathTest(String key, String path) throws MalformedURLException
     {
-        normalizer = new AttributeNormalizer(Resource.newResource("/opt/jetty-distro/demo.base/webapps/root"));
+        this.key = key;
+        this.path = AttributeNormalizer.uriSeparators(path);
+        this.normalizer = new AttributeNormalizer(Resource.newResource("/opt/jetty-distro/demo.base/webapps/root"));
     }
 
     @Test

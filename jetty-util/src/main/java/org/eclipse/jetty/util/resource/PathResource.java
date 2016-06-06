@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -56,9 +57,24 @@ public class PathResource extends Resource
     private final Path alias;
     private final URI uri;
     
-    private static final Path checkAliasPath(final Path path)
+    private final Path checkAliasPath()
     {
         Path abs = path;
+
+        /* Catch situation where the Path class has already normalized
+         * the URI eg. input path "aa./foo.txt"
+         * from an #addPath(String) is normalized away during
+         * the creation of a Path object reference.
+         * If the URI is different then the Path.toUri() then
+         * we will just use the original URI to construct the
+         * alias reference Path.
+         */
+
+        if(!URIUtil.equalsIgnoreEncodings(uri,path.toUri()))
+        {
+            return new File(uri).toPath().toAbsolutePath();
+        }
+
         if (!abs.isAbsolute())
         {
             abs = path.toAbsolutePath();
@@ -159,21 +175,42 @@ public class PathResource extends Resource
 
     /**
      * Construct a new PathResource from a Path object.
-     * 
+     *
      * @param path the path to use
      */
     public PathResource(Path path)
     {
         this.path = path.toAbsolutePath();
+        assertValidPath(path);
         this.uri = this.path.toUri();
-        this.alias = checkAliasPath(path);
+        this.alias = checkAliasPath();
+    }
+
+    /**
+     * Construct a new PathResource from a parent PathResource
+     * and child sub path
+     *
+     * @param parent the parent path resource
+     * @param childPath the child sub path
+     */
+    private PathResource(PathResource parent, String childPath) throws MalformedURLException
+    {
+        // Calculate the URI and the path separately, so that any aliasing done by
+        // FileSystem.getPath(path,childPath) is visiable as a difference to the URI
+        // obtained via URIUtil.addDecodedPath(uri,childPath)
+
+        this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
+        if (isDirectory() &&!childPath.endsWith("/"))
+            childPath+="/";
+        this.uri = URIUtil.addDecodedPath(parent.uri,childPath);
+        this.alias = checkAliasPath();
     }
 
     /**
      * Construct a new PathResource from a URI object.
      * <p>
      * Must be an absolute URI using the <code>file</code> scheme.
-     * 
+     *
      * @param uri the URI to build this PathResource from.
      * @throws IOException if unable to construct the PathResource from the URI.
      */
@@ -210,7 +247,7 @@ public class PathResource extends Resource
 
         this.path = path.toAbsolutePath();
         this.uri = path.toUri();
-        this.alias = checkAliasPath(path);
+        this.alias = checkAliasPath();
     }
 
     /**
@@ -227,7 +264,7 @@ public class PathResource extends Resource
      * <pre>
      * new PathResource(url.toURI());
      * </pre>
-     * 
+     *
      * @param url the url to attempt to create PathResource from
      * @throws IOException if URL doesn't point to a location that can be transformed to a PathResource
      * @throws URISyntaxException if the provided URL was malformed
@@ -243,7 +280,7 @@ public class PathResource extends Resource
         String cpath = URIUtil.canonicalPath(subpath);
 
         if ((cpath == null) || (cpath.length() == 0))
-            throw new MalformedURLException();
+            throw new MalformedURLException(subpath);
 
         if ("/".equals(cpath))
             return this;
@@ -252,7 +289,19 @@ public class PathResource extends Resource
         // compensate for input subpaths like "/subdir"
         // where default resolve behavior would be
         // to treat that like an absolute path
-        return new PathResource(this.path.getFileSystem().getPath(path.toString(), subpath));
+
+        return new PathResource(this, subpath);
+    }
+
+    private void assertValidPath(Path path)
+    {
+        // TODO merged from 9.2, check if necessary
+        String str = path.toString();
+        int idx = StringUtil.indexOfControlChars(str);
+        if(idx >= 0)
+        {
+            throw new InvalidPathException(str, "Invalid Character at index " + idx);
+        }
     }
 
     @Override
@@ -418,17 +467,21 @@ public class PathResource extends Resource
     {
         return this.alias!=null;
     }
-    
+
     /**
      * The Alias as a Path.
-     * 
+     * <p>
+     *     Note: this cannot return the alias as a DIFFERENT path in 100% of situations,
+     *     due to Java's internal Path/File normalization.
+     * </p>
+     *
      * @return the alias as a path.
      */
     public Path getAliasPath()
     {
         return this.alias;
     }
-    
+
     @Override
     public URI getAlias()
     {

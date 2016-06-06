@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<assembly>
+  <id>html</id>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <baseDirectory>${project.version}</baseDirectory>
+  <fileSets>
+    <fileSet>
+      <directory>${project.basedir}/target/docbkx/html/index</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>**</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>

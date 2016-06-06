@@ -137,11 +137,6 @@ public class InputStreamContentProvider implements ContentProvider, Callback, Cl
     }
 
     @Override
-    public void succeeded()
-    {
-    }
-
-    @Override
     public void failed(Throwable failure)
     {
         // TODO: forward the failure to the iterator.

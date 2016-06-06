@@ -22,7 +22,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -37,10 +36,8 @@ import org.eclipse.jetty.util.B64Code;
  * {@link AuthenticationStore} retrieved from the {@link HttpClient}
  * via {@link HttpClient#getAuthenticationStore()}.
  */
-public class BasicAuthentication implements Authentication
+public class BasicAuthentication extends AbstractAuthentication
 {
-    private final URI uri;
-    private final String realm;
     private final String user;
     private final String password;
 
@@ -52,42 +49,49 @@ public class BasicAuthentication implements Authentication
      */
     public BasicAuthentication(URI uri, String realm, String user, String password)
     {
-        this.uri = uri;
-        this.realm = realm;
+        super(uri, realm);
         this.user = user;
         this.password = password;
     }
 
     @Override
-    public boolean matches(String type, URI uri, String realm)
+    public String getType()
     {
-        if (!"basic".equalsIgnoreCase(type))
-            return false;
-
-        if (!uri.toString().startsWith(this.uri.toString()))
-            return false;
-
-        return this.realm.equals(realm);
+        return "Basic";
     }
 
     @Override
     public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
     {
-        String value = "Basic " + B64Code.encode(user + ":" + password, StandardCharsets.ISO_8859_1);
-        return new BasicResult(headerInfo.getHeader(), uri, value);
+        return new BasicResult(getURI(), headerInfo.getHeader(), user, password);
     }
 
-    private static class BasicResult implements Result
+    /**
+     * Basic authentication result.
+     * <p>
+     * Application may utilize this class directly via
+     * {@link AuthenticationStore#addAuthenticationResult(Result)}
+     * to perform preemptive authentication, that is immediately
+     * sending the authorization header based on the fact that the
+     * URI is known to require authentication and that username
+     * and password are known a priori.
+     */
+    public static class BasicResult implements Result
     {
-        private final HttpHeader header;
         private final URI uri;
+        private final HttpHeader header;
         private final String value;
 
-        public BasicResult(HttpHeader header, URI uri, String value)
+        public BasicResult(URI uri, String user, String password)
         {
-            this.header = header;
+            this(uri, HttpHeader.AUTHORIZATION, user, password);
+        }
+
+        public BasicResult(URI uri, HttpHeader header, String user, String password)
+        {
             this.uri = uri;
-            this.value = value;
+            this.header = header;
+            this.value = "Basic " + B64Code.encode(user + ":" + password, StandardCharsets.ISO_8859_1);
         }
 
         @Override
@@ -105,7 +109,7 @@ public class BasicAuthentication implements Authentication
         @Override
         public String toString()
         {
-            return String.format("Basic authentication result for %s", uri);
+            return String.format("Basic authentication result for %s", getURI());
         }
     }
 }

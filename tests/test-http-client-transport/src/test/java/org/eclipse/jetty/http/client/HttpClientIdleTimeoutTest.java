@@ -52,8 +52,11 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(0);
+                if (target.equals("/timeout"))
+                {
+                    AsyncContext asyncContext = request.startAsync();
+                    asyncContext.setTimeout(0);
+                }
             }
         });
         client.stop();
@@ -61,13 +64,19 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         client.start();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI()).send(result ->
-        {
-            if (result.isFailed())
-                latch.countDown();
-        });
+        client.newRequest(newURI())
+                .path("/timeout")
+                .send(result ->
+                {
+                    if (result.isFailed())
+                        latch.countDown();
+                });
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+
+        // Verify that after the timeout we can make another request.
+        ContentResponse response = client.newRequest(newURI()).send();
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @Test
@@ -79,13 +88,17 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(0);
+                if (target.equals("/timeout"))
+                {
+                    AsyncContext asyncContext = request.startAsync();
+                    asyncContext.setTimeout(0);
+                }
             }
         });
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(newURI())
+                .path("/timeout")
                 .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
                 .send(result ->
                 {
@@ -94,10 +107,41 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
                 });
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+
+        // Verify that after the timeout we can make another request.
+        ContentResponse response = client.newRequest(newURI()).send();
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @Test
-    public void testServerIdleTimeout() throws Exception
+    public void testIdleClientIdleTimeout() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+            }
+        });
+        client.stop();
+        client.setIdleTimeout(idleTimeout);
+        client.start();
+
+        // Make a first request to open a connection.
+        ContentResponse response = client.newRequest(newURI()).send();
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // Let the connection idle timeout.
+        Thread.sleep(2 * idleTimeout);
+
+        // Verify that after the timeout we can make another request.
+        response = client.newRequest(newURI()).send();
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testIdleServerIdleTimeout() throws Exception
     {
         start(new AbstractHandler()
         {

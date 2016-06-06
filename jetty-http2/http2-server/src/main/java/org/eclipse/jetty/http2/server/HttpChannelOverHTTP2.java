@@ -21,11 +21,13 @@ package org.eclipse.jetty.http2.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.IStream;
@@ -57,7 +59,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         super(connector, configuration, endPoint, transport);
     }
 
-    private IStream getStream()
+    protected IStream getStream()
     {
         return getHttpTransport().getStream();
     }
@@ -70,67 +72,93 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
     public Runnable onRequest(HeadersFrame frame)
     {
-        MetaData.Request request = (MetaData.Request)frame.getMetaData();
-        HttpFields fields = request.getFields();
-
-        // HTTP/2 sends the Host header as the :authority
-        // pseudo-header, so we need to synthesize a Host header.
-        if (!fields.contains(HttpHeader.HOST))
+        try
         {
-            String authority = request.getURI().getAuthority();
-            if (authority != null)
+            MetaData.Request request = (MetaData.Request)frame.getMetaData();
+            HttpFields fields = request.getFields();
+
+            // HTTP/2 sends the Host header as the :authority
+            // pseudo-header, so we need to synthesize a Host header.
+            if (!fields.contains(HttpHeader.HOST))
             {
-                // Lower-case to be consistent with other HTTP/2 headers.
-                fields.put("host", authority);
+                String authority = request.getURI().getAuthority();
+                if (authority != null)
+                {
+                    // Lower-case to be consistent with other HTTP/2 headers.
+                    fields.put("host", authority);
+                }
             }
+
+            _expect100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+
+            HttpFields response = getResponse().getHttpFields();
+            if (getHttpConfiguration().getSendServerVersion())
+                response.add(SERVER_VERSION);
+            if (getHttpConfiguration().getSendXPoweredBy())
+                response.add(POWERED_BY);
+
+            onRequest(request);
+
+            boolean endStream = frame.isEndStream();
+            if (endStream)
+                onRequestComplete();
+
+            _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
+                    !endStream && !_expect100Continue;
+
+            if (LOG.isDebugEnabled())
+            {
+                Stream stream = getStream();
+                LOG.debug("HTTP2 Request #{}/{}, delayed={}:{}{} {} {}{}{}",
+                        stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                        _delayedUntilContent, System.lineSeparator(),
+                        request.getMethod(), request.getURI(), request.getVersion(),
+                        System.lineSeparator(), fields);
+            }
+
+            return _delayedUntilContent ? null : this;
         }
-
-        _expect100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
-
-        HttpFields response = getResponse().getHttpFields();
-        if (getHttpConfiguration().getSendServerVersion())
-            response.add(SERVER_VERSION);
-        if (getHttpConfiguration().getSendXPoweredBy())
-            response.add(POWERED_BY);
-
-        onRequest(request);
-
-        boolean endStream = frame.isEndStream();
-        if (endStream)
-            onRequestComplete();
-
-        _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
-                !endStream && !_expect100Continue;
-
-        if (LOG.isDebugEnabled())
+        catch (BadMessageException x)
         {
-            Stream stream = getStream();
-            LOG.debug("HTTP2 Request #{}/{}, delayed={}:{}{} {} {}{}{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                    _delayedUntilContent, System.lineSeparator(),
-                    request.getMethod(), request.getURI(), request.getVersion(),
-                    System.lineSeparator(), fields);
+            onBadMessage(x.getCode(), x.getReason());
+            return null;
         }
-
-        return _delayedUntilContent ? null : this;
+        catch (Throwable x)
+        {
+            onBadMessage(HttpStatus.INTERNAL_SERVER_ERROR_500, null);
+            return null;
+        }
     }
 
     public Runnable onPushRequest(MetaData.Request request)
     {
-        onRequest(request);
-        getRequest().setAttribute("org.eclipse.jetty.pushed", Boolean.TRUE);
-        onRequestComplete();
-
-        if (LOG.isDebugEnabled())
+        try
         {
-            Stream stream = getStream();
-            LOG.debug("HTTP2 PUSH Request #{}/{}:{}{} {} {}{}{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(),
-                    request.getMethod(), request.getURI(), request.getVersion(),
-                    System.lineSeparator(), request.getFields());
-        }
+            onRequest(request);
+            getRequest().setAttribute("org.eclipse.jetty.pushed", Boolean.TRUE);
+            onRequestComplete();
 
-        return this;
+            if (LOG.isDebugEnabled())
+            {
+                Stream stream = getStream();
+                LOG.debug("HTTP2 PUSH Request #{}/{}:{}{} {} {}{}{}",
+                        stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(),
+                        request.getMethod(), request.getURI(), request.getVersion(),
+                        System.lineSeparator(), request.getFields());
+            }
+
+            return this;
+        }
+        catch (BadMessageException x)
+        {
+            onBadMessage(x.getCode(), x.getReason());
+            return null;
+        }
+        catch (Throwable x)
+        {
+            onBadMessage(HttpStatus.INTERNAL_SERVER_ERROR_500, null);
+            return null;
+        }
     }
 
     @Override
@@ -247,5 +275,15 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                     throw new IOException("Concurrent commit while trying to send 100-Continue");
             }
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        IStream stream = getStream();
+        long streamId = -1;
+        if (stream != null)
+            streamId = stream.getId();
+        return String.format("%s#%d", super.toString(), getStream() == null ? -1 : streamId);
     }
 }

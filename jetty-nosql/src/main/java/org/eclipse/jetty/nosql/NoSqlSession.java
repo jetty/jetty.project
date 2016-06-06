@@ -117,8 +117,17 @@ public class NoSqlSession extends MemSession
         //reinflate it if necessary
         if (!isDeIdleFailed() && _manager.getIdlePeriod() > 0 && isIdle())
             deIdle();
-        super.checkValid();
+        try
+        {
+            super.checkValid();
+        }
+        catch (IllegalStateException e)
+        {
+            throw new IllegalStateException (e.getMessage()+" idle="+_idle+" deidleFailed="+_deIdleFailed+" version="+_version, e);
+        }
     }
+    
+    
 
     /* ------------------------------------------------------------ */
     @Override

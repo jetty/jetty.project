@@ -1,0 +1,118 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[security-reports]]
+=== Jetty Security Reports
+
+The following sections provide information about Jetty security issues.
+
+.Resolved Issues
+[width="99%",cols="11%,19%,14%,9%,14%,14%,19%",options="header",]
+|=======================================================================
+|yyyy/mm/dd |ID |Exploitable |Severity |Affects |Fixed Version |Comment
+|2016/05/31 |CVE-2016-4800 |high |high |>= 9.3.0, < = 9.3.8 |9.3.9
+|http://www.ocert.org/advisories/ocert-2016-001.html[Alias vulnerability allowing access to protected resources within a webapp on Windows.]
+
+|2015/02/24 |CVE-2015-2080 |high |high |>=9.2.3 <9.2.9 |9.2.9
+|http://blog.gdssecurity.com/labs/2015/2/25/jetleak-vulnerability-remote-leakage-of-shared-buffers-in-je.html[JetLeak exposure of past buffers during HttpParser error]
+
+|2013/11/27 |http://en.securitylab.ru/lab/PT-2013-65[PT-2013-65] |medium
+|high |>=9.0.0 <9.0.5 |9.0.6
+https://bugs.eclipse.org/bugs/show_bug.cgi?id=418014[418014] |Alias checking disabled by NTFS errors on Windows.
+
+|2013/07/24
+|https://bugs.eclipse.org/bugs/show_bug.cgi?id=413684[413684] |low
+|medium |>=7.6.9 <9.0.5 |7.6.13,8.1.13,9.0.5
+https://bugs.eclipse.org/bugs/show_bug.cgi?id=413684[413684]
+|Constraints bypassed if Unix symlink alias checker used on Windows.
+
+|2011/12/29
+|http://www.ocert.org/advisories/ocert-2011-003.html[CERT2011-003] http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2011-4461[CVE-2011-4461]
+|high |medium |All versions |7.6.0.RCO
+https://bugs.eclipse.org/bugs/show_bug.cgi?id=367638[Jetty-367638]
+|Added ContextHandler.setMaxFormKeys (intkeys) to limit the number of parameters (default 1000).
+
+|2009/11/05
+|http://www.kb.cert.org/vuls/id/120541[CERT2011-003] http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2009-3555[CERT2011-003]
+|medium |high |JVM<1.6u19 |jetty-7.01.v20091125, jetty-6.1.22 |Work
+around by turning off SSL renegotiation in Jetty. If using JVM > 1.6u19
+setAllowRenegotiate(true) may be called on connectors.
+
+|2009/06/18 |http://jira.codehaus.org/browse/JETTY-1042[Jetty-1042] |low
+|high |< = 6.1.18, < = 7.0.0.M4 |6.1.19, 7.0.0.Rc0 |Cookie leak between
+requests sharing a connection.
+
+|2009/04/30 |http://www.kb.cert.org/vuls/id/402580[CERT402580] |medium
+|high |< = 6.1.16, < = 7.0.0.M2 a|
+5.1.15, 6.1.18, 7.0.0.M2
+
+http://jira.codehaus.org/browse/JETTY-1004[Jetty-1004]
+
+ |View arbitrary disk content in some specific configurations.
+
+|2007/12/22
+|http://www.kb.cert.org/vuls/id/553235[CERT553235] http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2007-6672[CVE-2007-6672]
+|high |medium |6.1.rrc0-6.1.6 a|
+6.1.7
+
+http://jira.codehaus.org/browse/JETTY-386[CERT553235]
+
+ |Static content visible in WEB-INF and past security constraints.
+
+|2007/11/05
+|http://www.kb.cert.org/vuls/id/438616[CERT438616] http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2007-5614[CVE-2007-5614]
+|low |low |<6.1.6 |6.1.6rc1 (patch in CVS for jetty5) |Single quote in
+cookie name.
+
+|2007/11/05
+|http://www.kb.cert.org/vuls/id/237888[CERT237888>] http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2007-5613[CVE-2007-5613]
+|low |low |<6.1.6 |6.1.6rc0 (patch in CVS for jetty5) |XSS in demo dup
+servlet.
+
+|2007/11/03 |http://www.kb.cert.org/vuls/id/212984[CERT212984
+>] http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2007-5615[CVE-2007-5615]
+|medium |medium |<6.1.6 |6.1.6rc0 (patch in CVS for jetty5) |CRLF
+Response splitting.
+
+|2006/11/22
+|http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2006-6969[CVE-2006-6969]
+|low |high |<6.1.0, <6.0.2, <5.1.12, <4.2.27 |6.1.0pre3, 6.0.2, 5.1.12,
+4.2.27 |Session ID predictability.
+
+|2006/06/01
+|http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2006-2759[CVE-2006-2759]
+|medium |medium |<6.0.*, <6.0.0Beta17 |6.0.0Beta17 |JSP source
+visibility.
+
+|2006/01/05 | |medium |medium |<5.1.10 |5.1.10 |Fixed //security
+constraint bypass on Windows.
+
+|2005/11/18
+|http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2006-2758[CVE-2006-2758]
+|medium |medium |<5.1.6 |5.1.6, 6.0.0Beta4 |JSP source visibility.
+
+|2004/02/04 |JSSE 1.0.3_01 |medium |medium |<4.2.7 |4.2.7 |Upgraded JSSE
+to obtain downstream security fix.
+
+|2002/09/22 | |high |high |<4.1.0 |4.1.0 |Fixed CGI servlet remove
+exploit.
+
+|2002/03/12 | |medium | |<3.1.7 |4.0.RC2, 3.1.7 |Fixed // security
+constraint bypass.
+
+|2001/10/21 |medium | |high |<3.1.3 |3.1.3 |Fixed trailing null security
+constraint bypass.
+|=======================================================================

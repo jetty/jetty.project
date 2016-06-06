@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -39,14 +42,10 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public abstract class AbstractHttpTest
 {
@@ -59,6 +58,8 @@ public abstract class AbstractHttpTest
     protected static ServerConnector connector;
     protected String httpVersion;
     protected SimpleHttpParser httpParser;
+    StacklessLogging stackless;
+
 
     public AbstractHttpTest(String httpVersion)
     {
@@ -74,36 +75,38 @@ public abstract class AbstractHttpTest
         
         server.addConnector(connector);
         httpParser = new SimpleHttpParser();
-        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+        stackless=new StacklessLogging(HttpChannel.class);
     }
 
     @After
     public void tearDown() throws Exception
     {
         server.stop();
-        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+        stackless.close();
     }
 
     protected SimpleHttpResponse executeRequest() throws URISyntaxException, IOException
     {
-        Socket socket = new Socket("localhost", connector.getLocalPort());
-        socket.setSoTimeout((int)connector.getIdleTimeout());
-        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-        PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+        try(Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            socket.setSoTimeout((int)connector.getIdleTimeout());
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+            PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-        writer.write("GET / " + httpVersion + "\r\n");
-        writer.write("Host: localhost\r\n");
-        writer.write("\r\n");
-        writer.flush();
+            writer.write("GET / " + httpVersion + "\r\n");
+            writer.write("Host: localhost\r\n");
+            writer.write("\r\n");
+            writer.flush();
 
-        SimpleHttpResponse response = httpParser.readResponse(reader);
-        if ("HTTP/1.1".equals(httpVersion) 
-            && response.getHeaders().get("content-length") == null 
-            && response.getHeaders().get("transfer-encoding") == null
-            && !__noBodyCodes.contains(response.getCode()))
-            assertThat("If HTTP/1.1 response doesn't contain transfer-encoding or content-length headers, " +
-                    "it should contain connection:close", response.getHeaders().get("connection"), is("close"));
-        return response;
+            SimpleHttpResponse response = httpParser.readResponse(reader);
+            if ("HTTP/1.1".equals(httpVersion) 
+                    && response.getHeaders().get("content-length") == null 
+                    && response.getHeaders().get("transfer-encoding") == null
+                    && !__noBodyCodes.contains(response.getCode()))
+                assertThat("If HTTP/1.1 response doesn't contain transfer-encoding or content-length headers, " +
+                        "it should contain connection:close", response.getHeaders().get("connection"), is("close"));
+            return response;
+        }
     }
 
     protected void assertResponseBody(SimpleHttpResponse response, String expectedResponseBody)

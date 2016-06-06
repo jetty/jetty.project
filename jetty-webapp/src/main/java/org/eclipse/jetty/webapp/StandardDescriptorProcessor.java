@@ -33,12 +33,12 @@ import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
 import javax.servlet.SessionTrackingMode;
 
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -51,7 +51,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
@@ -650,8 +649,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         XmlParser.Node tNode = node.get("session-timeout");
         if (tNode != null)
         {
-            int timeout = Integer.parseInt(tNode.toString(false, true));
-            context.getSessionHandler().getSessionManager().setMaxInactiveInterval(timeout * 60);
+            java.math.BigDecimal asDecimal = new java.math.BigDecimal(tNode.toString(false, true));
+            if (asDecimal.compareTo(AbstractSessionManager.MAX_INACTIVE_MINUTES) > 0)
+                throw new IllegalStateException ("Max session-timeout in minutes is "+AbstractSessionManager.MAX_INACTIVE_MINUTES);
+            
+            context.getSessionHandler().getSessionManager().setMaxInactiveInterval(asDecimal.intValueExact() * 60);
         }
 
         //Servlet Spec 3.0
@@ -1113,6 +1115,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             code=Integer.valueOf(error);
 
         String location = node.getString("location", false, true);
+        if (!location.startsWith("/"))
+            throw new IllegalStateException("Missing leading '/' for location: " + location);
         ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
         String originName = "error."+error;
         switch (context.getMetaData().getOrigin(originName))

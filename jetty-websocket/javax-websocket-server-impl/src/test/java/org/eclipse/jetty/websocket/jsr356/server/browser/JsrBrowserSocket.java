@@ -23,6 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.Random;
+import java.util.Set;
 
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
@@ -128,6 +129,14 @@ public class JsrBrowserSocket
                     else
                     {
                         writeMessage("Client Sec-WebSocket-Extensions: " + this.requestedExtensions);
+                    }
+
+                    Set<Session> openSessions = session.getOpenSessions();
+                    writeMessage("OpenSessions.size() = " + openSessions.size());
+                    int i = 0;
+                    for (Session open : openSessions)
+                    {
+                        writeMessage("  OpenSession[%d] = %s", i++, open);
                     }
                     break;
                 }

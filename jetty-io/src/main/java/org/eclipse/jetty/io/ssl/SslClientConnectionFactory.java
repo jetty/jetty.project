@@ -26,7 +26,9 @@ import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SslClientConnectionFactory implements ClientConnectionFactory
@@ -59,8 +61,10 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         context.put(SSL_ENGINE_CONTEXT_KEY, engine);
 
         SslConnection sslConnection = newSslConnection(byteBufferPool, executor, endPoint, engine);
-        sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
         endPoint.setConnection(sslConnection);
+
+        customize(sslConnection, context);
+
         EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
         appEndPoint.setConnection(connectionFactory.newConnection(appEndPoint, context));
 
@@ -70,5 +74,18 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
     {
         return new SslConnection(byteBufferPool, executor, endPoint, engine);
+    }
+
+    @Override
+    public Connection customize(Connection connection, Map<String, Object> context)
+    {
+        if (connection instanceof SslConnection)
+        {
+            SslConnection sslConnection = (SslConnection)connection;
+            sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
+            ContainerLifeCycle connector = (ContainerLifeCycle)context.get(ClientConnectionFactory.CONNECTOR_CONTEXT_KEY);
+            connector.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
+        }
+        return ClientConnectionFactory.super.customize(connection, context);
     }
 }

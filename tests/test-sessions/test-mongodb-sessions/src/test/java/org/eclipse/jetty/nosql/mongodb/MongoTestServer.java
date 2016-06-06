@@ -113,7 +113,7 @@ public class MongoTestServer extends AbstractTestServer
             throw new RuntimeException(e);
         }
         
-        manager.setSavePeriod(1);
+        manager.setSavePeriod(0);
         manager.setStalePeriod(0);
         manager.setSaveAllAttributes(_saveAllAttributes);
         //manager.setScavengePeriod((int)TimeUnit.SECONDS.toMillis(_scavengePeriod));

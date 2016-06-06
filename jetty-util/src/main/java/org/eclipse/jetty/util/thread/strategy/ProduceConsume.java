@@ -20,7 +20,10 @@ package org.eclipse.jetty.util.thread.strategy;
 
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Locker;
 
 /**
  * <p>A strategy where the caller thread iterates over task production, submitting each
@@ -28,8 +31,12 @@ import org.eclipse.jetty.util.thread.ExecutionStrategy;
  */
 public class ProduceConsume implements ExecutionStrategy, Runnable
 {
+    private static final Logger LOG = Log.getLogger(ExecuteProduceConsume.class);
+
+    private final Locker _locker = new Locker();
     private final Producer _producer;
     private final Executor _executor;
+    private State _state = State.IDLE;
 
     public ProduceConsume(Producer producer, Executor executor)
     {
@@ -40,16 +47,48 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
     @Override
     public void execute()
     {
+        try (Locker.Lock lock = _locker.lock())
+        {
+            switch(_state)
+            {
+                case IDLE:
+                    _state= State.PRODUCE;
+                    break;
+
+                case PRODUCE:
+                case EXECUTE:
+                    _state= State.EXECUTE;
+                    return;
+            }
+        }
+
         // Iterate until we are complete.
         while (true)
         {
             // Produce a task.
             Runnable task = _producer.produce();
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} produced {}", _producer, task);
 
             if (task == null)
-                break;
+            {
+                try (Locker.Lock lock = _locker.lock())
+                {
+                    switch(_state)
+                    {
+                        case IDLE:
+                            throw new IllegalStateException();
+                        case PRODUCE:
+                            _state= State.IDLE;
+                            return;
+                        case EXECUTE:
+                            _state= State.PRODUCE;
+                            continue;
+                    }
+                }
+            }
 
-            // run the task.
+            // Run the task.
             task.run();
         }
     }
@@ -64,5 +103,19 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
     public void run()
     {
         execute();
+    }
+
+    public static class Factory implements ExecutionStrategy.Factory
+    {
+        @Override
+        public ExecutionStrategy newExecutionStrategy(Producer producer, Executor executor)
+        {
+            return new ProduceConsume(producer, executor);
+        }
+    }
+
+    private enum State
+    {
+        IDLE, PRODUCE, EXECUTE
     }
 }

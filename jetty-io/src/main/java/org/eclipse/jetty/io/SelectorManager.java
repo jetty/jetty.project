@@ -27,12 +27,11 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -41,7 +40,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <p>{@link SelectorManager} subclasses implement methods to return protocol-specific
  * {@link EndPoint}s and {@link Connection}s.</p>
  */
-public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
+public abstract class SelectorManager extends ContainerLifeCycle implements Dumpable
 {
     public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
@@ -50,6 +49,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
+    private ExecutionStrategy.Factory _executionFactory = ExecutionStrategy.Factory.getDefault();
     private long _selectorIndex;
 
     protected SelectorManager(Executor executor, Scheduler scheduler)
@@ -97,6 +97,24 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
+     * @return the {@link ExecutionStrategy.Factory} used by {@link ManagedSelector}
+     */
+    public ExecutionStrategy.Factory getExecutionStrategyFactory()
+    {
+        return _executionFactory;
+    }
+
+    /**
+     * @param _executionFactory the {@link ExecutionStrategy.Factory} used by {@link ManagedSelector}
+     */
+    public void setExecutionStrategyFactory(ExecutionStrategy.Factory _executionFactory)
+    {
+        if (isRunning())
+            throw new IllegalStateException("Cannot change " + ExecutionStrategy.Factory.class.getSimpleName() + " after start()");
+        this._executionFactory = _executionFactory;
+    }
+
+    /**
      * @return the selector priority delta
      * @deprecated not implemented
      */
@@ -136,7 +154,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     private ManagedSelector chooseSelector(SocketChannel channel)
     {
         // Ideally we would like to have all connections from the same client end
-        // up on the same selector (to try to avoid smearing the data from a single 
+        // up on the same selector (to try to avoid smearing the data from a single
         // client over all cores), but because of proxies, the remote address may not
         // really be the client - so we have to hedge our bets to ensure that all
         // channels don't end up on the one selector for a proxy.
@@ -246,14 +264,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     @Override
     protected void doStart() throws Exception
     {
-        super.doStart();
         for (int i = 0; i < _selectors.length; i++)
         {
             ManagedSelector selector = newSelector(i);
             _selectors[i] = selector;
-            selector.start();
-            execute(selector);
+            addBean(selector);
         }
+        super.doStart();
     }
 
     /**
@@ -264,15 +281,15 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     protected ManagedSelector newSelector(int id)
     {
-        return new ManagedSelector(this, id);
+        return new ManagedSelector(this, id, getExecutionStrategyFactory());
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        for (ManagedSelector selector : _selectors)
-            selector.stop();
         super.doStop();
+        for (ManagedSelector selector : _selectors)
+            removeBean(selector);
     }
 
     /**
@@ -312,6 +329,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 LOG.warn("Exception while notifying connection " + connection, x);
             else
                 LOG.debug("Exception while notifying connection " + connection, x);
+            throw x;
         }
     }
 
@@ -375,17 +393,4 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @see #newEndPoint(SocketChannel, ManagedSelector, SelectionKey)
      */
     public abstract Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException;
-
-    @Override
-    public String dump()
-    {
-        return ContainerLifeCycle.dump(this);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out, indent, TypeUtil.asList(_selectors));
-    }
 }

@@ -136,7 +136,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject("Abstract implementation of the Connector Interface")
 public abstract class AbstractConnector extends ContainerLifeCycle implements Connector, Dumpable
 {
-    protected final Logger LOG = Log.getLogger(getClass());
+    protected final Logger LOG = Log.getLogger(AbstractConnector.class);
     // Order is important on server side, so we use a LinkedHashMap
     private final Map<String, ConnectionFactory> _factories = new LinkedHashMap<>();
     private final Server _server;
@@ -536,22 +536,22 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 LOG.warn(current);
             else
                 LOG.debug(current);
+            try
+            {
+                // Arbitrary sleep to avoid spin looping.
+                // Subclasses may decide for a different
+                // sleep policy or closing the connector.
+                Thread.sleep(1000);
+                return true;
+            }
+            catch (Throwable x)
+            {
+                return false;
+            }
         }
         else
         {
             LOG.ignore(current);
-        }
-
-        try
-        {
-            // Arbitrary sleep to avoid spin looping.
-            // Subclasses may decide for a different
-            // sleep policy or closing the connector.
-            Thread.sleep(1000);
-            return true;
-        }
-        catch (Throwable x)
-        {
             return false;
         }
     }

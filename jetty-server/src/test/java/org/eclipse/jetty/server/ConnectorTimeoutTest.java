@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,8 +43,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
@@ -452,9 +450,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         os.flush();
 
         long start = System.currentTimeMillis();
-        try
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
             Thread.sleep(300);
             os.write("1".getBytes("utf-8"));
             os.flush();
@@ -475,10 +472,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
         catch(Exception e)
         {
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         }
         long duration=System.currentTimeMillis() - start;
         Assert.assertThat(duration,Matchers.greaterThan(500L));
@@ -565,10 +558,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             line=is.readLine();
 
         long start=System.currentTimeMillis();
-        try
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class,AbstractConnection.class))
         {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
-            ((StdErrLog)Log.getLogger(AbstractConnection.class)).setHideStacks(true);
             for (int i=0;i<(128*1024);i++)
             {
                 if (i%1028==0)
@@ -583,11 +574,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
         catch(Throwable e)
         {}
-        finally
-        {
-            ((StdErrLog)Log.getLogger(AbstractConnection.class)).setHideStacks(false);
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
-        }
         long end=System.currentTimeMillis();
         long duration = end-start;
         Assert.assertThat(duration,Matchers.lessThan(20L*128L));

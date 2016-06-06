@@ -21,6 +21,8 @@ package org.eclipse.jetty.client;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,6 +39,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BasicAuthentication;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.DigestAuthentication;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -102,6 +105,15 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     @Test
     public void test_BasicAuthentication() throws Exception
     {
+        startBasic(new EmptyServerHandler());
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
+        test_Authentication(new BasicAuthentication(uri, realm, "basic", "basic"));
+    }
+
+    @Test
+    public void test_BasicEmptyRealm() throws Exception
+    {
+        realm = "";
         startBasic(new EmptyServerHandler());
         URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
         test_Authentication(new BasicAuthentication(uri, realm, "basic", "basic"));
@@ -365,5 +377,73 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void test_PreemptedAuthentication() throws Exception
+    {
+        startBasic(new EmptyServerHandler());
+
+        AuthenticationStore authenticationStore = client.getAuthenticationStore();
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
+        authenticationStore.addAuthenticationResult(new BasicAuthentication.BasicResult(uri, "basic", "basic"));
+
+        AtomicInteger requests = new AtomicInteger();
+        client.getRequestListeners().add(new Request.Listener.Adapter()
+        {
+            @Override
+            public void onSuccess(Request request)
+            {
+                requests.incrementAndGet();
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/secure")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(1, requests.get());
+    }
+
+    @Test
+    public void test_RequestFailsAfterResponse() throws Exception
+    {
+        startBasic(new EmptyServerHandler());
+
+        AuthenticationStore authenticationStore = client.getAuthenticationStore();
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
+        BasicAuthentication authentication = new BasicAuthentication(uri, realm, "basic", "basic");
+        authenticationStore.addAuthentication(authentication);
+
+        CountDownLatch successLatch = new CountDownLatch(1);
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        DeferredContentProvider content = new DeferredContentProvider();
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/secure")
+                .content(content)
+                .onResponseSuccess(response -> successLatch.countDown());
+        request.send(result ->
+        {
+            if (result.isFailed() && result.getResponseFailure() == null)
+                resultLatch.countDown();
+        });
+
+        // Send some content to make sure the request is dispatched on the server.
+        content.offer(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
+
+        // Wait for the response to arrive to
+        // the authentication protocol handler.
+        Thread.sleep(1000);
+
+        // Trigger request failure.
+        request.abort(new Exception());
+
+        // Verify that the response was successful, it's the request that failed.
+        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 }

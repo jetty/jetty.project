@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -93,9 +92,7 @@ public class HttpClientCustomProxyTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                if (!URI.create(baseRequest.getHttpURI().toString()).isAbsolute())
-                    response.setStatus(HttpServletResponse.SC_USE_PROXY);
-                else if (serverHost.equals(request.getServerName()))
+                if (serverHost.equals(request.getServerName()))
                     response.setStatus(status);
                 else
                     response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
@@ -142,7 +139,8 @@ public class HttpClientCustomProxyTest
         {
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
-            return new CAFEBABEConnection(endPoint, executor, connectionFactory, context);
+            CAFEBABEConnection connection = new CAFEBABEConnection(endPoint, executor, connectionFactory, context);
+            return customize(connection, context);
         }
     }
 

@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class GoAwayFrame extends Frame
@@ -69,6 +70,11 @@ public class GoAwayFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s,%d/%s", super.toString(), error, tryConvertPayload());
+        ErrorCode errorCode = ErrorCode.from(error);
+        return String.format("%s,%d/%s/%s",
+                super.toString(),
+                lastStreamId,
+                errorCode != null ? errorCode.toString() : String.valueOf(error),
+                tryConvertPayload());
     }
 }

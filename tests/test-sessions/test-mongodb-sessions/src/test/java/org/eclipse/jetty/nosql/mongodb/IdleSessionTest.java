@@ -139,7 +139,6 @@ public class IdleSessionTest
             
             //Test trying to de-idle an expired session (ie before the scavenger can get to it)
             
-            System.err.println("\n TESTING DEIDLE EXPIRED\n");
             //make a request to set up a session on the server
             response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
@@ -153,14 +152,12 @@ public class IdleSessionTest
             
             //stop the scavenger
             ((MongoTestServer.TestMongoSessionIdManager)server1.getServer().getSessionIdManager()).cancelScavenge();
-            System.err.println("SCAVENGE STOPPED");
+
             //check that the session is idle
             checkSessionIdle();
-            
-            System.err.println("WAITING FOR EXPIRY TIME TO PASS");
+
             //wait until the session should be expired
             pause (inactivePeriod + (inactivePeriod/2));
-            System.err.println("EXPIRY TIME PASSED");
             
             //make a request to try and deidle the session
             //make another request to de-idle the session

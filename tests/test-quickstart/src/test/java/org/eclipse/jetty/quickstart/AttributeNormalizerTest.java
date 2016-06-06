@@ -18,17 +18,24 @@
 
 package org.eclipse.jetty.quickstart;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.net.MalformedURLException;
 import java.net.URI;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
+
 public class AttributeNormalizerTest
 {
+    private static final Logger LOG = Log.getLogger(AttributeNormalizerTest.class);
+
     @Test
     public void testNormalizeWAR() throws MalformedURLException
     {
@@ -42,5 +49,26 @@ public class AttributeNormalizerTest
         
         result = normalizer.normalize(URI.create(webref + "/deep/ref"));
         assertThat(result, is("${WAR}/deep/ref"));
+    }
+
+    @Test
+    public void testWindowsTLD() throws MalformedURLException
+    {
+        // Setup AttributeNormalizer
+        String webref = "http://localhost/resource/webapps/root";
+        Resource webresource = Resource.newResource(webref);
+        AttributeNormalizer normalizer = new AttributeNormalizer(webresource);
+
+        // Setup example from windows
+        String javaUserHome = System.getProperty("user.home");
+        String realUserHome = AttributeNormalizerPathTest.toSystemPath(javaUserHome);
+        String userHome = AttributeNormalizer.uriSeparators(realUserHome);
+        String path = "jar:file:" + userHome + "/.m2/repository/something/somejar.jar!/META-INF/some.tld";
+
+        String result = normalizer.normalize(path);
+        assertThat(result, is("jar:file:${user.home}/.m2/repository/something/somejar.jar!/META-INF/some.tld"));
+
+        String expanded = normalizer.expand(result);
+        assertThat(expanded, not(anyOf(containsString("\\"), containsString("${"))));
     }
 }

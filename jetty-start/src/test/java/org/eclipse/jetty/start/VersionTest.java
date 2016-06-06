@@ -49,6 +49,8 @@ public class VersionTest
     {
         assertToShortString("1.8","1.8");
         assertToShortString("1.8.0","1.8.0");
+        assertToShortString("1.8.0_3","1.8.0_3");
+        assertToShortString("1.8.0_03","1.8.0_03");
         assertToShortString("1.8.0_45","1.8.0_45");
         assertToShortString("1.8.0_45-internal","1.8.0_45");
         assertToShortString("1.8.0-debug","1.8.0");
@@ -60,6 +62,22 @@ public class VersionTest
         assertThat("Version [" + verStr + "].toShortString", ver.toShortString(), is(expectedShortString));
     }
 
+    @Test
+    public void testToString() 
+    {
+        assertToString("1.8");
+        assertToString("1.8.0");
+        assertToString("1.8.0_0");
+        assertToString("1.8.0_3");
+        assertToString("1.8.0_03");
+    }
+
+    private void assertToString(String verStr)
+    {
+        Version ver = new Version(verStr);
+        assertThat("Version [" + verStr + "].toString", ver.toString(), is(verStr));
+    }
+    
     @Test
     public void testNewerVersion() {
         assertIsNewer("0.0.0", "0.0.1");
@@ -90,7 +108,7 @@ public class VersionTest
         assertThat("9.2 >= 9.3",new Version("9.2").isNewerThanOrEqualTo(new Version("9.3")),is(false));
         assertThat("9.3 >= 9.2",new Version("9.3").isNewerThanOrEqualTo(new Version("9.2")),is(true));
     }
-
+    
     private void assertIsOlder(String basever, String testver)
     {
         Version vbase = new Version(basever);
@@ -104,4 +122,6 @@ public class VersionTest
         Version vtest = new Version(testver);
         assertTrue("Version [" + testver + "] should be newer than [" + basever + "]", vtest.isNewerThan(vbase));
     }
+    
+    
 }

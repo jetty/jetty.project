@@ -18,9 +18,17 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNoException;
+import static org.junit.Assume.assumeThat;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -54,7 +62,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -71,7 +78,7 @@ public class FileSystemResourceTest
 
     @SuppressWarnings("deprecation")
     @Parameters(name="{0}")
-    public static Collection<Object[]> data() 
+    public static Collection<Object[]> data()
     {
         List<Object[]> data = new ArrayList<>();
         data.add(new Class<?>[]{FileResource.class});
@@ -111,7 +118,7 @@ public class FileSystemResourceTest
     {
         try
         {
-            return _class.getConstructor(File.class).newInstance(file); 
+            return _class.getConstructor(File.class).newInstance(file);
         }
         catch(InvocationTargetException e)
         {
@@ -216,7 +223,7 @@ public class FileSystemResourceTest
         else
         {
             assumeFalse("Unknown OS type",false);
-        }   
+        }
     }
     
     @Test
@@ -274,11 +281,14 @@ public class FileSystemResourceTest
             {
                 for (Path entry : dir)
                 {
-                    if (Files.isDirectory(entry) && !Files.isHidden(entry))
+                    if (Files.isDirectory(entry) && !Files.isHidden(entry) && !entry.getFileName().toString().contains("$"))
                     {
                         return entry.toAbsolutePath().toString();
                     }
                 }
+            }
+            catch(Exception e)
+            {
             }
         }
 
@@ -653,7 +663,7 @@ public class FileSystemResourceTest
         {
             // Reference to actual resource that exists
             Resource resource = base.addPath("file");
-                        
+
             assertThat("resource.alias", resource, hasNoAlias());
             assertThat("resource.uri.alias", newResource(resource.getURI()), hasNoAlias());
             assertThat("resource.file.alias", newResource(resource.getFile()), hasNoAlias());
@@ -691,7 +701,7 @@ public class FileSystemResourceTest
         {
             // Long filename
             Resource resource = base.addPath("TextFile.Long.txt");
-                        
+
             assertThat("resource.alias", resource, hasNoAlias());
             assertThat("resource.uri.alias", newResource(resource.getURI()), hasNoAlias());
             assertThat("resource.file.alias", newResource(resource.getFile()), hasNoAlias());
@@ -727,7 +737,7 @@ public class FileSystemResourceTest
         try (Resource base = newResource(dir.toFile()))
         {
             Resource resource = base.addPath("testfile");
-                        
+
             assertThat("resource.alias", resource, hasNoAlias());
             assertThat("resource.uri.alias", newResource(resource.getURI()), hasNoAlias());
             assertThat("resource.file.alias", newResource(resource.getFile()), hasNoAlias());
@@ -770,7 +780,7 @@ public class FileSystemResourceTest
         try (Resource base = newResource(dir.toFile()))
         {
             Resource resource = base.addPath("testfile");
-                        
+
             assertThat("resource.alias", resource, hasNoAlias());
             assertThat("resource.uri.alias", newResource(resource.getURI()), hasNoAlias());
             assertThat("resource.file.alias", newResource(resource.getFile()), hasNoAlias());
@@ -815,7 +825,7 @@ public class FileSystemResourceTest
         try (Resource base = newResource(dir.toFile()))
         {
             Resource resource = base.addPath("testfile");
-                        
+
             assertThat("resource.alias", resource, hasNoAlias());
             assertThat("resource.uri.alias", newResource(resource.getURI()), hasNoAlias());
             assertThat("resource.file.alias", newResource(resource.getFile()), hasNoAlias());
@@ -1169,7 +1179,180 @@ public class FileSystemResourceTest
             // Exception is acceptable
         }
     }
-    
+
+    @Test
+    public void testAddPath_WindowsSlash() throws Exception
+    {
+        Path dir = testdir.getPath().normalize().toRealPath();
+        Files.createDirectories(dir);
+
+        Path basePath = dir.resolve("base");
+        FS.ensureDirExists(basePath);
+        Path dirPath = basePath.resolve("aa");
+        FS.ensureDirExists(dirPath);
+        Path filePath = dirPath.resolve("foo.txt");
+        Files.createFile(filePath);
+
+        try (Resource base = newResource(basePath.toFile()))
+        {
+            assertThat("Exists: " + basePath,base.exists(),is(true));
+            assertThat("Alias: " + basePath,base,hasNoAlias());
+
+            Resource r = base.addPath("aa\\/foo.txt");
+            assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa%5C/foo.txt"));
+
+            if(OS.IS_WINDOWS)
+            {
+                assertThat("isAlias()", r.isAlias(), is(true));
+                assertThat("getAlias()", r.getAlias(), notNullValue());
+                assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("aa/foo.txt"));
+                assertThat("Exists: " + r, r.exists(), is(true));
+            }
+            else
+            {
+                assertThat("isAlias()", r.isAlias(), is(false));
+                assertThat("Exists: " + r, r.exists(), is(false));
+            }
+        }
+        catch (InvalidPathException e)
+        {
+            // Exception is acceptable
+        }
+    }
+
+    @Test
+    public void testAddPath_WindowsExtensionLess() throws Exception
+    {
+        Path dir = testdir.getPath().normalize().toRealPath();
+        Files.createDirectories(dir);
+
+        Path basePath = dir.resolve("base");
+        FS.ensureDirExists(basePath);
+        Path dirPath = basePath.resolve("aa");
+        FS.ensureDirExists(dirPath);
+        Path filePath = dirPath.resolve("foo.txt");
+        Files.createFile(filePath);
+
+        try (Resource base = newResource(basePath.toFile()))
+        {
+            assertThat("Exists: " + basePath,base.exists(),is(true));
+            assertThat("Alias: " + basePath,base,hasNoAlias());
+
+            Resource r = base.addPath("aa./foo.txt");
+            assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa./foo.txt"));
+
+            if(OS.IS_WINDOWS)
+            {
+                assertThat("isAlias()", r.isAlias(), is(true));
+                assertThat("getAlias()", r.getAlias(), notNullValue());
+                assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("aa/foo.txt"));
+                assertThat("Exists: " + r, r.exists(), is(true));
+            }
+            else
+            {
+                assertThat("isAlias()", r.isAlias(), is(false));
+                assertThat("Exists: " + r, r.exists(), is(false));
+            }
+        }
+        catch (InvalidPathException e)
+        {
+            // Exception is acceptable
+        }
+    }
+
+
+    @Test
+    public void testAddInitialSlash() throws Exception
+    {
+        Path dir = testdir.getPath().normalize().toRealPath();
+        Files.createDirectories(dir);
+
+        Path basePath = dir.resolve("base");
+        FS.ensureDirExists(basePath);
+        Path filePath = basePath.resolve("foo.txt");
+        Files.createFile(filePath);
+
+        try (Resource base = newResource(basePath.toFile()))
+        {
+            assertThat("Exists: " + basePath,base.exists(),is(true));
+            assertThat("Alias: " + basePath,base,hasNoAlias());
+
+            Resource r = base.addPath("/foo.txt");
+            assertThat("getURI()", r.getURI().toASCIIString(), containsString("/foo.txt"));
+
+            assertThat("isAlias()", r.isAlias(), is(false));
+            assertThat("Exists: " + r, r.exists(), is(true));
+        }
+        catch (InvalidPathException e)
+        {
+            // Exception is acceptable
+        }
+    }
+
+    @Test
+    public void testAddInitialDoubleSlash() throws Exception
+    {
+        Path dir = testdir.getPath().normalize().toRealPath();
+        Files.createDirectories(dir);
+
+        Path basePath = dir.resolve("base");
+        FS.ensureDirExists(basePath);
+        Path filePath = basePath.resolve("foo.txt");
+        Files.createFile(filePath);
+
+        try (Resource base = newResource(basePath.toFile()))
+        {
+            assertThat("Exists: " + basePath,base.exists(),is(true));
+            assertThat("Alias: " + basePath,base,hasNoAlias());
+
+            Resource r = base.addPath("//foo.txt");
+            assertThat("getURI()", r.getURI().toASCIIString(), containsString("//foo.txt"));
+
+            assertThat("isAlias()", r.isAlias(), is(true));
+            assertThat("getAlias()", r.getAlias(), notNullValue());
+            assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("/foo.txt"));
+            assertThat("Exists: " + r, r.exists(), is(true));
+
+        }
+        catch (InvalidPathException e)
+        {
+            // Exception is acceptable
+        }
+    }
+    @Test
+    public void testAddDoubleSlash() throws Exception
+    {
+        Path dir = testdir.getPath().normalize().toRealPath();
+        Files.createDirectories(dir);
+
+        Path basePath = dir.resolve("base");
+        FS.ensureDirExists(basePath);
+        Path dirPath = basePath.resolve("aa");
+        FS.ensureDirExists(dirPath);
+        Path filePath = dirPath.resolve("foo.txt");
+        Files.createFile(filePath);
+
+        try (Resource base = newResource(basePath.toFile()))
+        {
+            assertThat("Exists: " + basePath,base.exists(),is(true));
+            assertThat("Alias: " + basePath,base,hasNoAlias());
+
+            Resource r = base.addPath("aa//foo.txt");
+            assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa//foo.txt"));
+
+            assertThat("isAlias()", r.isAlias(), is(true));
+            assertThat("getAlias()", r.getAlias(), notNullValue());
+            assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("aa/foo.txt"));
+            assertThat("Exists: " + r, r.exists(), is(true));
+
+        }
+        catch (InvalidPathException e)
+        {
+            // Exception is acceptable
+        }
+    }
+
+
     @Test
     public void testEncoding() throws Exception
     {

@@ -223,7 +223,8 @@ public class DumpHandler extends AbstractHandler
         writer.flush();
 
         // commit now
-        response.setContentLength(buf.size()+1000);
+        if (!Boolean.valueOf(request.getParameter("no-content-length")))
+            response.setContentLength(buf.size()+1000);
         response.addHeader("Before-Flush",response.isCommitted()?"Committed???":"Not Committed");
         buf.writeTo(out);
         out.flush();

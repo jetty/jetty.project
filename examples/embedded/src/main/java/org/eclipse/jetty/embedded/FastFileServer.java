@@ -128,7 +128,7 @@ public class FastFileServer
             // Jetty DefaultServlet will cache formatted date strings, but we
             // will reformat for each request here
             response.setDateHeader("Last-Modified", file.lastModified());
-            response.setDateHeader("Content-Length", file.length());
+            response.setContentLengthLong(file.length());
             response.setContentType(mimeTypes.getMimeByExtension(file.getName()));
 
             // send "small" files blocking directly from an input stream

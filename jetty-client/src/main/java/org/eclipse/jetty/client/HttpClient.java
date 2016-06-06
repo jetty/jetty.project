@@ -57,6 +57,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
@@ -408,9 +409,9 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * Creates a new request with the specified URI.
+     * Creates a new request with the specified absolute URI in string format.
      *
-     * @param uri the URI to request
+     * @param uri the request absolute URI
      * @return the request just created
      */
     public Request newRequest(String uri)
@@ -419,9 +420,9 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * Creates a new request with the specified URI.
+     * Creates a new request with the specified absolute URI.
      *
-     * @param uri the URI to request
+     * @param uri the request absolute URI
      * @return the request just created
      */
     public Request newRequest(URI uri)
@@ -490,6 +491,11 @@ public class HttpClient extends ContainerLifeCycle
 
     protected HttpDestination destinationFor(String scheme, String host, int port)
     {
+        if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme))
+            throw new IllegalArgumentException("Invalid protocol " + scheme);
+
+        scheme = scheme.toLowerCase(Locale.ENGLISH);
+        host = host.toLowerCase(Locale.ENGLISH);
         port = normalizePort(scheme, port);
 
         Origin origin = new Origin(scheme, host, port);
@@ -524,17 +530,12 @@ public class HttpClient extends ContainerLifeCycle
      */
     public List<Destination> getDestinations()
     {
-        return new ArrayList<Destination>(destinations.values());
+        return new ArrayList<>(destinations.values());
     }
 
     protected void send(final HttpRequest request, List<Response.ResponseListener> listeners)
     {
-        String scheme = request.getScheme().toLowerCase(Locale.ENGLISH);
-        if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme))
-            throw new IllegalArgumentException("Invalid protocol " + scheme);
-
-        String host = request.getHost().toLowerCase(Locale.ENGLISH);
-        HttpDestination destination = destinationFor(scheme, host, request.getPort());
+        HttpDestination destination = destinationFor(request.getScheme(), request.getHost(), request.getPort());
         destination.send(request, listeners);
     }
 
@@ -547,6 +548,7 @@ public class HttpClient extends ContainerLifeCycle
             public void succeeded(List<InetSocketAddress> socketAddresses)
             {
                 Map<String, Object> context = new HashMap<>();
+                context.put(ClientConnectionFactory.CONNECTOR_CONTEXT_KEY, HttpClient.this);
                 context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
                 connect(socketAddresses, 0, context);
             }
@@ -559,12 +561,12 @@ public class HttpClient extends ContainerLifeCycle
 
             private void connect(List<InetSocketAddress> socketAddresses, int index, Map<String, Object> context)
             {
-                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise<Connection>()
+                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<Connection>(promise)
                 {
                     @Override
                     public void succeeded(Connection result)
                     {
-                        promise.succeeded(result);
+                        getPromise().succeeded(result);
                     }
 
                     @Override
@@ -572,7 +574,7 @@ public class HttpClient extends ContainerLifeCycle
                     {
                         int nextIndex = index + 1;
                         if (nextIndex == socketAddresses.size())
-                            promise.failed(x);
+                            getPromise().failed(x);
                         else
                             connect(socketAddresses, nextIndex, context);
                     }
@@ -1038,7 +1040,7 @@ public class HttpClient extends ContainerLifeCycle
         return host;
     }
 
-    protected int normalizePort(String scheme, int port)
+    public static int normalizePort(String scheme, int port)
     {
         return port > 0 ? port : HttpScheme.HTTPS.is(scheme) ? 443 : 80;
     }

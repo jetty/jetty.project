@@ -88,10 +88,11 @@ public class HttpRequest implements Request
         this.conversation = conversation;
         scheme = uri.getScheme();
         host = client.normalizeHost(uri.getHost());
-        port = client.normalizePort(scheme, uri.getPort());
+        port = HttpClient.normalizePort(scheme, uri.getPort());
         path = uri.getRawPath();
         query = uri.getRawQuery();
         extractParams(query);
+
         followRedirects(client.isFollowRedirects());
         idleTimeout = client.getIdleTimeout();
         HttpField acceptEncodingField = client.getAcceptEncodingField();
@@ -170,8 +171,6 @@ public class HttpRequest implements Request
         else
         {
             String rawPath = uri.getRawPath();
-            if (uri.isOpaque())
-                rawPath = path;
             if (rawPath == null)
                 rawPath = "";
             this.path = rawPath;
@@ -788,7 +787,7 @@ public class HttpRequest implements Request
         URI result = newURI(path);
         if (result == null)
             return NULL_URI;
-        if (!result.isAbsolute() && !result.isOpaque())
+        if (!result.isAbsolute())
             result = URI.create(new Origin(getScheme(), getHost(), getPort()).asString() + path);
         return result;
     }
@@ -797,12 +796,16 @@ public class HttpRequest implements Request
     {
         try
         {
-            return new URI(uri);
+            // Handle specially the "OPTIONS *" case, since it is possible to create a URI from "*" (!).
+            if ("*".equals(uri))
+                return null;
+            URI result = new URI(uri);
+            return result.isOpaque() ? null : result;
         }
         catch (URISyntaxException x)
         {
             // The "path" of a HTTP request may not be a URI,
-            // for example for CONNECT 127.0.0.1:8080 or OPTIONS *.
+            // for example for CONNECT 127.0.0.1:8080.
             return null;
         }
     }

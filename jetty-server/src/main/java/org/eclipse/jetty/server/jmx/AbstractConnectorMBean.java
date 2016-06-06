@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.jmx;
 
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.AbstractConnector;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject("MBean Wrapper for Connectors")
@@ -31,10 +32,23 @@ public class AbstractConnectorMBean extends ObjectMBean
         super(managedObject);
         _connector=(AbstractConnector)managedObject;
     }
+    
     @Override
     public String getObjectContextBasis()
     {
-        return String.format("%s@%x",_connector.getDefaultProtocol(),_connector.hashCode());
+        StringBuilder buffer = new StringBuilder();
+        for (ConnectionFactory f:_connector.getConnectionFactories())
+        {
+            String protocol=f.getProtocol();
+            if (protocol!=null)
+            {
+                if (buffer.length()>0)
+                    buffer.append("|");
+                buffer.append(protocol);
+            }
+        }
+        
+        return String.format("%s@%x",buffer.toString(),_connector.hashCode());
     }
 
 
