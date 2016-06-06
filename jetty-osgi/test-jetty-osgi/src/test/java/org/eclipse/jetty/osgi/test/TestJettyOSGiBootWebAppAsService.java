@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -49,11 +50,11 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * TestJettyOSGiBootWebAppAsService
- * 
+ *
  * Tests deployment of a WebAppContext as an osgi Service.
- * 
+ *
  * Tests the ServiceWebAppProvider.
- * 
+ *
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the
  * httpservice web-bundle. Then make sure we can deploy an OSGi service on the
  * top of this.
@@ -76,7 +77,7 @@ public class TestJettyOSGiBootWebAppAsService
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
                                                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
-     
+
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
         options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
         options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
@@ -85,14 +86,13 @@ public class TestJettyOSGiBootWebAppAsService
         options.addAll(jspDependencies());
         return options.toArray(new Option[options.size()]);
     }
-    
 
     public static List<Option> configureJettyHomeAndPort(String jettySelectorFileName)
     {
         File etcFolder = new File("src/test/config/etc");
         String etc = "file://" + etcFolder.getAbsolutePath();
         List<Option> options = new ArrayList<Option>();
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(etc     + "/jetty.xml;"
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(etc + "/jetty.xml;"
                 + etc
                 + "/"
                 + jettySelectorFileName
@@ -126,8 +126,7 @@ public class TestJettyOSGiBootWebAppAsService
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
-    /**
-     */
+    @Ignore
     @Test
     public void testBundle() throws Exception
     {
@@ -154,5 +153,4 @@ public class TestJettyOSGiBootWebAppAsService
         WebAppContext wac = (WebAppContext) bundleContext.getService(refs[0]);
         assertEquals("/acme", wac.getContextPath());
     }
-
 }
