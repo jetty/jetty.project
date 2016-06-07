@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -40,7 +41,7 @@ public class TestAnnotationConfiguration
     @Test
     public void testGetFragmentFromJar() throws Exception
     {
-        String dir = System.getProperty("basedir", ".");
+        String dir = MavenTestingUtils.getTargetTestingDir("getFragmentFromJar").getAbsolutePath();
         File file = new File(dir);
         file=new File(file.getCanonicalPath());
         URL url=file.toURL();

@@ -36,7 +36,7 @@ public class ListenerRuntimeOnConnectSocket extends WebSocketAdapter
     {
         super.onWebSocketConnect(sess);
 
-        throw new ArrayIndexOutOfBoundsException("Intentional Exception");
+        throw new RuntimeException("Intentional Exception from onWebSocketConnect");
     }
 
     @Override

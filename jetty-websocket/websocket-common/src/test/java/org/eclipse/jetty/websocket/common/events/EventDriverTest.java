@@ -29,6 +29,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.io.CloseableLocalWebSocketSession;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
@@ -67,12 +68,12 @@ public class EventDriverTest
     }
 
     @Test
-    public void testAdapter_ConnectClose() throws IOException
+    public void testAdapter_ConnectClose() throws Exception
     {
         AdapterConnectCloseSocket socket = new AdapterConnectCloseSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new LocalWebSocketSession(container,testname,driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testname,driver))
         {
             conn.open();
             driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -84,12 +85,12 @@ public class EventDriverTest
     }
 
     @Test
-    public void testAnnotated_ByteArray() throws IOException
+    public void testAnnotated_ByteArray() throws Exception
     {
         AnnotatedBinaryArraySocket socket = new AnnotatedBinaryArraySocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new LocalWebSocketSession(container,testname,driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testname,driver))
         {
             conn.open();
             driver.incomingFrame(makeBinaryFrame("Hello World",true));
@@ -103,12 +104,12 @@ public class EventDriverTest
     }
 
     @Test
-    public void testAnnotated_Error() throws IOException
+    public void testAnnotated_Error() throws Exception
     {
         AnnotatedTextSocket socket = new AnnotatedTextSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new LocalWebSocketSession(container,testname,driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testname,driver))
         {
             conn.open();
             driver.incomingError(new WebSocketException("oof"));
@@ -122,12 +123,12 @@ public class EventDriverTest
     }
 
     @Test
-    public void testAnnotated_Frames() throws IOException
+    public void testAnnotated_Frames() throws Exception
     {
         AnnotatedFramesSocket socket = new AnnotatedFramesSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new LocalWebSocketSession(container,testname,driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testname,driver))
         {
             conn.open();
             driver.incomingFrame(new PingFrame().setPayload("PING"));
@@ -151,7 +152,7 @@ public class EventDriverTest
         AnnotatedBinaryStreamSocket socket = new AnnotatedBinaryStreamSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new LocalWebSocketSession(container,testname,driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testname,driver))
         {
             conn.open();
             driver.incomingFrame(makeBinaryFrame("Hello World",true));
@@ -170,7 +171,7 @@ public class EventDriverTest
         ListenerBasicSocket socket = new ListenerBasicSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new LocalWebSocketSession(container,testname,driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testname,driver))
         {
             conn.start();
             conn.open();
