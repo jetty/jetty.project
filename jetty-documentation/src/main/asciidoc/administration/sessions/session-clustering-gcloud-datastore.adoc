@@ -17,144 +17,97 @@
 [[session-clustering-gcloud-datastore]]
 === Session Clustering with Google Cloud Datastore
 
-Jetty can support session clustering by persisting sessions to
-https://cloud.google.com/datastore/docs/concepts/overview[Google Cloud
-Datastore]. Each Jetty instance locally caches sessions for which it has
-received requests, writing any changes to the session through to the
-Datastore as the request exits the server. Sessions must obey the
-Serialization contract, and servlets must call the
-Session.setAttribute() method to ensure that changes are persisted.
+Jetty can support session clustering by persisting sessions to https://cloud.google.com/datastore/docs/concepts/overview[Google Cloud Datastore]. 
+Each Jetty instance locally caches sessions for which it has received requests, writing any changes to the session through to the Datastore as the request exits the server. 
+Sessions must obey the Serialization contract, and servlets must call the `Session.setAttribute()` method to ensure that changes are persisted.
 
-The persistent session mechanism works in conjunction with a load
-balancer that supports stickiness. Stickiness can be based on various
-data items, such as source IP address or characteristics of the session
-ID or a load-balancer specific mechanism. For those load balancers that
-examine the session ID, the Jetty persistent session mechanism appends a
-node ID to the session ID, which can be used for routing.
+The persistent session mechanism works in conjunction with a load balancer that supports stickiness. 
+Stickiness can be based on various data items, such as source IP address or characteristics of the session ID or a load-balancer specific mechanism. 
+For those load balancers that examine the session ID, the Jetty persistent session mechanism appends a node ID to the session ID, which can be used for routing.
 
 ==== Configuration
 
-There are two components to session management in Jetty: a session ID
-manager and a session manager.
+There are two components to session management in Jetty: a session ID manager and a session manager.
 
-* The session ID manager ensures that session IDs are unique across all
-webapps hosted on a Jetty instance, and thus there can only be one
-session ID manager per Jetty instance.
-* The session manager handles the session lifecycle
-(create/update/invalidate/expire) on behalf of a web application, so
-there is one session manager per web application instance.
+* The session ID manager ensures that session IDs are unique across all webapps hosted on a Jetty instance, and thus there can only be one session ID manager per Jetty instance.
+* The session manager handles the session lifecycle (create/update/invalidate/expire) on behalf of a web application, so there is one session manager per web application instance.
 
-These managers also cooperate and collaborate with the
-`org.eclipse.jetty.server.session.SessionHandler` to enable
-cross-context dispatch.
+These managers also cooperate and collaborate with the `org.eclipse.jetty.server.session.SessionHandler` to enable cross-context dispatch.
 
 ==== The gcloud-sessions Module
 
-When using the jetty distribution, to enable Cloud Datastore session
-persistence, you will first need to enable the `gcloud-sessions`
-link:#startup-modules[module] for your link:#creating-jetty-base[base]
-using the --add-to-start or --add-to-startd argument to the
-link:#startup-overview[start.jar].
+When using the jetty distribution, to enable Cloud Datastore session persistence, you will first need to enable the `gcloud-sessions` link:#startup-modules[module] for your link:#creating-jetty-base[base] using the `--add-to-start` or `--add-to-startd` argument to the link:#startup-overview[start.jar].
 
-As part of the module installation, the necessary jars will be
-dynamically downloaded and installed to your `${jetty.base}/lib/gcloud`
-directory. If you need to up or downgrade the version of the jars, then
-you can delete the jars that were automatically installed and replace
-them. Once you've done that, you will need to prevent jetty's startup
-checks from detecting the missing jars. To do that, you can use
-`--skip-file-validation=glcoud-sessions` argument to start.jar on the
-command line, or place that line inside `${jetty.base}/start.ini` to
-ensure it is used for every start.
+As part of the module installation, the necessary jars will be dynamically downloaded and installed to your `${jetty.base}/lib/gcloud` directory. 
+If you need to up or downgrade the version of the jars, then you can delete the jars that were automatically installed and replace them. 
+Once you've done that, you will need to prevent jetty's startup checks from detecting the missing jars. 
+To do that, you can use `--skip-file-validation=glcoud-sessions` argument to start.jar on the command line, or place that line inside `${jetty.base}/start.ini` to ensure it is used for every start.
 
 ===== Configuring the GCloudSessionIdManager
 
-The gcloud-sessions module will have installed file called
-`${jetty.home}/etc/jetty-gcloud-sessions.xml`. This file configures an
-instance of the GCloudSessionIdManager that will be shared across all
-webapps deployed on that server. It looks like this:
+The gcloud-sessions module will have installed file called `${jetty.home}/etc/jetty-gcloud-sessions.xml`. 
+This file configures an instance of the `GCloudSessionIdManager` that will be shared across all webapps deployed on that server. It looks like this:
 
 [source,xml]
 ----
-include::{SRCDIR}/jetty-gcloud/jetty-gcloud-session-manager/src/main/config/etc/jetty-gcloud-session-store.xml[]
+include::{SRCDIR}/jetty-gcloud/jetty-gcloud-session-manager/src/main/config/etc/jetty-gcloud-sessions.xml[]
 ----
 
-You configure it by setting values for properties. The properties will
-either be inserted as commented out in your `start.ini`, or your
-`start.d/gcloud-sessions.ini` file, depending on how you enabled the
-module.
+You configure it by setting values for properties. 
+The properties will either be inserted as commented out in your `start.ini`, or your `start.d/gcloud-sessions.ini` file, depending on how you enabled the module.
 
-The only property you always need to set is the name of the node in the
-cluster:
+The only property you always need to set is the name of the node in the cluster:
 
 jetty.gcloudSession.workerName::
-  The name that uniquely identifies this node in the cluster. This value
-  will also be used by the sticky load balancer to identify the node.
-  Don't forget to change the value of this property on *each* node on
-  which you enable gcloud datastore session clustering.
+  The name that uniquely identifies this node in the cluster. 
+  This value will also be used by the sticky load balancer to identify the node.
+  Don't forget to change the value of this property on *each* node on which you enable gcloud datastore session clustering.
 
-Which other properties you need to set depends on the execution
-environment:
+Which other properties you need to set depends on the execution environment:
 
 ====== Running Within Google Infrastructure
 
-When you upload your webapp to run in Compute Engine, you do not need to
-set any other properties for jetty. If you follow the instructions in
-the https://cloud.google.com/datastore/docs/activate[Cloud Datastore
-documentation], all authorizations etc will be provided by the runtime
-environment.
+When you upload your webapp to run in Compute Engine, you do not need to set any other properties for Jetty. 
+If you follow the instructions in the https://cloud.google.com/datastore/docs/activate[Cloud Datastore documentation], all authorizations...etc. will be provided by the runtime environment.
 
 ====== Running Externally to Google Infrastructure
 
-When your app is executing outside of Google, you can either contact a
-remote Cloud Datastore instance, or a
-https://cloud.google.com/datastore/docs/tools/devserver[local test dev
-server] provided by the sdk. The choice determines which properties you
-need to set:
+When your app is executing outside of Google, you can either contact a remote Cloud Datastore instance, or a https://cloud.google.com/datastore/docs/tools/devserver[local test dev server] provided by the sdk. 
+The choice determines which properties you need to set:
 
 Contacting an sdk dev server for testing:::
-  In this case, you need to set up either some _System_ properties or
-  _environment variables_ - NOT jetty properties!
-  +
+  In this case, you need to set up either some _System_ properties or _environment variables_ - *NOT* Jetty properties!
+  
   DATASTORE_DATASET;;
     This must be the name of your (test) project.
   DATASTORE_HOST;;
-    This is the url of the dev server as described at
-    https://cloud.google.com/datastore/docs/tools/devserver#setting_environment_variables.
-    An example may be "http://localhost:9999"
+    This is the url of the dev server as described https://cloud.google.com/datastore/docs/tools/devserver#setting_environment_variables[in Google's documentation].
+    An example may be "http://localhost:9999".
+    
 Contacting a remote Cloud Datastore:::
-  In this case, you need to provide all of the authentication and
-  authorization information explicitly via jetty properties in the ini
-  file:
-  +
+  In this case, you need to provide all of the authentication and authorization information explicitly via jetty properties in the ini file:
+  
   jetty.gcloudSession.projectId;;
     This is the name of your project.
   jetty.gcloudSession.p12File;;
-    This is the location of the p12 key file that is associated with
-    your project.
+    This is the location of the p12 key file that is associated with your project.
   jetty.gcloudSession.serviceAccount;;
-    This is the email address that defines your service account for the
-    Cloud Datastore.
+    This is the email address that defines your service account for the Cloud Datastore.
   jetty.gcloudSession.password;;
     This is the password associated with the p12 key file.
 
 ===== Configuring the GCloudSessionManager
 
-As mentioned elsewhere, there should be one GCloudSessionManager per
-context (ie webapp). It will need to reference the single
-GCloudSessionIdManager from which it derives the Cloud Datastore
-configuration information.
+As mentioned elsewhere, there should be one `GCloudSessionManager` per context (e.g. webapp). 
+It will need to reference the single `GCloudSessionIdManager` from which it derives the Cloud Datastore configuration information.
 
-The way you configure a GCloudSessionManager depends on whether you're
-configuring from a context xml file or a `jetty-web.xml` file or code.
-The basic difference is how you get a reference to the Jetty
-`org.eclipse.jetty.server.Server` instance.
+The way you configure a `GCloudSessionManager` depends on whether you're configuring from a context xml file, a `jetty-web.xml` file or code.
+The basic difference is how you get a reference to the Jetty `org.eclipse.jetty.server.Server` instance.
 
 From a context xml file, you reference the Server instance as a Ref:
 
 [source,xml]
-----
-  
-  
+----  
   <!-- Get a reference to the GCloudSessionIdManager -->
   <Ref id="Server">
     <Call id="idMgr" name="getSessionIdManager"/>
@@ -175,12 +128,10 @@ From a context xml file, you reference the Server instance as a Ref:
   </Set>
 ----
 
-From a `WEB-INF/jetty-web.xml` file, you can reference the Server
-instance directly:
+From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance directly:
 
 [source,xml]
 ----
-  
 <!-- Reference the server directly -->
 <Get name="server">
   <Get id="idMgr" name="sessionIdManager"/>
@@ -201,19 +152,17 @@ instance directly:
 </Set>
 ----
 
-The GCloudSessionManager supports the following configuration setters:
+The `GCloudSessionManager` supports the following configuration setters:
 
 scavengeIntervalSec::
-  Time in seconds between runs of a scavenger task that looks for
-  expired old sessions to delete. The default is 10 minutes. If set to
-  0, no scavenging is done.
+  Time in seconds between runs of a scavenger task that looks for expired old sessions to delete. 
+  The default is 10 minutes. 
+  If set to 0, no scavenging is done.
 staleIntervalSec::
-  The length of time a session can be in memory without being checked
-  against the cluster. A value of 0 indicates that the session is never
-  checked against the cluster - the current node is considered to be the
-  master for the session.
+  The length of time a session can be in memory without being checked against the cluster.
+  A value of 0 indicates that the session is never checked against the cluster - the current node is considered to be the master for the session.
 maxQueryResults::
-  The maximum number of results to return for a query to find expired
-  sessions. For efficiency it is important to limit the size of the
-  result. The default is 100. If 0 or negative numbers are set, the
-  default is used instead.
+  The maximum number of results to return for a query to find expired sessions. 
+  For efficiency it is important to limit the size of the result. 
+  The default is 100. 
+  If 0 or negative numbers are set, the default is used instead.
