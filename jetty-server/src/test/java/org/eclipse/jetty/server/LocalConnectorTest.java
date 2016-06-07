@@ -22,10 +22,12 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -91,7 +93,35 @@ public class LocalConnectorTest
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("pathInfo=/R1"));
     }
+    
+    @Test
+    public void testOneResponse_10() throws Exception
+    {
+        String response=_connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("pathInfo=/R1"));
+    }
 
+    @Test
+    public void testOneResponse_10_keep_alive() throws Exception
+    {
+        String response=_connector.getResponse("GET /R1 HTTP/1.0\r\n" +
+            "Connection: keep-alive\r\n" +
+            "\r\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("pathInfo=/R1"));
+    }
+
+    @Test
+    public void testOneResponse_11() throws Exception
+    {
+        String response=_connector.getResponse("GET /R1 HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("pathInfo=/R1"));
+    }
+    
     @Test
     public void testStopStart() throws Exception
     {
@@ -124,6 +154,27 @@ public class LocalConnectorTest
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("pathInfo=/R2"));
     }
+    
+    @Test
+    public void testTwoGETsParsed() throws Exception
+    {
+        LocalConnector.LocalEndPoint endp = _connector.executeRequest(
+            "GET /R1 HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "\r\n"+
+            "GET /R2 HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "\r\n");
+
+        String response = BufferUtil.toString(endp.waitForResponse(false,10,TimeUnit.SECONDS),StandardCharsets.ISO_8859_1);
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("pathInfo=/R1"));
+        
+        response = BufferUtil.toString(endp.waitForResponse(false,10,TimeUnit.SECONDS),StandardCharsets.ISO_8859_1);
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("pathInfo=/R2"));
+    }
+    
     
     @Test
     public void testManyGETs() throws Exception

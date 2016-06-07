@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import javax.servlet.AsyncContext;
@@ -44,24 +45,26 @@ import org.junit.Test;
 
 public class LocalAsyncContextTest
 {
-    protected Server _server = new Server();
-    protected SuspendHandler _handler = new SuspendHandler();
+    protected Server _server;
+    protected SuspendHandler _handler;
     protected Connector _connector;
 
     @Before
     public void init() throws Exception
     {
+        _server = new Server();
         _connector = initConnector();
         _server.setConnectors(new Connector[]{ _connector });
 
         SessionHandler session = new SessionHandler();
+        _handler = new SuspendHandler();
         session.setHandler(_handler);
 
         _server.setHandler(session);
         _server.start();
 
-        __completed.set(0);
-        __completed1.set(0);
+        __completed.set(null);
+        __completed1.set(null);
     }
 
     protected Connector initConnector()
@@ -86,8 +89,8 @@ public class LocalAsyncContextTest
         _handler.setCompleteAfter(-1);
         response=process(null);
         check(response,"TIMEOUT");
-        spinAssertEquals(1,__completed::get);
-        spinAssertEquals(1,__completed1::get);
+        spinAssertEquals(1,()->{return __completed.get()==null?0:1;});
+        spinAssertEquals(1,()->{return __completed1.get()==null?0:1;});
     }
 
     @Test
@@ -208,9 +211,6 @@ public class LocalAsyncContextTest
     {
         String response;
 
-        __completed.set(0);
-        __completed1.set(0);
-
         _handler.setRead(0);
         _handler.setSuspendFor(1000);
         _handler.setResumeAfter(100);
@@ -220,8 +220,8 @@ public class LocalAsyncContextTest
         _handler.setCompleteAfter2(-1);
         response=process(null);
         check(response,"STARTASYNC","DISPATCHED","startasync","STARTASYNC","DISPATCHED");
-        spinAssertEquals(1,__completed::get);
-        spinAssertEquals(0,__completed1::get);
+        spinAssertEquals(1,()->{return __completed.get()==null?0:1;});
+        spinAssertEquals(0,()->{return __completed1.get()==null?0:1;});
 
     }
 
@@ -542,22 +542,35 @@ public class LocalAsyncContextTest
         }
     }
 
-    static AtomicInteger __completed = new AtomicInteger();
-    static AtomicInteger __completed1 = new AtomicInteger();
+    static AtomicReference<Throwable> __completed = new AtomicReference<>();
+    static AtomicReference<Throwable> __completed1 = new AtomicReference<>();
 
     private static AsyncListener __asyncListener = new AsyncListener()
     {
-
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
-            __completed.incrementAndGet();
+            Throwable complete = new Throwable();
+            if (!__completed.compareAndSet(null,complete))
+            {
+                __completed.get().printStackTrace();
+                complete.printStackTrace();
+                __completed.set(null);
+                throw new IllegalStateException();
+            }
         }
 
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
-            __completed.incrementAndGet();
+            Throwable complete = new Throwable();
+            if (!__completed.compareAndSet(null,complete))
+            {
+                __completed.get().printStackTrace();
+                complete.printStackTrace();
+                __completed.set(null);
+                throw new IllegalStateException();
+            }
         }
 
         @Override
@@ -580,13 +593,29 @@ public class LocalAsyncContextTest
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
-            __completed1.incrementAndGet();
+            Throwable complete = new Throwable();
+            if (!__completed1.compareAndSet(null,complete))
+            {
+                __completed1.get().printStackTrace();
+                complete.printStackTrace();
+                __completed1.set(null);
+                throw new IllegalStateException();
+            }
         }
 
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
+            Throwable complete = new Throwable();
+            if (!__completed1.compareAndSet(null,complete))
+            {
+                __completed1.get().printStackTrace();
+                complete.printStackTrace();
+                __completed1.set(null);
+                throw new IllegalStateException();
+            }
         }
+        
         @Override
         public void onStartAsync(AsyncEvent event) throws IOException
         {

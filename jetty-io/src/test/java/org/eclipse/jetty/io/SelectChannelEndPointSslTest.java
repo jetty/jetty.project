@@ -226,6 +226,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         filled=client.read(sslIn);
         Assert.assertEquals(-1,filled);
 
+        Thread.sleep(100); // TODO This should not be needed
         Assert.assertFalse(server.isOpen());
     }
 
