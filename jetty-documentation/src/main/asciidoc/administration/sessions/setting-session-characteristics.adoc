@@ -17,9 +17,7 @@
 [[setting-session-characteristics]]
 === Setting Session Characteristics
 
-To modify the session characteristics of a web application, you can use
-the following parameters, applying them as in one of the example
-configurations:
+To modify the session characteristics of a web application, you can use the following parameters, applying them as in one of the example configurations:
 
 [[using-init-parameters]]
 ==== Using Init Parameters
@@ -61,14 +59,12 @@ urls with calls to encodeURL(). False by default.
 [[applying-init-parameters]]
 ===== Applying Init Parameters
 
-The following sections provide examples of how to apply the init
-parameters.
+The following sections provide examples of how to apply the init parameters.
 
 [[context-parameter-example]]
 ====== Context Parameter Example
 
-You can set these parameters as context parameters in a web
-application's ` WEB-INF/web.xml` file:
+You can set these parameters as context parameters in a web application's `WEB-INF/web.xml` file:
 
 [source,xml]
 ----
@@ -97,8 +93,7 @@ application's ` WEB-INF/web.xml` file:
 [[web-application-examples]]
 ====== Web Application Examples
 
-You can configure init parameters on a web application, either in code,
-or in a Jetty context xml file equivalent:
+You can configure init parameters on a web application, either in code, or in a Jetty context xml file equivalent:
 
 [source,xml]
 ----
@@ -125,8 +120,7 @@ or in a Jetty context xml file equivalent:
 [[init-parameter-examples]]
 ====== SessionManager Examples
 
-You can configure init parameters directly on a `SessionManager`
-instance, either in code or the equivalent in xml:
+You can configure init parameters directly on a `SessionManager` instance, either in code or the equivalent in xml:
 
 [source,xml]
 ----
@@ -152,24 +146,16 @@ instance, either in code or the equivalent in xml:
 
 ==== Using Servlet 3.0 Session Configuration
 
-With the advent of http://jcp.org/en/jsr/detail?id=315[Servlet
-Specification 3.0] there are new APIs for configuring session handling
-characteristics. What was achievable before only via jetty-specific
-link:#session-init-params[init-parameters] can now be achieved in a
-container-agostic manner either in code, or via web.xml.
+With the advent of http://jcp.org/en/jsr/detail?id=315[Servlet Specification 3.0] there are new APIs for configuring session handling characteristics. 
+What was achievable before only via Jetty-specific link:#session-init-params[init-parameters] can now be achieved in a container-agnostic manner either in code, or via `web.xml`.
 
 [[session-cookie-configuration]]
 ===== SessionCookieConfiguration
 
-The
-http://docs.oracle.com/javaee/6/api/javax/servlet/SessionCookieConfig.html[javax.servlet.SessionCookieConfig]
-class can be used to set up session handling characteristics. For full
-details, consult the
-http://docs.oracle.com/javaee/6/api/javax/servlet/SessionCookieConfig.html[javadoc].
+The http://docs.oracle.com/javaee/6/api/javax/servlet/SessionCookieConfig.html[javax.servlet.SessionCookieConfig] class can be used to set up session handling characteristics. 
+For full details, consult the http://docs.oracle.com/javaee/6/api/javax/servlet/SessionCookieConfig.html[javadoc].
 
-Here's an example of how you use it: this is a ServletContextListener
-that retrieves the SessionCookieConfig and sets up some new values for
-it when the context is being initialized:
+Below is an example of this implementation: a `ServletContextListener` retrieves the `SessionCookieConfig` and sets up some new values when the context is being initialized:
 
 [source,java]
 ----
@@ -209,9 +195,7 @@ public class TestListener implements ServletContextListener
 }
 ----
 
-You can also use web.xml to configure the session handling
-characteristics instead: here's an example, doing exactly the same as we
-did above in code:
+You can also use `web.xml` to configure the session handling characteristics instead: here's an example doing exactly the same as above instead of using code:
 
 [source,xml]
 ----
@@ -240,14 +224,9 @@ did above in code:
 [[session-tracking-modes]]
 ===== SessionTrackingModes
 
-In addition to the configuration of
-link:#session-cookie-configuration[session cookies], since Servlet 3.0
-you can also use the
-http://docs.oracle.com/javaee/6/api/javax/servlet/SessionTrackingMode.html[javax.servlet.SessionTrackingMode]
-to configure session tracking.
+In addition to the configuration of link:#session-cookie-configuration[session cookies], since Servlet 3.0 you can also use the http://docs.oracle.com/javaee/6/api/javax/servlet/SessionTrackingMode.html[javax.servlet.SessionTrackingMode] to configure session tracking.
 
-To determine what are the _default_ session tracking characteristics
-used by the container, call:
+To determine what are the _default_ session tracking characteristics used by the container, call:
 
 [source,java]
 ----
@@ -260,13 +239,12 @@ _default_ session tracking modes for Jetty are:
 * http://docs.oracle.com/javaee/6/api/javax/servlet/SessionTrackingMode.html#COOKIE[SessionTrackingMode.COOKIE]
 * http://docs.oracle.com/javaee/6/api/javax/servlet/SessionTrackingMode.html#URL[SessionTrackingMode.URL]
 
-To see which session tracking modes are actually in effect for this
-Context, the following call returns a java.util.Set of
-javax.servlet.SessionTrackingMode:
+To see which session tracking modes are actually in effect for this Context, the following call returns a `java.util.Set` of `javax.servlet.SessionTrackingMode`:
 
-....
+[source,java]
+----
 javax.servlet.SessionContext.getEffectiveSessionTrackingModes();
-....
+----
 
 To change the session tracking modes, call:
 
@@ -275,7 +253,7 @@ To change the session tracking modes, call:
 javax.servlet.SessionContext.setSessionTrackingModes(Set<SessionTrackingMode>);
 ----
 
-You may also set the tracking mode in web.xml, eg:
+You may also set the tracking mode in `web.xml`, e.g.:
 
 [source,xml]
 ----

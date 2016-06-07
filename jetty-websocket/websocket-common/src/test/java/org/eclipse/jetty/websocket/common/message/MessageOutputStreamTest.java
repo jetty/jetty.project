@@ -61,13 +61,14 @@ public class MessageOutputStreamTest
     private LocalWebSocketSession session;
 
     @After
-    public void closeSession()
+    public void closeSession() throws Exception
     {
         session.close();
+        session.stop();
     }
 
     @Before
-    public void setupSession()
+    public void setupSession() throws Exception
     {
         policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
@@ -91,6 +92,8 @@ public class MessageOutputStreamTest
         session.setPolicy(policy);
         // talk to our remote socket
         session.setOutgoingHandler(socketPipe);
+        // start session
+        session.start();
         // open connection
         session.open();
     }

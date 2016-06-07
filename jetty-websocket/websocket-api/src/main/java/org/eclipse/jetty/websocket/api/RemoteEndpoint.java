@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
@@ -160,6 +161,13 @@ public interface RemoteEndpoint
      * @see #flush()
      */
     void setBatchMode(BatchMode mode);
+
+    /**
+     * Get the InetSocketAddress for the established connection.
+     *
+     * @return the InetSocketAddress for the established connection. (or null, if the connection is no longer established)
+     */
+    InetSocketAddress getInetSocketAddress();
     
     /**
      * Flushes messages that may have been batched by the implementation.
