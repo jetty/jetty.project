@@ -109,7 +109,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
-        <version>1.7</version>
         <configuration>
           <platforms>
             <platform>unix</platform>
