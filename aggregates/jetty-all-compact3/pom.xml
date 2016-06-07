@@ -56,15 +56,15 @@
               <classifier>sources</classifier>
               <includes>**/*</includes>
               <excludes>
-                META-INF/**
-                **/Servlet3Continuation*
-                **/Jetty6Continuation*
-                **/AppContextLeakPreventer*.java
-                **/AWTLeakPreventer*.java
-                **/IntrospectorCleaner*.java
-                **/PostConstructAnnotationHandler*.java
-                **/PreDestroyAnnotationHandler*.java
-                **/ResourceAnnotationHandler*.java
+                META-INF/**,
+                **/Servlet3Continuation*,
+                **/Jetty6Continuation*,
+                **/AppContextLeakPreventer*.java,
+                **/AWTLeakPreventer*.java,
+                **/IntrospectorCleaner*.java,
+                **/PostConstructAnnotationHandler*.java,
+                **/PreDestroyAnnotationHandler*.java,
+                **/ResourceAnnotationHandler*.java,
                 **/ResourcesAnnotationHandler*.java
               </excludes>
               <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.websocket</includeGroupIds>
@@ -78,32 +78,22 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins
-        </groupId>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>package</id>
-            <phase>package</phase>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-            <configuration>
-              <archive>
-                <manifest>
-                </manifest>
-                <manifestEntries>
-                  <mode>development</mode>
-                  <url>http://eclipse.org/jetty</url>
-                  <Built-By>${user.name}</Built-By>
-                  <package>org.eclipse.jetty</package>
-                  <Bundle-License>https://raw.githubusercontent.com/eclipse/jetty.project/master/NOTICE.txt</Bundle-License>
-                  <Bundle-Name>Jetty</Bundle-Name>
-                </manifestEntries>
-              </archive>
-            </configuration>
-          </execution>
-        </executions>
+        <configuration>
+          <archive>
+            <manifest>
+            </manifest>
+            <manifestEntries>
+              <mode>development</mode>
+              <url>https://eclipse.org/jetty</url>
+              <Built-By>${user.name}</Built-By>
+              <package>org.eclipse.jetty</package>
+              <Bundle-License>https://raw.githubusercontent.com/eclipse/jetty.project/master/NOTICE.txt</Bundle-License>
+              <Bundle-Name>Jetty</Bundle-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
