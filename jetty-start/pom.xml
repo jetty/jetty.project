@@ -35,15 +35,14 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>2.4</version>
-        <configuration> 
+        <configuration>
           <minimizeJar>true</minimizeJar>
           <createDependencyReducedPom>false</createDependencyReducedPom>
           <artifactSet>
             <includes>
               <include>org.eclipse.jetty:jetty-util</include>
             </includes>
-          </artifactSet>              
+          </artifactSet>
           <relocations>
             <relocation>
               <pattern>org.eclipse.jetty.util</pattern>
