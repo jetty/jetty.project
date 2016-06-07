@@ -55,7 +55,7 @@ Services::
 ==== Configuring Connectors
 
 A Jetty Server Connector is a network end point that accepts connections for one or more protocols which produce requests and/or messages for the Jetty server. 
-In the standard Jetty server distribution, several provided configuration files add connectors to the server for various protocols and combinations of protocols: `http.ini`, `https.ini` and `jetty-spdy.xml`.
+In the standard Jetty server distribution, several provided configuration files add connectors to the server for various protocols and combinations of protocols: `http.ini`, `https.ini` and `jetty-http2.xml`.
 The configuration needed for connectors is typically:
 
 Port::
@@ -67,10 +67,10 @@ Host::
 Idle Timeout::
   The time in milliseconds that a connection can be idle before the connector takes action to close the connection.
 HTTP Configuration::
-  Connector types that accept HTTP semantics (including HTTP, HTTPS and SPDY) are configured with a HttpConfiguration instance that contains common HTTP configuration that is independent of the specific wire protocol used. 
-  Because these values are often common to multiple connector types, the standard Jetty Server distribution creates a single HttpConfiguration in the `jetty.xml` file which is used via the XML Ref element in the specific connector files.
+  Connector types that accept HTTP semantics (including HTTP, HTTPS and HTTP2) are configured with a `HttpConfiguration` instance that contains common HTTP configuration that is independent of the specific wire protocol used. 
+  Because these values are often common to multiple connector types, the standard Jetty Server distribution creates a single `HttpConfiguration` in the `jetty.xml` file which is used via the XML Ref element in the specific connector files.
 SSL Context Factory::
-  The TLS connector types (HTTPS and SPDY) configure an SSL Context Factory with the location of the server keystore and truststore for obtaining server certificates.
+  The TLS connector types (HTTPS and HTTP2) configure an SSL Context Factory with the location of the server keystore and truststore for obtaining server certificates.
 
 
 ____
