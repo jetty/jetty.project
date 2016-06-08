@@ -50,9 +50,9 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
     /* ------------------------------------------------------------ */
     public RewriteRegexRule(@Name("regex") String regex, @Name("replacement") String replacement)
     {
+        super(regex);
         setHandling(false);
         setTerminating(false);
-        setRegex(regex);
         setReplacement(replacement);
     }
 
