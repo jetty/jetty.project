@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -36,6 +37,7 @@ public class ThreadMonitorTest
 {
     public final static int DURATION=4000;
     
+    @Ignore
     @Test
     public void monitorTest() throws Exception
     {
