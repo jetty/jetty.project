@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+    <New id="sessionDataMapFactory" class="org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory">
+      <Set name="host"><Property name="jetty.session.memcache.host" default="localhost"/></Set>
+      <Set name="port"><Property name="jetty.session.memcache.port" default="11211"/></Set>
+      <Set name="expirySec"><Property name="etty.session.memcache.expirySec" default="0"/></Set>
+    </New>
+</Configure>

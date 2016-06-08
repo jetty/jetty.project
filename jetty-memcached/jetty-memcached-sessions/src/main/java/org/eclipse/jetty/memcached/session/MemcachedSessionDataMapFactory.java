@@ -60,13 +60,13 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
 
 
 
-    public int getExpiry()
+    public int getExpirySec()
     {
         return _expiry;
     }
 
 
-    public void setExpiry(int expiry)
+    public void setExpirySec(int expiry)
     {
         _expiry = expiry;
     }
