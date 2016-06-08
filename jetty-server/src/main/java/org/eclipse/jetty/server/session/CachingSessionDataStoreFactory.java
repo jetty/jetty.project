@@ -30,30 +30,35 @@ public class CachingSessionDataStoreFactory extends AbstractSessionDataStoreFact
     /**
      * The SessionDataStore that will store session data.
      */
-    protected  SessionDataStoreFactory _backingSessionStoreFactory;
+    protected  SessionDataStoreFactory _sessionStoreFactory;
     
     protected SessionDataMapFactory _mapFactory;
     
+ 
     
-    
-    
+    /**
+     * @return the SessionDataMapFactory
+     */
     public SessionDataMapFactory getMapFactory()
     {
         return _mapFactory;
     }
 
-    public void setMapFactory(SessionDataMapFactory map)
+    /**
+     * @param mapFactory the SessionDataMapFactory
+     */
+    public void setSessionDataMapFactory(SessionDataMapFactory mapFactory)
     {
-        _mapFactory = map;
+        _mapFactory = mapFactory;
     }
 
     /**
      * @param factory The factory for the actual SessionDataStore that the
      * CachingSessionDataStore will delegate to
      */
-    public void setBackingSessionStoreFactory (SessionDataStoreFactory factory)
+    public void setSessionStoreFactory (SessionDataStoreFactory factory)
     {
-        _backingSessionStoreFactory = factory;
+        _sessionStoreFactory = factory;
     }
     
     /** 
@@ -62,8 +67,7 @@ public class CachingSessionDataStoreFactory extends AbstractSessionDataStoreFact
     @Override
     public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
     {
-        // TODO configure and create a cache!
-        return new CachingSessionDataStore(_mapFactory.getSessionDataMap(), _backingSessionStoreFactory.getSessionDataStore(handler));    
+        return new CachingSessionDataStore(_mapFactory.getSessionDataMap(), _sessionStoreFactory.getSessionDataStore(handler));    
     }
 
 }
