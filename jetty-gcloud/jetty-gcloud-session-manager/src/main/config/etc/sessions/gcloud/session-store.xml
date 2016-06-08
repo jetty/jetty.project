@@ -9,7 +9,7 @@
   <!-- ===================================================================== -->
   <Call name="addBean">
    <Arg>
-    <New class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory">      
+    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory">      
        <Set name="gCloudConfiguration"><Ref id="gconf"/></Set>
        <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
        <Set name="maxRetries"><Property name="jetty.gcloudSession.maxRetries" default="5"/></Set>

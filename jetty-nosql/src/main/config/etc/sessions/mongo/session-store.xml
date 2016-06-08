@@ -9,7 +9,7 @@
   <!-- ===================================================================== -->
   <Call name="addBean">
    <Arg>
-    <New class="org.eclipse.jetty.server.session.MongoSessionStoreFactory">      
+    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.server.session.MongoSessionStoreFactory">      
        <Set name="dbName"><Property name="jetty.session.dbName" default="HttpSessions" /></Set>
        <Set name="collectionName"><Property name="jetty.session.collectionName" default="jettySessions" /></Set>
        <Set name="gracePeriod"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
