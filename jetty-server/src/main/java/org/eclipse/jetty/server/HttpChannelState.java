@@ -197,8 +197,6 @@ public class HttpChannelState
                     return Action.DISPATCH;
 
                 case COMPLETING:
-                    return Action.COMPLETE;
-
                 case COMPLETED:
                     return Action.TERMINATED;
 
