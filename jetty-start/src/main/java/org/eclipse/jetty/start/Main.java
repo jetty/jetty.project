@@ -254,7 +254,7 @@ public class Main
         System.out.println("Jetty Selected Module Ordering:");
         System.out.println("-------------------------------");
         Modules modules = args.getAllModules();
-        modules.dumpSelected();
+        modules.dumpEnabled();
     }
 
     /**
@@ -316,7 +316,7 @@ public class Main
         }
 
         args.setAllModules(modules);
-        List<Module> activeModules = modules.getSelected();
+        List<Module> activeModules = modules.getEnabled();
 
 
         final Version START_VERSION = new Version(StartArgs.VERSION);
@@ -350,6 +350,10 @@ public class Main
         // 9) Resolve Property Files
         args.resolvePropertyFiles(baseHome);
 
+        // ------------------------------------------------------------
+        // 10) Check enabled modules
+        args.getAllModules().checkEnabledModules();
+        
         return args;
     }
     

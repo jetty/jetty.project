@@ -171,7 +171,7 @@ public class ModulesTest
         modules.sort();
 
         // Collect active module list
-        List<Module> active = modules.getSelected();
+        List<Module> active = modules.getEnabled();
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();

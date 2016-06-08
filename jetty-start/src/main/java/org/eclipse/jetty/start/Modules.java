@@ -114,10 +114,10 @@ public class Modules implements Iterable<Module>
         });
     }
 
-    public void dumpSelected()
+    public void dumpEnabled()
     {
         int i=0;
-        for (Module module:getSelected())
+        for (Module module:getEnabled())
         {
             String name=module.getName();
             String index=(i++)+")";
@@ -204,7 +204,7 @@ public class Modules implements Iterable<Module>
         sort.sort(_modules);
     }
 
-    public List<Module> getSelected()
+    public List<Module> getEnabled()
     {
         return _modules.stream().filter(m->{return m.isEnabled();}).collect(Collectors.toList());
     }
@@ -311,8 +311,8 @@ public class Modules implements Iterable<Module>
                 Optional<Module> dftProvider = providers.stream().filter(m->m.getName().equals(dependsOn)).findFirst();
                 if (dftProvider.isPresent())
                     enable(newlyEnabled,dftProvider.get(),"default provider of "+dependsOn+" for "+module.getName(),true);
-                else
-                    throw new UsageException("Module %s requires %s from one of %s",module,dependsOn,providers);
+                else if (StartLog.isDebugEnabled())
+                    StartLog.debug("Module %s requires %s from one of %s",module,dependsOn,providers);
             }
         }
     }
@@ -331,6 +331,20 @@ public class Modules implements Iterable<Module>
     public Stream<Module> stream()
     {
         return _modules.stream();
+    }
+
+    public void checkEnabledModules()
+    {
+        _modules.stream().filter(Module::isEnabled).forEach(m->
+        {
+            // Check dependencies
+            m.getDepends().forEach(d->
+            {
+                Set<Module> providers =_provided.get(d);
+                if (providers.stream().filter(Module::isEnabled).count()==0)
+                    throw new UsageException(-1,"Module %s requires %s from one of %s",m.getName(),d,providers);
+            });
+        });
     }
     
 }
