@@ -157,6 +157,19 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         {
             LOG.debug("{} exclude by status {}",this,sc);
             noCompression();
+
+            if (sc==304)
+            {
+                String request_etags = (String)_channel.getRequest().getAttribute("o.e.j.s.h.gzip.GzipHandler.etag");
+                String response_etag = response.getHttpFields().get(HttpHeader.ETAG);
+                if (request_etags!=null && response_etag!=null)
+                {
+                    String response_etag_gzip=etagGzip(response_etag);
+                    if (request_etags.contains(response_etag_gzip))
+                        response.getHttpFields().put(HttpHeader.ETAG,response_etag_gzip);
+                }
+            }
+            
             _interceptor.write(content, complete, callback);
             return;
         }
@@ -216,11 +229,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             response.setContentLength(-1);
             String etag=fields.get(HttpHeader.ETAG);
             if (etag!=null)
-            {
-                int end = etag.length()-1;
-                etag=(etag.charAt(end)=='"')?etag.substring(0,end)+GzipHttpContent.ETAG_GZIP+'"':etag+GzipHttpContent.ETAG_GZIP;
-                fields.put(HttpHeader.ETAG,etag);
-            }
+                fields.put(HttpHeader.ETAG,etagGzip(etag));
 
             LOG.debug("{} compressing {}",this,_deflater);
             _state.set(GZState.COMPRESSING);
@@ -231,6 +240,12 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             callback.failed(new WritePendingException());
     }
 
+    private String etagGzip(String etag)
+    {
+        int end = etag.length()-1;
+        return (etag.charAt(end)=='"')?etag.substring(0,end)+GzipHttpContent.ETAG_GZIP+'"':etag+GzipHttpContent.ETAG_GZIP;
+    }
+    
     public void noCompression()
     {
         while (true)

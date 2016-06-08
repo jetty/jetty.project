@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.GzipHttpContent;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -443,6 +444,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             int i=etag.indexOf(GzipHttpContent.ETAG_GZIP_QUOTE);
             if (i>0)
             {
+                baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag",etag);
                 while (i>=0)
                 {
                     etag=etag.substring(0,i)+etag.substring(i+GzipHttpContent.ETAG_GZIP.length());
