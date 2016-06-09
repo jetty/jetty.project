@@ -25,7 +25,7 @@ This page presents several options to access port 80 as a non-root user, includi
 
 On some Linux systems you can use the _ipchains REDIRECT_ mechanism to redirect from one port to another inside the kernel (if ipchains is not available, then usually iptables is):
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ----
 # /sbin/ipchains -I input --proto TCP --dport 80 -j REDIRECT 8080
 ----
@@ -42,7 +42,7 @@ On many Linux systems you can use the iptables REDIRECT mechanism to redirect fr
 
 You need to add something like the following to the startup scripts or your firewall rules:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ----
 # /sbin/iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
 ----
@@ -68,7 +68,7 @@ The `http.mod` is enabled by default in the distribution, while the link:#quicks
 2.  Ensure that you have link:#quickstart-changing-jetty-port[changed the http port] to 80 (and link:#quickstart-changing-https-port[changed the https port] to 443 if you are using SSL).
 3.  Enable the `setuid.mod` module:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ----
 # java -jar start.jar --add-to-start=setuid
 ----
@@ -103,7 +103,7 @@ This code is hosted as part of the Jetty ToolChain project and it is released in
 You can find the source code https://github.com/eclipsejetty.toolchain[here] in the https://github.com/eclipse/jetty.toolchain/jetty-setuid[jetty-setuid] project. 
 Build it locally, which will produce a native library appropriate for the operating system:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ----
 # mvn clean install
 ----
@@ -114,7 +114,7 @@ You might like to copy this file into your jetty distribution's lib directory.
 6.  Start jetty as the root user in your base directory, providing the location of the native library to java. 
 Here's an example of how to do it on the command line, assuming were are in the link:#demo-webapps-base[demo-base] directory:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ----
 # sudo java -Djava.library.path=libsetuid-linux -jar $JETTY_HOME/start.jar
 ----
@@ -124,7 +124,7 @@ Here's an example of how to do it on the command line, assuming were are in the 
 
 Solaris 10 provides a User Rights Management framework that can permit users and processes superuser-like abilities:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ----
 usermod -K defaultpriv=basic,net_privaddr myself
 ----

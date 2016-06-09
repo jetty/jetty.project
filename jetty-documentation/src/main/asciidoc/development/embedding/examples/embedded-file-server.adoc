@@ -22,7 +22,7 @@ It is perfectly suitable for test cases where you need an actual web server to o
 Note that this does not have any logic for caching of files, either within the server or setting the appropriate headers on the response.
 It is simply a few lines that illustrate how easy it is to serve out some files.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/FileServer.java[]
 
@@ -36,7 +36,7 @@ After you have started things up you should be able to navigate to http://localh
 
 To use this example in your project you will need the following maven dependencies declared.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>

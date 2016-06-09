@@ -87,10 +87,10 @@ XML Files::
 The simplest way to start Jetty is via the `start.jar` mechanism using
 the following Java command line:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[user]$ cd jetty-distribution-@project.version@
-[jetty-distribution-@project.version@]$ java -jar start.jar --module=http jetty.http.port=8080
+[user]$ cd jetty-distribution-{VERSION}
+[jetty-distribution-{VERSION}]$ java -jar start.jar --module=http jetty.http.port=8080
 ....
 
 This command uses the `start.jar` mechanism to bootstrap the classpath,
@@ -98,9 +98,9 @@ properties, and XML files with the metadata obtained from the `http`
 module. Specifically the `http` module is defined in the
 `${jetty.home}/modules/http.mod` file, and includes the following:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-@project.version@]$ cat modules/http.mod
+[jetty-distribution-{VERSION}]$ cat modules/http.mod
 [depend]
 server
 
@@ -121,9 +121,9 @@ section is not actually used by the command above, so the
 Following the server dependency, the `${jetty.home}/modules/server.mod`
 file includes:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-@project.version@]$ cat modules/server.mod
+[jetty-distribution-{VERSION}]$ cat modules/server.mod
 [lib]
 lib/servlet-api-3.1.jar
 lib/jetty-http-${jetty.version}.jar
@@ -148,9 +148,9 @@ line required to start Jetty.
 Another way to see this is by asking Jetty what its configuration looks
 like:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-@project.version@]$ java -jar start.jar --module=http jetty.http.port=9099 --list-config
+[jetty-distribution-{VERSION}]$ java -jar start.jar --module=http jetty.http.port=9099 --list-config
 
 Java Environment:
 -----------------
@@ -165,9 +165,9 @@ Java Environment:
 
 Jetty Environment:
 -----------------
- jetty.home=/opt/jetty/jetty-distribution-@project.version@
- jetty.base=/opt/jetty/jetty-distribution-@project.version@
- jetty.version=@project.version@
+ jetty.home=/opt/jetty/jetty-distribution-{VERSION}
+ jetty.base=/opt/jetty/jetty-distribution-{VERSION}
+ jetty.version={VERSION}
 
 JVM Arguments:
 --------------
@@ -175,8 +175,8 @@ JVM Arguments:
 
 System Properties:
 ------------------
- jetty.home = /opt/jetty/jetty-distribution-@project.version@
- jetty.base = /opt/jetty/jetty-distribution-@project.version@
+ jetty.home = /opt/jetty/jetty-distribution-{VERSION}
+ jetty.base = /opt/jetty/jetty-distribution-{VERSION}
 
 Properties:
 -----------
@@ -189,11 +189,11 @@ Note: order presented here is how they would appear on the classpath.
       changes to the --module=name command line options will be reflected here.
  0:                    3.1.0 | ${jetty.home}/lib/servlet-api-3.1.jar
  1:                  3.1.RC0 | ${jetty.home}/lib/jetty-schemas-3.1.jar
- 2:               @project.version@ | ${jetty.home}/lib/jetty-http-@project.version@.jar
- 3:               @project.version@ | ${jetty.home}/lib/jetty-server-@project.version@.jar
- 4:               @project.version@ | ${jetty.home}/lib/jetty-xml-@project.version@.jar
- 5:               @project.version@ | ${jetty.home}/lib/jetty-util-@project.version@.jar
- 6:               @project.version@ | ${jetty.home}/lib/jetty-io-@project.version@.jar
+ 2:               {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
+ 3:               {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
+ 4:               {VERSION} | ${jetty.home}/lib/jetty-xml-{VERSION}.jar
+ 5:               {VERSION} | ${jetty.home}/lib/jetty-util-{VERSION}.jar
+ 6:               {VERSION} | ${jetty.home}/lib/jetty-io-{VERSION}.jar
 
 Jetty Active XMLs:
 ------------------
@@ -210,14 +210,14 @@ using a traditional Java command line.
 The following is the equivalent `java` command line for what the
 `start.jar` bootstrap above performs.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[user]$ cd jetty-distribution-@project.version@
-[jetty-distribution-@project.version@]$ echo jetty.http.port=8080 > /tmp/jetty.properties
-[jetty-distribution-@project.version@]$ export JETTY_HOME=`pwd`
-[jetty-distribution-@project.version@]$ export JETTY_BASE=`pwd`
-[jetty-distribution-@project.version@]$ export JETTY_VERSION="${project.version}"
-[jetty-distribution-@project.version@]$ java -Djetty.home=$JETTY_HOME \
+[user]$ cd jetty-distribution-{VERSION}
+[jetty-distribution-{VERSION}]$ echo jetty.http.port=8080 > /tmp/jetty.properties
+[jetty-distribution-{VERSION}]$ export JETTY_HOME=`pwd`
+[jetty-distribution-{VERSION}]$ export JETTY_BASE=`pwd`
+[jetty-distribution-{VERSION}]$ export JETTY_VERSION="${project.version}"
+[jetty-distribution-{VERSION}]$ java -Djetty.home=$JETTY_HOME \
 -Djetty.base=$JETTY_BASE \
 -cp \
  $JETTY_HOME/lib/servlet-api-3.1.jar\
@@ -242,10 +242,10 @@ You can further simplify the startup of this server by using the INI
 template defined by the modules to create a `start.ini` file with the
 command:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[user]$ cd jetty-distribution-@project.version@
-[jetty-distribution-@project.version@]$ mkdir example-base
+[user]$ cd jetty-distribution-{VERSION}
+[jetty-distribution-{VERSION}]$ mkdir example-base
 [example-base]$ cd example-base
 [example-base]$ ls -la
 total 8
@@ -266,7 +266,7 @@ drwxrwxr-x 12 user webgroup 4096 Oct  4 11:49 ../
 Once complete, you can edit the `start.ini` file to modify any
 parameters and you can run the server with the simple command:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 [example-base]$ java -jar $JETTY_HOME/start.jar
 ....

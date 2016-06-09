@@ -21,7 +21,7 @@ Jetty also provides a Jetty WebSocket Client Library to write make talking to We
 
 To use the Jetty WebSocket Client on your own Java project you will need the following maven artifacts.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.websocket</groupId>
@@ -34,14 +34,14 @@ To use the Jetty WebSocket Client on your own Java project you will need the fol
 
 To use the WebSocketClient you will need to hook up a WebSocket object instance to a specific destination WebSocket URI.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-websocket/websocket-client/src/test/java/examples/SimpleEchoClient.java[]
 ----
 
 The above example connects to a remote WebSocket server and hands off a SimpleEchoSocket to perform the logic on the websocket once connected, waiting for the socket to register that it has closed.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-websocket/websocket-client/src/test/java/examples/SimpleEchoSocket.java[]
 ----

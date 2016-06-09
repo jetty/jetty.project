@@ -22,7 +22,7 @@
 The suspend/resume style is used when a servlet and/or filter is used to generate the response after an asynchronous wait that is terminated by an asynchronous handler.
 Typically a request attribute is used to pass results and to indicate if the request has already been suspended.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 void doGet(HttpServletRequest request, HttpServletResponse response)
 {
@@ -67,7 +67,7 @@ This style is very good when the response needs the facilities of the servlet co
 
 The suspend/complete style is used when an asynchronous handler is used to generate the response:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 void doGet(HttpServletRequest request, HttpServletResponse response)
 {

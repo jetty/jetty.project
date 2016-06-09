@@ -61,9 +61,9 @@ enables the various demonstration webapps and server configurations.
 
 How to use the demo-base directory as a Jetty Base directory.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-@project.version@]$ ls -la
+[jetty-distribution-{VERSION}]$ ls -la
 total 496
 drwxrwxr-x 11 user group   4096 Oct  8 15:23 ./
 drwxr-xr-x 14 user group   4096 Oct  8 13:04 ../
@@ -82,11 +82,11 @@ drwxrwxr-x  2 user group   4096 Oct  8 06:54 start.d/
 -rw-rw-r--  1 user group  71921 Sep 30 19:55 start.jar
 -rw-rw-r--  1 user group 336468 Sep 30 19:55 VERSION.txt
 drwxrwxr-x  2 user group   4096 Oct  8 06:54 webapps/
-[jetty-distribution-@project.version@]$ cd demo-base
+[jetty-distribution-{VERSION}]$ cd demo-base
 [demo-base]$ java -jar $JETTY_HOME/start.jar
 2013-10-16 09:08:47.800:WARN::main: demo test-realm is deployed. DO NOT USE IN PRODUCTION!
-2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-@project.version@
-2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/jetty-distribution-@project.version@/demo-base/webapps/] at interval 1
+2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
+2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/jetty-distribution-{VERSION}/demo-base/webapps/] at interval 1
 2013-10-16 09:08:48.072:WARN::main: async-rest webapp is deployed. DO NOT USE IN PRODUCTION!
 ...
 ....
@@ -97,7 +97,7 @@ using the Jetty Base concepts.
 If you want to see what the Jetty Base looks like without executing
 Jetty, you can simply list the configuration
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 [my-base]$ java -jar $JETTY_HOME/start.jar --list-config
 
@@ -114,9 +114,9 @@ Java Environment:
 
 Jetty Environment:
 -----------------
- jetty.home=/home/user/jetty-distribution-@project.version@
- jetty.base=/home/user/jetty-distribution-@project.version@/demo-base
- jetty.version=@project.version@
+ jetty.home=/home/user/jetty-distribution-{VERSION}
+ jetty.base=/home/user/jetty-distribution-{VERSION}/demo-base
+ jetty.version={VERSION}
 
 JVM Arguments:
 --------------
@@ -124,8 +124,8 @@ JVM Arguments:
 
 System Properties:
 ------------------
- jetty.base = /home/user/jetty-distribution-@project.version@/demo-base
- jetty.home = /home/user/jetty-distribution-@project.version@
+ jetty.base = /home/user/jetty-distribution-{VERSION}/demo-base
+ jetty.home = /home/user/jetty-distribution-{VERSION}
 
 Properties:
 -----------
@@ -152,26 +152,26 @@ Jetty Server Classpath:
 Version Information on 42 entries in the classpath.
 Note: order presented here is how they would appear on the classpath.
       changes to the --module=name command line options will be reflected here.
- 0:               @project.version@ | ${jetty.home}/lib/jetty-client-@project.version@.jar
+ 0:               {VERSION} | ${jetty.home}/lib/jetty-client-{VERSION}.jar
  1:      1.4.1.v201005082020 | ${jetty.base}/lib/ext/javax.mail.glassfish-1.4.1.v201005082020.jar
- 2:               @project.version@ | ${jetty.base}/lib/ext/test-mock-resources-@project.version@.jar
+ 2:               {VERSION} | ${jetty.base}/lib/ext/test-mock-resources-{VERSION}.jar
  3:                    (dir) | ${jetty.home}/resources
  4:                    3.1.0 | ${jetty.home}/lib/servlet-api-3.1.jar
  5:                  3.1.RC0 | ${jetty.home}/lib/jetty-schemas-3.1.jar
- 6:               @project.version@ | ${jetty.home}/lib/jetty-http-@project.version@.jar
- 7:               @project.version@ | ${jetty.home}/lib/jetty-continuation-@project.version@.jar
- 8:               @project.version@ | ${jetty.home}/lib/jetty-server-@project.version@.jar
- 9:               @project.version@ | ${jetty.home}/lib/jetty-xml-@project.version@.jar
-10:               @project.version@ | ${jetty.home}/lib/jetty-util-@project.version@.jar
-11:               @project.version@ | ${jetty.home}/lib/jetty-io-@project.version@.jar
-12:               @project.version@ | ${jetty.home}/lib/jetty-jaas-@project.version@.jar
-13:               @project.version@ | ${jetty.home}/lib/jetty-jndi-@project.version@.jar
+ 6:               {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
+ 7:               {VERSION} | ${jetty.home}/lib/jetty-continuation-{VERSION}.jar
+ 8:               {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
+ 9:               {VERSION} | ${jetty.home}/lib/jetty-xml-{VERSION}.jar
+10:               {VERSION} | ${jetty.home}/lib/jetty-util-{VERSION}.jar
+11:               {VERSION} | ${jetty.home}/lib/jetty-io-{VERSION}.jar
+12:               {VERSION} | ${jetty.home}/lib/jetty-jaas-{VERSION}.jar
+13:               {VERSION} | ${jetty.home}/lib/jetty-jndi-{VERSION}.jar
 14:      1.1.0.v201105071233 | ${jetty.home}/lib/jndi/javax.activation-1.1.0.v201105071233.jar
 15:      1.4.1.v201005082020 | ${jetty.home}/lib/jndi/javax.mail.glassfish-1.4.1.v201005082020.jar
 16:                      1.2 | ${jetty.home}/lib/jndi/javax.transaction-api-1.2.jar
-17:               @project.version@ | ${jetty.home}/lib/jetty-rewrite-@project.version@.jar
-18:               @project.version@ | ${jetty.home}/lib/jetty-security-@project.version@.jar
-19:               @project.version@ | ${jetty.home}/lib/jetty-servlet-@project.version@.jar
+17:               {VERSION} | ${jetty.home}/lib/jetty-rewrite-{VERSION}.jar
+18:               {VERSION} | ${jetty.home}/lib/jetty-security-{VERSION}.jar
+19:               {VERSION} | ${jetty.home}/lib/jetty-servlet-{VERSION}.jar
 20:                    3.0.0 | ${jetty.home}/lib/jsp/javax.el-3.0.0.jar
 21:      1.2.0.v201105211821 | ${jetty.home}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
 22:                    2.3.2 | ${jetty.home}/lib/jsp/javax.servlet.jsp-2.3.2.jar
@@ -179,21 +179,21 @@ Note: order presented here is how they would appear on the classpath.
 24:                    2.3.3 | ${jetty.home}/lib/jsp/jetty-jsp-jdt-2.3.3.jar
 25:      1.2.0.v201112081803 | ${jetty.home}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
 26:   3.8.2.v20130121-145325 | ${jetty.home}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
-27:               @project.version@ | ${jetty.home}/lib/jetty-plus-@project.version@.jar
-28:               @project.version@ | ${jetty.home}/lib/jetty-webapp-@project.version@.jar
-29:               @project.version@ | ${jetty.home}/lib/jetty-annotations-@project.version@.jar
+27:               {VERSION} | ${jetty.home}/lib/jetty-plus-{VERSION}.jar
+28:               {VERSION} | ${jetty.home}/lib/jetty-webapp-{VERSION}.jar
+29:               {VERSION} | ${jetty.home}/lib/jetty-annotations-{VERSION}.jar
 30:                      4.1 | ${jetty.home}/lib/annotations/asm-4.1.jar
 31:                      4.1 | ${jetty.home}/lib/annotations/asm-commons-4.1.jar
 32:                      1.2 | ${jetty.home}/lib/annotations/javax.annotation-api-1.2.jar
-33:               @project.version@ | ${jetty.home}/lib/jetty-deploy-@project.version@.jar
+33:               {VERSION} | ${jetty.home}/lib/jetty-deploy-{VERSION}.jar
 34:                      1.0 | ${jetty.home}/lib/websocket/javax.websocket-api-1.0.jar
-35:               @project.version@ | ${jetty.home}/lib/websocket/javax-websocket-client-impl-@project.version@.jar
-36:               @project.version@ | ${jetty.home}/lib/websocket/javax-websocket-server-impl-@project.version@.jar
-37:               @project.version@ | ${jetty.home}/lib/websocket/websocket-api-@project.version@.jar
-38:               @project.version@ | ${jetty.home}/lib/websocket/websocket-client-@project.version@.jar
-39:               @project.version@ | ${jetty.home}/lib/websocket/websocket-common-@project.version@.jar
-40:               @project.version@ | ${jetty.home}/lib/websocket/websocket-server-@project.version@.jar
-41:               @project.version@ | ${jetty.home}/lib/websocket/websocket-servlet-@project.version@.jar
+35:               {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-client-impl-{VERSION}.jar
+36:               {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-server-impl-{VERSION}.jar
+37:               {VERSION} | ${jetty.home}/lib/websocket/websocket-api-{VERSION}.jar
+38:               {VERSION} | ${jetty.home}/lib/websocket/websocket-client-{VERSION}.jar
+39:               {VERSION} | ${jetty.home}/lib/websocket/websocket-common-{VERSION}.jar
+40:               {VERSION} | ${jetty.home}/lib/websocket/websocket-server-{VERSION}.jar
+41:               {VERSION} | ${jetty.home}/lib/websocket/websocket-servlet-{VERSION}.jar
 
 Jetty Active XMLs:
 ------------------
@@ -223,7 +223,7 @@ elements came from, be it in either in `${jetty.home}` or
 If you look at the $\{jetty.base}/start.ini you will see something like
 the following.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 [my-base]$ cat start.ini
 # Enable security via jaas, and configure it
@@ -282,14 +282,14 @@ The Jetty start.jar and XML files always assume that both
 You can opt to manually define the `${jetty.home}` and `${jetty.base}`
 directories, such as this:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-@project.version@]$ pwd
-/home/user/jetty-distribution-@project.version@
-[jetty-distribution-@project.version@]$ java -jar start.jar \
-    jetty.home=/home/user/jetty-distribution-@project.version@ \
+[jetty-distribution-{VERSION}]$ pwd
+/home/user/jetty-distribution-{VERSION}
+[jetty-distribution-{VERSION}]$ java -jar start.jar \
+    jetty.home=/home/user/jetty-distribution-{VERSION} \
     jetty.base=/home/user/my-base
-2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-@project.version@
+2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
 ...
 ....
@@ -300,12 +300,12 @@ The following example uses default discovery of `${jetty.home}` by using
 the parent directory of wherever start.jar itself is, and a manual
 declaration of `${jetty.base}`.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-@project.version@]$ pwd
-/home/user/jetty-distribution-@project.version@
-[jetty-distribution-@project.version@]$ java -jar start.jar jetty.base=/home/user/my-base
-2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-@project.version@
+[jetty-distribution-{VERSION}]$ pwd
+/home/user/jetty-distribution-{VERSION}
+[jetty-distribution-{VERSION}]$ java -jar start.jar jetty.base=/home/user/my-base
+2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
 ...
 ....
@@ -318,13 +318,13 @@ The following demonstrates this by allowing default discovery of
 `${jetty.home}` via locating the `start.jar`, and using the `user.dir`
 System Property for `${jetty.base}`.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-@project.version@]$ pwd
-/home/user/jetty-distribution-@project.version@
-[jetty-distribution-@project.version@]$ cd /home/user/my-base
-[my-base]$ java -jar /home/user/jetty-distribution-@project.version@/start.jar
-2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-@project.version@
+[jetty-distribution-{VERSION}]$ pwd
+/home/user/jetty-distribution-{VERSION}
+[jetty-distribution-{VERSION}]$ cd /home/user/my-base
+[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar
+2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
 ...
 ....

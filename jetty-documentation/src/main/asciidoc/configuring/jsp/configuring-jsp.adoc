@@ -35,7 +35,7 @@ link:#startup-modules[module] is set to Apache Jasper. To change to use
 Glassfish Jasper instead, edit the `$JETTY_HOME/start.d/jsp.mod` file
 and change the line indicated:
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-distribution/src/main/resources/modules/jsp.mod[]
 ----
@@ -85,7 +85,7 @@ For example, suppose you have precompiled your jsps with the custom
 package prefix of `com.acme`, then you would add the following lines to
 your web.xml file:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
   <context-param>
     <param-name>org.eclipse.jetty.servlet.jspPackagePrefix</param-name>
@@ -332,7 +332,7 @@ recompilation. Here is a factoring out of the various options:
 
 * Check the JSP files for possible recompilation on every request:
 +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <init-param>
@@ -345,7 +345,7 @@ recompilation. Here is a factoring out of the various options:
 * Only check approximately every N seconds, where a request triggers the
 time-lapse calculation. This example checks every 60 seconds:
 +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <init-param>
@@ -363,7 +363,7 @@ time-lapse calculation. This example checks every 60 seconds:
 hit. (Be aware that this ''reload-interval'' parameter is shorthand for
 a ''development=false'' and ''checkInterval=0'' combination.):
 +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <init-param>
@@ -377,7 +377,7 @@ a ''development=false'' and ''checkInterval=0'' combination.):
 thread to do checks every N seconds. This example checks every 60
 seconds:
 +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <init-param>
@@ -407,7 +407,7 @@ Jetty, apply your changes, and use it instead of the shipped version.
 The example below shows how to do this when using the Jetty Maven
 plugin.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
   <plugin>
@@ -427,7 +427,7 @@ settings for just one or a few of your webapps, copy the
 a link:#intro-jetty-configuration-contexts[context xml] file to set this
 file as the defaultsDescriptor for your webapp. Here's a snippet:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
  <Configure class=>"org.eclipse.jetty.webapp.WebAppContext">
@@ -453,7 +453,7 @@ may also add (but not remove) servlet-mappings. You can use the entry in
 link:#webdefault-xml[$JETTY_HOME/etc/webdefault.xml] as a starting
 point.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
  <servlet id="jsp">
@@ -547,7 +547,7 @@ link:#embedded-examples[Embedded Examples] section includes a
 link:#embedded-webapp-jsp[worked code example] of how to do this, here's
 a snippet from it:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
   webapp.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",".*/[^/]*taglibs.*\\.jar$");
 ----
@@ -575,7 +575,7 @@ $JETTY_HOME/lib/ext.
 You should make your JSF jars dependencies of the plugin and _not_ the
 webapp itself. For example:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
    <plugin>

@@ -35,7 +35,7 @@ This example also uses the @Resource annotation which involves JNDI, so we would
 
 Here is the embedding code:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
@@ -97,7 +97,7 @@ On lines 30, 33 and 37 we set up some JNDI resources that we will be able to ref
 
 With the setup above, we can create a servlet that uses annotations and Jetty will honour the annotations when the webapp is deployed:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 import javax.annotation.security.DeclareRoles;
 import javax.annotation.security.RunAs;

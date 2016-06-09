@@ -55,7 +55,7 @@ To learn how to turn on connector statistics please see Jetty Statistics tutoria
 The following example shows how to turn on connector statistics in jetty xml. 
 This example comes from within `jetty-http.xml`.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
   <Call name="addConnector">
@@ -95,7 +95,7 @@ Typically this can be done as the top level handler, but you may choose to confi
 Please note that `jetty-stats.xml` has to appear in the command line after the main Jetty configuration file as shown below. 
 It should be able to be uncommented in the start.ini file.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ java -jar start.jar OPTIONS=default etc/jetty.xml etc/jetty-stats.xml
     
@@ -104,7 +104,7 @@ $ java -jar start.jar OPTIONS=default etc/jetty.xml etc/jetty-stats.xml
 Alternately, if you are making multiple changes to the Jetty configuration, you could include statistics handler configuration into your own jetty xml configuration. 
 The following fragment shows how to configure a top level statistics handler:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
     <Get id="oldhandler" name="handler" />

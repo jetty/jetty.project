@@ -29,7 +29,7 @@ We'll refer to the unpacked location as `$metro.home`.
 3.  Copy the jars from $metro.home/lib to `$jetty.home/lib/metro`
 4.  Edit the start.ini file and add an OPTION line for metro near the end.
 +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 OPTIONS=metro
 ----
@@ -41,12 +41,12 @@ The Metro distribution you downloaded should also contain several example web ap
 
 Here's an example of the log output from Jetty when one of the sample Metro wars (from `$metro.home/samples/async`) is deployed to Jetty:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 [2093] java -jar start.jar
 
 2013-07-26 15:47:53.480:INFO:oejs.Server:main: jetty-9.0.4.v20130625
-2013-07-26 15:47:53.549:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/jetty-distribution-@project.version@/webapps/] at interval 1
+2013-07-26 15:47:53.549:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/jetty-distribution-{VERSION}/webapps/] at interval 1
 Jul 26, 2013 3:47:53 PM com.sun.xml.ws.transport.http.servlet.WSServletContextListener contextInitialized
 INFO: WSSERVLET12: JAX-WS context listener initializing
 Jul 26, 2013 3:47:56 PM com.sun.xml.ws.server.MonitorBase createRoot

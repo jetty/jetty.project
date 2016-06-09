@@ -38,7 +38,7 @@ For example in start.ini.
 
 ==== Embedded usage
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 Server server = new Server(8080);
 RolloverFileOutputStream outputStream = new RolloverFileOutputStream("MeinLogPfad/yyyy_mm_dd.request.log", true,10);

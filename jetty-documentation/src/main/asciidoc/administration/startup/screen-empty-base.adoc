@@ -14,7 +14,7 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 WARNING: Nothing to start, exiting ...
 

@@ -24,7 +24,7 @@ access from within the `java:comp/env` naming environment of the webapp
 during execution. Specifically, you can configure support for the
 following `web.xml` elements:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <env-entry/>
@@ -65,7 +65,7 @@ these bindings by using declarations of the following types:
 
 Declarations of each of these types follow the same general pattern:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <New class="org.eclipse.jetty.plus.jndi.xxxx">
@@ -116,7 +116,7 @@ JVM scope::
   application code. You represent this scope by a `null` first parameter
   to the resource declaration. For example:
   +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -137,7 +137,7 @@ Server scope::
   the Server instance as the first parameter to the resource
   declaration. For example:
   +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <Configure id="Server" class="org.eclipse.jetty.Server">
@@ -160,7 +160,7 @@ Webapp scope::
   referencing the WebAppContext instance as the first parameter to the
   resource declaration. For example:
   +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">

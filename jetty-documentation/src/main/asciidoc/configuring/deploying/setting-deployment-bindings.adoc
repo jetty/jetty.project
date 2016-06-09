@@ -28,7 +28,7 @@ There are a handful of bindings that exist within the core distribution of Jetty
 * `DebugBinding` (any specified)–Attaches a binding and prints logging information of a context going through the specified binding target.
 * `GlobalWebappConfigBinding` (deploying)–Allows the user to override various settings of a webapp's context globally for all contexts.
 +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
         <Call name="addLifeCycleBinding">
           <Arg>

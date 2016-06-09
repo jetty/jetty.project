@@ -33,7 +33,7 @@ This implementation allows you to wrap an arbitrary POJO in an MBean and annotat
 See xref:jetty-jmx-annotations[].
 
 TheMBeanContainer implementation of the Container.Listener interface coordinates creation of MBeans. 
-The Jetty Server and it's components use a link:{JDURL}/org/eclipse/jetty/util/component/Container.html[Container] to maintain a containment tree of components and to support notification of changes to that tree. 
+The Jetty Server and it's components use a link:{JDURL}/org/eclipse/jetty/util/component/Container.html[Container] to maintain a containment tree of components and to support notification of changes to that tree.
 The MBeanContainer class listens for Container events and creates and destroys MBeans as required to wrap all Jetty components.
 
 You can access the MBeans that Jetty publishes both through built-in Java VM connector via JConsole, or by registering a remote JMX connector and using a remote JMX agent to monitor Jetty.
@@ -76,7 +76,7 @@ If you are having difficulties validate that the section in the jetty.home/start
 
 When running Jetty embedded into an application, create and configure an MBeanContainer instance as follows:
 
-[source,java]
+[source, java]
 ----
 
 Server server = new Server();
@@ -100,12 +100,12 @@ Because logging is initialized prior to the MBeanContainer (even before the Serv
 
 If you are using the link:#jetty-maven-plugin[jetty maven plugin] you should copy the `etc/jetty-jmx.xml` file into your webapp project somewhere, such as `src/etc,` then add a `<jettyconfig>` element to the plugin `<configuration>`:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <plugin>
   <groupid>org.eclipse.jetty</groupid>
   <artifactid>jetty-maven-plugin</artifactid>
-  <version>@project.version@</version>
+  <version>{VERSION}</version>
   <configuration>
     <scanintervalseconds>10</scanintervalseconds>
     <jettyXml>src/etc/jetty-jmx.xml</jettyXml>
@@ -113,6 +113,7 @@ If you are using the link:#jetty-maven-plugin[jetty maven plugin] you should cop
 </plugin>
         
 ----
+
 
 [[enabling-jmxconnectorserver-for-remote-access]]
 ==== Enabling JMXConnectorServer for Remote Access
@@ -124,7 +125,7 @@ Unfortunately, this solution does not play well with firewalls and it is not fle
 * Use Jetty's `ConnectorServer` class. 
 To enable use of this class, uncomment the correspondent portion in `etc/jetty-jmx.xml,` like this:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <New id="ConnectorServer" class="org.eclipse.jetty.jmx.ConnectorServer">
   <Arg>
@@ -151,7 +152,7 @@ For a complete guide to controlling authentication and authorization in JMX, see
 
 To restrict access to the JMXConnectorServer, you can use this configuration, where the `jmx.password` and `jmx.access` files have the format specified in the blog entry above:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <New id="ConnectorServer" class="org.eclipse.jetty.jmx.ConnectorServer">
