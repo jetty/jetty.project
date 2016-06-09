@@ -1,1 +1,1 @@
---add-to-startd=noDftOptionB
+--add-to-start=noDftOptionB

@@ -150,14 +150,8 @@ public class StartArgs
     private List<String> rawLibs = new ArrayList<>();
 
     // jetty.base - build out commands
-    /** --add-to-startd=[module,[module]] */
-    private List<String> addToStartdIni = new ArrayList<>();
-    /** --add-to-start=[module,[module]] */
-    private List<String> addToStartIni = new ArrayList<>();
-
-    /** Tri-state True if modules should be added to StartdFirst, false if StartIni first, else null */
-    private Boolean addToStartdFirst;
-    
+    /** --add-to-start[d]=[module,[module]] */
+    private List<String> startModules = new ArrayList<>();
     
     // module inspection commands
     /** --write-module-graph=[filename] */
@@ -165,6 +159,7 @@ public class StartArgs
 
     /** Collection of all modules */
     private Modules allModules;
+    
     /** Should the server be run? */
     private boolean run = true;
 
@@ -180,6 +175,7 @@ public class StartArgs
     private boolean listConfig = false;
     private boolean version = false;
     private boolean dryRun = false;
+    private boolean useStartd = false;
 
     private boolean exec = false;
     private String exec_properties;
@@ -517,14 +513,9 @@ public class StartArgs
         }
     }
 
-    public List<String> getAddToStartdIni()
+    public List<String> getStartModules()
     {
-        return addToStartdIni;
-    }
-
-    public List<String> getAddToStartIni()
-    {
-        return addToStartIni;
+        return startModules;
     }
 
     public Modules getAllModules()
@@ -783,12 +774,10 @@ public class StartArgs
     {
         return version;
     }
-
-    public boolean isAddToStartdFirst()
+    
+    public boolean isUseStartd()
     {
-        if (addToStartdFirst==null)
-            throw new IllegalStateException();
-        return addToStartdFirst.booleanValue();
+        return useStartd;
     }
     
     public void parse(ConfigSources sources)
@@ -956,30 +945,19 @@ public class StartArgs
             run = false;
             return;
         }
-
-        // jetty.base build-out : add to ${jetty.base}/start.d/
-        if (arg.startsWith("--add-to-startd="))
-        {
-            List<String> moduleNames = Props.getValues(arg);
-            addToStartdIni.addAll(moduleNames);
-            run = false;
-            download = true;
-            licenseCheckRequired = true;
-            if (addToStartdFirst==null)
-                addToStartdFirst=Boolean.TRUE;
-            return;
-        }
-
+       
         // jetty.base build-out : add to ${jetty.base}/start.ini
-        if (arg.startsWith("--add-to-start="))
+        if (arg.startsWith("--add-to-startd=")||
+            arg.startsWith("--add-to-start="))
         {
+            if (arg.startsWith("--add-to-startd="))
+                useStartd=true;
+
             List<String> moduleNames = Props.getValues(arg);
-            addToStartIni.addAll(moduleNames);
+            startModules.addAll(moduleNames);
             run = false;
             download = true;
             licenseCheckRequired = true;
-            if (addToStartdFirst==null)
-                addToStartdFirst=Boolean.FALSE;
             return;
         }
 

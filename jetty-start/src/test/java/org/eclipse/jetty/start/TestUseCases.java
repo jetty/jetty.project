@@ -113,12 +113,14 @@ public class TestUseCases
         {
             if (prepare != null && prepare.length>0)
             {
-                Main main = new Main();
-                List<String> cmdLine = new ArrayList<>();
-                cmdLine.add("--testing-mode");
                 for (String arg : prepare)
-                    cmdLine.add(arg);
-                main.start(main.processCommandLine(cmdLine));
+                {
+                    Main main = new Main();
+                    List<String> cmdLine = new ArrayList<>();
+                    cmdLine.add("--testing-mode");
+                    cmdLine.addAll(Arrays.asList(arg.split(" ")));
+                    main.start(main.processCommandLine(cmdLine));
+                }
             }
 
             Main main = new Main();

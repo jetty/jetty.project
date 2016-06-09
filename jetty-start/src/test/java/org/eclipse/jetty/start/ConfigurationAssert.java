@@ -170,7 +170,7 @@ public class ConfigurationAssert
         textFile.stream()
         .filter(s->s.startsWith("EXISTS|"))
         .map(s->baseHome.getPath(s.substring(7)).toFile())
-        .forEach(f->Assert.assertTrue(f+" exists",f.exists()));
+        .forEach(f->Assert.assertTrue(f+" exists?",f.exists()));
     }
 
     private static String shorten(BaseHome baseHome, Path path, Path testResourcesDir)

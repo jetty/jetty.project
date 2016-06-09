@@ -218,6 +218,28 @@
           </execution>
 
           <execution>
+            <id>unpack-test-webapp-config</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>test-jetty-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+              <excludes>META-INF/**</excludes>
+            </configuration>
+          </execution>
+
+          <execution>
             <id>unpack-test-jaas-config</id>
             <phase>process-resources</phase>
             <goals>
@@ -525,21 +547,6 @@
             </goals>
           </execution>
           <execution>
-            <id>setup demo-base-ini</id>
-            <phase>process-classes</phase>
-            <configuration>
-              <mainClass>org.eclipse.jetty.start.Main</mainClass>
-              <arguments>
-                <argument>jetty.home=${assembly-directory}</argument>
-                <argument>jetty.base=${assembly-directory}/demo-base</argument>
-                <argument>--add-to-start=continuation,deploy,websocket,ext,resources,client,annotations,jndi,servlets</argument>
-              </arguments>
-            </configuration>
-            <goals>
-              <goal>java</goal>
-            </goals>
-          </execution>
-          <execution>
             <id>setup demo-base-startd</id>
             <phase>process-classes</phase>
             <configuration>
@@ -547,7 +554,7 @@
               <arguments>
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}/demo-base</argument>
-                <argument>--add-to-startd=jsp,jstl,http,https</argument>
+                <argument>--add-to-startd=continuation,deploy,websocket,ext,resources,client,annotations,jndi,servlets,jsp,jstl,http,https</argument>
               </arguments>
             </configuration>
             <goals>
