@@ -181,7 +181,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 //Resource represents a packed jar
                 URI uri = target.getURI();
-                resourcesDir = Resource.newResource("jar:"+uri+"!/META-INF/resources");
+                resourcesDir = Resource.newResource(uriJarPrefix(uri,"!/META-INF/resources"));
             }
             
             if (!resourcesDir.exists() || !resourcesDir.isDirectory())
@@ -252,7 +252,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             else
             {
                 URI uri = jar.getURI();
-                webFrag = Resource.newResource("jar:"+uri+"!/META-INF/web-fragment.xml");
+                webFrag = Resource.newResource(uriJarPrefix(uri,"!/META-INF/web-fragment.xml"));
             }
             if (!webFrag.exists() || webFrag.isDirectory())
             {
@@ -402,7 +402,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     {
         HashSet<URL> tlds = new HashSet<URL>();
 
-        String jarUri = uriJarPrefix(uri);
+        String jarUri = uriJarPrefix(uri, "!/");
         URL url = new URL(jarUri);
         JarURLConnection jarConn = (JarURLConnection) url.openConnection();
         jarConn.setUseCaches(Resource.getDefaultUseCaches());
@@ -422,13 +422,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return tlds;
     }
 
-    private String uriJarPrefix(URI uri)
+    private String uriJarPrefix(URI uri, String suffix)
     {
         String uriString = uri.toString();
         if (uriString.startsWith("jar:")) {
-            return uriString + "!/";
+            return uriString + suffix;
         } else {
-            return "jar:"+uriString+"!/";
+            return "jar:" + uriString + suffix;
         }
     }
 }
