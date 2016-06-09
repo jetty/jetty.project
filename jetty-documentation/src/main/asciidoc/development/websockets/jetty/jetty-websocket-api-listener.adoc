@@ -19,7 +19,7 @@
 
 The basic form of a WebSocket using the link:{JDURL}/org/eclipse/jetty/websocket/api/WebSocketListener.html[`org.eclipse.jetty.websocket.api.WebSocketListener`] for incoming events.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-websocket/websocket-common/src/test/java/examples/echo/ListenerEchoSocket.java[]
 ----

@@ -41,14 +41,14 @@ When creating new configurations for alternative server:
 
 The following example creates another server instance and configures it with a connector and deployer:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 include::{SRCDIR}/examples/embedded/src/main/resources/jetty-otherserver.xml[]
 ----
 
 To run the other server, add the extra configuration file(s) to the command line:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ----
 java -jar start.jar jetty-otherserver.xml
 ----

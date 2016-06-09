@@ -32,7 +32,7 @@ scanInterval::
 
 The default location for this configuration is in the `${jetty.home}/etc/jetty-deploy.xml` file.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">

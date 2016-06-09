@@ -37,7 +37,7 @@ The selection of which configuration files to use is controlled by xref:advanced
 
 `jetty.xml` configures an instance of the `Jetty org.eclipse.jetty.server.Server.`
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <?xml version="1.0"?>

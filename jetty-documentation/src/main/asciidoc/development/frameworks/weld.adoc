@@ -28,7 +28,7 @@ The easiest way to configure weld is within the jetty distribution itself:
 1.  Enable the startup link:#startup-modules[module] called "cdi".
 2.  Ensure your `WEB-INF/web.xml` contains the following:
 +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
   <listener>
     <listener-class>org.jboss.weld.environment.servlet.Listener</listener-class>
@@ -43,7 +43,7 @@ The easiest way to configure weld is within the jetty distribution itself:
 
 That should be it so when you start up your jetty distribution with the webapp you should see output similar to the following (providing your logging is the default configuration):
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 2015-06-18 12:13:54.924:INFO::main: Logging initialized @485ms
 2015-06-18 12:13:55.231:INFO:oejs.Server:main: jetty-9.3.1-SNAPSHOT

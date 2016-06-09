@@ -77,7 +77,7 @@ exposedHeaders::
 
 A typical configuration could be:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <web-app>

@@ -83,7 +83,7 @@ Place the configuration in a webapp's web.xml or jetty-web.xml.
 The default configuration processes ten requests at a time, servicing more important requests first, and queuing up the rest. 
 This example processes fifty requests at a time:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <filter>
@@ -129,7 +129,7 @@ managedAttr::
 You can use the `<filter-mapping>` syntax to map the QoSFilter to a servlet, either by using the servlet name, or by using a URL pattern. 
 In this example, a URL pattern applies the QoSFilter to every request within the web application context:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
     
 <filter-mapping>
@@ -153,7 +153,7 @@ To customize the priority, subclass QoSFilter and then override the getPriority(
 You can then use this subclass as your QoS filter. 
 Here's a trivial example:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
     
 public class ParsePriorityQoSFilter extends QoSFilter

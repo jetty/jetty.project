@@ -43,7 +43,7 @@ If a web application is deployed using the WebAppProvider of the DeploymentManag
 If a web application is deployed using the `WebAppProvider` of the `DeploymentManager` with an XML IoC file to configure the context, then the `setContextPath` method can be called within that file. 
 For example:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/test</Set>

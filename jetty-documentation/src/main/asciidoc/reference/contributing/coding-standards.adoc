@@ -35,7 +35,7 @@ http://git.eclipse.org/c/jetty/org.eclipse.jetty.admin.git/tree/jetty-eclipse-co
 
 The following is an example of the Java formatting and naming styles to apply to Jetty:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 import some.exact.ClassName;      // GOOD

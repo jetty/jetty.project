@@ -1,1 +1,1 @@
---add-to-startd=other
+--add-to-start=other

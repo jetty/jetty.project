@@ -74,24 +74,22 @@ Module Management:
                    or ${jetty.base}/start.d/*.ini files.
                    
   --add-to-start=<modulename>(,<modulename>)*
-                   Enable a module by appending lines to the
-                   ${jetty.base}/start.ini file.
+                   Enable a module. If the directory ${jetty.base}/start.d 
+                   exists then <modulename>.ini files are created within
+                   that directory, otherwise then enabling configuration
+                   is appended to the ${jetty.base}/start.ini file.
                    Lines that are added come from the ini template that
                    the module itself maintains.
                    Transitive module dependencies are followed and all
                    modules that the specified module depends on are also
-                   enabled in the ${jetty.base}/start.ini using the same
-                   techniques.
-                   Note: not all modules have ini templates.
+                   enabled.
+                   Note: not all modules have ini templates and thus may
+                   be transitively enabled and not explicitly enabled in
+                   a ini file.
 
   --add-to-startd=<modulename>(,<modulename>)*
-                   Enable a module via creation of an ini file in the
-                   ${jetty.base}/start.d/ directory.
-                   Uses ini template that the module itself maintains.
-                   Transitive module dependencies are followed and all
-                   modules that the specified module depends on are also
-                   enabled via their own ini files in the same directory.
-                   Note: not all modules have ini templates.
+                   Ensure that a start.d directory exists and then enable
+                   the module as for --add-to-start
 
   --write-module-graph=<filename>
                    Create a graphviz *.dot file of the module graph as it

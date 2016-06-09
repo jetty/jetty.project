@@ -107,31 +107,18 @@ public class BaseBuilder
         Modules modules = startArgs.getAllModules();
 
         // Select all the added modules to determine which ones are newly enabled
+        // TODO this does not look correct????
         Set<String> enabled = new HashSet<>();
-        Set<String> startDModules = new HashSet<>();
         Set<String> startModules = new HashSet<>();
-        if (!startArgs.getAddToStartdIni().isEmpty() || !startArgs.getAddToStartIni().isEmpty())
+        if (!startArgs.getStartModules().isEmpty())
         {
-            if (startArgs.isAddToStartdFirst())
-            {
-                for (String name:startArgs.getAddToStartdIni())
-                    startDModules.addAll(modules.select(name,"--add-to-startd"));
-                for (String name:startArgs.getAddToStartIni())
-                    startModules.addAll(modules.select(name,"--add-to-start"));
-            }
-            else
-            {
-                for (String name:startArgs.getAddToStartIni())
-                    startModules.addAll(modules.select(name,"--add-to-start"));
-                for (String name:startArgs.getAddToStartdIni())
-                    startDModules.addAll(modules.select(name,"--add-to-startd"));
-            }
-            enabled.addAll(startDModules);
+            for (String name:startArgs.getStartModules())
+                startModules.addAll(modules.select(name,"--add-to-start[d]"));
             enabled.addAll(startModules);
         }
 
         if (StartLog.isDebugEnabled())
-            StartLog.debug("startD=%s start=%s",startDModules,startModules);
+            StartLog.debug("start[d]=%s",startModules);
         
         // Check the licenses
         if (startArgs.isLicenseCheckRequired())
@@ -158,38 +145,43 @@ public class BaseBuilder
         List<FileArg> files = new ArrayList<FileArg>();
         AtomicReference<BaseBuilder.Config> builder = new AtomicReference<>();
         AtomicBoolean modified = new AtomicBoolean();
-        Consumer<Module> do_build_add = module ->
-        {
-            try
-            {
-                if (module.isSkipFilesValidation())
-                {
-                    StartLog.debug("Skipping [files] validation on %s",module.getName());
-                } 
-                else 
-                {
-                    if (builder.get().addModule(module))
-                        modified.set(true);
-                    for (String file : module.getFiles())
-                        files.add(new FileArg(module,startArgs.getProperties().expand(file)));
-                }
-            }
-            catch(Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-        };
-        
-        if (!startDModules.isEmpty())
-        {
-            builder.set(new StartDirBuilder(this));
-            startDModules.stream().map(n->modules.get(n)).forEach(do_build_add);
-        }
 
         if (!startModules.isEmpty())
         {
-            builder.set(new StartIniBuilder(this));
-            startModules.stream().map(n->modules.get(n)).forEach(do_build_add);
+            Path startd = getBaseHome().getBasePath("start.d");
+            Path startini = getBaseHome().getBasePath("start.ini");
+            
+            if (Files.exists(startini)) 
+            {
+                if (Files.exists(startd))
+                    StartLog.warn("Should not use both %s and %s",getBaseHome().toShortForm(startd),getBaseHome().toShortForm(startini));
+                else if (startArgs.isUseStartd())
+                    throw new UsageException("Cannot --add-to-startd when %s exists",getBaseHome().toShortForm(startini));
+            }
+            
+            boolean useStartD=startArgs.isUseStartd() || Files.exists(startd);            
+            builder.set(useStartD?new StartDirBuilder(this):new StartIniBuilder(this));
+            startModules.stream().map(n->modules.get(n)).forEach(module ->
+            {
+                try
+                {
+                    if (module.isSkipFilesValidation())
+                    {
+                        StartLog.debug("Skipping [files] validation on %s",module.getName());
+                    } 
+                    else 
+                    {
+                        if (builder.get().addModule(module))
+                            modified.set(true);
+                        for (String file : module.getFiles())
+                            files.add(new FileArg(module,startArgs.getProperties().expand(file)));
+                    }
+                }
+                catch(Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
         }
 
         files.addAll(startArgs.getFiles());

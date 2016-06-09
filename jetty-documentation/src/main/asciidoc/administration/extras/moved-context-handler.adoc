@@ -46,7 +46,7 @@ You create a new context xml file in $JETTY_HOME/contexts and configure the Move
 Here's an example. 
 This is a permanent redirection, which also preserves pathinfo and query strings on the redirect:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <?xml version="1.0" encoding="UTF-8"?>

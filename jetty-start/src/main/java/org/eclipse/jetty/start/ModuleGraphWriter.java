@@ -102,7 +102,7 @@ public class ModuleGraphWriter
             out.println("    ssize = \"20,40\"");
             out.println("  ];");
 
-            List<Module> enabled = modules.getSelected();
+            List<Module> enabled = modules.getEnabled();
 
             // Module Nodes
             writeModules(out,modules,enabled);

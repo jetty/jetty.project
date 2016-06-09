@@ -29,7 +29,7 @@ Refer to xref:jetty-downloading[] for more information about how to install Jett
 
 The fourth step is to create a Jetty base directory (see xref:startup-base-and-home[]), called in the following `$JETTY_BASE`, where you setup the configuration needed to support FastCGI in Jetty, and configure the `fcgi`, `http` and `deploy` modules, so that Jetty will be able to accept HTTP requests from browsers, convert them in FastCGI, and proxy them to `php-fpm`:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ mkdir -p /usr/jetty/wordpress
 $ cd /usr/jetty/wordpress
@@ -44,7 +44,7 @@ Typically this is done by deploying a `*.war` file in the `$JETTY_BASE/webapps` 
 Therefore you just need to deploy a Jetty XML file that configures the web application directly. 
 Copy and paste the following content as `$JETTY_BASE/webapps/jetty-wordpress.xml`
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -135,7 +135,7 @@ Refer to the link:{JDURL}/org/eclipse/jetty/fcgi/server/proxy/FastCGIProxyServle
 
 The last step is to start Jetty (see xref:startup[]) and hit `http://localhost:8080` with your browser and enjoy WordPress:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ cd $JETTY_BASE
 $ java -jar /opt/jetty/start.jar
@@ -149,7 +149,7 @@ In order to configure Jetty to listen for HTTP/2 requests from clients that are 
 
 Enabling the `http2` is really simple; in additions to the modules you have enabled above, add the `http2` module:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ cd $JETTY_BASE
 $ java -jar $JETTY_HOME/start.jar --add-to-start=http2
@@ -170,7 +170,7 @@ These will setup a clear text connector on port 8080 for HTTP/1.1 and a TLS conn
 
 At this point, you can start Jetty (see xref:startup[]), hit `http://localhost:8080` with your browser and enjoy WordPress via HTTP/2 using a HTTP/2 enabled browser:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ cd $JETTY_BASE
 $ java -jar $JETTY_HOME/start.jar

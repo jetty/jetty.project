@@ -42,7 +42,7 @@ This section provides the detail required for unusual deployments or developing 
 
 To enable ALPN support, start the JVM as follows:
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 java -Xbootclasspath/p:<path_to_alpn_boot_jar> ...
 ----
@@ -75,7 +75,7 @@ Refer to `ALPN` Javadocs and to the examples below for further details about cli
 [[alpn-client-example]]
 ==== Client Example
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 SSLContext sslContext = ...;
 final SSLSocket sslSocket = (SSLSocket)context.getSocketFactory().createSocket("localhost", server.getLocalPort());
@@ -121,7 +121,7 @@ The ALPN implementation calls `ALPN.ClientProvider` methods `supports()`, `proto
 
 The example for SSLEngine is identical, and you just need to replace the SSLSocket instance with an SSLEngine instance.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 final SSLSocket sslSocket = ...;
 ALPN.put(sslSocket, new ALPN.ServerProvider()
@@ -159,7 +159,7 @@ Failing to do so will cause a memory leak.
 You can write and run unit tests that use the ALPN implementation. 
 The solution that we use with Maven is to specify an additional command line argument to the Surefire plugin:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <project>
 
@@ -257,7 +257,7 @@ This section is for Jetty developers that need to update the ALPN implementation
 
 Clone the OpenJDK repository with the following command:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ hg clone http://hg.openjdk.java.net/jdk7u/jdk7u jdk7u # OpenJDK 7
 $ hg clone http://hg.openjdk.java.net/jdk8u/jdk8u jdk8u # OpenJDK 8
@@ -268,7 +268,7 @@ $ ./get_source.sh
 
 To update the source to a specific tag, use the following command:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ ./make/scripts/hgforest.sh update <tag-name>
   

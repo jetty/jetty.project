@@ -54,7 +54,7 @@ Most other settings are for expert configuration only.
 The services a link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`] instance uses are set by constructor injection and once instantiated cannot be changed. 
 Most of the services may be defaulted with null or 0 values so that a reasonable default is used, thus for most purposes only the Server and the connection factories need to be passed to the connector constructor. In Jetty XML (that is, in link:{SRCDIR}/jetty-server/src/main/config/etc/jetty-http.xml[`jetty-http.xml`]), you can do this by:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <New class="org.eclipse.jetty.server.ServerConnector">
   <Arg name="server"><Ref refid="Server" /></Arg>
@@ -76,7 +76,7 @@ Typically the defaults are sufficient for almost all deployments.
 You configure connector network settings by calling setters on the connector before it is started. 
 For example, you can set the port with the Jetty XML:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <New class="org.eclipse.jetty.server.ServerConnector">
   <Arg name="server"><Ref refid="Server" /></Arg>
@@ -89,7 +89,7 @@ For example, you can set the port with the Jetty XML:
 Values in Jetty XML can also be parameterized so that they may be passed from property files or set on the command line. 
 Thus typically the port is set within Jetty XML, but uses the `Property` element to be customizable:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <New class="org.eclipse.jetty.server.ServerConnector">
   <Arg name="server"><Ref refid="Server" /></Arg>
@@ -137,7 +137,7 @@ To avoid duplicate configuration, the standard Jetty distribution creates the co
 
 A typical configuration of link:{JDURL}/org/eclipse/jetty/server/HttpConfiguration.html[HttpConfiguration] is:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
   <Set name="secureScheme">https</Set>
@@ -150,7 +150,7 @@ A typical configuration of link:{JDURL}/org/eclipse/jetty/server/HttpConfigurati
 
 This example HttpConfiguration may be used by reference to the ID "`httpConfig`":
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Call name="addConnector">
   <Arg>
@@ -173,7 +173,7 @@ This example HttpConfiguration may be used by reference to the ID "`httpConfig`"
 
 For SSL based connectors (in `jetty-https.xml` and `jetty-http2.xml`), the common "`httpConfig`" instance is used as the basis to create an SSL specific configuration with ID "`sslHttpConfig`":
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <New id="sslHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
   <Arg><Ref refid="httpConfig"/></Arg>
@@ -212,7 +212,7 @@ ____
 The `X-Forwarded-for` header and associated headers are a de facto standard where intermediaries add HTTP headers to each request they forward to describe the originating connection. 
 These headers can be interpreted by an instance of link:{JDURL}/org/eclipse/jetty/server/ForwardedRequestCustomizer.html[`ForwardedRequestCustomizer`] which can be added to a `HttpConfiguration` as follows:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
   <Set name="outputBufferSize">32768</Set>
@@ -235,7 +235,7 @@ The connection factory can be added to any link:{JDURL}/org/eclipse/jetty/server
 
 An example of adding the factory to a HTTP connector is:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Call name="addConnector">
   <Arg>

@@ -59,7 +59,7 @@ helpful:
 Spengo Authentication must be enabled in the webapp in the following
 way. The name of the role will be different for your network.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
  <security-constraint>
@@ -89,7 +89,7 @@ embedded, via the jetty.xml or in a context file for the webapp.
 
 This is what the configuration within a jetty xml file would look like.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
   <Call name="addBean">
@@ -107,7 +107,7 @@ This is what the configuration within a jetty xml file would look like.
 This is what the configuration within a context xml file would look
 like.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
  <Get name="securityHandler">
@@ -142,7 +142,7 @@ for the http server. To do this use a process similar to this:
 
 On the windows active domain controller run:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
 $ setspn -A HTTP/linux.mortbay.org ADUser
@@ -152,7 +152,7 @@ $ setspn -A HTTP/linux.mortbay.org ADUser
 
 To create the keytab file use the following process:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
 $ ktpass -out c:\dir\krb5.keytab -princ HTTP/linux.mortbay.org@MORTBAY.ORG -mapUser ADUser -mapOp set -pass ADUserPWD -crypto RC4-HMAC-NT -pType KRB5_NT_PRINCIPAL

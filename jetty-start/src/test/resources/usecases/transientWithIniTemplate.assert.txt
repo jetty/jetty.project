@@ -15,4 +15,3 @@ PROP|direct.option=direct
 
 # Files / Directories to create
 FILE|maindir/
-EXISTS|start.d/direct.ini

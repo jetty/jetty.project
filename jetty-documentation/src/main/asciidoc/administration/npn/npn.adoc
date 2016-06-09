@@ -41,7 +41,7 @@ servlet container); you can use it in any other Java network server.
 
 To enable NPN support, start the JVM as follows:
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 java -Xbootclasspath/p:<path_to_npn_boot_jar> ...            
 ----
@@ -89,7 +89,7 @@ below for further details about client and server provider methods.
 [[client-example]]
 == Client Example
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 SSLContext sslContext = ...;
 final SSLSocket sslSocket = (SSLSocket)context.getSocketFactory().createSocket("localhost", server.getLocalPort());
@@ -131,7 +131,7 @@ that the client application can:
 The example for SSLEngine is identical, and you just need to replace the
 SSLSocket instance with an SSLEngine instance.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 final SSLSocket sslSocket = ...;
 NextProtoNego.put(sslSocket, new NextProtoNego.ServerProvider()
@@ -196,7 +196,7 @@ You can write and run unit tests that use the NPN implementation. The
 solution that we use with Maven is to specify an additional command line
 argument to the Surefire plugin:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <project>
 
@@ -281,7 +281,7 @@ implementation with the OpenJDK versions.
 
 Clone the OpenJDK repository with the following command:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ hg clone http://hg.openjdk.java.net/jdk7u/jdk7u jdk7u
 $ cd jdk7u
@@ -291,7 +291,7 @@ $ ./get_source.sh
 
 To update the source to a specific tag, use the following command:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ ./make/scripts/hgforest.sh update <tag-name>
   

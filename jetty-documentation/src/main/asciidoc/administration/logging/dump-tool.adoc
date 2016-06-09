@@ -27,7 +27,7 @@ You can do this by a direct call if you are embedding Jetty, or in `jetty.xml`.
 You can request that Jetty do a dump immediately after staring and just before stopping by calling the appropriate setters on the Server instance. 
 This can be accomplished in `jetty.xml` with:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Set name="dumpAfterStart">true</Set>
 <Set name="dumpBeforeStop">true</Set>
@@ -39,7 +39,7 @@ This can be accomplished in `jetty.xml` with:
 You can get additional detail from the QueuedThreadPool if `setDetailedDump(true)` is called on the thread pool instance. 
 Do this in `jetty.xml` as follows:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <!-- ==================================== -->
@@ -223,7 +223,7 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   |   |   |   |   |   += jsp@19c47==org.apache.jasper.servlet.JspServlet,0,true - STARTED
  |   |   |   |   |   |   |   +- logVerbosityLevel=DEBUG
  |   |   |   |   |   |   |   +- fork=false
- |   |   |   |   |   |   |   +- com.sun.appserv.jsp.classpath=/home/user/jetty-distribution-@project.version@/lib/jetty-xml-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/servlet-api-3.0.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-http-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-continuation-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-server-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-security-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-servlet-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-webapp-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-deploy-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-client-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-jmx-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/com.sun.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar:/home/user/jetty-distribution-@project.version@/resources:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-api-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-common-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-server-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-servlet-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-util-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-io-@project.version@.jar:/home/user/jetty-distribution-@project.version@/start.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/opt/local/lib/libsvnjavahl-1.0.dylib:/System/Library/Java/Extensions/AppleScriptEngine.jar:/System/Library/Java/Extensions/dns_sd.jar:/System/Library/Java/Extensions/j3daudio.jar:/System/Library/Java/Extensions/j3dcore.jar:/System/Library/Java/Extensions/j3dutils.jar:/System/Library/Java/Extensions/jai_codec.jar:/System/Library/Java/Extensions/jai_core.jar:/System/Library/Java/Extensions/libAppleScriptEngine.jnilib:/System/Library/Java/Extensions/libJ3D.jnilib:/System/Library/Java/Extensions/libJ3DAudio.jnilib:/System/Library/Java/Extensions/libJ3DUtils.jnilib:/System/Library/Java/Extensions/libmlib_jai.jnilib:/System/Library/Java/Extensions/libQTJNative.jnilib:/System/Library/Java/Extensions/mlibwrapper_jai.jar:/System/Library/Java/Extensions/MRJToolkit.jar:/System/Library/Java/Extensions/QTJava.zip:/System/Library/Java/Extensions/vecmath.jar:/usr/lib/java/libjdns_sd.jnilib
+ |   |   |   |   |   |   |   +- com.sun.appserv.jsp.classpath=/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar:/home/user/jetty-distribution-{VERSION}/resources:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/start.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/opt/local/lib/libsvnjavahl-1.0.dylib:/System/Library/Java/Extensions/AppleScriptEngine.jar:/System/Library/Java/Extensions/dns_sd.jar:/System/Library/Java/Extensions/j3daudio.jar:/System/Library/Java/Extensions/j3dcore.jar:/System/Library/Java/Extensions/j3dutils.jar:/System/Library/Java/Extensions/jai_codec.jar:/System/Library/Java/Extensions/jai_core.jar:/System/Library/Java/Extensions/libAppleScriptEngine.jnilib:/System/Library/Java/Extensions/libJ3D.jnilib:/System/Library/Java/Extensions/libJ3DAudio.jnilib:/System/Library/Java/Extensions/libJ3DUtils.jnilib:/System/Library/Java/Extensions/libmlib_jai.jnilib:/System/Library/Java/Extensions/libQTJNative.jnilib:/System/Library/Java/Extensions/mlibwrapper_jai.jar:/System/Library/Java/Extensions/MRJToolkit.jar:/System/Library/Java/Extensions/QTJava.zip:/System/Library/Java/Extensions/vecmath.jar:/usr/lib/java/libjdns_sd.jnilib
  |   |   |   |   |   |   |   +- scratchdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/jsp
  |   |   |   |   |   |   |   +- xpoweredBy=false
  |   |   |   |   |   |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp
@@ -250,42 +250,42 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   |   |   +> WebAppClassLoader=Async REST Webservice Example@52934ea0
  |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/classes/
  |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/example-async-rest-jar-9.0.2.v20130417.jar
- |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-client-@project.version@.jar
- |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-http-@project.version@.jar
- |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-io-@project.version@.jar
- |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-util-@project.version@.jar
- |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-util-ajax-@project.version@.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-client-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-http-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-io-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-util-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-util-ajax-{VERSION}.jar
  |   |   |   |   +- startJarLoader@7194b34a
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-xml-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/servlet-api-3.0.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-http-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-continuation-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-server-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-security-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-servlet-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-webapp-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-deploy-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-client-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-jmx-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.el-2.2.0.v201303151357.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/resources/
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-api-9.0.2.v20130417.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-common-9.0.2.v20130417.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-server-9.0.2.v20130417.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-util-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-io-@project.version@.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/resources/
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar
  |   |   |   |       +- sun.misc.Launcher$AppClassLoader@19d1b44b
- |   |   |   |           +- file:/home/user/jetty-distribution-@project.version@/start.jar
+ |   |   |   |           +- file:/home/user/jetty-distribution-{VERSION}/start.jar
  |   |   |   |           +- sun.misc.Launcher$ExtClassLoader@1693b52b
  |   |   |   +> javax.servlet.context.tempdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-
- |   |   |   +> org.apache.catalina.jsp_classpath=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/classes:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/example-async-rest-jar-9.0.2.v20130417.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-client-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-http-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-io-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-util-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-util-ajax-@project.version@.jar
+ |   |   |   +> org.apache.catalina.jsp_classpath=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/classes:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/example-async-rest-jar-9.0.2.v20130417.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-client-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-http-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-io-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-util-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-util-ajax-{VERSION}.jar
  |   |   |   +> org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern=.*/servlet-api-[^/]*\.jar$
  |   |   |   +> com.sun.jsp.taglibraryCache={}
  |   |   |   +> com.sun.jsp.tagFileJarUrlsCache={}
@@ -296,7 +296,7 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   |   |   |
  |   |   |   +> No ClassLoader
  |   |   |   +> org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern=.*/servlet-api-[^/]*\.jar$
- |   |   += o.e.j.w.WebAppContext@6f01ba6f{/,file:/home/user/jetty-distribution-@project.version@/webapps/ROOT/,AVAILABLE}{/ROOT} - STARTED
+ |   |   += o.e.j.w.WebAppContext@6f01ba6f{/,file:/home/user/jetty-distribution-{VERSION}/webapps/ROOT/,AVAILABLE}{/ROOT} - STARTED
  |   |   |   += org.eclipse.jetty.server.session.SessionHandler@5a770658 - STARTED
  |   |   |   |   += org.eclipse.jetty.server.session.HashSessionManager@746a95ae - STARTED
  |   |   |   |   += org.eclipse.jetty.security.ConstraintSecurityHandler@1890e38 - STARTED
@@ -318,7 +318,7 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   |   |   |   |   |   += jsp@19c47==org.apache.jasper.servlet.JspServlet,0,true - STARTED
  |   |   |   |   |   |   |   +- logVerbosityLevel=DEBUG
  |   |   |   |   |   |   |   +- fork=false
- |   |   |   |   |   |   |   +- com.sun.appserv.jsp.classpath=/home/user/jetty-distribution-@project.version@/lib/jetty-xml-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/servlet-api-3.0.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-http-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-continuation-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-server-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-security-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-servlet-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-webapp-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-deploy-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-client-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-jmx-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/com.sun.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar:/home/user/jetty-distribution-@project.version@/resources:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-api-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-common-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-server-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-servlet-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-util-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-io-@project.version@.jar:/home/user/jetty-distribution-@project.version@/start.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/opt/local/lib/libsvnjavahl-1.0.dylib:/System/Library/Java/Extensions/AppleScriptEngine.jar:/System/Library/Java/Extensions/dns_sd.jar:/System/Library/Java/Extensions/j3daudio.jar:/System/Library/Java/Extensions/j3dcore.jar:/System/Library/Java/Extensions/j3dutils.jar:/System/Library/Java/Extensions/jai_codec.jar:/System/Library/Java/Extensions/jai_core.jar:/System/Library/Java/Extensions/libAppleScriptEngine.jnilib:/System/Library/Java/Extensions/libJ3D.jnilib:/System/Library/Java/Extensions/libJ3DAudio.jnilib:/System/Library/Java/Extensions/libJ3DUtils.jnilib:/System/Library/Java/Extensions/libmlib_jai.jnilib:/System/Library/Java/Extensions/libQTJNative.jnilib:/System/Library/Java/Extensions/mlibwrapper_jai.jar:/System/Library/Java/Extensions/MRJToolkit.jar:/System/Library/Java/Extensions/QTJava.zip:/System/Library/Java/Extensions/vecmath.jar:/usr/lib/java/libjdns_sd.jnilib
+ |   |   |   |   |   |   |   +- com.sun.appserv.jsp.classpath=/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar:/home/user/jetty-distribution-{VERSION}/resources:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/start.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/opt/local/lib/libsvnjavahl-1.0.dylib:/System/Library/Java/Extensions/AppleScriptEngine.jar:/System/Library/Java/Extensions/dns_sd.jar:/System/Library/Java/Extensions/j3daudio.jar:/System/Library/Java/Extensions/j3dcore.jar:/System/Library/Java/Extensions/j3dutils.jar:/System/Library/Java/Extensions/jai_codec.jar:/System/Library/Java/Extensions/jai_core.jar:/System/Library/Java/Extensions/libAppleScriptEngine.jnilib:/System/Library/Java/Extensions/libJ3D.jnilib:/System/Library/Java/Extensions/libJ3DAudio.jnilib:/System/Library/Java/Extensions/libJ3DUtils.jnilib:/System/Library/Java/Extensions/libmlib_jai.jnilib:/System/Library/Java/Extensions/libQTJNative.jnilib:/System/Library/Java/Extensions/mlibwrapper_jai.jar:/System/Library/Java/Extensions/MRJToolkit.jar:/System/Library/Java/Extensions/QTJava.zip:/System/Library/Java/Extensions/vecmath.jar:/usr/lib/java/libjdns_sd.jnilib
  |   |   |   |   |   |   |   +- scratchdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-ROOT-_-any-/jsp
  |   |   |   |   |   |   |   +- xpoweredBy=false
  |   |   |   |   |   |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp
@@ -340,39 +340,39 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   |   |   |
  |   |   |   +> WebAppClassLoader=ROOT@7af33249
  |   |   |   |   +- startJarLoader@7194b34a
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-xml-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/servlet-api-3.0.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-http-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-continuation-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-server-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-security-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-servlet-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-webapp-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-deploy-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-client-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-jmx-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.el-2.2.0.v201303151357.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/resources/
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-api-9.0.2.v20130417.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-common-9.0.2.v20130417.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-server-9.0.2.v20130417.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-util-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-io-@project.version@.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/resources/
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar
  |   |   |   |       +- sun.misc.Launcher$AppClassLoader@19d1b44b
- |   |   |   |           +- file:/home/user/jetty-distribution-@project.version@/start.jar
+ |   |   |   |           +- file:/home/user/jetty-distribution-{VERSION}/start.jar
  |   |   |   |           +- sun.misc.Launcher$ExtClassLoader@1693b52b
  |   |   |   +> javax.servlet.context.tempdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-ROOT-_-any-
  |   |   |   +> org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern=.*/servlet-api-[^/]*\.jar$
  |   |   |   +> com.sun.jsp.taglibraryCache={}
  |   |   |   +> com.sun.jsp.tagFileJarUrlsCache={}
- |   |   += o.e.j.s.h.ContextHandler@7b2dffdf{/javadoc,file:/home/user/jetty-distribution-@project.version@/javadoc,AVAILABLE} - STARTED
+ |   |   += o.e.j.s.h.ContextHandler@7b2dffdf{/javadoc,file:/home/user/jetty-distribution-{VERSION}/javadoc,AVAILABLE} - STARTED
  |   |   |   += org.eclipse.jetty.server.handler.ResourceHandler@8f9c8a7 - STARTED
  |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
  |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
@@ -401,7 +401,7 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   |   |   |   |   |   += jsp@19c47==org.apache.jasper.servlet.JspServlet,0,true - STARTED
  |   |   |   |   |   |   |   +- logVerbosityLevel=DEBUG
  |   |   |   |   |   |   |   +- fork=false
- |   |   |   |   |   |   |   +- com.sun.appserv.jsp.classpath=/home/user/jetty-distribution-@project.version@/lib/jetty-xml-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/servlet-api-3.0.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-http-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-continuation-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-server-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-security-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-servlet-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-webapp-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-deploy-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-client-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-jmx-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/com.sun.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar:/home/user/jetty-distribution-@project.version@/resources:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-api-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-common-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-server-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-servlet-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-util-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-io-@project.version@.jar:/home/user/jetty-distribution-@project.version@/start.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/opt/local/lib/libsvnjavahl-1.0.dylib:/System/Library/Java/Extensions/AppleScriptEngine.jar:/System/Library/Java/Extensions/dns_sd.jar:/System/Library/Java/Extensions/j3daudio.jar:/System/Library/Java/Extensions/j3dcore.jar:/System/Library/Java/Extensions/j3dutils.jar:/System/Library/Java/Extensions/jai_codec.jar:/System/Library/Java/Extensions/jai_core.jar:/System/Library/Java/Extensions/libAppleScriptEngine.jnilib:/System/Library/Java/Extensions/libJ3D.jnilib:/System/Library/Java/Extensions/libJ3DAudio.jnilib:/System/Library/Java/Extensions/libJ3DUtils.jnilib:/System/Library/Java/Extensions/libmlib_jai.jnilib:/System/Library/Java/Extensions/libQTJNative.jnilib:/System/Library/Java/Extensions/mlibwrapper_jai.jar:/System/Library/Java/Extensions/MRJToolkit.jar:/System/Library/Java/Extensions/QTJava.zip:/System/Library/Java/Extensions/vecmath.jar:/usr/lib/java/libjdns_sd.jnilib
+ |   |   |   |   |   |   |   +- com.sun.appserv.jsp.classpath=/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar:/home/user/jetty-distribution-{VERSION}/resources:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/start.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/opt/local/lib/libsvnjavahl-1.0.dylib:/System/Library/Java/Extensions/AppleScriptEngine.jar:/System/Library/Java/Extensions/dns_sd.jar:/System/Library/Java/Extensions/j3daudio.jar:/System/Library/Java/Extensions/j3dcore.jar:/System/Library/Java/Extensions/j3dutils.jar:/System/Library/Java/Extensions/jai_codec.jar:/System/Library/Java/Extensions/jai_core.jar:/System/Library/Java/Extensions/libAppleScriptEngine.jnilib:/System/Library/Java/Extensions/libJ3D.jnilib:/System/Library/Java/Extensions/libJ3DAudio.jnilib:/System/Library/Java/Extensions/libJ3DUtils.jnilib:/System/Library/Java/Extensions/libmlib_jai.jnilib:/System/Library/Java/Extensions/libQTJNative.jnilib:/System/Library/Java/Extensions/mlibwrapper_jai.jar:/System/Library/Java/Extensions/MRJToolkit.jar:/System/Library/Java/Extensions/QTJava.zip:/System/Library/Java/Extensions/vecmath.jar:/usr/lib/java/libjdns_sd.jnilib
  |   |   |   |   |   |   |   +- scratchdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/jsp
  |   |   |   |   |   |   |   +- xpoweredBy=false
  |   |   |   |   |   |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp
@@ -484,46 +484,46 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   |   |   |
  |   |   |   +> WebAppClassLoader=Test WebApp@3e2f3adb
  |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/classes/
- |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-continuation-@project.version@.jar
- |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-http-@project.version@.jar
- |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-io-@project.version@.jar
- |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-servlets-@project.version@.jar
- |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-util-@project.version@.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-continuation-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-http-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-io-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-servlets-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-util-{VERSION}.jar
  |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/websocket-api-9.0.2.v20130417.jar
  |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/websocket-servlet-9.0.2.v20130417.jar
  |   |   |   |   +- startJarLoader@7194b34a
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-xml-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/servlet-api-3.0.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-http-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-continuation-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-server-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-security-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-servlet-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-webapp-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-deploy-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-client-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-jmx-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.el-2.2.0.v201303151357.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/resources/
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-api-9.0.2.v20130417.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-common-9.0.2.v20130417.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-server-9.0.2.v20130417.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-util-@project.version@.jar
- |   |   |   |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-io-@project.version@.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/resources/
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar
  |   |   |   |       +- sun.misc.Launcher$AppClassLoader@19d1b44b
- |   |   |   |           +- file:/home/user/jetty-distribution-@project.version@/start.jar
+ |   |   |   |           +- file:/home/user/jetty-distribution-{VERSION}/start.jar
  |   |   |   |           +- sun.misc.Launcher$ExtClassLoader@1693b52b
  |   |   |   +> org.eclipse.jetty.server.context.ManagedAttributes=QoSFilter,TransparentProxy.ThreadPool,TransparentProxy.HttpClient
  |   |   |   +> context-override-example=a context value
  |   |   |   +> javax.servlet.context.tempdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-
- |   |   |   +> org.apache.catalina.jsp_classpath=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/classes:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-continuation-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-http-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-io-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-servlets-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-util-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/websocket-api-9.0.2.v20130417.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/websocket-servlet-9.0.2.v20130417.jar
+ |   |   |   +> org.apache.catalina.jsp_classpath=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/classes:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-continuation-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-http-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-io-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-servlets-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-util-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/websocket-api-9.0.2.v20130417.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/websocket-servlet-9.0.2.v20130417.jar
  |   |   |   +> org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern=.*/servlet-api-[^/]*\.jar$
  |   |   |   +> QoSFilter=org.eclipse.jetty.servlets.QoSFilter@6df3d1f5
  |   |   |   +> com.sun.jsp.taglibraryCache={}
@@ -550,7 +550,7 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   |       |   |   |   += jsp@19c47==org.apache.jasper.servlet.JspServlet,0,true - STARTED
  |   |       |   |   |   |   +- logVerbosityLevel=DEBUG
  |   |       |   |   |   |   +- fork=false
- |   |       |   |   |   |   +- com.sun.appserv.jsp.classpath=/home/user/jetty-distribution-@project.version@/lib/jetty-xml-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/servlet-api-3.0.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-http-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-continuation-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-server-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-security-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-servlet-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-webapp-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-deploy-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-client-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-jmx-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/com.sun.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar:/home/user/jetty-distribution-@project.version@/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar:/home/user/jetty-distribution-@project.version@/resources:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-api-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-common-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-server-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-servlet-9.0.2.v20130417.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-util-@project.version@.jar:/home/user/jetty-distribution-@project.version@/lib/jetty-io-@project.version@.jar:/home/user/jetty-distribution-@project.version@/start.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/opt/local/lib/libsvnjavahl-1.0.dylib:/System/Library/Java/Extensions/AppleScriptEngine.jar:/System/Library/Java/Extensions/dns_sd.jar:/System/Library/Java/Extensions/j3daudio.jar:/System/Library/Java/Extensions/j3dcore.jar:/System/Library/Java/Extensions/j3dutils.jar:/System/Library/Java/Extensions/jai_codec.jar:/System/Library/Java/Extensions/jai_core.jar:/System/Library/Java/Extensions/libAppleScriptEngine.jnilib:/System/Library/Java/Extensions/libJ3D.jnilib:/System/Library/Java/Extensions/libJ3DAudio.jnilib:/System/Library/Java/Extensions/libJ3DUtils.jnilib:/System/Library/Java/Extensions/libmlib_jai.jnilib:/System/Library/Java/Extensions/libQTJNative.jnilib:/System/Library/Java/Extensions/mlibwrapper_jai.jar:/System/Library/Java/Extensions/MRJToolkit.jar:/System/Library/Java/Extensions/QTJava.zip:/System/Library/Java/Extensions/vecmath.jar:/usr/lib/java/libjdns_sd.jnilib
+ |   |       |   |   |   |   +- com.sun.appserv.jsp.classpath=/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar:/home/user/jetty-distribution-{VERSION}/resources:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/start.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/opt/local/lib/libsvnjavahl-1.0.dylib:/System/Library/Java/Extensions/AppleScriptEngine.jar:/System/Library/Java/Extensions/dns_sd.jar:/System/Library/Java/Extensions/j3daudio.jar:/System/Library/Java/Extensions/j3dcore.jar:/System/Library/Java/Extensions/j3dutils.jar:/System/Library/Java/Extensions/jai_codec.jar:/System/Library/Java/Extensions/jai_core.jar:/System/Library/Java/Extensions/libAppleScriptEngine.jnilib:/System/Library/Java/Extensions/libJ3D.jnilib:/System/Library/Java/Extensions/libJ3DAudio.jnilib:/System/Library/Java/Extensions/libJ3DUtils.jnilib:/System/Library/Java/Extensions/libmlib_jai.jnilib:/System/Library/Java/Extensions/libQTJNative.jnilib:/System/Library/Java/Extensions/mlibwrapper_jai.jar:/System/Library/Java/Extensions/MRJToolkit.jar:/System/Library/Java/Extensions/QTJava.zip:/System/Library/Java/Extensions/vecmath.jar:/usr/lib/java/libjdns_sd.jnilib
  |   |       |   |   |   |   +- scratchdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/jsp
  |   |       |   |   |   |   +- xpoweredBy=false
  |   |       |   |   |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp
@@ -580,42 +580,42 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   |       |
  |   |       +> WebAppClassLoader=Transparent Proxy WebApp@3570713d
  |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/classes/
- |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-client-@project.version@.jar
- |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-http-@project.version@.jar
- |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-io-@project.version@.jar
- |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-proxy-@project.version@.jar
- |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-util-@project.version@.jar
+ |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-client-{VERSION}.jar
+ |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-http-{VERSION}.jar
+ |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-io-{VERSION}.jar
+ |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-proxy-{VERSION}.jar
+ |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-util-{VERSION}.jar
  |   |       |   +- startJarLoader@7194b34a
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-xml-@project.version@.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/servlet-api-3.0.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-http-@project.version@.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-continuation-@project.version@.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-server-@project.version@.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-security-@project.version@.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-servlet-@project.version@.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-webapp-@project.version@.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-deploy-@project.version@.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-client-@project.version@.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-jmx-@project.version@.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.el-2.2.0.v201303151357.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/resources/
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-api-9.0.2.v20130417.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-common-9.0.2.v20130417.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-server-9.0.2.v20130417.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-util-@project.version@.jar
- |   |       |       +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-io-@project.version@.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/resources/
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar
  |   |       |       +- sun.misc.Launcher$AppClassLoader@19d1b44b
- |   |       |           +- file:/home/user/jetty-distribution-@project.version@/start.jar
+ |   |       |           +- file:/home/user/jetty-distribution-{VERSION}/start.jar
  |   |       |           +- sun.misc.Launcher$ExtClassLoader@1693b52b
  |   |       +> javax.servlet.context.tempdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-
- |   |       +> org.apache.catalina.jsp_classpath=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/classes:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-client-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-http-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-io-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-proxy-@project.version@.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-util-@project.version@.jar
+ |   |       +> org.apache.catalina.jsp_classpath=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/classes:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-client-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-http-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-io-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-proxy-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-util-{VERSION}.jar
  |   |       +> org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern=.*/servlet-api-[^/]*\.jar$
  |   |       +> JavadocTransparentProxy.HttpClient=org.eclipse.jetty.client.HttpClient@580f016d
  |   |       +> XrefTransparentProxy.HttpClient=org.eclipse.jetty.client.HttpClient@70c7e52b
@@ -642,7 +642,7 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   +- org.eclipse.jetty.server.handler.DefaultHandler@4de4926a=org.eclipse.jetty.server.handler:type=defaulthandler,id=0
  |   +- org.eclipse.jetty.server.session.SessionHandler@5c25bf03=org.eclipse.jetty.server.session:context=xref-proxy,type=sessionhandler,id=0
  |   +- [/ws/*]=>WSChat=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=WSChat,id=0
- |   +- o.e.j.w.WebAppContext@6f01ba6f{/,file:/home/user/jetty-distribution-@project.version@/webapps/ROOT/,AVAILABLE}{/ROOT}=org.eclipse.jetty.webapp:context=ROOT,type=webappcontext,id=0
+ |   +- o.e.j.w.WebAppContext@6f01ba6f{/,file:/home/user/jetty-distribution-{VERSION}/webapps/ROOT/,AVAILABLE}{/ROOT}=org.eclipse.jetty.webapp:context=ROOT,type=webappcontext,id=0
  |   +- o.e.j.w.WebAppContext@7ea88b1c{/async-rest,[file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/, jar:file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/example-async-rest-jar-9.0.2.v20130417.jar!/META-INF/resources/],AVAILABLE}{/async-rest.war}=org.eclipse.jetty.webapp:context=async-rest,type=webappcontext,id=0
  |   +- ServerConnector@3d0f282{HTTP/1.1}{0.0.0.0:9090}=org.eclipse.jetty.server:context=HTTP/1.1@3d0f282,type=serverconnector,id=0
  |   +- org.eclipse.jetty.security.DefaultAuthenticatorFactory@6242c657=org.eclipse.jetty.security:context=ROOT,type=defaultauthenticatorfactory,id=0
@@ -685,7 +685,7 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   +- [/*]/[]==0=>QoSFilter=org.eclipse.jetty.servlet:context=test,type=filtermapping,name=QoSFilter,id=0
  |   +- org.eclipse.jetty.server.session.SessionHandler@5a770658=org.eclipse.jetty.server.session:context=ROOT,type=sessionhandler,id=0
  |   +- org.eclipse.jetty.server.session.SessionHandler@336abd81=org.eclipse.jetty.server.session:context=test,type=sessionhandler,id=0
- |   +- o.e.j.s.h.ContextHandler@7b2dffdf{/javadoc,file:/home/user/jetty-distribution-@project.version@/javadoc,AVAILABLE}=org.eclipse.jetty.server.handler:context=javadoc,type=contexthandler,id=0
+ |   +- o.e.j.s.h.ContextHandler@7b2dffdf{/javadoc,file:/home/user/jetty-distribution-{VERSION}/javadoc,AVAILABLE}=org.eclipse.jetty.server.handler:context=javadoc,type=contexthandler,id=0
  |   +- org.eclipse.jetty.servlets.QoSFilter@6df3d1f5=org.eclipse.jetty.servlets:context=test,type=qosfilter,id=0
  |   +- [*.more]=>Dump=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=Dump,id=1
  |   +- Dump@20ae14==com.acme.Dump,1,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=Dump,id=0
@@ -792,33 +792,33 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  += org.eclipse.jetty.server.session.HashSessionIdManager@289eb857 - STARTED
  |
  +> startJarLoader@7194b34a
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-xml-@project.version@.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/servlet-api-3.0.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-http-@project.version@.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-continuation-@project.version@.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-server-@project.version@.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-security-@project.version@.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-servlet-@project.version@.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-webapp-@project.version@.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-deploy-@project.version@.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-client-@project.version@.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-jmx-@project.version@.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.el-2.2.0.v201303151357.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
-     +- file:/home/user/jetty-distribution-@project.version@/resources/
-     +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-api-9.0.2.v20130417.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-common-9.0.2.v20130417.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-server-9.0.2.v20130417.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-util-@project.version@.jar
-     +- file:/home/user/jetty-distribution-@project.version@/lib/jetty-io-@project.version@.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/resources/
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar
      +- sun.misc.Launcher$AppClassLoader@19d1b44b
-         +- file:/home/user/jetty-distribution-@project.version@/start.jar
+         +- file:/home/user/jetty-distribution-{VERSION}/start.jar
          +- sun.misc.Launcher$ExtClassLoader@1693b52b
 2013-04-29 14:38:39.422:INFO:oejs.Server:Thread-2: Graceful shutdown org.eclipse.jetty.server.Server@76f08fe1 by  Mon Apr 29 14:38:44 CDT 2013
 2013-04-29 14:38:39.429:INFO:oejs.ServerConnector:Thread-2: Stopped ServerConnector@3d0f282{HTTP/1.1}{0.0.0.0:9090}
@@ -826,9 +826,9 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
 2013-04-29 14:38:39.444:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.w.WebAppContext@4ac92718{/proxy,file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/,UNAVAILABLE}{/xref-proxy.war}
 2013-04-29 14:38:39.447:INFO:oejsl.ELContextCleaner:Thread-2: javax.el.BeanELResolver purged
 2013-04-29 14:38:39.447:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.w.WebAppContext@716d9094{/test,file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/,UNAVAILABLE}{/test.war}
-2013-04-29 14:38:39.455:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.s.h.ContextHandler@7b2dffdf{/javadoc,file:/home/user/jetty-distribution-@project.version@/javadoc,UNAVAILABLE}
+2013-04-29 14:38:39.455:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.s.h.ContextHandler@7b2dffdf{/javadoc,file:/home/user/jetty-distribution-{VERSION}/javadoc,UNAVAILABLE}
 2013-04-29 14:38:39.456:INFO:oejsl.ELContextCleaner:Thread-2: javax.el.BeanELResolver purged
-2013-04-29 14:38:39.456:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.w.WebAppContext@6f01ba6f{/,file:/home/user/jetty-distribution-@project.version@/webapps/ROOT/,UNAVAILABLE}{/ROOT}
+2013-04-29 14:38:39.456:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.w.WebAppContext@6f01ba6f{/,file:/home/user/jetty-distribution-{VERSION}/webapps/ROOT/,UNAVAILABLE}{/ROOT}
 2013-04-29 14:38:39.456:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.s.h.MovedContextHandler@5e0c8d24{/oldContextPath,null,UNAVAILABLE}
 2013-04-29 14:38:39.457:INFO:oejsl.ELContextCleaner:Thread-2: javax.el.BeanELResolver purged
 2013-04-29 14:38:39.457:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.w.WebAppContext@7ea88b1c{/async-rest,[file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/, jar:file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/example-async-rest-jar-9.0.2.v20130417.jar!/META-INF/resources/],UNAVAILABLE}{/async-rest.war}

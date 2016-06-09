@@ -19,7 +19,7 @@
 
 This section is written assuming that a jetty base directory is being used and a demo jetty base that support HTTP/1, HTTPS/1 and deployment from a webapps directory can be created with the commands:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ JETTY_BASE=http2-demo
 $ mkdir $JETTY_BASE
