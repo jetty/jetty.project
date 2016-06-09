@@ -422,8 +422,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return tlds;
     }
 
-    private String uriJarPrefix(URI uri) {
-
+    private String uriJarPrefix(URI uri)
+    {
         String uriString = uri.toString();
         if (uriString.startsWith("jar:")) {
             return uriString + "!/";
