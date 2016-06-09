@@ -401,8 +401,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public Collection<URL> getTlds (URI uri) throws IOException
     {
         HashSet<URL> tlds = new HashSet<URL>();
-        
-        URL url = new URL("jar:"+uri+"!/");
+
+        String jarUri = uriJarPrefix(uri);
+        URL url = new URL(jarUri);
         JarURLConnection jarConn = (JarURLConnection) url.openConnection();
         jarConn.setUseCaches(Resource.getDefaultUseCaches());
         JarFile jarFile = jarConn.getJarFile();
@@ -413,11 +414,21 @@ public class MetaInfConfiguration extends AbstractConfiguration
             String name = e.getName();
             if (name.startsWith("META-INF") && name.endsWith(".tld"))
             {
-                tlds.add(new URL("jar:"+uri+"!/"+name));
+                tlds.add(new URL(jarUri + name));
             }
         }
         if (!Resource.getDefaultUseCaches())
             jarFile.close();
         return tlds;
+    }
+
+    private String uriJarPrefix(URI uri) {
+
+        String uriString = uri.toString();
+        if (uriString.startsWith("jar:")) {
+            return uriString + "!/";
+        } else {
+            return "jar:"+uriString+"!/";
+        }
     }
 }
