@@ -34,7 +34,7 @@ If _exitJvm is set to true a hard System.exit() call is being made.
 
 This is an example of how you can setup this handler directly with the Server, it can be added as a part of handler chain or collection as well.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
     Server server = new Server(8080);
@@ -49,7 +49,7 @@ This is an example of how you can setup this handler directly with the Server, i
 
 And this is an example that you can use to call the shutdown handler from within java.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
    public static void attemptShutdown(int port, String shutdownCookie) {

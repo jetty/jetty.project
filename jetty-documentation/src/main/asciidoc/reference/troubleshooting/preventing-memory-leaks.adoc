@@ -74,7 +74,7 @@ See https://issues.apache.org/bugzilla/show_bug.cgi?id=51687[ASF bug 51687.]
 
 You can individually enable each preventer by adding an instance to a Server with the ` addBean(Object)` call. Here's an example of how to do it in code with the `org.eclipse.jetty.util.preventers.AppContextLeakPreventer`:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 Server server = new Server();
@@ -87,7 +87,7 @@ You can add the equivalent in code to the `$JETTY_HOME/etc/jetty.xml` file or an
 Be aware that if you have more than one Server instance in your JVM, you should configure these preventers on just _one_ of them.
 Here's the example from code put into xml:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">

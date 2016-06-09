@@ -98,7 +98,7 @@ jetty.home::
   `etc/` directory containing xml files to configure the Jetty container
   on startup. For example:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 jetty.home=/opt/custom/jetty
               
@@ -106,7 +106,7 @@ jetty.home=/opt/custom/jetty
   +
   Where `/opt/custom/jetty` contains:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 etc/jetty.xml
@@ -126,7 +126,7 @@ jetty.home.bundle::
               jettyhome/` directory with a default set of xml
   configuration files. Here's how you would specify it:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 jetty.home.bundle=org.eclipse.jetty.osgi.boot
 ----
@@ -134,7 +134,7 @@ jetty.home.bundle=org.eclipse.jetty.osgi.boot
   Here's a partial listing of that jar that shows you the names of the
   xml files contained within it:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 META-INF/MANIFEST.MF
 jettyhome/etc/jetty.xml
@@ -145,7 +145,7 @@ jetty.etc.config.urls::
   This specifies the paths of the xml files that are to be used. If not
   specified, they default to:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deployer.xml
 ----
@@ -178,7 +178,7 @@ applied to it, and then published as an OSGi service. Normally, you will
 not need to interact with this service instance, however you can
 retrieve a reference to it using the usual OSGi API:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 org.osgi.framework.BundleContext bc;
@@ -217,7 +217,7 @@ Here's an example of how to create a new Server instance and register it
 with OSGi so that the jetty-osgi-boot code will find it and configure it
 so it can be a deployment target:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 public class Activator implements BundleActivator
 {
@@ -246,7 +246,7 @@ webapps and ContextHandlers as Bundles or Services to it (see below for
 more information on this). Here's an example of deploying a webapp as a
 Service and targetting it to the "fooServer" Server we created above:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 public class Activator implements BundleActivator
 {
@@ -286,7 +286,7 @@ jetty-9.3) or Jetty-WarResourcePath::
   +
   `MANIFEST`:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 Bundle-Name: Web
@@ -300,7 +300,7 @@ Bundle-SymbolicName: com.acme.sample.web
   +
   Bundle contents:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 META-INF/MANIFEST.MF
@@ -323,7 +323,7 @@ Bundle MANIFEST contains Web-ContextPath::
   +
   `MANIFEST`:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 Bundle-Name: Web
@@ -389,14 +389,14 @@ any file extensions.
 
 For example, suppose we have a bundle whose location is:
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 file://some/where/over/the/rainbow/oz.war
 ----
 
 The corresponding synthesized context path would be:
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 /oz
 ----
@@ -409,7 +409,7 @@ file that is applied to the webapp. This xml file must be placed in
 
 Here's an example of a webapp bundle listing containing such a file:
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 META-INF/MANIFEST.MF
@@ -469,28 +469,28 @@ Bundle MANIFEST contains Jetty-ContextFilePath::
   +
   A context file that is inside the bundle:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 Jetty-ContextFilePath: ./a/b/c/d/foo.xml
 ----
   +
   A context file that is on the file system:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 Jetty-ContextFilePath: /opt/app/contexts/foo.xml
 ----
   +
   A context file that is relative to jetty.home:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 Jetty-ContextFilePath: contexts/foo.xml
 ----
   +
   A number of different context files:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 Jetty-ContextFilePath: ./a/b/c/d/foo.xml,/opt/app/contexts/foo.xml,contexts/foo.xml
 ----
@@ -529,7 +529,7 @@ bundle.root::
 Here's an example of a context xml file that makes use of these
 properties:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-osgi/test-jetty-osgi-context/src/main/context/acme.xml[]
 ----
@@ -550,7 +550,7 @@ WebAppContext:
 
 The bundle contents:
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 META-INF/MANIFEST.MF
@@ -562,7 +562,7 @@ com/acme/osgi/Activator.class
 
 The `MANIFEST.MF`:
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 Bundle-Classpath: .
@@ -585,7 +585,7 @@ Bundle-SymbolicName: com.acme.testwebapp
 
 The Activator code:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 public void start(BundleContext context) throws Exception
@@ -659,7 +659,7 @@ apply upon deployment:
 
 The bundle contents:
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 META-INF/MANIFEST.MF
@@ -673,7 +673,7 @@ com/acme/osgi/Activator$1.class
 
 The `MANIFEST`:
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 Bundle-Classpath: .
@@ -697,7 +697,7 @@ Bundle-SymbolicName: com.acme.testcontext
 
 The Activator code:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 public void start(final BundleContext context) throws Exception
@@ -729,7 +729,7 @@ public void start(final BundleContext context) throws Exception
 
 The contents of the `acme.xml` context file:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-osgi/test-jetty-osgi-context/src/main/context/acme.xml[]
 ----
@@ -939,7 +939,7 @@ Firstly, lets look at an example of a web bundle's modified MANIFEST
 file so you get an idea of what is required. This example is a web
 bundle that uses the Spring servlet framework:
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 Bundle-SymbolicName: com.acme.sample
@@ -982,7 +982,7 @@ org.eclipse.jetty.osgi.tldbundles::
   will be treated as if they are on the container's classpath for web
   bundles. For example:
   +
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 org.eclipse.jetty.osgi.tldbundles=com.acme.special.tags,com.foo.web,org.bar.web.framework
 ----
@@ -1012,7 +1012,7 @@ org.eclipse.jetty.server.webapp.containerIncludeBundlePattern::
   jetty-deploy.xml file would look if we defined a pattern that matched
   all bundle symbolic names ending in "tag" and "web":
   +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <?xml version="1.0"?>

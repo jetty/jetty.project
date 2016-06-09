@@ -25,7 +25,7 @@ runtime that you either cannot or cannot conveniently code into a
 `web.xml env-entry`. In such cases, you can use `org.eclipse.jetty.plus.jndi.EnvEntry`, and even override an entry of
 the same name in ` web.xml`.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
   <Arg></Arg>
@@ -66,7 +66,7 @@ application is __not portable__.
 To use the `env-entry` configured above, use code in your
 `servlet/filter/etc.`, such as:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 import javax.naming.InitialContext;
 
@@ -121,7 +121,7 @@ relational database, but you can use any implementation of a
 `javax.sql.DataSource`. This example configures it as scoped to a web
 app with the id of __wac__:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
   <New id="myds" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -147,7 +147,7 @@ from application lookups as `
 
 Here's an example `web.xml` declaration for the datasource above:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <resource-ref>
   <res-ref-name>jdbc/myds</res-ref-name>
@@ -158,7 +158,7 @@ Here's an example `web.xml` declaration for the datasource above:
 
 To look up your DataSource in your `servlet/filter/etc.`:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
@@ -192,7 +192,7 @@ factories. You just need to ensure the implementation Jars are available
 on Jetty's classpath. Here is an example of binding an
 http://activemq.apache.org[ActiveMQ] in-JVM connection factory:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
   <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -209,7 +209,7 @@ http://activemq.apache.org[ActiveMQ] in-JVM connection factory:
 
 The entry in `web.xml` would be:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <resource-ref>
   <res-ref-name>jms/connectionFactory</res-ref-name>
@@ -226,7 +226,7 @@ TODO: put in an example of a QUEUE from progress demo
 Jetty also provides infrastructure for access to `javax.mail.Sessions`
 from within an application:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
   <New id="mail" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -276,7 +276,7 @@ link:{JDURL}/org/eclipse/jetty/plus/jndi/Transaction.html[JNDI
 Transaction] object in a Jetty config file. The following example
 configures the http://www.atomikos.com/[Atomikos] transaction manager:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
   <Arg>
@@ -293,7 +293,7 @@ you use for it in `web.xml`. For example:
 
 In a context xml file:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
   <New id="myds" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -311,7 +311,7 @@ In a context xml file:
 
 In `web.xml`:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <resource-ref>
   <res-ref-name>jdbc/mydatasource</res-ref-name>
@@ -333,7 +333,7 @@ to the `jdbc/mydatasource` resource as `
 
 In a context xml file declare `jdbc/mydatasource`:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
   <New id="myds" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -353,7 +353,7 @@ Then in a `WEB-INF/jetty-env.xml` file, link the name
 `jdbc/mydatasource` to the name you want to reference it as in
 `web.xml`, which in this case is `jdbc/mydatasource1`:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <New id="map1" class="org.eclipse.jetty.plus.jndi.Link">
   <Arg><Ref refid='wac'/></Arg>
@@ -364,7 +364,7 @@ Then in a `WEB-INF/jetty-env.xml` file, link the name
 
 Now you can refer to `jdbc/mydatasource1` in the `web.xml` like this:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <resource-ref>
   <res-ref-name>jdbc/mydatasource1</res-ref-name>

@@ -34,7 +34,7 @@ To configure the form limits for a sinlge webapplication, the context
 handler (or webappContext) instance must be configured using the
 following methods:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 ContextHandler.setMaxFormContentSize(int maxSizeInBytes);
 ContextHandler.setMaxFormKeys(int formKeys);    
@@ -45,7 +45,7 @@ These methods may be called directly when embedding jetty, but more
 commonly are configured from a context XML file or WEB-INF/jetty-web.xml
 file:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
@@ -64,7 +64,7 @@ server attributes are inspected to see if a server wide limit has been
 set on the size or keys. The following XML shows how these attributes
 can be set in jetty.xml:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <configure class="org.eclipse.jetty.server.Server">
 

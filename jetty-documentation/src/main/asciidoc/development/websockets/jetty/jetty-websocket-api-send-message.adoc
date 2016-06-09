@@ -26,7 +26,7 @@ With RemoteEndpoint you can choose to send TEXT or BINARY WebSocket messages, or
 
 Most calls are blocking in nature, and will not return until the send has completed (or has thrown an exception).
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
 
@@ -45,7 +45,7 @@ catch (IOException e)
 How to send a simple Binary message using the RemoteEndpoint.
 This will block until the message is sent, possibly throwing an IOException if unable to send the message.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
 
@@ -69,7 +69,7 @@ This will block until the message is sent, possibly throwing an IOException if u
 If you have a large message to send, and want to send it in pieces and parts, you can utilize the partial message sending methods of RemoteEndpoint.
 Just be sure you finish sending your message (`isLast == true`).
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
 
@@ -92,7 +92,7 @@ catch (IOException e)
 How to send a Binary message in 2 parts, using the partial message support in RemoteEndpoint.
 This will block until each part of the message is sent, possibly throwing an IOException if unable to send the partial message.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
 
@@ -118,7 +118,7 @@ This will block until each part of the message is sent, possibly throwing an IOE
 
 You can also send Ping and Pong control frames using the RemoteEndpoint.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
 
@@ -138,7 +138,7 @@ catch (IOException e)
 How to send a Ping control frame, with a payload of `"You There?"` (arriving at Remote Endpoint as a byte array payload).
 This will block until the message is sent, possibly throwing an IOException if unable to send the ping frame.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
 
@@ -170,7 +170,7 @@ However there are also 2 Async send message methods available:
 
 Both return a `Future<Void>` that can be used to test for success and failure of the message send using standard http://docs.oracle.com/javase/7/docs/api/java/util/concurrent/Future.html[`java.util.concurrent.Future`] behavior.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
 
@@ -182,7 +182,7 @@ remote.sendBytesByFuture(buf);
 How to send a simple Binary message using the RemoteEndpoint.
 The message will be enqueued for outgoing write, but you will not know if it succeeded or failed.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
 
@@ -203,7 +203,7 @@ catch (ExecutionException | InterruptedException e)
 
 How to send a simple Binary message using the RemoteEndpoint, tracking the `Future<Void>` to know if the send succeeded or failed.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
 
@@ -235,7 +235,7 @@ catch (TimeoutException e)
 
 How to send a simple Binary message using the RemoteEndpoint, tracking the `Future<Void>` and waiting only prescribed amount of time for the send to complete, cancelling the message if the timeout occurs.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
 
@@ -246,7 +246,7 @@ remote.sendStringByFuture("Hello World");
 How to send a simple Text message using the RemoteEndpoint.
 The message will be enqueued for outgoing write, but you will not know if it succeeded or failed.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
 
@@ -266,7 +266,7 @@ catch (ExecutionException | InterruptedException e)
 
 How to send a simple Binary message using the RemoteEndpoint, tracking the `Future<Void>` to know if the send succeeded or failed.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
 

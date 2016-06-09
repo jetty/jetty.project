@@ -30,7 +30,7 @@ This can be done either in a context XML deployment descriptor external to the w
 
 In either case the syntax of the XML file is the same:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
@@ -44,7 +44,7 @@ In either case the syntax of the XML file is the same:
 
 Set an attribute on the Server instance for which you want to modify the maximum form content size:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure class="org.eclipse.jetty.server.Server">
   <Call name="setAttribute">

@@ -71,7 +71,7 @@ The Handler is the component that deals with received requests. The core API of 
 
 image:images/basic-architecture-handlers.png[image,width=576]
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 

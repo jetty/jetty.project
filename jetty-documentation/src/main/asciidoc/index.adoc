@@ -17,7 +17,7 @@
 Jetty : The Definitive Reference
 ================================
 :docinfo:
-:revnumber: {project.version}
+:revnumber: {VERSION}
 
 :toc:
 

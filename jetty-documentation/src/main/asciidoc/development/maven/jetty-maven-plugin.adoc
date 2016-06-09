@@ -36,13 +36,13 @@ We recommend either the traditional distribution deployment approach or using em
 
 First, add `jetty-maven-plugin` to your `pom.xml` definition:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>@project.version@</version>
+  <version>{VERSION}</version>
 </plugin>
 
       
@@ -50,7 +50,7 @@ First, add `jetty-maven-plugin` to your `pom.xml` definition:
 
 Then, from the same directory as your root `pom.xml`, type:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 mvn jetty:run
 ....
@@ -78,14 +78,14 @@ There are different goals to accomplish these tasks, as well as several others.
 
 To see a list of all goals supported by the Jetty Maven plugin, do:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 mvn jetty:help
 ....
 
 To see the detailed list of parameters that can be configured for a particular goal, in addition to its description, do:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 mvn jetty:help -Ddetail=true -Dgoal= goal-name
 ....
@@ -201,7 +201,7 @@ jetty.xml::
   Importantly, it sets up the link:{SRCDIR}/jetty-server/src/main/java/org/eclipse/jetty/server/HttpConfiguration.java[`org.eclipse.jetty.server.HttpConfiguration`] element that we can refer to in subsequent xml files that configure the connectors.
   Here's the relevant section:
 +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
     <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
       <Set name="secureScheme">https</Set>
@@ -224,7 +224,7 @@ jetty-ssl.xml::
   Set up ssl which will be used by the https connector.
   Here's the `jetty-ssl.xml` file from the jetty-distribution:
 +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-server/src/main/config/etc/jetty-ssl.xml[]
 ----
@@ -232,19 +232,19 @@ jetty-https.xml::
   Set up the https connector using the HttpConfiguration from
   `jetty.xml` and the ssl configuration from` jetty-ssl.xml`:
 +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-server/src/main/config/etc/jetty-https.xml[]
 ----
 
 Now you need to let the plugin know to apply the files above:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>@project.version@</version>
+  <version>{VERSION}</version>
   <configuration>
     <jettyXml>jetty.xml,jetty-ssl.xml,jetty-https.xml</jettyXml>
   </configuration>
@@ -259,19 +259,19 @@ ____
 You can also use jetty xml files to configure a http connector for the plugin to use.
 Here we use the same `jetty-http.xml` file from the Jetty distribution:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-server/src/main/config/etc/jetty-http.xml[]
 ----
 
 Now we add it to the list of configs for the plugin to apply:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>@project.version@</version>
+  <version>{VERSION}</version>
   <configuration>
     <jettyXml>jetty.xml,jetty-http.xml,jetty-ssl.xml,jetty-https.xml</jettyXml>
   </configuration>
@@ -347,13 +347,13 @@ Any changes you make are immediately reflected in the running instance of Jetty,
 
 Here is a small example, which turns on scanning for changes every ten seconds, and sets the webapp context path to `/test`:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>@project.version@</version>
+  <version>{VERSION}</version>
   <configuration>
     <scanIntervalSeconds>10</scanIntervalSeconds>
     <webApp>
@@ -406,7 +406,7 @@ scanTestClassesPattern::
 
 Here's an example:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <project>
@@ -416,7 +416,7 @@ Here's an example:
     <plugin>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-maven-plugin</artifactId>
-      <version>@project.version@</version>
+      <version>{VERSION}</version>
       <configuration>
         <webAppSourceDirectory>${project.basedir}/src/staticfiles</webAppSourceDirectory>
         <webApp>
@@ -472,7 +472,7 @@ war::
 
 Here's how to set it:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <project>
@@ -482,7 +482,7 @@ Here's how to set it:
     <plugin>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-maven-plugin</artifactId>
-      <version>@project.version@</version>
+      <version>{VERSION}</version>
       <configuration>
         <war>${project.basedir}/target/mycustom.war</war>
       </configuration>
@@ -507,7 +507,7 @@ war::
 
 Here's how to set it:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <project> 
@@ -517,7 +517,7 @@ Here's how to set it:
     <plugin>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>maven-jetty-plugin</artifactId>
-      <version>@project.version@</version>
+      <version>{VERSION}</version>
       <configuration>
         <war>${project.basedir}/target/myfunkywebapp</war>
       </configuration>
@@ -545,7 +545,7 @@ daemon::
 
 Here's the configuration:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <project>
@@ -555,7 +555,7 @@ Here's the configuration:
   <plugin>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-maven-plugin</artifactId>
-    <version>@project.version@</version>
+    <version>{VERSION}</version>
     <configuration>
       <war>/opt/special/some-app.war</war>
       <stopKey>alpha</stopKey>
@@ -631,7 +631,7 @@ systemProperties::
 
 To deploy your unassembled web app to Jetty running in a new JVM:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 mvn jetty:run-forked
 ....
@@ -658,13 +658,13 @@ For example, you can configure the plugin to start your webapp at the beginning 
 To do this, you need to set up a couple of `execution` scenarios for the Jetty plugin.
 You use the `pre-integration-test` and `post-integration-test` Maven build phases to trigger the execution and termination of Jetty:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>@project.version@</version>
+  <version>{VERSION}</version>
   <configuration>
     <scanIntervalSeconds>10</scanIntervalSeconds>
     <stopKey>foo</stopKey>
@@ -711,13 +711,13 @@ stopWait::
 
 Here's a configuration example:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>@project.version@</version>
+  <version>{VERSION}</version>
   <configuration>
     <stopPort>9966</stopPort>
     <stopKey>foo</stopKey>
@@ -730,7 +730,7 @@ Here's a configuration example:
 
 Then, while Jetty is running (in another window), type:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 mvn jetty:stop
 ....
@@ -769,7 +769,7 @@ This is probably best seen by looking at a concrete example.
 
 Suppose your webapp depends on the following wars:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <dependency>
@@ -809,12 +809,12 @@ WebAppY:
 
 They are configured for the http://maven.apache.org/plugins/maven-war-plugin/overlays.html[maven-war-plugin]:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <plugin>
   <groupId>org.apache.maven.plugins</groupId>
   <artifactId>maven-war-plugin</artifactId>
-  <version>@project.version@</version>
+  <version>{VERSION}</version>
   <configuration>
     <overlays>
       <overlay>
@@ -852,7 +852,7 @@ The configuration parameter `<baseAppFirst>` (see the section on link:#configuri
 
 For example, suppose our webapp depends on these two wars:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <dependency>
   <groupId>com.acme</groupId>
@@ -903,12 +903,12 @@ Then our webapp has available these additional resources:
 You can configure LoginServices in the plugin.
 Here's an example of setting up the HashLoginService for a webapp:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>@project.version@</version>
+  <version>{VERSION}</version>
   <configuration>
     <scanIntervalSeconds>10</scanIntervalSeconds>
     <webApp>
@@ -932,7 +932,7 @@ If you have external resources that you want to incorporate in the execution of 
 At runtime, when Jetty receives a request for a resource, it searches all the locations to retrieve the resource.
 It's a lot like the overlaid war situation, but without the war. Here's a configuration example:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <configuration>
   <webApp>
@@ -953,12 +953,12 @@ If you want to deploy webapp A, and webapps B and C in the same Jetty instance:
 
 Putting the configuration in webapp A's `pom.xml`:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>@project.version@</version>
+  <version>{VERSION}</version>
   <configuration>
     <scanIntervalSeconds>10</scanIntervalSeconds>
     <webApp>
@@ -988,7 +988,7 @@ ____
 Alternatively, add a `jetty.xml` file to webapp A.
 Copy the `jetty.xml` file from the jetty distribution, and then add WebAppContexts for the other 2 webapps:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Ref refid="Contexts">
   <Call name="addHandler">
@@ -1013,12 +1013,12 @@ Copy the `jetty.xml` file from the jetty distribution, and then add WebAppContex
 
 Then configure the location of this `jetty.xml` file into webapp A's jetty plugin:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>@project.version@</version>
+  <version>{VERSION}</version>
   <configuration>
     <scanIntervalSeconds>10</scanIntervalSeconds>
     <webApp>
@@ -1042,7 +1042,7 @@ However, *sometimes it is not possible to use this feature to set System propert
 time that jetty runs.
 In the latter case, you can use the http://mojo.codehaus.org/properties-maven-plugin/[maven properties plugin] to define the system properties instead. Here's an example that configures the logback logging system as the jetty logger:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <plugin>
@@ -1076,7 +1076,7 @@ Note that if a System property is already set (for example, from the command lin
 
 Here's an example of how to specify System properties in the POM:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <plugin> 
   <groupId>org.eclipse.jetty</groupId>
@@ -1098,7 +1098,7 @@ Here's an example of how to specify System properties in the POM:
 
 To change the default behaviour so that these system properties override those on the command line, use the <`force>` parameter:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <plugin> 
   <groupId>org.eclipse.jetty</groupId>
@@ -1135,7 +1135,7 @@ fooprop=222
 
 This can be configured on the plugin like so:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>

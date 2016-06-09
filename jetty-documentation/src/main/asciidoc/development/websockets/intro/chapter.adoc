@@ -120,7 +120,7 @@ Completely disable jsr-356 for a particular webapp:::
   Set the `org.eclipse.jetty.containerInitializerExclusionPattern` link:#context_attributes[context attribute] to include `org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer`.
   Here's an example of doing this in code, although you can do the link:#intro-jetty-configuration-webapps[same in xml]:
 +
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 WebAppContext context = new WebAppContext();
 context.setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern", 

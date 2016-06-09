@@ -52,7 +52,7 @@ webapp that references these JNDI entries in code. We'll use some mocked
 up classes for the transaction manager and the DataSource in this
 example for simplicity:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 import java.util.Properties;
 import org.eclipse.jetty.server.Server;
