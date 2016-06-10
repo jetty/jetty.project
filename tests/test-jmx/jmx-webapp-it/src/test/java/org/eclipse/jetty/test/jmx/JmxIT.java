@@ -39,6 +39,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.SimpleRequest;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.jmx.ConnectorServer;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -88,10 +89,7 @@ public class JmxIT
         context.setWar(war.getCanonicalPath());
         context.setContextPath("/jmx-webapp");
         
-        Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault(__server);
-        classlist.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                "org.eclipse.jetty.annotations.AnnotationConfiguration");
+        context.addConfiguration(new AnnotationConfiguration());
 
         context.setAttribute(
                             "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
