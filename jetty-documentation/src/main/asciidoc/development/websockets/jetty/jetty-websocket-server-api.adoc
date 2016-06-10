@@ -27,7 +27,7 @@ This will only work when running within the Jetty Container (unlike past Jetty t
 
 To wire up your WebSocket to a specific path via the WebSocketServlet, you will need to extend org.eclipse.jetty.websocket.servlet.WebSocketServlet and specify what WebSocket object should be created with incoming Upgrade requests.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-websocket/websocket-servlet/src/test/java/examples/MyEchoServlet.java[]
 ----
@@ -53,7 +53,7 @@ Use link:{JDURL}/org/eclipse/jetty/websocket/servlet/WebSocketServletFactory.htm
 
 If you have a more complicated creation scenario, you might want to provide your own WebSocketCreator that bases the WebSocket it creates off of information present in the UpgradeRequest object.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-websocket/websocket-servlet/src/test/java/examples/MyAdvancedEchoCreator.java[]
 ----
@@ -61,7 +61,7 @@ include::{SRCDIR}/jetty-websocket/websocket-servlet/src/test/java/examples/MyAdv
 Here we show a WebSocketCreator that will utilize the http://tools.ietf.org/html/rfc6455#section-1.9[WebSocket subprotocol] information from request to determine what WebSocket type should be
 created.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-websocket/websocket-servlet/src/test/java/examples/MyAdvancedEchoServlet.java[]
 ----

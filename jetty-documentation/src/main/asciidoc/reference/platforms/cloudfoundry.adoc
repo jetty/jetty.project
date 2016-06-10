@@ -44,7 +44,7 @@ For the time being I'll leave this buildpack under my personal github account an
 To show how incredibly easy it is to use the Jetty buildpack with cloudfoundry, this is all the more you need to do to deploy your application.
 Refer to the CloudFoundry http://docs.cloudfoundry.com/[documentation] to get started, get the `cf` utilities installed and an environment configured.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ cf push snifftest --buildpack=git://github.com/jmcc0nn3ll/jetty-buildpack.git
 
@@ -60,7 +60,7 @@ ____
 
 You will be prompted to answer a series of questions describing the execution environment and any additional services you need enabled (databases, etc).
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 Instances> 1
@@ -95,7 +95,7 @@ Save configuration?> n
 
 Once answered you will see the installation process of your application.
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 Uploading snifftest... OK
@@ -106,8 +106,8 @@ Installing jetty-buildpack.git.
 Downloading JDK...
 Copying openjdk-1.7.0_21.tar.gz from the buildpack cache ...
 Unpacking JDK to .jdk
-Downloading Jetty: jetty-distribution-@project.version@.tar.gz
-Downloading jetty-distribution-@project.version@.tar.gz from http://repo2.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.0.3.v20130506/ ...
+Downloading Jetty: jetty-distribution-{VERSION}.tar.gz
+Downloading jetty-distribution-{VERSION}.tar.gz from http://repo2.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.0.3.v20130506/ ...
 Unpacking Jetty to .jetty
 -> Uploading staged droplet (36M)
 -> Uploaded droplet

@@ -21,7 +21,7 @@ The link:{JDURL}/org/eclipse/jetty/websocket/api/Session.html[Session] object ca
 
 The Connection State (is it open or not).
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 if(session.isOpen()) {
   // send message
@@ -30,7 +30,7 @@ if(session.isOpen()) {
 
 Is the Connection Secure.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 if(session.isSecure()) {
   // connection is using 'wss://'
@@ -39,7 +39,7 @@ if(session.isSecure()) {
 
 What was in the Upgrade Request and Response.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 UpgradeRequest req = session.getUpgradeRequest();
 String channelName = req.getParameterMap().get("channelName");
@@ -50,14 +50,14 @@ String subprotocol = resp.getAcceptedSubProtocol();
 
 What is the Local and Remote Address.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 InetSocketAddress remoteAddr = session.getRemoteAddress();
 ----
 
 Get and Set the Idle Timeout
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 session.setIdleTimeout(2000); // 2 second timeout
 ----

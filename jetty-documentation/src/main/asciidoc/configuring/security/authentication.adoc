@@ -53,7 +53,7 @@ Below is an example taken from the
 link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/webapp/WEB-INF/web.xml?h=release-9[jetty-test-webapp
 web.xml] that configures BASIC authentication:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
   <login-config>
     <auth-method>BASIC</auth-method>
@@ -67,7 +67,7 @@ link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/webapp/WEB-INF
 web.xml] also includes commented out examples of other DIGEST and FORM
 configuration:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
   <login-config>
     <auth-method>FORM</auth-method>
@@ -86,7 +86,7 @@ from the
 link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/webapp/logon.html?h=release-9[test
 webapp logon.html]:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <HTML>
 <H1>FORM Authentication demo</H1>
@@ -181,7 +181,7 @@ example of an xml file that defines an in-memory type of LoginService
 called the
 link:{JDURL}/org/eclipse/jetty/security/HashLoginService.html[HashLoginService]:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
@@ -205,7 +205,7 @@ telling the context the name of the LoginService, or passing it the
 LoginService instance. Here's an example of doing both of these, using a
 link:#deployable-descriptor-file[context xml file]:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
@@ -231,7 +231,7 @@ Alternatively, you can define a LoginService for just a single web
 application. Here's how to define the same HashLoginService, but inside
 a link:#deployable-descriptor-file[context xml file]:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
@@ -331,7 +331,7 @@ guest: guest,read-only
 You configure the HashLoginService with a name and a reference to the
 location of the properties file:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <Item>
@@ -348,7 +348,7 @@ You can also configure it to check the properties file regularly for
 changes and reload when changes are detected. The reloadInterval is in
 seconds:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <New class="org.eclipse.jetty.security.HashLoginService">
@@ -450,7 +450,7 @@ prefix.
 You define a JDBCLoginService with the name of the realm and the
 location of the properties file describing the database:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <New class="org.eclipse.jetty.security.JDBCLoginService">

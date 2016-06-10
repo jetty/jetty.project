@@ -57,20 +57,20 @@ maximum effect. It also includes a detailed explanation of how modules
 work.
 
 This example assumes you have the jetty-distribution unpacked in
-`/home/user/jetty-distribution-@project.version@.`
+`/home/user/jetty-distribution-{VERSION}.`
 
 1.  Create a base directory anywhere.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 [/home/user]$ mkdir my-base
 [/home/user]$ cd my-base
 ....
 2.  Add the modules for SSL, HTTP, and webapp deployment.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[my-base]$ java -jar /home/user/jetty-distribution-@project.version@/start.jar --add-to-start=http,https,deploy
+[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar --add-to-start=http,https,deploy
 
 ssl             initialised in ${jetty.base}/start.ini (appended)
 ssl             enabled in     ${jetty.base}/start.ini
@@ -87,7 +87,7 @@ server          enabled in     ${jetty.base}/start.ini
 ....
 3.  Look at your directory.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 [my-base]$ ls -la
 total 20
@@ -99,20 +99,20 @@ drwxrwxr-x   2 user group 4096 Oct  8 06:55 webapps/
 ....
 4.  Copy your WAR files into webapps.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 [my-base]$ ls -la
 [my-base]$ cp ~/code/project/target/gadget.war webapps/
 ....
 5.  Copy your keystore into place.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 [my-base]$ cp ~/code/project/keystore etc/keystore
 ....
 6.  Edit the `start.ini` to configure your SSL settings.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 [my-base]$ cat start.ini
 ....
@@ -165,9 +165,9 @@ http.timeout=30000
 
 Look at the configuration you have at this point.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[my-base]$ java -jar /home/user/jetty-distribution-@project.version@/start.jar --list-config
+[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar --list-config
 
 Java Environment:
 -----------------
@@ -182,9 +182,9 @@ Java Environment:
 
 Jetty Environment:
 -----------------
- jetty.home=/home/user/jetty-distribution-@project.version@
+ jetty.home=/home/user/jetty-distribution-{VERSION}
  jetty.base=/home/user/my-base
- jetty.version=@project.version@
+ jetty.version={VERSION}
 
 JVM Arguments:
 --------------
@@ -193,7 +193,7 @@ JVM Arguments:
 System Properties:
 ------------------
  jetty.base = /home/user/my-base
- jetty.home = /home/user/jetty-distribution-@project.version@
+ jetty.home = /home/user/jetty-distribution-{VERSION}
 
 Properties:
 -----------
@@ -218,15 +218,15 @@ Note: order presented here is how they would appear on the classpath.
       changes to the --module=name command line options will be reflected here.
  0:                    3.1.0 | ${jetty.home}/lib/servlet-api-3.1.jar
  1:                  3.1.RC0 | ${jetty.home}/lib/jetty-schemas-3.1.jar
- 2:                @project.version@ | ${jetty.home}/lib/jetty-http-@project.version@.jar
- 3:                @project.version@ | ${jetty.home}/lib/jetty-continuation-@project.version@.jar
- 4:                @project.version@ | ${jetty.home}/lib/jetty-server-@project.version@.jar
- 5:                @project.version@ | ${jetty.home}/lib/jetty-xml-@project.version@.jar
- 6:                @project.version@ | ${jetty.home}/lib/jetty-util-@project.version@.jar
- 7:                @project.version@ | ${jetty.home}/lib/jetty-io-@project.version@.jar
- 8:                @project.version@ | ${jetty.home}/lib/jetty-servlet-@project.version@.jar
- 9:                @project.version@ | ${jetty.home}/lib/jetty-webapp-@project.version@.jar
-10:                @project.version@ | ${jetty.home}/lib/jetty-deploy-@project.version@.jar
+ 2:                {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
+ 3:                {VERSION} | ${jetty.home}/lib/jetty-continuation-{VERSION}.jar
+ 4:                {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
+ 5:                {VERSION} | ${jetty.home}/lib/jetty-xml-{VERSION}.jar
+ 6:                {VERSION} | ${jetty.home}/lib/jetty-util-{VERSION}.jar
+ 7:                {VERSION} | ${jetty.home}/lib/jetty-io-{VERSION}.jar
+ 8:                {VERSION} | ${jetty.home}/lib/jetty-servlet-{VERSION}.jar
+ 9:                {VERSION} | ${jetty.home}/lib/jetty-webapp-{VERSION}.jar
+10:                {VERSION} | ${jetty.home}/lib/jetty-deploy-{VERSION}.jar
 
 Jetty Active XMLs:
 ------------------
@@ -238,10 +238,10 @@ Jetty Active XMLs:
 
 Now start Jetty.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[my-base]$ java -jar /home/user/jetty-distribution-@project.version@/start.jar
-2013-10-08 07:06:55.837:INFO:oejs.Server:main: jetty-@project.version@
+[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar
+2013-10-08 07:06:55.837:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-08 07:06:55.853:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
 2013-10-08 07:06:55.872:INFO:oejs.ServerConnector:main: Started ServerConnector@72974691{HTTP/1.1}{0.0.0.0:8080}
 ....
@@ -268,9 +268,9 @@ a single unit, with dependencies on other modules.
 
 You can see the list of modules:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[my-base]$ java -jar /home/user/jetty-distribution-@project.version@/start.jar --list-modules
+[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar --list-modules
 
 Jetty All Available Modules:
 ----------------------------
@@ -458,9 +458,9 @@ easier to edit the `${jetty.base}/start.ini`.
 
 If you want to start using a new module:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[my-base] $ java -jar ../jetty-distribution-@project.version@/start.jar --add-to-start=https
+[my-base] $ java -jar ../jetty-distribution-{VERSION}/start.jar --add-to-start=https
 ....
 
 This adds the `--module=` lines and associated properties (the
@@ -494,12 +494,12 @@ For more information on the `start.jar` in 9.1, see xref:start-jar[].
 ==== Summary of Configuring SSL in Jetty 9.1
 
 1.  Download and unpack Jetty 9.1 into
-`/home/user/jetty-distribution-@project.version@`.
+`/home/user/jetty-distribution-{VERSION}`.
 2.  Go to your base directory and just use the distribution, no editing.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[my-base]$ java -jar /home/user/jetty-distribution-@project.version@/start.jar
+[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar
 ....
 * The Jetty 9.1 distribution provides, out of the box, the XML
 configuration files, in this case `jetty-http.xml` and `jetty-ssl.xml`.
@@ -529,9 +529,9 @@ modules as well.
 You can see what the configuration looks like, after all of the modules
 are resolved, without starting Jetty via:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[my-base] $ java -jar ../jetty-distribution-@project.version@/start.jar --list-config
+[my-base] $ java -jar ../jetty-distribution-{VERSION}/start.jar --list-config
 ....
 
 Just because the JARs exist on disk does not mean that they are in use.
@@ -541,7 +541,7 @@ Use the `--list-config` to see the configuration. Notice that only a
 subset of the JARs from the distribution are in use. The modules you
 have anabled determine that subset.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
-[my-base]$ java -jar ~/jetty-distribution-@project.version@/start.jar --list-config
+[my-base]$ java -jar ~/jetty-distribution-{VERSION}/start.jar --list-config
 ....

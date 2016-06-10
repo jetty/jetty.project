@@ -105,8 +105,8 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     }
                 });
 
-        Assert.assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(headersLatch.await(30, TimeUnit.SECONDS));
+        Assert.assertTrue(successLatch.await(30, TimeUnit.SECONDS));
 
         Assert.assertEquals(1, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
@@ -156,8 +156,8 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             }
         });
 
-        Assert.assertTrue(beginLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(beginLatch.await(30, TimeUnit.SECONDS));
+        Assert.assertTrue(failureLatch.await(30, TimeUnit.SECONDS));
 
         Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
@@ -216,7 +216,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     }
                 });
 
-        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(successLatch.await(30, TimeUnit.SECONDS));
 
         Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
@@ -290,7 +290,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     }
                 });
 
-        Assert.assertTrue(successLatch.await(delay * 5, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(successLatch.await(delay * 30, TimeUnit.MILLISECONDS));
 
         Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
@@ -324,7 +324,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     failureLatch.countDown();
                 });
 
-        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(failureLatch.await(30, TimeUnit.SECONDS));
 
         Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
@@ -369,7 +369,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     }
                 });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(30, TimeUnit.SECONDS));
 
         Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
@@ -422,7 +422,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         }
                     });
 
-            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(30, TimeUnit.SECONDS));
 
             Assert.assertEquals(0, idleConnections.size());
             Assert.assertEquals(0, activeConnections.size());
@@ -450,7 +450,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         ContentResponse response = client.newRequest(host, port)
                 .scheme(scheme)
-                .timeout(5, TimeUnit.SECONDS)
+                .timeout(30, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertEquals(200, response.getStatus());

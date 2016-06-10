@@ -19,6 +19,8 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -39,6 +41,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.server.session.Session.SessionInactivityTimeout;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.Test;
 
 /**
@@ -49,11 +52,11 @@ import org.junit.Test;
 public abstract class AbstractSessionExpiryTest extends AbstractTestBase
 {
 
-    public void pause(int scavengePeriod)
+    public void pause(int period)
     {
         try
         {
-            Thread.sleep(scavengePeriod * 1000L);
+            Thread.sleep(period * 1000L);
         }
         catch (InterruptedException e)
         {
@@ -209,6 +212,73 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             server1.stop();
         }     
     }
+    
+    
+    @Test
+    public void testRequestForSessionWithChangedTimeout () throws Exception
+    {
+      String contextPath = "";
+      String servletMapping = "/server";
+      int inactivePeriod = 5;
+      int scavengePeriod = 1;
+      AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
+      ChangeTimeoutServlet servlet = new ChangeTimeoutServlet();
+      ServletHolder holder = new ServletHolder(servlet);
+      ServletContextHandler context = server1.addContext(contextPath);
+      context.addServlet(holder, servletMapping);
+      TestHttpSessionListener listener = new TestHttpSessionListener();
+      
+      context.getSessionHandler().addEventListener(listener);
+      
+      server1.start();
+      int port1 = server1.getPort();
+
+      try
+      {
+          HttpClient client = new HttpClient();
+          client.start();
+          String url = "http://localhost:" + port1 + contextPath + servletMapping;
+
+          //make a request to set up a session on the server with the session manager's inactive timeout
+          ContentResponse response = client.GET(url + "?action=init");
+          assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+          String sessionCookie = response.getHeaders().get("Set-Cookie");
+          assertTrue(sessionCookie != null);
+          // Mangle the cookie, replacing Path with $Path, etc.
+          sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+             
+         
+          //make another request to change the session timeout to a larger value
+          int newInactivePeriod = 100;
+          Request request = client.newRequest(url + "?action=change&val="+newInactivePeriod);
+          request.getHeaders().add("Cookie", sessionCookie);
+          response = request.send();
+          assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+          
+          //stop and restart the session manager to ensure it needs to reload the session
+          context.stop();
+          context.start();
+
+          //wait until the session manager timeout has passed and re-request the session
+          //which should still be valid
+          pause(inactivePeriod);
+
+          request = client.newRequest(url + "?action=check");
+          request.getHeaders().add("Cookie", sessionCookie);
+          response = request.send();
+          assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+          String sessionCookie2 = response.getHeaders().get("Set-Cookie");
+          assertNull(sessionCookie2);
+          
+      }
+      finally
+      {
+          server1.stop();
+      }     
+    }
+    
+    
+    
     public void verifySessionCreated (TestHttpSessionListener listener, String sessionId)
     {
         assertTrue(listener.createdSessions.contains(sessionId));
@@ -249,4 +319,34 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
 
         }
     }
+    
+    
+    public static class ChangeTimeoutServlet extends HttpServlet
+    {
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+        {
+            String action = request.getParameter("action");
+            if ("init".equals(action))
+            {
+                HttpSession session = request.getSession(true);
+                session.setAttribute("test", "test");
+            }
+            else if ("change".equals(action))
+            {
+                String tmp = request.getParameter("val");
+                int val = (StringUtil.isBlank(tmp)?0:Integer.valueOf(tmp.trim()));
+                HttpSession session = request.getSession(false);
+                assertNotNull(session);
+                session.setMaxInactiveInterval(val);
+            }
+            else if ("check".equals(action))
+            {
+                HttpSession session = request.getSession(false);
+                assertNotNull(session);
+            }
+        }
+    }
+    
 }

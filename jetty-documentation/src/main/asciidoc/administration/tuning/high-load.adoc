@@ -50,7 +50,7 @@ Linux does a reasonable job of self-configuring TCP/IP, but there are a few limi
 
 You should increase TCP buffer sizes to at least 16MB for 10G paths and tune the auto-tuning (although you now need to consider buffer bloat).
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ sysctl -w net.core.rmem_max=16777216
 $ sysctl -w net.core.wmem_max=16777216
@@ -65,7 +65,7 @@ $ sysctl -w net.ipv4.tcp_wmem="4096 16384 16777216"
 The default value is 128; if you are running a high-volume server and connections are getting refused at a TCP level, you need to increase this. 
 This is a very tweakable setting in such a case: if you set it too high, resource problems occur as it tries to notify a server of a large number of connections, and many remain pending, but if you set it too low, refused connections occur.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
  $ sysctl -w net.core.somaxconn=4096
      
@@ -74,7 +74,7 @@ This is a very tweakable setting in such a case: if you set it too high, resourc
 The `net.core.netdev_max_backlog` controls the size of the incoming packet queue for upper-layer (java) processing. 
 The default (2048) may be increased and other related parameters (TODO MORE EXPLANATION) adjusted with:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
 $ sysctl -w net.core.netdev_max_backlog=16384
@@ -88,7 +88,7 @@ $ sysctl -w net.ipv4.tcp_syncookies=1
 
 If many outgoing connections are made (for example, on load generators), the operating system might run low on ports. Thus it is best to increase the port range, and allow reuse of sockets in TIME_WAIT:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
 $ sysctl -w net.ipv4.ip_local_port_range="1024 65535"
@@ -112,7 +112,7 @@ theusername            soft nofile     40000
 Linux supports pluggable congestion control algorithms. 
 To get a list of congestion control algorithms that are available in your kernel run:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ sysctl net.ipv4.tcp_available_congestion_control
         
@@ -121,7 +121,7 @@ $ sysctl net.ipv4.tcp_available_congestion_control
 If cubic and/or htcp are not listed, you need to research the control algorithms for your kernel. 
 You can try setting the control to cubic with:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 $ sysctl -w net.ipv4.tcp_congestion_control=cubic
     

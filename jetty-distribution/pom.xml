@@ -15,6 +15,11 @@
   </properties>
   <build>
     <plugins>
+      <!--
+      Copies the additional distribution content over the unpacked jetty-home
+      artifact contents, after the antrun execution that initially populates
+      the jetty-distribution directory
+      -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
@@ -103,7 +108,10 @@
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
-
+          <!--
+          The jetty-home artifact is the starting point for the jetty-distribution
+          and must happen early in the build process
+          -->
           <execution>
             <id>unpack-jetty-home</id>
             <phase>generate-resources</phase>
@@ -197,7 +205,27 @@
             </configuration>
           </execution>
 
-
+          <execution>
+            <id>unpack-test-webapp-config</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>test-jetty-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+              <excludes>META-INF/**</excludes>
+            </configuration>
+          </execution>
 
           <execution>
             <id>unpack-test-jaas-config</id>
@@ -270,7 +298,9 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
-
+          <!--
+          Setup the jetty distribution as a jetty.home/jetty.base combo using start.ini configuration mechanism
+          -->
           <execution>
             <id>setup home</id>
             <phase>process-classes</phase>
@@ -286,39 +316,24 @@
               <goal>java</goal>
             </goals>
           </execution>
-
+          <!--
+          Setup the demo-base using the start.d configuration mechanism
+          -->
           <execution>
-            <id>setup demo-base-ini</id>
+            <id>setup demo-base-startd</id>
             <phase>process-classes</phase>
             <configuration>
               <mainClass>org.eclipse.jetty.start.Main</mainClass>
               <arguments>
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}/demo-base</argument>
-                <argument>--add-to-start=continuation,deploy,websocket,ext,resources,client,annotations,jndi,servlets</argument>
+                <argument>--add-to-startd=continuation,deploy,websocket,ext,resources,client,annotations,jndi,servlets,jsp,jstl,http,https</argument>
               </arguments>
             </configuration>
             <goals>
               <goal>java</goal>
             </goals>
           </execution>
-
-          <execution>
-            <id>setup demo-base-start-extra</id>
-            <phase>process-classes</phase>
-            <configuration>
-              <mainClass>org.eclipse.jetty.start.Main</mainClass>
-              <arguments>
-                <argument>jetty.home=${assembly-directory}</argument>
-                <argument>jetty.base=${assembly-directory}/demo-base</argument>
-                <argument>--add-to-start=jsp,jstl,http,https</argument>
-              </arguments>
-            </configuration>
-            <goals>
-              <goal>java</goal>
-            </goals>
-          </execution>
-
         </executions>
       </plugin>
       <plugin>

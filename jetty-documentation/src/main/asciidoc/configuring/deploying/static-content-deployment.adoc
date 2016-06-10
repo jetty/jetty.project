@@ -20,7 +20,7 @@
 To serve purely static content, the Jetty Deployment Descriptor XML concepts and the internal `ResourceHandler` can be used. 
 Create a file called `scratch.xml` in the `${jetty.home}/webapps` directory and paste the following file contents in it.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <?xml version="1.0" encoding="UTF-8"?>

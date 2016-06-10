@@ -26,7 +26,7 @@ When new requests are made, the cookie store is consulted and if there are match
 
 Applications can programmatically access the cookie store to find the cookies that have been set:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 CookieStore cookieStore = httpClient.getCookieStore();
@@ -37,7 +37,7 @@ List<HttpCookie> cookies = cookieStore.get(URI.create("http://domain.com/path"))
 
 Applications can also programmatically set cookies as if they were returned from a HTTP response:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 CookieStore cookieStore = httpClient.getCookieStore();
@@ -52,7 +52,7 @@ cookieStore.add(URI.create("http://domain.com"), cookie);
 
 You can remove cookies that you do not want to be sent in future HTTP requests:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 CookieStore cookieStore = httpClient.getCookieStore();
@@ -66,7 +66,7 @@ for (HttpCookie cookie : cookies)
 
 If you want to totally disable cookie handling, you can install a `HttpCookieStore.Empty` instance in this way:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 httpClient.setCookieStore(new HttpCookieStore.Empty());
@@ -76,7 +76,7 @@ httpClient.setCookieStore(new HttpCookieStore.Empty());
 
 You can enable cookie filtering by installing a cookie store that performs the filtering logic in this way:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 httpClient.setCookieStore(new GoogleOnlyCookieStore());
@@ -103,7 +103,7 @@ Jetty HTTP client supports the "Basic" and "Digest" authentication mechanisms de
 
 You can configure authentication credentials in the HTTP client instance as follows:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 URI uri = new URI("http://domain.com/secure");
@@ -128,7 +128,7 @@ If the authentication is successful, it caches the result and reuses it for subs
 
 Successful authentications are cached, but it is possible to clear them in order to force authentication again:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 httpClient.getAuthenticationStore().clearAuthenticationResults();
@@ -146,7 +146,7 @@ Other implementations may be written by subclassing `ProxyConfiguration.Proxy`.
 
 A typical configuration is the following:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();

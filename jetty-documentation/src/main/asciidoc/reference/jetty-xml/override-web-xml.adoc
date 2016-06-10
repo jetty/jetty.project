@@ -30,7 +30,7 @@ You define it per-webapp, using the xref:jetty-xml-syntax[].
 
 You can specify the `override-web.xml` to use for an individual web application, in that webapp's xref:jetty-web-xml-config[].
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
@@ -46,7 +46,7 @@ You can specify the `override-web.xml` to use for an individual web application,
 
 The equivalent in code is:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -69,7 +69,7 @@ Alternatively, use the classloader (xref:jetty-classloading[]) to get the path t
 
 Use the `<overrideDescriptor>` tag as follows:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 
 <project>

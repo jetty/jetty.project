@@ -85,7 +85,7 @@ There are a number of properties that can be defined in the configuration that w
   +
   * Example when set to false:
   +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 2014-06-03 14:36:16.013:INFO:oejs.Server:main: jetty-9.2.0.v20140526
 2014-06-03 14:36:16.028:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/opt/jetty/demo-base/webapps/] at interval 1
@@ -96,7 +96,7 @@ There are a number of properties that can be defined in the configuration that w
   +
   * Example when set to true:
   +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 2014-06-03 14:38:19.019:INFO:org.eclipse.jetty.server.Server:main: jetty-9.2.0.v20140526
 2014-06-03 14:38:19.032:INFO:org.eclipse.jetty.deploy.providers.ScanningAppProvider:main: Deployment monitor [file:/opt/jetty/demo-base/webapps/] at interval 1

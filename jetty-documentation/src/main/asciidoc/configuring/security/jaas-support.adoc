@@ -71,7 +71,7 @@ Configure a jetty `org.eclipse.jetty.jaas.JAASLoginService` to match the
 <realm-name> in your web.xml file. For example, if the `web.xml`
 contains a realm called "xyz" like so:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <login-config>
   <auth-method>FORM</auth-method>
@@ -86,7 +86,7 @@ contains a realm called "xyz" like so:
 Then you need to create a JAASLoginService with the matching name of
 "xyz":
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <New class="org.eclipse.jetty.jaas.JAASLoginService">
   <Set name="Name">Test JAAS Realm</Set>
@@ -106,7 +106,7 @@ security infrastructure, then you can declare your JAASLoginService in a
 top-level jetty xml file as a bean that is added to the
 org.eclipse.jetty.server.Server. Here's an example:
 +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -125,7 +125,7 @@ org.eclipse.jetty.server.Server. Here's an example:
 webapp by creating a link:#deployable-descriptor-file[context xml] file
 for the webapp, and specifying the JAASLoginService in it:
 +
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
@@ -224,7 +224,7 @@ user role (Default: `org.eclipse.jetty.jaas.JAASRole`)
 
 Here's an example of setting each of these (to their default values):
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <New class="org.eclipse.jetty.jaas.JAASLoginService">
   <Set name="Name">Test JAAS Realm</Set>
@@ -478,7 +478,7 @@ login module, add the RequestParameterCallback to the list of callback
 handlers the login module uses, tell it which params you are interested
 in, and then get the value of the parameter back. Here's an example:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 public class FooLoginModule extends AbstractLoginModule

@@ -55,7 +55,7 @@ Services::
 ==== Configuring Connectors
 
 A Jetty Server Connector is a network end point that accepts connections for one or more protocols which produce requests and/or messages for the Jetty server. 
-In the standard Jetty server distribution, several provided configuration files add connectors to the server for various protocols and combinations of protocols: `http.ini`, `https.ini` and `jetty-spdy.xml`.
+In the standard Jetty server distribution, several provided configuration files add connectors to the server for various protocols and combinations of protocols: `http.ini`, `https.ini` and `jetty-http2.xml`.
 The configuration needed for connectors is typically:
 
 Port::
@@ -67,10 +67,10 @@ Host::
 Idle Timeout::
   The time in milliseconds that a connection can be idle before the connector takes action to close the connection.
 HTTP Configuration::
-  Connector types that accept HTTP semantics (including HTTP, HTTPS and SPDY) are configured with a HttpConfiguration instance that contains common HTTP configuration that is independent of the specific wire protocol used. 
-  Because these values are often common to multiple connector types, the standard Jetty Server distribution creates a single HttpConfiguration in the `jetty.xml` file which is used via the XML Ref element in the specific connector files.
+  Connector types that accept HTTP semantics (including HTTP, HTTPS and HTTP2) are configured with a `HttpConfiguration` instance that contains common HTTP configuration that is independent of the specific wire protocol used. 
+  Because these values are often common to multiple connector types, the standard Jetty Server distribution creates a single `HttpConfiguration` in the `jetty.xml` file which is used via the XML Ref element in the specific connector files.
 SSL Context Factory::
-  The TLS connector types (HTTPS and SPDY) configure an SSL Context Factory with the location of the server keystore and truststore for obtaining server certificates.
+  The TLS connector types (HTTPS and HTTP2) configure an SSL Context Factory with the location of the server keystore and truststore for obtaining server certificates.
 
 
 ____
@@ -130,7 +130,7 @@ resourceBase::
 
 In an embedded server, you configure contexts by directly calling the link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler] API as in the following example:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/OneContext.java[]
 ----
@@ -140,7 +140,7 @@ include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/One
 You can create and configure a context entirely by IoC XML (either Jetty's or Spring). 
 The deployer discovers and hot deploys context IoC descriptors like the following which creates a context to serve the Javadoc from the Jetty distribution:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC
@@ -201,7 +201,7 @@ Jetty allows the context Path of a WAR file to be set internally (by the WAR its
 
 To set the contextPath from within the WAR file, you can include a `WEB-INF/jetty-web.xml` file which contains IoC XML to set the context path:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC
@@ -215,7 +215,7 @@ To set the contextPath from within the WAR file, you can include a `WEB-INF/jett
 
 Alternately, to configure the classpath externally without the need to modify the WAR file itself, instead of allowing the WAR file to be discovered by the deployer, an IoC XML file may be deployed that both sets the context path and declares the WAR file that it applies to:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC
@@ -234,7 +234,7 @@ An example of setting the context path is included with the Jetty distribution i
 
 The authentication method and realm name for a standard web application may be set in the `web.xml` deployment descriptor with elements like:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 ...
 <login-config>
@@ -250,7 +250,7 @@ In Jetty, there are several realm implementations (called LoginServices) and the
 
 To configure an instance of HashLoginService that matches the "Test Realm" configured above, the following `$JETTY_HOME/etc/test-realm.xml` IoC XML file should be passed on the command line or set in `start.ini`.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 include::{SRCDIR}/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/test-realm.xml[]
 ----

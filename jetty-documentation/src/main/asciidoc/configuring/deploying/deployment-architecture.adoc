@@ -79,7 +79,7 @@ It supports hot (re)deployment.
 The basic operation of the `WebAppProvider` is to periodically scan a directory for deployables.
 In the standard Jetty Distribution, this is configured in the `${jetty.home}/etc/jetty-deploy.xml` file.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">

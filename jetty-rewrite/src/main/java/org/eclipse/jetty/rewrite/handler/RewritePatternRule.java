@@ -45,6 +45,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     /* ------------------------------------------------------------ */
     public RewritePatternRule(@Name("pattern") String pattern, @Name("replacement") String replacement)
     {
+        super(pattern);
         _handling = false;
         _terminating = false;
         setReplacement(replacement);

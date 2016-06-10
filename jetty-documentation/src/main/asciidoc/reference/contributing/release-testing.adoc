@@ -21,7 +21,7 @@ To test a Jetty release, complete the following steps for each release you want 
 
 1.  Download the staged release:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
  wget https://oss.sonatype.org/content/repositories/jetty-[reponumber]/org/eclipse/jetty/jetty-distribution/[jetty-version]/jetty-distribution-9.[jetty-minor-version].tar.gz
@@ -31,7 +31,7 @@ To test a Jetty release, complete the following steps for each release you want 
 2.  Extract to a directory of your choice.
 3.  Start jetty:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
  cd [installdir] ; java -jar start.jar
@@ -46,7 +46,7 @@ To test a Jetty release, complete the following steps for each release you want 
 9.  In the examples section click "Servlet 3.1 Test" and verify that everything works as expected.
 10. Verify that hot deployment works.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
  cd [installdir] ;
@@ -57,7 +57,7 @@ To test a Jetty release, complete the following steps for each release you want 
 11. Verify that `test.war` gets redeployed in `STDOUT`.
 12. Verify that the spdy example webapp and spdy-proxy do work
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
  cd jetty_src/jetty-spdy/spdy-example-webapp
@@ -68,7 +68,7 @@ To test a Jetty release, complete the following steps for each release you want 
 13. Browse to https://localhost:8443 and verify that all looks ok
 14. Stop the server with CTRL+C and restart it in proxy mode:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
  mvn -Pproxy jetty:run-forked
@@ -82,7 +82,7 @@ To test a Jetty release, complete the following steps for each release you want 
 
 1.  Clone CometD.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
  clone git://github.com/cometd/cometd.git
@@ -112,7 +112,7 @@ To test a Jetty release, complete the following steps for each release you want 
 ....
 3.  Build Cometd:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
  mvn clean install
@@ -126,7 +126,7 @@ Run the loadtest until ''JIT compilation time'' is close to a value of zero (abo
 6.  Make sure that the performance results are reasonably fast.
 On a MacBook Pro i7 2.6ghz dualcore produces the following:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
  ========================================
@@ -200,7 +200,7 @@ Thread Pool - Concurrent Threads max = 239 | Queue Size max = 1002 | Queue Laten
 ....
 7.  Deploy `cometd.war` to the `webapps` directory of the jetty-distribution tested above.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
  cp cometd-demo/target/cometd-demo-[version].war [pathToJetty]/jetty-distribution-[jetty-version]/webapps/
@@ -209,7 +209,7 @@ Thread Pool - Concurrent Threads max = 239 | Queue Size max = 1002 | Queue Laten
 ....
 8.  Start jetty and make sure there are no exceptions.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
  cd [pathToJetty] && java -jar start.jar

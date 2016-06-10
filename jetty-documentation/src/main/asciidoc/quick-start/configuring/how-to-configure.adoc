@@ -105,14 +105,14 @@ Property Files::
 
 To understand the link:#jetty-xml-syntax[Jetty IoC XML format], consider the following example of an embedded Jetty server instantiated and configured in Java:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/ExampleServer.java[]
 ----
 
 link:#jetty-xml-syntax[Jetty IoC XML format] allows you to instantiate and configure the exact same server in XML without writing any java code:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 include::{SRCDIR}/examples/embedded/src/main/resources/exampleserver.xml[]
 ----

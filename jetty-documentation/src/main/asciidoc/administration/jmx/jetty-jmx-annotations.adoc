@@ -100,7 +100,7 @@ description::
 
 The following is an example of each of the annotations mentioned above in practice.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 package com.acme;

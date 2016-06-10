@@ -33,7 +33,7 @@ You will need the jetty-runner jar:
 Let's assume we have a very simple webapp, that does not need any resources from its environment, nor any configuration apart from the defaults. 
 Starting it is as simple as doing the following:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar simple.war      
 ....
@@ -42,14 +42,14 @@ This will start jetty on port 8080, and deploy the webapp to "/".
 
 Your webapp does not have to be packed into a war, you can deploy a webapp that is a directory instead in the same way:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar simple  
 ....
 
 In fact, the webapp does not have to be a war or even a directory, it can simply be a jetty link:#using-context-provider[context xml] file that describes your webapp:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar simple-context.xml
 ....
@@ -65,7 +65,7 @@ If you have more than one webapp that must be deployed, simply provide them all 
 You can control the context paths for them using the "--path" parameter. 
 Here's an example of deploying 2 wars (although either or both of them could be unpacked directories instead):
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --path /one my1.war --path /two my2.war  
 ....
@@ -73,7 +73,7 @@ Here's an example of deploying 2 wars (although either or both of them could be 
 If you have context xml files that describe your webapps, you can fully configure your webapps in them, and hence you don't need to use the command line switches. 
 Just provide the list of context files like so:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar my-first-context.xml my-second-context.xml my-third-context.xml
     
@@ -91,7 +91,7 @@ By default the jetty-runner will listen on port 8080.
 You can easily change this on the command line using the "--port" command. 
 Here's an example that runs our simple.war on port 9090:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --port 9090 simple.war  
 ....
@@ -101,7 +101,7 @@ Here's an example that runs our simple.war on port 9090:
 Instead of, or in addition to using command line switches, you can use one or more jetty.xml files to configure the environment for your webapps. 
 Here's an example where we apply two different jetty.xml files:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --config jetty.xml --config jetty-https.xml simple.war    
 ....
@@ -115,14 +115,14 @@ ____
 
 You can see the fill set of configuration options using the --help switch:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --help    
 ....
 
 Here's what the output will look like:
 
-[source,plain]
+[source, plain, subs="{sub-order}"]
 ----
 
 Usage: java [-Djetty.home=dir] -jar jetty-runner.jar [--help|--version] [ server opts] [[ context opts] context ...]
@@ -147,7 +147,7 @@ Context opts:
 Printing the version:::
   Print out the version of jetty and then exit immediately.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --version          
 
@@ -158,7 +158,7 @@ Configuring a request log:::
   If the file is prefixed with yyyy_mm_dd then the file will be automatically rolled over. 
   Note that for finer grained configuration of the link:{JDURL}/org/eclipse/jetty/server/NCSARequestLog.html[request log], you will need to use a jetty xml file instead.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --log yyyy_mm_dd-requests.log  my.war            
 
@@ -168,7 +168,7 @@ Configuring the output log:::
   Redirect the output of jetty logging to the named file. 
   If the file is prefixed with yyyy_mm_dd then the file will be automatically rolled over.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --out yyyy_mm_dd-output.log my.war        
 
@@ -178,7 +178,7 @@ Configuring the interface for http:::
   Like jetty standalone, the default is for the connectors to listen on all interfaces on a machine. 
   You can control that by specifying the name or ip address of the particular interface you wish to use with the --host argument:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --host 192.168.22.19 my.war
 
@@ -188,7 +188,7 @@ Configuring the port for http:::
   The default port number is 8080. 
   To link:#how-to-configure-connectors[configure a https connector], use a jetty xml config file instead.
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --port 9090  my.war        
 
@@ -199,7 +199,7 @@ Configuring stop:::
   This requires the use of a "secret" key, to prevent malicious or accidental termination. 
   Use the --stop-port and --stop-key parameters as arguments to the jetty-runner:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --stop-port 8181 --stop-key abc123
         
@@ -209,7 +209,7 @@ Then, to stop jetty from a different terminal, you need to supply the same port 
 For this you'll either need a local installation of jetty, the link:#jetty-maven-plugin[jetty-maven-plugin], the link:#jetty-ant[jetty-ant plugin], or write a custom class. 
 Here's how to use a jetty installation to perform a stop:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar start.jar --stop-port 8181 --stop-key abc123 --stop
         
@@ -222,7 +222,7 @@ Configuring the container classpath:::
 --lib adds the location of a directory which contains jars to add to the container classpath. 
 You can add 1 or more. Here's an example of configuring 2 directories:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --lib /usr/local/external/lib --lib $HOME/external-other/lib my.war
         
@@ -232,7 +232,7 @@ You can add 1 or more. Here's an example of configuring 2 directories:
 You can add 1 or more. 
 Here's an example of configuring 3 extra jars:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --jar /opt/stuff/jars/jar1.jar --jar $HOME/jars/jar2.jar --jar /usr/local/proj/jars/jar3.jar  my.war
         
@@ -242,7 +242,7 @@ Here's an example of configuring 3 extra jars:
 You can add 1 or more. 
 Here's an example of configuring a single extra classes dir:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --classes /opt/stuff/classes my.war
         
@@ -254,7 +254,7 @@ Gathering statistics:::
   context with a password. Here's an example of enabling statistics,
   with no password protection:
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --stats unsecure my.war
           
@@ -276,7 +276,7 @@ digest: MD5:6e120743ad67abfbc385bc2bb754e297,user
 +
 Assuming we've copied it into the local directory, we would apply it like so
 +
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --stats realm.properties my.war
         

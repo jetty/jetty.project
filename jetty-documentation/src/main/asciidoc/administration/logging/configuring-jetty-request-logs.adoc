@@ -46,7 +46,7 @@ If neither of these options meets your needs, you can implement a custom request
 
 To configure a single request log for the entire Jetty Server instance:
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Set name="RequestLog">
@@ -62,7 +62,7 @@ To configure a single request log for the entire Jetty Server instance:
 
 The equivalent code is:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 NCSARequestLog requestLog = new NCSARequestLog("/var/logs/jetty/jetty-yyyy_mm_dd.request.log");
 requestLog.setAppend(true);
@@ -83,7 +83,7 @@ To examine many more configuration options, see link:{JDURL}/org/eclipse/jetty/s
 
 To configure a separate request log for a web application, add the following to the context XML file.
 
-[source,xml]
+[source, xml, subs="{sub-order}"]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   ...

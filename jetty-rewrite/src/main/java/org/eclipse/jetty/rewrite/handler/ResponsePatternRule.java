@@ -42,6 +42,7 @@ public class ResponsePatternRule extends PatternRule
     /* ------------------------------------------------------------ */
     public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") String code, @Name("reason") String reason)
     {
+        super(pattern);
         _handling = true;
         _terminating = true;
         setCode(code);

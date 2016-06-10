@@ -31,7 +31,7 @@ The link:{JDURL}/org/eclipse/jetty/continuation/ContinuationSupport.html[Continu
 
 To suspend a request, the suspend method can be called on the continuation:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
     void doGet(HttpServletRequest request, HttpServletResponse response)
       {
@@ -60,7 +60,7 @@ If an exception is desirable (to bypass code that is unaware of continuations an
 
 Once an asynchronous event has occurred, the continuation can be resumed:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
     void myAsyncCallback(Object results)
     {
@@ -78,7 +78,7 @@ Continuation resume is analogous to Servlet 3.0 `AsyncContext.dispatch()`.
 
 As an alternative to resuming a request, an asynchronous handler may  write the response itself. After writing the response, the handler must indicate the request handling is complete by calling the complete method:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
     void myAsyncCallback(Object results)
     {
@@ -93,7 +93,7 @@ After complete is called, the container schedules the response to be  committed 
 
 An application may monitor the status of a continuation by using a ContinuationListener:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
     void doGet(HttpServletRequest request, HttpServletResponse response)
     {

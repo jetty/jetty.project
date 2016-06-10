@@ -53,7 +53,7 @@ Jetty uses http://maven.apache.org/[Apache Maven 3] for managing its build and p
 
 Building Jetty should simply be a matter of changing into the relevant directory and executing the following commands:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 
 $ git clone https://github.com/eclipse/jetty.project.git

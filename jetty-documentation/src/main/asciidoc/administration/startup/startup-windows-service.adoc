@@ -29,7 +29,7 @@ The techniques outlined here are based on Windows 7 (64-bit), using JDK
 
 Prepare some empty directories to work with.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 C:\> mkdir opt
 C:\> cd opt
@@ -78,7 +78,7 @@ C:\opt\temp::
 Or download Java 7 from:
 http://www.oracle.com/technetwork/java/javase/downloads/index.html
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 C:\opt>java -version
 java version "1.7.0_45"
@@ -90,13 +90,13 @@ Grab a copy of the ZIP distribution from the
 link:#jetty-downloading[Official Eclipse Download Site]
 
 Open it up the downloaded Zip in Windows Explorer and drag the contents
-of the `jetty-distribution-@project.version@` directory into place at
+of the `jetty-distribution-{VERSION}` directory into place at
 `C:\opt\jetty`
 
 Once you are complete, the contents of the `C:\opt\jetty` directory
 should look like this:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 C:\opt\jetty>dir
  Volume in drive C has no label.
@@ -143,7 +143,7 @@ file.
 Once you are complete, the contents of `C:\opt` directory should look
 like this:
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 C:\opt> dir 
  Volume in drive C has no label.
@@ -168,7 +168,7 @@ your WebApps and the configurations that they need.
 We'll start by specifying which modules we want to use (this will create
 a start.ini file and also create a few empty directories for you)
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 C:\opt\myappbase>java -jar ..\jetty\start.jar --add-to-start=deploy,http,logging
 
@@ -221,7 +221,7 @@ up and configuring a `${jetty.base}` directory.
 At this point you merely have to copy your WAR files into the webapps
 directory.
 
-[source, screen]
+[source, screen, subs="{sub-order}"]
 ....
 C:\opt\myappbase> copy C:\projects\mywebsite.war webapps\
 ....

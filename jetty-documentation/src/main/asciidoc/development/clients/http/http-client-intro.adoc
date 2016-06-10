@@ -42,7 +42,7 @@ Like a browser, it can make requests to different domains, it manages redirects,
 
 In order to use `HttpClient`, you must instantiate it, configure it, and then start it:
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 // Instantiate HttpClient
@@ -64,7 +64,7 @@ When you create a `HttpClient` instance using the parameterless constructor, you
 In order to perform HTTPS requests, you should create first a link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html[`SslContextFactory`], configure it, and pass it to `HttpClient`'s constructor.
 When created with a `SslContextFactory`, the `HttpClient` will be able to perform both HTTP and HTTPS requests to any domain.
 
-[source,java]
+[source, java, subs="{sub-order}"]
 ----
 
 // Instantiate and configure the SslContextFactory

@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -39,14 +46,6 @@ import org.junit.Test;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 
 
@@ -84,6 +83,12 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     public void testSessionExpiry() throws Exception
     {
         super.testSessionExpiry();
+    }
+    
+    @Test
+    public void testRequestForSessionWithChangedTimeout() throws Exception
+    {
+        super.testRequestForSessionWithChangedTimeout();
     }
     
     @Test
@@ -265,6 +270,8 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         }     
     }
     
+
+    
     
     public void verifySessionTimeout (DBCollection sessions, String id, int sec) throws Exception
     {
@@ -328,29 +335,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         System.err.println(o);
     }
     
-    public static class ChangeTimeoutServlet extends HttpServlet
-    {
 
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
-        {
-            String action = request.getParameter("action");
-            if ("init".equals(action))
-            {
-                HttpSession session = request.getSession(true);
-                session.setAttribute("test", "test");
-            }
-            else if ("change".equals(action))
-            {
-                String tmp = request.getParameter("val");
-                int val = (StringUtil.isBlank(tmp)?0:Integer.valueOf(tmp.trim()));
-                HttpSession session = request.getSession(false);
-                assertNotNull(session);
-                session.setMaxInactiveInterval(val);
-            }
-        }
-    }
-    
     public static class ImmediateChangeTimeoutServlet extends HttpServlet
     {
 
