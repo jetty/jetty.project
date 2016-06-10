@@ -14,9 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <bundle-symbolic-name>${project.groupId}.jmx.webapp.it</bundle-symbolic-name>
-    <scripts-dir>${project.basedir}/src/test/scripts</scripts-dir>
     <test-base-dir>${project.build.directory}/test-base</test-base-dir>
-    <test-home-dir>${project.build.directory}/test-home</test-home-dir>
   </properties>
   <dependencies>
     <dependency>
@@ -80,35 +78,4 @@
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>it-windows</id>
-      <activation>
-        <os>
-          <family>Windows</family>
-        </os>
-      </activation>
-      <properties>
-        <run.command>cmd</run.command>
-        <run.command.xtra>/c</run.command.xtra>
-        <start.script>start-jetty.bat</start.script>
-        <stop.script>stop-jetty.bat</stop.script>
-      </properties>
-    </profile>
-    <profile>
-      <id>it-unix</id>
-      <activation>
-        <os>
-          <family>unix</family>
-        </os>
-      </activation>
-      <properties>
-        <run.command>sh</run.command>
-        <run.command.xtra>--</run.command.xtra>
-        <setup.script>setup-jetty.sh</setup.script>
-        <start.script>start-jetty.sh</start.script>
-        <stop.script>stop-jetty.sh</stop.script>
-      </properties>
-    </profile>
-  </profiles>
 </project>
