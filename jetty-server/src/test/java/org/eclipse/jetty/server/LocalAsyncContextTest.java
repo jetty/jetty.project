@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -37,6 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.thread.Locker;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -63,7 +63,10 @@ public class LocalAsyncContextTest
         _server.setHandler(session);
         _server.start();
 
-        __completed.set(null);
+        try(Locker.Lock lock = _completeLock.lock())
+        {
+            __completed=null;
+        }
         __completed1.set(null);
     }
 
@@ -89,7 +92,13 @@ public class LocalAsyncContextTest
         _handler.setCompleteAfter(-1);
         response=process(null);
         check(response,"TIMEOUT");
-        spinAssertEquals(1,()->{return __completed.get()==null?0:1;});
+        
+        spinAssertEquals(1,()->{
+            try(Locker.Lock lock = _completeLock.lock())
+            {
+                return __completed==null?0:1;
+            }
+        });
         spinAssertEquals(1,()->{return __completed1.get()==null?0:1;});
     }
 
@@ -220,7 +229,13 @@ public class LocalAsyncContextTest
         _handler.setCompleteAfter2(-1);
         response=process(null);
         check(response,"STARTASYNC","DISPATCHED","startasync","STARTASYNC","DISPATCHED");
-        spinAssertEquals(1,()->{return __completed.get()==null?0:1;});
+
+        spinAssertEquals(1,()->{
+            try(Locker.Lock lock = _completeLock.lock())
+            {
+                return __completed==null?0:1;
+            }
+        });
         spinAssertEquals(0,()->{return __completed1.get()==null?0:1;});
 
     }
@@ -542,7 +557,9 @@ public class LocalAsyncContextTest
         }
     }
 
-    static AtomicReference<Throwable> __completed = new AtomicReference<>();
+    static Locker _completeLock = new Locker();
+    static Throwable __completed;
+    static Throwable __dispatched;
     static AtomicReference<Throwable> __completed1 = new AtomicReference<>();
 
     private static AsyncListener __asyncListener = new AsyncListener()
@@ -551,12 +568,27 @@ public class LocalAsyncContextTest
         public void onComplete(AsyncEvent event) throws IOException
         {
             Throwable complete = new Throwable();
-            if (!__completed.compareAndSet(null,complete))
+            Throwable dispatched = HttpChannel.getDispatchedFrom();
+            try(Locker.Lock lock = _completeLock.lock())
             {
-                __completed.get().printStackTrace();
-                complete.printStackTrace();
-                __completed.set(null);
-                throw new IllegalStateException();
+                if (__completed==null)
+                {
+                    __completed=complete;
+                    __dispatched=dispatched;
+                }
+                else
+                {
+                    System.err.println("First onCompleted dispatched from:");
+                    if (__dispatched!=null)
+                        __dispatched.printStackTrace();
+                    System.err.println("First onCompleted:");
+                    __completed.printStackTrace();
+                    System.err.println("Second onCompleted dispatched from:");
+                    if (dispatched!=null)
+                        dispatched.printStackTrace();
+                    complete.printStackTrace();
+                    throw new IllegalStateException();
+                }
             }
         }
 
@@ -564,12 +596,27 @@ public class LocalAsyncContextTest
         public void onError(AsyncEvent event) throws IOException
         {
             Throwable complete = new Throwable();
-            if (!__completed.compareAndSet(null,complete))
+            Throwable dispatched = HttpChannel.getDispatchedFrom();
+            try(Locker.Lock lock = _completeLock.lock())
             {
-                __completed.get().printStackTrace();
-                complete.printStackTrace();
-                __completed.set(null);
-                throw new IllegalStateException();
+                if (__completed==null)
+                {
+                    __completed=complete;
+                    __dispatched=dispatched;
+                }
+                else
+                {
+                    System.err.println("First onCompleted dispatched from:");
+                    if (__dispatched!=null)
+                        __dispatched.printStackTrace();
+                    System.err.println("First onCompleted:");
+                    __completed.printStackTrace();
+                    System.err.println("Second onCompleted dispatched from:");
+                    if (dispatched!=null)
+                        dispatched.printStackTrace();
+                    complete.printStackTrace();
+                    throw new IllegalStateException();
+                }
             }
         }
 
