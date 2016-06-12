@@ -18,7 +18,7 @@
 ==== Simple File Server
 
 This example shows how to create a simple file server in Jetty.
-It is perfectly suitable for test cases where you need an actual web server to obtain a file from, it could easily be configured to serve files from a directory under src/test/resources.
+It is perfectly suitable for test cases where you need an actual web server to obtain a file from, it could easily be configured to serve files from a directory under `src/test/resources`.
 Note that this does not have any logic for caching of files, either within the server or setting the appropriate headers on the response.
 It is simply a few lines that illustrate how easy it is to serve out some files.
 
@@ -34,7 +34,7 @@ After you have started things up you should be able to navigate to http://localh
 
 ===== Maven Coordinates
 
-To use this example in your project you will need the following maven dependencies declared.
+To use this example in your project you will need the following Maven dependencies declared.
 
 [source, xml, subs="{sub-order}"]
 ----
