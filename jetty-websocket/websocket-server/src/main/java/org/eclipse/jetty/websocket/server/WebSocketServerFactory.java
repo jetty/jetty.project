@@ -28,7 +28,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -88,6 +90,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
      */
     private final Scheduler scheduler = new ScheduledExecutorScheduler();
+    private final List<WebSocketSession.Listener> listeners = new CopyOnWriteArrayList<>();
     private final String supportedVersions;
     private final WebSocketPolicy defaultPolicy;
     private final EventDriverFactory eventDriverFactory;
@@ -151,6 +154,16 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             rv.append(v);
         }
         supportedVersions = rv.toString();
+    }
+
+    public void addSessionListener(WebSocketSession.Listener listener)
+    {
+        listeners.add(listener);
+    }
+
+    public void removeSessionListener(WebSocketSession.Listener listener)
+    {
+        listeners.remove(listener);
     }
 
     @Override
@@ -454,15 +467,32 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     }
 
     @Override
-    public void onSessionClosed(WebSocketSession session)
-    {
-        removeBean(session);
-    }
-
-    @Override
     public void onSessionOpened(WebSocketSession session)
     {
         addManaged(session);
+        notifySessionListeners(listener -> listener.onOpened(session));
+    }
+
+    @Override
+    public void onSessionClosed(WebSocketSession session)
+    {
+        removeBean(session);
+        notifySessionListeners(listener -> listener.onClosed(session));
+    }
+
+    private void notifySessionListeners(Consumer<WebSocketSession.Listener> consumer)
+    {
+        for (WebSocketSession.Listener listener : listeners)
+        {
+            try
+            {
+                consumer.accept(listener);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Exception while invoking listener " + listener, x);
+            }
+        }
     }
 
     @Override
