@@ -19,11 +19,14 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
+import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
@@ -245,14 +248,18 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
-        super.onSessionClosed(session);
         webSocketServerFactory.onSessionClosed(session);
     }
 
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
-        super.onSessionOpened(session);
         webSocketServerFactory.onSessionOpened(session);
+    }
+
+    @Override
+    public Set<Session> getOpenSessions()
+    {
+        return new HashSet<>(webSocketServerFactory.getBeans(Session.class));
     }
 }
