@@ -588,6 +588,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                 "\r\n";
         try (Socket socket = newSocket())
         {
+            socket.setSoTimeout((int)idleTimeout);
             OutputStream output = socket.getOutputStream();
             InputStream input = socket.getInputStream();
 
