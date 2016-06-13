@@ -24,7 +24,9 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 
-import java.io.IOException;
+import java.io.File;
+import java.lang.management.ManagementFactory;
+import java.net.URI;
 
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
@@ -32,6 +34,14 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.SimpleRequest;
+import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.jmx.ConnectorServer;
+import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,26 +51,78 @@ import org.junit.Test;
  */
 public class JmxIT
 {
-    private static JMXConnector jmxc;
-    private static MBeanServerConnection mbsc;
+    private static JMXConnector __jmxc;
+    private static MBeanServerConnection __mbsc;
+    private static Server __server;
+    private static int __port;
 
     @BeforeClass
-    public static void connectToMBeanServer() throws IOException
+    public static void connectToMBeanServer() throws Exception
     {
+        startJetty();
         JMXServiceURL url = new JMXServiceURL("service:jmx:rmi://localhost:1099/jndi/rmi://localhost:1099/jmxrmi");
-        jmxc = JMXConnectorFactory.connect(url,null);
-        mbsc = jmxc.getMBeanServerConnection();
+        __jmxc = JMXConnectorFactory.connect(url,null);
+        __mbsc = __jmxc.getMBeanServerConnection();
     }
 
     @AfterClass
-    public static void disconnectFromMBeanServer() throws IOException
+    public static void disconnectFromMBeanServer() throws Exception
     {
-        jmxc.close();
+        stopJetty();
+        __jmxc.close();
+    }
+
+    public static void startJetty() throws Exception
+    {
+        File target = MavenTestingUtils.getTargetDir();
+        File jettyBase = new File (target, "test-base");
+        File webapps = new File (jettyBase, "webapps");
+        File war = new File (webapps, "jmx-webapp.war");
+
+        //create server instance
+        __server = new Server(0);
+         
+        //set up the webapp
+        WebAppContext context = new WebAppContext();
+        
+        context.setWar(war.getCanonicalPath());
+        context.setContextPath("/jmx-webapp");
+        
+        Configuration.ClassList classlist = Configuration.ClassList
+                .setServerDefault(__server);
+        classlist.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
+                "org.eclipse.jetty.annotations.AnnotationConfiguration");
+
+        context.setAttribute(
+                            "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+                            ".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$");
+        __server.setHandler(context);
+        
+        //set up jmx remote
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        __server.addBean(mbContainer);
+
+        JMXServiceURL serviceUrl = new JMXServiceURL("rmi", "localhost", 1099, "/jndi/rmi://localhost:1099/jmxrmi");
+        ConnectorServer jmxConnServer = new ConnectorServer(serviceUrl, "org.eclipse.jetty.jmx:name=rmiconnectorserver");
+        __server.addBean(jmxConnServer);
+
+        //start server
+        __server.start();
+        
+        //remember chosen port
+        __port = ((NetworkConnector)__server.getConnectors()[0]).getLocalPort();
+    }
+    
+    
+    public static void stopJetty () throws Exception
+    {
+        if (__server != null)
+            __server.stop();
     }
 
     private String getStringAttribute(ObjectName objName, String attrName) throws Exception
     {
-        Object val = mbsc.getAttribute(objName,attrName);
+        Object val = __mbsc.getAttribute(objName,attrName);
         assertThat(attrName,val,notNullValue());
         assertThat(attrName,val,instanceOf(String.class));
         return (String)val;
@@ -68,18 +130,25 @@ public class JmxIT
 
     private int getIntegerAttribute(ObjectName objName, String attrName) throws Exception
     {
-        Object val = mbsc.getAttribute(objName,attrName);
+        Object val = __mbsc.getAttribute(objName,attrName);
         assertThat(attrName,val,notNullValue());
         assertThat(attrName,val,instanceOf(Integer.class));
         return (Integer)val;
     }
 
     @Test
+    public void testBasic() throws Exception
+    {
+        URI serverURI = new URI("http://localhost:"+String.valueOf(__port)+"/jmx-webapp/");
+        SimpleRequest req = new SimpleRequest(serverURI);
+        assertThat(req.getString("ping"),startsWith("Servlet Pong at "));
+    }
+    
+    @Test
     public void testObtainRunningServerVersion() throws Exception
     {
         ObjectName serverName = new ObjectName("org.eclipse.jetty.server:type=server,id=0");
         String version = getStringAttribute(serverName,"version");
-        System.err.println("Running version: " + version);
         assertThat("Version",version,startsWith("9.4."));
     }
 
@@ -117,7 +186,7 @@ public class JmxIT
         // Get initial count
         int count = getIntegerAttribute(pingerName,"count");
         // Operations
-        Object val = mbsc.invoke(pingerName,"ping",null,null);
+        Object val = __mbsc.invoke(pingerName,"ping",null,null);
         assertThat("ping() return",val.toString(),startsWith("Pong"));
         // Attributes
         assertThat("count",getIntegerAttribute(pingerName,"count"),is(count+1));
@@ -134,7 +203,7 @@ public class JmxIT
         // Get initial count
         int count = getIntegerAttribute(echoerName,"count");
         // Operations
-        Object val = mbsc.invoke(echoerName,"echo",new Object[]{"Its Me"},new String[]{String.class.getName()});
+        Object val = __mbsc.invoke(echoerName,"echo",new Object[]{"Its Me"},new String[]{String.class.getName()});
         assertThat("echo() return",val.toString(),is("Its Me"));
         // Attributes
         assertThat("count",getIntegerAttribute(echoerName,"count"),is(count+1));

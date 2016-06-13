@@ -181,7 +181,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 //Resource represents a packed jar
                 URI uri = target.getURI();
-                resourcesDir = Resource.newResource("jar:"+uri+"!/META-INF/resources");
+                resourcesDir = Resource.newResource(uriJarPrefix(uri,"!/META-INF/resources"));
             }
             
             if (!resourcesDir.exists() || !resourcesDir.isDirectory())
@@ -252,7 +252,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             else
             {
                 URI uri = jar.getURI();
-                webFrag = Resource.newResource("jar:"+uri+"!/META-INF/web-fragment.xml");
+                webFrag = Resource.newResource(uriJarPrefix(uri,"!/META-INF/web-fragment.xml"));
             }
             if (!webFrag.exists() || webFrag.isDirectory())
             {
@@ -401,8 +401,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public Collection<URL> getTlds (URI uri) throws IOException
     {
         HashSet<URL> tlds = new HashSet<URL>();
-        
-        URL url = new URL("jar:"+uri+"!/");
+
+        String jarUri = uriJarPrefix(uri, "!/");
+        URL url = new URL(jarUri);
         JarURLConnection jarConn = (JarURLConnection) url.openConnection();
         jarConn.setUseCaches(Resource.getDefaultUseCaches());
         JarFile jarFile = jarConn.getJarFile();
@@ -413,11 +414,21 @@ public class MetaInfConfiguration extends AbstractConfiguration
             String name = e.getName();
             if (name.startsWith("META-INF") && name.endsWith(".tld"))
             {
-                tlds.add(new URL("jar:"+uri+"!/"+name));
+                tlds.add(new URL(jarUri + name));
             }
         }
         if (!Resource.getDefaultUseCaches())
             jarFile.close();
         return tlds;
+    }
+
+    private String uriJarPrefix(URI uri, String suffix)
+    {
+        String uriString = uri.toString();
+        if (uriString.startsWith("jar:")) {
+            return uriString + suffix;
+        } else {
+            return "jar:" + uriString + suffix;
+        }
     }
 }
