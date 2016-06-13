@@ -265,6 +265,31 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         handle();
     }
+    
+    // TODO Revert once #624 debugged 
+    private static ThreadLocal<Throwable> __dispatchedFrom=new ThreadLocal<>();
+    public static Throwable getDispatchedFrom() { return __dispatchedFrom.get(); }
+    public Runnable getRunnable()
+    {
+        Throwable _dispatched = new Throwable();
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    __dispatchedFrom.set(_dispatched);
+                    handle();
+                }
+                finally
+                {
+                    __dispatchedFrom.set(null);
+                }
+            }
+        };
+    }
+
 
     AtomicReference<Action> caller = new AtomicReference<>();
     
