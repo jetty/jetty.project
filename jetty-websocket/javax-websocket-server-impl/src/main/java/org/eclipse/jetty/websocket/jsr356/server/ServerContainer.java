@@ -19,11 +19,14 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
+import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
@@ -60,7 +63,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this));
         addBean(webSocketServerFactory);
     }
-    
+
     public EndpointInstance newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
     {
         EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass(),config);
@@ -124,13 +127,13 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             deferredEndpointConfigs.add(config);
         }
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
         // Proceed with Normal Startup
         super.doStart();
-        
+
         // Process Deferred Endpoints
         if (deferredEndpointClasses != null)
         {
@@ -140,7 +143,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             }
             deferredEndpointClasses.clear();
         }
-        
+
         if (deferredEndpointConfigs != null)
         {
             for (ServerEndpointConfig config : deferredEndpointConfigs)
@@ -245,14 +248,18 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
-        super.onSessionClosed(session);
         webSocketServerFactory.onSessionClosed(session);
     }
 
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
-        super.onSessionOpened(session);
         webSocketServerFactory.onSessionOpened(session);
+    }
+
+    @Override
+    public Set<Session> getOpenSessions()
+    {
+        return new HashSet<>(webSocketServerFactory.getBeans(Session.class));
     }
 }
