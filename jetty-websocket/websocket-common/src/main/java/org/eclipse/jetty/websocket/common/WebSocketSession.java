@@ -474,7 +474,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         return new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
     }
-    
+
     /**
      * Open/Activate the session
      */

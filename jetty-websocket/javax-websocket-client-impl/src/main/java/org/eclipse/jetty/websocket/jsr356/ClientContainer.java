@@ -74,14 +74,13 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketContainerScope
 {
     private static final Logger LOG = Log.getLogger(ClientContainer.class);
-    
+
     /** The delegated Container Scope */
     private final WebSocketContainerScope scopeDelegate;
     /** Tracking all primitive decoders for the container */
     private final DecoderFactory decoderFactory;
     /** Tracking all primitive encoders for the container */
     private final EncoderFactory encoderFactory;
-
     /** Tracking for all declared Client endpoints */
     private final Map<Class<?>, EndpointMetadata> endpointClientMetadataCache;
     /** Tracking for all open Sessions */
@@ -95,11 +94,11 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         this(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()));
         client.setDaemon(true);
     }
-    
+
     public ClientContainer(WebSocketContainerScope scope)
     {
         boolean trustAll = Boolean.getBoolean("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
-        
+
         this.scopeDelegate = scope;
         client = new WebSocketClient(scope, new SslContextFactory(trustAll));
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
@@ -112,7 +111,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
         ShutdownThread.register(this);
     }
-    
+
     private Session connect(EndpointInstance instance, URI path) throws IOException
     {
         Objects.requireNonNull(instance,"EndpointInstance cannot be null");
@@ -190,18 +189,18 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         EndpointInstance instance = newClientEndpointInstance(endpoint,null);
         return connect(instance,path);
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
         super.doStart();
-        
+
         // Initialize the default decoder / encoder factories
         EmptyClientEndpointConfig empty = new EmptyClientEndpointConfig();
         this.decoderFactory.init(empty);
         this.encoderFactory.init(empty);
     }
-    
+
     @Override
     protected void doStop() throws Exception
     {
@@ -223,11 +222,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
     public EndpointMetadata getClientEndpointMetadata(Class<?> endpoint, EndpointConfig config)
     {
-        EndpointMetadata metadata = null;
-
         synchronized (endpointClientMetadataCache)
         {
-            metadata = endpointClientMetadataCache.get(endpoint);
+            EndpointMetadata metadata = endpointClientMetadataCache.get(endpoint);
 
             if (metadata != null)
             {
@@ -257,7 +254,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
                 err.append(endpoint.getName());
                 err.append("] does not extend @").append(ClientEndpoint.class.getName());
                 err.append(" or extend from ").append(Endpoint.class.getName());
-                throw new InvalidWebSocketException("Unable to identify as valid Endpoint: " + endpoint);
+                throw new InvalidWebSocketException(err.toString());
             }
 
             endpointClientMetadataCache.put(endpoint,metadata);
@@ -339,7 +336,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     {
         return scopeDelegate.getPolicy();
     }
-    
+
     @Override
     public SslContextFactory getSslContextFactory()
     {
@@ -403,7 +400,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
                     Session.class.getName());
         }
     }
-    
+
     @Override
     public void setAsyncSendTimeout(long ms)
     {

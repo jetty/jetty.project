@@ -60,7 +60,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this));
         addBean(webSocketServerFactory);
     }
-    
+
     public EndpointInstance newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
     {
         EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass(),config);
@@ -124,13 +124,13 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             deferredEndpointConfigs.add(config);
         }
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
         // Proceed with Normal Startup
         super.doStart();
-        
+
         // Process Deferred Endpoints
         if (deferredEndpointClasses != null)
         {
@@ -140,7 +140,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             }
             deferredEndpointClasses.clear();
         }
-        
+
         if (deferredEndpointConfigs != null)
         {
             for (ServerEndpointConfig config : deferredEndpointConfigs)
