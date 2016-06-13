@@ -20,13 +20,11 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
@@ -83,8 +81,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     private final EncoderFactory encoderFactory;
     /** Tracking for all declared Client endpoints */
     private final Map<Class<?>, EndpointMetadata> endpointClientMetadataCache;
-    /** Tracking for all open Sessions */
-    private Set<Session> openSessions = new CopyOnWriteArraySet<>();
     /** The jetty websocket client in use for this container */
     private WebSocketClient client;
 
@@ -328,7 +324,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
      */
     public Set<Session> getOpenSessions()
     {
-        return Collections.unmodifiableSet(this.openSessions);
+        return new HashSet<>(getBeans(Session.class));
     }
 
     @Override
@@ -378,7 +374,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     {
         if (session instanceof Session)
         {
-            this.openSessions.remove((Session)session);
+            removeBean(session);
         }
         else
         {
@@ -392,7 +388,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     {
         if (session instanceof Session)
         {
-            this.openSessions.add((Session)session);
+            addManaged(session);
         }
         else
         {
