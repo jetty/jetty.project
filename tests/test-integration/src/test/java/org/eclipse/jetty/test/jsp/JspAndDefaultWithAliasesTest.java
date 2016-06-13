@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.test.jsp;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,6 +45,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+
 /**
  * Test various paths for JSP resources that tickle various java.io.File bugs to get around the JspServlet matching, that then flows to the DefaultServlet to be
  * served as source files.
@@ -64,7 +64,7 @@ public class JspAndDefaultWithAliasesTest
     public static Collection<String[]> data()
     {
         List<String[]> data = new ArrayList<String[]>();
-        
+
         double javaVersion = Double.parseDouble(System.getProperty("java.specification.version"));
 
         // @formatter:off
@@ -75,7 +75,7 @@ public class JspAndDefaultWithAliasesTest
         data.add(new String[] { "false","/dump.jsp%00x/dump.jsp" });
         data.add(new String[] { "false","/dump.jsp%00/dump.jsp" });
 
-        if (javaVersion >= 1.7) 
+        if (javaVersion >= 1.7)
         {
             data.add(new String[] { "false","/dump.jsp%00x" });
             data.add(new String[] { "false","/dump.jsp%00x/" });
@@ -89,7 +89,7 @@ public class JspAndDefaultWithAliasesTest
     @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new Server(0);  
+        server = new Server(0);
 
         // Configure LoginService
         HashLoginService login = new HashLoginService();
@@ -111,14 +111,14 @@ public class JspAndDefaultWithAliasesTest
 
         // add jsp
         ServletHolder jsp = new ServletHolder(new FakeJspServlet());
-        context.addServlet(jsp,"*.jsp");        
+        context.addServlet(jsp,"*.jsp");
         jsp.setInitParameter("classpath",context.getClassPath());
 
         // add context
         server.setHandler(context);
 
         server.start();
-        
+
         int port = ((NetworkConnector)server.getConnectors()[0]).getLocalPort();
 
         serverURI = new URI("http://localhost:" + port + "/");
@@ -145,7 +145,7 @@ public class JspAndDefaultWithAliasesTest
         // make sure that jsp actually ran, and didn't just get passed onto
         // the default servlet to return the jsp source
         String body = getResponseBody(conn);
-        
+
         if (knownBypass && body.indexOf("<%@")>=0)
             LOG.info("Known bypass of mapping by "+path);
         else
@@ -166,7 +166,7 @@ public class JspAndDefaultWithAliasesTest
 
         if (conn.getResponseCode()!=404)
             System.err.println(conn.getResponseMessage());
-        
+
         // Of other possible paths, only 404 Not Found is expected
         Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
     }
@@ -175,13 +175,13 @@ public class JspAndDefaultWithAliasesTest
     public void testGetReference() throws Exception
     {
         URI uri = serverURI.resolve(path);
-        
+
         HttpURLConnection conn = null;
         try
         {
             conn = (HttpURLConnection)uri.toURL().openConnection();
-            conn.setConnectTimeout(1000);
-            conn.setReadTimeout(1000);
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(5000);
             assertResponse(conn);
         }
         finally
