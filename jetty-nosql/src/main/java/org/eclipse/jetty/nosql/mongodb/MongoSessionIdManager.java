@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
-
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Random;
@@ -175,12 +176,33 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         _server = server;
         _sessions = sessions;
 
-        _sessions.createIndex(
-                BasicDBObjectBuilder.start().add("id",1).get(),
-                BasicDBObjectBuilder.start().add("unique",true).add("sparse",false).get());
-        _sessions.createIndex(
-                BasicDBObjectBuilder.start().add("id",1).add("version",1).get(),
-                BasicDBObjectBuilder.start().add("unique",true).add("sparse",false).get());
+        try {
+            try {
+                Method ensureIndexMethod = _sessions.getClass().getMethod("ensureIndex", DBCollection.class, DBCollection.class);
+                ensureIndexMethod.invoke(_sessions,
+                        BasicDBObjectBuilder.start().add("id",1).get(),
+                        BasicDBObjectBuilder.start().add("unique",true).add("sparse",false).get());
+                ensureIndexMethod.invoke(_sessions,
+                        BasicDBObjectBuilder.start().add("id",1).add("version",1).get(),
+                        BasicDBObjectBuilder.start().add("unique",true).add("sparse",false).get());
+            } catch (NoSuchMethodException e) {
+                try {
+                    Method createIndexMethod = _sessions.getClass().getMethod("createIndex", DBCollection.class, DBCollection.class);
+                    createIndexMethod.invoke(_sessions,
+                            BasicDBObjectBuilder.start().add("id",1).get(),
+                            BasicDBObjectBuilder.start().add("unique",true).add("sparse",false).get());
+                    createIndexMethod.invoke(_sessions,
+                            BasicDBObjectBuilder.start().add("id",1).add("version",1).get(),
+                            BasicDBObjectBuilder.start().add("unique",true).add("sparse",false).get());
+                } catch (NoSuchMethodException e1) {
+                    // never happen
+                }
+            }
+        } catch (IllegalAccessException e) {
+            __log.debug(e);
+        } catch (InvocationTargetException e) {
+            __log.debug(e);
+        }
 
     }
  
