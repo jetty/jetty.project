@@ -26,12 +26,16 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.junit.After;
+import org.junit.Rule;
 
 public abstract class AbstractConnectHandlerTest
 {
+    @Rule
+    public final TestTracker tracker = new TestTracker();
     protected Server server;
     protected ServerConnector serverConnector;
     protected Server proxy;
