@@ -22,3 +22,26 @@ Professional Services
 ============
 
 Expert advice and production support are available through [http://webtide.com](Webtide.com).
+
+关于该分支
+============
+该分支维护jetty9.2.x的正式发布，并做一些定制修改。
+当有正式的release时，会将release合并到该分支中。
+
+定制
+============
+
+改动了`jetty-nosql`模块，将mongodb的驱动升级到了3.0.x版本
+
+位置:
+```
+org.eclipse.jetty.nosql.mongodb.MongoSessionIdManager.MongoSessionIdManager(org.eclipse.jetty.server.Server, com.mongodb.DBCollection)
+```
+mongo-java-driver 2.x
+```
+com.mongodb.DBCollection.createIndex(com.mongodb.DBObject)
+```
+mongo-java-driver 3.x
+```
+com.mongodb.DBCollection.createIndex(com.mongodb.DBObject)
+```
