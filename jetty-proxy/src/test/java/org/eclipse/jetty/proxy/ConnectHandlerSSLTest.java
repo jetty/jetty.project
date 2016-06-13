@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.proxy;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -35,12 +33,13 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Before;
@@ -77,23 +76,18 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
-            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
-            SimpleHttpResponse response = readResponse(input);
-            Assert.assertEquals("200", response.getCode());
-
-            // Be sure the buffered input does not have anything buffered
-            Assert.assertFalse(input.ready());
+            HttpTester.Response response = readResponse(socket.getInputStream());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             // Upgrade the socket to SSL
             try (SSLSocket sslSocket = wrapSocket(socket))
             {
                 output = sslSocket.getOutputStream();
-                input = new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
 
                 request =
                         "GET /echo HTTP/1.1\r\n" +
@@ -102,9 +96,9 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
-                response = readResponse(input);
-                Assert.assertEquals("200", response.getCode());
-                Assert.assertEquals("GET /echo", response.getBody());
+                response = readResponse(sslSocket.getInputStream());
+                Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+                Assert.assertEquals("GET /echo", response.getContent());
             }
         }
     }
@@ -120,23 +114,18 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
-            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
-            SimpleHttpResponse response = readResponse(input);
-            Assert.assertEquals("200", response.getCode());
-
-            // Be sure the buffered input does not have anything buffered
-            Assert.assertFalse(input.ready());
+            HttpTester.Response response = readResponse(socket.getInputStream());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             // Upgrade the socket to SSL
             try (SSLSocket sslSocket = wrapSocket(socket))
             {
                 output = sslSocket.getOutputStream();
-                input = new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
 
                 for (int i = 0; i < 10; ++i)
                 {
@@ -149,9 +138,9 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                     output.write(request.getBytes(StandardCharsets.UTF_8));
                     output.flush();
 
-                    response = readResponse(input);
-                    Assert.assertEquals("200", response.getCode());
-                    Assert.assertEquals("POST /echo?param=" + i + "\r\nHELLO", response.getBody());
+                    response = readResponse(sslSocket.getInputStream());
+                    Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+                    Assert.assertEquals("POST /echo?param=" + i + "\r\nHELLO", response.getContent());
                 }
             }
         }
@@ -187,10 +176,14 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 while ((read = input.read()) >= 0)
                     baos.write(read);
                 baos.close();
+                byte[] bytes = baos.toByteArray();
 
                 ServletOutputStream output = httpResponse.getOutputStream();
-                output.println(builder.toString());
-                output.write(baos.toByteArray());
+                if (bytes.length == 0)
+                    output.print(builder.toString());
+                else
+                    output.println(builder.toString());
+                output.write(bytes);
             }
             else
             {

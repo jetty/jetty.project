@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.proxy;
 
-import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.Socket;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.junit.After;
 import org.junit.Rule;
 
@@ -69,9 +68,10 @@ public abstract class AbstractConnectHandlerTest
         proxy.stop();
     }
 
-    protected SimpleHttpResponse readResponse(BufferedReader reader) throws IOException
+    protected HttpTester.Response readResponse(InputStream inputStream) throws IOException
     {
-        return new SimpleHttpParser().readResponse(reader);
+        HttpTester.Input input = HttpTester.from(inputStream);
+        return HttpTester.parseResponse(input);
     }
 
     protected Socket newSocket() throws IOException
