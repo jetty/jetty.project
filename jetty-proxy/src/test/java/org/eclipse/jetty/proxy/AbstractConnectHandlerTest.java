@@ -18,24 +18,25 @@
 
 package org.eclipse.jetty.proxy;
 
-import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.Socket;
 
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.After;
+import org.junit.Rule;
 
 public abstract class AbstractConnectHandlerTest
 {
+    @Rule
+    public final TestTracker tracker = new TestTracker();
     protected Server server;
     protected ServerConnector serverConnector;
     protected Server proxy;
-    protected Connector proxyConnector;
+    protected ServerConnector proxyConnector;
     protected ConnectHandler connectHandler;
 
     protected void prepareProxy() throws Exception
@@ -65,14 +66,15 @@ public abstract class AbstractConnectHandlerTest
         proxy.stop();
     }
 
-    protected SimpleHttpResponse readResponse(BufferedReader reader) throws IOException
+    protected HttpTester.Response readResponse(InputStream inputStream) throws IOException
     {
-        return new SimpleHttpParser().readResponse(reader);
+        HttpTester.Input input = HttpTester.from(inputStream);
+        return HttpTester.parseResponse(input);
     }
 
     protected Socket newSocket() throws IOException
     {
-        Socket socket = new Socket("localhost", ((NetworkConnector)proxyConnector).getLocalPort());
+        Socket socket = new Socket("localhost", proxyConnector.getLocalPort());
         socket.setSoTimeout(5000);
         return socket;
     }

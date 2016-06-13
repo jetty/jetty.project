@@ -364,6 +364,7 @@ public class ConnectHandler extends HandlerWrapper
         try
         {
             response.setStatus(statusCode);
+            response.setContentLength(0);
             if (statusCode != HttpServletResponse.SC_OK)
                 response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
             response.getOutputStream().close();
