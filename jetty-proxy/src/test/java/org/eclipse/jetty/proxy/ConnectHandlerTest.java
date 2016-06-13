@@ -573,6 +573,13 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECTAndPOSTWithBigBody() throws Exception
     {
+        // Use a longer idle timeout since this test
+        // may take a long time on slower machines.
+        long idleTimeout = 5 * 60 * 1000;
+        serverConnector.setIdleTimeout(idleTimeout);
+        proxyConnector.setIdleTimeout(idleTimeout);
+        connectHandler.setIdleTimeout(idleTimeout);
+
         String hostPort = "localhost:" + serverConnector.getLocalPort();
 
         String request = "" +

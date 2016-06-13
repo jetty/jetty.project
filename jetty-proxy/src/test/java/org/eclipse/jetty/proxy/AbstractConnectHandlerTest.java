@@ -23,8 +23,6 @@ import java.io.InputStream;
 import java.net.Socket;
 
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.TestTracker;
@@ -38,7 +36,7 @@ public abstract class AbstractConnectHandlerTest
     protected Server server;
     protected ServerConnector serverConnector;
     protected Server proxy;
-    protected Connector proxyConnector;
+    protected ServerConnector proxyConnector;
     protected ConnectHandler connectHandler;
 
     protected void prepareProxy() throws Exception
@@ -76,7 +74,7 @@ public abstract class AbstractConnectHandlerTest
 
     protected Socket newSocket() throws IOException
     {
-        Socket socket = new Socket("localhost", ((NetworkConnector)proxyConnector).getLocalPort());
+        Socket socket = new Socket("localhost", proxyConnector.getLocalPort());
         socket.setSoTimeout(5000);
         return socket;
     }
