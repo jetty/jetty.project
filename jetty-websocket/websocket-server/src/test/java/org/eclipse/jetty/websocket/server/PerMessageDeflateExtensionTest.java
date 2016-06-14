@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +42,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
 public class PerMessageDeflateExtensionTest
@@ -145,7 +145,7 @@ public class PerMessageDeflateExtensionTest
         {
             client.start();
             // Make sure the read times out if there are problems with the implementation
-            client.setMaxIdleTimeout(TimeUnit.SECONDS.toMillis(1));
+            client.setMaxIdleTimeout(TimeUnit.SECONDS.toMillis(15));
 
             CaptureSocket clientSocket = new CaptureSocket();
             ClientUpgradeRequest request = new ClientUpgradeRequest();
@@ -155,7 +155,7 @@ public class PerMessageDeflateExtensionTest
             Future<Session> fut = client.connect(clientSocket,server.getServerUri(),request);
 
             // Wait for connect
-            Session session = fut.get(3,TimeUnit.SECONDS);
+            Session session = fut.get(5,TimeUnit.SECONDS);
 
             assertThat("Response.extensions",getNegotiatedExtensionList(session),containsString("permessage-deflate"));
 
@@ -171,7 +171,7 @@ public class PerMessageDeflateExtensionTest
             // Client sends first message
             session.getRemote().sendBytes(ByteBuffer.wrap(msg));
 
-            clientSocket.messages.awaitEventCount(1,1,TimeUnit.SECONDS);
+            clientSocket.messages.awaitEventCount(1,5,TimeUnit.SECONDS);
             String echoMsg = clientSocket.messages.poll();
             Assert.assertThat("Echo'd Message",echoMsg,is("binary[sha1="+sha1+"]"));
         }
