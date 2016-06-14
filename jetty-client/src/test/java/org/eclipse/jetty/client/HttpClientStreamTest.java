@@ -97,7 +97,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                 .scheme(scheme)
                 .file(upload)
                 .onRequestSuccess(request -> requestTime.set(System.nanoTime()))
-                .timeout(10, TimeUnit.SECONDS)
+                .timeout(30, TimeUnit.SECONDS)
                 .send();
         long responseTime = System.nanoTime();
 
