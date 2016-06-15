@@ -204,9 +204,14 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         // index our accessed and valid fields so that purges are faster, note that the "valid" field is first
         // so that we can take advantage of index prefixes
         // http://docs.mongodb.org/manual/core/index-compound/#compound-index-prefix
-        _sessions.ensureIndex(
-                BasicDBObjectBuilder.start().add(MongoSessionManager.__VALID, 1).add(MongoSessionManager.__ACCESSED, 1).get(),
-                BasicDBObjectBuilder.start().add("sparse", false).add("background", true).get());
+        
+        DBObject validKey = BasicDBObjectBuilder.start().add(MongoSessionManager.__VALID, 1).add(MongoSessionManager.__ACCESSED, 1).get();
+        _sessions.createIndex(validKey,
+                BasicDBObjectBuilder.start()
+                .add("name", MongoSessionManager.__VALID+"_1_"+MongoSessionManager.__ACCESSED+"_1")
+                .add("ns", _sessions.getFullName())
+                .add("sparse", false)
+                .add("background", true).get());
     }
  
     /* ------------------------------------------------------------ */
