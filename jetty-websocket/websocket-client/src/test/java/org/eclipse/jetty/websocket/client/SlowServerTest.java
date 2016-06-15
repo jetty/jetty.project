@@ -88,8 +88,8 @@ public class SlowServerTest
         sconnection.upgrade();
 
         // Confirm connected
-        future.get(500,TimeUnit.MILLISECONDS);
-        tsocket.waitForConnected(500,TimeUnit.MILLISECONDS);
+        future.get(30,TimeUnit.SECONDS);
+        tsocket.waitForConnected(30,TimeUnit.SECONDS);
 
         int messageCount = 10;
 
@@ -135,8 +135,8 @@ public class SlowServerTest
         serverConn.upgrade();
 
         // Confirm connected
-        clientConnectFuture.get(500,TimeUnit.MILLISECONDS);
-        clientSocket.waitForConnected(500,TimeUnit.MILLISECONDS);
+        clientConnectFuture.get(30,TimeUnit.SECONDS);
+        clientSocket.waitForConnected(30,TimeUnit.SECONDS);
 
         // Have server write slowly.
         int messageCount = 1000;
