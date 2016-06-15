@@ -19,10 +19,13 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
 import com.mongodb.WriteResult;
 
@@ -35,6 +38,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
@@ -340,7 +344,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         Long expiry = (Long)sessionDocument.get(__EXPIRY);
         
         if (expiry.longValue() <= 0)
-            return false; //never expires, its good
+            return true; //never expires, its good
         return (expiry.longValue() > System.currentTimeMillis()); //expires later
     }
 
@@ -358,9 +362,9 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         //firstly ask mongo to verify if these candidate ids have expired - all of
         //these candidates will be for our node
         BasicDBObject query = new BasicDBObject();     
-        query.put(__ID,new BasicDBObject("$in", candidates));
-        query.put(__EXPIRY, new BasicDBObject("$gt", 0));
-        query.put(__EXPIRY, new BasicDBObject("$lt", upperBound));   
+        query.append(__ID,new BasicDBObject("$in", candidates));
+        query.append(__EXPIRY, new BasicDBObject("$gt", 0));
+        query.append(__EXPIRY, new BasicDBObject("$lt", upperBound));   
 
         DBCursor verifiedExpiredSessions = null;
         try  
@@ -378,25 +382,32 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             if (verifiedExpiredSessions != null) verifiedExpiredSessions.close();
         }
 
-        //now ask mongo to find sessions last managed by other nodes that expired a while ago 
+        //now ask mongo to find sessions last managed by any nodes that expired a while ago 
         //if this is our first expiry check, make sure that we only grab really old sessions
         if (_lastExpiryCheckTime <= 0)
             upperBound = (now - (3*(1000L * _gracePeriodSec)));
         else
             upperBound =  _lastExpiryCheckTime - (1000L * _gracePeriodSec);
         
-        query.clear();
-        query.put(__EXPIRY, new BasicDBObject("$gt", 0));
-        query.put(__EXPIRY, new BasicDBObject("$lt", upperBound));
+        query = new BasicDBObject();
+        BasicDBObject gt = new BasicDBObject(__EXPIRY, new BasicDBObject("$gt", 0));
+        BasicDBObject lt = new BasicDBObject (__EXPIRY, new BasicDBObject("$lt", upperBound));
+        BasicDBList list = new BasicDBList();
+        list.add(gt);
+        list.add(lt);
+        query.append("and", list);
 
         DBCursor oldExpiredSessions = null;
         try
         {
-            oldExpiredSessions = _dbSessions.find(query, new BasicDBObject(__ID, 1));
+            BasicDBObject bo = new BasicDBObject(__ID, 1);
+            bo.append(__EXPIRY, 1);
+            
+            oldExpiredSessions = _dbSessions.find(query, bo);
             for (DBObject session : oldExpiredSessions)
             {
                 String id = (String)session.get(__ID);
-                if (LOG.isDebugEnabled()) LOG.debug("{} Mongo found old expired session {}", _context, id);
+                if (LOG.isDebugEnabled()) LOG.debug("{} Mongo found old expired session {}", _context, id+" exp="+session.get(__EXPIRY));
                 expiredSessions.add(id);
             }
 
@@ -414,7 +425,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
      */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
-    {
+    {        
         NoSqlSessionData nsqd = (NoSqlSessionData)data;
         
         // Form query for upsert
@@ -435,7 +446,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             version = new Long(1);
             sets.put(__CREATED,nsqd.getCreated());
             sets.put(__VALID,true);
-
             sets.put(getContextSubfield(__VERSION),version);
             sets.put(__MAX_IDLE, nsqd.getMaxInactiveMs());
             sets.put(__EXPIRY, nsqd.getExpiry());
@@ -473,14 +483,13 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         Set<String> names = nsqd.takeDirtyAttributes();
 
         if (lastSaveTime <= 0)
-        {
+        {         
             names.addAll(nsqd.getAllAttributeNames()); // note dirty may include removed names
         }
 
 
         for (String name : names)
         {
-
             Object value = data.getAttribute(name);
             if (value == null)
                 unsets.put(getContextField() + "." + encodeName(name),1);
@@ -509,14 +518,37 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         
         _version_1 = new BasicDBObject(getContextSubfield(__VERSION),1);
         
+        ensureIndexes();
+        
         super.doStart();
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        // TODO Auto-generated method stub
         super.doStop();
+    }
+    
+    
+    protected void ensureIndexes() throws MongoException
+    {
+        DBObject idKey = BasicDBObjectBuilder.start().add("id", 1).get();        
+        _dbSessions.createIndex(idKey,
+                              BasicDBObjectBuilder.start()
+                              .add("name", "id_1")
+                              .add("ns", _dbSessions.getFullName())
+                              .add("sparse", false)
+                              .add("unique", true)
+                              .get());
+
+        DBObject versionKey = BasicDBObjectBuilder.start().add("id", 1).add("version", 1).get();       
+        _dbSessions.createIndex(versionKey, BasicDBObjectBuilder.start()
+                              .add("name", "id_1_version_1")
+                              .add("ns", _dbSessions.getFullName())
+                              .add("sparse", false)
+                              .add("unique", true)
+                              .get());
+        //TODO perhaps index on expiry time?
     }
 
     /*------------------------------------------------------------ */
