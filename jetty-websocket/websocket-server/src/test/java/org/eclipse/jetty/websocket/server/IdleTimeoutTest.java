@@ -94,7 +94,7 @@ public class IdleTimeoutTest
             client.write(new TextFrame().setPayload("Hello"));
 
             // Expect server to have closed due to its own timeout
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
             WebSocketFrame frame = frames.poll();
             Assert.assertThat("frame opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);

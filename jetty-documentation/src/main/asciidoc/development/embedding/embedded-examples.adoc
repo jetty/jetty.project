@@ -37,7 +37,7 @@ include::examples/embedded-one-webapp.adoc[]
 ==== Web Application with JSP
 
 This example is very similar to the one in the previous section, although it enables the embedded webapp to use JSPs.
-As of jetty-9.2, we use the JSP engine from Apache, which relies on a Servlet Specification 3.1 style ServletContainerInitializer to initialize itself.
+As of jetty-9.2, we use the JSP engine from Apache, which relies on a Servlet Specification 3.1 style `ServletContainerInitializer` to initialize itself.
 To get this to work with Jetty, you need to enable annotations processing, as shown in this example code:
 
 [source, java, subs="{sub-order}"]
@@ -52,7 +52,7 @@ After you have started things up you should be able to navigate to http://localh
 
 ===== Maven Coordinates
 
-To use this example in your project, you will need the following maven dependencies declared, in addition to those from the previous section:
+To use this example in your project, you will need the following Maven dependencies declared, in addition to those from the previous section:
 
 [source, xml, subs="{sub-order}"]
 ----

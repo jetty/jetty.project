@@ -99,7 +99,7 @@ public class TrackingSocket extends WebSocketAdapter
 
     public void assertWasOpened() throws InterruptedException
     {
-        Assert.assertThat("Was Opened",openLatch.await(500,TimeUnit.MILLISECONDS),is(true));
+        Assert.assertThat("Was Opened",openLatch.await(30,TimeUnit.SECONDS),is(true));
     }
 
     public void awaitMessage(int expectedMessageCount, TimeUnit timeoutUnit, int timeoutDuration) throws TimeoutException, InterruptedException

@@ -75,7 +75,7 @@ public class SessionTest
             final IBlockheadServerConnection srvSock = server.accept();
             srvSock.upgrade();
 
-            Session sess = future.get(500,TimeUnit.MILLISECONDS);
+            Session sess = future.get(30000,TimeUnit.MILLISECONDS);
             Assert.assertThat("Session",sess,notNullValue());
             Assert.assertThat("Session.open",sess.isOpen(),is(true));
             Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
@@ -93,9 +93,9 @@ public class SessionTest
             {
                 remote.flush();
             }
-            srvSock.echoMessage(1,500,TimeUnit.MILLISECONDS);
+            srvSock.echoMessage(1,30000,TimeUnit.MILLISECONDS);
             // wait for response from server
-            cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
+            cliSock.waitForMessage(30000,TimeUnit.MILLISECONDS);
             
             Set<WebSocketSession> open = client.getOpenSessions();
             Assert.assertThat("(Before Close) Open Sessions.size", open.size(), is(1));
@@ -104,8 +104,9 @@ public class SessionTest
             cliSock.close();
             srvSock.close();
             
-            cliSock.waitForClose(500,TimeUnit.MILLISECONDS);
+            cliSock.waitForClose(30000,TimeUnit.MILLISECONDS);
             open = client.getOpenSessions();
+            // TODO this sometimes fails!
             Assert.assertThat("(After Close) Open Sessions.size", open.size(), is(0));
         }
         finally

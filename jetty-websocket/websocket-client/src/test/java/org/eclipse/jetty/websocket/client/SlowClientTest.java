@@ -86,8 +86,8 @@ public class SlowClientTest
         sconnection.upgrade();
 
         // Confirm connected
-        future.get(500, TimeUnit.MILLISECONDS);
-        tsocket.waitForConnected(500, TimeUnit.MILLISECONDS);
+        future.get(30,TimeUnit.SECONDS);
+        tsocket.waitForConnected(30,TimeUnit.SECONDS);
 
         int messageCount = 10;
 

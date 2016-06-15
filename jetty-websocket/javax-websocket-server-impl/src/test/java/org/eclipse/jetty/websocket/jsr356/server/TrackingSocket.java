@@ -100,7 +100,7 @@ public abstract class TrackingSocket
 
     public void assertWasOpened() throws InterruptedException
     {
-        Assert.assertThat("Was Opened",openLatch.await(500,TimeUnit.MILLISECONDS),is(true));
+        Assert.assertThat("Was Opened",openLatch.await(30000,TimeUnit.MILLISECONDS),is(true));
     }
 
     public void clear()

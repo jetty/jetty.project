@@ -108,7 +108,7 @@ public class WebSocketClientTest
             final IBlockheadServerConnection srvSock = server.accept();
             srvSock.upgrade();
 
-            Session sess = future.get(500,TimeUnit.MILLISECONDS);
+            Session sess = future.get(30,TimeUnit.SECONDS);
             Assert.assertThat("Session",sess,notNullValue());
             Assert.assertThat("Session.open",sess.isOpen(),is(true));
             Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
@@ -124,9 +124,9 @@ public class WebSocketClientTest
             remote.sendStringByFuture("Hello World!");
             if (remote.getBatchMode() == BatchMode.ON)
                 remote.flush();
-            srvSock.echoMessage(1,500,TimeUnit.MILLISECONDS);
+            srvSock.echoMessage(1,30,TimeUnit.SECONDS);
             // wait for response from server
-            cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
+            cliSock.waitForMessage(30,TimeUnit.SECONDS);
 
             cliSock.assertMessage("Hello World!");
         }
@@ -155,7 +155,7 @@ public class WebSocketClientTest
             final IBlockheadServerConnection srvSock = server.accept();
             srvSock.upgrade();
 
-            Session sess = future.get(500,TimeUnit.MILLISECONDS);
+            Session sess = future.get(30,TimeUnit.SECONDS);
             Assert.assertThat("Session",sess,notNullValue());
             Assert.assertThat("Session.open",sess.isOpen(),is(true));
             Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
@@ -193,7 +193,7 @@ public class WebSocketClientTest
             srvSock.upgrade();
 
             // Validate connect
-            Session sess = future.get(500,TimeUnit.MILLISECONDS);
+            Session sess = future.get(30,TimeUnit.SECONDS);
             Assert.assertThat("Session",sess,notNullValue());
             Assert.assertThat("Session.open",sess.isOpen(),is(true));
             Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
@@ -203,7 +203,7 @@ public class WebSocketClientTest
             srvSock.write(new TextFrame().setPayload("Hello World"));
 
             // Verify connect
-            future.get(500,TimeUnit.MILLISECONDS);
+            future.get(30,TimeUnit.SECONDS);
             wsocket.assertWasOpened();
             wsocket.awaitMessage(1,TimeUnit.SECONDS,2);
 
@@ -230,7 +230,7 @@ public class WebSocketClientTest
             IBlockheadServerConnection ssocket = server.accept();
             ssocket.upgrade();
 
-            future.get(500,TimeUnit.MILLISECONDS);
+            future.get(30,TimeUnit.SECONDS);
 
             Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
 
@@ -270,7 +270,7 @@ public class WebSocketClientTest
             IBlockheadServerConnection ssocket = server.accept();
             ssocket.upgrade();
 
-            future.get(500,TimeUnit.MILLISECONDS);
+            future.get(30,TimeUnit.SECONDS);
 
             Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
 
@@ -310,7 +310,7 @@ public class WebSocketClientTest
 
             wsocket.awaitConnect(1,TimeUnit.SECONDS);
 
-            Session sess = future.get(500,TimeUnit.MILLISECONDS);
+            Session sess = future.get(30,TimeUnit.SECONDS);
             Assert.assertThat("Session",sess,notNullValue());
             Assert.assertThat("Session.open",sess.isOpen(),is(true));
 
@@ -350,7 +350,7 @@ public class WebSocketClientTest
             IBlockheadServerConnection ssocket = server.accept();
             ssocket.upgrade();
 
-            future.get(500,TimeUnit.MILLISECONDS);
+            future.get(30,TimeUnit.SECONDS);
 
             Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
 

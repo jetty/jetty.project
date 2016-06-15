@@ -115,7 +115,7 @@ public class ClientCloseTest
         public void assertReceivedError(Class<? extends Throwable> expectedThrownClass, Matcher<String> messageMatcher) throws TimeoutException,
                 InterruptedException
         {
-            errorQueue.awaitEventCount(1,500,TimeUnit.MILLISECONDS);
+            errorQueue.awaitEventCount(1,30,TimeUnit.SECONDS);
             Throwable actual = errorQueue.poll();
             Assert.assertThat("Client Error Event",actual,instanceOf(expectedThrownClass));
             if (messageMatcher == null)
@@ -193,10 +193,10 @@ public class ClientCloseTest
     private void confirmConnection(CloseTrackingSocket clientSocket, Future<Session> clientFuture, IBlockheadServerConnection serverConns) throws Exception
     {
         // Wait for client connect on via future
-        clientFuture.get(500,TimeUnit.MILLISECONDS);
+        clientFuture.get(30,TimeUnit.SECONDS);
 
         // Wait for client connect via client websocket
-        Assert.assertThat("Client WebSocket is Open",clientSocket.openLatch.await(500,TimeUnit.MILLISECONDS),is(true));
+        Assert.assertThat("Client WebSocket is Open",clientSocket.openLatch.await(30,TimeUnit.SECONDS),is(true));
 
         try
         {
@@ -205,10 +205,10 @@ public class ClientCloseTest
             Future<Void> testFut = clientSocket.getRemote().sendStringByFuture(echoMsg);
 
             // Wait for send future
-            testFut.get(500,TimeUnit.MILLISECONDS);
+            testFut.get(30,TimeUnit.SECONDS);
 
             // Read Frame on server side
-            IncomingFramesCapture serverCapture = serverConns.readFrames(1,500,TimeUnit.MILLISECONDS);
+            IncomingFramesCapture serverCapture = serverConns.readFrames(1,30,TimeUnit.SECONDS);
             serverCapture.assertNoErrors();
             serverCapture.assertFrameCount(1);
             WebSocketFrame frame = serverCapture.getFrames().poll();
@@ -237,7 +237,7 @@ public class ClientCloseTest
     private void confirmServerReceivedCloseFrame(IBlockheadServerConnection serverConn, int expectedCloseCode, Matcher<String> closeReasonMatcher) throws IOException,
             TimeoutException
     {
-        IncomingFramesCapture serverCapture = serverConn.readFrames(1,500,TimeUnit.MILLISECONDS);
+        IncomingFramesCapture serverCapture = serverConn.readFrames(1,30,TimeUnit.SECONDS);
         serverCapture.assertNoErrors();
         serverCapture.assertFrameCount(1);
         serverCapture.assertHasFrame(OpCode.CLOSE,1);
