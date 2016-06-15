@@ -92,7 +92,7 @@ public class WebSocketOverSSLTest
                 remote.flush();
 
             // Read frame (hopefully text frame)
-            clientSocket.messages.awaitEventCount(1,500,TimeUnit.MILLISECONDS);
+            clientSocket.messages.awaitEventCount(1,30,TimeUnit.SECONDS);
             EventQueue<String> captured = clientSocket.messages;
             Assert.assertThat("Text Message",captured.poll(),is(msg));
 
@@ -134,7 +134,7 @@ public class WebSocketOverSSLTest
                 remote.flush();
 
             // Read frame (hopefully text frame)
-            clientSocket.messages.awaitEventCount(1,500,TimeUnit.MILLISECONDS);
+            clientSocket.messages.awaitEventCount(1,30,TimeUnit.SECONDS);
             EventQueue<String> captured = clientSocket.messages;
             Assert.assertThat("Server.session.isSecure",captured.poll(),is("session.isSecure=true"));
 
@@ -176,7 +176,7 @@ public class WebSocketOverSSLTest
                 remote.flush();
 
             // Read frame (hopefully text frame)
-            clientSocket.messages.awaitEventCount(1,500,TimeUnit.MILLISECONDS);
+            clientSocket.messages.awaitEventCount(1,30,TimeUnit.SECONDS);
             EventQueue<String> captured = clientSocket.messages;
             String expected = String.format("session.upgradeRequest.requestURI=%s",requestUri.toASCIIString());
             Assert.assertThat("session.upgradeRequest.requestURI",captured.poll(),is(expected));

@@ -86,8 +86,8 @@ public class BadNetworkTest
         ssocket.upgrade();
 
         // Validate that we are connected
-        future.get(500,TimeUnit.MILLISECONDS);
-        wsocket.waitForConnected(500,TimeUnit.MILLISECONDS);
+        future.get(30,TimeUnit.SECONDS);
+        wsocket.waitForConnected(30,TimeUnit.SECONDS);
 
         // Have client disconnect abruptly
         Session session = wsocket.getSession();
@@ -114,8 +114,8 @@ public class BadNetworkTest
         ssocket.upgrade();
 
         // Validate that we are connected
-        future.get(500,TimeUnit.MILLISECONDS);
-        wsocket.waitForConnected(500,TimeUnit.MILLISECONDS);
+        future.get(30,TimeUnit.SECONDS);
+        wsocket.waitForConnected(30,TimeUnit.SECONDS);
 
         // Have server disconnect abruptly
         ssocket.disconnect();

@@ -169,7 +169,7 @@ public class CookieTest
         serverConn.close(StatusCode.NORMAL);
 
         // Confirm client connect on future
-        clientConnectFuture.get(500,TimeUnit.MILLISECONDS);
+        clientConnectFuture.get(30000,TimeUnit.MILLISECONDS);
 
         // Wait for client receipt of cookie frame via client websocket
         clientSocket.messageQueue.awaitEventCount(1,2,TimeUnit.SECONDS);

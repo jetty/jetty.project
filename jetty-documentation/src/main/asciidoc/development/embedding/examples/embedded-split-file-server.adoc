@@ -17,7 +17,7 @@
 [[embedded-split-file-server]]
 ==== Split File Server
 
-This example builds on the link:#emebedded-file-server[Simple File Server] to show how chaining multiple ResourceHandlers together can let you aggregate mulitple directories to serve content on a single path and how you can link these together with ContextHandlers.
+This example builds on the link:#emebedded-file-server[Simple File Server] to show how chaining multiple `ResourceHandlers` together can let you aggregate multiple directories to serve content on a single path and how you can link these together with `ContextHandlers`.
 
 [source, java, subs="{sub-order}"]
 ----

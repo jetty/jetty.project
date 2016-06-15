@@ -105,7 +105,7 @@ public class AnnotatedMaxMessageSizeTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
             WebSocketFrame tf = frames.poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
@@ -133,7 +133,7 @@ public class AnnotatedMaxMessageSizeTest
             client.write(new TextFrame().setPayload(ByteBuffer.wrap(buf)));
 
             // Read frame (hopefully close frame saying its too large)
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
             WebSocketFrame tf = frames.poll();
             Assert.assertThat("Frame is close", tf.getOpCode(), is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(tf);
