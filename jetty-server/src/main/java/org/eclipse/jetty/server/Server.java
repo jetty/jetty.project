@@ -654,7 +654,8 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void setAttribute(String name, Object attribute)
     {
-        addBean(attribute);
+        Object old=_attributes.getAttribute(name);
+        updateBean(old,attribute);        
         _attributes.setAttribute(name, attribute);
     }
 

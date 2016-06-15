@@ -246,7 +246,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 
     public boolean addBean(Object o, Managed managed)
     {
-        if (contains(o))
+        if (o==null || contains(o))
             return false;
 
         Bean new_bean = new Bean(o);
@@ -751,6 +751,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 
         private Bean(Object b)
         {
+            if (b==null)
+                throw new NullPointerException();
             _bean = b;
         }
 
