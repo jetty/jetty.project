@@ -121,7 +121,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         HttpChannel channel = _channelState.getHttpChannel();
         Executor executor = channel.getConnector().getServer().getThreadPool();
-        executor.execute(channel.getRunnable());
+        executor.execute(channel);
     }
 
 
