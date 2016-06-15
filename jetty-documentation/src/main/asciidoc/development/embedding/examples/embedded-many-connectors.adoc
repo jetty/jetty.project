@@ -29,12 +29,12 @@ include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/Man
 ===== Walkthrough
 
 Start things up!
-By using the server.join() the server thread will join with the current thread.
-See http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Thread.html#join()[Thread.join()] for more details.
+By using the `server.join()` the server thread will join with the current thread.
+See link:http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Thread.html#join()[`Thread.join()`] for more details.
 
 ===== Maven Coordinates
 
-To use this example in your project you will need the following maven dependencies declared.
+To use this example in your project you will need the following Maven dependencies declared.
 
 [source, xml, subs="{sub-order}"]
 ----
