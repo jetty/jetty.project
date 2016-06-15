@@ -43,10 +43,8 @@ import org.junit.Test;
 
 public class LocalAsyncContextTest
 {
-    private final Locker _completeLock = new Locker();
-    private Throwable __completed;
-    private Throwable __dispatched;
-    private final AtomicReference<Throwable> __completed1 = new AtomicReference<>();
+    private final AtomicReference<Throwable> _completed0 = new AtomicReference<>();
+    private final AtomicReference<Throwable> _completed1 = new AtomicReference<>();
     protected Server _server;
     protected SuspendHandler _handler;
     protected Connector _connector;
@@ -65,11 +63,8 @@ public class LocalAsyncContextTest
         _server.setHandler(session);
         _server.start();
 
-        try (Locker.Lock lock = _completeLock.lock())
-        {
-            __completed = null;
-        }
-        __completed1.set(null);
+        _completed0.set(null);
+        _completed1.set(null);
     }
 
     protected Connector initConnector()
@@ -95,14 +90,8 @@ public class LocalAsyncContextTest
         response = process(null);
         check(response, "TIMEOUT");
 
-        spinAssertEquals(1, () ->
-        {
-            try (Locker.Lock lock = _completeLock.lock())
-            {
-                return __completed == null ? 0 : 1;
-            }
-        });
-        spinAssertEquals(1, () -> __completed1.get() == null ? 0 : 1);
+        spinAssertEquals(1, () -> _completed0.get() == null ? 0 : 1);
+        spinAssertEquals(1, () -> _completed1.get() == null ? 0 : 1);
     }
 
     @Test
@@ -231,14 +220,8 @@ public class LocalAsyncContextTest
         response = process(null);
         check(response, "STARTASYNC", "DISPATCHED", "startasync", "STARTASYNC2", "DISPATCHED");
 
-        spinAssertEquals(1, () ->
-        {
-            try (Locker.Lock lock = _completeLock.lock())
-            {
-                return __completed == null ? 0 : 1;
-            }
-        });
-        spinAssertEquals(0, () -> __completed1.get() == null ? 0 : 1);
+        spinAssertEquals(1, () -> _completed0.get() == null ? 0 : 1);
+        spinAssertEquals(0, () -> _completed1.get() == null ? 0 : 1);
     }
 
     protected void check(String response, String... content)
@@ -490,56 +473,30 @@ public class LocalAsyncContextTest
         public void onComplete(AsyncEvent event) throws IOException
         {
             Throwable complete = new Throwable();
-            Throwable dispatched = HttpChannel.getDispatchedFrom();
-            try (Locker.Lock lock = _completeLock.lock())
+            if (!_completed0.compareAndSet(null, complete))
             {
-                if (__completed == null)
-                {
-                    __completed = complete;
-                    __dispatched = dispatched;
-                }
-                else
-                {
-                    System.err.println("First onCompleted dispatched from:");
-                    if (__dispatched != null)
-                        __dispatched.printStackTrace();
-                    System.err.println("First onCompleted:");
-                    __completed.printStackTrace();
-                    System.err.println("Second onCompleted dispatched from:");
-                    if (dispatched != null)
-                        dispatched.printStackTrace();
-                    complete.printStackTrace();
-                    throw new IllegalStateException();
-                }
+              System.err.println("First onCompleted:");
+              _completed0.get().printStackTrace();
+              System.err.println("First onCompleted:");
+              complete.printStackTrace();
+              _completed0.set(null);
+              throw new IllegalStateException();
             }
         }
 
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
-            Throwable complete = new Throwable();
-            Throwable dispatched = HttpChannel.getDispatchedFrom();
-            try (Locker.Lock lock = _completeLock.lock())
-            {
-                if (__completed == null)
-                {
-                    __completed = complete;
-                    __dispatched = dispatched;
-                }
-                else
-                {
-                    System.err.println("First onCompleted dispatched from:");
-                    if (__dispatched != null)
-                        __dispatched.printStackTrace();
-                    System.err.println("First onCompleted:");
-                    __completed.printStackTrace();
-                    System.err.println("Second onCompleted dispatched from:");
-                    if (dispatched != null)
-                        dispatched.printStackTrace();
-                    complete.printStackTrace();
-                    throw new IllegalStateException();
-                }
-            }
+          Throwable complete = new Throwable();
+          if (!_completed0.compareAndSet(null, complete))
+          {
+            System.err.println("First onCompleted:");
+            _completed0.get().printStackTrace();
+            System.err.println("First onCompleted:");
+            complete.printStackTrace();
+            _completed0.set(null);
+            throw new IllegalStateException();
+          }
         }
 
         @Override
@@ -563,11 +520,11 @@ public class LocalAsyncContextTest
         public void onComplete(AsyncEvent event) throws IOException
         {
             Throwable complete = new Throwable();
-            if (!__completed1.compareAndSet(null, complete))
+            if (!_completed1.compareAndSet(null, complete))
             {
-                __completed1.get().printStackTrace();
+                _completed1.get().printStackTrace();
                 complete.printStackTrace();
-                __completed1.set(null);
+                _completed1.set(null);
                 throw new IllegalStateException();
             }
         }
@@ -576,11 +533,11 @@ public class LocalAsyncContextTest
         public void onError(AsyncEvent event) throws IOException
         {
             Throwable complete = new Throwable();
-            if (!__completed1.compareAndSet(null, complete))
+            if (!_completed1.compareAndSet(null, complete))
             {
-                __completed1.get().printStackTrace();
+                _completed1.get().printStackTrace();
                 complete.printStackTrace();
-                __completed1.set(null);
+                _completed1.set(null);
                 throw new IllegalStateException();
             }
         }

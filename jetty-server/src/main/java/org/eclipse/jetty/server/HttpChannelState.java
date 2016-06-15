@@ -615,7 +615,7 @@ public class HttpChannelState
 
         cancelTimeout(event);
         if (handle)
-            runInContext(event,_channel.getRunnable());
+            runInContext(event,_channel);
     }
 
     public void errorComplete()
@@ -887,7 +887,7 @@ public class HttpChannelState
 
     protected void scheduleDispatch()
     {
-        _channel.execute(_channel.getRunnable());
+        _channel.execute(_channel);
     }
 
     protected void scheduleTimeout(AsyncContextEvent event)
