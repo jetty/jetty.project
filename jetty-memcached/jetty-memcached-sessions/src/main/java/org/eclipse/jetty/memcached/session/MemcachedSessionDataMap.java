@@ -46,8 +46,8 @@ public class MemcachedSessionDataMap implements SessionDataMap
     
 
     /**
-     * @param host
-     * @param port
+     * @param host address of memcache server
+     * @param port address of memcache server
      */
     public MemcachedSessionDataMap(String host, String port)
     {

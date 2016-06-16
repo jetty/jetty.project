@@ -8,7 +8,9 @@
   <!-- ===================================================================== -->
 
   <Call name="removeBean">
-    <Ref id="sessionDataStoreFactory"/>
+    <Arg>
+      <Ref id="sessionDataStoreFactory"/>
+    </Arg>
   </Call>
 
   
@@ -17,7 +19,7 @@
    <Arg>
     <New class="org.eclipse.jetty.server.session.CachingSessionDataStoreFactory">
        <Set name="sessionStoreFactory"><Ref id="sessionDataStoreFactory"/></Set>
-       <Set name="sessionDataMapFactory"><Ref id="sessionDataMapFatory"/></Set>
+       <Set name="sessionDataMapFactory"><Ref id="sessionDataMapFactory"/></Set>
     </New>
    </Arg> 
   </Call>

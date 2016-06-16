@@ -10,7 +10,7 @@ maven://org.slf4j/slf4j-api/1.6.6|lib/xmemcached/slf4j-api-1.6.6.jar
 
 [lib]
 lib/jetty-memcached-sessions-${jetty.version}.jar
-lib/xmemcached
+lib/xmemcached/*.jar
 
 [license]
 Xmemcached is an open source project hosted on Github and released under the Apache 2.0 license.
