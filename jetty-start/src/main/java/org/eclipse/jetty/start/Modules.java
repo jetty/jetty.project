@@ -197,6 +197,10 @@ public class Modules implements Iterable<Module>
                 Module dependency = _names.get(name);
                 if (dependency!=null)
                     sort.addDependency(module,dependency);
+                
+                Set<Module> provided = _provided.get(name);
+                if (provided!=null)
+                    provided.forEach(p->sort.addDependency(module,p));
             };
             module.getDepends().forEach(add);
             module.getOptional().forEach(add);
