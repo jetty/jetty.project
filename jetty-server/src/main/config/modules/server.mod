@@ -5,6 +5,7 @@ Enables the core Jetty server on the classpath.
 jvm
 ext
 resources
+logging
 
 [lib]
 lib/servlet-api-3.1.jar

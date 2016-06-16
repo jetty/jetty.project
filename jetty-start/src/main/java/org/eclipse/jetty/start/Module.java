@@ -402,16 +402,16 @@ public class Module
     public String toString()
     {
         StringBuilder str = new StringBuilder();
-        str.append("Module[").append(getName());
+        str.append(getName()).append('{');
         if (isEnabled())
         {
-            str.append(",enabled");
+            str.append("enabled");
+            if (isTransitive())
+                str.append(",transitive");
         }
-        if (isTransitive())
-        {
-            str.append(",transitive");
-        }
-        str.append(']');
+        else if (isTransitive())
+            str.append("transitive");
+        str.append('}');
         return str.toString();
     }
 

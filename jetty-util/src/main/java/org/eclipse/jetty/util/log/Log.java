@@ -183,7 +183,7 @@ public class Log
             }
 
             if (LOG!=null)
-                LOG.info(String.format("Logging initialized @%dms",Uptime.getUptime()));
+                LOG.info(String.format("Logging initialized @%dms to %s",Uptime.getUptime(),LOG.getClass().getName()));
         }
     }
 
