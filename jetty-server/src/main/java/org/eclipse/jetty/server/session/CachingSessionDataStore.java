@@ -21,7 +21,7 @@ package org.eclipse.jetty.server.session;
 
 import java.util.Set;
 
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 /**
  * CachingSessionDataStore
@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  * possible that failures can result in cache inconsistency.
  * 
  */
-public class CachingSessionDataStore extends AbstractLifeCycle implements SessionDataStore
+public class CachingSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
 
     /**
@@ -64,7 +64,9 @@ public class CachingSessionDataStore extends AbstractLifeCycle implements Sessio
     public CachingSessionDataStore (SessionDataMap cache, SessionDataStore store)
     {
         _cache = cache;
+        addBean(_cache,true);
         _store = store;
+        addBean(_store,true);
     }
    
     
