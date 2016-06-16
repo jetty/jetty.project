@@ -12,7 +12,7 @@
   <!-- =========================================================== -->
   <Set name="RequestLog">
     <New id="RequestLog" class="org.eclipse.jetty.server.AsyncNCSARequestLog">
-      <Set name="filename"><Property name="jetty.base" default="." /><Property>
+      <Set name="filename"><Property name="jetty.base" default="." />/<Property>
           <Name>jetty.requestlog.filePath</Name>
           <Deprecated>requestlog.filename</Deprecated>
           <Default><Property name="jetty.requestlog.dir" default="/logs"/>/yyyy_mm_dd.request.log</Default>
