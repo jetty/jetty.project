@@ -20,5 +20,6 @@
        <Set name="sessionDataMapFactory"><Ref id="sessionDataMapFatory"/></Set>
     </New>
    </Arg> 
+  </Call>
 
 </Configure>
