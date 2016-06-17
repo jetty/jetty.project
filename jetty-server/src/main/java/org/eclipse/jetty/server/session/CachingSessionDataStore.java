@@ -81,9 +81,9 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
     
     
     /**
-     * @return the cache 
+     * @return the fronting cache for session data 
      */
-    public SessionDataMap getCache ()
+    public SessionDataMap getSessionDataMap ()
     {
         return _cache;
     }
