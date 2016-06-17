@@ -3,10 +3,10 @@ Memcache cache for SessionData
 
 [depends]
 session-store
+slf4j-api
 
 [files]
 maven://com.googlecode.xmemcached/xmemcached/2.0.0|lib/xmemcached/xmemcached-2.0.0.jar
-maven://org.slf4j/slf4j-api/1.6.6|lib/xmemcached/slf4j-api-1.6.6.jar
 
 [lib]
 lib/jetty-memcached-sessions-${jetty.version}.jar
