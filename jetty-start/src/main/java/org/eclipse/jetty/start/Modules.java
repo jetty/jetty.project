@@ -221,7 +221,12 @@ public class Modules implements Iterable<Module>
         return _modules.stream().filter(m->{return m.isEnabled();}).collect(Collectors.toList());
     }
 
-    public Set<String> select(String name, String enabledFrom)
+    /** Enable a module
+     * @param name The name of the module to enable
+     * @param enabledFrom The source the module was enabled from
+     * @return The set of modules newly enabled
+     */
+    public Set<String> enable(String name, String enabledFrom)
     {
         Module module = get(name);
         if (module==null)
@@ -347,6 +352,7 @@ public class Modules implements Iterable<Module>
 
     public void checkEnabledModules()
     {
+        StringBuilder unsatisfied=new StringBuilder();
         _modules.stream().filter(Module::isEnabled).forEach(m->
         {
             // Check dependencies
@@ -354,9 +360,17 @@ public class Modules implements Iterable<Module>
             {
                 Set<Module> providers =_provided.get(d);
                 if (providers.stream().filter(Module::isEnabled).count()==0)
-                    throw new UsageException(-1,"Module %s requires %s from one of %s",m.getName(),d,providers);
+                { 
+                    if (unsatisfied.length()>0)
+                        unsatisfied.append(',');
+                    unsatisfied.append(m.getName());
+                    System.err.printf("%nWARN: Module %s requires %s from one of %s%n",m.getName(),d,providers);
+                }
             });
         });
+        
+        if (unsatisfied.length()>0)
+            throw new UsageException(-1,"Unsatisfied module dependencies: "+unsatisfied);
     }
     
 }

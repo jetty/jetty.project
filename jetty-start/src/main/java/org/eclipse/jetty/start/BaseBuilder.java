@@ -113,24 +113,23 @@ public class BaseBuilder
         Modules modules = startArgs.getAllModules();
 
         // Select all the added modules to determine which ones are newly enabled
-        // TODO this does not look correct????
-        Set<String> enabled = new HashSet<>();
-        Set<String> startModules = new HashSet<>();
+
+        
+        Set<String> newly_enabled = new HashSet<>();
         if (!startArgs.getStartModules().isEmpty())
         {
             for (String name:startArgs.getStartModules())
-                startModules.addAll(modules.select(name,"--add-to-start[d]"));
-            enabled.addAll(startModules);
+                newly_enabled.addAll(modules.enable(name,"--add-to-start[d]"));
         }
 
         if (StartLog.isDebugEnabled())
-            StartLog.debug("start[d]=%s",startModules);
+            StartLog.debug("start[d]=%s",newly_enabled);
         
         // Check the licenses
         if (startArgs.isLicenseCheckRequired())
         {
             Licensing licensing = new Licensing();
-            for (String name : enabled)
+            for (String name : newly_enabled)
                 licensing.addModule(modules.get(name));
             
             if (licensing.hasLicenses())
@@ -152,7 +151,7 @@ public class BaseBuilder
         AtomicReference<BaseBuilder.Config> builder = new AtomicReference<>();
         AtomicBoolean modified = new AtomicBoolean();
 
-        if (!startModules.isEmpty())
+        if (!newly_enabled.isEmpty())
         {
             Path startd = getBaseHome().getBasePath("start.d");
             Path startini = getBaseHome().getBasePath("start.ini");
@@ -167,7 +166,7 @@ public class BaseBuilder
             
             boolean useStartD=startArgs.isUseStartd() || Files.exists(startd);            
             builder.set(useStartD?new StartDirBuilder(this):new StartIniBuilder(this));
-            startModules.stream().map(n->modules.get(n)).forEach(module ->
+            newly_enabled.stream().map(n->modules.get(n)).forEach(module ->
             {
                 try
                 {
@@ -187,7 +186,7 @@ public class BaseBuilder
                 {
                     throw new RuntimeException(e);
                 }
-            });
+            });            
         }
 
         files.addAll(startArgs.getFiles());
@@ -242,7 +241,8 @@ public class BaseBuilder
                 }
             }
 
-            System.err.println("Failed to initialize: "+arg.uri+"|"+arg.location);
+            if (!FS.exists(file))
+              System.err.println("Failed to initialize: "+arg.uri+"|"+arg.location);
             
             return modified;
         }

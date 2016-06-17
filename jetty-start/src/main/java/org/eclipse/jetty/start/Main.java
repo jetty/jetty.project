@@ -97,8 +97,8 @@ public class Main
             t.printStackTrace(System.err);
         }
         System.err.println();
-        System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
-        System.err.println("       java -jar start.jar --help  # for more information");
+        System.err.println("Usage: java -jar $JETTY_HOME/start.jar [options] [properties] [configs]");
+        System.err.println("       java -jar $JETTY_HOME/start.jar --help  # for more information");
         
         if (test)
             System.err.println("EXIT: "+exit);
@@ -301,7 +301,7 @@ public class Main
             for (String source : args.getSources(enabledModule))
             {
                 String shortForm = baseHome.toShortForm(source);
-                modules.select(enabledModule,shortForm);
+                modules.enable(enabledModule,shortForm);
             }
         }
 
@@ -349,10 +349,6 @@ public class Main
         // ------------------------------------------------------------
         // 9) Resolve Property Files
         args.resolvePropertyFiles(baseHome);
-
-        // ------------------------------------------------------------
-        // 10) Check enabled modules
-        args.getAllModules().checkEnabledModules();
         
         return args;
     }
@@ -418,7 +414,10 @@ public class Main
             StartLog.info("Base directory was modified");
         else if (args.isDownload() || !args.getStartModules().isEmpty())
             StartLog.info("Base directory was not modified");
-        
+
+        // Check module dependencies
+        args.getAllModules().checkEnabledModules();
+
         // Informational command line, don't run jetty
         if (!args.isRun())
         {

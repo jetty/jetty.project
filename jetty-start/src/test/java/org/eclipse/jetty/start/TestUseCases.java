@@ -133,6 +133,7 @@ public class TestUseCases
             }
 
             StartArgs args = main.processCommandLine(cmdLine);
+            args.getAllModules().checkEnabledModules();
             BaseHome baseHome = main.getBaseHome();
             ConfigurationAssert.assertConfiguration(baseHome,args,assertFile);
         }

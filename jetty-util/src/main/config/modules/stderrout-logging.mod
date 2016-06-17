@@ -3,7 +3,7 @@ Redirects JVMs stderr and stdout to a log file,
 including output from Jetty's default StdErrLog logging.
 
 [xml]
-etc/jetty-logging.xml
+etc/stderrout-logging.xml
 
 [files]
 logs/
