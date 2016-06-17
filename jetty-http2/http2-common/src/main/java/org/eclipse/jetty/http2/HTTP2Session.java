@@ -321,12 +321,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.MAX_HEADER_LIST_SIZE:
                 {
                     // TODO implement
-                    LOG.warn("NOT IMPLEMENTED max header list size to {}", value);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("NOT IMPLEMENTED max header list size to {}", value);
                     break;
                 }
                 default:
                 {
-                    LOG.debug("Unknown setting {}:{}", key, value);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unknown setting {}:{}", key, value);
                     break;
                 }
             }
