@@ -166,8 +166,8 @@ public class ModulesTest
         modules.registerAll();
 
         // Enable 2 modules
-        modules.select("base",TEST_SOURCE);
-        modules.select("optional",TEST_SOURCE);
+        modules.enable("base",TEST_SOURCE);
+        modules.enable("optional",TEST_SOURCE);
         modules.sort();
 
         // Collect active module list
