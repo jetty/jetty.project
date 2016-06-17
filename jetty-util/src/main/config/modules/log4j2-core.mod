@@ -1,5 +1,6 @@
 [description]
-Provides Apache Log4j 2 Core. 
+Provides a Log4j v2 implementation. 
+To receive jetty logs enable the jetty-slf4j, slf4j-log4j and log4j-log4j2 modules.
 
 [depends]
 log4j2-api 

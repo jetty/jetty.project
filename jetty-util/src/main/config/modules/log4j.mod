@@ -1,5 +1,6 @@
 [description]
-Provides Apache Log4j 1.2 
+Provides a Log4j v1.2 API and implementation.  
+To receive jetty logs enable the jetty-slf4j and slf4j-log4j modules.
 
 [depends]
 resources

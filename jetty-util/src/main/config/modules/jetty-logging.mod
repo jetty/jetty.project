@@ -1,5 +1,6 @@
 [description]
-Enables Java util logging
+Enables the Jetty Logging implementation and installs a template
+configuration in ${jetty.base} resources/jetty-logging.properties.
 
 [depends]
 resources
