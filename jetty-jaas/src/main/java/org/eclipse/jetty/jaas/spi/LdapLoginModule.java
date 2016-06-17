@@ -502,7 +502,17 @@ public class LdapLoginModule extends AbstractLoginModule
         LOG.info("Attempting authentication: " + userDn);
 
         Hashtable<Object,Object> environment = getEnvironment();
+
+        if ( userDn == null || "".equals(userDn) )
+        {
+            throw new NamingException("username may not be empty");
+        }
         environment.put(Context.SECURITY_PRINCIPAL, userDn);
+        // RFC 4513 section 6.3.1, protect against ldap server implementations that allow successful binding on empty passwords
+        if ( password == null || "".equals(password))
+        {
+            throw new NamingException("password may not be empty");
+        }
         environment.put(Context.SECURITY_CREDENTIALS, password);
 
         DirContext dirContext = new InitialDirContext(environment);
