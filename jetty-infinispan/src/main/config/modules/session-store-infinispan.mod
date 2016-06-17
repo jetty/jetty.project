@@ -1,11 +1,11 @@
 [description]
-Enables session data store in a remote Infinispan cache
+Enables session data store in an Infinispan cache
 
 [provides]
 session-store
 
 [depend]
-session
+sessions
 sessions/infinispan/${cache-type}
 
 [files]
