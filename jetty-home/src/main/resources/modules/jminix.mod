@@ -4,6 +4,8 @@ Deploys the Jminix JMX Console within the server
 [depend]
 stats
 jmx
+jcl-api
+jcl-impl
 
 [xml]
 etc/jminix.xml
@@ -17,7 +19,6 @@ maven://org.apache.velocity/velocity/1.5|lib/jminix/velocity-1.5.jar
 maven://oro/oro/2.0.8|lib/jminix/oro-2.0.8.jar
 http://maven.restlet.com/com/noelios/restlet/com.noelios.restlet/1.1.5/com.noelios.restlet-1.1.5.jar|lib/jminix/com.noelios.restlet-1.1.5.jar
 http://maven.restlet.com/com/noelios/restlet/com.noelios.restlet.ext.servlet/1.1.5/com.noelios.restlet.ext.servlet-1.1.5.jar|lib/jminix/com.noelios.restlet.ext.servlet-1.1.5.jar
-maven://commons-logging/commons-logging/1.1.1|lib/jminix/commons-logging-1.1.1.jar
 maven://net.sf.json-lib/json-lib/2.2.3/jar/jdk15|lib/jminix/json-lib-2.2.3-jdk15.jar
 maven://commons-lang/commons-lang/2.4|lib/jminix/commons-lang-2.4.jar
 maven://commons-beanutils/commons-beanutils/1.7.0|lib/jminix/commons-beanutils-1.7.0.jar

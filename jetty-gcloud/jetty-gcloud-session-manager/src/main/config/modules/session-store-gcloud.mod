@@ -9,6 +9,8 @@ annotations
 webapp
 sessions
 sessions/gcloud/${type}
+jcl-api
+jcl-impl
 
 [files]
 maven://com.google.gcloud/gcloud-java-datastore/0.0.7|lib/gcloud/gcloud-java-datastore-0.0.7.jar
@@ -21,7 +23,6 @@ maven://com.google.http-client/google-http-client/1.20.0|lib/gcloud/google-http-
 maven://com.google.code.findbugs/jsr305/1.3.9|lib/gcloud/jsr305-1.3.9.jar
 maven://org.apache.httpcomponents/httpclient/4.0.1|lib/gcloud/httpclient-4.0.1.jar
 maven://org.apache.httpcomponents/httpcore/4.0.1|lib/gcloud/httpcore-4.0.1.jar
-maven://commons-logging/commons-logging/1.1.1|lib/gcloud/commons-logging-1.1.1.jar
 maven://commons-codec/commons-codec/1.3|lib/gcloud/commons-codec-1.3.jar
 maven://com.google.oauth-client/google-oauth-client/1.20.0|lib/gcloud//google-oauth-client-1.20.0.jar
 maven://com.google.guava/guava/18.0|lib/gcloud/guava-18.0.jar
