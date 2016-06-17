@@ -73,6 +73,7 @@ public class ContinuationBodyParser extends BodyParser
                     {
                         headerBlockFragments.storeFragment(buffer, remaining, false);
                         length -= remaining;
+                        break;
                     }
                     else
                     {
