@@ -13,16 +13,6 @@ lib/logging/**.jar
 resources/
 
 [ini-template]
-## Logging Configuration
-## Configure jetty logging for default internal behavior STDERR output
-# -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog
-
-## Configure jetty logging for slf4j
-# -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
-
-## Configure jetty logging for java.util.logging
-# -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.JavaUtilLog
-
 ## Logging directory (relative to $jetty.base)
 # jetty.logging.dir=logs
 

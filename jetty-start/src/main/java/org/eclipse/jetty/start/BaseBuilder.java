@@ -28,10 +28,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.start.builders.StartDirBuilder;
 import org.eclipse.jetty.start.builders.StartIniBuilder;
+import org.eclipse.jetty.start.fileinits.BaseHomeFileInitializer;
 import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer;
 import org.eclipse.jetty.start.fileinits.TestFileInitializer;
 import org.eclipse.jetty.start.fileinits.UriFileInitializer;
@@ -71,6 +71,9 @@ public class BaseBuilder
         // Establish FileInitializers
         if (args.isTestingModeEnabled())
         {
+            // Copy from basehome
+            fileInitializers.add(new BaseHomeFileInitializer(baseHome));
+            
             // No downloads performed
             fileInitializers.add(new TestFileInitializer());
         }
@@ -90,6 +93,9 @@ public class BaseBuilder
                 fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome));
             }
 
+            // Copy from basehome
+            fileInitializers.add(new BaseHomeFileInitializer(baseHome));
+            
             // Normal URL downloads
             fileInitializers.add(new UriFileInitializer(baseHome));
         }
@@ -215,14 +221,12 @@ public class BaseBuilder
      */
     private boolean processFileResource(FileArg arg, Path file) throws IOException
     {
+        // now on copy/download paths (be safe above all else)
+        if (!file.startsWith(baseHome.getBasePath()))
+            throw new IOException("For security reasons, Jetty start is unable to process maven file resource not in ${jetty.base} - " + file);
+        
         if (startArgs.isDownload() && (arg.uri != null))
         {
-            // now on copy/download paths (be safe above all else)
-            if (!file.startsWith(baseHome.getBasePath()))
-            {
-                throw new IOException("For security reasons, Jetty start is unable to process maven file resource not in ${jetty.base} - " + file);
-            }
-            
             // make the directories in ${jetty.base} that we need
             boolean modified = FS.ensureDirectoryExists(file.getParent());
             
@@ -238,7 +242,9 @@ public class BaseBuilder
                 }
             }
 
-            return false;
+            System.err.println("Failed to initialize: "+arg.uri+"|"+arg.location);
+            
+            return modified;
         }
         else
         {

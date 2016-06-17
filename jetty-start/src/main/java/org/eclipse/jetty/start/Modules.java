@@ -205,7 +205,15 @@ public class Modules implements Iterable<Module>
             module.getDepends().forEach(add);
             module.getOptional().forEach(add);
         }
-        sort.sort(_modules);
+        try
+        {
+            sort.sort(_modules);
+        }
+        catch (IllegalStateException e)
+        {
+            System.err.println(sort.dump());
+            throw e;
+        }
     }
 
     public List<Module> getEnabled()
@@ -251,7 +259,7 @@ public class Modules implements Iterable<Module>
                             }
                         }
                         else
-                            throw new UsageException("Capability %s already enabled by %s for %s",name,p.getName(),module.getName());
+                            throw new UsageException("%s provides %s, which is already provided by %s enabled in %s",module.getName(),name,p.getName(),p.getEnableSources());
                     }
                 });
             }   
