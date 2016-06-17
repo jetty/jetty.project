@@ -91,7 +91,6 @@ public class MemcachedSessionDataMap implements SessionDataMap
         }
         catch (IOException e)
         {
-            e.printStackTrace();
             throw new IllegalStateException(e);
         }
     }
