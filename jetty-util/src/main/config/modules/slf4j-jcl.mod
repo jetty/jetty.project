@@ -1,5 +1,7 @@
 [description]
-Provides SLF4J bridge to apache java commons logging
+Provides a SLF4J implementation that logs to the Java Commons Logging API.  
+Requires another module that provides an JCL implementation.
+To receive jetty logs enable the jetty-slf4j module.
 
 [depend]
 slf4j-api

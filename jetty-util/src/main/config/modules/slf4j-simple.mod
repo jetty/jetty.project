@@ -1,5 +1,6 @@
 [description]
-Provides SLF4J simple logging
+Provides SLF4J simple logging implementation.
+To receive jetty logs enable the jetty-slf4j module.
 
 [depend]
 slf4j-api

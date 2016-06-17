@@ -1,5 +1,6 @@
 [description]
-Configure Jetty logging to use SLF4J
+Provides a Jetty Logging implementation that logs to the SLF4J API.  
+Requires another module that provides and SLF4J implementation.
 
 [depend]
 slf4j-api

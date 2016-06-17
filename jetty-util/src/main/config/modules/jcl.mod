@@ -1,5 +1,6 @@
 [description]
-Provides Apache Java Commons Logging API and implementation
+Provides a Java Commons Logging implementation.  
+To receive jetty logs the jetty-slf4j and slf4j-jcl must also be enabled.
 
 [depends]
 

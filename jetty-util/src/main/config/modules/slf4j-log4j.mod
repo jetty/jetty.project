@@ -1,5 +1,7 @@
 [description]
-Provides SLF4J Log4j implementation.
+Provides a SLF4J implementation that logs to the Log4j v1.2 API.  
+Requires another module that provides a Log4j implementation.
+To receive jetty logs enable the jetty-slf4j module.
 
 [depend]
 slf4j-api

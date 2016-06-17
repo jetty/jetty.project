@@ -1,5 +1,6 @@
 [description]
-Enables Java util logging
+Provides a Jetty Logging implementation that logs to the Java Util Logging API.  
+Requires another module that provides a Java Util Logging implementation.
 
 [provide]
 logging

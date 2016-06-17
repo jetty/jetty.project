@@ -1,5 +1,6 @@
 [description]
-Provides JCL implementation that routes logs into slf4j
+Provides a Java Commons Logging implementation that logs to the SLF4J API.  
+Requires another module that provides and SLF4J implementation.
 
 [depends]
 slf4j-api

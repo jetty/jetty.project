@@ -1,7 +1,7 @@
 [description]
-Provides Apache Log4j 2 API.
-Requires a log4j 2 implementation module
-Use slf4j-log4j module to link jetty logging
+Provides the Log4j v2 API
+Requires another module that provides an Log4j v2 implementation.
+To receive jetty logs enable the jetty-slf4j, slf4j-log4j and log4j-log4j2 modules.
 
 [files]
 maven://org.apache.logging.log4j/log4j-api/2.6.1|lib/log4j/log4j-api-2.6.1.jar
