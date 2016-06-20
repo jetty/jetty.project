@@ -116,14 +116,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     @Test
     public void testIdleClientIdleTimeout() throws Exception
     {
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-            }
-        });
+        start(new EmptyServerHandler());
         client.stop();
         client.setIdleTimeout(idleTimeout);
         client.start();
@@ -143,14 +136,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     @Test
     public void testIdleServerIdleTimeout() throws Exception
     {
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-            }
-        });
+        start(new EmptyServerHandler());
         connector.setIdleTimeout(idleTimeout);
 
         ContentResponse response1 = client.newRequest(newURI()).send();
