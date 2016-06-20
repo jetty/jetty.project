@@ -18,14 +18,9 @@
 
 package org.eclipse.jetty.http.client;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -44,8 +39,6 @@ import org.eclipse.jetty.http2.client.http.HttpChannelOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
@@ -61,14 +54,7 @@ public class HttpChannelAssociationTest extends AbstractTest
     @Test
     public void testAssociationFailedAbortsRequest() throws Exception
     {
-        startServer(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-            }
-        });
+        startServer(new EmptyServerHandler());
 
         client = new HttpClient(newHttpClientTransport(transport, exchange -> false), sslContextFactory);
         QueuedThreadPool clientThreads = new QueuedThreadPool();
@@ -90,14 +76,7 @@ public class HttpChannelAssociationTest extends AbstractTest
     @Test
     public void testIdleTimeoutJustBeforeAssociation() throws Exception
     {
-        startServer(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-            }
-        });
+        startServer(new EmptyServerHandler());
 
         long idleTimeout = 1000;
         client = new HttpClient(newHttpClientTransport(transport, exchange ->

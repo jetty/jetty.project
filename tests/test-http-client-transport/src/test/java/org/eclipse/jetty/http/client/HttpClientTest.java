@@ -300,14 +300,7 @@ public class HttpClientTest extends AbstractTest
         // Only run this test for transports over TLS.
         Assume.assumeTrue(EnumSet.of(Transport.HTTPS, Transport.H2).contains(transport));
 
-        startServer(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-            }
-        });
+        startServer(new EmptyServerHandler());
 
         // Use a default SslContextFactory, requests should fail because the server certificate is unknown.
         client = newHttpClient(provideClientTransport(transport), new SslContextFactory());
@@ -410,14 +403,7 @@ public class HttpClientTest extends AbstractTest
     @Test
     public void testConnectionListener() throws Exception
     {
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-            }
-        });
+        start(new EmptyServerHandler());
 
         CountDownLatch openLatch = new CountDownLatch(1);
         CountDownLatch closeLatch = new CountDownLatch(1);
