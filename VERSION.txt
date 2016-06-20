@@ -7,12 +7,6 @@ jetty-9.3.10.M0 - 26 May 2016
  + 574 Introduce a TLS handshake completed listener
  + 581 Initial session recv window setting not working
  + 85 Expose TLS protocol used for connection in SecureRequestCustomizer
- + 354 Spin loop in case of exception thrown during accept()
- + 464 Improve reporting of SSLHandshakeException
- + 542 Support Connection.Listener bean on clients
- + 574 Introduce a TLS handshake completed listener
- + 581 Initial session recv window setting not working
- + 85 Expose TLS protocol used for connection in SecureRequestCustomizer
 
 jetty-9.3.9.v20160517 - 17 May 2016
  + 436 Migrate Jetty Documentation
