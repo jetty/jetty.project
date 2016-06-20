@@ -15,7 +15,7 @@
       <Set name="filename"><Property name="jetty.base" default="." />/<Property>
           <Name>jetty.requestlog.filePath</Name>
           <Deprecated>requestlog.filename</Deprecated>
-          <Default><Property name="jetty.requestlog.dir" default="/logs"/>/yyyy_mm_dd.request.log</Default>
+          <Default><Property name="jetty.requestlog.dir" default="logs"/>/yyyy_mm_dd.request.log</Default>
         </Property>
       </Set>
       <Set name="filenameDateFormat"><Property name="jetty.requestlog.filenameDateFormat" deprecated="requestlog.filenameDateFormat" default="yyyy_MM_dd"/></Set>
