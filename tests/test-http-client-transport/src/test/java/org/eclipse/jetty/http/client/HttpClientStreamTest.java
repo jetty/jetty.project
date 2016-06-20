@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.client;
+package org.eclipse.jetty.http.client;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -65,15 +65,15 @@ import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class HttpClientStreamTest extends AbstractHttpClientServerTest
+public class HttpClientStreamTest extends AbstractTest
 {
-    public HttpClientStreamTest(SslContextFactory sslContextFactory)
+    public HttpClientStreamTest(Transport transport)
     {
-        super(sslContextFactory);
+        super(transport);
     }
 
     @Test
@@ -90,11 +90,30 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                 output.write(kb);
         }
 
-        start(new RespondThenConsumeHandler());
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.setContentLength(0);
+                response.flushBuffer();
+
+                InputStream in = request.getInputStream();
+                byte[] buffer = new byte[1024];
+                while (true)
+                {
+                    int read = in.read(buffer);
+                    if (read < 0)
+                        break;
+                }
+            }
+        });
 
         final AtomicLong requestTime = new AtomicLong();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .file(upload)
                 .onRequestSuccess(request -> requestTime.set(System.nanoTime()))
                 .timeout(30, TimeUnit.SECONDS)
@@ -127,7 +146,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
@@ -168,7 +187,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
@@ -215,7 +234,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
@@ -241,7 +260,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
             // Expected.
         }
 
-        Assert.assertEquals(data.length, length);
+        Assert.assertThat(length, Matchers.lessThanOrEqualTo(data.length));
 
         Result result = listener.await(5, TimeUnit.SECONDS);
         Assert.assertNotNull(result);
@@ -267,7 +286,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         stream.close();
 
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .content(new BytesContentProvider(new byte[]{0, 1, 2, 3}))
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -309,7 +328,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
             }
         };
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .send(listener);
 
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -366,7 +385,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
             }
         };
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -418,7 +437,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
             }
         };
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -443,7 +462,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         InputStreamResponseListener listener = new InputStreamResponseListener();
         // Connect to the wrong port
         client.newRequest("localhost", port)
-                .scheme(scheme)
+                .scheme(getScheme())
                 .send(listener);
         Result result = listener.await(5, TimeUnit.SECONDS);
         Assert.assertNotNull(result);
@@ -464,7 +483,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         final byte[] data = new byte[]{0, 1, 2, 3};
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .content(new InputStreamContentProvider(new InputStream()
                 {
                     private int index = 0;
@@ -510,7 +529,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
@@ -555,7 +574,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
@@ -591,7 +610,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
@@ -630,7 +649,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         try (DeferredContentProvider content = new DeferredContentProvider())
         {
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scheme)
+                    .scheme(getScheme())
                     .content(content)
                     .send(result ->
                     {
@@ -680,7 +699,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
             });
 
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scheme)
+                    .scheme(getScheme())
                     .content(content)
                     .send(result ->
                     {
@@ -720,7 +739,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         };
 
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .content(content)
                 .send(new BufferingResponseListener()
                 {
@@ -784,7 +803,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                     {
                         byte[] chunk = iteratorData[index.getAndIncrement()];
                         ByteBuffer result = chunk == null ? null : ByteBuffer.wrap(chunk);
-                        if (index.get() == 2)
+                        if (index.get() < iteratorData.length)
                         {
                             contentRef.get().offer(result == null ? BufferUtil.EMPTY_BUFFER : result);
                             contentRef.get().close();
@@ -802,7 +821,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         contentRef.set(content);
 
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .content(content)
                 .send(new BufferingResponseListener()
                 {
@@ -836,7 +855,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         OutputStreamContentProvider content = new OutputStreamContentProvider();
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .content(content)
                 .send(new BufferingResponseListener()
                 {
@@ -879,7 +898,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         OutputStreamContentProvider content = new OutputStreamContentProvider();
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .content(content)
                 .send(new BufferingResponseListener(data.length)
                 {
@@ -920,7 +939,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         OutputStreamContentProvider content = new OutputStreamContentProvider();
         client.newRequest("0.0.0.1", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .content(content)
                 .send(result ->
                 {
@@ -959,7 +978,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         final CountDownLatch completeLatch = new CountDownLatch(1);
         final DeferredContentProvider content = new DeferredContentProvider();
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .content(content)
                 .onRequestBegin(request ->
                 {
@@ -1007,7 +1026,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("0.0.0.1", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .content(content)
                 .send(result ->
                 {
@@ -1079,7 +1098,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .content(provider)
                 .onRequestCommit(request -> commit.set(true))
                 .send(result ->
@@ -1110,7 +1129,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(getScheme())
                 .timeout(5, TimeUnit.SECONDS)
                 .send(listener);
 

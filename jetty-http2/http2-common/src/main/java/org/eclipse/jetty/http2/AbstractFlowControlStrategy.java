@@ -139,13 +139,13 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     {
         int oldSize = session.updateRecvWindow(-length);
         if (LOG.isDebugEnabled())
-            LOG.debug("Data received, updated session recv window {} -> {} for {}", oldSize, oldSize - length, session);
+            LOG.debug("Data received, {} bytes, updated session recv window {} -> {} for {}", length, oldSize, oldSize - length, session);
 
         if (stream != null)
         {
             oldSize = stream.updateRecvWindow(-length);
             if (LOG.isDebugEnabled())
-                LOG.debug("Data received, updated stream recv window {} -> {} for {}", oldSize, oldSize - length, stream);
+                LOG.debug("Data received, {} bytes, updated stream recv window {} -> {} for {}", length, oldSize, oldSize - length, stream);
         }
     }
 
