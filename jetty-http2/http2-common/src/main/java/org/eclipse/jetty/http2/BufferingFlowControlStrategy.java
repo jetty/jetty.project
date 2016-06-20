@@ -111,13 +111,13 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
             level = sessionLevel.getAndSet(0);
             session.updateRecvWindow(level);
             if (LOG.isDebugEnabled())
-                LOG.debug("Data consumed, updated session recv window by {}/{} for {}", level, maxLevel, session);
+                LOG.debug("Data consumed, {} bytes, updated session recv window by {}/{} for {}", length, level, maxLevel, session);
             windowFrame = new WindowUpdateFrame(0, level);
         }
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Data consumed, session recv window level {}/{} for {}", level, maxLevel, session);
+                LOG.debug("Data consumed, {} bytes, session recv window level {}/{} for {}", length, level, maxLevel, session);
         }
 
         Frame[] windowFrames = Frame.EMPTY_ARRAY;
@@ -126,7 +126,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
             if (stream.isClosed())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Data consumed, ignoring update stream recv window by {} for closed {}", length, stream);
+                    LOG.debug("Data consumed, {} bytes, ignoring update stream recv window for closed {}", length, stream);
             }
             else
             {
@@ -140,7 +140,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                         level = streamLevel.getAndSet(0);
                         stream.updateRecvWindow(level);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Data consumed, updated stream recv window by {}/{} for {}", level, maxLevel, stream);
+                            LOG.debug("Data consumed, {} bytes, updated stream recv window by {}/{} for {}", length, level, maxLevel, stream);
                         WindowUpdateFrame frame = new WindowUpdateFrame(stream.getId(), level);
                         if (windowFrame == null)
                             windowFrame = frame;
@@ -150,7 +150,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                     else
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Data consumed, stream recv window level {}/{} for {}", level, maxLevel, stream);
+                            LOG.debug("Data consumed, {} bytes, stream recv window level {}/{} for {}", length, level, maxLevel, stream);
                     }
                 }
             }
