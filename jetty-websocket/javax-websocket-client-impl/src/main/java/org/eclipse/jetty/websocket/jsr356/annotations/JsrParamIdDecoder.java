@@ -25,7 +25,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
 
 /**
- * Param handling for Text or Binary &#064;{@link OnMessage} parameters declared as {@link javax.websocket.Decoder}s
+ * Param handling for Text or Binary &#064;{@link javax.websocket.OnMessage} parameters declared as {@link javax.websocket.Decoder}s
  */
 public class JsrParamIdDecoder extends JsrParamIdOnMessage implements IJsrParamId
 {
@@ -69,7 +69,8 @@ public class JsrParamIdDecoder extends JsrParamIdOnMessage implements IJsrParamI
                     param.bind(Role.MESSAGE_PONG);
                     break;
             }
-            callable.setDecoderClass(metadata.getCoderClass());
+
+            callable.setDecodingType(metadata.getObjectType());
             return true;
         }
         return false;

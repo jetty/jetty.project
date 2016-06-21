@@ -25,13 +25,21 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.OnMessage;
@@ -100,8 +108,8 @@ public class ConfiguratorTest
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
-            super.modifyHandshake(sec,request,response);
-            sec.getUserProperties().put("request-headers",request.getHeaders());
+            super.modifyHandshake(sec, request, response);
+            sec.getUserProperties().put("request-headers", request.getHeaders());
         }
     }
 
@@ -115,7 +123,7 @@ public class ConfiguratorTest
 
             response.append("Request Header [").append(headerKey).append("]: ");
             @SuppressWarnings("unchecked")
-            Map<String, List<String>> headers = (Map<String, List<String>>)session.getUserProperties().get("request-headers");
+            Map<String, List<String>> headers = (Map<String, List<String>>) session.getUserProperties().get("request-headers");
             if (headers == null)
             {
                 response.append("<no headers found in session.getUserProperties()>");
@@ -129,7 +137,7 @@ public class ConfiguratorTest
                 }
                 else
                 {
-                    response.append(QuoteUtil.join(values,","));
+                    response.append(QuoteUtil.join(values, ","));
                 }
             }
 
@@ -144,15 +152,15 @@ public class ConfiguratorTest
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
-            super.modifyHandshake(sec,request,response);
+            super.modifyHandshake(sec, request, response);
         }
         
         @Override
         public String getNegotiatedSubprotocol(List<String> supported, List<String> requested)
         {
-            String seen = QuoteUtil.join(requested,",");
-            seenProtocols.compareAndSet(null,seen);
-            return super.getNegotiatedSubprotocol(supported,requested);
+            String seen = QuoteUtil.join(requested, ",");
+            seenProtocols.compareAndSet(null, seen);
+            return super.getNegotiatedSubprotocol(supported, requested);
         }
     }
 
@@ -177,15 +185,24 @@ public class ConfiguratorTest
         {
             int upgradeNum = upgradeCount.addAndGet(1);
             LOG.debug("Upgrade Num: {}", upgradeNum);
-            sec.getUserProperties().put("upgradeNum",Integer.toString(upgradeNum));
-            switch(upgradeNum) {
-                case 1: sec.getUserProperties().put("apple", "fruit from tree"); break;
-                case 2: sec.getUserProperties().put("blueberry", "fruit from bush"); break;
-                case 3: sec.getUserProperties().put("strawberry", "fruit from annual"); break;
-                default: sec.getUserProperties().put("fruit"+upgradeNum, "placeholder"); break;
+            sec.getUserProperties().put("upgradeNum", Integer.toString(upgradeNum));
+            switch (upgradeNum)
+            {
+                case 1:
+                    sec.getUserProperties().put("apple", "fruit from tree");
+                    break;
+                case 2:
+                    sec.getUserProperties().put("blueberry", "fruit from bush");
+                    break;
+                case 3:
+                    sec.getUserProperties().put("strawberry", "fruit from annual");
+                    break;
+                default:
+                    sec.getUserProperties().put("fruit" + upgradeNum, "placeholder");
+                    break;
             }
             
-            super.modifyHandshake(sec,request,response);
+            super.modifyHandshake(sec, request, response);
         }
     }
     
@@ -195,7 +212,7 @@ public class ConfiguratorTest
         @OnMessage
         public String onMessage(Session session, String msg)
         {
-            String value = (String)session.getUserProperties().get(msg);
+            String value = (String) session.getUserProperties().get(msg);
             StringBuilder response = new StringBuilder();
             response.append("Requested User Property: [").append(msg).append("] = ");
             if (value == null)
@@ -215,13 +232,13 @@ public class ConfiguratorTest
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
-            InetSocketAddress local = (InetSocketAddress)sec.getUserProperties().get(JsrCreator.PROP_LOCAL_ADDRESS);
-            InetSocketAddress remote = (InetSocketAddress)sec.getUserProperties().get(JsrCreator.PROP_REMOTE_ADDRESS);
+            InetSocketAddress local = (InetSocketAddress) sec.getUserProperties().get(JsrCreator.PROP_LOCAL_ADDRESS);
+            InetSocketAddress remote = (InetSocketAddress) sec.getUserProperties().get(JsrCreator.PROP_REMOTE_ADDRESS);
             
             sec.getUserProperties().put("found.local", local);
             sec.getUserProperties().put("found.remote", remote);
             
-            super.modifyHandshake(sec,request,response);
+            super.modifyHandshake(sec, request, response);
         }
     }
     
@@ -232,20 +249,98 @@ public class ConfiguratorTest
         public String onMessage(Session session, String msg)
         {
             StringBuilder response = new StringBuilder();
-            appendPropValue(session,response,"javax.websocket.endpoint.localAddress");
-            appendPropValue(session,response,"javax.websocket.endpoint.remoteAddress");
-            appendPropValue(session,response,"found.local");
-            appendPropValue(session,response,"found.remote");
+            appendPropValue(session, response, "javax.websocket.endpoint.localAddress");
+            appendPropValue(session, response, "javax.websocket.endpoint.remoteAddress");
+            appendPropValue(session, response, "found.local");
+            appendPropValue(session, response, "found.remote");
             return response.toString();
         }
 
         private void appendPropValue(Session session, StringBuilder response, String key)
         {
-            InetSocketAddress value = (InetSocketAddress)session.getUserProperties().get(key);
+            InetSocketAddress value = (InetSocketAddress) session.getUserProperties().get(key);
 
             response.append("[").append(key).append("] = ");
             response.append(toSafeAddr(value));
             response.append(System.lineSeparator());
+        }
+    }
+
+    public static class SelectedProtocolConfigurator extends ServerEndpointConfig.Configurator
+    {
+        @Override
+        public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response)
+        {
+            List<String> selectedProtocol = response.getHeaders().get("Sec-WebSocket-Protocol");
+            String protocol = "<>";
+            if (selectedProtocol != null || !selectedProtocol.isEmpty())
+                protocol = selectedProtocol.get(0);
+            config.getUserProperties().put("selected-subprotocol", protocol);
+        }
+    }
+
+    public static class GmtTimeDecoder implements Decoder.Text<Calendar>
+    {
+        private TimeZone TZ;
+
+        @Override
+        public Calendar decode(String s) throws DecodeException
+        {
+            if (TZ == null)
+                throw new DecodeException(s, ".init() not called");
+            try
+            {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                dateFormat.setTimeZone(TZ);
+                Date time = dateFormat.parse(s);
+                Calendar cal = Calendar.getInstance();
+                cal.setTimeZone(TZ);
+                cal.setTime(time);
+                return cal;
+            }
+            catch (ParseException e)
+            {
+                throw new DecodeException(s, "Unable to decode Time", e);
+            }
+        }
+
+        @Override
+        public void init(EndpointConfig config)
+        {
+            TZ = TimeZone.getTimeZone("GMT+0");
+        }
+
+        @Override
+        public void destroy()
+        {
+        }
+
+        @Override
+        public boolean willDecode(String s)
+        {
+            return true;
+        }
+    }
+
+    @ServerEndpoint(value = "/timedecoder",
+            subprotocols = { "time", "gmt" },
+            configurator = SelectedProtocolConfigurator.class,
+            decoders = {GmtTimeDecoder.class})
+    public static class TimeDecoderSocket
+    {
+        private TimeZone TZ = TimeZone.getTimeZone("GMT+0");
+
+        @OnMessage
+        public String onMessage(Calendar cal)
+        {
+            return String.format("cal=%s", newDateFormat().format(cal.getTime()));
+        }
+
+        private SimpleDateFormat newDateFormat()
+        {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss Z");
+            dateFormat.setTimeZone(TZ);
+            return dateFormat;
         }
     }
     
@@ -271,6 +366,7 @@ public class ConfiguratorTest
         container.addEndpoint(ProtocolsSocket.class);
         container.addEndpoint(UniqueUserPropsSocket.class);
         container.addEndpoint(AddressSocket.class);
+        container.addEndpoint(TimeDecoderSocket.class);
 
         server.start();
         String host = connector.getHost();
@@ -279,9 +375,9 @@ public class ConfiguratorTest
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        baseServerUri = new URI(String.format("ws://%s:%d/",host,port));
+        baseServerUri = new URI(String.format("ws://%s:%d/", host, port));
         if (LOG.isDebugEnabled())
-            LOG.debug("Server started on {}",baseServerUri);
+            LOG.debug("Server started on {}", baseServerUri);
     }
 
     public static String toSafeAddr(InetSocketAddress addr)
@@ -290,7 +386,7 @@ public class ConfiguratorTest
         {
             return "<null>";
         }
-        return String.format("%s:%d",addr.getAddress().getHostAddress(),addr.getPort());
+        return String.format("%s:%d", addr.getAddress().getHostAddress(), addr.getPort());
     }
 
     @AfterClass
@@ -310,7 +406,7 @@ public class ConfiguratorTest
             client.connect();
             client.sendStandardRequest();
             HttpResponse response = client.readResponseHeader();
-            Assert.assertThat("response.extensions",response.getExtensionsHeader(),is("identity"));
+            Assert.assertThat("response.extensions", response.getExtensionsHeader(), is("identity"));
         }
     }
 
@@ -325,7 +421,7 @@ public class ConfiguratorTest
             client.connect();
             client.sendStandardRequest();
             HttpResponse response = client.readResponseHeader();
-            Assert.assertThat("response.extensions",response.getExtensionsHeader(),nullValue());
+            Assert.assertThat("response.extensions", response.getExtensionsHeader(), nullValue());
         }
     }
 
@@ -342,7 +438,7 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("X-Dummy"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
             WebSocketFrame frame = frames.poll();
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Request Header [X-Dummy]: \"Bogus\""));
         }
@@ -361,7 +457,7 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("apple"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
             WebSocketFrame frame = frames.poll();
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [apple] = \"fruit from tree\""));
         }
@@ -375,7 +471,7 @@ public class ConfiguratorTest
 
             client.write(new TextFrame().setPayload("apple"));
             client.write(new TextFrame().setPayload("blueberry"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(2,1,TimeUnit.SECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(2, 1, TimeUnit.SECONDS);
             WebSocketFrame frame = frames.poll();
             // should have no value
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [apple] = <null>"));
@@ -401,7 +497,7 @@ public class ConfiguratorTest
             InetSocketAddress expectedRemote = client.getRemoteSocketAddress();
 
             client.write(new TextFrame().setPayload("addr"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
             WebSocketFrame frame = frames.poll();
             
             StringWriter expected = new StringWriter();
@@ -409,8 +505,8 @@ public class ConfiguratorTest
             // local <-> remote are opposite on server (duh)
             out.printf("[javax.websocket.endpoint.localAddress] = %s%n", toSafeAddr(expectedRemote));
             out.printf("[javax.websocket.endpoint.remoteAddress] = %s%n", toSafeAddr(expectedLocal));
-            out.printf("[found.local] = %s%n",toSafeAddr(expectedRemote));
-            out.printf("[found.remote] = %s%n",toSafeAddr(expectedLocal));
+            out.printf("[found.local] = %s%n", toSafeAddr(expectedRemote));
+            out.printf("[found.remote] = %s%n", toSafeAddr(expectedLocal));
             
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is(expected.toString()));
         }
@@ -434,7 +530,7 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("getProtocols"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
             WebSocketFrame frame = frames.poll();
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\"]"));
         }
@@ -458,7 +554,7 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("getProtocols"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
             WebSocketFrame frame = frames.poll();
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
         }
@@ -482,7 +578,7 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("getProtocols"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
             WebSocketFrame frame = frames.poll();
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
         }
@@ -506,9 +602,31 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("getProtocols"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
             WebSocketFrame frame = frames.poll();
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
+        }
+    }
+
+    /**
+     * Test of Sec-WebSocket-Protocol, using non-spec case header
+     */
+    @Test
+    public void testDecoderWithProtocol() throws Exception
+    {
+        URI uri = baseServerUri.resolve("/timedecoder");
+
+        try (BlockheadClient client = new BlockheadClient(uri))
+        {
+            client.addHeader("Sec-Websocket-Protocol: gmt\r\n");
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            client.write(new TextFrame().setPayload("2016-06-20T14:27:44"));
+            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("cal=2016.06.20 AD at 14:27:44 +0000"));
         }
     }
 }
