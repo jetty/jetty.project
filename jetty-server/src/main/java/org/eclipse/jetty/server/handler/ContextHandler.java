@@ -2123,6 +2123,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (url == null)
                     return null;
                 Resource r = Resource.newResource(url);
+                // Issue #654 - return null for directories (same as Jetty 9.2.x)
+                if(r.isDirectory())
+                    return null;
                 return r.getInputStream();
             }
             catch (Exception e)
