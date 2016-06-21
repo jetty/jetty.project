@@ -20,14 +20,13 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.reflect.Method;
 
-import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
- * Callable for {@link OnOpen} annotated methods
+ * Callable for {@link javax.websocket.OnOpen} annotated methods
  */
 public class OnOpenCallable extends JsrCallable
 {
@@ -62,7 +61,7 @@ public class OnOpenCallable extends JsrCallable
     }
 
     @Override
-    public void setDecoderClass(Class<? extends Decoder> decoderClass)
+    public void setDecodingType(Class<?> decodingType)
     {
         /* ignore, not relevant for onClose */
     }

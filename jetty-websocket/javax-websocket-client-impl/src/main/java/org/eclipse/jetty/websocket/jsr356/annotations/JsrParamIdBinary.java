@@ -23,12 +23,9 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
-import org.eclipse.jetty.websocket.jsr356.decoders.ByteArrayDecoder;
-import org.eclipse.jetty.websocket.jsr356.decoders.ByteBufferDecoder;
-import org.eclipse.jetty.websocket.jsr356.decoders.InputStreamDecoder;
 
 /**
- * Param handling for static Binary &#064;{@link OnMessage} parameters.
+ * Param handling for static Binary &#064;{@link javax.websocket.OnMessage} parameters.
  */
 public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
 {
@@ -46,14 +43,14 @@ public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
         if (param.type.isAssignableFrom(ByteBuffer.class))
         {
             param.bind(Role.MESSAGE_BINARY);
-            callable.setDecoderClass(ByteBufferDecoder.class);
+            callable.setDecodingType(ByteBuffer.class);
             return true;
         }
 
         if (param.type.isAssignableFrom(byte[].class))
         {
             param.bind(Role.MESSAGE_BINARY);
-            callable.setDecoderClass(ByteArrayDecoder.class);
+            callable.setDecodingType(byte[].class);
             return true;
         }
 
@@ -62,7 +59,7 @@ public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
         {
             assertPartialMessageSupportDisabled(param,callable);
             param.bind(Role.MESSAGE_BINARY_STREAM);
-            callable.setDecoderClass(InputStreamDecoder.class);
+            callable.setDecodingType(InputStream.class);
             return true;
         }
 

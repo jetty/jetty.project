@@ -27,11 +27,11 @@ import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
- * Callable for {@link OnMessage} annotated methods with a whole or partial text messages.
+ * Callable for {@link javax.websocket.OnMessage} annotated methods with a whole or partial text messages.
  * <p>
- * Not for use with {@link Reader} based {@link OnMessage} method objects.
+ * Not for use with {@link java.io.Reader} based {@link javax.websocket.OnMessage} method objects.
  * 
- * @see Text
+ * @see javax.websocket.Decoder.Text
  */
 public class OnMessageTextCallable extends OnMessageCallable
 {
