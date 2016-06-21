@@ -1,4 +1,4 @@
-jetty-9.3.10-SNAPSHOT - 21 June 2016
+jetty-9.3.10.v20160621 - 21 June 2016
  + 388 Add methods to send text frames with pre-encoded strings.
  + 605 Guard concurrent calls to WebSocketSession.close()
  + 608 reset encoding set from content type?
