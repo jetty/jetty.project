@@ -172,5 +172,9 @@ public abstract class JsrCallable extends CallableMethod
         }
     }
 
-    public abstract void setDecoderClass(Class<? extends Decoder> decoderClass);
+    /**
+     * The Type of Class a {@link Decoder} should be created to produce.
+     * @param decodingType the type of class a Decoder should be created to produce
+     */
+    public abstract void setDecodingType(Class<?> decodingType);
 }

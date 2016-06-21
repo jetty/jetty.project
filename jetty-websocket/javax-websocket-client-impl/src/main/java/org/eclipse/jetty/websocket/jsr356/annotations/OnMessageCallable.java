@@ -26,7 +26,6 @@ import javax.websocket.Encoder;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.EncoderFactory;
-import org.eclipse.jetty.websocket.jsr356.InitException;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
@@ -34,7 +33,7 @@ public class OnMessageCallable extends JsrCallable
 {
     protected final Class<?> returnType;
     protected Encoder returnEncoder;
-    protected Class<? extends Decoder> decoderClass;
+    protected Class<?> decodingType;
     protected Decoder decoder;
     protected int idxPartialMessageFlag = -1;
     protected int idxMessageObject = -1;
@@ -50,7 +49,7 @@ public class OnMessageCallable extends JsrCallable
     {
         super(copy);
         this.returnType = copy.returnType;
-        this.decoderClass = copy.decoderClass;
+        this.decodingType = copy.decodingType;
         this.decoder = copy.decoder;
         this.idxPartialMessageFlag = copy.idxPartialMessageFlag;
         this.idxMessageObject = copy.idxMessageObject;
@@ -93,11 +92,6 @@ public class OnMessageCallable extends JsrCallable
         return decoder;
     }
 
-    public Class<? extends Decoder> getDecoderClass()
-    {
-        return decoderClass;
-    }
-
     public Param getMessageObjectParam()
     {
         if (idxMessageObject < 0)
@@ -138,16 +132,9 @@ public class OnMessageCallable extends JsrCallable
             this.returnEncoder = encoderWrapper.getEncoder();
         }
 
-        if (decoderClass != null)
+        if (decodingType != null)
         {
-            try
-            {
-                this.decoder = decoderClass.newInstance();
-            }
-            catch (InstantiationException | IllegalAccessException e)
-            {
-                throw new InitException("Unable to create decoder: " + decoderClass.getName(),e);
-            }
+            this.decoder = session.getDecoderFactory().getDecoderFor(decodingType);
         }
     }
 
@@ -162,9 +149,9 @@ public class OnMessageCallable extends JsrCallable
     }
 
     @Override
-    public void setDecoderClass(Class<? extends Decoder> decoderClass)
+    public void setDecodingType(Class<?> decodingType)
     {
-        this.decoderClass = decoderClass;
+        this.decodingType = decodingType;
         messageRoleAssigned = true;
     }
 
