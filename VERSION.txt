@@ -1,3 +1,8 @@
+jetty-9.3.11.M0 - 22 June 2016
+ + 425 Incorrect @ServerEndpoint Encoder/Decoder lifecycle
+ + 624 AsyncContext.onCompleted called twice
+ + 659 CONNECT request fails spuriously
+
 jetty-9.3.10.v20160621 - 21 June 2016
  + 388 Add methods to send text frames with pre-encoded strings.
  + 605 Guard concurrent calls to WebSocketSession.close()
@@ -11,9 +16,10 @@ jetty-9.3.10.v20160621 - 21 June 2016
  + 624 AsyncContext.onCompleted called twice
  + 628 IOException: Unable to open root Jar file ...
    MetaInfConfiguration.getTlds(MetaInfConfiguration.java:406) with Spring boot
-   loader + WebAppContext + non-expanded war 
+   loader + WebAppContext + non-expanded war
  + 632 JMX tests rely on fixed port
- + 633 If jmx and websocket is enabled, redploying a context produces a NullPointerException
+ + 633 If jmx and websocket is enabled, redploying a context produces a
+   NullPointerException
  + 638 ConnectHandler responses should have Content-Length
  + 639 ServerContainer stores WebSocket sessions twice
  + 640 ClientContainer should store WebSocket sessions as beans
