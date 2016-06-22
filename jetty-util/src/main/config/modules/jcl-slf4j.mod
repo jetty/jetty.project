@@ -10,8 +10,7 @@ jcl-impl
 jcl-api
 
 [files]
-maven://org.slf4j/jcl-over-slf4j/1.7.21|lib/slf4j/jcl-over-slf4j-1.7.21.jar
+maven://org.slf4j/jcl-over-slf4j/${slf4j.version}|lib/slf4j/jcl-over-slf4j-${slf4j.version}.jar
 
 [lib]
-lib/slf4j/jcl-over-slf4j-1.7.21.jar
-
+lib/slf4j/jcl-over-slf4j-${slf4j.version}.jar
