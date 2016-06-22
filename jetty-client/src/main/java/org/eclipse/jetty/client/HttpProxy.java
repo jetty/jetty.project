@@ -27,7 +27,6 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -172,24 +171,24 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             connection.send(connect, result ->
             {
                 // The EndPoint may have changed during the conversation, get the latest.
-                EndPoint endPoint1 = (EndPoint)conversation.getAttribute(EndPoint.class.getName());
+                EndPoint endPoint = (EndPoint)conversation.getAttribute(EndPoint.class.getName());
                 if (result.isSucceeded())
                 {
                     Response response = result.getResponse();
                     if (response.getStatus() == HttpStatus.OK_200)
                     {
-                        tunnelSucceeded(endPoint1);
+                        tunnelSucceeded(endPoint);
                     }
                     else
                     {
                         HttpResponseException failure = new HttpResponseException("Unexpected " + response +
                                 " for " + result.getRequest(), response);
-                        tunnelFailed(endPoint1, failure);
+                        tunnelFailed(endPoint, failure);
                     }
                 }
                 else
                 {
-                    tunnelFailed(endPoint1, result.getFailure());
+                    tunnelFailed(endPoint, result.getFailure());
                 }
             });
         }
@@ -206,6 +205,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                         new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
                 HttpConnectionOverHTTP oldConnection = (HttpConnectionOverHTTP)endPoint.getConnection();
                 org.eclipse.jetty.io.Connection newConnection = sslConnectionFactory.newConnection(endPoint, context);
+                // Creating the connection will link the new Connection the EndPoint,
+                // but we need the old Connection linked for the upgrade to do its job.
+                endPoint.setConnection(oldConnection);
                 endPoint.upgrade(newConnection);
                 if (LOG.isDebugEnabled())
                     LOG.debug("HTTP tunnel established: {} over {}", oldConnection, newConnection);
