@@ -1,7 +1,11 @@
 jetty-9.3.11.M0 - 22 June 2016
  + 425 Incorrect @ServerEndpoint Encoder/Decoder lifecycle
  + 624 AsyncContext.onCompleted called twice
+ + 654 Jetty 9.3 ServletContext.getResourceAsStream("/") returns an unusable
+   stream
  + 659 CONNECT request fails spuriously
+ + 660 NullPointerException in Request.getParameter: _parameters is null
+ + 661 JsrExtension is missing hashCode() and equals()
 
 jetty-9.3.10.v20160621 - 21 June 2016
  + 388 Add methods to send text frames with pre-encoded strings.
