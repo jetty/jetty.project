@@ -27,7 +27,6 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -173,24 +172,24 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             connection.send(connect, result ->
             {
                 // The EndPoint may have changed during the conversation, get the latest.
-                EndPoint endPoint1 = (EndPoint)conversation.getAttribute(EndPoint.class.getName());
+                EndPoint endPoint = (EndPoint)conversation.getAttribute(EndPoint.class.getName());
                 if (result.isSucceeded())
                 {
                     Response response = result.getResponse();
                     if (response.getStatus() == HttpStatus.OK_200)
                     {
-                        tunnelSucceeded(endPoint1);
+                        tunnelSucceeded(endPoint);
                     }
                     else
                     {
                         HttpResponseException failure = new HttpResponseException("Unexpected " + response +
                                 " for " + result.getRequest(), response);
-                        tunnelFailed(endPoint1, failure);
+                        tunnelFailed(endPoint, failure);
                     }
                 }
                 else
                 {
-                    tunnelFailed(endPoint1, result.getFailure());
+                    tunnelFailed(endPoint, result.getFailure());
                 }
             });
         }

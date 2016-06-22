@@ -165,7 +165,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     protected void fillInterested()
     {
-        getHttpChannel().getHttpConnection().fillInterested();
+        getHttpConnection().fillInterested();
     }
 
     private void shutdown()
