@@ -380,14 +380,15 @@ public class HttpChannelState
                         read_interested=_asyncReadUnready;
                         _state=State.ASYNC_WAIT;
                         action=Action.WAIT;
-                        scheduleTimeout();
+                        Scheduler scheduler = _channel.getScheduler();
+                        if (scheduler!=null && _timeoutMs>0)
+                            _event.setTimeoutTask(scheduler.schedule(_event,_timeoutMs,TimeUnit.MILLISECONDS));
                     }
                     break;
 
                 case EXPIRING:
                     _state=State.ASYNC_WAIT;
                     action=Action.WAIT;
-                    scheduleTimeout();
                     break;
 
                 case ERRORING:
@@ -746,15 +747,6 @@ public class HttpChannelState
     protected void scheduleDispatch()
     {
         _channel.execute(_channel);
-    }
-
-    protected void scheduleTimeout()
-    {
-        if (!_locker.isLocked())
-        	throw new IllegalStateException();
-        Scheduler scheduler = _channel.getScheduler();
-        if (scheduler!=null && _timeoutMs>0)
-        	_event.setTimeoutTask(scheduler.schedule(_event,_timeoutMs,TimeUnit.MILLISECONDS));
     }
 
     protected void cancelTimeout()
