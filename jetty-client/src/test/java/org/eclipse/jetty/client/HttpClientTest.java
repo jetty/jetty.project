@@ -77,6 +77,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.TestingDir;
@@ -1508,6 +1509,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 ContentResponse response = listener.get(5, TimeUnit.SECONDS);
                 Assert.assertEquals(200, response.getStatus());
+
+                // Because the tunnel was successful, this connection will be
+                // upgraded to an SslConnection, so it will not be fill interested.
+                // This test doesn't upgrade, so it needs to restore the fill interest.
+                ((AbstractConnection)connection).fillInterested();
 
                 // Test that I can send another request on the same connection.
                 request = client.newRequest(host, port);
