@@ -52,6 +52,7 @@ public class TimeDecoder implements Decoder.Text<Date>
     @Override
     public void init(EndpointConfig config)
     {
+        System.out.println("#### INIT ####");
     }
 
     @Override

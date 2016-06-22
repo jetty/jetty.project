@@ -67,9 +67,8 @@ public class OnErrorCallable extends JsrCallable
     }
 
     @Override
-    public void setDecoderClass(Class<? extends Decoder> decoderClass)
+    public void setDecodingType(Class<?> decodingType)
     {
         /* ignore, not relevant for onClose */
     }
-
 }

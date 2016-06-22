@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -165,7 +166,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     protected void fillInterested()
     {
-        getHttpChannel().getHttpConnection().fillInterested();
+        getHttpConnection().fillInterested();
     }
 
     private void shutdown()
@@ -265,7 +266,19 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
-        return !responseSuccess(exchange);
+        boolean proceed = responseSuccess(exchange);
+        if (!proceed)
+            return true;
+
+        int status = exchange.getResponse().getStatus();
+        if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
+            return true;
+
+        if (HttpMethod.CONNECT.is(exchange.getRequest().getMethod()) &&
+                status == HttpStatus.OK_200)
+            return true;
+
+        return false;
     }
 
     @Override
