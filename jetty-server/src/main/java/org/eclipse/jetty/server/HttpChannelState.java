@@ -323,7 +323,6 @@ public class HttpChannelState
     protected Action unhandle()
     {
         Action action;
-        AsyncContextEvent schedule_event=null;
         boolean read_interested=false;
 
         try(Locker.Lock lock= _locker.lock())
@@ -379,10 +378,12 @@ public class HttpChannelState
                     }
                     else
                     {
-                        schedule_event=_event;
                         read_interested=_asyncReadUnready;
                         _state=State.ASYNC_WAIT;
                         action=Action.WAIT;
+                        Scheduler scheduler = _channel.getScheduler();
+                        if (scheduler!=null && _timeoutMs>0)
+                            _event.setTimeoutTask(scheduler.schedule(_event,_timeoutMs,TimeUnit.MILLISECONDS));
                     }
                     break;
 
@@ -418,8 +419,6 @@ public class HttpChannelState
             }
         }
 
-        if (schedule_event!=null)
-            scheduleTimeout(schedule_event);
         if (read_interested)
             _channel.asyncReadFillInterested();
         return action;
@@ -888,13 +887,6 @@ public class HttpChannelState
     protected void scheduleDispatch()
     {
         _channel.execute(_channel);
-    }
-
-    protected void scheduleTimeout(AsyncContextEvent event)
-    {
-        Scheduler scheduler = _channel.getScheduler();
-        if (scheduler!=null && _timeoutMs>0)
-            event.setTimeoutTask(scheduler.schedule(event,_timeoutMs,TimeUnit.MILLISECONDS));
     }
 
     protected void cancelTimeout()
