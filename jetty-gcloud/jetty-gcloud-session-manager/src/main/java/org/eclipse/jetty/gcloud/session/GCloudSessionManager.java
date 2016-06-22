@@ -19,7 +19,10 @@
 package org.eclipse.jetty.gcloud.session;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Externalizable;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -239,86 +242,7 @@ public class GCloudSessionManager extends AbstractSessionManager
         }
     }
     
-    /*
-     * Every time a Session is put into the cache one of these objects
-     * is created to copy the data out of the in-memory session, and 
-     * every time an object is read from the cache one of these objects
-     * a fresh Session object is created based on the data held by this
-     * object.
-     */
-    public class SerializableSessionData implements Serializable
-    {
-        /**
-         * 
-         */
-        private static final long serialVersionUID = -7779120106058533486L;
-        String clusterId;
-        String contextPath;
-        String vhost;
-        long accessed;
-        long lastAccessed;
-        long createTime;
-        long cookieSetTime;
-        String lastNode;
-        long expiry;
-        long maxInactive;
-        Map<String, Object> attributes;
-
-        public SerializableSessionData()
-        {
-
-        }
-
-       
-       public SerializableSessionData(Session s)
-       {
-           clusterId = s.getClusterId();
-           contextPath = s.getContextPath();
-           vhost = s.getVHost();
-           accessed = s.getAccessed();
-           lastAccessed = s.getLastAccessedTime();
-           createTime = s.getCreationTime();
-           cookieSetTime = s.getCookieSetTime();
-           lastNode = s.getLastNode();
-           expiry = s.getExpiry();
-           maxInactive = s.getMaxInactiveInterval();
-           attributes = s.getAttributeMap(); // TODO pointer, not a copy
-       }
-        
-        private void writeObject(java.io.ObjectOutputStream out) throws IOException
-        {  
-            out.writeUTF(clusterId); //session id
-            out.writeUTF(contextPath); //context path
-            out.writeUTF(vhost); //first vhost
-
-            out.writeLong(accessed);//accessTime
-            out.writeLong(lastAccessed); //lastAccessTime
-            out.writeLong(createTime); //time created
-            out.writeLong(cookieSetTime);//time cookie was set
-            out.writeUTF(lastNode); //name of last node managing
-      
-            out.writeLong(expiry); 
-            out.writeLong(maxInactive);
-            out.writeObject(attributes);
-        }
-        
-        private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
-        {
-            clusterId = in.readUTF();
-            contextPath = in.readUTF();
-            vhost = in.readUTF();
-            
-            accessed = in.readLong();//accessTime
-            lastAccessed = in.readLong(); //lastAccessTime
-            createTime = in.readLong(); //time created
-            cookieSetTime = in.readLong();//time cookie was set
-            lastNode = in.readUTF(); //last managing node
-            expiry = in.readLong(); 
-            maxInactive = in.readLong();
-            attributes = (HashMap<String,Object>)in.readObject();
-        }
-        
-    }
+   
     
 
     
@@ -1139,7 +1063,7 @@ public class GCloudSessionManager extends AbstractSessionManager
         if (_datastore == null)
             throw new IllegalStateException("No DataStore");
         
-        if (LOG.isDebugEnabled()) LOG.debug("Loading session {} from DataStore", key);
+        if (LOG.isDebugEnabled()) LOG.debug("Loading session {} from DataStore ", key);
 
         Entity entity = _datastore.get(key);
         if (entity == null)
@@ -1222,7 +1146,7 @@ public class GCloudSessionManager extends AbstractSessionManager
      * @param session
      * @return
      */
-    private Key makeKey (Session session, Context context)
+    protected Key makeKey (Session session, Context context)
     {
        return makeKey(session.getId(), context);
     }
@@ -1241,12 +1165,24 @@ public class GCloudSessionManager extends AbstractSessionManager
      * @param session
      * @return
      */
-    private Key makeKey (String id, Context context)
+    protected Key makeKey (String id, Context context)
+    {
+        return _keyFactory.newKey(canonicalizeKey(id,context));
+    }
+    
+    
+    /**
+     * Make a unique string from the session id and info from its Context
+     * @param id the id of the Session
+     * @param context the Context in which the Session exists
+     * @return a unique string representing the id of the session in the context
+     */
+    protected String canonicalizeKey(String id, Context context)
     {
         String key = getContextPath(context);
         key = key + "_" + getVirtualHost(context);
         key = key+"_"+id;
-        return _keyFactory.newKey(key);
+        return key;
     }
     
     /**
