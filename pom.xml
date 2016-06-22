@@ -6,7 +6,7 @@
     <version>25</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.3.10-SNAPSHOT</version>
+  <version>9.3.11-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -268,7 +268,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>2.0</version>
+          <version>2.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
