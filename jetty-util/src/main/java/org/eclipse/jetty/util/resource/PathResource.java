@@ -377,6 +377,13 @@ public class PathResource extends Resource
     @Override
     public InputStream getInputStream() throws IOException
     {
+        /* Mimic behavior from old FileResource class and its
+         * usage of java.io.FileInputStream(File) which will trigger
+         * an IOException on construction if the path is a directory
+         */
+        if (Files.isDirectory(path))
+            throw new IOException(path + " is a directory");
+
         return Files.newInputStream(path,StandardOpenOption.READ);
     }
 
