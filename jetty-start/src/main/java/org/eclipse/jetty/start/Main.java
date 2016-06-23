@@ -76,7 +76,7 @@ public class Main
         }
         catch (UsageException e)
         {
-            System.err.println(e.getMessage());
+            StartLog.warn(e.getMessage());
             usageExit(e.getCause(),e.getExitCode(),test);
         }
         catch (Throwable e)
@@ -197,7 +197,7 @@ public class Main
         }
         catch (ClassNotFoundException e)
         {
-            System.out.println("WARNING: Nothing to start, exiting ...");
+            StartLog.warn("Nothing to start, exiting ...");
             StartLog.debug(e);
             usageExit(ERR_INVOKE_MAIN);
             return;
@@ -452,7 +452,7 @@ public class Main
 
         if (args.hasJvmArgs() || args.hasSystemProperties())
         {
-            System.err.println("WARNING: System properties and/or JVM args set.  Consider using --dry-run or --exec");
+            StartLog.warn("System properties and/or JVM args set.  Consider using --dry-run or --exec");
         }
 
         ClassLoader cl = classpath.getClassLoader();
@@ -507,13 +507,13 @@ public class Main
         {
             if (port <= 0)
             {
-                System.err.println("STOP.PORT system property must be specified");
+                StartLog.warn("STOP.PORT system property must be specified");
             }
             if (key == null)
             {
                 key = "";
-                System.err.println("STOP.KEY system property must be specified");
-                System.err.println("Using empty key");
+                StartLog.info("STOP.KEY system property must be specified");
+                StartLog.info("Using empty key");
             }
 
             try (Socket s = new Socket(InetAddress.getByName(host),port))
@@ -530,7 +530,7 @@ public class Main
 
                     if (timeout > 0)
                     {
-                        System.err.printf("Waiting %,d seconds for jetty to stop%n",timeout);
+                        StartLog.info("Waiting %,d seconds for jetty to stop%n",timeout);
                         LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
                         String response;
                         while ((response = lin.readLine()) != null)
@@ -547,7 +547,7 @@ public class Main
         }
         catch (SocketTimeoutException e)
         {
-            System.err.println("Timed out waiting for stop confirmation");
+            StartLog.warn("Timed out waiting for stop confirmation");
             System.exit(ERR_UNKNOWN);
         }
         catch (ConnectException e)
@@ -565,7 +565,7 @@ public class Main
         StartLog.endStartLog();
         if(!printTextResource("org/eclipse/jetty/start/usage.txt"))
         {
-            System.err.println("ERROR: detailed usage resource unavailable");
+            StartLog.warn("detailed usage resource unavailable");
         }
         if (exit)
         {
@@ -592,7 +592,7 @@ public class Main
             }
             else
             {
-                System.out.println("Unable to find resource: " + resourceName);
+                StartLog.warn("Unable to find resource: " + resourceName);
             }
         }
         catch (IOException e)
@@ -613,7 +613,7 @@ public class Main
         }
         catch (UsageException e)
         {
-            System.err.println(e.getMessage());
+            StartLog.warn(e.getMessage());
             usageExit(e.getCause(),e.getExitCode(),startupArgs.isTestingModeEnabled());
         }
         catch (Throwable e)

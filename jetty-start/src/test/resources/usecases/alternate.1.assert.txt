@@ -13,6 +13,3 @@ LIB|${jetty.home}/lib/other.jar
 PROP|main.prop=value0
 PROP|default.option=default
 PROP|noDft.option=B
-
-# Files / Directories to create
-FILE|maindir/

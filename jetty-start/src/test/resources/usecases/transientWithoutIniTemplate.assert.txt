@@ -13,6 +13,3 @@ LIB|${jetty.home}/lib/other.jar
 PROP|main.prop=value0
 PROP|transient.option=transient
 PROP|direct.option=direct
-
-# Files / Directories to create
-FILE|maindir/

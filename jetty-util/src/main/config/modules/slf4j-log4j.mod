@@ -11,8 +11,8 @@ log4j-api
 slf4j-impl
 
 [files]
-maven://org.slf4j/slf4j-log4j12/1.7.21|lib/slf4j/slf4j-log4j12-1.7.21.jar
+maven://org.slf4j/slf4j-log4j12/${slf4j.version}|lib/slf4j/slf4j-log4j12-${slf4j.version}.jar
 
 [lib]
-lib/slf4j/slf4j-log4j12-1.7.21.jar
+lib/slf4j/slf4j-log4j12-${slf4j.version}.jar
 

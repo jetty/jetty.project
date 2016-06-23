@@ -32,25 +32,18 @@ import org.junit.Test;
  */
 public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
 {
-    static GCloudSessionTestSupport _testSupport;
-    
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
+
     
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+       GCloudTestSuite.__testSupport.deleteSessions();
     }
     
     @Override
     public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy)
     {
-       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy, _testSupport.getConfiguration());
+       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy, GCloudTestSuite.__testSupport.getConfiguration());
     }
 
     @Test

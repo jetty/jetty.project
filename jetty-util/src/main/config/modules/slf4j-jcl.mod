@@ -11,10 +11,10 @@ jcl-api
 slf4j-impl
 
 [files]
-maven://org.slf4j/slf4j-jcl/1.7.21|lib/slf4j/slf4j-jcl-1.7.21.jar
+maven://org.slf4j/slf4j-jcl/${slf4j.version}|lib/slf4j/slf4j-jcl-${slf4j.version}.jar
 
 [lib]
-lib/slf4j/slf4j-jcl-1.7.21.jar
+lib/slf4j/slf4j-jcl-${slf4j.version}.jar
 
 [exec]
 -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog

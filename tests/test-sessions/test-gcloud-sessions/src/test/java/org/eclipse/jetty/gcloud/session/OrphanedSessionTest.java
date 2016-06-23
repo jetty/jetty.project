@@ -32,19 +32,11 @@ import org.junit.Test;
  */
 public class OrphanedSessionTest extends AbstractOrphanedSessionTest
 {
-    static GCloudSessionTestSupport _testSupport;
 
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
-    
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+        GCloudTestSuite.__testSupport.deleteSessions();
     }
     
 
@@ -54,7 +46,7 @@ public class OrphanedSessionTest extends AbstractOrphanedSessionTest
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge,int evictionPolicy)
     {
-        return  new GCloudTestServer(port, max, scavenge, evictionPolicy, _testSupport.getConfiguration());
+        return  new GCloudTestServer(port, max, scavenge, evictionPolicy, GCloudTestSuite.__testSupport.getConfiguration());
     }
 
     @Test
@@ -62,7 +54,7 @@ public class OrphanedSessionTest extends AbstractOrphanedSessionTest
     public void testOrphanedSession() throws Exception
     {
         super.testOrphanedSession();
-        _testSupport.assertSessions(0);
+        GCloudTestSuite.__testSupport.assertSessions(0);
     }
     
     

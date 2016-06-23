@@ -10,6 +10,3 @@ LIB|${jetty.base}/lib/agent-jdk-1.7.jar
 
 # The Properties we expect (order is irrelevant)
 PROP|main.prop=value0
-
-# Files / Directories to create
-FILE|maindir/
