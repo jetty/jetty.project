@@ -132,6 +132,14 @@ public class MemcachedTestServer extends AbstractTestServer
             
             return expiredIds;
         }
+
+        @Override
+        protected void doStop() throws Exception
+        {
+            super.doStop();
+        }
+        
+        
         
     }
     /**
