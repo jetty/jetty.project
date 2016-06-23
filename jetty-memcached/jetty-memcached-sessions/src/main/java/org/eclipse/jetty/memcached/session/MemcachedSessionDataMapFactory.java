@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.memcached.session;
 
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.server.session.SessionDataMap;
 import org.eclipse.jetty.server.session.SessionDataMapFactory;
 
@@ -28,36 +32,29 @@ import org.eclipse.jetty.server.session.SessionDataMapFactory;
  */
 public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
 {
-    protected String _host = "localhost";
-    protected String _port = "11211";
     protected int _expiry;
+    protected int[] _weights;    
+    protected List<InetSocketAddress> _addresses;
     
+    /**
+     * @param addresses host and port address of memcached servers
+     */
+    public void setAddresses(InetSocketAddress... addresses)
+    {
+        if (addresses == null)
+            _addresses = null;
+        _addresses = new ArrayList<>();
+        for (InetSocketAddress a:addresses)
+            _addresses.add(a);
+    }
     
-    
-    
-    public String getHost()
+    /**
+     * @param weights the relative weight to give each server in the list of addresses
+     */
+    public void setWeights(int[] weights)
     {
-        return _host;
+        _weights = weights;
     }
-
-
-    public void setHost(String host)
-    {
-        _host = host;
-    }
-
-
-    public String getPort()
-    {
-        return _port;
-    }
-
-
-    public void setPort(String port)
-    {
-        _port = port;
-    }
-
 
 
     public int getExpirySec()
@@ -66,6 +63,9 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
     }
 
 
+    /**
+     * @param expiry time in secs that memcached item remains valid
+     */
     public void setExpirySec(int expiry)
     {
         _expiry = expiry;
@@ -77,7 +77,7 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
     @Override
     public SessionDataMap getSessionDataMap()
     {
-        MemcachedSessionDataMap m = new MemcachedSessionDataMap(_host, _port);
+        MemcachedSessionDataMap m = new MemcachedSessionDataMap(_addresses, _weights);
         m.setExpirySec(_expiry);
         return m;
     }

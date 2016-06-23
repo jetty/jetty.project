@@ -19,6 +19,8 @@
 package org.eclipse.jetty.memcached.session;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.List;
 
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
@@ -58,6 +60,16 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     }
     
     
+    public MemcachedSessionDataMap (List<InetSocketAddress> addresses)
+    {
+        _builder = new XMemcachedClientBuilder(addresses);
+    }
+    
+    
+    public MemcachedSessionDataMap (List<InetSocketAddress> addresses, int[] weights)
+    {
+        _builder = new XMemcachedClientBuilder(addresses, weights);
+    }
     
     /**
      * @return the builder
