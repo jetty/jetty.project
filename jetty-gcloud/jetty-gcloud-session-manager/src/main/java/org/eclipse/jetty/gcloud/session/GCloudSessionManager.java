@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 import com.google.gcloud.datastore.Blob;
 import com.google.gcloud.datastore.Datastore;
+import com.google.gcloud.datastore.DatastoreException;
 import com.google.gcloud.datastore.DatastoreFactory;
 import com.google.gcloud.datastore.Entity;
 import com.google.gcloud.datastore.GqlQuery;
@@ -74,6 +75,8 @@ public class GCloudSessionManager extends AbstractSessionManager
     public static final String KIND = "GCloudSession";
     public static final int DEFAULT_MAX_QUERY_RESULTS = 100;
     public static final long DEFAULT_SCAVENGE_SEC = 600; 
+    public static final int DEFAULT_BACKOFF_MS = 1000; //start at 1 sec
+    public static final int DEFAULT_MAX_RETRIES = 5;
     
     /**
      * Sessions known to this node held in memory
@@ -103,6 +106,8 @@ public class GCloudSessionManager extends AbstractSessionManager
 
 
     private int _maxResults = DEFAULT_MAX_QUERY_RESULTS;
+    private int _backoffMs = DEFAULT_BACKOFF_MS;
+    private int _maxRetries = DEFAULT_MAX_RETRIES;
 
 
     /**
@@ -1096,12 +1101,74 @@ public class GCloudSessionManager extends AbstractSessionManager
         if (LOG.isDebugEnabled()) LOG.debug("Writing session {} to DataStore", session.getId());
     
         Entity entity = _converter.entityFromSession(session, makeKey(session, _context));
-        _datastore.put(entity);
-        session.setLastSyncTime(System.currentTimeMillis());
+        
+        //attempt the update with exponential back-off
+        int backoff = getBackoffMs();
+        int attempts;
+        for (attempts = 0; attempts < getMaxRetries(); attempts++)
+        {
+            try
+            {
+                _datastore.put(entity);
+                session.setLastSyncTime(System.currentTimeMillis());
+                return;
+            }
+            catch (DatastoreException e)
+            {
+                if (e.code().retryable())
+                {
+                    if (LOG.isDebugEnabled()) LOG.debug("Datastore put retry {} waiting {}ms", attempts, backoff);
+                        
+                    try
+                    {
+                        Thread.currentThread().sleep(backoff);
+                    }
+                    catch (InterruptedException x)
+                    {
+                    }
+                    backoff *= 2;
+                }
+                else
+                {
+                   throw e;
+                }
+            }
+        }
+        throw new IOException("Retries exhausted");
     }
     
     
     
+    public int getMaxRetries()
+    {
+        return _maxRetries;
+    }
+
+
+    public int getBackoffMs()
+    {
+        return _backoffMs;
+    }
+
+
+    /**
+     * @param backoffMs the backoffMs to set
+     */
+    public void setBackoffMs(int backoffMs)
+    {
+        _backoffMs = backoffMs;
+    }
+
+
+    /**
+     * @param maxRetries the maxRetries to set
+     */
+    public void setMaxRetries(int maxRetries)
+    {
+        _maxRetries = maxRetries;
+    }
+
+
     /**
      * Remove the session from the cluster cache.
      * 
