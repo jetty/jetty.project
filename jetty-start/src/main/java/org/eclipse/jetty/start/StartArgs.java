@@ -175,7 +175,7 @@ public class StartArgs
     private boolean listConfig = false;
     private boolean version = false;
     private boolean dryRun = false;
-    private boolean useStartd = false;
+    private boolean createStartd = false;
 
     private boolean exec = false;
     private String exec_properties;
@@ -775,9 +775,9 @@ public class StartArgs
         return version;
     }
     
-    public boolean isUseStartd()
+    public boolean isCreateStartd()
     {
-        return useStartd;
+        return createStartd;
     }
     
     public void parse(ConfigSources sources)
@@ -947,14 +947,28 @@ public class StartArgs
         }
        
         // jetty.base build-out : add to ${jetty.base}/start.ini
-        if (arg.startsWith("--add-to-startd=")||
-            arg.startsWith("--add-to-start="))
+        if ("--create-startd".equals(arg))
         {
-            if (arg.startsWith("--add-to-startd="))
-                useStartd=true;
-
-            List<String> moduleNames = Props.getValues(arg);
-            startModules.addAll(moduleNames);
+            createStartd=true;
+            run = false;
+            download = true;
+            licenseCheckRequired = true;
+            return;
+        }
+        if (arg.startsWith("--add-to-startd="))
+        {
+            String value = Props.getValue(arg);
+            StartLog.warn("--add-to-startd is deprecated! Instead use:%n      %s",value);
+            createStartd=true;
+            startModules.addAll(Props.getValues(arg));
+            run = false;
+            download = true;
+            licenseCheckRequired = true;
+            return;
+        }
+        if (arg.startsWith("--add=") || arg.startsWith("--add-to-start="))
+        {
+            startModules.addAll(Props.getValues(arg));
             run = false;
             download = true;
             licenseCheckRequired = true;

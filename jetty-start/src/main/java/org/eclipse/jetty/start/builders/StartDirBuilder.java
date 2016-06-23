@@ -76,29 +76,11 @@ public class StartDirBuilder implements BaseBuilder.Config
 
             try (BufferedWriter writer = Files.newBufferedWriter(ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING))
             {
-                writeModuleSection(writer,module);
+                module.writeIniSection(writer);
             }
             return true;
         }
 
         return false;
-    }
-
-    protected void writeModuleSection(BufferedWriter writer, Module module)
-    {
-        PrintWriter out = new PrintWriter(writer);
-
-        out.println("# --------------------------------------- ");
-        out.println("# Module: " + module.getName());
-        out.println("--module=" + module.getName());
-        out.println();
-
-        for (String line : module.getIniTemplate())
-        {
-            out.println(line);
-        }
-
-        out.println();
-        out.flush();
     }
 }

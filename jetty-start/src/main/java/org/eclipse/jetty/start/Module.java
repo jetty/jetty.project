@@ -19,8 +19,10 @@
 package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -485,5 +487,21 @@ public class Module
     public boolean isTransitive()
     {
         return isEnabled() && !_notTransitive;
+    }
+
+    public void writeIniSection(BufferedWriter writer)
+    {
+        PrintWriter out = new PrintWriter(writer);
+        out.println("# --------------------------------------- ");
+        out.println("# Module: " + getName());
+        for (String line : getDescription())
+            out.append("# ").println(line);
+        out.println("# --------------------------------------- ");
+        out.println("--module=" + getName());
+        out.println();
+        for (String line : getIniTemplate())
+            out.println(line);
+        out.println();
+        out.flush();
     }
 }

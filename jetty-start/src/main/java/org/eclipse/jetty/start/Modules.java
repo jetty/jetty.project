@@ -364,7 +364,7 @@ public class Modules implements Iterable<Module>
                     if (unsatisfied.length()>0)
                         unsatisfied.append(',');
                     unsatisfied.append(m.getName());
-                    System.err.printf("%nWARN: Module %s requires %s from one of %s%n",m.getName(),d,providers);
+                    StartLog.warn("Module %s requires %s from one of %s%n",m.getName(),d,providers);
                 }
             });
         });

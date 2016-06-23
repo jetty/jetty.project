@@ -14,7 +14,3 @@ LIB|${jetty.base}/lib/db/mysql-driver.jar
 PROP|main.prop=value0
 PROP|mysql.user=frank
 PROP|mysql.pass=secret
-
-
-# Files / Directories to create
-FILE|maindir/

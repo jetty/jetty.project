@@ -20,12 +20,15 @@ package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -148,30 +151,14 @@ public class ConfigurationAssert
             }
         }
         assertContainsUnordered("Downloads",expectedDownloads,actualDownloads);
-        
-        // Validate Files/Dirs creation
-        List<String> expectedFiles = new ArrayList<>();
-        for(String line: textFile)
-        {
-            if(line.startsWith("FILE|"))
-            {
-                expectedFiles.add(getValue(line));
-            }
-        }
-        List<String> actualFiles = new ArrayList<>();
-        for(FileArg farg: args.getFiles())
-        {
-            if(farg.uri == null)
-            {
-                actualFiles.add(farg.location);
-            }
-        }
-        assertContainsUnordered("Files/Dirs",expectedFiles,actualFiles);
-        
+                
         textFile.stream()
-        .filter(s->s.startsWith("EXISTS|"))
-        .map(s->baseHome.getPath(s.substring(7)).toFile())
-        .forEach(f->Assert.assertTrue(f+" exists?",f.exists()));
+        .filter(s->s.startsWith("EXISTS|")).map(f->f.substring(7)).forEach(f->
+        {
+            Path path=baseHome.getBasePath().resolve(f);
+            assertTrue(baseHome.toShortForm(path)+" exists?",Files.exists(path));
+            assertEquals(baseHome.toShortForm(path)+" isDir?",f.endsWith("/"),Files.isDirectory(path)); 
+        });
     }
 
     private static String shorten(BaseHome baseHome, Path path, Path testResourcesDir)

@@ -18,7 +18,6 @@ PROP|main.prop=valueT
 PROP|optional.prop=value0
 
 # Files / Directories to create
-FILE|maindir/
-EXISTS|start.d/extra.ini
+EXISTS|maindir/
+EXISTS|start.d/start.ini
 EXISTS|start.d/optional.ini
-EXISTS|start.d/main.ini

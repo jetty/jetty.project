@@ -118,29 +118,11 @@ public class StartIniBuilder implements BaseBuilder.Config
             // Append to start.ini
             try (BufferedWriter writer = Files.newBufferedWriter(startIni,StandardCharsets.UTF_8,StandardOpenOption.APPEND,StandardOpenOption.CREATE))
             {
-                writeModuleSection(writer,module);
+                module.writeIniSection(writer);
             }
             return true;
         }
 
         return false;
-    }
-
-    protected void writeModuleSection(BufferedWriter writer, Module module)
-    {
-        PrintWriter out = new PrintWriter(writer);
-
-        out.println("# --------------------------------------- ");
-        out.println("# Module: " + module.getName());
-        out.println("--module=" + module.getName());
-        out.println();
-
-        for (String line : module.getIniTemplate())
-        {
-            out.println(line);
-        }
-
-        out.println();
-        out.flush();
     }
 }

@@ -84,12 +84,12 @@ public class StartLog
 
     public static void info(String format, Object... args)
     {
-        log("INFO",format,args);
+        log("INFO ",format,args);
     }
 
     public static void warn(String format, Object... args)
     {
-        log("WARNING",format,args);
+        log("WARN ",format,args);
     }
 
     public static void warn(Throwable t)
