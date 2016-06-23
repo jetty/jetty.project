@@ -27,6 +27,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <skipTests>true</skipTests>
+          <test>GCloudTestSuite</test>
         </configuration>
       </plugin>
     </plugins>

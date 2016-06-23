@@ -37,19 +37,10 @@ import org.junit.Assert;
 public class SessionExpiryTest extends AbstractSessionExpiryTest
 {
 
-    static GCloudSessionTestSupport _testSupport;
-    
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
-    
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+       GCloudTestSuite.__testSupport.deleteSessions();
     }
     
     
@@ -59,7 +50,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
     {
-        return  new GCloudTestServer(port, max, scavenge, evictionPolicy, _testSupport.getConfiguration());
+        return  new GCloudTestServer(port, max, scavenge, evictionPolicy, GCloudTestSuite.__testSupport.getConfiguration());
     }
 
     @Test
@@ -67,7 +58,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     public void testSessionNotExpired() throws Exception
     {
         super.testSessionNotExpired();
-        _testSupport.deleteSessions();
+        GCloudTestSuite.__testSupport.deleteSessions();
     }
 
     /** 
@@ -78,20 +69,22 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     public void testSessionExpiry() throws Exception
     {
         super.testSessionExpiry();
-        _testSupport.deleteSessions();
+
+        GCloudTestSuite.__testSupport.deleteSessions();
     }
 
     @Override
     public void verifySessionCreated(TestHttpSessionListener listener, String sessionId)
     {
         super.verifySessionCreated(listener, sessionId);
-        try {_testSupport.assertSessions(1);}catch(Exception e){ Assert.fail(e.getMessage());}
+        try {GCloudTestSuite.__testSupport.assertSessions(1);}catch(Exception e){ Assert.fail(e.getMessage());}
     }
 
     @Override
     public void verifySessionDestroyed(TestHttpSessionListener listener, String sessionId)
     {
         super.verifySessionDestroyed(listener, sessionId);
+        //try{GCloudTestSuite.__testSupport.assertSessions(0);}catch(Exception e) {Assert.fail(e.getMessage());}
     }
 
     

@@ -36,34 +36,19 @@ import org.junit.BeforeClass;
  */
 public class ImmediateSaveTest extends AbstractImmediateSaveTest
 {
-   
-    static GCloudSessionTestSupport _testSupport;
-
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
-    
     
     @After
     public void deleteSessions () throws Exception
     {
-        _testSupport.deleteSessions();
+        GCloudTestSuite.__testSupport.deleteSessions();
     }
     
-    
-    @AfterClass
-    public static void teardown () throws Exception
-    {
-        _testSupport.tearDown();
-    }
+
 
 
     public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
     {        
-        return new GCloudTestServer(port, max, scavenge, evictionPolicy,_testSupport.getConfiguration()) 
+        return new GCloudTestServer(port, max, scavenge, evictionPolicy, GCloudTestSuite.__testSupport.getConfiguration()) 
         {
             public SessionHandler newSessionHandler()
             {
