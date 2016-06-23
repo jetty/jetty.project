@@ -18,6 +18,7 @@
 
   <modules>
     <module>jetty-gcloud-session-manager</module>
+    <module>jetty-gcloud-memcached-session-manager</module>
   </modules>
 
 </project>

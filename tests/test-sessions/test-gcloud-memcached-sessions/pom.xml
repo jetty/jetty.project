@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.3.10-SNAPSHOT</version>
+    <version>9.3.11-SNAPSHOT</version>
   </parent>
   <artifactId>test-gcloud-memcached-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: GCloud with Memcached</name>
@@ -44,6 +44,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <skipTests>true</skipTests>
+          <test>GCloudMemcachedTestSuite</test>
         </configuration>
       </plugin>
     </plugins>
@@ -59,24 +60,30 @@
             <artifactId>jetty-webapp</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-client</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty.tests</groupId>
-            <artifactId>test-sessions-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty.gcloud</groupId>
+	<dependency>
+		<groupId>org.eclipse.jetty</groupId>
+		<artifactId>jetty-client</artifactId>
+		<version>${project.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>org.eclipse.jetty.tests</groupId>
+		<artifactId>test-sessions-common</artifactId>
+		<version>${project.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>org.eclipse.jetty.gcloud</groupId>
             <artifactId>jetty-gcloud-memcached-session-manager</artifactId>
             <version>${project.version}</version>
          </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.7.9</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

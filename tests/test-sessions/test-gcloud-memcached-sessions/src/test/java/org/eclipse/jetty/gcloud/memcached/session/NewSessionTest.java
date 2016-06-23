@@ -37,20 +37,12 @@ import org.junit.Test;
  */
 public class NewSessionTest extends AbstractNewSessionTest
 {
-    GCloudSessionTestSupport _testSupport;
-    
-    @Before
-    public void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
+
     
     @After
     public void teardown () throws Exception
     {
-        _testSupport.tearDown();
-
+        GCloudMemcachedTestSuite.__testSupport.deleteSessions();
     }
     
     
@@ -60,7 +52,7 @@ public class NewSessionTest extends AbstractNewSessionTest
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-       return new GCloudTestServer(port, max, scavenge, _testSupport.getConfiguration());
+       return new GCloudMemcachedTestServer(port, max, scavenge, GCloudMemcachedTestSuite.__testSupport.getConfiguration());
     }
 
     @Test

@@ -32,19 +32,10 @@ import org.junit.Test;
  */
 public class SessionRenewTest extends AbstractSessionRenewTest
 {
-    static GCloudSessionTestSupport _testSupport;
-
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
-
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+        GCloudTestSuite.__testSupport.deleteSessions();
     }
 
     /** 
@@ -53,7 +44,7 @@ public class SessionRenewTest extends AbstractSessionRenewTest
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return  new GCloudTestServer(port,max, scavenge, _testSupport.getConfiguration());
+        return  new GCloudTestServer(port,max, scavenge, GCloudTestSuite.__testSupport.getConfiguration());
     }
 
     @Test

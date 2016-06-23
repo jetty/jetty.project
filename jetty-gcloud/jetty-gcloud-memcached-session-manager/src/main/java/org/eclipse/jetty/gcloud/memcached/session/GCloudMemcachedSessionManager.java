@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
 import com.google.gcloud.datastore.Key;
 
 import net.rubyeye.xmemcached.MemcachedClient;
+import net.rubyeye.xmemcached.XMemcachedClient;
 import net.rubyeye.xmemcached.XMemcachedClientBuilder;
 import net.rubyeye.xmemcached.transcoders.SerializingTranscoder;
 
@@ -156,7 +157,7 @@ public class GCloudMemcachedSessionManager extends GCloudSessionManager
        
         
         private void writeObject(java.io.ObjectOutputStream out) throws IOException
-        {  
+        { 
             out.writeUTF(clusterId); //session id
             out.writeUTF(contextPath); //context path
             out.writeUTF(vhost); //first vhost
@@ -217,8 +218,9 @@ public class GCloudMemcachedSessionManager extends GCloudSessionManager
         if (StringUtil.isBlank(_host) || StringUtil.isBlank(_port))
             throw new IllegalStateException("Memcached host and/or port not configured");
         
-         XMemcachedClientBuilder builder = new XMemcachedClientBuilder(_host+":"+_port);
+        XMemcachedClientBuilder builder = new XMemcachedClientBuilder(_host+":"+_port);
         _client = builder.build();
+
         _client.setTranscoder(new ContextClassloaderSerializingTranscoder());
         super.doStart();
     }
@@ -226,8 +228,9 @@ public class GCloudMemcachedSessionManager extends GCloudSessionManager
     @Override
     public void doStop() throws Exception
     {
-        _client.shutdown();
         super.doStop();
+        _client.shutdown();
+        _client = null;
     }
 
     @Override
@@ -337,6 +340,8 @@ public class GCloudMemcachedSessionManager extends GCloudSessionManager
     {
         return _port;
     }
+    
+   
 
     /**
      * @param port the port of the memcached server

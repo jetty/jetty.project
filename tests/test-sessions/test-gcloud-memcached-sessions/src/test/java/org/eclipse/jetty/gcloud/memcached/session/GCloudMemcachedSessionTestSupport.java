@@ -57,34 +57,35 @@ import com.google.gcloud.datastore.QueryResults;
 import com.google.gcloud.datastore.StructuredQuery;
 import com.google.gcloud.datastore.StructuredQuery.Projection;
 
+
+
+
 import net.rubyeye.xmemcached.MemcachedClient;
 import net.rubyeye.xmemcached.XMemcachedClientBuilder;
 
 /**
- * GCloudSessionTestSupport
+ * GCloudMemcachedSessionTestSupport
  *
  *
  */
-public class GCloudSessionTestSupport
+public class GCloudMemcachedSessionTestSupport
 {
 
-    public static class MemcacheFlusher 
+    /**
+     * MemcachedFlusher
+     *
+     *
+     */
+    public static class MemcachedFlusher 
     {
         protected XMemcachedClientBuilder _builder;
         protected MemcachedClient _client;
 
 
-        public MemcacheFlusher()
+        public MemcachedFlusher() throws Exception
         {        
-            try
-            {
             _builder = new XMemcachedClientBuilder("localhost:11211");
             _client = _builder.build();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
         }
         
         public void flush () throws Exception
@@ -92,6 +93,8 @@ public class GCloudSessionTestSupport
             _client.flushAllWithNoReply();
         }
     }
+    
+    
     
     private static class ProcessOutputReader implements Runnable
     {
@@ -144,8 +147,7 @@ public class GCloudSessionTestSupport
     public static String DEFAULT_GCD_UNPACKED = "gcd-v1beta2-rev1-2.1.2b";
     public static String DEFAULT_DOWNLOAD_URL = "http://storage.googleapis.com/gcd/tools/";
     
-    static MemcacheFlusher _flusher = new MemcacheFlusher();
-    
+ 
     String _projectId;
     String _testServerUrl;
     String _testPort;
@@ -153,8 +155,11 @@ public class GCloudSessionTestSupport
     File _gcdInstallDir;
     File _gcdUnpackedDir;
     Datastore _ds;
+    MemcachedFlusher _flusher;
+ 
     
-    public GCloudSessionTestSupport (File gcdInstallDir)
+    
+    public GCloudMemcachedSessionTestSupport (File gcdInstallDir)
     {
         _gcdInstallDir = gcdInstallDir;
         if (_gcdInstallDir == null)
@@ -180,7 +185,7 @@ public class GCloudSessionTestSupport
         }
     }
     
-    public GCloudSessionTestSupport ()
+    public GCloudMemcachedSessionTestSupport ()
     {
         this(null);
     }
@@ -315,7 +320,6 @@ public class GCloudSessionTestSupport
     {
         stopDatastore();
         clearDatastore();
-        _flusher.flush();
     }
     
     public void ensureDatastore()
@@ -361,10 +365,11 @@ public class GCloudSessionTestSupport
         }       
         assertEquals(count, actual);
     }
-    
+
     public void deleteSessions () throws Exception
     {
-       ensureDatastore();
+        deleteMemcachedSessions();
+        ensureDatastore();
         StructuredQuery<ProjectionEntity> keyOnlyProjectionQuery = Query.projectionEntityQueryBuilder()
                 .kind(GCloudSessionManager.KIND)
                 .projection(Projection.property("__key__"))
@@ -374,16 +379,27 @@ public class GCloudSessionTestSupport
         if (results != null)
         {
             List<Key> keys = new ArrayList<Key>();
-            
+
             while (results.hasNext())
             { 
                 ProjectionEntity pe = results.next();
                 keys.add(pe.key());
             }
-            
+
             _ds.delete(keys.toArray(new Key[keys.size()]));
         }
-        
+
         assertSessions(0);
+    }
+    
+
+
+
+    public void deleteMemcachedSessions () throws Exception
+    {
+        if (_flusher == null)
+            _flusher = new MemcachedFlusher();
+
+        _flusher.flush();
     }
 }

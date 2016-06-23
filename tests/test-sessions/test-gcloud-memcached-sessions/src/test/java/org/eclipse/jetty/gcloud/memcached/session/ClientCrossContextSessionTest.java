@@ -22,7 +22,6 @@ package org.eclipse.jetty.gcloud.memcached.session;
 import org.eclipse.jetty.server.session.AbstractClientCrossContextSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -32,19 +31,12 @@ import org.junit.Test;
  */
 public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
 {
-    static GCloudSessionTestSupport _testSupport;
-    
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
+
     
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+       GCloudMemcachedTestSuite.__testSupport.deleteSessions();
     }
     
     /** 
@@ -53,7 +45,7 @@ public class ClientCrossContextSessionTest extends AbstractClientCrossContextSes
     @Override
     public AbstractTestServer createServer(int port)
     {
-        return new GCloudTestServer(port, _testSupport.getConfiguration());
+        return new GCloudMemcachedTestServer(port, GCloudMemcachedTestSuite.__testSupport.getConfiguration());
     }
 
     @Test

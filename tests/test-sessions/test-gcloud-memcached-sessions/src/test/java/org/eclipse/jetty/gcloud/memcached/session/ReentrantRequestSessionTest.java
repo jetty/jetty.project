@@ -32,19 +32,11 @@ import org.junit.Test;
  */
 public class ReentrantRequestSessionTest extends AbstractReentrantRequestSessionTest
 {
-    static GCloudSessionTestSupport _testSupport;
-
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
 
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+        GCloudMemcachedTestSuite.__testSupport.deleteSessions();
     }
 
     /** 
@@ -53,7 +45,7 @@ public class ReentrantRequestSessionTest extends AbstractReentrantRequestSession
     @Override
     public AbstractTestServer createServer(int port)
     {
-        return  new GCloudTestServer(port, _testSupport.getConfiguration());
+        return  new GCloudMemcachedTestServer(port, GCloudMemcachedTestSuite.__testSupport.getConfiguration());
     }
 
     @Test

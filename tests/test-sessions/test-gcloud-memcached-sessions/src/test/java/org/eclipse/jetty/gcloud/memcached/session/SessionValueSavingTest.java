@@ -32,20 +32,10 @@ import org.junit.Test;
  */
 public class SessionValueSavingTest extends AbstractSessionValueSavingTest
 {
-
-    static GCloudSessionTestSupport _testSupport;
-
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
-
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+        GCloudMemcachedTestSuite.__testSupport.deleteSessions();
     }
 
     /** 
@@ -54,7 +44,7 @@ public class SessionValueSavingTest extends AbstractSessionValueSavingTest
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return  new GCloudTestServer(port, max, scavenge, _testSupport.getConfiguration());
+        return  new GCloudMemcachedTestServer(port, max, scavenge, GCloudMemcachedTestSuite.__testSupport.getConfiguration());
     }
 
     @Test

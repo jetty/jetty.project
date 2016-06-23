@@ -19,9 +19,6 @@
 
 package org.eclipse.jetty.gcloud.memcached.session;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.jetty.gcloud.session.GCloudConfiguration;
 import org.eclipse.jetty.gcloud.session.GCloudSessionIdManager;
 import org.eclipse.jetty.server.SessionIdManager;
@@ -29,15 +26,12 @@ import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.SessionHandler;
 
-import com.google.gcloud.datastore.Datastore;
-import com.google.gcloud.datastore.DatastoreFactory;
-
 /**
- * GCloudTestServer
+ * GCloudMemachedTestServer
  *
  *
  */
-public class GCloudTestServer extends AbstractTestServer
+public class GCloudMemcachedTestServer extends AbstractTestServer
 {
     static int __workers=0;
     public static int STALE_INTERVAL_SEC = 1;
@@ -50,7 +44,7 @@ public class GCloudTestServer extends AbstractTestServer
      * @param scavengePeriod
      * @param sessionIdMgrConfig
      */
-    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod, GCloudConfiguration config)
+    public GCloudMemcachedTestServer(int port, int maxInactivePeriod, int scavengePeriod, GCloudConfiguration config)
     {
         super(port, maxInactivePeriod, scavengePeriod, config);
     }
@@ -59,7 +53,7 @@ public class GCloudTestServer extends AbstractTestServer
      * @param port
      * @param configuration
      */
-    public GCloudTestServer(int port, GCloudConfiguration configuration)
+    public GCloudMemcachedTestServer(int port, GCloudConfiguration configuration)
     {
         super(port, 30,10, configuration);
     }

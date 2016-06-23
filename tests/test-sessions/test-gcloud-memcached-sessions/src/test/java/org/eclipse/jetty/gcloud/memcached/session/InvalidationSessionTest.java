@@ -31,19 +31,11 @@ import org.junit.BeforeClass;
  */
 public class InvalidationSessionTest extends AbstractInvalidationSessionTest
 {
-    static GCloudSessionTestSupport _testSupport;
-
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
     
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+        GCloudMemcachedTestSuite.__testSupport.deleteSessions();
     }
     
     /** 
@@ -52,7 +44,7 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
     @Override
     public AbstractTestServer createServer(int port)
     {
-        return new GCloudTestServer(port, _testSupport.getConfiguration());
+        return new GCloudMemcachedTestServer(port, GCloudMemcachedTestSuite.__testSupport.getConfiguration());
     }
 
     /** 
@@ -66,7 +58,7 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
         //has expired on node2 for it to reload the session and discover it has been deleted.
         try
         {
-            Thread.currentThread().sleep((2*GCloudTestServer.STALE_INTERVAL_SEC)*1000);
+            Thread.currentThread().sleep((2*GCloudMemcachedTestServer.STALE_INTERVAL_SEC)*1000);
         }
         catch (Exception e)
         {

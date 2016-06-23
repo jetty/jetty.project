@@ -32,20 +32,10 @@ import org.junit.Test;
  */
 public class ServerCrossContextSessionTest extends AbstractServerCrossContextSessionTest
 {
-
-    static GCloudSessionTestSupport _testSupport;
-
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
-
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+        GCloudTestSuite.__testSupport.deleteSessions();
     }
     /** 
      * @see org.eclipse.jetty.server.session.AbstractServerCrossContextSessionTest#createServer(int)
@@ -53,7 +43,7 @@ public class ServerCrossContextSessionTest extends AbstractServerCrossContextSes
     @Override
     public AbstractTestServer createServer(int port)
     {
-        return  new GCloudTestServer(port, _testSupport.getConfiguration()); 
+        return  new GCloudTestServer(port, GCloudTestSuite.__testSupport.getConfiguration()); 
     }
 
     @Test

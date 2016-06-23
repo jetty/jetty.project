@@ -32,28 +32,19 @@ import org.junit.Test;
  */
 public class SessionMigrationTest extends AbstractSessionMigrationTest
 {
-    static GCloudSessionTestSupport _testSupport;
-
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
-
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+        GCloudMemcachedTestSuite.__testSupport.deleteSessions();
     }
-
+    
     /** 
      * @see org.eclipse.jetty.server.session.AbstractSessionMigrationTest#createServer(int)
      */
     @Override
     public AbstractTestServer createServer(int port)
     {
-        return  new GCloudTestServer(port, _testSupport.getConfiguration());
+        return  new GCloudMemcachedTestServer(port, GCloudMemcachedTestSuite.__testSupport.getConfiguration());
     }
 
     
@@ -63,6 +54,4 @@ public class SessionMigrationTest extends AbstractSessionMigrationTest
     {
         super.testSessionMigration();
     }
-
-    
 }

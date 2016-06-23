@@ -21,7 +21,9 @@ package org.eclipse.jetty.gcloud.memcached.session;
 
 import org.eclipse.jetty.server.session.AbstractSessionExpiryTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,19 +35,10 @@ import org.junit.Test;
 public class SessionExpiryTest extends AbstractSessionExpiryTest
 {
 
-    static GCloudSessionTestSupport _testSupport;
-    
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
-    
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+       GCloudMemcachedTestSuite.__testSupport.deleteSessions();
     }
     
     
@@ -55,7 +48,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return new GCloudTestServer(port, max, scavenge, _testSupport.getConfiguration());
+        return  new GCloudMemcachedTestServer(port, max, scavenge, GCloudMemcachedTestSuite.__testSupport.getConfiguration());
     }
 
     @Test
@@ -63,7 +56,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     public void testSessionNotExpired() throws Exception
     {
         super.testSessionNotExpired();
-        _testSupport.deleteSessions();
+        GCloudMemcachedTestSuite.__testSupport.deleteSessions();
     }
 
     /** 
@@ -74,34 +67,23 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     public void testSessionExpiry() throws Exception
     {
         super.testSessionExpiry();
-        _testSupport.assertSessions(0);
+        GCloudMemcachedTestSuite.__testSupport.assertSessions(0);
     }
 
     @Override
     public void verifySessionCreated(TestHttpSessionListener listener, String sessionId)
     {
         super.verifySessionCreated(listener, sessionId);
-        try
-        {
-            _testSupport.assertSessions(1);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        try{ GCloudMemcachedTestSuite.__testSupport.listSessions(); GCloudMemcachedTestSuite.__testSupport.assertSessions(1);}catch(Exception e) {e.printStackTrace();} 
     }
 
     @Override
     public void verifySessionDestroyed(TestHttpSessionListener listener, String sessionId)
     {
         super.verifySessionDestroyed(listener, sessionId);
-        try
-        {
-            _testSupport.assertSessions(0);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        try{ GCloudMemcachedTestSuite.__testSupport.listSessions(); GCloudMemcachedTestSuite.__testSupport.assertSessions(0);}catch(Exception e) {e.printStackTrace();}
     }
+
+    
+    
 }

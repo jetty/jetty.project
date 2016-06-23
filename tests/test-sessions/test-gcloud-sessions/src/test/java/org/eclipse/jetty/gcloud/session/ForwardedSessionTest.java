@@ -31,19 +31,12 @@ import org.junit.BeforeClass;
  */
 public class ForwardedSessionTest extends AbstractForwardedSessionTest
 {
-    static GCloudSessionTestSupport _testSupport;
 
-    @BeforeClass
-    public static void setup () throws Exception
-    {
-        _testSupport = new GCloudSessionTestSupport();
-        _testSupport.setUp();
-    }
     
     @AfterClass
     public static void teardown () throws Exception
     {
-        _testSupport.tearDown();
+        GCloudTestSuite.__testSupport.deleteSessions();
     }
     
     /** 
@@ -52,7 +45,7 @@ public class ForwardedSessionTest extends AbstractForwardedSessionTest
     @Override
     public AbstractTestServer createServer(int port)
     {
-       return new GCloudTestServer(port, _testSupport.getConfiguration());
+       return new GCloudTestServer(port, GCloudTestSuite.__testSupport.getConfiguration());
     }
 
 }
