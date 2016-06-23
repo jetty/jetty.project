@@ -20,6 +20,7 @@ package org.eclipse.jetty.start;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -113,23 +114,21 @@ public class BaseBuilder
         Modules modules = startArgs.getAllModules();
 
         // Select all the added modules to determine which ones are newly enabled
-
-        
-        Set<String> newly_enabled = new HashSet<>();
+        Set<String> newly_added = new HashSet<>();
         if (!startArgs.getStartModules().isEmpty())
         {
             for (String name:startArgs.getStartModules())
-                newly_enabled.addAll(modules.enable(name,"--add-to-start[d]"));
+                newly_added.addAll(modules.enable(name,"--add-to-start"));
         }
 
         if (StartLog.isDebugEnabled())
-            StartLog.debug("start[d]=%s",newly_enabled);
+            StartLog.debug("added=%s",newly_added);
         
         // Check the licenses
         if (startArgs.isLicenseCheckRequired())
         {
             Licensing licensing = new Licensing();
-            for (String name : newly_enabled)
+            for (String name : newly_added)
                 licensing.addModule(modules.get(name));
             
             if (licensing.hasLicenses())
@@ -151,22 +150,36 @@ public class BaseBuilder
         AtomicReference<BaseBuilder.Config> builder = new AtomicReference<>();
         AtomicBoolean modified = new AtomicBoolean();
 
-        if (!newly_enabled.isEmpty())
+        Path startd = getBaseHome().getBasePath("start.d");
+        Path startini = getBaseHome().getBasePath("start.ini");
+        
+        if (startArgs.isCreateStartd() && !Files.exists(startd))
         {
-            Path startd = getBaseHome().getBasePath("start.d");
-            Path startini = getBaseHome().getBasePath("start.ini");
-            
+            if(FS.ensureDirectoryExists(startd))
+                modified.set(true);
             if (Files.exists(startini)) 
             {
-                if (Files.exists(startd))
-                    StartLog.warn("Should not use both %s and %s",getBaseHome().toShortForm(startd),getBaseHome().toShortForm(startini));
-                else if (startArgs.isUseStartd())
-                    throw new UsageException("Cannot --add-to-startd when %s exists",getBaseHome().toShortForm(startini));
+                int ini=0;
+                Path startd_startini=startd.resolve("start.ini");
+                while(Files.exists(startd_startini))
+                {
+                    ini++;
+                    startd_startini=startd.resolve("start"+ini+".ini");
+                }
+                Files.move(startini,startd_startini);
+                modified.set(true);
             }
+        }
+        
+        if (!newly_added.isEmpty())
+        {
             
-            boolean useStartD=startArgs.isUseStartd() || Files.exists(startd);            
+            if (Files.exists(startini) && Files.exists(startd)) 
+                StartLog.warn("Use both %s and %s is deprecated",getBaseHome().toShortForm(startd),getBaseHome().toShortForm(startini));
+            
+            boolean useStartD=Files.exists(startd);            
             builder.set(useStartD?new StartDirBuilder(this):new StartIniBuilder(this));
-            newly_enabled.stream().map(n->modules.get(n)).forEach(module ->
+            newly_added.stream().map(n->modules.get(n)).forEach(module ->
             {
                 try
                 {

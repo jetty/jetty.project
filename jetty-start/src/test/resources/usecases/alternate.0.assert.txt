@@ -10,6 +10,3 @@ LIB|${jetty.home}/lib/other.jar
 # The Properties we expect (order is irrelevant)
 PROP|main.prop=value0
 PROP|noDft.option=A
-
-# Files / Directories to create
-FILE|maindir/

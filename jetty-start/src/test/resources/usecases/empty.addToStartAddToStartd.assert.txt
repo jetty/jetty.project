@@ -1,1 +1,0 @@
-EX|org.eclipse.jetty.start.UsageException: Cannot --add-to-startd when ${jetty.base}/start.ini exists
