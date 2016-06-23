@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * A store for the data contained in a Session object. The store
  * would usually be persistent.
  */
-public interface SessionDataStore extends SessionDataMap, LifeCycle
+public interface SessionDataStore extends SessionDataMap
 {  
     
     /**

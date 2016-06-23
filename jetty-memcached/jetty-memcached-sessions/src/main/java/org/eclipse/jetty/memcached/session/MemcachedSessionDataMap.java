@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataMap;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 import net.rubyeye.xmemcached.MemcachedClient;
 import net.rubyeye.xmemcached.XMemcachedClientBuilder;
@@ -34,7 +35,7 @@ import net.rubyeye.xmemcached.XMemcachedClientBuilder;
  *
  * Uses memcached as a cache for SessionData.
  */
-public class MemcachedSessionDataMap implements SessionDataMap
+public class MemcachedSessionDataMap extends AbstractLifeCycle implements SessionDataMap
 {
     public static final String DEFAULT_HOST = "localhost";
     public static final String DEFAULT_PORT = "11211";
@@ -125,4 +126,19 @@ public class MemcachedSessionDataMap implements SessionDataMap
         _client.delete(id);
         return true; //delete returns false if the value didn't exist
     }
+
+
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        if (_client != null)
+        {
+            _client.shutdown();
+            _client = null;
+        }
+    }
+    
+    
 }
