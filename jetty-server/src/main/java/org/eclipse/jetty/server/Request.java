@@ -1012,9 +1012,16 @@ public class Request implements HttpServletRequest
         if (_queryParameters == null)
             extractQueryParameters();
 
-        _parameters = new MultiMap<>();
-        _parameters.addAllValues(_queryParameters);
-        _parameters.addAllValues(_contentParameters);
+        if (_queryParameters==NO_PARAMS || _queryParameters.size()==0)
+            _parameters=_contentParameters;
+        else if (_contentParameters==NO_PARAMS || _contentParameters.size()==0)
+            _parameters=_queryParameters;
+        else
+        {
+            _parameters = new MultiMap<>();
+            _parameters.addAllValues(_queryParameters);
+            _parameters.addAllValues(_contentParameters);
+        }
     }
 
     /* ------------------------------------------------------------ */
