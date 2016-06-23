@@ -3,8 +3,23 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
     <New id="sessionDataMapFactory" class="org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory">
-      <Set name="host"><Property name="jetty.session.memcache.host" default="localhost"/></Set>
-      <Set name="port"><Property name="jetty.session.memcache.port" default="11211"/></Set>
-      <Set name="expirySec"><Property name="etty.session.memcache.expirySec" default="0"/></Set>
+       <Set name="addresses">
+         <Array type="java.net.InetSocketAddress">
+           <Item>
+             <New class="java.net.InetSocketAddress">
+               <Arg><Property name="jetty.session.memcache.host" default="localhost"/></Arg>
+               <Arg type="int"><Property name="jetty.session.memcache.port" default="11211"/></Arg>
+             </New>
+           </Item>
+           <!--  Add more here -->
+         </Array>
+       </Set>
+       <!-- Optionally set the weight of each server in the list -->
+       <Set name="weights">
+         <Array type="int">
+           <Item type="int">100</Item>
+         </Array>
+       </Set>
+      <Set name="expirySec"><Property name="jetty.session.memcache.expirySec" default="0"/></Set>
     </New>
 </Configure>
