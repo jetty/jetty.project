@@ -204,13 +204,13 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
     {
         /* TODO: provide annotation in future */
     }
-    
+
     @Override
     public void onPing(ByteBuffer buffer)
     {
         /* TODO: provide annotation in future */
     }
-    
+
     @Override
     public BatchMode getBatchMode()
     {
@@ -234,12 +234,6 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
             throw t;
         }
     }
-    
-    @Override
-    protected void doStop() throws Exception
-    {
-        session = null;
-    }
 
     protected void terminateConnection(int statusCode, String rawreason)
     {
@@ -252,7 +246,7 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
     {
         TARGET_LOG.warn("Unhandled Error (closing connection)",t);
         onError(t);
-        
+
         if (t instanceof CloseException)
         {
             terminateConnection(((CloseException)t).getStatusCode(),t.getClass().getSimpleName());
