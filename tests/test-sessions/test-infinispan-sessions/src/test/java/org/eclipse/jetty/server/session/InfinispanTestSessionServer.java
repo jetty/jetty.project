@@ -33,7 +33,7 @@ public class InfinispanTestSessionServer extends AbstractTestServer
     
     public InfinispanTestSessionServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy, BasicCache config)
     {
-        super(port, maxInactivePeriod, scavengePeriod, evictionPolicy, config);
+        super(port, maxInactivePeriod, scavengePeriod, evictionPolicy);
     }
     
  

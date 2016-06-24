@@ -45,7 +45,7 @@ public class SessionMigrationTest extends AbstractSessionMigrationTest
     @Override
     public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy)
     {
-       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy, GCloudTestSuite.__testSupport.getConfiguration());
+       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy);
     }
     
     @Test

@@ -590,6 +590,10 @@ public class FileSystemResourceTest
         
         try (Resource base = newResource(dir.toFile()))
         {
+            if (OS.IS_WINDOWS && base instanceof FileResource)
+                // FileResource doesn't handle symlinks of Windows
+                return;
+                
             Resource resFoo = base.addPath("foo");
             Resource resBar = base.addPath("bar");
             

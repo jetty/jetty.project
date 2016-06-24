@@ -45,7 +45,7 @@ public class ReentrantRequestSessionTest extends AbstractReentrantRequestSession
     @Override
     public AbstractTestServer createServer(int port,int max, int scavengePeriod,int evictionPolicy)
     {
-        return  new GCloudTestServer(port, max, scavengePeriod, evictionPolicy, GCloudTestSuite.__testSupport.getConfiguration());
+        return  new GCloudTestServer(port, max, scavengePeriod, evictionPolicy);
     }
 
     @Test

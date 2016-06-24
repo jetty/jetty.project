@@ -19,24 +19,6 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import com.google.gcloud.datastore.Blob;
-import com.google.gcloud.datastore.BlobValue;
-import com.google.gcloud.datastore.Datastore;
-import com.google.gcloud.datastore.DatastoreException;
-import com.google.gcloud.datastore.DatastoreFactory;
-import com.google.gcloud.datastore.Entity;
-import com.google.gcloud.datastore.Key;
-import com.google.gcloud.datastore.KeyFactory;
-import com.google.gcloud.datastore.ProjectionEntity;
-import com.google.gcloud.datastore.Query;
-import com.google.gcloud.datastore.QueryResults;
-import com.google.gcloud.datastore.StructuredQuery;
-import com.google.gcloud.datastore.StructuredQuery.CompositeFilter;
-import com.google.gcloud.datastore.StructuredQuery.KeyQueryBuilder;
-import com.google.gcloud.datastore.StructuredQuery.Projection;
-import com.google.gcloud.datastore.StructuredQuery.ProjectionEntityQueryBuilder;
-import com.google.gcloud.datastore.StructuredQuery.PropertyFilter;
-
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashSet;
@@ -53,6 +35,20 @@ import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import com.google.cloud.datastore.Blob;
+import com.google.cloud.datastore.BlobValue;
+import com.google.cloud.datastore.Datastore;
+import com.google.cloud.datastore.DatastoreException;
+import com.google.cloud.datastore.DatastoreOptions;
+import com.google.cloud.datastore.Entity;
+import com.google.cloud.datastore.Key;
+import com.google.cloud.datastore.KeyFactory;
+import com.google.cloud.datastore.ProjectionEntity;
+import com.google.cloud.datastore.Query;
+import com.google.cloud.datastore.QueryResults;
+import com.google.cloud.datastore.StructuredQuery.CompositeFilter;
+import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
 
 /**
  * GCloudSessionDataStore
@@ -80,12 +76,13 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     public static final int DEFAULT_MAX_RETRIES = 5;
     public static final int DEFAULT_BACKOFF_MS = 1000;
 
-    private GCloudConfiguration _config;
     private Datastore _datastore;
     private KeyFactory _keyFactory;
     private int _maxResults = DEFAULT_MAX_QUERY_RESULTS;
     private int _maxRetries = DEFAULT_MAX_RETRIES;
     private int _backoff = DEFAULT_BACKOFF_MS;
+
+    private boolean _dsProvided = false;
     
     
     
@@ -118,13 +115,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     @Override
     protected void doStart() throws Exception
     {
-        
-        if (_config == null)
-            throw new IllegalStateException("No DataStore configuration");
-        
-        _datastore = DatastoreFactory.instance().get(_config.getDatastoreOptions());
-        _keyFactory = _datastore.newKeyFactory().kind(KIND);
-        
+        if (!_dsProvided)
+            _datastore = DatastoreOptions.defaultInstance().service();
+
+        _keyFactory = _datastore.newKeyFactory().kind(KIND);     
         super.doStart();
     }
 
@@ -134,20 +128,16 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     @Override
     protected void doStop() throws Exception
     {
+        if (!_dsProvided)
+            _datastore = null;
         super.doStop();
     }
     
-    
-    public void setGCloudConfiguration (GCloudConfiguration cfg)
+    public void setDatastore (Datastore datastore)
     {
-        _config = cfg;
+        _datastore = datastore;
+        _dsProvided  = true;
     }
-    
-    public GCloudConfiguration getGCloudConfiguration ()
-    {
-        return _config;
-    }
-
     
     public int getMaxResults()
     {
@@ -209,13 +199,14 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         try
         {        
             //get up to maxResult number of sessions that have expired
-            ProjectionEntityQueryBuilder pbuilder = Query.projectionEntityQueryBuilder();
-            pbuilder.projection(Projection.property(ID), Projection.property(LASTNODE), Projection.property(EXPIRY));
-            pbuilder.filter(CompositeFilter.and(PropertyFilter.gt(EXPIRY, 0), PropertyFilter.le(EXPIRY, now)));
-            pbuilder.limit(_maxResults);
-            pbuilder.kind(KIND);
-            StructuredQuery<ProjectionEntity> pquery = pbuilder.build();
-            QueryResults<ProjectionEntity> presults = _datastore.run(pquery);
+            Query<ProjectionEntity> query = Query.projectionEntityQueryBuilder()
+                    .kind(KIND)
+                    .projection(ID, LASTNODE, EXPIRY)
+                    .filter(CompositeFilter.and(PropertyFilter.gt(EXPIRY, 0), PropertyFilter.le(EXPIRY, now)))
+                    .limit(_maxResults)
+                    .build();
+
+            QueryResults<ProjectionEntity> presults = _datastore.run(query);
 
             while (presults.hasNext())
             {
@@ -249,7 +240,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 }
             }
 
-            //reconcile against ids that the SessionDataStore thinks are expired
+            //reconcile against ids that the SessionCache thinks are expired
             Set<String> tmp = new HashSet<String>(candidates);
             tmp.removeAll(expired);       
             if (!tmp.isEmpty())
@@ -262,12 +253,12 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 {
                     try
                     {
-                        KeyQueryBuilder kbuilder = Query.keyQueryBuilder();
-                        kbuilder.filter(PropertyFilter.eq(ID, s));
-                        kbuilder.kind(KIND);
-                        StructuredQuery<Key> kq = kbuilder.build();
-                        QueryResults<Key> kresults = _datastore.run(kq);
-                        if (!kresults.hasNext())
+                        Query<Key> q = Query.keyQueryBuilder()
+                                .kind(KIND)
+                                .filter(PropertyFilter.eq(ID, s))
+                                .build();
+                       QueryResults<Key> res = _datastore.run(q);
+                        if (!res.hasNext())
                             expired.add(s); //not in db, can be expired
                     }
                     catch (Exception e)
@@ -297,13 +288,14 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     @Override
     public boolean exists(String id) throws Exception
     {
-        ProjectionEntityQueryBuilder pbuilder = Query.projectionEntityQueryBuilder();
-        pbuilder.kind(KIND);
-        pbuilder.projection(Projection.property(EXPIRY));
-        pbuilder.filter(PropertyFilter.eq(ID, id));
+        Query<ProjectionEntity> query = Query.projectionEntityQueryBuilder()
+                .kind(KIND)
+                .projection(EXPIRY)
+                .filter(PropertyFilter.eq(ID, id))
+                .build();
 
-        StructuredQuery<ProjectionEntity> pquery = pbuilder.build();
-        QueryResults<ProjectionEntity> presults = _datastore.run(pquery);
+
+        QueryResults<ProjectionEntity> presults = _datastore.run(query);
 
         if (presults.hasNext())
         {
@@ -340,7 +332,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             }
             catch (DatastoreException e)
             {
-                if (e.code().retryable())
+                if (e.retryable())
                 {
                     if (LOG.isDebugEnabled()) LOG.debug("Datastore put retry {} waiting {}ms", attempts, backoff);
                         
@@ -418,7 +410,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 .set(LASTNODE,session.getLastNode())
                 .set(EXPIRY, session.getExpiry())
                 .set(MAXINACTIVE, session.getMaxInactiveMs())
-                .set(ATTRIBUTES, BlobValue.builder(Blob.copyFrom(baos.toByteArray())).indexed(false).build()).build();
+                .set(ATTRIBUTES, BlobValue.builder(Blob.copyFrom(baos.toByteArray())).excludeFromIndexes(true).build()).build();
 
                  
         return entity;
