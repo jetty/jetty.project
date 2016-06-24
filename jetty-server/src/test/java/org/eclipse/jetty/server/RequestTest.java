@@ -1465,7 +1465,7 @@ public class RequestTest
         assertNotNull(request.getAttributeNames());
         assertFalse(request.getAttributeNames().hasMoreElements());
 
-        request.extractParameters();
+        request.getParameterMap();
         assertNull(request.getQueryString());
         assertNotNull(request.getQueryParameters());
         assertEquals(0,request.getQueryParameters().size());
