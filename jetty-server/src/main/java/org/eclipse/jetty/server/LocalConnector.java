@@ -223,7 +223,7 @@ public class LocalConnector extends AbstractConnector
      */
     public String getResponse(String rawRequest) throws Exception
     {
-        return getResponse(rawRequest,false,10,TimeUnit.SECONDS);
+        return getResponse(rawRequest,false,30,TimeUnit.SECONDS);
     }
     
     /** Get a single response using a parser to search for the end of the message.
@@ -234,7 +234,7 @@ public class LocalConnector extends AbstractConnector
      * @return ByteBuffer containing response or null.
      * @throws Exception If there is a problem
      */
-    public String getResponse(String rawRequest,boolean head, long time,TimeUnit unit) throws Exception
+    public String getResponse(String rawRequest, boolean head, long time,TimeUnit unit) throws Exception
     {
         ByteBuffer requestsBuffer = BufferUtil.toBuffer(rawRequest, StandardCharsets.ISO_8859_1);
         if (LOG.isDebugEnabled())
