@@ -50,7 +50,7 @@ public abstract class AbstractRemoveSessionTest
         String contextPath = "";
         String servletMapping = "/server";
         int scavengePeriod = 3;
-        AbstractTestServer server = createServer(0, 1, scavengePeriod);
+        AbstractTestServer server = createServer(0, 10, scavengePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
         TestEventListener testListener = new TestEventListener();

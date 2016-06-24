@@ -94,8 +94,8 @@ public abstract class AbstractSessionInvalidateAndCreateTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 1;
-        int scavengePeriod = 2;
+        int inactivePeriod = 4;
+        int scavengePeriod = 1;
         AbstractTestServer server = createServer(0, inactivePeriod, scavengePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         TestServlet servlet = new TestServlet();
@@ -124,15 +124,14 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-
                 // Make a request which will invalidate the existing session and create a new one
                 Request request2 = client.newRequest(url + "?action=test");
                 request2.header("Cookie", sessionCookie);
                 ContentResponse response2 = request2.send();
                 assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
-                // Wait for the scavenger to run, waiting 3 times the scavenger period
-                pause(scavengePeriod);
+                // Wait for the scavenger to run and the session to have expired
+                pause(inactivePeriod + scavengePeriod);
 
                 //test that the session created in the last test is scavenged:
                 //the HttpSessionListener should have been called when session1 was invalidated and session2 was scavenged

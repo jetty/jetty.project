@@ -24,8 +24,7 @@ import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.SessionHandler;
 
-import com.google.gcloud.datastore.Datastore;
-import com.google.gcloud.datastore.DatastoreFactory;
+
 
 /**
  * GCloudTestServer
@@ -45,18 +44,18 @@ public class GCloudTestServer extends AbstractTestServer
      * @param scavengePeriod
      * @param sessionIdMgrConfig
      */
-    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod, GCloudConfiguration config)
+    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod, config);
+        super(port, maxInactivePeriod, scavengePeriod);
     }
 
     /**
      * @param port
      * @param configuration
      */
-    public GCloudTestServer(int port, GCloudConfiguration configuration)
+    public GCloudTestServer(int port)
     {
-        super(port, 30,10, configuration);
+        super(port, 30,10);
     }
 
     /** 
@@ -67,7 +66,6 @@ public class GCloudTestServer extends AbstractTestServer
     {
         GCloudSessionIdManager idManager = new GCloudSessionIdManager(getServer());
         idManager.setWorkerName("w"+(__workers++));
-        idManager.setConfig((GCloudConfiguration)config);
         return idManager;
     }
 
@@ -81,6 +79,7 @@ public class GCloudTestServer extends AbstractTestServer
         sessionManager.setSessionIdManager((GCloudSessionIdManager)_sessionIdManager);
         sessionManager.setStaleIntervalSec(STALE_INTERVAL_SEC);
         sessionManager.setScavengeIntervalSec(_scavengePeriod);
+        sessionManager.setDatastore(GCloudTestSuite.__testSupport.getDatastore());
         return sessionManager;
         
     }

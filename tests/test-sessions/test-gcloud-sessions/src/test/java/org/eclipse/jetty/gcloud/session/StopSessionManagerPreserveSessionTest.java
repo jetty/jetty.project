@@ -64,7 +64,7 @@ public class StopSessionManagerPreserveSessionTest extends AbstractStopSessionMa
     @Override
     public AbstractTestServer createServer(int port)
     {
-        return  new GCloudTestServer(port, GCloudTestSuite.__testSupport.getConfiguration());
+        return  new GCloudTestServer(port);
     }
 
     /** 

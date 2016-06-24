@@ -45,7 +45,7 @@ public class ImmortalSessionTest extends AbstractImmortalSessionTest
     @Override
     public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs)
     {
-       return new GCloudMemcachedTestServer(port, port, scavengeMs, GCloudMemcachedTestSuite.__testSupport.getConfiguration());
+       return new GCloudMemcachedTestServer(port, port, scavengeMs);
     }
 
     @Test

@@ -31,24 +31,24 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-  ClientCrossContextSessionTest.class,
-  ForwardedSessionTest.class,
-  ImmortalSessionTest.class,
-  InvalidationSessionTest.class,
-  LastAccessTimeTest.class,
-  LocalSessionScavengingTest.class,
-  NewSessionTest.class,
-  OrphanedSessionTest.class,
-  ReentrantRequestSessionTest.class,
-  RemoveSessionTest.class,
-  SameNodeLoadTest.class,
-  ServerCrossContextSessionTest.class,
-  SessionExpiryTest.class,
-  SessionInvalidateAndCreateTest.class,
-  SessionMigrationTest.class,
-  SessionRenewTest.class,
-  SessionValueSavingTest.class,
-  StopSessionManagerPreserveSessionTest.class
+    ClientCrossContextSessionTest.class,
+    ForwardedSessionTest.class,
+    ImmortalSessionTest.class,
+    InvalidationSessionTest.class,
+    LastAccessTimeTest.class,
+    LocalSessionScavengingTest.class,
+    NewSessionTest.class,
+    OrphanedSessionTest.class,
+    ReentrantRequestSessionTest.class,
+    RemoveSessionTest.class,
+    SameNodeLoadTest.class,
+    ServerCrossContextSessionTest.class,
+    SessionExpiryTest.class,
+    SessionInvalidateAndCreateTest.class,
+    SessionMigrationTest.class,
+    SessionRenewTest.class,
+    SessionValueSavingTest.class,
+    StopSessionManagerPreserveSessionTest.class
 })
 
 

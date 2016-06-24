@@ -78,7 +78,7 @@ public abstract class AbstractSessionExpiryTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 10;
+        int inactivePeriod = 100;
         int scavengePeriod = 10;
         AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
         TestServlet servlet = new TestServlet();

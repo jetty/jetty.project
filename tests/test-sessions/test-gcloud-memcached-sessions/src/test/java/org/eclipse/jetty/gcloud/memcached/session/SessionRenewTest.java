@@ -44,7 +44,7 @@ public class SessionRenewTest extends AbstractSessionRenewTest
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return  new GCloudMemcachedTestServer(port,max, scavenge, GCloudMemcachedTestSuite.__testSupport.getConfiguration());
+        return  new GCloudMemcachedTestServer(port,max, scavenge);
     }
 
     @Test

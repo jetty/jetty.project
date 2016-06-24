@@ -42,14 +42,8 @@ public class GCloudSessionTester
         loginService.setConfig( "../../jetty-distribution/target/distribution/demo-base/resources/realm.properties" );
         server.addBean( loginService );
 
-        GCloudConfiguration config = new GCloudConfiguration();
-        config.setProjectId(args[0]);
-        config.setP12File(args[1]);
-        config.setPassword(args[2]);
-        config.setServiceAccount(args[3]);
-
+    
         GCloudSessionIdManager idmgr = new GCloudSessionIdManager(server);
-        idmgr.setConfig(config);
         idmgr.setWorkerName("w1");
         server.setSessionIdManager(idmgr);
 

@@ -59,8 +59,8 @@ public abstract class AbstractLocalSessionScavengingTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 1;
-        int scavengePeriod = 2;
+        int inactivePeriod = 3;
+        int scavengePeriod = 1;
         AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
@@ -97,9 +97,8 @@ public abstract class AbstractLocalSessionScavengingTest
                     ContentResponse response2 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
-
                     // Wait for the scavenger to run on node1, waiting 2.5 times the scavenger period
-                    pause(scavengePeriod);
+                    pause(inactivePeriod+scavengePeriod);
 
                     // Check that node1 does not have any local session cached
                     request = client.newRequest(urls[0] + "?action=check");
@@ -107,11 +106,10 @@ public abstract class AbstractLocalSessionScavengingTest
                     response1 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
 
-
                     // Wait for the scavenger to run on node2, waiting 2 times the scavenger period
                     // This ensures that the scavenger on node2 runs at least once.
-                    pause(scavengePeriod);
-
+                    pause(inactivePeriod+(3*scavengePeriod));
+                    
                     // Check that node2 does not have any local session cached
                     request = client.newRequest(urls[1] + "?action=check");
                     request.header("Cookie", sessionCookie);

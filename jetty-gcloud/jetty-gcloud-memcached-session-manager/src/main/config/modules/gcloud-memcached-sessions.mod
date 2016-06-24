@@ -3,11 +3,13 @@
 #
 
 [depend]
+ext
 gcloud-sessions
 
 
 [files]
 maven://com.googlecode.xmemcached/xmemcached/2.0.0|lib/xmemcached/xmemcached-2.0.0.jar
+maven://org.slf4j/slf4j-api/1.6.6|lib/ext/slf4j-api-1.6.6.jar
 
 [lib]
 lib/jetty-gcloud-memcached-session-manager-${jetty.version}.jar

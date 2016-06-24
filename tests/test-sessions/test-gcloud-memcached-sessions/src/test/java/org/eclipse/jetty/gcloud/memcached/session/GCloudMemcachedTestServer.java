@@ -19,7 +19,7 @@
 
 package org.eclipse.jetty.gcloud.memcached.session;
 
-import org.eclipse.jetty.gcloud.session.GCloudConfiguration;
+
 import org.eclipse.jetty.gcloud.session.GCloudSessionIdManager;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
@@ -44,18 +44,18 @@ public class GCloudMemcachedTestServer extends AbstractTestServer
      * @param scavengePeriod
      * @param sessionIdMgrConfig
      */
-    public GCloudMemcachedTestServer(int port, int maxInactivePeriod, int scavengePeriod, GCloudConfiguration config)
+    public GCloudMemcachedTestServer(int port, int maxInactivePeriod, int scavengePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod, config);
+        super(port, maxInactivePeriod, scavengePeriod);
     }
 
     /**
      * @param port
      * @param configuration
      */
-    public GCloudMemcachedTestServer(int port, GCloudConfiguration configuration)
+    public GCloudMemcachedTestServer(int port)
     {
-        super(port, 30,10, configuration);
+        super(port, 30,10);
     }
 
     /** 
@@ -66,7 +66,6 @@ public class GCloudMemcachedTestServer extends AbstractTestServer
     {
         GCloudSessionIdManager idManager = new GCloudSessionIdManager(getServer());
         idManager.setWorkerName("w"+(__workers++));
-        idManager.setConfig((GCloudConfiguration)config);
         return idManager;
     }
 
@@ -80,6 +79,7 @@ public class GCloudMemcachedTestServer extends AbstractTestServer
         sessionManager.setSessionIdManager((GCloudSessionIdManager)_sessionIdManager);
         sessionManager.setStaleIntervalSec(STALE_INTERVAL_SEC);
         sessionManager.setScavengeIntervalSec(_scavengePeriod);
+        sessionManager.setDatastore(GCloudMemcachedTestSuite.__testSupport.getDatastore());
         sessionManager.setExpirySec(0);
         sessionManager.setHost("localhost");
         sessionManager.setPort("11211");

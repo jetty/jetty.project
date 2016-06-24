@@ -33,11 +33,12 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-import com.google.gcloud.datastore.Datastore;
-import com.google.gcloud.datastore.DatastoreFactory;
-import com.google.gcloud.datastore.Entity;
-import com.google.gcloud.datastore.Key;
-import com.google.gcloud.datastore.KeyFactory;
+import com.google.cloud.datastore.Datastore;
+import com.google.cloud.datastore.DatastoreFactory;
+import com.google.cloud.datastore.DatastoreOptions;
+import com.google.cloud.datastore.Entity;
+import com.google.cloud.datastore.Key;
+import com.google.cloud.datastore.KeyFactory;
 
 
 
@@ -55,7 +56,6 @@ public class GCloudSessionIdManager extends AbstractSessionIdManager
     private Server _server;
     private Datastore _datastore;
     private KeyFactory _keyFactory;
-    private GCloudConfiguration _config;
     
     
     
@@ -88,11 +88,7 @@ public class GCloudSessionIdManager extends AbstractSessionIdManager
     @Override
     protected void doStart() throws Exception
     {
-        if (_config == null)
-            throw new IllegalStateException("No gcloud configuration specified");       
-        
-
-        _datastore = DatastoreFactory.instance().get(_config.getDatastoreOptions());
+        _datastore = DatastoreOptions.defaultInstance().service();
         _keyFactory = _datastore.newKeyFactory().kind(KIND);
   
         super.doStart();
@@ -161,19 +157,7 @@ public class GCloudSessionIdManager extends AbstractSessionIdManager
         insert (((AbstractSession)session).getClusterId());
     }
 
-  
-
-    
-    public GCloudConfiguration getConfig()
-    {
-        return _config;
-    }
-
-    public void setConfig(GCloudConfiguration config)
-    {
-        _config = config;
-    }
-
+ 
     
     
     /** 

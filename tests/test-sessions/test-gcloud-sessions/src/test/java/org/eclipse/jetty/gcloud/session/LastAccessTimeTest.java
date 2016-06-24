@@ -44,7 +44,7 @@ public class LastAccessTimeTest extends AbstractLastAccessTimeTest
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return  new GCloudTestServer(port, max, scavenge, GCloudTestSuite.__testSupport.getConfiguration());
+        return  new GCloudTestServer(port, max, scavenge);
     }
 
     @Test

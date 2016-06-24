@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-import com.google.gcloud.datastore.Key;
+import com.google.cloud.datastore.Key;
 
 import net.rubyeye.xmemcached.MemcachedClient;
 import net.rubyeye.xmemcached.XMemcachedClient;
@@ -350,6 +350,4 @@ public class GCloudMemcachedSessionManager extends GCloudSessionManager
     {
         _port = port;
     }
-
-    
 }

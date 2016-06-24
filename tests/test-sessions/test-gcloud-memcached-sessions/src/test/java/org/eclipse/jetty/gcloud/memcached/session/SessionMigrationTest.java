@@ -44,7 +44,7 @@ public class SessionMigrationTest extends AbstractSessionMigrationTest
     @Override
     public AbstractTestServer createServer(int port)
     {
-        return  new GCloudMemcachedTestServer(port, GCloudMemcachedTestSuite.__testSupport.getConfiguration());
+        return  new GCloudMemcachedTestServer(port);
     }
 
     

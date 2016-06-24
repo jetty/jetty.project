@@ -19,13 +19,8 @@
 package org.eclipse.jetty.gcloud.session;
 
 import java.io.ByteArrayOutputStream;
-import java.io.Externalizable;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -48,17 +43,17 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-import com.google.gcloud.datastore.Blob;
-import com.google.gcloud.datastore.Datastore;
-import com.google.gcloud.datastore.DatastoreException;
-import com.google.gcloud.datastore.DatastoreFactory;
-import com.google.gcloud.datastore.Entity;
-import com.google.gcloud.datastore.GqlQuery;
-import com.google.gcloud.datastore.Key;
-import com.google.gcloud.datastore.KeyFactory;
-import com.google.gcloud.datastore.Query;
-import com.google.gcloud.datastore.Query.ResultType;
-import com.google.gcloud.datastore.QueryResults;
+import com.google.cloud.datastore.Blob;
+import com.google.cloud.datastore.Datastore;
+import com.google.cloud.datastore.DatastoreException;
+import com.google.cloud.datastore.DatastoreOptions;
+import com.google.cloud.datastore.Entity;
+import com.google.cloud.datastore.GqlQuery;
+import com.google.cloud.datastore.Key;
+import com.google.cloud.datastore.KeyFactory;
+import com.google.cloud.datastore.Query;
+import com.google.cloud.datastore.Query.ResultType;
+import com.google.cloud.datastore.QueryResults;
 
 
 
@@ -108,6 +103,9 @@ public class GCloudSessionManager extends AbstractSessionManager
     private int _maxResults = DEFAULT_MAX_QUERY_RESULTS;
     private int _backoffMs = DEFAULT_BACKOFF_MS;
     private int _maxRetries = DEFAULT_MAX_RETRIES;
+
+
+    private boolean _dsSet;
 
 
     /**
@@ -628,6 +626,14 @@ public class GCloudSessionManager extends AbstractSessionManager
 
     }
 
+    
+    
+    
+    public void setDatastore (Datastore datastore)
+    {
+        _datastore = datastore;
+        _dsSet = true;
+    }
 
 
     
@@ -641,13 +647,9 @@ public class GCloudSessionManager extends AbstractSessionManager
     {
         if (_sessionIdManager == null)
             throw new IllegalStateException("No session id manager defined");
-        
-        GCloudConfiguration config = ((GCloudSessionIdManager)_sessionIdManager).getConfig();
-        if (config == null)
-            throw new IllegalStateException("No gcloud configuration");
-        
-        
-        _datastore = DatastoreFactory.instance().get(config.getDatastoreOptions());
+
+        if (!_dsSet)
+            _datastore = DatastoreOptions.defaultInstance().service();
         _keyFactory = _datastore.newKeyFactory().kind(KIND);
         _converter = new SessionEntityConverter();       
         _sessions = new ConcurrentHashMap<String, Session>();
@@ -688,6 +690,9 @@ public class GCloudSessionManager extends AbstractSessionManager
 
         _sessions.clear();
         _sessions = null;
+        
+        if (!_dsSet)
+            _datastore = null;
     }
 
 
@@ -1115,7 +1120,7 @@ public class GCloudSessionManager extends AbstractSessionManager
             }
             catch (DatastoreException e)
             {
-                if (e.code().retryable())
+                if (e.retryable())
                 {
                     if (LOG.isDebugEnabled()) LOG.debug("Datastore put retry {} waiting {}ms", attempts, backoff);
                         
@@ -1209,8 +1214,8 @@ public class GCloudSessionManager extends AbstractSessionManager
      * <li>the virtual hosts</li>
      * </ol>
      * 
-     *TODO consider the difference between getClusterId and getId
      * @param session
+     * @param context
      * @return
      */
     protected Key makeKey (Session session, Context context)
@@ -1228,8 +1233,8 @@ public class GCloudSessionManager extends AbstractSessionManager
      * <li>the virtual hosts</li>
      * </ol>
      * 
-     *TODO consider the difference between getClusterId and getId
      * @param session
+     * @param context
      * @return
      */
     protected Key makeKey (String id, Context context)
@@ -1268,6 +1273,7 @@ public class GCloudSessionManager extends AbstractSessionManager
      *
      * Used to help identify the exact session/contextPath.
      *
+     * @param context
      * @return 0.0.0.0 if no virtual host is defined
      */
     private static String getVirtualHost (ContextHandler.Context context)
