@@ -37,9 +37,9 @@ public class GCloudTestServer extends AbstractTestServer
      * @param scavengePeriod
      * @param sessionIdMgrConfig
      */
-    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy, GCloudConfiguration config)
+    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy)
     {
-        super(port, maxInactivePeriod, scavengePeriod, evictionPolicy, config);
+        super(port, maxInactivePeriod, scavengePeriod, evictionPolicy);
     }
 
 
@@ -53,7 +53,7 @@ public class GCloudTestServer extends AbstractTestServer
         SessionHandler handler =  new SessionHandler();
         handler.setSessionIdManager(_sessionIdManager);
         GCloudSessionDataStore ds = new GCloudSessionDataStore();
-        ds.setGCloudConfiguration((GCloudConfiguration)_config);
+        ds.setDatastore(GCloudTestSuite.__testSupport.getDatastore());
         DefaultSessionCache ss = new DefaultSessionCache(handler);
         ss.setSessionDataStore(ds);
         handler.setSessionCache(ss);

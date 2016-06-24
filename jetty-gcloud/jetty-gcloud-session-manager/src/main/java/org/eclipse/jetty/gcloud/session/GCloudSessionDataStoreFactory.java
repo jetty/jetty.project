@@ -30,20 +30,10 @@ import org.eclipse.jetty.server.session.SessionHandler;
  */
 public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
-    private GCloudConfiguration _config;
     private int _maxRetries;
     private int _backoffMs;
     
     
-    public GCloudConfiguration getGCloudConfiguration()
-    {
-        return _config;
-    }
-
-    public void setGCloudConfiguration(GCloudConfiguration config)
-    {
-        _config = config;
-    }
 
     public int getMaxRetries()
     {
@@ -73,7 +63,6 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
     public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
     {
         GCloudSessionDataStore ds = new GCloudSessionDataStore();
-        ds.setGCloudConfiguration(getGCloudConfiguration());
         ds.setBackoffMs(getBackoffMs());
         ds.setMaxRetries(getMaxRetries());
         ds.setGracePeriodSec(getGracePeriodSec());

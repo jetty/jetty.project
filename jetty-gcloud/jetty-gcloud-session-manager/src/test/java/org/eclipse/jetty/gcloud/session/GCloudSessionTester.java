@@ -44,11 +44,6 @@ public class GCloudSessionTester
         loginService.setConfig( "../../jetty-distribution/target/distribution/demo-base/resources/realm.properties" );
         server.addBean( loginService );
 
-        GCloudConfiguration config = new GCloudConfiguration();
-        config.setProjectId(args[0]);
-        config.setP12File(args[1]);
-        config.setPassword(args[2]);
-        config.setServiceAccount(args[3]);
 
         DefaultSessionIdManager idmgr = new DefaultSessionIdManager(server);
         idmgr.setWorkerName("w1");
@@ -60,7 +55,7 @@ public class GCloudSessionTester
         webapp.setWar("../../jetty-distribution/target/distribution/demo-base/webapps/test.war");
         webapp.addAliasCheck(new AllowSymLinkAliasChecker());
         GCloudSessionDataStore ds = new GCloudSessionDataStore();
-        ds.setGCloudConfiguration(config);
+
         DefaultSessionCache ss = new DefaultSessionCache(webapp.getSessionHandler());
         webapp.getSessionHandler().setSessionCache(ss);
         ss.setSessionDataStore(ds);

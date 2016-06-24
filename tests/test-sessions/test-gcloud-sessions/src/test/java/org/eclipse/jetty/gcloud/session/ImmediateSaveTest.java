@@ -48,7 +48,7 @@ public class ImmediateSaveTest extends AbstractImmediateSaveTest
 
     public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
     {        
-        return new GCloudTestServer(port, max, scavenge, evictionPolicy, GCloudTestSuite.__testSupport.getConfiguration()) 
+        return new GCloudTestServer(port, max, scavenge, evictionPolicy) 
         {
             public SessionHandler newSessionHandler()
             {
