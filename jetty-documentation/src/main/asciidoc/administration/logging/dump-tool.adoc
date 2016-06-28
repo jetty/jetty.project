@@ -18,13 +18,13 @@
 === Jetty Dump Tool
 
 The dump feature in Jetty provides a good snapshot of the status of the threadpool, select sets, classloaders, and so forth. 
-To get maximum detail from the dump, you need to `setDetailDump(true)` on any QueuedThreadPools you are using. 
+To get maximum detail from the dump, you need to `setDetailDump(true)` on any `QueuedThreadPools` you are using. 
 You can do this by a direct call if you are embedding Jetty, or in `jetty.xml`.
 
 [[configuring-dump-feature]]
 ==== Configuring the Dump Feature in jetty.xml
 
-You can request that Jetty do a dump immediately after staring and just before stopping by calling the appropriate setters on the Server instance. 
+You can request that Jetty do a dump immediately after starting and just before stopping by calling the appropriate setters on the `Server` instance. 
 This can be accomplished in `jetty.xml` with:
 
 [source, xml, subs="{sub-order}"]
@@ -36,7 +36,7 @@ This can be accomplished in `jetty.xml` with:
 [[extra-threadpool-info]]
 ==== Extra ThreadPool Information
 
-You can get additional detail from the QueuedThreadPool if `setDetailedDump(true)` is called on the thread pool instance. 
+You can get additional detail from the `QueuedThreadPool` if `setDetailedDump(true)` is called on the thread pool instance. 
 Do this in `jetty.xml` as follows:
 
 [source, xml, subs="{sub-order}"]
@@ -58,10 +58,10 @@ Do this in `jetty.xml` as follows:
 [[dump-tool-via-jmx]]
 ==== Using the Dump Feature via JMX
 
-The dump method is on the Server instance and many of its nested components (Handlers, Connectors, and so forth). 
-Dumps may be obtained by calling these methods either in code or via JMX (see ).
+The `dump` method is on the Server instance and many of its nested components (Handlers, Connectors, and so forth). 
+Dumps may be obtained by calling these methods either in code or via JMX (see xref:using-jmx[]).
 
-The Server MBean has a `dump()` method, which dumps everything, plus a `dumpStdErr()` operation that dumps to stderr rather than replying to jconsole.
+The Server MBean has a `dump()` method, which dumps everything, plus a `dumpStdErr()` operation that dumps to StdErr rather than replying to JConsole.
 
 [[examing-jetty-distro-dump]]
 ==== Examining a Jetty Distribution Dump
