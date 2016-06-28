@@ -47,7 +47,14 @@
                   </Default>
                 </Property>
               </Set>
-              <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml</Set>
+              <Set name="defaultsDescriptor">
+                <Property>
+                  <Name>jetty.deploy.defaultsDescriptorPath</Name>
+                  <Default>
+                    <Property name="jetty.home" default="." />/etc/webdefault.xml
+                  </Default>
+                </Property>
+              </Set>
               <Set name="scanInterval"><Property name="jetty.deploy.scanInterval" default="1"/></Set>
               <Set name="extractWars"><Property name="jetty.deploy.extractWars" default="true"/></Set>
               <Set name="configurationManager">
