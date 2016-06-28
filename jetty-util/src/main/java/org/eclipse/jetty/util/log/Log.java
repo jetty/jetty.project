@@ -167,13 +167,18 @@ public class Log
                 return;
             __initialized = true;
 
+            Boolean announce = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.announce", "true"));
+
             try
             {
                 Class<?> log_class = __logClass==null?null:Loader.loadClass(__logClass);
                 if (LOG == null || (log_class!=null && !LOG.getClass().equals(log_class)))
                 {
                     LOG = (Logger)log_class.newInstance();
-                    LOG.debug("Logging to {} via {}", LOG, log_class.getName());
+                    if(announce)
+                    {
+                        LOG.debug("Logging to {} via {}", LOG, log_class.getName());
+                    }
                 }
             }
             catch(Throwable e)
@@ -182,8 +187,10 @@ public class Log
                 initStandardLogging(e);
             }
 
-            if (LOG!=null)
+            if (announce && LOG!=null)
+            {
                 LOG.info(String.format("Logging initialized @%dms to %s",Uptime.getUptime(),LOG.getClass().getName()));
+            }
         }
     }
 
@@ -199,7 +206,12 @@ public class Log
         {
             log_class = StdErrLog.class;
             LOG = new StdErrLog();
-            LOG.debug("Logging to {} via {}", LOG, log_class.getName());
+
+            Boolean announce = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.announce", "true"));
+            if(announce)
+            {
+                LOG.debug("Logging to {} via {}", LOG, log_class.getName());
+            }
         }
     }
     
@@ -321,5 +333,10 @@ public class Log
     public static Map<String, Logger> getLoggers()
     {
         return Collections.unmodifiableMap(__loggers);
+    }
+
+    public static Properties getProperties()
+    {
+        return __props;
     }
 }
