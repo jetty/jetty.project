@@ -232,7 +232,7 @@ public class ClasspathPattern extends AbstractList<String>
                 continue;
             if (entry._package)
             {
-                if (name.startsWith(entry._name))
+                if (name.startsWith(entry._name) || ".".equals(entry._pattern))
                     return entry._inclusive;
             }
             else
