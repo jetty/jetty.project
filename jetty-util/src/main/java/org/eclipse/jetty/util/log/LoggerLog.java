@@ -206,7 +206,7 @@ public class LoggerLog extends AbstractLogger
     {
         if (Log.isIgnored())
         {
-            warn(Log.IGNORED, ignored);
+            debug(Log.IGNORED, ignored);
         }
     }
 

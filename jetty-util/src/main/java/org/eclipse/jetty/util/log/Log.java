@@ -55,7 +55,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 public class Log
 {
     public final static String EXCEPTION= "EXCEPTION ";
-    public final static String IGNORED= "IGNORED ";
+    public final static String IGNORED= "IGNORED EXCEPTION ";
 
     /**
      * Logging Configuration Properties
