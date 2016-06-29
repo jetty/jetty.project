@@ -127,7 +127,7 @@ public class Slf4jLog extends AbstractLogger
     {
         if (Log.isIgnored())
         {
-            warn(Log.IGNORED, ignored);
+            debug(Log.IGNORED, ignored);
         }
     }
 
