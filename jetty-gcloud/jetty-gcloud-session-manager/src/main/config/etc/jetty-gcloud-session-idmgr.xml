@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+  <!-- ===================================================================== -->
+  <!-- Configure a GCloudSessionIdManager                                    -->
+  <!-- ===================================================================== -->
+  <Set name="sessionIdManager">
+    <New id="idMgr" class="org.eclipse.jetty.gcloud.session.GCloudSessionIdManager">
+      <Arg>
+        <Ref id="Server"/>
+      </Arg>
+      <Set name="workerName"><Property name="jetty.gcloudSession.workerName"><Default>node<Env name="GAE_MODULE_INSTANCE" default="0"/></Default></Property></Set>
+    </New>
+  </Set>
+
+</Configure>

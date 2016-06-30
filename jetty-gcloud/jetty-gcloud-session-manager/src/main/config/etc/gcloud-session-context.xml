@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+
+  <!-- Get a reference to the GCloudSessionIdManager -->
+  <Ref id="Server">
+    <Call id="idMgr" name="getSessionIdManager"/>
+  </Ref>
+
+  <!-- Use the GCloudSessionIdManager to set up the GCloudSessionManager -->
+  <Set name="sessionHandler">
+    <New class="org.eclipse.jetty.server.session.SessionHandler">
+      <Arg>
+        <New id="mgr" class="org.eclipse.jetty.gcloud.session.GCloudSessionManager">
+          <Set name="sessionIdManager">
+            <Ref id="idMgr"/>
+          </Set>
+          <Set name="scavengeIntervalSec">600</Set>
+        </New>
+      </Arg>
+    </New>
+  </Set>
+
+</Configure>

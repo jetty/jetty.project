@@ -4,7 +4,7 @@
 
 [depend]
 ext
-gcloud-sessions
+gcloud-session-idmgr
 
 
 [files]
@@ -14,6 +14,10 @@ maven://org.slf4j/slf4j-api/1.6.6|lib/ext/slf4j-api-1.6.6.jar
 [lib]
 lib/jetty-gcloud-memcached-session-manager-${jetty.version}.jar
 lib/xmemcached/*.jar
+
+
+[xml]
+etc/jetty-gcloud-memcached-sessions.xml
 
 [license]
 Xmemcached is an open source project hosted on Github and released under the Apache 2.0 license.

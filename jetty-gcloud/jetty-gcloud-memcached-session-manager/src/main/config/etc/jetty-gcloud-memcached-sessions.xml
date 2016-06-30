@@ -3,10 +3,10 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-  <!-- ===================================================================== -->
-  <!-- Configure the Deployer to create a GCloudSessionManager for every     -->
-  <!-- webapp that is deployed                                               -->
-  <!-- ===================================================================== -->
+  <!-- ============================================================================== -->
+  <!-- Configure the Deployer to create a GCloudMemcachedSessionManager for every     -->
+  <!-- webapp that is deployed                                                        -->
+  <!-- ============================================================================== -->
 
   <Ref id="DeploymentManager">
     <!-- Add a customize step to the deployment lifecycle -->
@@ -18,7 +18,7 @@
     <Call name="addLifeCycleBinding">
       <Arg>
         <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding">
-          <Set name="jettyXml"><Property name="jetty.home" default="."/>/etc/gcloud-session-context.xml</Set>
+         <Set name="jettyXml"><Property name="jetty.home" default="."/>/etc/gcloud-memcached-session-context.xml</Set>
         </New>
       </Arg>
     </Call>
