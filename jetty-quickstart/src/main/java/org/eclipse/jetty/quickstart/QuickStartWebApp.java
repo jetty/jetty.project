@@ -62,7 +62,6 @@ public class QuickStartWebApp extends WebAppContext
     {
         super();
         setConfigurationClasses(__preconfigurationClasses);
-        setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",".*\\.jar");
     }
 
     public boolean isPreconfigure()
