@@ -18,6 +18,7 @@
 
 include::startup/chapter.adoc[]
 include::sessions/chapter.adoc[]
+include::logging/chapter.adoc[]
 include::jndi/chapter.adoc[]
 include::annotations/chapter.adoc[]
 include::jmx/chapter.adoc[]
@@ -27,4 +28,3 @@ include::fastcgi/chapter.adoc[]
 include::extras/chapter.adoc[]
 include::runner/chapter.adoc[]
 include::tuning/chapter.adoc[]
-include::logging/chapter.adoc[]
