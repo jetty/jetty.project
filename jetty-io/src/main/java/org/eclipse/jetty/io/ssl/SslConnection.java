@@ -93,6 +93,7 @@ public class SslConnection extends AbstractConnection
     private final boolean _encryptedDirectBuffers = true;
     private final boolean _decryptedDirectBuffers = false;
     private boolean _renegotiationAllowed;
+    private boolean _closedOutbound;
     private final Runnable _runCompletWrite = new Runnable()
     {
         @Override
@@ -926,19 +927,23 @@ public class SslConnection extends AbstractConnection
         @Override
         public void doShutdownOutput()
         {
-            boolean ishut = isInputShutdown();
-            boolean oshut = isOutputShutdown();
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} shutdownOutput: oshut={}, ishut={}", SslConnection.this, oshut, ishut);
             try
             {
                 synchronized (this)
                 {
+                    boolean ishut = isInputShutdown();
+                    boolean oshut = isOutputShutdown();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} shutdownOutput: oshut={}, ishut={}", SslConnection.this, oshut, ishut);
+                    
                     if (!oshut)
                     {
-                        _sslEngine.closeOutbound();
-                        // Send the TLS close message.
-                        flush(BufferUtil.EMPTY_BUFFER);
+                        if (!_closedOutbound)
+                        {
+                            _closedOutbound=true; // Only attempt this once
+                            _sslEngine.closeOutbound();
+                            flush(BufferUtil.EMPTY_BUFFER); // Send the TLS close message.
+                        }
                         if (ishut)
                             getEndPoint().close();
                         else

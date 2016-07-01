@@ -42,7 +42,6 @@ public class QuickStartWebApp extends WebAppContext
         setExtractWAR(true);
         setCopyWebDir(false);
         setCopyWebInf(false);
-        setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",".*\\.jar");
     }
 
     @Deprecated
