@@ -25,4 +25,4 @@ This guide is in two parts.
 * The second part describes advanced uses of Jetty, providing in depth coverage of specific features like our highly scalable async client, proxy servlet configuration, the Jetty Maven plugin, and using Jetty as an embedded server. The advanced section includes tutorials, howtos, videos, and reference materials.
 
 Feedback is always welcome!
-Additionally, if you are interested in how to contribute to the open source project there is a section on that as well!
+Additionally, if you are interested in how to contribute to the open source project there is a link:#community[section on that as well!]
