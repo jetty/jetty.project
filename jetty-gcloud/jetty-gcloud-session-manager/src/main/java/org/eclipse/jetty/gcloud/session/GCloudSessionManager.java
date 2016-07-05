@@ -440,7 +440,7 @@ public class GCloudSessionManager extends AbstractSessionManager
         
         /** Test if the session is stale
          * @param atTime
-         * @return
+         * @return true if the session is stale at the time given
          */
         protected boolean isStale (long atTime)
         {
@@ -449,7 +449,7 @@ public class GCloudSessionManager extends AbstractSessionManager
         
         
         /** Test if the session is dirty
-         * @return
+         * @return true if the dirty flag is set
          */
         protected boolean isDirty ()
         {
@@ -745,7 +745,7 @@ public class GCloudSessionManager extends AbstractSessionManager
 
     /**
      * Scavenge a session that has expired
-     * @param e
+     * @param e the session info from datastore
      * @throws Exception
      */
     protected void scavengeSession (Entity e)
@@ -785,7 +785,7 @@ public class GCloudSessionManager extends AbstractSessionManager
      * often.
      * 
      * 
-     * @param sec
+     * @param sec the number of seconds between scavenge cycles
      */
     public void setScavengeIntervalSec (long sec)
     {
@@ -1064,8 +1064,8 @@ public class GCloudSessionManager extends AbstractSessionManager
     /**
      * Load a session from the clustered cache.
      * 
-     * @param key
-     * @return
+     * @param key the unique datastore key for the session
+     * @return the Session object restored from datastore
      */
     protected Session load (Key key)
     throws Exception
@@ -1094,7 +1094,7 @@ public class GCloudSessionManager extends AbstractSessionManager
     /**
      * Save or update the session to the cluster cache
      * 
-     * @param session
+     * @param session the session to save to datastore
      * @throws Exception
      */
     protected void save (GCloudSessionManager.Session session)
@@ -1177,7 +1177,7 @@ public class GCloudSessionManager extends AbstractSessionManager
     /**
      * Remove the session from the cluster cache.
      * 
-     * @param session
+     * @param session the session to delete from datastore
      */
     protected void delete (GCloudSessionManager.Session session)
     {  
@@ -1191,7 +1191,7 @@ public class GCloudSessionManager extends AbstractSessionManager
     /**
      * Invalidate a session for this context with the given id
      * 
-     * @param idInCluster
+     * @param idInCluster the id of the session to invalidate
      */
     public void invalidateSession (String idInCluster)
     {
@@ -1214,9 +1214,9 @@ public class GCloudSessionManager extends AbstractSessionManager
      * <li>the virtual hosts</li>
      * </ol>
      * 
-     * @param session
-     * @param context
-     * @return
+     * @param session the session for which the key should be created
+     * @param context the context to which the session belongs
+     * @return a unique datastore key for the session
      */
     protected Key makeKey (Session session, Context context)
     {
@@ -1233,9 +1233,9 @@ public class GCloudSessionManager extends AbstractSessionManager
      * <li>the virtual hosts</li>
      * </ol>
      * 
-     * @param session
-     * @param context
-     * @return
+     * @param id the id of the session for which the key should be created
+     * @param context the context to which the session belongs
+     * @return a unique datastore key for the session
      */
     protected Key makeKey (String id, Context context)
     {
@@ -1260,8 +1260,8 @@ public class GCloudSessionManager extends AbstractSessionManager
     /**
      * Turn the context path into an acceptable string
      * 
-     * @param context
-     * @return
+     * @param context a context
+     * @return a stringified version of the context
      */
     private static String getContextPath (ContextHandler.Context context)
     {
@@ -1273,8 +1273,8 @@ public class GCloudSessionManager extends AbstractSessionManager
      *
      * Used to help identify the exact session/contextPath.
      *
-     * @param context
-     * @return 0.0.0.0 if no virtual host is defined
+     * @param context a context
+     * @return a stringified form of the virtual hosts for the context, 0.0.0.0 if none are defined
      */
     private static String getVirtualHost (ContextHandler.Context context)
     {
@@ -1293,8 +1293,8 @@ public class GCloudSessionManager extends AbstractSessionManager
     /**
      * Make an acceptable name from a context path.
      *
-     * @param path
-     * @return
+     * @param path a context path
+     * @return a stringified form of the context path
      */
     private static String canonicalize (String path)
     {

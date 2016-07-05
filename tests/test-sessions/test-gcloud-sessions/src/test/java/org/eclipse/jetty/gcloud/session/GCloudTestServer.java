@@ -42,7 +42,6 @@ public class GCloudTestServer extends AbstractTestServer
      * @param port
      * @param maxInactivePeriod
      * @param scavengePeriod
-     * @param sessionIdMgrConfig
      */
     public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod)
     {
@@ -51,7 +50,6 @@ public class GCloudTestServer extends AbstractTestServer
 
     /**
      * @param port
-     * @param configuration
      */
     public GCloudTestServer(int port)
     {

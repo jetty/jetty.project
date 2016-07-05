@@ -42,7 +42,6 @@ public class GCloudMemcachedTestServer extends AbstractTestServer
      * @param port
      * @param maxInactivePeriod
      * @param scavengePeriod
-     * @param sessionIdMgrConfig
      */
     public GCloudMemcachedTestServer(int port, int maxInactivePeriod, int scavengePeriod)
     {
@@ -51,7 +50,6 @@ public class GCloudMemcachedTestServer extends AbstractTestServer
 
     /**
      * @param port
-     * @param configuration
      */
     public GCloudMemcachedTestServer(int port)
     {

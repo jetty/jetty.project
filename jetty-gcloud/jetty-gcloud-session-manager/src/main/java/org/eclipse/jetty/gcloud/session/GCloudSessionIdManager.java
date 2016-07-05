@@ -249,8 +249,8 @@ public class GCloudSessionIdManager extends AbstractSessionIdManager
     /**
      * Ask the datastore if a particular id exists.
      * 
-     * @param id
-     * @return
+     * @param id the session id to check for existence
+     * @return true if a session with that id exists, false otherwise
      */
     protected boolean exists (String id)
     {
@@ -264,7 +264,7 @@ public class GCloudSessionIdManager extends AbstractSessionIdManager
     /**
      * Put a session id into the cluster.
      * 
-     * @param id
+     * @param id the id to mark as in use
      */
     protected void insert (String id)
     {        
@@ -282,7 +282,7 @@ public class GCloudSessionIdManager extends AbstractSessionIdManager
     /**
      * Remove a session id from the cluster.
      * 
-     * @param id
+     * @param id the id to remove
      */
     protected void delete (String id)
     {
@@ -297,8 +297,8 @@ public class GCloudSessionIdManager extends AbstractSessionIdManager
     /**
      * Generate a unique key from the session id.
      * 
-     * @param id
-     * @return
+     * @param id the id of the session
+     * @return a unique key for the session id
      */
     protected Key makeKey (String id)
     {

@@ -17,8 +17,8 @@
             <Ref id="idMgr"/>
           </Set>
           <Set name="scavengeIntervalSec">600</Set>
-          <Set name="host">localhost</Set>
-          <Set name="port">11211</Set>
+          <Set name="host"><Env name="MEMCACHE_PORT_11211_TCP_ADDR" default="localhost"/></Set>
+          <Set name="port"><Env name="MEMCACHE_PORT_11211_TCP_PORT" default="11211"/></Set>
         </New>
       </Arg>
     </New>
