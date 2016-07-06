@@ -55,7 +55,7 @@ For example, here is a descriptor file that deploys the file `/opt/myapp/myapp.w
 ____
 [NOTE]
 Both `SystemProperty` and `Property` elements can be used in the descriptor file.
-For example, if the system property is set tp `myapp.home=/opt/myapp`, the previous example can be rewritten as:
+For example, if the system property is set to `myapp.home=/opt/myapp`, the previous example can be rewritten as:
 ____
 
 [source, xml, subs="{sub-order}"]
