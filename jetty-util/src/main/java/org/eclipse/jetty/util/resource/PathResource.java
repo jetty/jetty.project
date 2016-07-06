@@ -83,7 +83,7 @@ public class PathResource extends Resource
         try
         {
             if (Files.isSymbolicLink(path))
-                return Files.readSymbolicLink(path);
+                return path.getParent().resolve(Files.readSymbolicLink(path));
             if (Files.exists(path))
             {
                 Path real = abs.toRealPath(FOLLOW_LINKS);
