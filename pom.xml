@@ -298,7 +298,7 @@
           <configuration>
             <argLine>-showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
-            <runMode>random</runMode>
+            <runOrder>random</runOrder>
             <systemProperties>
               <!--
               <property>
