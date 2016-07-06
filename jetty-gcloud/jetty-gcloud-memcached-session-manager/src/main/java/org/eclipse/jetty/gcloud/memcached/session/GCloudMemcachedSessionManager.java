@@ -217,6 +217,8 @@ public class GCloudMemcachedSessionManager extends GCloudSessionManager
     {
         if (StringUtil.isBlank(_host) || StringUtil.isBlank(_port))
             throw new IllegalStateException("Memcached host and/or port not configured");
+
+        LOG.info("Memcached host {} port {}", _host, _port);
         
         XMemcachedClientBuilder builder = new XMemcachedClientBuilder(_host+":"+_port);
         _client = builder.build();
