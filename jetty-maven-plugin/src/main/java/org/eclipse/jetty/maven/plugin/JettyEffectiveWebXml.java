@@ -86,6 +86,7 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             applyJettyXml ();  
         
             ServerSupport.configureHandlers(server, null);
+            ServerSupport.configureDefaultConfigurationClasses(server);
                    
             //ensure config of the webapp based on settings in plugin
             configureWebApplication();
