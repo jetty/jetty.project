@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
@@ -229,7 +230,7 @@ public class PathResource extends Resource
         Path path;
         try
         {
-            path = new File(uri).toPath();
+            path = Paths.get(uri);
         }
         catch (InvalidPathException e)
         {
