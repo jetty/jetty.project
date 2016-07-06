@@ -64,8 +64,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     @Override
     public boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher)
     {
-        // TODO remove this draft 14 protection
-        // Implement 9.2.2
+        // Implement 9.2.2 for draft 14
         boolean acceptable = "h2-14".equals(protocol) || !(HTTP2Cipher.isBlackListProtocol(tlsProtocol) && HTTP2Cipher.isBlackListCipher(tlsCipher));
         if (LOG.isDebugEnabled())
             LOG.debug("proto={} tls={} cipher={} 9.2.2-acceptable={}",protocol,tlsProtocol,tlsCipher,acceptable);

@@ -271,7 +271,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             request.setAttribute("javax.servlet.request.key_size",keySize);
             request.setAttribute("javax.servlet.request.ssl_session_id", idStr);
             String sessionAttribute = getSslSessionAttribute();
-            if (sessionAttribute != null && sessionAttribute.isEmpty())
+            if (sessionAttribute != null && !sessionAttribute.isEmpty())
                 request.setAttribute(sessionAttribute, sslSession);
         }
         catch (Exception e)

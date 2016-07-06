@@ -53,12 +53,15 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
-        this(httpConfiguration,"h2","h2-17","h2-16","h2-15","h2-14");
+        this(httpConfiguration,"h2");
     }
 
     protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, String... protocols)
     {
         super(protocols);
+        for (String p:protocols)
+            if (!HTTP2ServerConnection.isSupportedProtocol(p))
+                throw new IllegalArgumentException("Unsupported HTTP2 Protocol variant: "+p);
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
         addBean(httpConfiguration);
     }
