@@ -18,20 +18,33 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
@@ -40,11 +53,16 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -121,8 +139,12 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         sslContextFactory.setTrustStorePath(keystorePath);
         sslContextFactory.setTrustStorePassword("storepwd");
         ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-        ServerConnector connector = new ServerConnector(_server,(Executor)null,(Scheduler)null,pool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
-
+        
+        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
+        ServerConnector connector = new ServerConnector(_server,(Executor)null,(Scheduler)null,pool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory,httpConnectionFactory));
+        SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
+        secureRequestCustomer.setSslSessionAttribute("SSL_SESSION");
+        httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
         
         startServer(connector);
 
@@ -222,5 +244,67 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     {
     }
 
+    @Test
+    public void testSecureRequestCustomizer() throws Exception
+    {
+        configureServer(new SecureRequestHandler());
 
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            os.write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            System.err.println(response);
+            
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("Hello world"));
+            assertThat(response, containsString("scheme='https'"));
+            assertThat(response, containsString("isSecure='true'"));
+            assertThat(response, containsString("X509Certificate='null'"));
+
+            Matcher matcher=Pattern.compile("cipher_suite='([^']*)'").matcher(response);
+            matcher.find();
+            assertThat(matcher.group(1), Matchers.allOf(not(isEmptyOrNullString()),not(is("null"))));
+           
+            matcher=Pattern.compile("key_size='([^']*)'").matcher(response);
+            matcher.find();
+            assertThat(matcher.group(1), Matchers.allOf(not(isEmptyOrNullString()),not(is("null"))));
+            
+            matcher=Pattern.compile("ssl_session_id='([^']*)'").matcher(response);
+            matcher.find();
+            assertThat(matcher.group(1), Matchers.allOf(not(isEmptyOrNullString()),not(is("null"))));
+            
+            matcher=Pattern.compile("ssl_session='([^']*)'").matcher(response);
+            matcher.find();
+            assertThat(matcher.group(1), Matchers.allOf(not(isEmptyOrNullString()),not(is("null"))));
+        }
+    }
+
+    public static class SecureRequestHandler extends AbstractHandler
+    {
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setStatus(200);
+            response.getOutputStream().println("Hello world");
+            response.getOutputStream().println("scheme='"+request.getScheme()+"'");
+            response.getOutputStream().println("isSecure='"+request.isSecure()+"'");
+            response.getOutputStream().println("X509Certificate='"+request.getAttribute("javax.servlet.request.X509Certificate")+"'");
+            response.getOutputStream().println("cipher_suite='"+request.getAttribute("javax.servlet.request.cipher_suite")+"'");
+            response.getOutputStream().println("key_size='"+request.getAttribute("javax.servlet.request.key_size")+"'");
+            response.getOutputStream().println("ssl_session_id='"+request.getAttribute("javax.servlet.request.ssl_session_id")+"'");
+            SSLSession sslSession=(SSLSession)request.getAttribute("SSL_SESSION");
+            response.getOutputStream().println("ssl_session='"+sslSession+"'");
+            
+        }
+        
+    }
+    
 }

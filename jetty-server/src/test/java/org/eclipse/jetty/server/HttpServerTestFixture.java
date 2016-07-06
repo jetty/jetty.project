@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -71,7 +72,7 @@ public class HttpServerTestFixture
 
     protected void startServer(ServerConnector connector) throws Exception
     {
-        startServer(connector,new HandlerWrapper());
+        startServer(connector,new HotSwapHandler());
     }
     
     protected void startServer(ServerConnector connector, Handler handler) throws Exception
@@ -96,10 +97,9 @@ public class HttpServerTestFixture
 
     protected void configureServer(Handler handler) throws Exception
     {
-        HandlerWrapper current = (HandlerWrapper)_server.getHandler();
-        current.stop();
-        current.setHandler(handler);
-        current.start();
+        HotSwapHandler swapper = (HotSwapHandler)_server.getHandler();
+        swapper.setHandler(handler);
+        handler.start();
     }
 
 
