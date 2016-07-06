@@ -13,6 +13,3 @@ maven://org.slf4j/slf4j-simple/${slf4j.version}|lib/slf4j/slf4j-simple-${slf4j.v
 
 [lib]
 lib/slf4j/slf4j-simple-${slf4j.version}.jar
-
-[exec]
--Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
