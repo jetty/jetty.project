@@ -77,8 +77,8 @@ context.setAttribute("org.eclipse.jetty.webapp.basetempdir", "/tmp/foo");
 
 There are several ways to use a particular directory as the temporary directory:
 
-*Call WebAppContext.setTempDirectory(String dir)*
-Like before this can be accomplished with an xml file or directly in code. Here's an example of setting the temp directory in xml:
+====== Call WebAppContext.setTempDirectory(String dir)
+As before this can be accomplished with an xml file or directly in code. Here's an example of setting the temp directory in xml:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -101,7 +101,7 @@ context.setWar("foo.war");
 context.setTempDirectory(new File("/some/dir/foo"));
 ----
 
-*Set the `javax.servlet.context.tempdir` context attribute*
+====== Set the javax.servlet.context.tempdir context attribute
 You should set this context attribute with the name of directory you want to use as the temp directory. Again, you can do this in xml:
 
 [source, xml, subs="{sub-order}"]
@@ -129,27 +129,27 @@ context.setWar("foo.war");
 context.setAttribute("javax.servlet.context.tempdir", "/some/dir/foo");
 ----
 
-Once a temporary directory has been created by either of these methods, a File instance for it is set as the value of the `javax.servlet.context.tempdir` attribute of the web application.
+Once a temporary directory has been created by either of these methods, a file instance for it is set as the value of the `javax.servlet.context.tempdir` attribute of the web application.
 
 ____
 [NOTE]
 Be wary of setting an explicit temp directory if you are likely to change the jars in WEB-INF/lib between redeployments.
-There is a JVM bug concerning caching of jar contents: http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4774421
+There is a JVM bug concerning link:http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4774421[caching of jar contents.]
 ____
 
 ==== The "work" directory
 
-Mostly for backward compatibility, from jetty-9.1.1 onwards, it is be possible to create a directory named "work" in the `$\{jetty.base}` directory.
-If such a directory is found, it is assumed you want to use it as the parent directory for all of the temporary directories of the webapps in that `$\{jetty.base}`.
-Moreover, as has historically been the case, these temp directories inside the work directory are not cleaned up when jetty exists (or more correctly speaking, the `temp` directory corresponding to a context is not cleaned up when that context stops).
+Mostly for backward compatibility, from Jetty 9.1.1 onwards, it is possible to create a directory named "work" in the `$\{jetty.base}` directory.
+If such a directory is found, it is assumed you want to use it as the parent directory for all of the temporary directories of the webapps in `$\{jetty.base}`.
+Moreover, as has historically been the case, these temp directories inside the work directory are not cleaned up when Jetty exits (or more correctly speaking, the `temp` directory corresponding to a context is not cleaned up when that context stops).
 
 When a work directory is used, the algorithm for generating the name of the context-specific temp directories omits the random digit string.
 This ensures the name of the directory remains consistent across context restarts.
 
 ==== Persisting the temp directory
 
-Sometimes you may find it useful to keep the contents of the temporary directory between restarts of the web application.
-By default, Jetty will _not_ persist the temp directory.
+Sometimes it is useful to keep the contents of the temporary directory between restarts of the web application.
+By default, Jetty will *not* persist the temp directory.
 To configure Jetty to keep it, use link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[WebAppContext.setPersistTempDirectory(true)].
 
 ____
