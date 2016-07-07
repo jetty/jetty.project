@@ -20,7 +20,6 @@
 ==== Downloading the Jetty Distribution
 
 The standalone Jetty distribution is available for download from the Eclipse Foundation:
-
 ____
 *Jetty*
 http://download.eclipse.org/jetty

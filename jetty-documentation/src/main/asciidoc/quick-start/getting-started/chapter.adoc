@@ -15,9 +15,9 @@
 //  ========================================================================
 
 [[quick-start-getting-started]]
-== Using Jetty Introduction
+== Using Jetty
 
-You can use Jetty in many different ways, ranging from embedding Jetty in applications, launching it from different build systems, from different JVM-based languages, or as a standalone distribution.
+You can use Jetty in many different ways ranging from embedding Jetty in applications, launching it from different build systems, from different JVM-based languages, or as a standalone distribution.
 This guide covers the latter, a standalone distribution suitable for deploying web applications.
 
 include::jetty-installing.adoc[]

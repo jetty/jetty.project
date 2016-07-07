@@ -528,6 +528,7 @@
           <configuration>
             <argLine>-showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
+	    <runOrder>random</runOrder>
             <systemProperties>
               <property>
                 <name>java.io.tmpdir</name>

@@ -17,11 +17,11 @@
 [[configuring-webapps]]
 === Deployment Processing of WebAppContexts
 
-Web applications require a certain amount of processing before they can go into service: they may need to be unpacked, a special classloader created for their jar files, web.xml and web-fragment.xml descriptors processed, and classes scanned for annotations amongst many other things. 
-As web applications have become more complex, Jetty gas added ways to assist with customization by either broadening or lessening the amount of processing that is done at deployment time. 
+Web applications require a certain amount of processing before they can go into service: they may need to be unpacked, a special classloader created for their jar files, `web.xml` and `web-fragment.xml` descriptors processed, and classes scanned for annotations amongst other things. 
+As web applications have become more complex, Jetty has added ways to assist with customization by either broadening or lessening the amount of processing that is done at deployment time. 
 This section will examine this processing and it can be tailored to fit individual needs.
 
-If instead you're looking for information on how to configure a specific WebAppContext - such as its context path, whether it should be unpacked or not - then you can find that in the section entitled link:#configuring-specific-webapp-deployment[Configuring a Specific WebApp Deployment].
+If instead you're looking for information on how to configure a specific `WebAppContext` - such as its context path, whether it should be unpacked or not - then you can find that in the section entitled link:#configuring-specific-webapp-deployment[Configuring a Specific WebApp Deployment].
 
 [[webapp-configurations]]
 ==== Configuration Classes
@@ -52,7 +52,7 @@ META-INF/web-fragment.xml
 
 ===== Anatomy of a Configuration Class
 
-A Configuration class is called 5 times in different phases of the `WebAppContext's` lifecycle:
+A Configuration class is called 5 times in different phases of the link:http://download.eclipse.org/jetty/stable-9/apidocs/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext's`] lifecycle:
 
 preConfigure::
   As the `WebAppContext` is starting up this phase is executed. 
@@ -75,9 +75,9 @@ The cycle is repeated _in reverse order_ for the `deconfigure()` and eventually 
 
 ===== Extending Container Support by Creating Extra Configurations
 
-As shows, there is a default set of Configurations that support basic deployment of a webapp. 
-JavaEE features such as JNDI, nor advanced servlet spec features such as annotations have not been mentioned.
-That is because Jetty's philosophy is to allow the user to tailor the container exactly to their needs. 
+As shown, there is a default set of Configurations that support basic deployment of a webapp. 
+JavaEE features such as JNDI and advanced servlet spec features such as annotations have not been mentioned.
+Jetty's philosophy is to allow the user to tailor the container exactly to their needs. 
 If these features are not needed, then Jetty does not pay the price for them - an important consideration because features such as annotations require extensive and time-consuming scanning of `WEB-INF/lib` jars. 
 As modern webapps may have scores of these jars, it can be a source of significant deployment delay. 
 We will see in the section link:#webapp-context-attributes[Other Configuration] another helpful webapp facility that Jetty provides for cutting down the time spent analyzing jars.
@@ -103,7 +103,7 @@ To achieve that, we use 2 extra Configurations:
 |=======================================================================
 
 These configurations must be added in _exactly_ the order shown above and should be inserted _immediately before_ the link:{JDURL}/org/eclipse/jetty/webapp/JettyWebXmlConfiguration.html[org.eclipse.jetty.webapp.JettyWebXmlConfiguration] class in the list of configurations. 
-To fully support JNDI, you need to do a couple of other things, full details of which can be found link:#jndi[here].
+To fully support JNDI additional configuration is required, full details of which can be found link:#jndi[here].
 
 ====== Example: Annotation Configurations
 
@@ -118,7 +118,7 @@ We need just one extra Configuration class to help provide servlet annotation sc
 |=======================================================================
 
 The above configuration class must be _inserted immediately before_ the link:{JDURL}/org/eclipse/jetty/webapp/JettyWebXmlConfiguration.html[org.eclipse.jetty.webapp.JettyWebXmlConfiguration] class in the list of configurations. 
-To fully support annotations, you need to do a couple of other things, details of which can be found below.
+To fully support annotations additional configuration is require, details of which can be found link:#webapp-context-attributes[below.]
 
 ===== How to Set the List of Configurations
 
