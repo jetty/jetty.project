@@ -500,15 +500,13 @@ public class PartialRFC2616Test
                 "Content-Type: text/plain\n"+
                 "Content-Length: 8\n"+
                 "\n");
-        Thread.sleep(200);
-        String infomational= endp.takeOutputString();
+        String infomational= endp.getResponse();
         offset=checkContains(infomational,offset,"HTTP/1.1 100 ","8.2.3 expect 100")+1;
         checkNotContained(infomational,offset,"HTTP/1.1 200","8.2.3 expect 100");
 
         endp.addInput("654321\015\012");
 
-        Thread.sleep(200);
-        String response= endp.takeOutputString();
+        String response= endp.getResponse();
         offset=0;
         offset=checkContains(response,offset,"HTTP/1.1 200","8.2.3 expect 100")+1;
         offset=checkContains(response,offset,"654321","8.2.3 expect 100")+1;
