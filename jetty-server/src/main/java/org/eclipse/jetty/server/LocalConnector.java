@@ -94,6 +94,7 @@ public class LocalConnector extends AbstractConnector
      * @param requests the requests
      * @return the responses
      * @throws Exception if the requests fail
+     * @deprecated Use {@link #getResponse(String)}
      */
     public String getResponses(String requests) throws Exception
     {
@@ -112,6 +113,7 @@ public class LocalConnector extends AbstractConnector
      * @param units The units of idleFor
      * @return the responses
      * @throws Exception if the requests fail
+     * @deprecated Use {@link #getResponse(String, boolean, long, TimeUnit)}
      */
     public String getResponses(String requests,long idleFor,TimeUnit units) throws Exception
     {
@@ -129,6 +131,7 @@ public class LocalConnector extends AbstractConnector
      * @param requestsBuffer the requests
      * @return the responses
      * @throws Exception if the requests fail
+     * @deprecated Use {@link #getResponse(ByteBuffer)}
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer) throws Exception
     {
@@ -146,6 +149,7 @@ public class LocalConnector extends AbstractConnector
      * @param units The units of idleFor
      * @return the responses
      * @throws Exception if the requests fail
+     * @deprecated Use {@link #getResponse(ByteBuffer, boolean, long, TimeUnit)}
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
     {
@@ -491,6 +495,9 @@ public class LocalConnector extends AbstractConnector
                         }
                     }
                 }
+            
+                if (bout.getCount()==0 && isOutputShutdown())
+                    return null;
                 return ByteBuffer.wrap(bout.getBuf(),0,bout.getCount()); 
             }
         }
