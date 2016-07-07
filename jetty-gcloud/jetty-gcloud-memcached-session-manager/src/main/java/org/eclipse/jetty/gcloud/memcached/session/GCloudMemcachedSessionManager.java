@@ -52,6 +52,7 @@ public class GCloudMemcachedSessionManager extends GCloudSessionManager
     protected String _port;
     protected MemcachedClient _client;
     protected int _expirySec = 0;
+    private boolean _heartbeats = true;
 
     
 
@@ -210,6 +211,15 @@ public class GCloudMemcachedSessionManager extends GCloudSessionManager
     {
         _expirySec = expirySec;
     }
+    
+    
+    /**
+     * @param heartbeats if true memcached heartbeats are enabled. Default is true.
+     */
+    public void setHeartbeats (boolean heartbeats)
+    {
+        _heartbeats  = heartbeats;
+    }
 
     
     @Override
@@ -222,6 +232,8 @@ public class GCloudMemcachedSessionManager extends GCloudSessionManager
         
         XMemcachedClientBuilder builder = new XMemcachedClientBuilder(_host+":"+_port);
         _client = builder.build();
+        _client.setEnableHeartBeat(_heartbeats);
+        
 
         _client.setTranscoder(new ContextClassloaderSerializingTranscoder());
         super.doStart();

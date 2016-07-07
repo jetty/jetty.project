@@ -17,6 +17,12 @@
             <Ref id="idMgr"/>
           </Set>
           <Set name="scavengeIntervalSec">600</Set>
+          <!-- uncomment and configure the secs before a memcache entry is evicted
+          <Set name="expirySec">86400</Set>
+           -->
+           <!-- uncomment and configure whether memcached does heartbeats or not
+           <Set name="heartbeats">false</Set>
+            -->
           <Set name="host"><Env name="MEMCACHE_PORT_11211_TCP_ADDR" default="localhost"/></Set>
           <Set name="port"><Env name="MEMCACHE_PORT_11211_TCP_PORT" default="11211"/></Set>
         </New>
