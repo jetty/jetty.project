@@ -17,7 +17,7 @@
 [[automatic-webapp-deployment]]
 === Automatic Web Application Deployment
 
-The most basic technique for deploying Web Applications is to put a WAR file or Exploded WAR directory into the `${jetty.home}/webapps/` directory and let Jetty's deployment scanner find it and deploy it under a Context path of the same name.
+The most basic technique for deploying Web Applications is to put a WAR file or Exploded WAR directory into the `${jetty.base}/webapps/` directory and let Jetty's deployment scanner find it and deploy it under a Context path of the same name.
 
 Only Web Applications that follow the Web Application Layout will be detected by Jetty and deployed this way.
 
@@ -34,7 +34,7 @@ The Context Path assigned to this automatic deployment is based the filename (or
 
 |`/webapps/belaying-pins/WEB-INF/web.xml` |http://host/belaying-pins/
 
-|`/webapps/root.war` _(special name)_ |http://host/
+|`/webapps/root.war` _(reserved name)_ |http://host/
 
-|`/webapps/root/WEB-INF/web.xml` _(special name)_ |http://host/
+|`/webapps/root/WEB-INF/web.xml` _(reserved name)_ |http://host/
 |=======================================================================
