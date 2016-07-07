@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.session.SessionDataMapFactory;
 public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
 {
     protected int _expiry;
+    protected boolean _heartbeats = true;
     protected int[] _weights;    
     protected List<InetSocketAddress> _addresses;
     
@@ -71,6 +72,16 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
         _expiry = expiry;
     }
     
+    public boolean isHeartbeats()
+    {
+        return _heartbeats;
+    }
+
+    public void setHeartbeats(boolean heartbeats)
+    {
+        _heartbeats = heartbeats;
+    }
+
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataMapFactory#getSessionDataMap()
      */
@@ -79,6 +90,7 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
     {
         MemcachedSessionDataMap m = new MemcachedSessionDataMap(_addresses, _weights);
         m.setExpirySec(_expiry);
+        m.setHeartbeats(isHeartbeats());
         return m;
     }
 

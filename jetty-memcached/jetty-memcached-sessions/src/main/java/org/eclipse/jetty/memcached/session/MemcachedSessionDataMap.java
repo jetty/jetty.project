@@ -43,6 +43,7 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     public static final String DEFAULT_PORT = "11211";
     protected MemcachedClient _client;
     protected int _expirySec = 0;
+    protected boolean _heartbeats = true;
     protected XMemcachedClientBuilder _builder;
 
     
@@ -92,6 +93,18 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     
 
 
+    public boolean isHeartbeats()
+    {
+        return _heartbeats;
+    }
+
+
+    public void setHeartbeats(boolean heartbeats)
+    {
+        _heartbeats = heartbeats;
+    }
+
+
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataMap#initialize(org.eclipse.jetty.server.session.SessionContext)
      */
@@ -101,6 +114,7 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
         try
         {
             _client = _builder.build();
+            _client.setEnableHeartBeat(isHeartbeats());
         }
         catch (IOException e)
         {
