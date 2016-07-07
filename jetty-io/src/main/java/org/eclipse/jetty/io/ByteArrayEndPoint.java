@@ -282,7 +282,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
         try(Locker.Lock lock = _locker.lock())
         {
-            if (BufferUtil.isEmpty(_out))
+            if (BufferUtil.isEmpty(_out) && !_closed && !_oshut)
                 _hasOutput.await(time,unit);
                
             b=_out;
