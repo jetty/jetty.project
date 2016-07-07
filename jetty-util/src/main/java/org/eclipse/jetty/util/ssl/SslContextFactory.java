@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -1089,14 +1090,46 @@ public class SslContextFactory extends AbstractLifeCycle
 
             if (managers!=null)
             {
-                if (_certAlias != null)
-                {
-                    for (int idx = 0; idx < managers.length; idx++)
-                    {
-                        if (managers[idx] instanceof X509ExtendedKeyManager)
-                            managers[idx] = new AliasedX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx],_certAlias);
-                    }
-                }
+                 final List<String> aliases = new ArrayList<>();
+                 final List<String> trustedCertificateAliases = new ArrayList<>();
+                 for (Enumeration<String> e = keyStore.aliases(); e.hasMoreElements();)
+                 {
+                     final String alias = e.nextElement();
+                     aliases.add(alias);
+                     if (keyStore.isCertificateEntry(alias))
+                     {
+                         trustedCertificateAliases.add(alias);
+                     }
+                 }
+                 if (_certAlias != null)
+                 {
+                     if (!aliases.contains(_certAlias))
+                     {
+                         throw new IllegalStateException("Certificat alias " + _certAlias + " not found in keystore, available aliases are " + aliases
+                                 + ", trusted certificates are " + trustedCertificateAliases);
+                     }
+                     if (!trustedCertificateAliases.contains(_certAlias))
+                     {
+                         LOG.warn("Certificat alias " + _certAlias + " is not trusted, available aliases are {}, trusted certificates are {}. ",aliases,
+                                 trustedCertificateAliases);
+                     }
+                     for (int idx = 0; idx < managers.length; idx++)
+                     {
+                         if (managers[idx] instanceof X509ExtendedKeyManager)
+                             managers[idx] = new AliasedX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx],_certAlias);
+                     }
+                 }
+                 else
+                 {
+                     if (aliases.isEmpty())
+                     {
+                         throw new IllegalStateException("No certificate found in keystore");
+                     }
+                     if (trustedCertificateAliases.isEmpty())
+                     {
+                         LOG.warn("No trusted certificate found in keystore");
+                     }
+                 }
 
                 if (!_certHosts.isEmpty() || !_certWilds.isEmpty())
                 {
