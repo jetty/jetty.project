@@ -23,10 +23,12 @@ The link:#quickstart-config-what[next section] gives an overview of the action c
 
 ==== Jetty POJO Configuration
 
-The core components of Jetty are Plain Old Java Objects (http://en.wikipedia.org/wiki/Plain_Old_Java_Object[POJOs]); the process of configuring Jetty is mostly the process of instantiating, assembling and setting fields on the Jetty POJOs. 
+The core components of Jetty are Plain Old Java Objects (http://en.wikipedia.org/wiki/Plain_Old_Java_Object[POJOs])
+The process of configuring Jetty is mostly the process of instantiating, assembling and setting fields on the Jetty POJOs. 
 This can be achieved by:
 
-* Writing Java code to directly instantiate and assemble Jetty objects. This is referred to as xref:embedding-jetty[].
+* Writing Java code to directly instantiate and assemble Jetty objects. 
+This is referred to as xref:embedding-jetty[].
 * Using Jetty XML configuration, which is an http://en.wikipedia.org/wiki/Inversion_of_Control[Inversion of Control (IoC)] framework, to instantiate and assemble Jetty objects as XML objects. 
 The `etc/jetty.xml` file is the main Jetty XML configuration file, but there are many other `etc/jetty-__feature__.xml` files included in the Jetty distribution.
 * Using a third party http://en.wikipedia.org/wiki/Inversion_of_Control[IoC] framework like http://en.wikipedia.org/wiki/Spring_Framework[Spring], to instantiate and assemble Jetty objects as Spring beans.
@@ -35,20 +37,25 @@ Because the main Jetty configuration is done by IoC, the link:{JDURL}/[Jetty API
 
 ==== Jetty Start Configuration Files
 
-The Jetty distribution uses the following configuration files to instantiate, inject and start server via the start.jar mechanism.
+The Jetty distribution uses the following configuration files to instantiate, inject and start server via the `start.jar` mechanism.
 
 `ini` files::
   The Jetty Start mechanism uses the command line, the `$JETTY_BASE/start.ini` and/or `$JETTY_BASE/start.d/*.ini` files to create an effective command line of arguments. 
   Arguments may be:
   
-  * XML files in Jetty IoC (or Spring) XML format
   * Module activations in the form `--module=name`
-  * Property in the form of `name=value`, used to parameterize Jetty IoC XML
+  * Properties in the form of `name=value`, used to parameterize Jetty IoC XML
+  * XML files in Jetty IoC (or Spring) XML format
   * A standard http://en.wikipedia.org/wiki/Java_properties[Java property file] containing additional start properties
   * Other start.jar options (see `java -jar start.jar --help`)
   * Some JVM options in combination with `--exec`, such as `-Xbootclasspath`.
-+
+
+____
+[NOTE]
+--
 As of Jetty 9 it is the `ini` files located in the Jetty base directory (if different from Jetty home) that are typically edited to change the configuration (e.g. change ports). 
+--
+____
   
 `mod` files::
   The `$JETTY_HOME/modules/*.mod` files contain the definition of modules that can be activated by `--module=name`. 
@@ -69,7 +76,7 @@ XML files::
   The XML files instantiate and inject the actual Java objects that comprise the server, connectors and contexts. 
   Because Jetty IoC XML files use properties, most common configuration tasks can be accomplished without editing these XML files and can instead be achieved by editing the property in the corresponding `ini` files.
   XML files are normally located in `$JETTY_HOME/etc/`, but extra or edited XML files may be added to `$JETTY_BASE/etc/`. 
-  If XML configuration changes are required, it is best practice to copy the XML file from `$JETTY_HOME/etc/` to `$JETTY_BASE/etc/` before being modified.
+  *Note* If XML configuration changes are required, it is best practice to copy the XML file from `$JETTY_HOME/etc/` to `$JETTY_BASE/etc/` before being modified.
   
 Below is an illustration of how the various Jetty configuration files (`ini`, `mod` and XML) are related:
 
@@ -83,7 +90,7 @@ Context XML files::
   Any XML files in link:#jetty-xml-syntax[Jetty IoC XML format] or Spring IoC format that is discovered in the `/webapps` directory are used by the deploy module to instantiate and inject `HttpContext` instances to create a specific context. 
   These may be standard web applications or bespoke contexts created from special purpose handlers.
 
-`web.xml`::
+web.xml::
   The http://en.wikipedia.org/wiki/Servlet[Servlet] Specification defines the http://en.wikipedia.org/wiki/Web.xml[`web.xml`] deployment descriptor that defines and configures the filters, servlets and resources a http://en.wikipedia.org/wiki/Web_application[web application] uses. 
   The Jetty `WebAppContext` component uses this XML format to:
 
@@ -117,5 +124,5 @@ link:#jetty-xml-syntax[Jetty IoC XML format] allows you to instantiate and confi
 include::{SRCDIR}/examples/embedded/src/main/resources/exampleserver.xml[]
 ----
 
-In practice, most commonly used Jetty features have XML files that are included in the standard distribution in the `etc` directory. 
-Thus configuring Jetty is often a matter of just editing existing XML files and altering the property values injected into them.
+//In practice, most commonly used Jetty features have XML files that are included in the standard distribution in the `/etc` directory. 
+//Thus configuring Jetty is often a matter of just editing existing XML files and altering the property values injected into them.
