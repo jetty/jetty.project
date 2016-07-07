@@ -145,6 +145,28 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     
     /* ------------------------------------------------------------ */
     @Override
+    public void doShutdownOutput()
+    {
+        super.doShutdownOutput(); 
+        try(Locker.Lock lock = _locker.lock())
+        {
+            _hasOutput.signalAll();
+        }  
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void doClose()
+    {
+        super.doClose();
+        try(Locker.Lock lock = _locker.lock())
+        {
+            _hasOutput.signalAll();
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
     public InetSocketAddress getLocalAddress()
     {
         return NOIPPORT;
@@ -317,7 +339,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
         try(Locker.Lock lock = _locker.lock())
         {
-            if (BufferUtil.isEmpty(_out))
+            if (BufferUtil.isEmpty(_out) && isOpen() && !isOutputShutdown())
                 _hasOutput.await(time,unit);
                
             b=_out;

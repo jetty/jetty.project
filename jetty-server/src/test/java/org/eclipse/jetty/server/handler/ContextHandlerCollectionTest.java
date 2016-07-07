@@ -222,7 +222,7 @@ public class ContextHandlerCollectionTest
         {
             // System.err.printf("host=%s in %s%n",host,contextHosts==null?Collections.emptyList():Arrays.asList(contextHosts));
             
-            String response=connector.getResponses("GET / HTTP/1.0\n" + "Host: "+host+"\nConnection:close\n\n");
+            String response=connector.getResponse("GET / HTTP/1.0\n" + "Host: "+host+"\nConnection:close\n\n");
             // System.err.println(response);
             if(succeed)
                 assertTrue("'"+host+"' should have been handled.",handler.isHandled());

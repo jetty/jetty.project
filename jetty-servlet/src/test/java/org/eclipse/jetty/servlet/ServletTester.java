@@ -196,7 +196,7 @@ public class ServletTester extends ContainerLifeCycle
         {
             LOG.debug("Request: {}",request);
         }
-        return _connector.getResponses(request);
+        return _connector.getResponse(request);
     }
     
     public String getResponses(String request, long idleFor,TimeUnit units) throws Exception
@@ -205,7 +205,7 @@ public class ServletTester extends ContainerLifeCycle
         {
             LOG.debug("Request: {}",request);
         }
-        return _connector.getResponses(request, idleFor, units);
+        return _connector.getResponse(request, idleFor, units);
     }
     
     public ByteBuffer getResponses(ByteBuffer request) throws Exception
@@ -214,7 +214,7 @@ public class ServletTester extends ContainerLifeCycle
         {
             LOG.debug("Request (Buffer): {}",BufferUtil.toUTF8String(request));
         }
-        return _connector.getResponses(request);
+        return _connector.getResponse(request);
     }
     
     public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
@@ -223,7 +223,7 @@ public class ServletTester extends ContainerLifeCycle
         {
             LOG.debug("Requests (Buffer): {}",BufferUtil.toUTF8String(requestsBuffer));
         }
-        return _connector.getResponses(requestsBuffer, idleFor, units);
+        return _connector.getResponse(requestsBuffer, idleFor, units);
     }
 
     /** Create a port based connector.
