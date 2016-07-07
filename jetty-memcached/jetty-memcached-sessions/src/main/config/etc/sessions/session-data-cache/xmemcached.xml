@@ -7,8 +7,8 @@
          <Array type="java.net.InetSocketAddress">
            <Item>
              <New class="java.net.InetSocketAddress">
-               <Arg><Property name="jetty.session.memcache.host" default="localhost"/></Arg>
-               <Arg type="int"><Property name="jetty.session.memcache.port" default="11211"/></Arg>
+               <Arg><Property name="jetty.session.memcache.host"><Default><Env name="MEMCACHE_PORT_11211_TCP_ADDR" default="localhost"/></Default></Property></Arg>
+               <Arg type="int"><Property name="jetty.session.memcache.port"><Default><Env name="MEMCACHE_PORT_11211_TCP_PORT" default="11211"/></Default></Property></Arg>
              </New>
            </Item>
            <!--  Add more here -->
@@ -21,5 +21,6 @@
          </Array>
        </Set>
       <Set name="expirySec"><Property name="jetty.session.memcache.expirySec" default="0"/></Set>
+      <Set name="heartbeats"><Property name="jetty.session.memcache.heartbeats" default="true"/></Set>
     </New>
 </Configure>

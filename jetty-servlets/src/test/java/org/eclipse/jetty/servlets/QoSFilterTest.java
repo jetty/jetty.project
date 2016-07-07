@@ -18,10 +18,18 @@
 
 package org.eclipse.jetty.servlets;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.concurrent.CountDownLatch;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
@@ -50,7 +58,6 @@ public class QoSFilterTest
 
     private ServletTester _tester;
     private LocalConnector[] _connectors;
-    private CountDownLatch _doneRequests;
     private final int NUM_CONNECTIONS = 8;
     private final int NUM_LOOPS = 6;
     private final int MAX_QOS = 4;
@@ -68,8 +75,6 @@ public class QoSFilterTest
         for (int i = 0; i < _connectors.length; ++i)
             _connectors[i] = _tester.createLocalConnector();
 
-        _doneRequests = new CountDownLatch(NUM_CONNECTIONS * NUM_LOOPS);
-
         _tester.start();
     }
 
@@ -82,17 +87,21 @@ public class QoSFilterTest
     @Test
     public void testNoFilter() throws Exception
     {
+        List<Worker> workers = new ArrayList<>();
         for (int i = 0; i < NUM_CONNECTIONS; ++i)
         {
-            new Thread(new Worker(i)).start();
+            workers.add(new Worker(i));
         }
 
-        _doneRequests.await(10, TimeUnit.SECONDS);
+        ExecutorService executor = Executors.newFixedThreadPool(NUM_CONNECTIONS);
+        List<Future<Void>> futures = executor.invokeAll(workers, 10, TimeUnit.SECONDS);
+
+        rethrowExceptions(futures);
 
         if (TestServlet.__maxSleepers <= MAX_QOS)
             LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
         else
-            Assert.assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(NUM_CONNECTIONS));
+            assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(NUM_CONNECTIONS));
     }
 
     @Test
@@ -103,12 +112,17 @@ public class QoSFilterTest
         holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, "" + MAX_QOS);
         _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
+        List<Worker> workers = new ArrayList<>();
         for (int i = 0; i < NUM_CONNECTIONS; ++i)
         {
-            new Thread(new Worker(i)).start();
+            workers.add(new Worker(i));
         }
 
-        _doneRequests.await(10, TimeUnit.SECONDS);
+        ExecutorService executor = Executors.newFixedThreadPool(NUM_CONNECTIONS);
+        List<Future<Void>> futures = executor.invokeAll(workers, 10, TimeUnit.SECONDS);
+
+        rethrowExceptions(futures);
+
         if (TestServlet.__maxSleepers < MAX_QOS)
             LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
         else
@@ -123,19 +137,32 @@ public class QoSFilterTest
         holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, String.valueOf(MAX_QOS));
         _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
+        List<Worker2> workers = new ArrayList<>();
         for (int i = 0; i < NUM_CONNECTIONS; ++i)
         {
-            new Thread(new Worker2(i)).start();
+            workers.add(new Worker2(i));
         }
 
-        _doneRequests.await(20, TimeUnit.SECONDS);
+        ExecutorService executor = Executors.newFixedThreadPool(NUM_CONNECTIONS);
+        List<Future<Void>> futures = executor.invokeAll(workers, 20, TimeUnit.SECONDS);
+
+        rethrowExceptions(futures);
+
         if (TestServlet.__maxSleepers < MAX_QOS)
             LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
         else
             Assert.assertEquals(TestServlet.__maxSleepers, MAX_QOS);
     }
 
-    class Worker implements Runnable
+    private void rethrowExceptions(List<Future<Void>> futures) throws Exception
+    {
+        for (Future<Void> future : futures)
+        {
+            future.get();
+        }
+    }
+
+    class Worker implements Callable<Void>
     {
         private int _num;
 
@@ -145,7 +172,7 @@ public class QoSFilterTest
         }
 
         @Override
-        public void run()
+        public Void call() throws Exception
         {
             for (int i = 0; i < NUM_LOOPS; i++)
             {
@@ -155,23 +182,17 @@ public class QoSFilterTest
                 request.setHeader("host", "tester");
                 request.setURI("/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY));
                 request.setHeader("num", _num + "");
-                try
-                {
-                    String responseString = _connectors[_num].getResponses(BufferUtil.toString(request.generate()));
-                    if (responseString.contains("HTTP"))
-                    {
-                        _doneRequests.countDown();
-                    }
-                }
-                catch (Exception x)
-                {
-                    Assert.assertTrue(false);
-                }
+
+                String responseString = _connectors[_num].getResponse(BufferUtil.toString(request.generate()));
+
+                assertThat("Response contains", responseString, containsString("HTTP"));
             }
+
+            return null;
         }
     }
 
-    class Worker2 implements Runnable
+    class Worker2 implements Callable<Void>
     {
         private int _num;
 
@@ -181,7 +202,7 @@ public class QoSFilterTest
         }
 
         @Override
-        public void run()
+        public Void call() throws Exception
         {
             URL url = null;
             try
@@ -191,13 +212,14 @@ public class QoSFilterTest
                 {
                     url = new URL(addr + "/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY) + "&n=" + _num + "&l=" + i);
                     url.getContent();
-                    _doneRequests.countDown();
                 }
             }
             catch (Exception e)
             {
                 LOG.debug("Request " + url + " failed", e);
             }
+
+            return null;
         }
     }
 
