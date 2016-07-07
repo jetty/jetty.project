@@ -573,6 +573,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
        
         boolean timeout = !latch.await(getMaxScanWait(context), TimeUnit.SECONDS);
+        long elapsedMs = TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS);
+        
+        LOG.info("Scanning elapsed time={}ms",elapsedMs);
           
         if (LOG.isDebugEnabled())
         {
@@ -581,7 +584,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
             LOG.debug("Scanned {} container path jars, {} WEB-INF/lib jars, {} WEB-INF/classes dirs in {}ms for context {}",
                     _containerPathStats.getTotal(), _webInfLibStats.getTotal(), _webInfClassesStats.getTotal(),
-                    (TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS)),
+                    elapsedMs,
                     context);
         }
 
