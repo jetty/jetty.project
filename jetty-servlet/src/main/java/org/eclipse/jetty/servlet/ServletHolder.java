@@ -105,7 +105,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /** Constructor .
      * @param creator the holder source
      */
-    public ServletHolder(Holder.Source creator)
+    public ServletHolder(Source creator)
     {
         super(creator);
     }
@@ -1022,7 +1022,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 return clash;
 
             //otherwise apply all of them
-            ServletMapping mapping = new ServletMapping();
+            ServletMapping mapping = new ServletMapping(Source.JAVAX_API);
             mapping.setServletName(ServletHolder.this.getName());
             mapping.setPathSpecs(urlPatterns);
             _servletHandler.addServletMapping(mapping);

@@ -63,7 +63,6 @@ import org.eclipse.jetty.server.ServletResponseHttpWrapper;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ScopedHandler;
-import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
@@ -802,7 +801,7 @@ public class ServletHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    public ListenerHolder newListenerHolder(Holder.Source source)
+    public ListenerHolder newListenerHolder(Source source)
     {
         return new ListenerHolder(source);
     }
@@ -822,7 +821,7 @@ public class ServletHandler extends ScopedHandler
      * @param source the holder source
      * @return the servlet holder
      */
-    public ServletHolder newServletHolder(Holder.Source source)
+    public ServletHolder newServletHolder(Source source)
     {
         return new ServletHolder(source);
     }
@@ -915,7 +914,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    public FilterHolder newFilterHolder(Holder.Source source)
+    public FilterHolder newFilterHolder(Source source)
     {
         return new FilterHolder(source);
     }
@@ -1361,16 +1360,27 @@ public class ServletHandler extends ScopedHandler
                         else
                         {
                             //existing candidate isn't a default, if the one we're looking at isn't a default either, then its an error
-                            if (!mapping.isDefault())
-                                throw new IllegalStateException("Multiple servlets map to path: "+pathSpec+": "+finalMapping.getServletName()+","+mapping.getServletName());
+                            if (!mapping.isDefault())          
+                            {
+                                ServletHolder finalMappedServlet = _servletNameMap.get(finalMapping.getServletName());
+                                throw new IllegalStateException("Multiple servlets map to path "
+                                        +pathSpec+": "
+                                        +finalMappedServlet.getName()+"[mapped:"+finalMapping.getSource()+"],"
+                                        +mapping.getServletName()+"[mapped:"+mapping.getSource()+"]");
+                            }
                         }
                     }
                 }
                 if (finalMapping == null)
                     throw new IllegalStateException ("No acceptable servlet mappings for "+pathSpec);
            
-                if (LOG.isDebugEnabled()) LOG.debug("Chose path={} mapped to servlet={} from default={}", pathSpec, finalMapping.getServletName(), finalMapping.isDefault());
-               
+                if (LOG.isDebugEnabled()) 
+                    LOG.debug("Path={}[{}] mapped to servlet={}[{}]",
+                              pathSpec,
+                              finalMapping.getSource(),
+                              finalMapping.getServletName(),
+                              _servletNameMap.get(finalMapping.getServletName()).getSource());
+
                 servletPathMappings.put(pathSpec, finalMapping);
                 pm.put(new ServletPathSpec(pathSpec),_servletNameMap.get(finalMapping.getServletName()));
             }
