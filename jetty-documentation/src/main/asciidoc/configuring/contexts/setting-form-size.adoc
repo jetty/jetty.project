@@ -17,9 +17,9 @@
 [[setting-form-size]]
 === Setting Max Form Size
 
-Jetty limits the amount of data that can post back from a browser or other client to the server. 
+Jetty limits the amount of data that can post back from a browser or other client to the server.
 This helps protect the server against denial of service attacks by malicious clients sending huge amounts of data.
-The default maximum size Jetty permits is 200000 bytes. 
+The default maximum size Jetty permits is 200000 bytes.
 You can change this default for a particular webapp, for all webapps on a particular Server instance, or all webapps within the same JVM.
 
 ==== For a Single Webapp
@@ -56,5 +56,5 @@ Set an attribute on the Server instance for which you want to modify the maximum
 
 ==== For All Apps in the JVM
 
-Use the system property `org.eclipse.jetty.server.Request.maxFormContentSize`. 
-This can be set on the command line or in the `start.ini` file.
+Use the system property `org.eclipse.jetty.server.Request.maxFormContentSize`.
+This can be set on the command line or in the `start.ini` or `start.d\server.ini` file.
