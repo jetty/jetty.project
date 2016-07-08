@@ -71,6 +71,16 @@ public class DumpHandler extends AbstractHandler
         if (!isStarted())
             return;
 
+        if (Boolean.valueOf(request.getParameter("flush")))
+            response.flushBuffer();
+        
+        if (Boolean.valueOf(request.getParameter("empty")))
+        {
+            baseRequest.setHandled(true);
+            response.setStatus(200);
+            return;
+        }            
+            
         StringBuilder read = null;
         if (request.getParameter("read")!=null)
         {
@@ -214,6 +224,7 @@ public class DumpHandler extends AbstractHandler
             }
             catch(IOException e)
             {
+                e.printStackTrace();
                 writer.write(e.toString());
             }
         }

@@ -182,6 +182,13 @@ public class LocalConnector extends AbstractConnector
         return endp;
     }
 
+    public LocalEndPoint connect()
+    {
+        LocalEndPoint endp = new LocalEndPoint();
+        _connects.add(endp);
+        return endp;
+    }
+    
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
@@ -502,6 +509,9 @@ public class LocalConnector extends AbstractConnector
                         }
                     }
                 }
+            
+                if (bout.getCount()==0 && isOutputShutdown())
+                    return null;
                 return ByteBuffer.wrap(bout.getBuf(),0,bout.getCount()); 
             }
         }
