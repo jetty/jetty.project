@@ -17,15 +17,15 @@
 [[jetty-classloading]]
 === Jetty Classloading
 
-Class loading in a web container is slightly more complex than a normal Java application. 
-The normal configuration is that each web context (web application or WAR file) has its own classloader, which has the system classloader as its parent. 
+Class loading in a web container is slightly more complex than a normal Java application.
+The normal configuration is that each web context (web application or WAR file) has its own classloader, which has the system classloader as its parent.
 Such a classloader hierarchy is normal in Java, however the servlet specification complicates the hierarchy because it requires the following:
 
-* Classes contained within WEB-INF/lib or WEB-INF/classes have priority over classes on the parent classloader. 
+* Classes contained within WEB-INF/lib or WEB-INF/classes have priority over classes on the parent classloader.
 This is the opposite of the normal behaviour of a Java 2 classloader.
-* System classes such as `java.lang.String` are excluded from the webapp priority, and you may not replace them with classes in `WEB-INF/lib` or `WEB-INF/` classes. 
+* System classes such as `java.lang.String` are excluded from the webapp priority, and you may not replace them with classes in `WEB-INF/lib` or `WEB-INF/` classes.
 Unfortunately the specification does not clearly state what classes are _System_ classes, and it is unclear if all javax classes should be treated as System classes.
-* Server implementation classes like link:{JDURL}/org/eclipse/jetty/server/Server.html[Server] should be hidden from the web application and should not be available in any classloader. 
+* Server implementation classes like link:{JDURL}/org/eclipse/jetty/server/Server.html[Server] should be hidden from the web application and should not be available in any classloader.
 Unfortunately the specification does not state what classes are _Server_ classes, and it is unclear if common libraries like the Xerces parser should be treated as Implementation classes.
 
 [[configuring-webapp-classloading]]
@@ -33,19 +33,45 @@ Unfortunately the specification does not state what classes are _Server_ classes
 
 Jetty provides configuration options to control the three webapp class loading issues identified above.
 
-You can configure webapp classloading by several methods on the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[WebAppContext]. 
-You can call these methods directly if you are working with the Jetty API, or you can inject methods from a context XML file if you are using the Context Provider (xref:using-context-provider[]). 
+You can configure webapp classloading by several methods on the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[WebAppContext].
+You can call these methods directly if you are working with the Jetty API, or you can inject methods from a context XML file if you are using the Context Provider (xref:using-context-provider[]).
 You CANNOT set these methods from a `jetty-web.xml` file, as it executes after the classloader configuration is set.
 
 [[controlling-webapp-classloader-priority]]
 ===== Controlling Webapp Classloader Priority
 
-The method link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#isParentLoaderPriority()[org.eclipse.jett .webapp.WebAppContext.setParentLoaderPriority(boolean)] allows control over the priority given to webapp classes over system classes. 
-If you set it to false (the default), Jetty uses standard webapp classloading priority. 
+The method link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#isParentLoaderPriority()[org.eclipse.jett .webapp.WebAppContext.setParentLoaderPriority(boolean)] allows control over the priority given to webapp classes over system classes.
+If you set it to false (the default), Jetty uses standard webapp classloading priority.
 However, if in this mode some classes that are dependencies of other classes are loaded from the parent classloader (due to settings of system classes below), ambiguities might arise as both the webapp and system classloader versions can end up being loaded.
 
-If set to true, Jetty uses normal JavaSE classloading priority, and gives priority to the parent/system classloader. 
+If set to true, Jetty uses normal JavaSE classloading priority, and gives priority to the parent/system classloader.
 This avoids the issues of multiple versions of a class within a webapp, but the version the parent/system loader provides must be the right version for all webapps you configure in this way.
+
+[[configuring-webapp-caching]]
+===== Configuring Webapp Classloader Caching
+
+Introduced in Jetty 9.3.6, the link:{JDURL}/org/eclipse/jetty/webapp/CachingWebAppClassLoader.html[CachingWebAppClassLoader] can be used to cache `getResource(String)` results.
+For webapps that search for classes and resources regularly, this can increase speed and performance.
+This is an optional feature and it should be noted that it can conflict with several other libraries such as JSP, JSTL, JSF and CDI.
+As such, this feature must be manually enabled for each webapp you want to use it in.
+
+Below is an example of implementing this feature using Jetty IoC XML format:
+
+[source, xml, options="header"]
+----
+<Configure id="mywebapp" class="org.eclipse.jetty.webapp.WebAppContext">
+
+...
+
+  <Set name="classLoader">
+    <New class="org.eclipse.jetty.webapp.CachingWebAppClassLoader">
+      <Arg><Ref refid="mywebapp"/></Arg>
+    </New>
+  </Set>
+
+...
+</Configure>
+----
 
 [[classloading-setting-system-classes]]
 ===== Setting System Classes
@@ -109,15 +135,15 @@ You can add extra classpaths to Jetty in several ways.
 
 If you are using xref:advanced-start-features[], at startup the jetty runtime automatically loads option Jars from the top level `$jetty.home/lib` directory. The default settings include:
 
-* Adding Jars under `$jetty.home/lib/ext` to the system classpath. 
+* Adding Jars under `$jetty.home/lib/ext` to the system classpath.
 You can place additional Jars here.
-* Adding the directory `$jetty.home/resources` to the classpath (may contain classes or other resources). 
+* Adding the directory `$jetty.home/resources` to the classpath (may contain classes or other resources).
 * Adding a single path defined by the command line parameter __path__.
 
 [[using-extra-classpath-method]]
 ===== Using the extraClasspath() method
 
-You can add an additional classpath to a context classloader by calling link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#setExtraClasspath(java.lang.String)[org.eclipse.jetty.webapp.WebAppContext.setExtraClasspath(String)] with a comma-separated list of paths. 
+You can add an additional classpath to a context classloader by calling link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#setExtraClasspath(java.lang.String)[org.eclipse.jetty.webapp.WebAppContext.setExtraClasspath(String)] with a comma-separated list of paths.
 You can do so directly to the API via a context XML file such as the following:
 
 [source, xml, subs="{sub-order}"]
@@ -131,7 +157,7 @@ You can do so directly to the API via a context XML file such as the following:
 [[using-custom-webappclassloader]]
 ==== Using a Custom WebAppClassLoader
 
-If none of the alternatives already described meet your needs, you can always provide a custom classloader for your webapp. 
+If none of the alternatives already described meet your needs, you can always provide a custom classloader for your webapp.
 We recommend, but do not require, that your custom loader subclasses link:{JDURL}/org/eclipse/jetty/webapp/WebAppClassLoader.html[WebAppClassLoader].
 You configure the classloader for the webapp like so:
 
@@ -142,7 +168,7 @@ MyCleverClassLoader myCleverClassLoader = new MyCleverClassLoader();
    WebAppContext webapp = new WebAppContext();
  ...
    webapp.setClassLoader(myCleverClassLoader);
-      
+
 ----
 
 You can also accomplish this in a context xml file.
@@ -150,7 +176,7 @@ You can also accomplish this in a context xml file.
 [[starting-jetty-custom-classloader]]
 ==== Starting Jetty with a Custom ClassLoader
 
-If you start a Jetty server using a custom class loader–consider the Jetty classes not being available to the system class loader, only your custom class loader–you may run into class loading issues when the WebAppClassLoader kicks in. 
+If you start a Jetty server using a custom class loader–consider the Jetty classes not being available to the system class loader, only your custom class loader–you may run into class loading issues when the WebAppClassLoader kicks in.
 By default the WebAppClassLoader uses the system class loader as its parent, hence the problem. This is easy to fix, like so:
 
 [source, java, subs="{sub-order}"]
