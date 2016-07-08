@@ -27,9 +27,9 @@ import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 
-import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
+import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
@@ -130,7 +130,9 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         {
             //No servlet of this name has already been defined, either by a descriptor
             //or another annotation (which would be impossible).
-            holder = _context.getServletHandler().newServletHolder(Holder.Source.ANNOTATION);
+            Source source = new Source(Source.Origin.ANNOTATION, clazz.getName());
+            
+            holder = _context.getServletHandler().newServletHolder(source);
             holder.setHeldClass(clazz);
             metaData.setOrigin(servletName+".servlet.servlet-class",annotation,clazz);
 
@@ -153,7 +155,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             _context.getServletHandler().addServlet(holder);
 
 
-            mapping = new ServletMapping();
+            mapping = new ServletMapping(source);
             mapping.setServletName(holder.getName());
             mapping.setPathSpecs( LazyList.toStringArray(urlPatternList));
         }
@@ -190,7 +192,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             //about processing these url mappings
             if (existingMappings.isEmpty() || !containsNonDefaultMappings(existingMappings))
             {
-                mapping = new ServletMapping();
+                mapping = new ServletMapping(new Source(Source.Origin.ANNOTATION, clazz.getName()));
                 mapping.setServletName(servletName);
                 mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
             }

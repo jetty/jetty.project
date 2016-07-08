@@ -30,11 +30,19 @@ public class ServletMapping
     private String[] _pathSpecs;
     private String _servletName;
     private boolean _default;
+    private Source _source;
+    
     
 
     /* ------------------------------------------------------------ */
     public ServletMapping()
     {
+        this (Source.EMBEDDED);
+    }
+    
+    public ServletMapping(Source source)
+    {
+        _source = source;
     }
     
     /* ------------------------------------------------------------ */
@@ -116,6 +124,12 @@ public class ServletMapping
     public void setDefault(boolean fromDefault)
     {
         _default = fromDefault;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public Source getSource ()
+    {
+        return _source;
     }
 
     /* ------------------------------------------------------------ */

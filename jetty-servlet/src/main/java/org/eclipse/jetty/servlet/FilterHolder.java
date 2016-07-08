@@ -59,7 +59,7 @@ public class FilterHolder extends Holder<Filter>
     /** Constructor
      * @param source the holder source
      */
-    public FilterHolder(Holder.Source source)
+    public FilterHolder(Source source)
     {
         super(source);
     }
