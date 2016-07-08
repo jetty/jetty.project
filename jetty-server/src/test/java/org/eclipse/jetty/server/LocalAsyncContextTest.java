@@ -63,6 +63,11 @@ public class LocalAsyncContextTest
         _server.setHandler(session);
         _server.start();
 
+        reset();
+    }
+    
+    public void reset()
+    {
         _completed0.set(null);
         _completed1.set(null);
     }
@@ -181,9 +186,8 @@ public class LocalAsyncContextTest
         _handler.setCompleteAfter(100);
         response = process("wibble");
         check(response, "COMPLETED");
-
+        
         _handler.setRead(6);
-
         _handler.setResumeAfter(0);
         _handler.setCompleteAfter(-1);
         response = process("wibble");
@@ -192,6 +196,7 @@ public class LocalAsyncContextTest
         _handler.setResumeAfter(100);
         _handler.setCompleteAfter(-1);
         response = process("wibble");
+        
         check(response, "DISPATCHED");
 
         _handler.setResumeAfter(-1);
@@ -203,6 +208,7 @@ public class LocalAsyncContextTest
         _handler.setCompleteAfter(100);
         response = process("wibble");
         check(response, "COMPLETED");
+        
     }
 
     @Test
@@ -238,6 +244,7 @@ public class LocalAsyncContextTest
 
     private synchronized String process(String content) throws Exception
     {
+        reset();
         String request = "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n";

@@ -121,7 +121,6 @@ public class ThreadStarvationTest
         prepareServer(new ReadHandler());
         _connector.setExecutionStrategyFactory(executionFactory);
         _server.start();
-        System.err.println(_threadPool.dump());
 
         Socket[] client = new Socket[_availableThreads + 1];
         OutputStream[] os = new OutputStream[client.length];
@@ -146,7 +145,6 @@ public class ThreadStarvationTest
         }
 
         Thread.sleep(500);
-        System.err.println(_threadPool.dump());
 
         for (int i = 0; i < client.length; i++)
         {
@@ -155,7 +153,6 @@ public class ThreadStarvationTest
         }
 
         Thread.sleep(500);
-        System.err.println(_threadPool.dump());
 
         for (int i = 0; i < client.length; i++)
         {
@@ -173,7 +170,6 @@ public class ThreadStarvationTest
         _threadPool.setMaxThreads(5);
         _connector.setExecutionStrategyFactory(new ExecuteProduceConsume.Factory());
         _server.start();
-        System.err.println(_server.dump());
 
         // Three idle threads in the pool here.
         // The server will accept the socket in normal mode.
@@ -212,7 +208,6 @@ public class ThreadStarvationTest
         os.flush();
 
         Thread.sleep(500);
-        System.err.println(_threadPool.dump());
 
         // Request did not send the whole body, Handler
         // is blocked reading, zero idle threads here,
@@ -235,7 +230,6 @@ public class ThreadStarvationTest
         os.flush();
 
         Thread.sleep(500);
-        System.err.println(_threadPool.dump());
 
         for (ManagedSelector selector : _connector.getSelectorManager().getBeans(ManagedSelector.class))
         {
