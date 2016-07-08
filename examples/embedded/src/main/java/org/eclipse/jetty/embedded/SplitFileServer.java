@@ -55,20 +55,22 @@ public class SplitFileServer
         // our jetty maven testing utilities to get the proper resource
         // directory, you needn't use these, you simply need to supply the paths
         // you are looking to serve content from.
+        ResourceHandler rh0 = new ResourceHandler();
+
         ContextHandler context0 = new ContextHandler();
         context0.setContextPath("/");
-        ResourceHandler rh0 = new ResourceHandler();
         File dir0 = MavenTestingUtils.getTestResourceDir("dir0");
-        rh0.setBaseResource(Resource.newResource(dir0));
+        context0.setBaseResource(Resource.newResource(dir0));
         context0.setHandler(rh0);
 
         // Rinse and repeat the previous item, only specifying a different
         // resource base.
+        ResourceHandler rh1 = new ResourceHandler();
+
         ContextHandler context1 = new ContextHandler();
         context1.setContextPath("/");
-        ResourceHandler rh1 = new ResourceHandler();
         File dir1 = MavenTestingUtils.getTestResourceDir("dir1");
-        rh1.setBaseResource(Resource.newResource(dir1));
+        context1.setBaseResource(Resource.newResource(dir1));
         context1.setHandler(rh1);
 
         // Create a ContextHandlerCollection and set the context handlers to it.
