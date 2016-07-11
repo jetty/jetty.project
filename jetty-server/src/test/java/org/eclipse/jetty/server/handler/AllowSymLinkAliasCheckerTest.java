@@ -59,6 +59,7 @@ public class AllowSymLinkAliasCheckerTest
         data.add(new Object[]{"/testdir/testfile.txt", 200, "text/plain", "Hello TestFile"});
         data.add(new Object[]{"/testdir/testfilelnk.txt", 200, "text/plain", "Hello TestFile"});
         data.add(new Object[]{"/testdirlnk/testfile.txt", 200, "text/plain", "Hello TestFile"});
+        data.add(new Object[]{"/testdirlnk-failing/testfile.txt", 200, "text/plain", "Hello TestFile"});
         data.add(new Object[]{"/testdirlnk/testfilelnk.txt", 200, "text/plain", "Hello TestFile"});
 
         return data;
@@ -96,6 +97,10 @@ public class AllowSymLinkAliasCheckerTest
             // If we used testdir (Path) from above, this symlink
             // would point to an absolute path.
             Files.createSymbolicLink(testdirlnk, new File("testdir").toPath());
+
+            // Failing testcase by clauso, similar to https://github.com/eclipse/jetty.project/issues/687
+            testdirlnk = rootPath.resolve("testdirlnk-failing");
+            Files.createSymbolicLink(testdirlnk, new File("./testdir/").toPath());
         }
         catch (UnsupportedOperationException | FileSystemException e)
         {
