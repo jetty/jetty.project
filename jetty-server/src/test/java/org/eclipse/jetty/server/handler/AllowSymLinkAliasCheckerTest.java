@@ -54,12 +54,16 @@ public class AllowSymLinkAliasCheckerTest
     {
         List<Object[]> data = new ArrayList<>();
 
-        data.add(new Object[]{"/testdir/", 200, "text/html", "Directory: /testdir/"});
-        data.add(new Object[]{"/testdirlnk/", 200, "text/html", "Directory: /testdirlnk/"});
-        data.add(new Object[]{"/testdir/testfile.txt", 200, "text/plain", "Hello TestFile"});
-        data.add(new Object[]{"/testdir/testfilelnk.txt", 200, "text/plain", "Hello TestFile"});
-        data.add(new Object[]{"/testdirlnk/testfile.txt", 200, "text/plain", "Hello TestFile"});
-        data.add(new Object[]{"/testdirlnk/testfilelnk.txt", 200, "text/plain", "Hello TestFile"});
+        String dirs[] = {"/testdir/", "/testdirlnk/", "/testdirprefixlnk/", "/testdirsuffixlnk/",
+                "/testdirwraplnk/"};
+
+        for (String dirname : dirs)
+        {
+            data.add(new Object[]{dirname, 200, "text/html", "Directory: " + dirname});
+            data.add(new Object[]{dirname + "testfile.txt", 200, "text/plain", "Hello TestFile"});
+            data.add(new Object[]{dirname + "testfilelnk.txt", 200, "text/plain", "Hello TestFile"});
+            data.add(new Object[]{dirname + "testfileprefixlnk.txt", 200, "text/plain", "Hello TestFile"});
+        }
 
         return data;
     }
@@ -91,11 +95,17 @@ public class AllowSymLinkAliasCheckerTest
 
         try
         {
-            Path testdirlnk = rootPath.resolve("testdirlnk");
-            // Create a relative symlink testdirlnk -> testdir.
-            // If we used testdir (Path) from above, this symlink
+            // If we used testdir (Path) from above, these symlinks
             // would point to an absolute path.
-            Files.createSymbolicLink(testdirlnk, new File("testdir").toPath());
+
+            // Create a relative symlink testdirlnk -> testdir
+            Files.createSymbolicLink(rootPath.resolve("testdirlnk"), new File("testdir").toPath());
+            // Create a relative symlink testdirprefixlnk -> ./testdir
+            Files.createSymbolicLink(rootPath.resolve("testdirprefixlnk"), new File("./testdir").toPath());
+            // Create a relative symlink testdirsuffixlnk -> testdir/
+            Files.createSymbolicLink(rootPath.resolve("testdirsuffixlnk"), new File("testdir/").toPath());
+            // Create a relative symlink testdirwraplnk -> ./testdir/
+            Files.createSymbolicLink(rootPath.resolve("testdirwraplnk"), new File("./testdir/").toPath());
         }
         catch (UnsupportedOperationException | FileSystemException e)
         {
@@ -114,10 +124,25 @@ public class AllowSymLinkAliasCheckerTest
         try
         {
             Path testfileTxtLnk = testdir.resolve("testfilelnk.txt");
-            // Create a relative symlink testfilelnk.txt -> testfile.txt.
+            // Create a relative symlink testfilelnk.txt -> testfile.txt
             // If we used testfileTxt (Path) from above, this symlink
             // would point to an absolute path.
             Files.createSymbolicLink(testfileTxtLnk, new File("testfile.txt").toPath());
+        }
+        catch (UnsupportedOperationException | FileSystemException e)
+        {
+            // If unable to create symlink, no point testing the rest.
+            // This is the path that Microsoft Windows takes.
+            assumeNoException(e);
+        }
+
+        try
+        {
+            Path testfilePrefixTxtLnk = testdir.resolve("testfileprefixlnk.txt");
+            // Create a relative symlink testfileprefixlnk.txt -> ./testfile.txt
+            // If we used testfileTxt (Path) from above, this symlink
+            // would point to an absolute path.
+            Files.createSymbolicLink(testfilePrefixTxtLnk, new File("./testfile.txt").toPath());
         }
         catch (UnsupportedOperationException | FileSystemException e)
         {
