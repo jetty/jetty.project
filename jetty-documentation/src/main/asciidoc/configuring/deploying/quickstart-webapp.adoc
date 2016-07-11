@@ -77,7 +77,7 @@ Otherwise, create a `webapps/myapp.xml` file as follows:
 ==== Avoiding TLD Scans with precompiled JSPs
 
 Of course precompiling JSPs is an excellent way to improve the start time of a web application.
-Since jetty 9.2.0, the Apache Jasper JSP implementation has been used and has been augmented to allow the TLD scan to be skipped.
+As of Jetty 9.2 the Apache Jasper JSP implementation has been used and has been augmented to allow the TLD scan to be skipped.
 This can be done by adding a `context-param` to the `web.xml` file (this is done automatically by the Jetty Maven JSPC plugin):
 
 [source, xml, subs="{sub-order}"]
