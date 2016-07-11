@@ -96,7 +96,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
                     {
                         Path link=Files.readSymbolicLink(d);    
                         if (!link.isAbsolute())
-                            link=d.getParent().resolve(link);
+                            link=d.getParent().resolve(link).normalize();
                         d=link;
                         linked=true;
                     }
