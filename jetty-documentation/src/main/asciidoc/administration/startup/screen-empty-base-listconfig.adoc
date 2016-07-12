@@ -20,13 +20,13 @@
 
 Java Environment:
 -----------------
- java.home = /lib/jvm/jdk-8u45/jre
+ java.home = /lib/jvm/jdk-8u92/jre
  java.vm.vendor = Oracle Corporation
- java.vm.version = 25.45-b02
+ java.vm.version = 25.45-b14
  java.vm.name = Java HotSpot(TM) 64-Bit Server VM
  java.vm.info = mixed mode
  java.runtime.name = Java(TM) SE Runtime Environment
- java.runtime.version = 1.8.0_45-b14
+ java.runtime.version = 1.8.0_92-b14
  java.io.tmpdir = /tmp
  user.dir = /home/jetty/mybase
  user.language = en
