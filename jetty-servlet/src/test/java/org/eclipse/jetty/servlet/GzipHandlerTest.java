@@ -23,7 +23,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -53,7 +52,7 @@ import org.junit.Test;
 
 public class GzipHandlerTest
 {
-    private static String __content =
+    private static final String __content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
         "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "+
         "habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. "+
@@ -67,9 +66,11 @@ public class GzipHandlerTest
         "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse "+
         "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
 
-    private static String __contentETag = String.format("W/\"%x\"",__content.hashCode());
-    private static String __contentETagGzip = String.format("W/\"%x--gzip\"",__content.hashCode());
-    private static String __icontent = "BEFORE"+__content+"AFTER";
+    private static final String __micro = __content.substring(0,10);
+
+    private static final String __contentETag = String.format("W/\"%x\"",__content.hashCode());
+    private static final String __contentETagGzip = String.format("W/\"%x--gzip\"",__content.hashCode());
+    private static final String __icontent = "BEFORE"+__content+"AFTER";
             
     private Server _server;
     private LocalConnector _connector;
@@ -83,17 +84,36 @@ public class GzipHandlerTest
 
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setExcludedAgentPatterns();
+        gzipHandler.setMinGzipSize(16);
 
         ServletContextHandler context = new ServletContextHandler(gzipHandler,"/ctx");
         ServletHandler servlets = context.getServletHandler();
         
         _server.setHandler(gzipHandler);
         gzipHandler.setHandler(context);
+        servlets.addServletWithMapping(MicroServlet.class,"/micro");
         servlets.addServletWithMapping(TestServlet.class,"/content");
         servlets.addServletWithMapping(ForwardServlet.class,"/forward");
         servlets.addServletWithMapping(IncludeServlet.class,"/include");
         
         _server.start();
+    }
+
+    public static class MicroServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setHeader("ETag",__contentETag);
+            String ifnm = req.getHeader("If-None-Match");
+            if (ifnm!=null && ifnm.equals(__contentETag))
+                response.sendError(304);
+            else
+            {
+                PrintWriter writer = response.getWriter();
+                writer.write(__micro);
+            }
+        }
     }
     
     public static class TestServlet extends HttpServlet
@@ -194,6 +214,33 @@ public class GzipHandlerTest
         assertEquals(__content, testOut.toString("UTF8"));
     }
     
+    @Test
+    public void testGzipNotMicro() throws Exception
+    {
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setURI("/ctx/micro");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("Accept-Encoding","gzip");
+
+        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+
+        assertThat(response.getStatus(),is(200));
+        assertThat(response.get("Content-Encoding"),not(containsString("gzip")));
+        assertThat(response.get("ETag"),is(__contentETag));
+        assertThat(response.get("Vary"),is("Accept-Encoding"));
+
+        InputStream testIn = new ByteArrayInputStream(response.getContentBytes());
+        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+        IO.copy(testIn,testOut);
+
+        assertEquals(__micro, testOut.toString("UTF8"));
+    }
+
     @Test
     public void testETagNotGzipHandler() throws Exception
     {
