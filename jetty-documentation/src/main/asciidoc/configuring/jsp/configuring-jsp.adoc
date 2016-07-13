@@ -179,13 +179,6 @@ By default, the Glassfish JSP container tries to use the compiler that is part o
 If you do not have a full JDK, you can configure the Eclipse Java Compiler that Jetty ships in the distro in `{$jetty.home}/lib/jsp/.`
 You need to define a SystemProperty that prevents the Glassfish JSP engine from defaulting to the in-JVM compiler.
 
-// This is best done when using the standalone distro by uncommenting the System property `org.apache.jasper.compiler.disablejsr199` in the jsp link:#startup-modules[module]:
-//
-// [source,text]
-// ----
-//  -Dorg.apache.jasper.compiler.disablejsr199=true
-// ----
-
 For embedded usages, simply define this as a normal System property.
 
 [[configuring-jsp-for-jetty]]
