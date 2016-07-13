@@ -17,16 +17,9 @@
 [[startup-xml-config]]
 === Managing XML Based Startup Configuration
 
-When you see XML files on the command line for startup of Jetty, they
-are always part of the Jetty IoC Configuration mechanism.
+When you see XML files on the command line for startup of Jetty, they are always part of the Jetty IoC Configuration mechanism.
 
-Internally, Jetty uses these XML files to build up Jetty with the
-features that you wan to use.
+Internally, Jetty uses these XML files to build up Jetty with the features that you wan to use.
 
-The module mechanism present in Jetty determines the load order of the
-XML files.
-
-The Jetty Base and Jetty Home resolution logic also applies, which
-allows you to override a XML file declared by a module with your XML by
-simply having the same named XML in your `${jetty.base}` directory
-location.
+The module mechanism present in Jetty determines the load order of the XML files.
+The Jetty Base and Jetty Home resolution logic also applies, which allows you to override a XML file declared by a module with your XML by simply having the same named XML in your `${jetty.base}/etc` directory location.
