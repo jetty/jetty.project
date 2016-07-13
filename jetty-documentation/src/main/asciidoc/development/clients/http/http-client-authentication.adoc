@@ -15,7 +15,7 @@
 //  ========================================================================
 
 [[http-client-authentication]]
-==== Authentication Support
+=== Authentication Support
 
 Jetty's HTTP client supports the "Basic" and "Digest" authentication mechanisms
 defined by https://tools.ietf.org/html/rfc7235[RFC 7235].

@@ -15,7 +15,7 @@
 //  ========================================================================
 
 [[http-client-proxy]]
-==== Proxy Support
+=== Proxy Support
 
 Jetty's HTTP client can be configured to use proxies to connect to destinations.
 
