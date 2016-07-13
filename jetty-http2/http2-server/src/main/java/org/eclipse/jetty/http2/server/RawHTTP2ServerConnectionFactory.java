@@ -33,6 +33,12 @@ public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnecti
         this.listener = listener;
     }
 
+    public RawHTTP2ServerConnectionFactory(HttpConfiguration httpConfiguration, ServerSessionListener listener, String... protocols)
+    {
+        super(httpConfiguration,protocols);
+        this.listener = listener;
+    }
+
     @Override
     protected ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint)
     {
