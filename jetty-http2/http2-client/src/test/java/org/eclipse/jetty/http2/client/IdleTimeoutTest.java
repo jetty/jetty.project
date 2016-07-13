@@ -94,9 +94,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
         }, new Stream.Listener.Adapter());
 
-        Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-
-        sleep(1000);
+        Assert.assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -136,7 +134,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
         }, new Stream.Listener.Adapter());
 
-        Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -190,7 +188,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(replyLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(replyLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
 
         // Just make sure onClose() has never been called, but don't wait too much
         Assert.assertFalse(closeLatch.await(idleTimeout / 2, TimeUnit.MILLISECONDS));
@@ -233,7 +231,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
         }, new Stream.Listener.Adapter());
 
-        Assert.assertTrue(closeLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(closeLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
         Assert.assertTrue(session.isClosed());
     }
 
@@ -271,7 +269,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
         }, new Stream.Listener.Adapter());
 
-        Assert.assertTrue(closeLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(closeLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -324,7 +322,7 @@ public class IdleTimeoutTest extends AbstractTest
         });
 
         Assert.assertFalse(closeLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-        Assert.assertTrue(replyLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(replyLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -474,8 +472,8 @@ public class IdleTimeoutTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(dataLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-        Assert.assertFalse(timeoutLatch.await(0, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(timeoutLatch.await(1, TimeUnit.SECONDS));
     }
 
     @Test
@@ -521,7 +519,7 @@ public class IdleTimeoutTest extends AbstractTest
         sleep(idleTimeout / 2);
         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.NOOP);
 
-        Assert.assertFalse(resetLatch.await(0, TimeUnit.SECONDS));
+        Assert.assertFalse(resetLatch.await(1, TimeUnit.SECONDS));
     }
 
     @Test

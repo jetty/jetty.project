@@ -30,8 +30,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.util.BufferUtil;
