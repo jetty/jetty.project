@@ -20,4 +20,3 @@
 # -XX:+PrintTenuringDistribution
 # -XX:+PrintCommandLineFlags
 # -XX:+DisableExplicitGC
-# -Dorg.apache.jasper.compiler.disablejsr199=true
