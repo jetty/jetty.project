@@ -18,37 +18,29 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.URI;
+import java.nio.ByteBuffer;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ResponseHeadersTest
 {
-    /** Pretend to be a WebSocket Upgrade (not real) */
-    @SuppressWarnings("serial")
-    private static class SimulateUpgradeServlet extends HttpServlet
+    public static class SimulateUpgradeServlet extends HttpServlet
     {
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
@@ -61,35 +53,39 @@ public class ResponseHeadersTest
         }
     }
 
+    public static class MultilineResponseValueServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            // The bad use-case
+            response.setHeader("X-example", req.getPathInfo());
+
+            // The correct use
+            response.setContentType("text/plain");
+            response.setCharacterEncoding("utf-8");
+            response.getWriter().println("Got request uri - " + req.getRequestURI());
+        }
+    }
+
     private static Server server;
-    private static ServerConnector connector;
-    private static URI serverUri;
+    private static LocalConnector connector;
 
     @BeforeClass
     public static void startServer() throws Exception
     {
-        // Configure Server
         server = new Server();
-        connector = new ServerConnector(server);
+        connector = new LocalConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
         server.setHandler(context);
 
-        // Serve capture servlet
-        context.addServlet(new ServletHolder(new SimulateUpgradeServlet()),"/*");
+        context.addServlet(new ServletHolder(new SimulateUpgradeServlet()),"/ws/*");
+        context.addServlet(new ServletHolder(new MultilineResponseValueServlet()),"/multiline/*");
 
-        // Start Server
         server.start();
-
-        String host = connector.getHost();
-        if (host == null)
-        {
-            host = "localhost";
-        }
-        int port = connector.getLocalPort();
-        serverUri = new URI(String.format("http://%s:%d/",host,port));
     }
 
     @AfterClass
@@ -106,62 +102,39 @@ public class ResponseHeadersTest
     }
 
     @Test
-    public void testResponseHeaderFormat() throws IOException
+    public void testResponseWebSocketHeaderFormat() throws Exception
     {
-        Socket socket = new Socket();
-        SocketAddress endpoint = new InetSocketAddress(serverUri.getHost(),serverUri.getPort());
-        socket.connect(endpoint);
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/ws/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Host", "test");
 
-        StringBuilder req = new StringBuilder();
-        req.append("GET / HTTP/1.1\r\n");
-        req.append(String.format("Host: %s:%d\r\n",serverUri.getHost(),serverUri.getPort()));
-        req.append("\r\n");
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
-        OutputStream out = null;
-        InputStream in = null;
-        try
-        {
-            out = socket.getOutputStream();
-            in = socket.getInputStream();
-
-            // Write request
-            out.write(req.toString().getBytes());
-            out.flush();
-
-            // Read response
-            String respHeader = readResponseHeader(in);
-
-            // Now test for properly formatted HTTP Response Headers.
-            Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 101 Switching Protocols"));
-            Assert.assertThat("Response Header Upgrade",respHeader,containsString("Upgrade: WebSocket\r\n"));
-            Assert.assertThat("Response Header Connection",respHeader,containsString("Connection: Upgrade\r\n"));
-        }
-        finally
-        {
-            IO.close(in);
-            IO.close(out);
-            socket.close();
-        }
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code",response.getStatus(),is(101));
+        assertThat("Response Header Upgrade",response.get("Upgrade"),is("WebSocket"));
+        assertThat("Response Header Connection",response.get("Connection"),is("Upgrade"));
     }
 
-    private String readResponseHeader(InputStream in) throws IOException
+    @Test
+    public void testMultilineResponseHeaderValue() throws Exception
     {
-        InputStreamReader isr = new InputStreamReader(in);
-        BufferedReader reader = new BufferedReader(isr);
-        StringBuilder header = new StringBuilder();
-        // Read the response header
-        String line = reader.readLine();
-        Assert.assertNotNull(line);
-        Assert.assertThat(line,startsWith("HTTP/1.1 "));
-        header.append(line).append("\r\n");
-        while ((line = reader.readLine()) != null)
-        {
-            if (line.trim().length() == 0)
-            {
-                break;
-            }
-            header.append(line).append("\r\n");
-        }
-        return header.toString();
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/multiline/%0A%20Content-Type%3A%20image/png%0A%20Content-Length%3A%208%0A%20%0A%20yuck<!--");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code",response.getStatus(),is(200));
+        assertThat("Response Header Content-Type",response.get("Content-Type"),is("text/plain;charset=UTF-8"));
     }
 }

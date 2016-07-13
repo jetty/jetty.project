@@ -472,6 +472,8 @@ public class IdleTimeoutTest extends AbstractTest
                     @Override
                     public void succeeded()
                     {
+                        // Idle timeout should not fire while receiving.
+                        Assert.assertEquals(1, timeoutLatch.getCount());
                         dataLatch.countDown();
                     }
                 });
@@ -479,7 +481,8 @@ public class IdleTimeoutTest extends AbstractTest
         });
 
         Assert.assertTrue(dataLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
-        Assert.assertFalse(timeoutLatch.await(1, TimeUnit.SECONDS));
+        // The server did not send a response, so it will eventually timeout.
+        Assert.assertTrue(timeoutLatch.await(5 * idleTimeout, TimeUnit.SECONDS));
     }
 
     @Test
@@ -582,7 +585,7 @@ public class IdleTimeoutTest extends AbstractTest
         ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1);
         stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
 
-        Assert.assertTrue(latch.await(555, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     private void sleep(long value)
