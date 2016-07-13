@@ -32,6 +32,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 
@@ -92,6 +93,7 @@ public class GzipHandlerTest
         _server.setHandler(gzipHandler);
         gzipHandler.setHandler(context);
         servlets.addServletWithMapping(MicroServlet.class,"/micro");
+        servlets.addServletWithMapping(MicroChunkedServlet.class,"/microchunked");
         servlets.addServletWithMapping(TestServlet.class,"/content");
         servlets.addServletWithMapping(ForwardServlet.class,"/forward");
         servlets.addServletWithMapping(IncludeServlet.class,"/include");
@@ -113,6 +115,17 @@ public class GzipHandlerTest
                 PrintWriter writer = response.getWriter();
                 writer.write(__micro);
             }
+        }
+    }
+
+    public static class MicroChunkedServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            PrintWriter writer = response.getWriter();
+            writer.write(__micro);
+            response.flushBuffer();
         }
     }
     
@@ -235,6 +248,35 @@ public class GzipHandlerTest
         assertThat(response.get("Vary"),is("Accept-Encoding"));
 
         InputStream testIn = new ByteArrayInputStream(response.getContentBytes());
+        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+        IO.copy(testIn,testOut);
+
+        assertEquals(__micro, testOut.toString("UTF8"));
+    }
+
+    @Test
+    public void testGzipNotMicroChunked() throws Exception
+    {
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setURI("/ctx/microchunked");
+        request.setVersion("HTTP/1.1");
+        request.setHeader("Host","tester");
+        request.setHeader("Accept-Encoding","gzip");
+
+        ByteBuffer rawresponse = _connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(rawresponse));
+        response = HttpTester.parseResponse(rawresponse);
+
+        assertThat(response.getStatus(),is(200));
+        assertThat(response.get("Transfer-Encoding"),containsString("chunked"));
+        assertThat(response.get("Content-Encoding"),containsString("gzip"));
+        assertThat(response.get("Vary"),is("Accept-Encoding"));
+
+        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn,testOut);
 
