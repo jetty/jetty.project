@@ -15,7 +15,7 @@
 //  ========================================================================
 
 [[http-client-cookie]]
-==== Cookies Support
+=== Cookies Support
 
 Jetty HTTP client supports cookies out of the box.
 The `HttpClient` instance receives cookies from HTTP responses and stores them

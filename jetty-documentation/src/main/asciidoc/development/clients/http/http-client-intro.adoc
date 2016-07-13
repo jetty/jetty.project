@@ -30,7 +30,8 @@ Jetty's HTTP client offers also a synchronous API, that is a programming interfa
 where the thread that issued the request blocks until the request/response
 conversation is complete.
 
-Jetty's HTTP client supports different transports: HTTP/1.1, FastCGI and HTTP/2.
+Jetty's HTTP client supports different <<http-client-transport,transports>>:
+HTTP/1.1, FastCGI and HTTP/2.
 This means that the semantic of a HTTP request (that is, "GET me the resource
 `/index.html`") can be carried over the network in different formats.
 The most common and default format is HTTP/1.1.
