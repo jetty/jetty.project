@@ -24,6 +24,7 @@ import java.util.List;
 
 import javax.net.ssl.SSLEngine;
 
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -110,10 +111,15 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
             }
         }
 
-        // if default protocol is not set, then it is the first protocol given
+        // if default protocol is not set, then it is either HTTP/1.1 or 
+        // the first protocol given
         String dft = defaultProtocol;
         if (dft == null && !negotiated.isEmpty())
+        {
+            if (negotiated.contains(HttpVersion.HTTP_1_1.asString()))
+                dft = HttpVersion.HTTP_1_1.asString();
             dft = negotiated.get(0);
+        }
 
         SSLEngine engine = null;
         EndPoint ep = endPoint;
