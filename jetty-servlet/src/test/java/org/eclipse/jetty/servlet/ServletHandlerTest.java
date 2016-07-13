@@ -26,7 +26,6 @@ import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
 
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.junit.Before;
 import org.junit.Test;
 
