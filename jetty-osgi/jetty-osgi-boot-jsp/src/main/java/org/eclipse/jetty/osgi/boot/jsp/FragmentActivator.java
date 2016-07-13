@@ -47,9 +47,6 @@ public class FragmentActivator implements BundleActivator
      */
     public void start(BundleContext context) throws Exception
     {
-        //jsr199 compilation does not work in osgi
-        System.setProperty("org.apache.jasper.compiler.disablejsr199", Boolean.TRUE.toString());
-        
         //set up some classes that will look for bundles with tlds that must be converted
         //to urls and treated as if they are on the Jetty container's classpath so that 
         //jasper can deal with them
