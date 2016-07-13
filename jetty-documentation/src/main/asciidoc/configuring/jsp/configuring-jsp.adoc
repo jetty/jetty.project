@@ -17,73 +17,43 @@
 [[jsp-support]]
 === Configuring JSP
 
-This document provides information about configuring Java Server Pages
-for Jetty.
+This document provides information about configuring Java Server Pages (JSP) for Jetty.
 
 [[which-jsp-implementation]]
 ==== Which JSP Implementation
 
-From jetty-9.2 onwards, we are using Jasper from
-http://tomcat.apache.org/tomcat-8.0-doc/jasper-howto.html[Apache] as the
-default JSP container implementation. In previous versions we used
-Jasper from http://jsp.java.net[Glassfish], and if you wish to, you can
-continue to do so.
+As of Jetty 9.2, Jetty is using Jasper from http://tomcat.apache.org/tomcat-8.0-doc/jasper-howto.html[Apache] as the default JSP container implementation.
+In previous versions Jasper from http://jsp.java.net[Glassfish] was used, and if you wish to, you can continue to do so.
 
-The jetty-distribution by default enables the jsp
-link:#startup-modules[module], and by default, this
-link:#startup-modules[module] is set to Apache Jasper. To change to use
-Glassfish Jasper instead, edit the `$JETTY_HOME/start.d/jsp.mod` file
-and change the line indicated:
+By default the Jetty distribution enables the JSP link:#startup-modules[module], and by default, this link:#startup-modules[module] is set to Apache Jasper.
+To change to use Glassfish Jasper instead, edit the `{jetty.home}/modules/jsp.mod` file and change the line indicated:
 
 [source, plain, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-distribution/src/main/resources/modules/jsp.mod[]
 ----
 
-Note that the availability of some JSP features may depend on which JSP
-container implementation you are using. Note also that it may not be
-possible to precompile your jsps with one container and deploy to the
-other.
+Note that the availability of some JSP features may depend on which JSP container implementation you are using.
+Note also that it may not be possible to precompile your JSPs with one container and deploy to the other.
 
 ===== JSPs and Embedding
 
-If you have an embedded setup for your webapp and wish to use jsps, you
-will need to ensure that a JSP engine is correctly initialized.
+If you have an embedded setup for your webapp and wish to use JSPs, you will need to ensure that a JSP engine is correctly initialized.
 
-For both Apache and Glassfish JSP engines, a Servlet Specification 3.1
-style link:#servlet-container-initializers[ServletContainerInitializer]
-is used to accomplish this. You will need to ensure that this
-ServletContainerInitializer is run by jetty. Perhaps the easiest way to
-do this is to enable annotations processing so that jetty automatically
-discovers and runs it. The link:#embedded-examples[Embedded Examples]
-section includes a link:#embedded-webapp-jsp[worked code example] of how
-to do this.
+For both Apache and Glassfish JSP engines, a Servlet Specification 3.1 style link:#servlet-container-initializers[ServletContainerInitializer] is used to accomplish this.
+You will need to ensure that this ServletContainerInitializer is run by jetty. Perhaps the easiest way to do this is to enable annotations processing so that Jetty automatically discovers and runs it.
+The link:#embedded-examples[Embedded Examples] section includes a link:#embedded-webapp-jsp[worked code example] of how to do this.
 
-Alternatively, you can manually wire in the appropriate
-ServletContainerInitializer as shown in the
-https://github.com/jetty-project/embedded-jetty-jsp/blob/master/src/main/java/org/eclipse/jetty/demo/Main.java[embedded-jetty-jsp]
-example on https://github.com/jetty-project[github], in which case you
-will not need the jetty-annotations jar on your classpath, nor include
-the AnnotationConfiguration in the list of
-link:#webapp-configurations[configuration classes].
+Alternatively, you can manually wire in the appropriate ServletContainerInitializer as shown in the https://github.com/jetty-project/embedded-jetty-jsp/blob/master/src/main/java/org/eclipse/jetty/demo/Main.java[embedded-jetty-jsp] example on https://github.com/jetty-project[GitHub], in which case you will not need the jetty-annotations jar on your classpath, nor include the AnnotationConfiguration in the list of link:#webapp-configurations[configuration classes].
 
 ==== Precompiling JSPs
 
-You can either follow the instructions on precompilation provided by the
-JSP container of your choice (either http://jsp.java.net[Glassfish] or
-http://tomcat.apache.org/tomcat-8.0-doc/jasper-howto.html[Apache]), or
-if you are using maven for your builds, you can use the
-link:#jetty-jspc-maven-plugin[jetty-jspc-maven] plugin to do it for you.
+You can either follow the instructions on precompilation provided by the JSP container of your choice (either http://jsp.java.net[Glassfish] or http://tomcat.apache.org/tomcat-8.0-doc/jasper-howto.html[Apache]), or if you are using maven for your builds, you can use the link:#jetty-jspc-maven-plugin[jetty-jspc-maven] plugin to do it for you.
 
-If you have precompiled your jsps, and have customized the output
-package prefix (which is `org.apache.jsp` by default), you should
-configure your webapp context to tell Jetty about this custom package
-name. You can do this using a servlet context init-param called
-`org.eclipse.jetty.servlet.jspPackagePrefix`.
+If you have precompiled your JSPs, and have customized the output package prefix (which is `org.apache.jsp` by default), you should configure your webapp context to tell Jetty about this custom package name.
+You can do this using a servlet context init-param called `org.eclipse.jetty.servlet.jspPackagePrefix`.
 
-For example, suppose you have precompiled your jsps with the custom
-package prefix of `com.acme`, then you would add the following lines to
-your web.xml file:
+For example, suppose you have precompiled your JSPs with the custom package prefix of `com.acme`, then you would add the following lines to your `web.xml` file:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -95,22 +65,19 @@ your web.xml file:
 
 ____
 [NOTE]
-Both jetty maven plugins - link:#jetty-jspc-maven-plugin[jetty-jspc-maven-plugin] and the link:#jetty-maven-plugin[jetty-maven-plugin] - will only use Apache Jasper.
+Both Jetty Maven plugins - link:#jetty-jspc-maven-plugin[jetty-jspc-maven-plugin] and the link:#jetty-maven-plugin[jetty-maven-plugin] - will only use Apache Jasper.
 ____
 
 [[compiling-jsps]]
 ==== Runtime Compiling JSPs
 
-Depending on which JSP container you elect to use, the configuration and
-compilation characteristics will be different.
+Depending on which JSP container you elect to use, the configuration and compilation characteristics will be different.
 
 ===== Apache JSP Container
 
-By default, the Apache JSP container will look for the Eclipse Java
-Compiler (jdt). The jetty distribution ships a copy of this in
-$JETTY_HOME/lib/apache-jsp. If you wish to use a different compiler, you
-will need to configure the `compilerClassName` init-param on the
-`JspServlet` with the name of the class.
+By default, the Apache JSP container will look for the Eclipse Java Compiler (jdt).
+The Jetty distribution ships a copy of this in `{$jetty.home}/lib/apache-jsp`.
+If you wish to use a different compiler, you will need to configure the `compilerClassName` init-param on the `JspServlet` with the name of the class.
 
 .Understanding Apache JspServlet Parameters
 [cols=",,,",options="header",]
@@ -203,44 +170,32 @@ resource usage. |- |–
 
 ===== Glassfish JSP Container
 
-To compile `.jsp` files into Java classes, you need a Java compiler. You
-can acquire a Java compiler from the JVM if you are using a full JDK, or
-from a third party Jar.
+To compile `.jsp` files into Java classes, you need a Java compiler.
+You can acquire a Java compiler from the JVM if you are using a full JDK, or from a third party Jar.
 
-By default, the Glassfish JSP container tries to use the compiler that
-is part of the JDK. *NOTE:* when using the JDK compiler, the system does
-_not_ save your class files to disk unless you use the `saveBytecode`
-init-param as described below.
+By default, the Glassfish JSP container tries to use the compiler that is part of the JDK.
+*NOTE:* when using the JDK compiler, the system does _not_ save your class files to disk unless you use the `saveBytecode` init-param as described below.
 
-If you do not have a full JDK, you can configure the Eclipse Java
-Compiler that Jetty ships in the distro in `$JETTY_HOME/lib/jsp/.`You
-need to define a SystemProperty that prevents the Glassfish JSP engine
-from defaulting to the in-JVM compiler.
+If you do not have a full JDK, you can configure the Eclipse Java Compiler that Jetty ships in the distro in `{$jetty.home}/lib/jsp/.`
+You need to define a SystemProperty that prevents the Glassfish JSP engine from defaulting to the in-JVM compiler.
 
-This is best done when using the standalone distro by uncommenting the
-System property `org.apache.jasper.compiler.disablejsr199` in the jsp
-link:#startup-modules[module]:
+// This is best done when using the standalone distro by uncommenting the System property `org.apache.jasper.compiler.disablejsr199` in the jsp link:#startup-modules[module]:
+//
+// [source,text]
+// ----
+//  -Dorg.apache.jasper.compiler.disablejsr199=true
+// ----
 
-[source,text]
-----
-
- -Dorg.apache.jasper.compiler.disablejsr199=true
-
-      
-----
-
-Or for embedded usages, simply define this as a normal System property.
+For embedded usages, simply define this as a normal System property.
 
 [[configuring-jsp-for-jetty]]
 ===== Configuration
 
-The JSP engine has many configuration parameters. Some parameters affect
-only precompilation, and some affect runtime recompilation checking.
+The JSP engine has many configuration parameters.
+Some parameters affect only precompilation, and some affect runtime recompilation checking.
 Parameters also differ among the various versions of the JSP engine.
-This page lists the configuration parameters, their meanings, and their
-default settings. Set all parameters on the
-`org.apache.jasper.JspServlet` instance defined in the
-link:#webdefault-xml[`webdefault.xml`] file.
+This page lists the configuration parameters, their meanings, and their default settings.
+Set all parameters on the `org.apache.jasper.JspServlet` instance defined in the link:#webdefault-xml[`webdefault.xml`] file.
 
 ____
 [NOTE]
@@ -325,10 +280,8 @@ and `development=false`. |– |–
 mapping the name of the JSP to class and JSP file. |– |–
 |=======================================================================
 
-Much confusion generally ensues about the `development`, `checkInterval`
-and `
-      modificationTestInterval` parameters and JSP runtime
-recompilation. Here is a factoring out of the various options:
+Much confusion generally ensues about the `development`, `checkInterval` and `modificationTestInterval` parameters and JSP runtime recompilation.
+Here is a factoring out of the various options:
 
 * Check the JSP files for possible recompilation on every request:
 +
@@ -339,15 +292,12 @@ recompilation. Here is a factoring out of the various options:
         <param-name>development></param-name>
         <param-value>true></param-value>
 </init-param>
-
-        
 ----
-* Only check approximately every N seconds, where a request triggers the
-time-lapse calculation. This example checks every 60 seconds:
+* Only check approximately every N seconds, where a request triggers the time-lapse calculation.
+This example checks every 60 seconds:
 +
 [source, xml, subs="{sub-order}"]
 ----
-
 <init-param>
         <param-name>development></param-name>
         <param-value>true></param-value>
@@ -356,30 +306,22 @@ time-lapse calculation. This example checks every 60 seconds:
         <param-name>modificationTestInterval></param-name>
         <param-value>60></param-value>
 </init-param>
-
-        
 ----
-* Do no checking whatsoever, but still compile the JSP on the very first
-hit. (Be aware that this ''reload-interval'' parameter is shorthand for
-a ''development=false'' and ''checkInterval=0'' combination.):
+* Do no checking whatsoever, but still compile the JSP on the very first hit (Be aware that this `reload-interval` parameter is shorthand for
+a `development=false` and `checkInterval=0` combination):
 +
 [source, xml, subs="{sub-order}"]
 ----
-
 <init-param>
         <param-name>reload-interval></param-name>
         <param-value>-1></param-value>
 </init-param>
-
-        
 ----
-* Don't do any request-time checking, but instead start a background
-thread to do checks every N seconds. This example checks every 60
-seconds:
+* Don't do any request-time checking, but instead start a background thread to do checks every N seconds.
+This example checks every 60 seconds:
 +
 [source, xml, subs="{sub-order}"]
 ----
-
 <init-param>
         <param-name>development></param-name>
         <param-value>false></param-value>
@@ -388,28 +330,21 @@ seconds:
          <param-name>checkInterval></param-name>
          <param-value>60></param-value>
 </init-param>
- 
-        
 ----
 
 [[modifying-configuration]]
 ==== Modifying Configuration
 
-Regardless of which JSP container you are using, there are several
-options for modifying the JspServlet configuration.
+Regardless of which JSP container you are using, there are several options for modifying the JspServlet configuration.
 
 [[overriding-webdefault.xml]]
 ===== Overriding `webdefault.xml`
 
-You can make a copy of the
-link:#webdefault-xml[$JETTY_HOME/etc/webdefault.xml] that ships with
-Jetty, apply your changes, and use it instead of the shipped version.
-The example below shows how to do this when using the Jetty Maven
-plugin.
+You can make a copy of the link:#webdefault-xml[{$jetty.home}/etc/webdefault.xml] that ships with Jetty, apply your changes, and use it instead of the shipped version.
+The example below shows how to do this when using the Jetty Maven plugin.
 
 [source, xml, subs="{sub-order}"]
 ----
-
   <plugin>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-maven-plugin</artifactId>
@@ -418,44 +353,32 @@ plugin.
         <defaultsDescriptor>src/main/resources/webdefault.xml</defaultsDescriptor>
       </webApp>
   </plugin>
-        
 ----
 
-If you are using the Jetty distro, and you want to change the JSP
-settings for just one or a few of your webapps, copy the
-`$JETTY_HOME/etc/webdefault.xml` file somewhere, modify it, and then use
-a link:#intro-jetty-configuration-contexts[context xml] file to set this
-file as the defaultsDescriptor for your webapp. Here's a snippet:
+If you are using the Jetty distribution, and you want to change the JSP settings for just one or a few of your webapps, copy the `{$jetty.home}/etc/webdefault.xml` file somewhere, modify it, and then use a link:#intro-jetty-configuration-contexts[context xml] file to set this file as the `defaultsDescriptor` for your webapp. Here's a snippet:
 
 [source, xml, subs="{sub-order}"]
 ----
-
  <Configure class=>"org.eclipse.jetty.webapp.WebAppContext">
- 
+
    <Set name=>"contextPath">/foo</Set>
    <Set name=>"war"><SystemProperty name=>"jetty.home" >default=>"."/>/webapps/foobar.war</Set>
    <Set name=>"defaultsDescriptor">/home/smith/dev/webdefault.xml</Set>
-  
- </Configure>
 
-        
+ </Configure>
 ----
 
-If you want to change the JSP settings for all webapps, edit
-the` $JETTY_HOME/etc/webdefaults.xml` file directly instead.
+If you want to change the JSP settings for all webapps, edit the `{$jetty.home}/etc/webdefaults.xml` file directly instead.
 
 [[configuring-jsp-servlet-in-web.xml]]
 ===== Configuring the JSP Servlet in `web.xml`
 
-Another option is to add an entry for the JSPServlet to the
-`WEB-INF/web.xml` file of your webapp and change or add init-params. You
-may also add (but not remove) servlet-mappings. You can use the entry in
-link:#webdefault-xml[$JETTY_HOME/etc/webdefault.xml] as a starting
-point.
+Another option is to add an entry for the JSPServlet to the `WEB-INF/web.xml` file of your webapp and change or add init-params.
+You may also add (but not remove) servlet-mappings.
+You can use the entry in link:#webdefault-xml[{$jetty.home}/etc/webdefault.xml] as a starting point.
 
 [source, xml, subs="{sub-order}"]
 ----
-
  <servlet id="jsp">
      <servlet-name>jsp</servlet-name>
      <servlet-class>org.apache.jasper.servlet.JspServlet</servlet-class>
@@ -472,10 +395,10 @@ point.
          <param-value>>true</param-value>
      </init-param>
      ...
-     
+
      <load-on-startup>0</load-on-startup>
    </servlet>
- 
+
    <servlet-mapping>
      <servlet-name>jsp</servlet-name>
      <url-pattern>*.jsp</url-pattern>
@@ -487,65 +410,42 @@ point.
      <url-pattern>*.JSPX</url-pattern>
      <url-pattern>*.XSP</url-pattern>
    </servlet-mapping>
-   
+
    <servlet id="my-servlet">
      <servlet-name>myServlet</servlet-name>
      <servlet-class>com.acme.servlet.MyServlet</servlet-class>
       ...
-
-
-        
 ----
 
 [[using-jstl-taglibs-for-jetty7-jetty8]]
 ==== Using JSTL Taglibs
 
-The JavaServer Pages Standlard Tag Library (JSTL) is part of the Jetty
-distribution and is automatically put on the classpath when you
-link:#which-jsp-implementation[select your flavour of JSP]. It is also
-automatically on the classpath for the jetty maven plugin, which uses
-the Apache JSP engine as of jetty-9.2.
+The JavaServer Pages Standlard Tag Library (JSTL) is part of the Jetty distribution and is automatically put on the classpath when you link:#which-jsp-implementation[select your flavour of JSP].
+It is also automatically on the classpath for the Jetty Maven plugin, which uses the Apache JSP engine as of Jetty 9.2.
 
 ===== Embedding
 
-If you are using jetty in an embedded scenario, and you need to use
-JSTL, then you must ensure that the JSTL jars are included on the
-_container's_ classpath - that is the classpath that is the _parent_ of
-the webapp's classpath. This is a restriction that arises from the Java
-EE specification.
+If you are using Jetty in an embedded scenario, and you need to use JSTL, then you must ensure that the JSTL jars are included on the _container's_ classpath - that is the classpath that is the _parent_ of the webapp's classpath.
+This is a restriction that arises from the JavaEE specification.
 
-The jars that you will include will depend on the flavour of JSP that
-you are using.
+The jars that you will include will depend on the flavor of JSP that you are using.
 
 ====== With Glassfish JSP
 
-You will need to put the jstl jars that are present in
-$jetty.home/lib/jsp onto the _container's_ classpath. The Glassfish JSP
-engine will find the jstl tag definitions inside these jars during
-startup.
+You will need to put the JSTL jars that are present in `{$jetty.home/lib/jsp}` onto the _container's_ classpath.
+The Glassfish JSP engine will find the JSTL tag definitions inside these jars during startup.
 
 ====== With Apache JSP
 
-You will need to put the jars that are present in the
-$jetty.home/lib/apache-jstl directory onto the _container's_ classpath.
-The Apache JSP engine will find the jstl tag definitions inside these
-jars during startup.
+You will need to put the jars that are present in the `{$jetty.home}/lib/apache-jstl` directory onto the _container's_ classpath.
+The Apache JSP engine will find the JSTL tag definitions inside these jars during startup.
 
-As an efficiency enhancement, you can have jetty examine the jstl jars
-to find the tags, and pre-feed them into the Apache JSP engine. This is
-more efficient, because jetty will only scan the jars you tell it to,
-whereas the Apache JSP engine will scan every jar, which can be
-time-consuming in applications with a lot of jars on the container
-classpath.
+As an efficiency enhancement, you can have jetty examine the JSTL jars to find the tags, and pre-feed them into the Apache JSP engine.
+This is more efficient, because jetty will only scan the jars you tell it to, whereas the Apache JSP engine will scan every jar, which can be time-consuming in applications with a lot of jars on the container classpath.
 
-To take advantage of this efficiency enhancement, set up the
-link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern]
-to include a
-http://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html[pattern]
-that will match the names of the jstl jars. The
-link:#embedded-examples[Embedded Examples] section includes a
-link:#embedded-webapp-jsp[worked code example] of how to do this, here's
-a snippet from it:
+To take advantage of this efficiency enhancement, set up the link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] to include a http://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html[pattern] that will match the names of the JSTL jars.
+The link:#embedded-examples[Embedded Examples] section includes a link:#embedded-webapp-jsp[worked code example] of how to do this.
+Below is a snippet from the example:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -555,29 +455,22 @@ a snippet from it:
 [[using-jsf-taglibs]]
 ==== Using JSF Taglibs
 
-The following sections provide information about using JSF taglibs with
-Jetty Standalone and the Jetty Maven Plugin.
+The following sections provide information about using JSF TagLibs with Jetty Standalone and the Jetty Maven Plugin.
 
 [[using-jsf-taglibs-with-jetty-standalone]]
 ===== Using JSF Taglibs with Jetty Distribution
 
-If you want to use JSF with your webapp, you need to copy the JSF
-implementation Jar (whichever Jar contains the `META-INF/*.tld` files
-from your chosen JSF implementation) into Jetty's shared container lib
-directory. You can either put them into the lib directory matching your
-JSP container of choice (either $JETTY_HOME/lib/jsp for Glassfish JSP,
-or $JETTY_HOME/lib/apache-jsp for Apache JSP), or put them into
-$JETTY_HOME/lib/ext.
+If you want to use JSF with your webapp, you need to copy the JSF implementation Jar (whichever Jar contains the `META-INF/*.tld` files from your chosen JSF implementation) into Jetty's shared container lib directory.
+You can either put them into the lib directory matching your JSP container of choice (either `{$jetty.home}/lib/jsp` for Glassfish JSP, or `{$jetty.home}/lib/apache-jsp` for Apache JSP), or put them into `{$jetty.home}/lib/ext`.
 
 [[using-jsf-taglibs-with-jetty-maven-plugin]]
 ===== Using JSF Taglibs with Jetty Maven Plugin
 
-You should make your JSF jars dependencies of the plugin and _not_ the
-webapp itself. For example:
+You should make your JSF jars dependencies of the plugin and _not_ the webapp itself.
+For example:
 
 [source, xml, subs="{sub-order}"]
 ----
-
    <plugin>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-maven-plugin</artifactId>
@@ -600,6 +493,4 @@ webapp itself. For example:
      </dependency>
     </dependencies>
   </plugin>
-
-        
 ----

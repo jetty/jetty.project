@@ -17,53 +17,40 @@
 [[startup-base-and-home]]
 === Managing Jetty Base and Jetty Home
 
-Starting with Jetty 9.1, it is now possible to maintain a separation
-between the binary installation of the standalone Jetty (known as
-`${jetty.home}`), and the customizations for your specific environment
-(known as `${jetty.base}`).
+Starting with Jetty 9.1, it is possible to maintain a separation between the binary installation of the standalone Jetty (known as `${jetty.home}`), and the customizations for your specific environment (known as `${jetty.base}`).
 
 Jetty Base::
-  Also known as the `${jetty.base}` property
-  +
-  This is the location for your configurations and customizations to the
-  Jetty distribution.
+  * Also known as the `${jetty.base}` property.
+  * This is the location for your configurations and customizations to the Jetty distribution.
 Jetty Home::
-  Also known as the `${jetty.home}` property.
-  +
-  This is the location for the Jetty distribution binaries, default XML
-  IoC configurations, and default module definitions.
+  * Also known as the `${jetty.home}` property.
+  * This is the location for the Jetty distribution binaries, default XML IoC configurations, and default module definitions.
 
 Potential configuration is resolved from these 2 directory locations.
 
 Check Jetty Base::
-  If the referenced configuration exists, relative to the defined Jetty
-  Base, use it.
+  If the referenced configuration exists, relative to the defined Jetty base, use it.
 Check Jetty Home::
-  If the referenced configuration exists, relative to the defined Jetty
-  Home, use it.
+  If the referenced configuration exists, relative to the defined Jetty home, use it.
 Use java.io.File(String pathname) Logic::
-  Lastly, use the reference as a `java.io.File(String
-          pathname)` reference, following the default resolution rules
-  outlined by that constructor.
-  +
-  In brief, the reference will be used as-is, be it relative (to current
-  working directory, aka $\{user.dir}) or absolute path, or even network
-  reference (such as on Windows and use of UNC paths).
+  Lastly, use the reference as a `java.io.File(String pathname)` reference, following the default resolution rules outlined by that constructor.
 
-For more details on how startup with start.jar works, see
-link:#execute-start-jar[Using start.jar: Executing]
++
+In brief, the reference will be used as-is, be it relative (to current working directory, aka $\{user.dir}) or absolute path, or even network reference (such as on Windows and use of UNC paths).
+
+For more details on how startup with start.jar works, see link:#execute-start-jar[Using start.jar: Executing]
 
 [[demo-base]]
 ==== Demo-Base in the Jetty Distribution
 
-The Jetty Distribution comes with an example $\{jetty.base} which
-enables the various demonstration webapps and server configurations.
+The Jetty Distribution comes with an example `${jetty.base}` which enables the various demonstration webapps and server configurations.
 
 How to use the demo-base directory as a Jetty Base directory.
 
 [source, screen, subs="{sub-order}"]
 ....
 [jetty-distribution-{VERSION}]$ ls -la
+
 total 496
 drwxrwxr-x 11 user group   4096 Oct  8 15:23 ./
 drwxr-xr-x 14 user group   4096 Oct  8 13:04 ../
@@ -82,8 +69,10 @@ drwxrwxr-x  2 user group   4096 Oct  8 06:54 start.d/
 -rw-rw-r--  1 user group  71921 Sep 30 19:55 start.jar
 -rw-rw-r--  1 user group 336468 Sep 30 19:55 VERSION.txt
 drwxrwxr-x  2 user group   4096 Oct  8 06:54 webapps/
+
 [jetty-distribution-{VERSION}]$ cd demo-base
 [demo-base]$ java -jar $JETTY_HOME/start.jar
+
 2013-10-16 09:08:47.800:WARN::main: demo test-realm is deployed. DO NOT USE IN PRODUCTION!
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/jetty-distribution-{VERSION}/demo-base/webapps/] at interval 1
@@ -91,11 +80,9 @@ drwxrwxr-x  2 user group   4096 Oct  8 06:54 webapps/
 ...
 ....
 
-As you can see above, you are executing the demo-base configuration
-using the Jetty Base concepts.
+As you can see above, you are executing the demo-base configuration using the Jetty base concepts.
 
-If you want to see what the Jetty Base looks like without executing
-Jetty, you can simply list the configuration
+If you want to see what the Jetty base looks like without executing Jetty, you can simply list the configuration
 
 [source, screen, subs="{sub-order}"]
 ....
@@ -210,22 +197,17 @@ Jetty Active XMLs:
  ${jetty.base}/etc/test-realm.xml
 ....
 
-This demonstrates the powerful `--list-config` command line option and
-how you can use it to see what the configuration will look like when
-starting Jetty. From the Java environment, to the system properties, to
-the classpath, and finally the Active Jetty IoC XML used to build up
-your Jetty server configuration.
+This demonstrates the powerful `--list-config` command line option and how you can use it to see what the configuration will look like when starting Jetty.
+From the Java environment, to the system properties, to the classpath, and finally the Active Jetty IoC XML used to build up the Jetty server configuration.
 
-Of note, is that the output will make it known where the configuration
-elements came from, be it in either in `${jetty.home}` or
-`${jetty.base}`.
+Of note, is that the output will make it known where the configuration elements came from, be it in either in `${jetty.home}` or `${jetty.base}`.
 
-If you look at the $\{jetty.base}/start.ini you will see something like
-the following.
+If you look at the `${jetty.base}/start.ini` you will see a layout similar to below.
 
 [source, screen, subs="{sub-order}"]
 ....
 [my-base]$ cat start.ini
+
 # Enable security via jaas, and configure it
 --module=jaas
 jaas.login.conf=etc/login.conf
@@ -259,71 +241,64 @@ jetty.dump.stop=false
 --module=annotations
 ....
 
-The $\{jetty.base}/start.ini is the main startup configuration entry
-point for Jetty. In this example you will see that we are enabling a few
-modules for Jetty, specifying some properties, and also referencing some
-Jetty IoC XML files (namely the `etc/demo-rewrite-rules.xml` and
-`etc/test-realm.xml` files)
+The `${jetty.base}/start.ini` is the main startup configuration entry point for Jetty.
+In this example you will see that we are enabling a few modules for Jetty, specifying some properties, and also referencing some Jetty IoC XML files (namely the `etc/demo-rewrite-rules.xml` and `etc/test-realm.xml` files)
 
-When Jetty's `start.jar` resolves the entries in the start.ini, it will
-follow the link:#base-vs-home-resolution[resolution rules above].
+When Jetty's `start.jar` resolves the entries in the `start.ini`, it will follow the link:#base-vs-home-resolution[resolution rules above].
 
-For example, the reference to `etc/demo-rewrite-rules.xml` was found in
-`${jetty.base}/etc/demo-rewrite-rules.xml`.
+For example, the reference to `etc/demo-rewrite-rules.xml` was found in `${jetty.base}/etc/demo-rewrite-rules.xml`.
 
 ==== Declaring Jetty Base
 
-The Jetty Distribution's start.jar is the component that manages the
-behavior of this separation.
+The Jetty distribution's `start.jar` is the component that manages the behavior of this separation.
 
-The Jetty start.jar and XML files always assume that both
-`${jetty.home}` and `${jetty.base}` are defined when starting Jetty.
+The Jetty `start.jar` and XML files always assume that both `${jetty.home}` and `${jetty.base}` are defined when starting Jetty.
 
-You can opt to manually define the `${jetty.home}` and `${jetty.base}`
-directories, such as this:
+You can opt to manually define the `${jetty.home}` and `${jetty.base}` directories, such as this:
 
 [source, screen, subs="{sub-order}"]
 ....
 [jetty-distribution-{VERSION}]$ pwd
 /home/user/jetty-distribution-{VERSION}
+
 [jetty-distribution-{VERSION}]$ java -jar start.jar \
     jetty.home=/home/user/jetty-distribution-{VERSION} \
     jetty.base=/home/user/my-base
+
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
 ...
 ....
 
-Or you can declare one directory and let the other one be discovered.
+Alternately, you can declare one directory and let the other one be discovered.
 
-The following example uses default discovery of `${jetty.home}` by using
-the parent directory of wherever start.jar itself is, and a manual
-declaration of `${jetty.base}`.
+The following example uses default discovery of `${jetty.home}` by using the parent directory of wherever `start.jar` itself is, and a manual declaration of `${jetty.base}`.
 
 [source, screen, subs="{sub-order}"]
 ....
 [jetty-distribution-{VERSION}]$ pwd
 /home/user/jetty-distribution-{VERSION}
+
 [jetty-distribution-{VERSION}]$ java -jar start.jar jetty.base=/home/user/my-base
+
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
 ...
 ....
 
-But Jetty recommends that you always start Jetty by sitting in the
-directory that is your $\{jetty.base} and starting Jetty by referencing
-the start.jar remotely.
+But Jetty recommends that you always start Jetty from the directory that is your `${jetty.base}` and starting Jetty by referencing
+the `start.jar` in your `{$jetty.home}` remotely.
 
-The following demonstrates this by allowing default discovery of
-`${jetty.home}` via locating the `start.jar`, and using the `user.dir`
-System Property for `${jetty.base}`.
+The following demonstrates this by allowing default discovery of `${jetty.home}` via locating the `start.jar`, and using the `user.dir` System Property for `${jetty.base}`.
 
 [source, screen, subs="{sub-order}"]
 ....
 [jetty-distribution-{VERSION}]$ pwd
 /home/user/jetty-distribution-{VERSION}
+
 [jetty-distribution-{VERSION}]$ cd /home/user/my-base
 [my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar
+
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
 ...
@@ -331,7 +306,6 @@ System Property for `${jetty.base}`.
 
 ____
 [IMPORTANT]
-Be aware of the `user.dir` system property, it can only be safely set when the JVM starts, and many 3rd party libraries (especially logging) use this system property.
-+
+Be aware of the `user.dir` system property, as it can only be safely set when the JVM starts and many 3rd party libraries (especially logging) use this system property.
 It is strongly recommended that you sit in the directory that is your desired `${jetty.base}` when starting Jetty to have consistent behavior and use of the `user.dir` system property.
 ____
