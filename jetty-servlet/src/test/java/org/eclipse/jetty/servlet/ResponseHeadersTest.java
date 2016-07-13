@@ -33,15 +33,14 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ResponseHeadersTest
 {
-    /** Pretend to be a WebSocket Upgrade (not real) */
-    @SuppressWarnings("serial")
-    private static class SimulateUpgradeServlet extends HttpServlet
+    public static class SimulateUpgradeServlet extends HttpServlet
     {
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
@@ -54,13 +53,27 @@ public class ResponseHeadersTest
         }
     }
 
+    public static class MultilineResponseValueServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            // The bad use-case
+            response.setHeader("X-example", req.getPathInfo());
+
+            // The correct use
+            response.setContentType("text/plain");
+            response.setCharacterEncoding("utf-8");
+            response.getWriter().println("Got request uri - " + req.getRequestURI());
+        }
+    }
+
     private static Server server;
     private static LocalConnector connector;
 
     @BeforeClass
     public static void startServer() throws Exception
     {
-        // Configure Server
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
@@ -69,10 +82,9 @@ public class ResponseHeadersTest
         context.setContextPath("/");
         server.setHandler(context);
 
-        // Serve capture servlet
         context.addServlet(new ServletHolder(new SimulateUpgradeServlet()),"/ws/*");
+        context.addServlet(new ServletHolder(new MultilineResponseValueServlet()),"/multiline/*");
 
-        // Start Server
         server.start();
     }
 
@@ -105,5 +117,24 @@ public class ResponseHeadersTest
         assertThat("Response Code",response.getStatus(),is(101));
         assertThat("Response Header Upgrade",response.get("Upgrade"),is("WebSocket"));
         assertThat("Response Header Connection",response.get("Connection"),is("Upgrade"));
+    }
+
+    @Test
+    public void testMultilineResponseHeaderValue() throws Exception
+    {
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/multiline/%0A%20Content-Type%3A%20image/png%0A%20Content-Length%3A%208%0A%20%0A%20yuck<!--");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code",response.getStatus(),is(200));
+        assertThat("Response Header Content-Type",response.get("Content-Type"),is("text/plain;charset=UTF-8"));
     }
 }
