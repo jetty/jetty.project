@@ -61,7 +61,7 @@
                 <JDURL>http://download.eclipse.org/jetty/stable-9/apidocs</JDURL>
                 <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
                 <SRCDIR>${basedir}/..</SRCDIR>
-                <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.3.x</GITBROWSEURL>
+                <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.4.x</GITBROWSEURL>
                 <VERSION>${project.version}</VERSION>
               </attributes>
             </configuration>
