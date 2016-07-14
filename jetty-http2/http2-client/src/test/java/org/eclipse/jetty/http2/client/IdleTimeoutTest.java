@@ -571,7 +571,7 @@ public class IdleTimeoutTest extends AbstractTest
         ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1);
         stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(555, TimeUnit.SECONDS));
     }
 
     private void sleep(long value)
