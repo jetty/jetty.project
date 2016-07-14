@@ -23,10 +23,8 @@ This document provides information about configuring Java Server Pages (JSP) for
 ==== Which JSP Implementation
 
 As of Jetty 9.2, Jetty is using Jasper from http://tomcat.apache.org/tomcat-8.0-doc/jasper-howto.html[Apache] as the default JSP container implementation.
-In previous versions Jasper from http://jsp.java.net[Glassfish] was used, and if you wish to, you can continue to do so.
 
 By default the Jetty distribution enables the JSP link:#startup-modules[module], and by default, this link:#startup-modules[module] is set to Apache Jasper.
-To change to use Glassfish Jasper instead, edit the `{jetty.home}/modules/jsp.mod` file and change the line indicated:
 
 [source, plain, subs="{sub-order}"]
 ----
@@ -40,7 +38,7 @@ Note also that it may not be possible to precompile your JSPs with one container
 
 If you have an embedded setup for your webapp and wish to use JSPs, you will need to ensure that a JSP engine is correctly initialized.
 
-For both Apache and Glassfish JSP engines, a Servlet Specification 3.1 style link:#servlet-container-initializers[ServletContainerInitializer] is used to accomplish this.
+For Apache, a Servlet Specification 3.1 style link:#servlet-container-initializers[ServletContainerInitializer] is used to accomplish this.
 You will need to ensure that this ServletContainerInitializer is run by jetty. Perhaps the easiest way to do this is to enable annotations processing so that Jetty automatically discovers and runs it.
 The link:#embedded-examples[Embedded Examples] section includes a link:#embedded-webapp-jsp[worked code example] of how to do this.
 
@@ -48,7 +46,7 @@ Alternatively, you can manually wire in the appropriate ServletContainerInitiali
 
 ==== Precompiling JSPs
 
-You can either follow the instructions on precompilation provided by the JSP container of your choice (either http://jsp.java.net[Glassfish] or http://tomcat.apache.org/tomcat-8.0-doc/jasper-howto.html[Apache]), or if you are using maven for your builds, you can use the link:#jetty-jspc-maven-plugin[jetty-jspc-maven] plugin to do it for you.
+You can either follow the instructions on precompilation provided by Apache, or if you are using Maven for your builds, you can use the link:#jetty-jspc-maven-plugin[jetty-jspc-maven] plugin to do it for you.
 
 If you have precompiled your JSPs, and have customized the output package prefix (which is `org.apache.jsp` by default), you should configure your webapp context to tell Jetty about this custom package name.
 You can do this using a servlet context init-param called `org.eclipse.jetty.servlet.jspPackagePrefix`.
@@ -69,10 +67,6 @@ Both Jetty Maven plugins - link:#jetty-jspc-maven-plugin[jetty-jspc-maven-plugin
 ____
 
 [[compiling-jsps]]
-==== Runtime Compiling JSPs
-
-Depending on which JSP container you elect to use, the configuration and compilation characteristics will be different.
-
 ===== Apache JSP Container
 
 By default, the Apache JSP container will look for the Eclipse Java Compiler (jdt).
@@ -168,19 +162,6 @@ default as compilation may be expensive and could lead to excessive
 resource usage. |- |–
 |=======================================================================
 
-===== Glassfish JSP Container
-
-To compile `.jsp` files into Java classes, you need a Java compiler.
-You can acquire a Java compiler from the JVM if you are using a full JDK, or from a third party Jar.
-
-By default, the Glassfish JSP container tries to use the compiler that is part of the JDK.
-*NOTE:* when using the JDK compiler, the system does _not_ save your class files to disk unless you use the `saveBytecode` init-param as described below.
-
-If you do not have a full JDK, you can configure the Eclipse Java Compiler that Jetty ships in the distro in `{$jetty.home}/lib/jsp/.`
-You need to define a SystemProperty that prevents the Glassfish JSP engine from defaulting to the in-JVM compiler.
-
-For embedded usages, simply define this as a normal System property.
-
 [[configuring-jsp-for-jetty]]
 ===== Configuration
 
@@ -195,140 +176,8 @@ ____
 Be careful: for all of these parameters, if the value you set doesn't take effect, try using all lower case instead of camel case, or capitalizing only some of the words in the name, as JSP is inconsistent in its parameter naming strategy.
 ____
 
-.Understanding Glassfish JSP Parameters
-[cols=",,,",options="header",]
-|=======================================================================
-|init param |Description |Default |`webdefault.xml`
-|development |`development=true`, recompilation checks occur on each
-request. See also `
-              modificationTestInterval`. |TRUE |–
-
-|fork |Should Ant fork its Java compiles of JSP pages? |TRUE |FALSE
-
-|keepgenerated |Do you want to keep the generated Java files around?
-|FALSE |–
-
-|saveBytecode |If class files are generated as byte arrays, should they
-be saved to disk at the end of compilations? |FALSE |–
-
-|trimSpaces |Should white spaces between directives or actions be
-trimmed? |FALSE |–
-
-|enablePooling |Determines whether tag handler pooling is enabled. |TRUE
-|–
-
-|mappedFile |Support for mapped Files. Generates a servlet that has a
-print statement per line of the JSP file./ |TRUE |–
-
-|sendErrorToClient |If false, stack traces, etc., are sent to std error
-instead of the client's browser. |FALSE |–
-
-|classdebuginfo |Include debugging info in class file. |TRUE |–
-
-|checkInterval |Interval in seconds between background recompile checks.
-Only relevant if ` development=false`. |0 |–
-
-|suppressSmap |Generation of SMAP info for JSR45 debugging. |FALSE |–
-
-|dumpSmap |Dump SMAP JSR45 info to a file. |FALSE |–
-
-|genStrAsCharArray |Option for generating Strings. |FALSE |–
-
-|genStrAsByteArray |Option for generating Strings. |TRUE |–
-
-|defaultBufferNone | |FALSE |–
-
-|errorOnUseBeanInvalidClassAttribute | |FALSE |–
-
-|scratchDir |Directory where servlets are generated. Jetty sets this
-value according to the [/display/JETTY/Temporary+Directories work dir]
-settings for the webapp. |– |–
-
-|compiler |Determined at runtime. For Jetty this is the Eclipse jdt
-compiler. |– |–
-
-|compilerTargetVM |Target vm to compile for. |1.5 |–
-
-|compilerSourceVM |Sets source compliance level for the jdt compiler.
-|1.5 |–
-
-|javaEncoding |Pass through the encoding to use for the compilation.
-|UTF8 |–
-
-|modificationTestInterval |If `development=true`, interval between
-recompilation checks, triggered by a request. |0 |–
-
-|xpoweredBy |Generate an X-Powered-By response header. |FALSE |FALSE
-
-|usePrecompiled/use-precompiled | |FALSE |–
-
-|validating/enableTldValidation |Whether or not to validate tag files
-against the schema. |FALSE |–
-
-|reload-interval |If `reload-interval=0`, then no runtime checking of
-JSP, otherwise sets the checking interval for both `development=true`
-and `development=false`. |– |–
-
-|initial-capacity/initialCapacity |The initial capacity of the hash maps
-mapping the name of the JSP to class and JSP file. |– |–
-|=======================================================================
-
-Much confusion generally ensues about the `development`, `checkInterval` and `modificationTestInterval` parameters and JSP runtime recompilation.
-Here is a factoring out of the various options:
-
-* Check the JSP files for possible recompilation on every request:
-+
-[source, xml, subs="{sub-order}"]
-----
-
-<init-param>
-        <param-name>development></param-name>
-        <param-value>true></param-value>
-</init-param>
-----
-* Only check approximately every N seconds, where a request triggers the time-lapse calculation.
-This example checks every 60 seconds:
-+
-[source, xml, subs="{sub-order}"]
-----
-<init-param>
-        <param-name>development></param-name>
-        <param-value>true></param-value>
-</init-param>
-<init-param>
-        <param-name>modificationTestInterval></param-name>
-        <param-value>60></param-value>
-</init-param>
-----
-* Do no checking whatsoever, but still compile the JSP on the very first hit (Be aware that this `reload-interval` parameter is shorthand for
-a `development=false` and `checkInterval=0` combination):
-+
-[source, xml, subs="{sub-order}"]
-----
-<init-param>
-        <param-name>reload-interval></param-name>
-        <param-value>-1></param-value>
-</init-param>
-----
-* Don't do any request-time checking, but instead start a background thread to do checks every N seconds.
-This example checks every 60 seconds:
-+
-[source, xml, subs="{sub-order}"]
-----
-<init-param>
-        <param-name>development></param-name>
-        <param-value>false></param-value>
- </init-param>
- <init-param>
-         <param-name>checkInterval></param-name>
-         <param-value>60></param-value>
-</init-param>
-----
-
 [[modifying-configuration]]
 ==== Modifying Configuration
-
-Regardless of which JSP container you are using, there are several options for modifying the JspServlet configuration.
 
 [[overriding-webdefault.xml]]
 ===== Overriding `webdefault.xml`
@@ -421,14 +270,7 @@ It is also automatically on the classpath for the Jetty Maven plugin, which uses
 If you are using Jetty in an embedded scenario, and you need to use JSTL, then you must ensure that the JSTL jars are included on the _container's_ classpath - that is the classpath that is the _parent_ of the webapp's classpath.
 This is a restriction that arises from the JavaEE specification.
 
-The jars that you will include will depend on the flavor of JSP that you are using.
-
-====== With Glassfish JSP
-
-You will need to put the JSTL jars that are present in `{$jetty.home/lib/jsp}` onto the _container's_ classpath.
-The Glassfish JSP engine will find the JSTL tag definitions inside these jars during startup.
-
-====== With Apache JSP
+====== Apache JSP
 
 You will need to put the jars that are present in the `{$jetty.home}/lib/apache-jstl` directory onto the _container's_ classpath.
 The Apache JSP engine will find the JSTL tag definitions inside these jars during startup.
@@ -454,7 +296,7 @@ The following sections provide information about using JSF TagLibs with Jetty St
 ===== Using JSF Taglibs with Jetty Distribution
 
 If you want to use JSF with your webapp, you need to copy the JSF implementation Jar (whichever Jar contains the `META-INF/*.tld` files from your chosen JSF implementation) into Jetty's shared container lib directory.
-You can either put them into the lib directory matching your JSP container of choice (either `{$jetty.home}/lib/jsp` for Glassfish JSP, or `{$jetty.home}/lib/apache-jsp` for Apache JSP), or put them into `{$jetty.home}/lib/ext`.
+You can either put them into the lib directory for Apache `{$jetty.home}/lib/apache-jsp` or put them into `{$jetty.home}/lib/ext`.
 
 [[using-jsf-taglibs-with-jetty-maven-plugin]]
 ===== Using JSF Taglibs with Jetty Maven Plugin

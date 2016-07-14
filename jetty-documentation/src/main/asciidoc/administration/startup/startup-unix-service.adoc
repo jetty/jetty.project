@@ -74,7 +74,7 @@ This is the temporary directory assigned to Java by the Service Layer (this is w
 This is intentionally kept separate from the standard temp directory of `/tmp`, as this location doubles as the Servlet Spec work directory.
 It is our experience that the standard temp directory is often managed by various cleanup scripts that wreak havoc on a long running Jetty server.
 
-Jetty $\{project.version} requires Java 7 (or greater) to run.
+Jetty 9.3 requires Java 8 (or greater) to run.
 Make sure you have it installed.
 
 [source, screen, subs="{sub-order}"]
