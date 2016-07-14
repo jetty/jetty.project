@@ -542,6 +542,7 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testBufferedReadsResetStreamIdleTimeout() throws Exception
     {
+        int bufferSize = 8192;
         long delay = 1000;
         start(new HttpServlet()
         {
@@ -549,7 +550,7 @@ public class IdleTimeoutTest extends AbstractTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 ServletInputStream input = request.getInputStream();
-                byte[] buffer = new byte[8192];
+                byte[] buffer = new byte[bufferSize];
                 while (true)
                 {
                     int read = input.read(buffer);
@@ -580,12 +581,13 @@ public class IdleTimeoutTest extends AbstractTest
 
         // Send data larger than the flow control window.
         // The client will send bytes up to the flow control window immediately
-        // and they will be buffered by the server, which will read them slowly.
-        // Server reads should reset the idle timeout.
-        ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1);
+        // and they will be buffered by the server; the Servlet will consume them slowly.
+        // Servlet reads should reset the idle timeout.
+        int contentLength = FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1;
+        ByteBuffer data = ByteBuffer.allocate(contentLength);
         stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(2 * (contentLength / bufferSize + 1) * delay, TimeUnit.MILLISECONDS));
     }
 
     private void sleep(long value)
