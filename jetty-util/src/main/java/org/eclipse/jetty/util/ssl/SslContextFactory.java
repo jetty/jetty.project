@@ -398,15 +398,16 @@ public class SslContextFactory extends AbstractLifeCycle
         }
         
         // select the protocols and ciphers
-        SSLEngine sslEngine=context.createSSLEngine();
-        selectCipherSuites(sslEngine.getEnabledCipherSuites(),sslEngine.getSupportedCipherSuites());
-        selectProtocols(sslEngine.getEnabledProtocols(),sslEngine.getSupportedProtocols());
+        SSLParameters enabled=context.getDefaultSSLParameters();
+        SSLParameters supported=context.getSupportedSSLParameters();
+        selectCipherSuites(enabled.getCipherSuites(),supported.getCipherSuites());
+        selectProtocols(enabled.getProtocols(),supported.getProtocols());
 
         _factory = new Factory(keyStore,trustStore,context);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Selected Protocols {} of {}",Arrays.asList(_selectedProtocols),Arrays.asList(sslEngine.getSupportedProtocols()));
-            LOG.debug("Selected Ciphers   {} of {}",Arrays.asList(_selectedCipherSuites),Arrays.asList(sslEngine.getSupportedCipherSuites()));
+            LOG.debug("Selected Protocols {} of {}",Arrays.asList(_selectedProtocols),Arrays.asList(supported.getProtocols()));
+            LOG.debug("Selected Ciphers   {} of {}",Arrays.asList(_selectedCipherSuites),Arrays.asList(supported.getCipherSuites()));
         }
     }
 
