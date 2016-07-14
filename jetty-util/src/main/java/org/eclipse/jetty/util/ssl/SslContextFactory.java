@@ -402,7 +402,7 @@ public class SslContextFactory extends AbstractLifeCycle
         SSLParameters enabled=context.getDefaultSSLParameters();
         SSLParameters supported=context.getSupportedSSLParameters();
         selectCipherSuites(enabled.getCipherSuites(),supported.getCipherSuites());
-        selectProtocols(enabled.getProtocols(),enabled.getProtocols());
+        selectProtocols(enabled.getProtocols(),supported.getProtocols());
 
         _factory = new Factory(keyStore,trustStore,context);
         if (LOG.isDebugEnabled())
