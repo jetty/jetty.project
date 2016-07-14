@@ -400,7 +400,6 @@ public class SslContextFactory extends AbstractLifeCycle
         
         // select the protocols and ciphers
         SSLEngine sslEngine=context.createSSLEngine();
-        sslEngine.setSSLParameters(customize(sslEngine.getSSLParameters()));
         selectCipherSuites(sslEngine.getEnabledCipherSuites(),sslEngine.getSupportedCipherSuites());
         selectProtocols(sslEngine.getEnabledProtocols(),sslEngine.getSupportedProtocols());
 
