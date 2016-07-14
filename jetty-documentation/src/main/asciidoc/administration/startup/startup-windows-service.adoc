@@ -17,15 +17,11 @@
 [[startup-windows-service]]
 === Startup via Windows Service
 
-There are no components that ship with the Jetty Distribution to make it
-a formal Windows Service.
+There are no components that ship with the Jetty Distribution to make it a formal Windows Service.
 
-However, we recommend the use of
-https://commons.apache.org/proper/commons-daemon/procrun.html[Apache
-ProcRun's Daemon].
+However, we recommend the use of https://commons.apache.org/proper/commons-daemon/procrun.html[Apache ProcRun's Daemon].
 
-The techniques outlined here are based on Windows 7 (64-bit), using JDK
-7 (64-bit), running on an Intel i7 architecture machine.
+The techniques outlined here are based on Windows 7 (64-bit), using JDK 8 (64-bit), running on an Intel i7 architecture machine.
 
 Prepare some empty directories to work with.
 
@@ -37,7 +33,7 @@ C:\opt> mkdir jetty
 C:\opt> mkdir logs
 C:\opt> mkdir myappbase
 C:\opt> mkdir temp
-C:\opt> dir 
+C:\opt> dir
  Volume in drive C has no label.
  Volume Serial Number is DEAD-BEEF
 
@@ -55,28 +51,21 @@ C:\opt> dir
 The directory purposes are as follows:
 
 C:\opt::
-  Where the service layer utilities, scripts, and binaries will
-  eventually be
+Where the service layer utilities, scripts, and binaries will eventually be.
 C:\opt\logs::
-  Where the logs for the service layer will put its own logs.
-  +
-  Typically you will see the audit logs (install/update/delete),
-  StdOutput, and StdError logs here.
+Where the logs for the service layer will put its own logs.
++
+Typically you will see the audit logs (install/update/delete), StdOutput, and StdError logs here.
 C:\opt\jetty::
-  Where the Jetty Distribution will be unpacked into
+Where the Jetty Distribution will be unpacked into.
 C:\opt\myappbase::
-  Where your specific set of webapps will be located, including all of
-  the configuration required of the server to make them operational.
+Where your specific set of webapps will be located, including all of the configuration required of the server to make them operational.
 C:\opt\temp::
-  This is the temporary directory assigned to Java by the Service Layer
-  (this is what Java sees as the `java.io.tmpdir` System Property)
-  +
-  This is intentionally kept separate from the standard temp directories
-  of Windows, as this location doubles as the Servlet Spec work
-  directory.
+This is the temporary directory assigned to Java by the Service Layer (this is what Java sees as the `java.io.tmpdir` System Property).
++
+This is intentionally kept separate from the standard temp directories of Windows, as this location doubles as the Servlet Spec work directory.
 
-Or download Java 7 from:
-http://www.oracle.com/technetwork/java/javase/downloads/index.html
+Or download Java 8 from: http://www.oracle.com/technetwork/java/javase/downloads/index.html
 
 [source, screen, subs="{sub-order}"]
 ....
@@ -86,15 +75,11 @@ Java(TM) SE Runtime Environment (build 1.7.0_45-b18)
 Java HotSpot(TM) 64-Bit Server VM (build 24.45-b08, mixed mode)
 ....
 
-Grab a copy of the ZIP distribution from the
-link:#jetty-downloading[Official Eclipse Download Site]
+Download a copy of the ZIP distribution from the link:#jetty-downloading[Official Eclipse Download Site]
 
-Open it up the downloaded Zip in Windows Explorer and drag the contents
-of the `jetty-distribution-{VERSION}` directory into place at
-`C:\opt\jetty`
+Extract the contents of the `jetty-distribution-{VERSION}` directory to `C:\opt\jetty`
 
-Once you are complete, the contents of the `C:\opt\jetty` directory
-should look like this:
+Once complete, the contents of the `C:\opt\jetty` directory should look like this:
 
 [source, screen, subs="{sub-order}"]
 ....
@@ -125,27 +110,19 @@ C:\opt\jetty>dir
               11 Dir(s)  306,711,420,928 bytes free
 ....
 
-Download a copy of the
-https://commons.apache.org/proper/commons-daemon/binaries.html[native
-binaries] of
-https://commons.apache.org/proper/commons-daemon/binaries.html[Apache
-ProcRun].
+Download a copy of the https://commons.apache.org/proper/commons-daemon/binaries.html[Apache ProcRun] native binaries.
 
-You should have downloaded a file named
-`commons-daemon-1.0.15-bin-windows.zip` (version might be different).
-Open this ZIP file in Windows Explorer and drag `prunmgr.exe` and
-`prunsrv.exe` files into the `C:\opt` directory.
+You should have downloaded a file named `commons-daemon-1.0.15-bin-windows.zip` (the version might be different).
+Open the ZIP file and extract the `prunmgr.exe` and `prunsrv.exe` files into the `C:\opt` directory.
 
-Make sure to get the right version of `prunsrv.exe` for your
-environment. The ZIP file has both 32 bit and 64 bit versions of this
-file.
+Make sure to get the right version of `prunsrv.exe` for your environment.
+The ZIP file has both 32 bit and 64 bit versions of this file.
 
-Once you are complete, the contents of `C:\opt` directory should look
-like this:
+Once you are complete, the contents of `C:\opt` directory should look like this:
 
 [source, screen, subs="{sub-order}"]
 ....
-C:\opt> dir 
+C:\opt> dir
  Volume in drive C has no label.
  Volume Serial Number is DEAD-BEEF
 
@@ -162,11 +139,9 @@ C:\opt> dir
                2 File(s)        185,344 bytes
 ....
 
-Now it's time to setup your new `${jetty.base}` directory to have all of
-your WebApps and the configurations that they need.
+Now it's time to setup your new `${jetty.base}` directory to have all of your WebApps and the configurations that they need.
 
-We'll start by specifying which modules we want to use (this will create
-a start.ini file and also create a few empty directories for you)
+We'll start by specifying which modules we want to use (this will create a start.ini file and also create a few empty directories for you)
 
 [source, screen, subs="{sub-order}"]
 ....
@@ -199,44 +174,34 @@ C:\opt\myappbase>dir
                4 Dir(s)  306,711,064,576 bytes free
 ....
 
-At this point you have configured your `C:\opt\myappbase` to enable the
-following modules:
+At this point you have configured your `C:\opt\myappbase` to enable the following modules:
 
 deploy::
-  This is the module that will perform deployment of web applications
-  (WAR files or exploded directories), or Jetty IoC XML context
-  deployables, from the `C:\opt\myappbase\webapps` directory.
+This is the module that will perform deployment of web applications (WAR files or exploded directories), or Jetty IoC XML context deployables, from the `C:\opt\myappbase\webapps` directory.
 http::
-  This sets up a single Connector that listens for basic HTTP requests.
-  +
-  See the created `start.ini` for configuring this connector
+This sets up a single Connector that listens for basic HTTP requests.
++
+See the created `start.ini` for configuring this connector.
 logging::
-  When running Jetty as a service it is very important to have logging
-  enabled. This module will enable the basic STDOUT and STDERR capture
-  logging to the `C:\opt\myappbase\logs` directory.
+When running Jetty as a service it is very important to have logging enabled.
+This module will enable the basic STDOUT and STDERR capture logging to the `C:\opt\myappbase\logs` directory.
 
-See xref:start-jar[] for more details and options on setting
-up and configuring a `${jetty.base}` directory.
+See the section on xref:start-jar[] for more details and options on setting up and configuring a `${jetty.base}` directory.
 
-At this point you merely have to copy your WAR files into the webapps
-directory.
+At this point you merely have to copy your WAR files into the `{$jetty.base}/webapps` directory.
 
 [source, screen, subs="{sub-order}"]
 ....
 C:\opt\myappbase> copy C:\projects\mywebsite.war webapps\
 ....
 
-At this point you should have your directories, Java, the Jetty
-distribution, and your webapp specifics setup and ready for operation.
+At this point you should have your directories, Java, the Jetty distribution, and your webapp specifics setup and ready for operation.
 
-We will use the
-https://commons.apache.org/proper/commons-daemon/binaries.html[Apache
-ProcRun's prunsrv.exe] to install a Jetty Service.
+We will use the https://commons.apache.org/proper/commons-daemon/binaries.html[Apache ProcRun's prunsrv.exe] to install a Jetty Service.
 
 The basic command line syntax is outlined in the link above.
 
-A example `install-jetty-service.bat` is provided here as an example,
-based on the above directories.
+A example `install-jetty-service.bat` is provided here as an example, based on the above directories.
 
 [source,bat]
 ----
@@ -315,20 +280,16 @@ echo The Service "%SERVICE_NAME%" has been installed
 Configuration's of note in this batch file:
 
 SERVICE_NAME::
-  This is the name of the service that Windows sees. The name in the
-  Services window will show this name.
+This is the name of the service that Windows sees.
+The name in the Services window will show this name.
 STOPKEY::
-  This is the secret key (password) for the ShutdownMonitor, used to
-  issue a formal command to stop the server.
+This is the secret key (password) for the ShutdownMonitor, used to issue a formal command to stop the server.
 STOPPORT::
-  The port that the Shutdown Monitor listens on for the stop command.
-  +
-  If you have multiple Jetty servers on the same machine, this port will
-  need to be different for each Service.
+The port that the Shutdown Monitor listens on for the stop command.
++
+If you have multiple Jetty servers on the same machine, this port will need to be different for each Service.
 
-Once you have run `prunsrv.exe //IS/<service-name>` (done for you in the
-above batch file) to install the service, you can use the standard
-Windows utilities to manage (start/stop/restart) the Jetty service.
+Once you have run `prunsrv.exe //IS/<service-name>` (done for you in the above batch file) to install the service, you can use the standard Windows utilities to manage (start/stop/restart) the Jetty service.
 
 Open the Service View and start your service.
 
