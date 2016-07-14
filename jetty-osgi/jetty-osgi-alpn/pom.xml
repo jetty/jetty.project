@@ -24,6 +24,7 @@
             </goals>
             <configuration>
               <versionString>${alpn.api.version}</versionString>
+              <propertyPrefix>alpn</propertyPrefix>
             </configuration>
           </execution>
         </executions>
@@ -36,7 +37,7 @@
               <Bundle-SymbolicName>${bundle-symbolic-name};singleton:=true</Bundle-SymbolicName>
               <Bundle-Name>Jetty OSGi ALPN Fragment</Bundle-Name>
               <Import-Package>!javax.*;!org.eclipse.jetty.*</Import-Package>
-              <Export-Package>org.eclipse.jetty.alpn;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+              <Export-Package>org.eclipse.jetty.alpn;version="${alpn.majorVersion}.${alpn.minorVersion}.${alpn.incrementalVersion}"</Export-Package>
               <Fragment-Host>system.bundle;extension:=framework</Fragment-Host>
             </instructions>
         </configuration>
