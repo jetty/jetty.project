@@ -47,9 +47,11 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.server.HttpOutput;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -402,48 +404,51 @@ public class StreamResetTest extends AbstractTest
     @Test
     public void testServerExceptionConsumesQueuedData() throws Exception
     {
-        start(new HttpServlet()
+        try (StacklessLogging suppressor = new StacklessLogging(ServletHandler.class))
         {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            start(new HttpServlet()
             {
-                try
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
                 {
-                    // Wait to let the data sent by the client to be queued.
-                    Thread.sleep(1000);
-                    throw new IllegalStateException();
+                    try
+                    {
+                        // Wait to let the data sent by the client to be queued.
+                        Thread.sleep(1000);
+                        throw new IllegalStateException("explictly_thrown_by_test");
+                    }
+                    catch (InterruptedException e)
+                    {
+                        throw new InterruptedIOException();
+                    }
                 }
-                catch (InterruptedException e)
-                {
-                    throw new InterruptedIOException();
-                }
-            }
-        });
+            });
 
-        Session client = newClient(new Session.Listener.Adapter());
-        MetaData.Request request = newRequest("GET", new HttpFields());
-        HeadersFrame frame = new HeadersFrame(request, null, false);
-        FuturePromise<Stream> promise = new FuturePromise<>();
-        client.newStream(frame, promise, new Stream.Listener.Adapter());
-        Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
-        CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, false), new Callback()
-        {
-            @Override
-            public void succeeded()
+            Session client = newClient(new Session.Listener.Adapter());
+            MetaData.Request request = newRequest("GET", new HttpFields());
+            HeadersFrame frame = new HeadersFrame(request, null, false);
+            FuturePromise<Stream> promise = new FuturePromise<>();
+            client.newStream(frame, promise, new Stream.Listener.Adapter());
+            Stream stream = promise.get(5, TimeUnit.SECONDS);
+            ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+            CountDownLatch dataLatch = new CountDownLatch(1);
+            stream.data(new DataFrame(stream.getId(), data, false), new Callback()
             {
-                dataLatch.countDown();
-            }
-        });
-        // The server does not read the data, so the flow control window should be zero.
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(0, ((ISession)client).updateSendWindow(0));
+                @Override
+                public void succeeded()
+                {
+                    dataLatch.countDown();
+                }
+            });
+            // The server does not read the data, so the flow control window should be zero.
+            Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+            Assert.assertEquals(0, ((ISession)client).updateSendWindow(0));
 
-        // Wait for the server process the exception, and
-        // for the client to process the window updates.
-        Thread.sleep(2000);
+            // Wait for the server process the exception, and
+            // for the client to process the window updates.
+            Thread.sleep(2000);
 
-        Assert.assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
+            Assert.assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
+        }
     }
 }
