@@ -400,9 +400,8 @@ public class SslContextFactory extends AbstractLifeCycle
         
         // select the protocols and ciphers
         SSLEngine sslEngine=context.createSSLEngine();
-        selectCipherSuites(
-                sslEngine.getEnabledCipherSuites(),
-                sslEngine.getSupportedCipherSuites());
+        sslEngine.setSSLParameters(customize(sslEngine.getSSLParameters()));
+        selectCipherSuites(sslEngine.getEnabledCipherSuites(),sslEngine.getSupportedCipherSuites());
         selectProtocols(sslEngine.getEnabledProtocols(),sslEngine.getSupportedProtocols());
 
         _factory = new Factory(keyStore,trustStore,context);
@@ -1469,20 +1468,11 @@ public class SslContextFactory extends AbstractLifeCycle
         checkIsStarted();
 
         SSLServerSocketFactory factory = _factory._context.getServerSocketFactory();
-
         SSLServerSocket socket =
             (SSLServerSocket) (host==null ?
                         factory.createServerSocket(port,backlog):
                         factory.createServerSocket(port,backlog,InetAddress.getByName(host)));
-
-        if (getWantClientAuth())
-            socket.setWantClientAuth(getWantClientAuth());
-        if (getNeedClientAuth())
-            socket.setNeedClientAuth(getNeedClientAuth());
-
-        socket.setEnabledCipherSuites(_selectedCipherSuites);
-        socket.setEnabledProtocols(_selectedProtocols);
-
+        socket.setSSLParameters(customize(socket.getSSLParameters()));
         return socket;
     }
 
@@ -1491,17 +1481,8 @@ public class SslContextFactory extends AbstractLifeCycle
         checkIsStarted();
 
         SSLSocketFactory factory = _factory._context.getSocketFactory();
-
         SSLSocket socket = (SSLSocket)factory.createSocket();
-
-        if (getWantClientAuth())
-            socket.setWantClientAuth(getWantClientAuth());
-        if (getNeedClientAuth())
-            socket.setNeedClientAuth(getNeedClientAuth());
-
-        socket.setEnabledCipherSuites(_selectedCipherSuites);
-        socket.setEnabledProtocols(_selectedProtocols);
-
+        socket.setSSLParameters(customize(socket.getSSLParameters()));
         return socket;
     }
 
@@ -1568,31 +1549,41 @@ public class SslContextFactory extends AbstractLifeCycle
         return newSSLEngine(hostName, address.getPort());
     }
 
+    /**
+     * Customize an SslEngine instance with the configuration of this factory,
+     * by calling {@link #customize(SSLParameters)}
+     * @param sslEngine
+     */
     public void customize(SSLEngine sslEngine)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Customize {}",sslEngine);
 
-        SSLParameters sslParams = sslEngine.getSSLParameters();
+        sslEngine.setSSLParameters(customize(sslEngine.getSSLParameters()));
+    }
+    
+    /**
+     * Customize an SslParameters instance with the configuration of this factory.
+     * @param sslParams The parameters to customize
+     * @return The passed instance of sslParams (returned as a convenience)
+     */
+    public SSLParameters customize(SSLParameters sslParams)
+    {
         sslParams.setEndpointIdentificationAlgorithm(_endpointIdentificationAlgorithm);
         sslParams.setUseCipherSuitesOrder(_useCipherSuitesOrder);
         if (!_certHosts.isEmpty() || !_certWilds.isEmpty())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Enable SNI matching {}",sslEngine);
             sslParams.setSNIMatchers(Collections.singletonList((SNIMatcher)new AliasSNIMatcher()));
-        }
-        sslParams.setCipherSuites(_selectedCipherSuites);
-        sslParams.setProtocols(_selectedProtocols);
-
+        if (_selectedCipherSuites!=null)
+            sslParams.setCipherSuites(_selectedCipherSuites);
+        if (_selectedProtocols!=null)
+            sslParams.setProtocols(_selectedProtocols);
         if (getWantClientAuth())
             sslParams.setWantClientAuth(true);
         if (getNeedClientAuth())
             sslParams.setNeedClientAuth(true);
-
-        sslEngine.setSSLParameters(sslParams);
+        return sslParams;
     }
-
+    
     public static X509Certificate[] getCertChain(SSLSession sslSession)
     {
         try
