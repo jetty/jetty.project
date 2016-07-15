@@ -24,25 +24,24 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 
 public class MetaDataBuilder
-{ 
+{
     private final int _maxSize;
     private int _size;
     private int _status;
     private String _method;
     private HttpScheme _scheme;
     private HostPortHttpField _authority;
-    private String _path;  
+    private String _path;
     private long _contentLength=Long.MIN_VALUE;
-
     private HttpFields _fields = new HttpFields(10);
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param maxHeadersSize The maximum size of the headers, expressed as total name and value characters.
      */
@@ -50,7 +49,7 @@ public class MetaDataBuilder
     {
         _maxSize=maxHeadersSize;
     }
-    
+
     /** Get the maxSize.
      * @return the maxSize
      */
@@ -73,7 +72,7 @@ public class MetaDataBuilder
         _size+=field_size;
         if (_size>_maxSize)
             throw new BadMessageException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,"Header size "+_size+">"+_maxSize);
-        
+
         if (field instanceof StaticTableHttpField)
         {
             StaticTableHttpField value = (StaticTableHttpField)field;
@@ -82,7 +81,7 @@ public class MetaDataBuilder
                 case C_STATUS:
                     _status=(Integer)value.getStaticValue();
                     break;
-                    
+
                 case C_METHOD:
                     _method=field.getValue();
                     break;
@@ -90,7 +89,7 @@ public class MetaDataBuilder
                 case C_SCHEME:
                     _scheme = (HttpScheme)value.getStaticValue();
                     break;
-                    
+
                 default:
                     throw new IllegalArgumentException(field.getName());
             }
@@ -130,7 +129,7 @@ public class MetaDataBuilder
                     _contentLength = field.getLongValue();
                     _fields.add(field);
                     break;
-                    
+
                 default:
                     if (field.getName().charAt(0)!=':')
                         _fields.add(field);
@@ -142,14 +141,14 @@ public class MetaDataBuilder
                 _fields.add(field);
         }
     }
-    
+
     public MetaData build()
     {
         try
         {
             HttpFields fields = _fields;
             _fields = new HttpFields(Math.max(10,fields.size()+5));
-            
+
             if (_method!=null)
                 return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields,_contentLength);
             if (_status!=0)
@@ -168,8 +167,8 @@ public class MetaDataBuilder
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /** Check that the max size will not be exceeded.
+    /**
+     * Check that the max size will not be exceeded.
      * @param length the length
      * @param huffman the huffman name
      */

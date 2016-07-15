@@ -35,9 +35,8 @@ import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-/* ------------------------------------------------------------ */
-/** HPACK - Header Compression for HTTP/2
+/**
+ * HPACK - Header Compression for HTTP/2
  * <p>This class maintains the compression context for a single HTTP/2
  * connection. Specifically it holds the static and dynamic Header Field Tables
  * and the associated sizes and limits.
@@ -48,7 +47,7 @@ public class HpackContext
 {
     public static final Logger LOG = Log.getLogger(HpackContext.class);
     private static final String EMPTY = "";
-    public static final String[][] STATIC_TABLE = 
+    public static final String[][] STATIC_TABLE =
     {
         {null,null},
         /* 1  */ {":authority",EMPTY},
@@ -113,7 +112,7 @@ public class HpackContext
         /* 60 */ {"via",EMPTY},
         /* 61 */ {"www-authenticate",EMPTY},
     };
-    
+
     private static final Map<HttpField,Entry> __staticFieldMap = new HashMap<>();
     private static final Trie<StaticEntry> __staticNameMap = new ArrayTernaryTrie<>(true,512);
     private static final StaticEntry[] __staticTableByHeader = new StaticEntry[HttpHeader.UNKNOWN.ordinal()];
@@ -134,42 +133,42 @@ public class HpackContext
                 {
                     case C_METHOD:
                     {
-                        
+
                         HttpMethod method = HttpMethod.CACHE.get(value);
                         if (method!=null)
                             entry=new StaticEntry(i,new StaticTableHttpField(header,name,value,method));
                         break;
                     }
-                    
+
                     case C_SCHEME:
                     {
-                        
+
                         HttpScheme scheme = HttpScheme.CACHE.get(value);
                         if (scheme!=null)
                             entry=new StaticEntry(i,new StaticTableHttpField(header,name,value,scheme));
                         break;
                     }
-                    
+
                     case C_STATUS:
                     {
                         entry=new StaticEntry(i,new StaticTableHttpField(header,name,value,Integer.valueOf(value)));
                         break;
                     }
-                    
+
                     default:
                         break;
                 }
             }
-            
+
             if (entry==null)
                 entry=new StaticEntry(i,header==null?new HttpField(STATIC_TABLE[i][0],value):new HttpField(header,name,value));
-            
-                        
+
+
             __staticTable[i]=entry;
-            
+
             if (entry._field.getValue()!=null)
                 __staticFieldMap.put(entry._field,entry);
-            
+
             if (!added.contains(entry._field.getName()))
             {
                 added.add(entry._field.getName());
@@ -178,7 +177,7 @@ public class HpackContext
                     throw new IllegalStateException("name trie too small");
             }
         }
-        
+
         for (HttpHeader h : HttpHeader.values())
         {
             StaticEntry entry = __staticNameMap.get(h.asString());
@@ -186,13 +185,13 @@ public class HpackContext
                 __staticTableByHeader[h.ordinal()]=entry;
         }
     }
-    
+
     private int _maxDynamicTableSizeInBytes;
     private int _dynamicTableSizeInBytes;
     private final DynamicTable _dynamicTable;
     private final Map<HttpField,Entry> _fieldMap = new HashMap<>();
     private final Map<String,Entry> _nameMap = new HashMap<>();
-    
+
     HpackContext(int maxDynamicTableSize)
     {
         _maxDynamicTableSizeInBytes=maxDynamicTableSize;
@@ -201,7 +200,7 @@ public class HpackContext
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("HdrTbl[%x] created max=%d",hashCode(),maxDynamicTableSize));
     }
-    
+
     public void resize(int newMaxDynamicTableSize)
     {
         if (LOG.isDebugEnabled())
@@ -211,7 +210,7 @@ public class HpackContext
         evict();
         _dynamicTable.resizeUnsafe(guesstimateEntries);
     }
-    
+
     public Entry get(HttpField field)
     {
         Entry entry = _fieldMap.get(field);
@@ -219,7 +218,7 @@ public class HpackContext
             entry=__staticFieldMap.get(field);
         return entry;
     }
-    
+
     public Entry get(String name)
     {
         Entry entry = __staticNameMap.get(name);
@@ -227,19 +226,19 @@ public class HpackContext
             return entry;
         return _nameMap.get(StringUtil.asciiToLowerCase(name));
     }
-    
+
     public Entry get(int index)
     {
         if (index<__staticTable.length)
             return __staticTable[index];
-            
+
         int d=_dynamicTable.size()-index+__staticTable.length-1;
 
-        if (d>=0) 
-            return _dynamicTable.getUnsafe(d);      
+        if (d>=0)
+            return _dynamicTable.getUnsafe(d);
         return null;
     }
-    
+
     public Entry get(HttpHeader header)
     {
         Entry e = __staticTableByHeader[header.ordinal()];
@@ -252,7 +251,7 @@ public class HpackContext
     {
         return __staticTableByHeader[header.ordinal()];
     }
-    
+
     public Entry add(HttpField field)
     {
         int slot=_dynamicTable.getNextSlotUnsafe();
@@ -282,7 +281,7 @@ public class HpackContext
     {
         return _dynamicTable.size();
     }
-    
+
     /**
      * @return Current Dynamic table size in Octets
      */
@@ -308,7 +307,7 @@ public class HpackContext
 
         return _dynamicTable.index(entry)+__staticTable.length-1;
     }
-    
+
     public static int staticIndex(HttpHeader header)
     {
         if (header==null)
@@ -318,7 +317,7 @@ public class HpackContext
             return 0;
         return entry.getSlot();
     }
-    
+
     private void evict()
     {
         while (_dynamicTableSizeInBytes>_maxDynamicTableSizeInBytes)
@@ -336,31 +335,20 @@ public class HpackContext
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d",hashCode(),_dynamicTable.size(),_dynamicTableSizeInBytes,_maxDynamicTableSizeInBytes));
     }
-    
+
     @Override
     public String toString()
     {
         return String.format("HpackContext@%x{entries=%d,size=%d,max=%d}",hashCode(),_dynamicTable.size(),_dynamicTableSizeInBytes,_maxDynamicTableSizeInBytes);
     }
-    
-    
-    
-    /* ------------------------------------------------------------ */
-    /**
-     */
+
     private class DynamicTable extends ArrayQueue<HpackContext.Entry>
     {
-        /* ------------------------------------------------------------ */
-        /**
-         * @param initCapacity
-         * @param growBy
-         */
         private DynamicTable(int initCapacity, int growBy)
         {
             super(initCapacity,growBy);
         }
 
-        /* ------------------------------------------------------------ */
         /**
          * @see org.eclipse.jetty.util.ArrayQueue#growUnsafe()
          */
@@ -373,7 +361,6 @@ public class HpackContext
                 ((Entry)_elements[s])._slot=s;
         }
 
-        /* ------------------------------------------------------------ */
         /**
          * @see org.eclipse.jetty.util.ArrayQueue#enqueue(java.lang.Object)
          */
@@ -383,7 +370,6 @@ public class HpackContext
             return super.enqueue(e);
         }
 
-        /* ------------------------------------------------------------ */
         /**
          * @see org.eclipse.jetty.util.ArrayQueue#dequeue()
          */
@@ -392,43 +378,32 @@ public class HpackContext
         {
             return super.dequeue();
         }
-        
-        /* ------------------------------------------------------------ */
-        /**
-         * @param entry
-         * @return
-         */
+
         private int index(Entry entry)
         {
             return entry._slot>=_nextE?_size-entry._slot+_nextE:_nextSlot-entry._slot;
         }
-
     }
 
-
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     public static class Entry
     {
         final HttpField _field;
         int _slot;
-        
+
         Entry()
-        {    
+        {
             _slot=0;
             _field=null;
         }
-        
+
         Entry(int index,String name, String value)
-        {    
+        {
             _slot=index;
             _field=new HttpField(name,value);
         }
-        
+
         Entry(int slot, HttpField field)
-        {    
+        {
             _slot=slot;
             _field=field;
         }
@@ -437,40 +412,40 @@ public class HpackContext
         {
             return 32+_field.getName().length()+_field.getValue().length();
         }
-        
+
         public HttpField getHttpField()
         {
             return _field;
         }
-        
+
         public boolean isStatic()
         {
             return false;
         }
-        
+
         public byte[] getStaticHuffmanValue()
         {
             return null;
         }
-        
+
         public int getSlot()
         {
             return _slot;
         }
-        
+
         public String toString()
         {
             return String.format("{%s,%d,%s,%x}",isStatic()?"S":"D",_slot,_field,hashCode());
         }
-    } 
-    
+    }
+
     public static class StaticEntry extends Entry
     {
         private final byte[] _huffmanValue;
         private final byte _encodedField;
-        
+
         StaticEntry(int index,HttpField field)
-        {    
+        {
             super(index,field);
             String value = field.getValue();
             if (value!=null && value.length()>0)
@@ -478,18 +453,18 @@ public class HpackContext
                 int huffmanLen = Huffman.octetsNeeded(value);
                 int lenLen = NBitInteger.octectsNeeded(7,huffmanLen);
                 _huffmanValue = new byte[1+lenLen+huffmanLen];
-                ByteBuffer buffer = ByteBuffer.wrap(_huffmanValue); 
-                        
+                ByteBuffer buffer = ByteBuffer.wrap(_huffmanValue);
+
                 // Indicate Huffman
                 buffer.put((byte)0x80);
                 // Add huffman length
                 NBitInteger.encode(buffer,7,huffmanLen);
                 // Encode value
-                Huffman.encode(buffer,value);       
+                Huffman.encode(buffer,value);
             }
             else
                 _huffmanValue=null;
-            
+
             _encodedField=(byte)(0x80|index);
         }
 
@@ -498,18 +473,16 @@ public class HpackContext
         {
             return true;
         }
-        
+
         @Override
         public byte[] getStaticHuffmanValue()
         {
             return _huffmanValue;
         }
-        
+
         public byte getEncodedField()
         {
             return _encodedField;
         }
     }
-
-
 }
