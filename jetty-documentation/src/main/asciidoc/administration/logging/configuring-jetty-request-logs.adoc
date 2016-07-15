@@ -23,19 +23,19 @@ There is one entry per request received, and commonly in the standard NCSA forma
 [[constructing-request-log-entry]]
 ==== Constructing a Request Log Entry
 
-A standard request log entry includes the client IP address, date, method, URL, result, size, referrer, and user agent, for example:
+A standard request log entry includes the client IP address, date, method, URL, result, size, referrer, user agent and latency for example:
 
 ....
 123.4.5.6 - - [27/Aug/2004:10:16:17 +0000]
   "GET /jetty/tut/XmlConfiguration.html HTTP/1.1"
   200 76793 "http://localhost:8080/jetty/tut/logging.html"
-  "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040614 Firefox/0.8"
+  "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040614 Firefox/0.8" 342
 ....
 
 [[implementing-request-log]]
 ==== Implementing a Request Log
 
-Jetty provides an implementation called `NCSARequestLog` which supports the NCSA format in files that you can roll over on a daily basis.
+Jetty provides an implementation called `NCSARequestLog` which supports the NCSA format in files that will roll over on a daily basis.
 
 The http://logback.qos.ch/[Logback Project] offers http://logback.qos.ch/access.html[another implementation] of a `RequestLog` interface, providing rich and powerful HTTP-access log functionality.
 
@@ -44,7 +44,7 @@ If neither of these options meets your needs, you can implement a custom request
 [[configuring-request-log]]
 ==== Configuring the Request Log module
 
-To enable the Reqest Log module for the entire server via the Jetty distribution, it first needs to be enabled on the command line:
+To enable the Request Log module for the entire server via the Jetty distribution, it first needs to be enabled on the command line:
 
 [source, screen, subs="{sub-order}"]
 ----
@@ -72,7 +72,7 @@ server.setRequestLog(requestLog);
 ----
 
 This configures a request log in `{$jetty.home}/logs` with filenames including the date.
-Old log files are kept for 90 days before being deleted.
+By defaukt, log files are kept for 90 days before being deleted.
 Existing log files are appended to and the extended NCSA format is used in the GMT time zone.
 
 To examine many more configuration options, see link:{JDURL}/org/eclipse/jetty/server/NCSARequestLog.html[NCSARequestLog.java].
@@ -80,7 +80,7 @@ To examine many more configuration options, see link:{JDURL}/org/eclipse/jetty/s
 [[configuring-separate-request-log-for-web-application]]
 ==== Configuring a Separate Request Log For a Web Application
 
-To configure a separate request log for a web application, add the following to the context XML file.
+To configure a separate request log for specific a web application, add the following to the context XML file.
 
 [source, xml, subs="{sub-order}"]
 ----
