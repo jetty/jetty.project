@@ -35,32 +35,30 @@ A standard request log entry includes the client IP address, date, method, URL, 
 [[implementing-request-log]]
 ==== Implementing a Request Log
 
-Jetty provides an implementation called _`NCSARequestLog`_ which supports the NCSA format in files that you can roll over on a daily basis.
+Jetty provides an implementation called `NCSARequestLog` which supports the NCSA format in files that you can roll over on a daily basis.
 
 The http://logback.qos.ch/[Logback Project] offers http://logback.qos.ch/access.html[another implementation] of a `RequestLog` interface, providing rich and powerful HTTP-access log functionality.
 
 If neither of these options meets your needs, you can implement a custom request logger by implementing Jetty's link:{JDURL}/org/eclipse/jetty/server/RequestLog.html[`RequestLog.java`] interface and plugging it in similar to the `NCSARequestLog`, as shown below.
 
 [[configuring-request-log]]
-==== Configuring a Request Log
+==== Configuring the Request Log module
 
-To configure a single request log for the entire Jetty Server instance:
+To enable the Reqest Log module for the entire server via the Jetty distribution, it first needs to be enabled on the command line:
 
-[source, xml, subs="{sub-order}"]
+[source, screen, subs="{sub-order}"]
 ----
-<Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Set name="RequestLog">
-    <New id="RequestLog" class="org.eclipse.jetty.server.AsyncNCSARequestLog">
-      <Set name="filename">/var/log/jetty/yyyy_mm_dd.request.log</Set>
-      <Set name="append">true</Set>
-      <Set name="extended">false</Set>
-      <Set name="LogTimeZone">GMT</Set>
-    </New>
-  </Set>
-</Configure>
+$ java -jar ../start.jar --add-to-startd=requestlog
+
+INFO: requestlog      initialised in ${jetty.base}/start.d/requestlog.ini
+MKDIR: ${jetty.base}/logs
+INFO: Base directory was modified
 ----
 
-The equivalent code is:
+The above command will add a new `requestlog.ini` file to your `{$jetty.base}/start.d` directory.
+If you used `--add-to-start` it will append the configuration options for the module to the `start.ini` file located in your `{$jetty.base}` directory.
+
+The equivalent code for embedded usages of Jetty is:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -68,12 +66,13 @@ NCSARequestLog requestLog = new NCSARequestLog("/var/logs/jetty/jetty-yyyy_mm_dd
 requestLog.setAppend(true);
 requestLog.setExtended(false);
 requestLog.setLogTimeZone("GMT");
+requestLog.setLogLatency(true);
 
 server.setRequestLog(requestLog);
 ----
 
-This configures a request log in `$JETTY_HOME/logs` with filenames including the date. 
-Old log files are kept for 90 days before being deleted. 
+This configures a request log in `{$jetty.home}/logs` with filenames including the date.
+Old log files are kept for 90 days before being deleted.
 Existing log files are appended to and the extended NCSA format is used in the GMT time zone.
 
 To examine many more configuration options, see link:{JDURL}/org/eclipse/jetty/server/NCSARequestLog.html[NCSARequestLog.java].
@@ -97,11 +96,12 @@ To configure a separate request log for a web application, add the following to 
             <Set name="LogTimeZone">GMT</Set>
             <Set name="retainDays">90</Set>
             <Set name="append">true</Set>
+            <Set name="LogLatency">true</Set>
           </New>
         </Set>
       </New>
     </Arg>
   </Call>
   ...
-</Configure>      
+</Configure>
 ----
