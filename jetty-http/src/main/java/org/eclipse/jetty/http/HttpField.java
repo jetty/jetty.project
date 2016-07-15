@@ -83,6 +83,9 @@ public class HttpField
 
     public String[] getValues()
     {
+        if (_value == null)
+            return null;
+
         ArrayList<String> list = new ArrayList<>();
         int state = 0;
         int start=0;
@@ -412,7 +415,7 @@ public class HttpField
     @Override
     public int hashCode()
     {
-        int vhc = _value==null?0:_value.hashCode();
+        int vhc = Objects.hashCode(_value);
         if (_header==null)
             return vhc ^ nameHashCode();
         return vhc ^ _header.hashCode();

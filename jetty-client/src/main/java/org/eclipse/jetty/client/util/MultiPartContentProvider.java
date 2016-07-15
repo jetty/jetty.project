@@ -271,7 +271,9 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
                         continue;
                     buffer.write(field.getName().getBytes(StandardCharsets.US_ASCII));
                     buffer.write(COLON_SPACE_BYTES);
-                    buffer.write(field.getValue().getBytes(StandardCharsets.UTF_8));
+                    String value = field.getValue();
+                    if (value != null)
+                        buffer.write(value.getBytes(StandardCharsets.UTF_8));
                     buffer.write(CR_LF_BYTES);
                 }
                 buffer.write(CR_LF_BYTES);

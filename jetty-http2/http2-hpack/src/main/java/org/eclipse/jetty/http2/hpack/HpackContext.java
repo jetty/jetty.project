@@ -410,7 +410,8 @@ public class HpackContext
 
         public int getSize()
         {
-            return 32+_field.getName().length()+_field.getValue().length();
+            String value = _field.getValue();
+            return 32 + _field.getName().length() + (value == null ? 0 : value.length());
         }
 
         public HttpField getHttpField()

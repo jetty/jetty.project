@@ -67,62 +67,74 @@ public class MetaDataBuilder
     }
 
     public void emit(HttpField field)
-    {        
-        int field_size = field.getName().length()+field.getValue().length();
+    {
+        HttpHeader header = field.getHeader();
+        String name = field.getName();
+        String value = field.getValue();
+        int field_size = name.length() + (value == null ? 0 : value.length());
         _size+=field_size;
         if (_size>_maxSize)
             throw new BadMessageException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,"Header size "+_size+">"+_maxSize);
 
         if (field instanceof StaticTableHttpField)
         {
-            StaticTableHttpField value = (StaticTableHttpField)field;
-            switch(field.getHeader())
+            StaticTableHttpField staticField = (StaticTableHttpField)field;
+            switch(header)
             {
                 case C_STATUS:
-                    _status=(Integer)value.getStaticValue();
+                    _status=(Integer)staticField.getStaticValue();
                     break;
 
                 case C_METHOD:
-                    _method=field.getValue();
+                    _method=value;
                     break;
 
                 case C_SCHEME:
-                    _scheme = (HttpScheme)value.getStaticValue();
+                    _scheme = (HttpScheme)staticField.getStaticValue();
                     break;
 
                 default:
-                    throw new IllegalArgumentException(field.getName());
+                    throw new IllegalArgumentException(name);
             }
         }
-        else if (field.getHeader()!=null)
+        else if (header!=null)
         {
-            switch(field.getHeader())
+            switch(header)
             {
                 case C_STATUS:
                     _status=field.getIntValue();
                     break;
 
                 case C_METHOD:
-                    _method=field.getValue();
+                    _method=value;
                     break;
 
                 case C_SCHEME:
-                    _scheme = HttpScheme.CACHE.get(field.getValue());
+                    if (value != null)
+                        _scheme = HttpScheme.CACHE.get(value);
                     break;
 
                 case C_AUTHORITY:
-                    _authority=(field instanceof HostPortHttpField)?((HostPortHttpField)field):new AuthorityHttpField(field.getValue());
+                    if (field instanceof HostPortHttpField)
+                        _authority = (HostPortHttpField)field;
+                    else if (value != null)
+                        _authority = new AuthorityHttpField(value);
                     break;
 
                 case HOST:
                     // :authority fields must come first.  If we have one, ignore the host header as far as authority goes.
                     if (_authority==null)
-                        _authority=(field instanceof HostPortHttpField)?((HostPortHttpField)field):new AuthorityHttpField(field.getValue());
+                    {
+                        if (field instanceof HostPortHttpField)
+                            _authority = (HostPortHttpField)field;
+                        else if (value != null)
+                            _authority = new AuthorityHttpField(value);
+                    }
                     _fields.add(field);
                     break;
 
                 case C_PATH:
-                    _path = field.getValue();
+                    _path = value;
                     break;
 
                 case CONTENT_LENGTH:
@@ -131,13 +143,14 @@ public class MetaDataBuilder
                     break;
 
                 default:
-                    if (field.getName().charAt(0)!=':')
+                    if (name.charAt(0)!=':')
                         _fields.add(field);
+                    break;
             }
         }
         else
         {
-            if (field.getName().charAt(0)!=':')
+            if (name.charAt(0)!=':')
                 _fields.add(field);
         }
     }
