@@ -95,6 +95,66 @@ include::screen-http-webapp-deploy-listconfig.adoc[]
 You now have a configured and functional server, albeit with no webapps deployed.
 At this point you can place a webapp (war file) in the `mybase/webapps/` directory and and start Jetty.
 
+[[startup-configuring-modules]]
+
+==== Configuring Modules
+
+Once a module has been enabled for the server, it can be further configured to meet your needs.
+This is done by editing the associated ini file for the module.
+If your server setup is using a centralized ini configuration, you will edit the `{$jetty.base}/server.ini` file.
+If you have elected to manage each module within it's own ini file, you can find these files in the `{$jetty.base}/start.d` directory.
+
+When a module is activated, a number of properties are set by default.
+To view these defaults, open up the associated ini file.
+Listed in the ini file is the associated module file and any properties that can be set.
+
+Below is an example of the `requestlog.ini` file:
+
+[source, screen, subs="{sub-order}"]
+....
+# ---------------------------------------
+# Module: requestlog
+--module=requestlog
+
+## Logging directory (relative to $jetty.base)
+# jetty.requestlog.dir=logs
+
+## File path
+# jetty.requestlog.filePath=${jetty.requestlog.dir}/yyyy_mm_dd.request.log
+
+## Date format for rollovered files (uses SimpleDateFormat syntax)
+# jetty.requestlog.filenameDateFormat=yyyy_MM_dd
+
+## How many days to retain old log files
+# jetty.requestlog.retainDays=90
+
+## Whether to append to existing file
+# jetty.requestlog.append=true
+
+## Whether to use the extended log output
+# jetty.requestlog.extended=true
+
+## Whether to log http cookie information
+# jetty.requestlog.cookies=true
+
+## Timezone of the log entries
+# jetty.requestlog.timezone=GMT
+
+## Whether to log LogLatency
+# jetty.requestlog.loglatency=false
+....
+
+The first lines name the module file being called (located in `{$jetty.home/modules}`).
+Subsequent lines list properties that can be changed as well as a description for each property.
+To edit a property, first un-comment the line by deleting the `#` at the start of the line, then make the change after `=` sign (such as changing a `true` value to `false`).
+
+[[startup-disable-module]]
+==== Disabling Modules
+
+Disabling a module is an easy process.
+To disable a module, comment out the `--module=` line in the associated ini file.
+Deleting the ini file associated with module is another option, but may not be practical in all situations.
+
 [[startup-listing-modules]]
 ==== Listing Available and Active Modules
 
