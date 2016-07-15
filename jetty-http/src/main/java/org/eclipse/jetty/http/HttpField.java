@@ -83,6 +83,9 @@ public class HttpField
 
     public String[] getValues()
     {
+        if (_value == null)
+            return null;
+
         ArrayList<String> list = new ArrayList<>();
         int state = 0;
         int start=0;
@@ -191,8 +194,8 @@ public class HttpField
         return list.toArray(new String[list.size()]);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Look for a value in a possible multi valued field
+    /**
+     * Look for a value in a possible multi valued field
      * @param search Values to search for (case insensitive)
      * @return True iff the value is contained in the field value entirely or
      * as an element of a quoted comma separated list. List element parameters (eg qualities) are ignored,
@@ -208,7 +211,7 @@ public class HttpField
             return false;
         if (search.equals(_value))
             return true;
-        
+
         search = StringUtil.asciiToLowerCase(search);
 
         int state=0;
@@ -412,7 +415,7 @@ public class HttpField
     @Override
     public int hashCode()
     {
-        int vhc = _value==null?0:_value.hashCode();
+        int vhc = Objects.hashCode(_value);
         if (_header==null)
             return vhc ^ nameHashCode();
         return vhc ^ _header.hashCode();
