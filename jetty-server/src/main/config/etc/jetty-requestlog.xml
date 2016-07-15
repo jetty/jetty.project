@@ -24,6 +24,7 @@
       <Set name="extended"><Property name="jetty.requestlog.extended" deprecated="requestlog.extended" default="false"/></Set>
       <Set name="logCookies"><Property name="jetty.requestlog.cookies" deprecated="requestlog.cookies" default="false"/></Set>
       <Set name="LogTimeZone"><Property name="jetty.requestlog.timezone" deprecated="requestlog.timezone" default="GMT"/></Set>
+      <Set name="LogLatency"><Property name="jetty.requestlog.loglatency" default="false"/></Set>
     </New>
   </Set>
 </Configure>
