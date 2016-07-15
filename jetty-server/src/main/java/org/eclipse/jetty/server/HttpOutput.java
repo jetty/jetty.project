@@ -921,14 +921,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
             switch(_state.get())
             {
-                case CLOSED:
-                    // Even though a write is not possible, because a close has
-                    // occurred, we need to call onWritePossible to tell async
-                    // producer that the last write completed.
-                    // So fall through
+                case ASYNC:
+                case READY:
                 case PENDING:
                 case UNREADY:
-                case READY:
+                    // Even though a write is not possible, because a close has
+                    // occurred, we need to call onWritePossible to tell async
+                    // producer that the last write completed, so fall through.
+                case CLOSED:
                     try
                     {
                         _writeListener.onWritePossible();
