@@ -175,6 +175,9 @@ public class HpackEncoder
 
     public void encode(ByteBuffer buffer, HttpField field)
     {
+        if (field.getValue()==null)
+            field = new HttpField(field.getHeader(),field.getName(),"");
+        
         final int p=_debug?buffer.position():-1;
 
         String encoding=null;

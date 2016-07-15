@@ -206,6 +206,8 @@ public class HttpField
             return false;
         if (_value==null)
             return false;
+        if (search.equals(_value))
+            return true;
         
         search = StringUtil.asciiToLowerCase(search);
 
@@ -410,9 +412,10 @@ public class HttpField
     @Override
     public int hashCode()
     {
+        int vhc = _value==null?0:_value.hashCode();
         if (_header==null)
-            return _value.hashCode() ^ nameHashCode();
-        return _value.hashCode() ^ _header.hashCode();
+            return vhc ^ nameHashCode();
+        return vhc ^ _header.hashCode();
     }
 
     @Override
