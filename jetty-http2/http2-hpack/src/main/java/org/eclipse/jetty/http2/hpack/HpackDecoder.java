@@ -78,10 +78,9 @@ public class HpackDecoder
 
         while(buffer.hasRemaining())
         {
-            if (LOG.isDebugEnabled())
+            if (LOG.isDebugEnabled() && buffer.hasArray())
             {
-                int l=Math.min(buffer.remaining(),16);
-                // TODO: not guaranteed the buffer has a backing array !
+                int l=Math.min(buffer.remaining(),32);
                 LOG.debug("decode {}{}",
                         TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l),
                         l<buffer.remaining()?"...":"");
