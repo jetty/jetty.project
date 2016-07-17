@@ -152,6 +152,46 @@ public class ErrorHandler extends AbstractHandler
             writer.destroy();
         }
     }
+    
+    /**
+    * A method to be overridden by extensions of the ErrorHandler. Extensions
+    * can write their own custom error page to the client. The method is called
+    * by
+    * {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)}
+    * and must return a flag indicating whether the error has been
+    * successfully. If the method returns TRUE, the request will no longer be
+    * processed. If the return value is FALSE, the ErrorHandler will continue
+    * to handle the error.<br>
+    * Extension of the ErrorHandler do not have to set
+    * {@link Request#setHandled(boolean)} as this will be done by the
+    * ErrorHandler itself.<br>
+    * The default implementation always returns false.
+    * 
+    * @param target
+    *            The target of the request - either a URI or a name.
+    * @param baseRequest
+    *            The original unwrapped request object.
+    * @param request
+    *            The request either as the Request object or a wrapper of that
+    *            request. The
+    *            HttpConnection.getCurrentConnection().getHttpChannel().
+    *            getRequest() method can be used access the Request object if
+    *            required.
+    * @param response
+    *            The response as the Response object or a wrapper of that
+    *            request. The
+    *            HttpConnection.getCurrentConnection().getHttpChannel().
+    *            getResponse() method can be used access the Response object if
+    *            required.
+    * 
+    * @return TRUE if the request has been handled, FALSE if not
+    */
+    protected boolean writeCustomPage(String target, Request baseRequest, HttpServletRequest request,
+    		HttpServletResponse response) {
+    	// Default behavior is to return false
+    	return false;
+    }
+    
 
     /* ------------------------------------------------------------ */
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message)
