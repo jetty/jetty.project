@@ -23,6 +23,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import javax.servlet.ServletContext;
 import javax.servlet.RequestDispatcher;
@@ -30,7 +33,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -41,7 +43,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -130,29 +131,120 @@ public class ErrorHandler extends AbstractHandler
                 }
             }
         }
-        
-        
-        baseRequest.setHandled(true);
 
-        // Issue #124 - Don't produce text/html if the request doesn't accept it
-        HttpField accept = baseRequest.getHttpFields().getField(HttpHeader.ACCEPT);
-        if (accept == null || accept.contains("text/html") || accept.contains("*/*"))
-        {
-            response.setContentType(MimeTypes.Type.TEXT_HTML_8859_1.asString());
-            if (_cacheControl != null)
-                response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
-            ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(4096);
-            String reason = (response instanceof Response) ? ((Response) response).getReason() : null;
-            if (LOG.isDebugEnabled())
-                LOG.debug("default error page {} {}",request,response);
-            handleErrorPage(request, writer, response.getStatus(), reason);
-            writer.flush();
-            response.setContentLength(writer.size());
-            writer.writeTo(response.getOutputStream());
-            writer.destroy();
-        }
+        if (_cacheControl != null)
+            response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
+        generateAcceptableResponse(baseRequest,request,response,response.getStatus(),baseRequest.getResponse().getReason());
     }
 
+    /* ------------------------------------------------------------ */
+    /** Generate an acceptable error response.
+     * <p>This method is called to generate an Error page of a mime type that is 
+     * acceptable to the user-agent.  The Accept header is evaluated in 
+     * quality order and the method 
+     * {@link #generateAcceptableResponse(Request, HttpServletRequest, HttpServletResponse, String)}
+     * is called for each mimetype until {@link Request#isHandled()} is true.</p>
+     * @param baseRequest The base request
+     * @param request The servlet request (may be wrapped)
+     * @param response The response (may be wrapped)
+     * @throws IOException
+     */
+    protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message)
+        throws IOException
+    {
+        List<String> acceptable=baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT);
+        
+        if (acceptable.isEmpty() && !baseRequest.getHttpFields().contains(HttpHeader.ACCEPT))
+            generateAcceptableResponse(baseRequest,request,response,code,message,MimeTypes.Type.TEXT_HTML.asString());
+        else
+        {
+            for (String mimeType:acceptable)
+            {
+                generateAcceptableResponse(baseRequest,request,response,code,message,mimeType);
+                if (baseRequest.isHandled())
+                    return;
+            }
+        }
+        baseRequest.setHandled(true);
+    }
+
+    /* ------------------------------------------------------------ */
+    /** get an acceptable writer for an error page.
+     * <p>Uses the user-agent's <code>Accept-Charset</code> to get response
+     * {@link Writer}.  The acceptable charsets are tested in quality order 
+     * if they are known to the JVM and the first known is set on
+     * {@link HttpServletResponse#setCharacterEncoding(String)} and the 
+     * {@link HttpServletResponse#getWriter()} method used to return a writer.
+     * If there is no <code>Accept-Charset</code> header then 
+     * <code>ISO-8859-1</code> is used.  If '*' is the highest quality known
+     * charset, then <code>utf-8</code> is used.
+     * </p>     
+     * @param baseRequest The base request
+     * @param request The servlet request (may be wrapped)
+     * @param response The response (may be wrapped)
+     * @return A {@link Writer} if there is a known acceptable charset or null
+     * @throws IOException
+     */
+    protected Writer getAcceptableWriter(Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException
+    {
+        List<String> acceptable=baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
+        if (acceptable.isEmpty())
+        {
+            response.setCharacterEncoding(StandardCharsets.ISO_8859_1.name());
+            return response.getWriter();
+        }
+        
+        for (String charset:acceptable)
+        {
+            try
+            {
+                if ("*".equals(charset))
+                    response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+                else
+                    response.setCharacterEncoding(Charset.forName(charset).name());
+                return response.getWriter();
+            }
+            catch(Exception e)
+            {
+                LOG.ignore(e);
+            }
+        }
+        return null;
+    }
+        
+    /* ------------------------------------------------------------ */
+    /** Generate an acceptable error response for a mime type.
+     * <p>This method is called for each mime type in the users agent's
+     * <code>Accept</code> header, until {@link Request#isHandled()} is true and a 
+     * response of the appropriate type is generated.
+     * 
+     * @param baseRequest The base request
+     * @param request The servlet request (may be wrapped)
+     * @param response The response (may be wrapped)
+     * @param mimeType The mimetype to generate (may be *&#47;*or other wildcard)
+     * @throws IOException
+     */
+    protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String mimeType)
+        throws IOException
+    {
+        switch(mimeType)
+        {
+            case "text/html":
+            case "text/*":
+            case "*/*":
+            {
+                baseRequest.setHandled(true);
+                Writer writer = getAcceptableWriter(baseRequest,request,response);
+                if (writer!=null)
+                {
+                    response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
+                    handleErrorPage(request, writer, code, message);
+                }
+            }
+        }        
+    }
+    
     /* ------------------------------------------------------------ */
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message)
         throws IOException
