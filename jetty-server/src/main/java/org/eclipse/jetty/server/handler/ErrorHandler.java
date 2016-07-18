@@ -23,13 +23,14 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.List;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -110,25 +111,74 @@ public class ErrorHandler extends AbstractHandler
             }
         }
         
-        baseRequest.setHandled(true);
-
-        // Issue #124 - Don't produce text/html if the request doesn't accept it
-        HttpField accept = baseRequest.getHttpFields().getField(HttpHeader.ACCEPT);
-        if (accept == null || accept.contains("text/html") || accept.contains("*/*"))
-        {
-            response.setContentType(MimeTypes.Type.TEXT_HTML_8859_1.asString());
-            if (_cacheControl != null)
-                response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
-            ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(4096);
-            String reason = (response instanceof Response) ? ((Response) response).getReason() : null;
-            handleErrorPage(request, writer, response.getStatus(), reason);
-            writer.flush();
-            response.setContentLength(writer.size());
-            writer.writeTo(response.getOutputStream());
-            writer.destroy();
-        }
+        generateAcceptableResponse(baseRequest,request,response);
     }
 
+    /* ------------------------------------------------------------ */
+    protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException
+    {
+        List<String> acceptable=baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT);
+        if (acceptable.isEmpty())
+            acceptable=Collections.singletonList("*/*");
+        for (String mimeType:acceptable)
+        {
+            generateAcceptableResponse(baseRequest,request,response,mimeType);
+            if (baseRequest.isHandled())
+                return;
+        }
+
+        baseRequest.setHandled(true);
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String mimeType)
+        throws IOException
+    {
+        switch(mimeType)
+        {
+            case "text/html":
+            case "text/html;charset=iso-8859-1":
+            case "*/*":
+            {
+                baseRequest.setHandled(true);
+                response.setContentType(MimeTypes.Type.TEXT_HTML_8859_1.asString());
+                if (_cacheControl != null)
+                    response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
+                ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(4096);
+                String reason = (response instanceof Response) ? ((Response) response).getReason() : null;
+                handleErrorPage(request, writer, response.getStatus(), reason);
+                writer.flush();
+                response.setContentLength(writer.size());
+                writer.writeTo(response.getOutputStream());
+                writer.destroy();
+                return;
+            }
+                
+            case "text/html;charset=utf-8":
+            {
+                baseRequest.setHandled(true);
+                response.setContentType(MimeTypes.Type.TEXT_HTML_UTF_8.asString());
+                if (_cacheControl != null)
+                    response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
+                String reason = (response instanceof Response) ? ((Response) response).getReason() : null;
+                handleErrorPage(request, response.getWriter(), response.getStatus(), reason);
+                return;
+            }       
+        }
+        
+        if (MimeTypes.Type.TEXT_HTML.is(MimeTypes.getContentTypeWithoutCharset(mimeType)))
+        {
+            baseRequest.setHandled(true);
+            response.setContentType(mimeType);
+            if (_cacheControl != null)
+                response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
+            String reason = (response instanceof Response) ? ((Response) response).getReason() : null;
+            handleErrorPage(request, response.getWriter(), response.getStatus(), reason);
+            return;
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message)
         throws IOException
