@@ -17,8 +17,7 @@
 [[jndi-datasource-examples]]
 === Datasource Examples
 
-Here are examples of configuring a JNDI datasource for various
-databases.
+Here are examples of configuring a JNDI datasource for various databases.
 
 ____
 [NOTE]
@@ -29,22 +28,17 @@ All of these examples correspond to a `resource-ref` in `web.xml`.
 
 [source, xml, subs="{sub-order}"]
 ----
-
   <resource-ref>
      <description>My DataSource Reference</description>
      <res-ref-name>jdbc/DSTest</res-ref-name>
      <res-type>javax.sql.DataSource</res-type>
      <res-auth>Container</res-auth>
   </resource-ref>
-
-    
 ----
 
-These examples assume that all of the datasources are declared at the
-JVM scope, but you can use other scopes if desired. You can configure
-all JNDI resources in a `jetty.xml` file or in a `
-  WEB-INF/jetty-env.xml` file, or a context XML file. See the section
-xref:jndi-where-to-declare[] for more information.
+These examples assume that all of the datasources are declared at the JVM scope, but you can use other scopes if desired.
+You can configure all JNDI resources in a `jetty.xml` file, a `WEB-INF/jetty-env.xml` file, or a context XML file.
+See the section xref:jndi-where-to-declare[] for more information.
 
 ____
 [IMPORTANT]
@@ -54,14 +48,11 @@ ____
 [[pooling-datasources]]
 ==== Pooling DataSources
 
-Pooling datasources enables connection pooling, which lets you reuse an
-existing connection instead of creating a new connection to the
-database. This is highly efficient in terms of memory allocation and
-speed of the request to the database. We highly recommend this option
-for production environments.
+Pooling datasources enables connection pooling, which lets you reuse an existing connection instead of creating a new connection to the database.
+This is highly efficient in terms of memory allocation and speed of the request to the database.
+We highly recommend this option for production environments.
 
-The following is a list of the pooled datasource examples we have worked
-with in the past:
+The following is a list of the pooled datasource examples we have worked with in the past:
 
 * xref:hikaricp-datasource[]
 * xref:bonecp-datasource[]
@@ -75,14 +66,11 @@ with in the past:
 [[hikaricp-datasource]]
 ===== HikariCP
 
-Connection pooling, available at
-http://search.maven.org/remotecontent?filepath=com/zaxxer/HikariCP/1.4.0/HikariCP-1.4.0.jar[HikariCP
-Download]. All configuration options for HikariCP are described here:
-https://github.com/brettwooldridge/HikariCP[HikariCP documentation].
+Connection pooling, available at http://search.maven.org/remotecontent?filepath=com/zaxxer/HikariCP/1.4.0/HikariCP-1.4.0.jar[HikariCP Download].
+All configuration options for HikariCP are described here: https://github.com/brettwooldridge/HikariCP[HikariCP documentation].
 
 [source, xml, subs="{sub-order}"]
 ----
-
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
      <Arg>jdbc/DSTest</Arg>
@@ -104,18 +92,13 @@ https://github.com/brettwooldridge/HikariCP[HikariCP documentation].
       </New>
     </Arg>
   </New>
-
-        
 ----
 
 [[bonecp-datasource]]
 ===== BoneCP
 
-Connection pooling, available at
-http://jolbox.com/index.html?page=http://jolbox.com/download.html[BoneCP
-Download]. All configuration options for BoneCP are described here:
-http://jolbox.com/bonecp/downloads/site/apidocs/com/jolbox/bonecp/BoneCPDataSource.html[BoneCP
-API].
+Connection pooling, available at http://jolbox.com/index.html?page=http://jolbox.com/download.html[BoneCP Download].
+All configuration options for BoneCP are described here: http://jolbox.com/bonecp/downloads/site/apidocs/com/jolbox/bonecp/BoneCPDataSource.html[BoneCP API].
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -136,20 +119,15 @@ API].
       </New>
     </Arg>
   </New>
-
-        
 ----
 
 [[c3p0-datasource]]
 ===== c3p0
 
-Connection pooling, available at
-http://central.maven.org/maven2/c3p0/c3p0/0.9.1.2/c3p0-0.9.1.2.jar[c3p0
-Jar].
+Connection pooling, available at http://central.maven.org/maven2/c3p0/c3p0/0.9.1.2/c3p0-0.9.1.2.jar[c3p0 Jar].
 
 [source, xml, subs="{sub-order}"]
 ----
-
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
      <Arg>jdbc/DSTest</Arg>
@@ -162,20 +140,15 @@ Jar].
       </New>
      </Arg>
     </New>
-
-        
 ----
 
 [[dbcp-datasource]]
 ===== DBCP
 
-Connection pooling, available at
-http://central.maven.org/maven2/commons-dbcp/commons-dbcp/1.2/commons-dbcp-1.2.jar[dbcp
-Jar].
+Connection pooling, available at http://central.maven.org/maven2/commons-dbcp/commons-dbcp/1.2/commons-dbcp-1.2.jar[dbcp Jar].
 
 [source, xml, subs="{sub-order}"]
 ----
-
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
      <Arg>jdbc/DSTest</Arg>
@@ -189,8 +162,6 @@ Jar].
          </New>
      </Arg>
     </New>
-
-        
 ----
 
 [[atomikos-datasource]]
@@ -200,7 +171,6 @@ Connection pooling + XA transactions.
 
 [source, xml, subs="{sub-order}"]
 ----
-
    <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
       <Arg></Arg>
       <Arg>jdbc/DSTest</Arg>
@@ -227,19 +197,15 @@ Connection pooling + XA transactions.
          </New>
       </Arg>
     </New>
-
-        
 ----
 
 [[mysql-pooled-datasource]]
 ===== MySQL
 
-Implements `javax.sql.DataSource,
-      javax.sql.ConnectionPoolDataSource.`
+Implements `javax.sql.DataSource` and `javax.sql.ConnectionPoolDataSource`.
 
 [source, xml, subs="{sub-order}"]
 ----
- 
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
      <Arg>jdbc/DSTest</Arg>
@@ -251,14 +217,12 @@ Implements `javax.sql.DataSource,
         </New>
      </Arg>
     </New>
-
-        
 ----
 
 [[postgreSQL-pooled-datasource]]
 ===== PostgreSQL
 
-Implements `javax.sql.ConnectionPoolDataSource`
+Implements `javax.sql.ConnectionPoolDataSource`.
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -273,22 +237,21 @@ Implements `javax.sql.ConnectionPoolDataSource`
            <Set name="DatabaseName">dbname</Set>
            <Set name="ServerName">localhost</Set>
            <Set name="PortNumber">5432</Set>
- 
+
         </New>
      </Arg>
   </New>
 
-        
+
 ----
 
 [[DB2-pooled-datasource]]
 ===== DB2
 
-Implements `javax.sql.ConnectionPoolDataSource`
+Implements `javax.sql.ConnectionPoolDataSource`.
 
 [source, xml, subs="{sub-order}"]
 ----
-
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
      <Arg>jdbc/DSTest</Arg>
@@ -302,16 +265,13 @@ Implements `javax.sql.ConnectionPoolDataSource`
         </New>
      </Arg>
   </New>
-
-        
 ----
 
 [[non-pooling-datasources]]
 ==== Non-pooling DataSources
 
-If you are deploying in a production environment, we highly recommend
-using a Pooling DataSource. Since that is not always an option we have a
-handful of examples for non-pooling datasources listed here as well.
+If you are deploying in a production environment, we highly recommend using a Pooling DataSource.
+Since that is not always an option we have a handful of examples for non-pooling datasources listed here as well.
 
 The following is a list of the non-pooled datasource examples:
 
@@ -324,8 +284,7 @@ The following is a list of the non-pooled datasource examples:
 [[sql-server-2000-datasource]]
 ===== SQL Server 2000
 
-Implements `javax.sql.DataSource,
-      javax.sql.ConnectionPoolDataSource.`
+Implements `javax.sql.DataSource` and `javax.sql.ConnectionPoolDataSource`.
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -347,8 +306,7 @@ Implements `javax.sql.DataSource,
 [[oracle-9i10g-datasource]]
 ===== Oracle 9i/10g
 
-Implements `javax.sql.DataSource,
-      javax.sql.ConnectionPoolDataSource.`
+Implements `javax.sql.DataSource` and `javax.sql.ConnectionPoolDataSource`.
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -376,14 +334,12 @@ Implements `javax.sql.DataSource,
   </New>
 ----
 
-For more information, refer to:
-http://docs.oracle.com/cd/B14117_01/java.101/b10979/conncache.htm[Oracle
-Database JDBC documentation].
+For more information, refer to: http://docs.oracle.com/cd/B14117_01/java.101/b10979/conncache.htm[Oracle Database JDBC documentation].
 
 [[postgreSQL-datasource]]
 ===== PostgreSQL
 
-Implements `javax.sql.DataSource.`
+Implements `javax.sql.DataSource`.
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -405,7 +361,7 @@ Implements `javax.sql.DataSource.`
 [[sybase-datasource]]
 ===== Sybase
 
-Implements `javax.sql.DataSource.`
+Implements `javax.sql.DataSource`.
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -421,13 +377,13 @@ Implements `javax.sql.DataSource.`
            <Set name="PortNumber">5000</Set>
         </New>
      </Arg>
-  </New>        
+  </New>
 ----
 
 [[DB2-datasource]]
 ===== DB2
 
-Implements `javax.sql.DataSource.`
+Implements `javax.sql.DataSource`.
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -443,5 +399,5 @@ Implements `javax.sql.DataSource.`
            <Set name="PortNumber">50000</Set>
         </New>
      </Arg>
-  </New>        
+  </New>
 ----

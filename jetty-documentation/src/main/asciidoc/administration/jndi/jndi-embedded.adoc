@@ -19,38 +19,24 @@
 
 ==== Setting up the Classpath
 
-In addition to the jars that you require for your application, and the
-jars needed for core Jetty, you will need to place the following jars
-onto your classpath:
+In addition to the jars that you require for your application, and the jars needed for core Jetty, you will need to place the following jars onto your classpath:
 
 ....
 jetty-jndi.jar
 jetty-plus.jar
 ....
 
-If you are using transactions, you will also need the javax.transaction
-api. You can
-http://download.eclipse.org/jetty/orbit/javax.transaction_1.1.1.v201004190952.jar/dist/[obtain
-this jar] from http://download.eclipse.org/jetty/orbit[the Jetty
-dependencies site.]
+If you are using transactions, you will also need the `javax.transaction` api.
+You can http://download.eclipse.org/jetty/orbit/javax.transaction_1.1.1.v201004190952.jar/dist/[obtain this jar] from http://download.eclipse.org/jetty/orbit[the Jetty dependencies site.]
 
-If you wish to use mail, you will also need the javax.mail api and
-implementation. You can
-http://download.eclipse.org/jetty/orbit/javax.mail.glassfish_1.4.1.v201005082020.jar/dist/[obtain
-this jar] from
-thehttp://download.eclipse.org/jetty/orbit/javax.mail.glassfish_1.4.1.v201005082020.jar/dist/[Jetty
-dependencies site]. Note that this jar also requires the
-javax.activation classes, which you can also
-http://download.eclipse.org/jetty/orbit/javax.activation_1.1.0.v201105071233.jar/dist/[obtain]
-from the http://download.eclipse.org/jetty/orbit/[Jetty dependencies
-site].
+If you wish to use mail, you will also need the `javax.mail` api and implementation.
+You can http://download.eclipse.org/jetty/orbit/javax.mail.glassfish_1.4.1.v201005082020.jar/dist/[obtain this jar] from the http://download.eclipse.org/jetty/orbit/javax.mail.glassfish_1.4.1.v201005082020.jar/dist/[Jetty dependencies site].
+Note that this jar also requires the `javax.activation` classes, which you can also http://download.eclipse.org/jetty/orbit/javax.activation_1.1.0.v201105071233.jar/dist/[obtain]  from the http://download.eclipse.org/jetty/orbit/[Jetty dependencies site].
 
 ==== Example Code
 
-Here is an example class that sets up some JNDI entries and deploys a
-webapp that references these JNDI entries in code. We'll use some mocked
-up classes for the transaction manager and the DataSource in this
-example for simplicity:
+Here is an example class that sets up some JNDI entries and deploys a webapp that references these JNDI entries in code.
+We'll use some mocked up classes for the transaction manager and the DataSource in this example for simplicity:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -70,7 +56,7 @@ public class ServerWithJNDI
 
         //Create the server
         Server server = new Server(8080);
-        
+
         //Enable parsing of jndi-related parts of web.xml and jetty-env.xml
         org.eclipse.jetty.webapp.Configuration.ClassList classlist = org.eclipse.jetty.webapp.Configuration.ClassList.setServerDefault(server);
         classlist.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration", "org.eclipse.jetty.plus.webapp.EnvConfiguration", "org.eclipse.jetty.plus.webapp.PlusConfiguration");
@@ -86,19 +72,19 @@ public class ServerWithJNDI
         org.eclipse.jetty.plus.jndi.Transaction transactionMgr = new org.eclipse.jetty.plus.jndi.Transaction(new com.acme.MockUserTransaction());
 
         //Define an env entry with Server scope.
-        //At runtime, the webapp accesses this as java:comp/env/woggle  
-        //This is equivalent to putting an env-entry in web.xml: 
-        //<env-entry> 
-        //  <env-entry-name>woggle</env-entry-name> 
-        //  <env-entry-type>java.lang.Integer</env-entry-type> 
-        //  <env-entry-value>4000</env-entry-value> 
+        //At runtime, the webapp accesses this as java:comp/env/woggle
+        //This is equivalent to putting an env-entry in web.xml:
+        //<env-entry>
+        //  <env-entry-name>woggle</env-entry-name>
+        //  <env-entry-type>java.lang.Integer</env-entry-type>
+        //  <env-entry-value>4000</env-entry-value>
         //</env-entry>
         org.eclipse.jetty.plus.jndi.EnvEntry woggle = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "woggle", new Integer(4000), false);
 
 
         //Define an env entry with webapp scope.
         //At runtime, the webapp accesses this as java:comp/env/wiggle
-        //This is equivalent to putting a web.xml entry in web.xml:    
+        //This is equivalent to putting a web.xml entry in web.xml:
         //<env-entry>
         //  <env-entry-name>wiggle</env-entry-name>
         //  <env-entry-value>100</env-entry-value>
@@ -126,7 +112,7 @@ public class ServerWithJNDI
         props.put("mail.debug", "false");
         mailref.setProperties(props);
         org.eclipse.jetty.plus.jndi.Resource xxxmail = new org.eclipse.jetty.plus.jndi.Resource(webapp, "mail/Session", mailref);
-     
+
 
         // Register a  mock DataSource scoped to the webapp
         //This must be linked to the webapp via an entry in web.xml:
@@ -138,7 +124,7 @@ public class ServerWithJNDI
         //At runtime the webapp accesses this as java:comp/env/jdbc/mydatasource
         org.eclipse.jetty.plus.jndi.Resource mydatasource = new org.eclipse.jetty.plus.jndi.Resource(webapp, "jdbc/mydatasource",
                                                                                                      new com.acme.MockDataSource());
-    
+
         server.start();
         server.join();
     }
