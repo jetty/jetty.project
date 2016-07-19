@@ -21,4 +21,4 @@ Project documentation is located on our Eclipse website.
 Professional Services
 ============
 
-Expert advice and production support are available through [http://webtide.com](Webtide.com).
+Expert advice and production support are available through http://webtide.com.
