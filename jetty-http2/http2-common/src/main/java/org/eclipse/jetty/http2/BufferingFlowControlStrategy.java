@@ -108,11 +108,18 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
         int maxLevel = (int)(maxSessionRecvWindow.get() * ratio);
         if (level > maxLevel)
         {
-            level = sessionLevel.getAndSet(0);
-            session.updateRecvWindow(level);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Data consumed, {} bytes, updated session recv window by {}/{} for {}", length, level, maxLevel, session);
-            windowFrame = new WindowUpdateFrame(0, level);
+            if (sessionLevel.compareAndSet(level, 0))
+            {
+                session.updateRecvWindow(level);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Data consumed, {} bytes, updated session recv window by {}/{} for {}", length, level, maxLevel, session);
+                windowFrame = new WindowUpdateFrame(0, level);
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Data consumed, {} bytes, concurrent session recv window level {}/{} for {}", length, sessionLevel, maxLevel, session);
+            }
         }
         else
         {
