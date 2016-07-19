@@ -200,7 +200,7 @@ public class AsyncServletTest
     @Test
     public void testAsyncNotSupportedAsync() throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             _expectedCode="500 ";
             String response=process("noasync","start=200",null);

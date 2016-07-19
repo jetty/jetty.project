@@ -199,11 +199,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 }
                 
                 case ASYNC:
+                    if (!_state.compareAndSet(state, OutputState.READY))
+                        continue;
+                    break;
                 case UNREADY:
                 case PENDING:
                 {
                     if (!_state.compareAndSet(state,OutputState.CLOSED))
-                        break;
+                        continue;
                     IOException ex = new IOException("Closed while Pending/Unready");
                     LOG.warn(ex.toString());
                     LOG.debug(ex);
@@ -212,7 +215,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 default:
                 {
                     if (!_state.compareAndSet(state,OutputState.CLOSED))
-                        break;
+                        continue;
 
                     try
                     {

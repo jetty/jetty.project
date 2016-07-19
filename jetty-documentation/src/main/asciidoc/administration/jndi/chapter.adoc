@@ -17,8 +17,8 @@
 [[jndi]]
 == Configuring JNDI
 
-Jetty supports `java:comp/env` lookups in webapps. This is an optional
-feature for which you need to do some setup.
+Jetty supports `java:comp/env` lookups in webapps.
+This is an optional feature for which some configuration is required.
 
 include::quick-jndi-setup.adoc[]
 include::using-jndi.adoc[]

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -46,6 +47,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -75,6 +78,7 @@ public class AsyncIOServletTest
 {
     private Server server;
     private ServerConnector connector;
+    private LocalConnector local;
     private ServletContextHandler context;
     private String path = "/path";
     private static final ThreadLocal<Throwable> scope = new ThreadLocal<>();
@@ -83,6 +87,7 @@ public class AsyncIOServletTest
     {
         startServer(servlet,30000);
     }
+    
     public void startServer(HttpServlet servlet, long idleTimeout) throws Exception
     {
         server = new Server();
@@ -90,6 +95,8 @@ public class AsyncIOServletTest
         connector.setIdleTimeout(idleTimeout);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(false);
         server.addConnector(connector);
+        local = new LocalConnector(server);
+        server.addConnector(local);
 
         context = new ServletContextHandler(server, "/", false, false);
         ServletHolder holder = new ServletHolder(servlet);
@@ -952,11 +959,16 @@ public class AsyncIOServletTest
                             int read = input.read(buffer);
                             if (read < 0)
                             {
-                                asyncContext.complete();
+                                //if (output.isReady())
+                                {
+                                    asyncContext.complete();
+                                }
                                 break;
                             }
                             if (output.isReady())
+                            {
                                 output.write(buffer, 0, read);
+                            }
                             else
                                 Assert.fail();
                         }
@@ -978,7 +990,10 @@ public class AsyncIOServletTest
                     @Override
                     public void onWritePossible() throws IOException
                     {
-                        writeLatch.countDown();
+                        if (writeLatch.getCount()==0)
+                            asyncContext.complete();
+                        else
+                            writeLatch.countDown();
                     }
 
                     @Override
@@ -992,29 +1007,24 @@ public class AsyncIOServletTest
 
         String content = "0123456789ABCDEF";
 
-        try (Socket client = new Socket("localhost", connector.getLocalPort()))
+        try (LocalEndPoint endp = local.connect())
         {
-            OutputStream output = client.getOutputStream();
-
             String request = "POST " + path + " HTTP/1.1\r\n" +
                     "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                     "Transfer-Encoding: chunked\r\n" +
                     "\r\n" +
-                    "10\r\n" +
+                    Integer.toHexString(content.length())+"\r\n" +
                     content + "\r\n";
-            output.write(request.getBytes("UTF-8"));
-            output.flush();
+            endp.addInput(ByteBuffer.wrap(request.getBytes("UTF-8")));
 
             assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
 
             request = "" +
                     "0\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
-            output.flush();
+            endp.addInput(ByteBuffer.wrap(request.getBytes("UTF-8")));
 
-            HttpTester.Input input = HttpTester.from(client.getInputStream());
-            HttpTester.Response response = HttpTester.parseResponse(input);
+            HttpTester.Response response = HttpTester.parseResponse(endp.getResponse());
 
             assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
             assertThat(response.getContent(), Matchers.equalTo(content));
