@@ -60,6 +60,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
+import javax.servlet.http.PushBuilder;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -74,6 +75,8 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.session.Session;
@@ -173,6 +176,7 @@ public class Request implements HttpServletRequest
     private String _contextPath;
     private String _servletPath;
     private String _pathInfo;
+    private PathSpec _pathSpec;
 
     private boolean _secure;
     private String _asyncNotSupportedSource = null;
@@ -236,42 +240,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    /** Get a PushBuilder associated with this request initialized as follows:<ul>
-     * <li>The method is initialized to "GET"</li>
-     * <li>The headers from this request are copied to the Builder, except for:<ul>
-     *   <li>Conditional headers (eg. If-Modified-Since)
-     *   <li>Range headers
-     *   <li>Expect headers
-     *   <li>Authorization headers
-     *   <li>Referrer headers
-     * </ul></li>
-     * <li>If the request was Authenticated, an Authorization header will
-     * be set with a container generated token that will result in equivalent
-     * Authorization</li>
-     * <li>The query string from {@link #getQueryString()}
-     * <li>The {@link #getRequestedSessionId()} value, unless at the time
-     * of the call {@link #getSession(boolean)}
-     * has previously been called to create a new {@link HttpSession}, in
-     * which case the new session ID will be used as the PushBuilders
-     * requested session ID.</li>
-     * <li>The source of the requested session id will be the same as for
-     * this request</li>
-     * <li>The builders Referer header will be set to {@link #getRequestURL()}
-     * plus any {@link #getQueryString()} </li>
-     * <li>If {@link HttpServletResponse#addCookie(Cookie)} has been called
-     * on the associated response, then a corresponding Cookie header will be added
-     * to the PushBuilder, unless the {@link Cookie#getMaxAge()} is &lt;=0, in which
-     * case the Cookie will be removed from the builder.</li>
-     * <li>If this request has has the conditional headers If-Modified-Since or
-     * If-None-Match then the {@link PushBuilderImpl#isConditional()} header is set
-     * to true.
-     * </ul>
-     *
-     * <p>Each call to getPushBuilder() will return a new instance
-     * of a PushBuilder based off this Request.  Any mutations to the
-     * returned PushBuilder are not reflected on future returns.
-     * @return A new PushBuilder or null if push is not supported
-     */
+    @Override
     public PushBuilder getPushBuilder()
     {
         if (!isPushSupported())
@@ -1840,6 +1809,7 @@ public class Request implements HttpServletRequest
         _queryParameters = null;
         _contentParameters = null;
         _parameters = null;
+        _pathSpec = null;
         _contentParamsExtracted = false;
         _inputState = __NONE;
         _multiPartInputStream = null;
@@ -2427,4 +2397,106 @@ public class Request implements HttpServletRequest
     {
         throw new ServletException("HttpServletRequest.upgrade() not supported in Jetty");
     }
+    
+    
+    public void setPathSpec(PathSpec pathSpec)
+    {
+        _pathSpec = pathSpec;
+    }
+
+    public PathSpec getPathSpec()
+    {
+        return _pathSpec;
+    }
+    
+    
+    // TODO replace with overriden version from API
+    public Mapping getMapping() 
+    {
+        final PathSpec pathSpec = _pathSpec;
+        final String servletPath = _servletPath;
+        return new Mapping()
+        {
+            @Override
+            public String getMatchValue()
+            {   
+                return servletPath;
+            }
+
+            @Override
+            public String getPattern()
+            {
+                if (pathSpec!=null)
+                    pathSpec.toString();
+                return null;
+            }
+
+            @Override
+            public MappingMatch getMatchType()
+            {
+                if (pathSpec instanceof ServletPathSpec)
+                {
+                    switch(((ServletPathSpec)pathSpec).getGroup())
+                    {
+                        case EXACT:
+                            return MappingMatch.EXACT;
+                        case ROOT:
+                            return MappingMatch.CONTEXT_ROOT;
+                        case PREFIX_GLOB:
+                            return MappingMatch.PATH;
+                        case SUFFIX_GLOB:
+                            return MappingMatch.EXTENSION;
+                                                        
+                        default:
+                            return MappingMatch.UNKNOWN;
+                    }
+                }
+                else
+                    return MappingMatch.UNKNOWN;
+            }
+            
+        };
+    }
+
+    /**
+     * Represents how the request from which this object was obtained was mapped to
+     * the associated servlet.
+     * TODO replace with API version
+     * @since 4.0
+     */
+    public interface Mapping {
+        /**
+         * @return The value that was matched or the empty String if not known.
+         */
+        String getMatchValue();
+     
+        /**
+         * @return The {@code url-pattern} that matched this request or the empty
+         *         String if not known.
+         */
+        String getPattern();
+     
+        /**
+         * @return The type of match ({@link MappingMatch#UNKNOWN} if not known)
+         */
+        MappingMatch getMatchType();
+    }
+    
+    /**
+     * Represents the ways that a request can be mapped to a servlet
+     * TODO replace with API version
+     * @since 4.0
+     */
+    public enum MappingMatch 
+    {
+        CONTEXT_ROOT,
+        DEFAULT,
+        EXACT,
+        EXTENSION,
+        IMPLICIT,
+        PATH,
+        UNKNOWN
+    }
+
+    
 }

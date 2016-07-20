@@ -457,6 +457,7 @@ public class ServletHandler extends ScopedHandler
                 }
                 else
                 {
+                    baseRequest.setPathSpec(pathSpec);
                     baseRequest.setServletPath(servlet_path);
                     baseRequest.setPathInfo(path_info);
                 }
