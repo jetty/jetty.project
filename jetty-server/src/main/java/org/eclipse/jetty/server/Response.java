@@ -985,7 +985,7 @@ public class Response implements HttpServletResponse
         if (isIncluding() || isWriting())
             return;
 
-        if (_outputType == OutputType.NONE && !isCommitted())
+        if (_outputType != OutputType.WRITER && !isCommitted())
         {
             if (encoding == null)
             {

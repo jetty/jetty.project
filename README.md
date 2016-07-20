@@ -33,8 +33,9 @@ Documentation
 Project documentation is located on our Eclipse website.
 
 - [http://www.eclipse.org/jetty/documentation](http://www.eclipse.org/jetty/documentation)
+- README.TXT
 
 Professional Services
 ---------------------
 
-Expert advice and production support are available through [http://webtide.com](Webtide.com).
+Expert advice and production support are available through [Webtide.com](http://webtide.com).
