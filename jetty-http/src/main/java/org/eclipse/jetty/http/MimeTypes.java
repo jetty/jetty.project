@@ -211,27 +211,22 @@ public class MimeTypes
             }
             else
             {
-                int count = 0;
-
                 try (InputStream in = mimeTypesUrl.openStream();
                      InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8))
                 {
                     Properties mime = new Properties();
                     mime.load(reader);
-
-                    for (String ext : mime.stringPropertyNames())
+                    mime.stringPropertyNames().stream()
+                    .filter(x->x!=null)
+                    .forEach(x->
+                    __dftMimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(mime.getProperty(x))));
+                    
+                    if (__dftMimeMap.size()<mime.size())
                     {
-                        if (ext == null)
-                        {
-                            LOG.warn("Encountered null mime-type extension in resource: {}", mimeTypesUrl);
-                        }
-                        String m = mime.getProperty(ext);
-                        __dftMimeMap.put(StringUtil.asciiToLowerCase(ext), normalizeMimeType(m));
-                        count++;
+                        LOG.warn("Encountered duplicate or null mime-type extension in resource: {}", mimeTypesUrl);
                     }
                 }
-
-                if (count < 1)
+                if (__dftMimeMap.size()==0)
                 {
                     LOG.warn("Empty mime types declaration at {}", mimeTypesUrl);
                 }
@@ -253,26 +248,23 @@ public class MimeTypes
             }
             else
             {
-                int count = 0;
-
                 try (InputStream in = mimeTypesUrl.openStream();
                      InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8))
                 {
                     Properties encoding = new Properties();
                     encoding.load(reader);
+                    
+                    encoding.stringPropertyNames().stream()
+                    .filter(t->t!=null)
+                    .forEach(t->__encodings.put(t, encoding.getProperty(t)));
 
-                    for (String type : encoding.stringPropertyNames())
+                    if (__encodings.size()<encoding.size())
                     {
-                        if (type == null)
-                        {
-                            LOG.warn("Encountered null encoding type in resource: {}", mimeTypesUrl);
-                        }
-                        __encodings.put(type, encoding.getProperty(type));
-                        count++;
+                        LOG.warn("Encountered null or duplicate encoding type in resource: {}", mimeTypesUrl);
                     }
                 }
 
-                if (count < 1)
+                if (__encodings.size()==0)
                 {
                     LOG.warn("Empty mime types declaration at {}", mimeTypesUrl);
                 }
