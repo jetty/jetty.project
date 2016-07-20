@@ -966,7 +966,7 @@ public class StartArgs
             licenseCheckRequired = true;
             return;
         }
-        if (arg.startsWith("--add=") || arg.startsWith("--add-to-start="))
+        if (arg.startsWith("--add-to-start="))
         {
             startModules.addAll(Props.getValues(arg));
             run = false;
