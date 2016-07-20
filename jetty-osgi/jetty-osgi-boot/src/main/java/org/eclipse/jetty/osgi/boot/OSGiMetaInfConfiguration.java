@@ -19,6 +19,8 @@
 package org.eclipse.jetty.osgi.boot;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -339,6 +341,16 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
         }
         url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(url);
         String key = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
-        resourceMap.put(key + ";" + fragment.getSymbolicName(), Resource.newResource(url));
+
+        URI uri;
+        try
+        {
+           uri = url.toURI();
+        }
+        catch (URISyntaxException e)
+        {
+            uri = new URI(url.toString().replaceAll(" ", "%20"));
+        }
+        resourceMap.put(key + ";" + fragment.getSymbolicName(), Resource.newResource(uri));
     }
 }

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.osgi.boot;
 
+
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 
