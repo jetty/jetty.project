@@ -393,6 +393,27 @@ public class HttpConnectionTest
     }
 
     @Test
+    public void testNoHost() throws Exception
+    {
+        String response;
+
+        response=connector.getResponse("GET / HTTP/1.1\r\n"+
+            "\r\n");
+        checkContains(response,0,"HTTP/1.1 400");
+    }
+
+    @Test
+    public void testEmptyHost() throws Exception
+    {
+        String response;
+
+        response=connector.getResponse("GET / HTTP/1.1\r\n"+
+            "Host:\r\n"+
+            "\r\n");
+        checkContains(response,0,"HTTP/1.1 200");
+    }
+
+    @Test
     public void testBadURIencoding() throws Exception
     {
         Log.getLogger(HttpParser.class).info("badMessage: bad encoding expected ...");
