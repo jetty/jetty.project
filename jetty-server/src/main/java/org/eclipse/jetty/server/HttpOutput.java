@@ -199,31 +199,49 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 }
                 
                 case ASYNC:
+                {
+                    // A close call implies a write operation, thus in asynchronous mode
+                    // a call to isReady() that returned true should have been made.
+                    // However it is desirable to allow a close at any time, specially if 
+                    // complete is called.   Thus we simulate a call to isReady here, assuming
+                    // that we can transition to READY.
                     if (!_state.compareAndSet(state, OutputState.READY))
                         continue;
                     break;
+                }
+                    
                 case UNREADY:
                 case PENDING:
                 {
+                    // A close call implies a write operation, thus in asynchronous mode
+                    // a call to isReady() that returned true should have been made.
+                    // However it is desirable to allow a close at any time, specially if 
+                    // complete is called.   Because the prior write has not yet completed
+                    // and/or isReady has not been called, this close is allowed, but will
+                    // abort the response.
                     if (!_state.compareAndSet(state,OutputState.CLOSED))
                         continue;
                     IOException ex = new IOException("Closed while Pending/Unready");
                     LOG.warn(ex.toString());
                     LOG.debug(ex);
                     _channel.abort(ex);
+                    return;
                 }
+                
                 default:
                 {
                     if (!_state.compareAndSet(state,OutputState.CLOSED))
                         continue;
 
+                    // Do a normal close by writing the aggregate buffer or an empty buffer. If we are
+                    // not including, then indicate this is the last write.
                     try
                     {
                         write(BufferUtil.hasContent(_aggregate)?_aggregate:BufferUtil.EMPTY_BUFFER, !_channel.getResponse().isIncluding());
                     }
                     catch (IOException x)
                     {
-                        // Ignore it, it's been already logged in write().
+                        LOG.ignore(x); // Ignore it, it's been already logged in write().
                     }
                     finally
                     {
@@ -944,30 +962,30 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 continue;
             }
 
-            switch(_state.get())
+            // We do not check the state here.  Strictly speaking the state should 
+            // always be READY when run is called.  However, other async threads or 
+            // a prior call by this thread to onDataAvailable may have called write
+            // after onWritePossible was called, so the state could be any of the 
+            // write states.  
+            //
+            // Even if the state is CLOSED, we need to call onWritePossible to tell 
+            // async producer that the last write completed.
+            //
+            // We have to trust the scheduling of this run was done 
+            // for good reason, that is protected correctly by HttpChannelState and 
+            // that implementations of onWritePossible will 
+            // themselves check isReady().  If multiple threads are calling write,
+            // then they must either rely on only a single container thread being
+            // dispatched or perform their own mutual exclusion.
+            try
             {
-                case ASYNC:
-                case READY:
-                case PENDING:
-                case UNREADY:
-                    // Even though a write is not possible, because a close has
-                    // occurred, we need to call onWritePossible to tell async
-                    // producer that the last write completed, so fall through.
-                case CLOSED:
-                    try
-                    {
-                        _writeListener.onWritePossible();
-                        break loop;
-                    }
-                    catch (Throwable e)
-                    {
-                        _onError = e;
-                    }
-                    break;
-
-                default:
-                    _onError=new IllegalStateException("state="+_state.get());
+                _writeListener.onWritePossible();
+                break loop;
             }
+            catch (Throwable e)
+            {
+                _onError = e;
+            }            
         }
     }
 
