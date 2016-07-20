@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLEngine;
 
@@ -96,19 +97,11 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
         if (negotiated.isEmpty())
         {
             // Generate list of protocols that we can negotiate
-            negotiated = new ArrayList<>(connector.getProtocols());
-            for (Iterator<String> i = negotiated.iterator();i.hasNext();)
-            {
-                String protocol = i.next();
-                // exclude SSL and negotiating protocols
-                ConnectionFactory f = connector.getConnectionFactory(protocol);
-               
-                if ((f instanceof SslConnectionFactory) ||
-                    (f instanceof NegotiatingServerConnectionFactory))
-                {
-                    i.remove();
-                }
-            }
+            negotiated = connector.getProtocols().stream()
+            .map(p->connector.getConnectionFactory(p))
+            .filter(f->!(f instanceof SslConnectionFactory)&&!(f instanceof NegotiatingServerConnectionFactory))
+            .map(p->p.getProtocol())
+            .collect(Collectors.toList());
         }
 
         // if default protocol is not set, then it is either HTTP/1.1 or 
@@ -118,7 +111,8 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
         {
             if (negotiated.contains(HttpVersion.HTTP_1_1.asString()))
                 dft = HttpVersion.HTTP_1_1.asString();
-            dft = negotiated.get(0);
+            else
+                dft = negotiated.get(0);
         }
 
         SSLEngine engine = null;
