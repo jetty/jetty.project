@@ -17,28 +17,30 @@
 [[jetty-jmx-annotations]]
 === Jetty JMX Annotations
 
-When the jetty-jmx libraries are present on startup and the wiring is enabled for exposing jetty mbeans to jmx, there are three annotations that govern when and how mbeans are created and exposed.
+When the `jetty-jmx` libraries are present on startup and the wiring is enabled for exposing Jetty MBeans to JMX, there are three annotations that govern when and how MBeans are created and exposed.
 
 [[jmx-annotation-introspection]]
 ==== Annotation Introspection
 
-When jmx is configured and enabled in jetty any time an object is registered with the Server it is introspected as a potential mbean to be exposed. 
+When JMX is configured and enabled in Jetty, any time an object is registered with the Server it is introspected as a potential MBean to be exposed.
 This introspection proceeds as follows assuming the class is named `com.acme.Foo`:
 
-1.  All influences for `com.acme.Foo` determined. These include each class in the chain of super classes, and by convention each of these classes following a form of `com.acme.jmx.FooMBean`. 
+1.  All influences for `com.acme.Foo` determined.
+These include each class in the chain of super classes, and by convention each of these classes following a form of `com.acme.jmx.FooMBean`.
 All super classes and their corresponding MBean representations are then used in the next step.
-2.  Each potential influencing class is checked for the @ManagedObject annotation, should this annotation exist at any point in the chain of influencers then a mbean is created with the description of the version @ManageObject discovered.
-3.  Once an mbean has been created for an object then each potential influencing object is introspected for @ManagedAttribute and @ManagedOperation annotations and the corresponding type is exposed to the mbean.
+2.  Each potential influencing class is checked for the `@ManagedObject` annotation.
+Should this annotation exist at any point in the chain of influencers then an MBran is created with the description of the version `@ManagedObject` discovered.
+3.  Once a MBean has been created for an object then each potential influencing object is introspected for `@ManagedAttribute` and `@ManagedOperation` annotations and the corresponding type is exposed to the MBean.
 
-The convention of looking for @ManageObject annotations on `.jmx.ClassMBean` allows for a normal POJO to be wrapped in an mbean without itself without requiring it being marked up with annotations.
-Since the pojo is passed to these wrapped derived Mbean instances and is an internal variable then the MBean can be used to better expose a set of attributes and operations that may not have been anticipated when the original object was created.
+The convention of looking for `@ManagedObject` annotations on `.jmx.ClassMBean` allows for a normal POJOs to be wrapped in an MBean without itself without requiring it being marked up with annotations.
+Since the POJO is passed to these wrapped derived Mbean instances and is an internal variable then the MBean can be used to better expose a set of attributes and operations that may not have been anticipated when the original object was created.
 
 [[jmx-managed-object]]
 ==== @ManagedObject
 
-The @ManagedObject annotation is used on a class at the top level to indicate that it should be exposed as an mbean. 
-It has only one attribute to it which is used as the description of the MBean. 
-Should multiple @ManagedObject annotations be found in the chain of influence then the first description is used.
+The `@ManagedObject` annotation is used on a class at the top level to indicate that it should be exposed as an MBean.
+It has only one attribute to it which is used as the description of the MBean.
+Should multiple `@ManagedObject` annotations be found in the chain of influence then the first description is used.
 
 The list of attributes available are:
 
@@ -48,9 +50,10 @@ value::
 [[jmx-managed-attribute]]
 ==== @ManagedAttribute
 
-The @ManagedAttribute annotation is used to indicate that a given method exposes a JMX attribute. This annotation is placed always on the reader method of a given attribute. 
-Unless it is marked as read-only in the configuration of the annotation a corresponding setter is looked for following normal naming conventions. 
-For example if this annotation is on a method called getFoo() then a method called setFoo() would be looked for and if found wired automatically into the jmx attribute.
+The `@ManagedAttribute` annotation is used to indicate that a given method exposes a JMX attribute.
+This annotation is placed always on the reader method of a given attribute.
+Unless it is marked as read-only in the configuration of the annotation a corresponding setter is looked for following normal naming conventions.
+For example if this annotation is on a method called `getFoo()` then a method called `setFoo()` would be looked for and if found wired automatically into the JMX attribute.
 
 The list of attributes available are:
 
@@ -59,33 +62,33 @@ value::
 name::
   The name of the Managed Attribute.
 proxied::
-  Value is true if the corresponding mbean for this object contains the method of this JMX attribute in question.
+  Value is true if the corresponding MBean for this object contains the method of this JMX attribute in question.
 readonly::
-  By default this value is false which means that a corresponding setter will be looked for an wired into the attribute should one be found.  
-  Setting this to true make the jmx attribute read only.
+  By default this value is false which means that a corresponding setter will be looked for an wired into the attribute should one be found.
+  Setting this to true make the JMX attribute read only.
 setter::
   This attribute can be used when the corresponding setter for a JMX attribute follows a non-standard naming convention and it should still be exposed as the setter for the attribute.
 
 [[jmx-managed-operation]]
 ==== @ManagedOperation
 
-The @ManagedOperation annotation is used to indicate that a given method should be considered a JMX operation.
+The `@ManagedOperation` annotation is used to indicate that a given method should be considered a JMX operation.
 
 The list of attributes available are:
 
 value::
   The description of the Managed Operation.
 impact::
-  The impact of an operation. 
+  The impact of an operation.
   By default this value is "UNKNOWN" and acceptable values are "ACTION", "INFO", "ACTION_INFO" and should be used according to their definitions with JMX.
 proxied::
-  Value is true if the corresponding mbean for this object contains the method of this JMX operation in question.
+  Value is true if the corresponding MBean for this object contains the method of this JMX operation in question.
 
 [[jmx-name-annotation]]
 ==== @Name
 
-A fourth annotation is often used in conjunction with the JMX annotations mentioned above. 
-This annotation is used to describe variables in method signatures so that when rendered into tools like JConsole it is clear what the parameters are. 
+A fourth annotation is often used in conjunction with the JMX annotations mentioned above.
+This annotation is used to describe variables in method signatures so that when rendered into tools like JConsole it is clear what the parameters are.
 For example:
 
 The list of attributes available are:
@@ -132,7 +135,4 @@ public class Derived extends Base implements Signature
         System.err.println("doodle "+doodle);
     }
 }
-
-
-      
 ----
