@@ -18,21 +18,24 @@
 
 package org.eclipse.jetty.http;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
+import java.util.Properties;
 import java.util.Set;
 
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.log.Log;
@@ -200,16 +203,36 @@ public class MimeTypes
 
         try
         {
-            ResourceBundle mime = ResourceBundle.getBundle("org/eclipse/jetty/http/mime");
-            Enumeration<String> i = mime.getKeys();
-            while(i.hasMoreElements())
+            String resourceName = "org/eclipse/jetty/http/mime.properties";
+            URL mimeTypesUrl = Loader.getResource(__dftMimeMap.getClass(), resourceName);
+            if (mimeTypesUrl == null)
             {
-                String ext = i.nextElement();
-                String m = mime.getString(ext);
-                __dftMimeMap.put(StringUtil.asciiToLowerCase(ext),normalizeMimeType(m));
+                LOG.warn("Missing mime-type resource: {}", resourceName);
+            }
+            else
+            {
+                try (InputStream in = mimeTypesUrl.openStream();
+                     InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8))
+                {
+                    Properties mime = new Properties();
+                    mime.load(reader);
+                    mime.stringPropertyNames().stream()
+                    .filter(x->x!=null)
+                    .forEach(x->
+                    __dftMimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(mime.getProperty(x))));
+                    
+                    if (__dftMimeMap.size()<mime.size())
+                    {
+                        LOG.warn("Encountered duplicate or null mime-type extension in resource: {}", mimeTypesUrl);
+                    }
+                }
+                if (__dftMimeMap.size()==0)
+                {
+                    LOG.warn("Empty mime types declaration at {}", mimeTypesUrl);
+                }
             }
         }
-        catch(MissingResourceException e)
+        catch(IOException e)
         {
             LOG.warn(e.toString());
             LOG.debug(e);
@@ -217,15 +240,37 @@ public class MimeTypes
 
         try
         {
-            ResourceBundle encoding = ResourceBundle.getBundle("org/eclipse/jetty/http/encoding");
-            Enumeration<String> i = encoding.getKeys();
-            while(i.hasMoreElements())
+            String resourceName = "org/eclipse/jetty/http/encoding.properties";
+            URL mimeTypesUrl = Loader.getResource(__dftMimeMap.getClass(), resourceName);
+            if (mimeTypesUrl == null)
             {
-                String type = i.nextElement();
-                __encodings.put(type,encoding.getString(type));
+                LOG.warn("Missing mime-type resource: {}", resourceName);
+            }
+            else
+            {
+                try (InputStream in = mimeTypesUrl.openStream();
+                     InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8))
+                {
+                    Properties encoding = new Properties();
+                    encoding.load(reader);
+                    
+                    encoding.stringPropertyNames().stream()
+                    .filter(t->t!=null)
+                    .forEach(t->__encodings.put(t, encoding.getProperty(t)));
+
+                    if (__encodings.size()<encoding.size())
+                    {
+                        LOG.warn("Encountered null or duplicate encoding type in resource: {}", mimeTypesUrl);
+                    }
+                }
+
+                if (__encodings.size()==0)
+                {
+                    LOG.warn("Empty mime types declaration at {}", mimeTypesUrl);
+                }
             }
         }
-        catch(MissingResourceException e)
+        catch(IOException e)
         {
             LOG.warn(e.toString());
             LOG.debug(e);
