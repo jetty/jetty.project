@@ -1330,12 +1330,14 @@ public class Request implements HttpServletRequest
         HttpField host = metadata==null?null:metadata.getFields().getField(HttpHeader.HOST);
         if (host!=null)
         {
-            // TODO is this needed now?
-            HostPortHttpField authority = (host instanceof HostPortHttpField)
-                ?((HostPortHttpField)host)
-                :new HostPortHttpField(host.getValue());
-            metadata.getURI().setAuthority(authority.getHost(),authority.getPort());
-            return authority.getHost();
+            if (!(host instanceof HostPortHttpField) && host.getValue()!=null && !host.getValue().isEmpty())
+                host=new HostPortHttpField(host.getValue());    
+            if (host instanceof HostPortHttpField)
+            {
+                HostPortHttpField authority = (HostPortHttpField)host;
+                metadata.getURI().setAuthority(authority.getHost(),authority.getPort());
+                return authority.getHost();
+            }
         }
 
         // Return host from connection

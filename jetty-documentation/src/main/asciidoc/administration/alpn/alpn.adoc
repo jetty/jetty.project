@@ -26,15 +26,15 @@ For those browsers that support HTTP/2, they all now support the ALPN negotiatio
 
 Starting with Jetty 9.3.0, only ALPN is supported by Jetty.
 
-The Jetty project provides an implementation of the TLS extension for ALPN for OpenJDK 7 and OpenJDK 8. 
+The Jetty project provides an implementation of the TLS extension for ALPN for OpenJDK 7 and OpenJDK 8.
 ALPN allows the application layer to negotiate which protocol to use over the secure connection.
 
-Any protocol can be negotiated by ALPN within a TLS connection. 
-The protocols that are most commonly negotiated are HTTP/2 (for browsers that support it) and, historically, SPDY. 
-The ALPN implementation is therefore not HTTP/2 or SPDY specific in any way. 
+Any protocol can be negotiated by ALPN within a TLS connection.
+The protocols that are most commonly negotiated are HTTP/2 (for browsers that support it) and, historically, SPDY.
+The ALPN implementation is therefore not HTTP/2 or SPDY specific in any way.
 Jetty's ALPN implementation, although hosted under the umbrella of the Jetty project, is independent of Jetty (the Servlet Container); you can use the ALPN implementation in any other Java network server.
 
-The Jetty distribution will automatically enable ALPN when it is needed to by a HTTP/2 connector, so for the most part ALPN is transparent to the average deployer. 
+The Jetty distribution will automatically enable ALPN when it is needed to by a HTTP/2 connector, so for the most part ALPN is transparent to the average deployer.
 This section provides the detail required for unusual deployments or developing to the ALPN API.
 
 [[alpn-starting]]
@@ -54,7 +54,7 @@ Be certain link:#alpn-versions[to get the ALPN Boot Jar version which matches th
 [[alpn-osgi]]
 ===== Starting in OSGi
 
-To use ALPN in an OSGi environment, in addition to putting the ALPN jar on the boot classpath for the container, you will also need to deploy the jetty-osgi-alpn jar. 
+To use ALPN in an OSGi environment, in addition to putting the ALPN jar on the boot classpath for the container, you will also need to deploy the jetty-osgi-alpn jar.
 This jar contains a Fragment-Host directive that ensures the ALPN classes will be available from the system bundle.
 
 You can download the http://central.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-alpn/[jetty-osgi-alpn jar] from Maven Central.
@@ -62,14 +62,14 @@ You can download the http://central.maven.org/maven2/org/eclipse/jetty/osgi/jett
 [[alpn-understanding]]
 ==== Understanding the ALPN API
 
-Applications need to interact with ALPN TLS extension protocol negotiations. 
+Applications need to interact with ALPN TLS extension protocol negotiations.
 For example, server applications need to know whether the client supports ALPN, and client applications needs to know whether the server supports ALPN.
 
 To implement this interaction, Jetty's ALPN implementation provides an API to applications, hosted at Maven coordinates
-`org.eclipse.jetty.alpn:alpn-api`. 
+`org.eclipse.jetty.alpn:alpn-api`.
 You need to declare this dependency as provided, because the `alpn-boot` Jar already includes it (see the previous section), and it is therefore available from the boot classpath.
 
-The API consists of a single class, `org.eclipse.jetty.alpn.ALPN`, and applications need to register instances of `SSLSocket` or `SSLEngine` with a `ClientProvider` or `ServerProvider` (depending on whether the application is a client application or server application). 
+The API consists of a single class, `org.eclipse.jetty.alpn.ALPN`, and applications need to register instances of `SSLSocket` or `SSLEngine` with a `ClientProvider` or `ServerProvider` (depending on whether the application is a client application or server application).
 Refer to `ALPN` Javadocs and to the examples below for further details about client and server provider methods.
 
 [[alpn-client-example]]
@@ -156,7 +156,7 @@ Failing to do so will cause a memory leak.
 [[alpn-tests]]
 ==== Unit Tests
 
-You can write and run unit tests that use the ALPN implementation. 
+You can write and run unit tests that use the ALPN implementation.
 The solution that we use with Maven is to specify an additional command line argument to the Surefire plugin:
 
 [source, xml, subs="{sub-order}"]
@@ -202,7 +202,7 @@ Since the ALPN class is in the boot classpath, we chose not to use logging libra
 [[alpn-license-details]]
 ==== License Details
 
-The ALPN implementation relies on modification of a few OpenJDK classes and on a few new classes that need to live in the `sun.security.ssl` package. 
+The ALPN implementation relies on modification of a few OpenJDK classes and on a few new classes that need to live in the `sun.security.ssl` package.
 These classes are released under the same GPLv2+exception license of OpenJDK.
 
 The ALPN class and its nested classes are released under same license as the classes of the Jetty project.
@@ -248,6 +248,8 @@ The ALPN implementation, relying on modifications of OpenJDK classes, updates ev
 |1.8.0u77 |8.1.7.v20160121
 |1.8.0u91 |8.1.7.v20160121
 |1.8.0u92 |8.1.8.v20160420
+|1.8.0u101 |8.1.9.v20160720
+|1.8.0u102 |8.1.9.v20160720
 |=============================
 
 [[alpn-build]]
@@ -263,7 +265,7 @@ $ hg clone http://hg.openjdk.java.net/jdk7u/jdk7u jdk7u # OpenJDK 7
 $ hg clone http://hg.openjdk.java.net/jdk8u/jdk8u jdk8u # OpenJDK 8
 $ cd !$
 $ ./get_source.sh
-  
+
 ....
 
 To update the source to a specific tag, use the following command:
@@ -271,7 +273,7 @@ To update the source to a specific tag, use the following command:
 [source, screen, subs="{sub-order}"]
 ....
 $ ./make/scripts/hgforest.sh update <tag-name>
-  
+
 ....
 
 The list of OpenJDK tags can be obtained from these pages:

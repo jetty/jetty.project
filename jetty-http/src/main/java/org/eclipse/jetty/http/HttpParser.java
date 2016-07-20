@@ -907,7 +907,7 @@ public class HttpParser
 
                     case HOST:
                         _host=true;
-                        if (!(_field instanceof HostPortHttpField))
+                        if (!(_field instanceof HostPortHttpField) && _valueString!=null && !_valueString.isEmpty())
                         {
                             _field=new HostPortHttpField(_header,legacyString(_headerString,_header.asString()),_valueString);
                             add_to_connection_trie=_connectionFields!=null;
