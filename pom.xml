@@ -17,7 +17,7 @@
     <slf4j-version>1.6.6</slf4j-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
     <npn.api.version>1.1.1.v20141010</npn.api.version>
-    <alpn.api.version>1.1.2.v20150522</alpn.api.version>
+    <alpn.api.version>1.1.3.v20160715</alpn.api.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <npn.version>undefined</npn.version>
     <alpn.version>undefined</alpn.version>
@@ -1238,6 +1238,30 @@
       </activation>
       <properties>
         <alpn.version>8.1.8.v20160420</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u101</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_101</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.9.v20160720</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u102</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_102</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.9.v20160720</alpn.version>
       </properties>
     </profile>
   </profiles>
