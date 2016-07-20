@@ -36,6 +36,7 @@ import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
+import org.ops4j.pax.exam.options.extra.WorkingDirectoryOption;
 import org.osgi.framework.BundleContext;
 
 import static org.junit.Assert.assertEquals;
@@ -76,6 +77,7 @@ public class TestJettyOSGiBootWithAnnotations
         // options.addAll(TestJettyOSGiBootCore.consoleDependencies());
         options.addAll(jspDependencies());
         options.addAll(annotationDependencies());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-fragment").versionAsInProject().noStart());
         return options.toArray(new Option[options.size()]);
     }
 
@@ -157,6 +159,10 @@ public class TestJettyOSGiBootWithAnnotations
             response = req.send();
             content = new String(response.getContent());
             assertTrue(content.contains("<p><b>Result: <span class=\"pass\">PASS</span></p>"));
+            
+            response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_HTTP_PORT + "/frag.html");
+            content = new String(response.getContent());
+            assertTrue(content.contains("<h1>FRAGMENT</h1>"));
         }
         finally
         {
