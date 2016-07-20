@@ -15,28 +15,18 @@
 //  ========================================================================
 
 [[using-jmx]]
-=== Using Java Management Extensions (JMX)
+=== Using JMX with Jetty
 
-The [http://java.sun.com/products/JavaManagement/[Java Management Extensions (JMX) API] is a standard API for managing and monitoring resources such as applications, devices, services, and the Java virtual machine.
-
-Typical uses of the JMX technology include:
-
-* Consulting and changing application configuration.
-* Accumulating and making available statistics about application behavior.
-* Notifying of state changes and erroneous conditions.
-
-The JMX API includes remote access, so a remote management program can interact with a running application for these purposes.
-
-Jetty JMX integration uses the platform MBean server implementation that Java VM provides. 
-The integration is based on the ObjectMBean implementation of DynamicMBean. 
-This implementation allows you to wrap an arbitrary POJO in an MBean and annotate it appropriately to expose it via JMX. 
+Jetty JMX integration uses the platform MBean server implementation that Java VM provides.
+The integration is based on the `ObjectMBean` implementation of `DynamicMBean`.
+This implementation allows you to wrap an arbitrary POJO in an MBean and annotate it appropriately to expose it via JMX.
 See xref:jetty-jmx-annotations[].
 
-TheMBeanContainer implementation of the Container.Listener interface coordinates creation of MBeans. 
+The `MBeanContainer` implementation of the `Container.Listener` interface coordinates creation of MBeans.
 The Jetty Server and it's components use a link:{JDURL}/org/eclipse/jetty/util/component/Container.html[Container] to maintain a containment tree of components and to support notification of changes to that tree.
-The MBeanContainer class listens for Container events and creates and destroys MBeans as required to wrap all Jetty components.
+The `MBeanContainer` class listens for Container events and creates and destroys MBeans as required to wrap all Jetty components.
 
-You can access the MBeans that Jetty publishes both through built-in Java VM connector via JConsole, or by registering a remote JMX connector and using a remote JMX agent to monitor Jetty.
+You can access the MBeans that Jetty publishes both through built-in Java VM connector via JConsole or JMC, or by registering a remote JMX connector and using a remote JMX agent to monitor Jetty.
 
 [[configuring-jmx]]
 ==== Configuring JMX
@@ -52,13 +42,13 @@ To monitor an application using JMX, perform the following steps:
 [[accessing-jetty-mbeans]]
 ===== Using JConsole to Access Jetty MBeans
 
-The simplest way to access the MBeans that Jetty publishes is to use the http://java.sun.com/developer/technicalArticles/J2SE/jconsole.html[JConsole utility] the Java Virtual Machine supplies. 
-See xref:jetty-jconsole[] for instructions on how to configure JVM for use with JConsole.
+The simplest way to access the MBeans that Jetty publishes is to use the http://java.sun.com/developer/technicalArticles/J2SE/jconsole.html[JConsole utility] the Java Virtual Machine supplies.
+See xref:jetty-jconsole[] for instructions on how to configure JVM for use with JConsole or JMC.
 
-To access Jetty MBeans via JConsole, you must:
+To access Jetty MBeans via JConsole or JMC, you must:
 
 * Enable the registration of Jetty MBeans into the platform MBeanServer.
-* Enable a JMXConnectorServer so that JConsole can connect and visualize the MBeans.
+* Enable a `JMXConnectorServer` so that JConsole/JMC can connect and visualize the MBeans.
 
 [[registering-jetty-mbeans]]
 ===== Registering Jetty MBeans
@@ -68,8 +58,23 @@ Configuring Jetty JMX integration differs for standalone and embedded Jetty.
 [[jmx-standalone-jetty]]
 ====== Standalone Jetty
 
-JMX is enabled by default in the jetty-9 distribution. 
-If you are having difficulties validate that the section in the jetty.home/start.ini file is uncommented.
+JMX is not enabled by default in the Jetty distribution.
+To enable JMX in the Jetty distribution, run the following, where `{$jetty.home}` is the directory where you have the Jetty distribution located (see link:#startup-base-and-home[the documentation for Jetty base vs. home examples]):
+
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar {$jetty.home}/start.jar --add-to-start=jmx
+....
+
+Running the above command will append the available configurable elements of the JMX module to the `{$jetty.base}/start.ini` file.
+If you are managing separate ini files for your modules in the distribution, use `--add-to-start.d=jmx` instead.
+
+If you wish to add remote access for JMX, you will also need to enable the JMX-Remote module:
+
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar {$jetty.home}/start.jar --add-to-start=jmx-remote
+....
 
 [[jmx-embedded-jetty]]
 ====== Embedded Jetty
@@ -91,14 +96,14 @@ server.addBean(Log.getLog());
 
 ----
 
-Notice that Jetty creates the MBeanContainer immediately after creating the Server, and immediately after registering it as an EventListener of the Server object (which is also a Container object).
+Notice that Jetty creates the `MBeanContainer` immediately after creating the Server, and immediately after registering it as an `EventListener` of the Server object (which is also a Container object).
 
-Because logging is initialized prior to the MBeanContainer (even before the Server itself), it is necessary to register the logger manually via `server.addBean()` so that the loggers may show up in the JMX tree.
+Because logging is initialized prior to the `MBeanContainer` (even before the Server itself), it is necessary to register the logger manually via `server.addBean()` so that the loggers may show up in the JMX tree.
 
 [[jmx-using-jetty-maven-plugin]]
 ===== Using the Jetty Maven Plugin with JMX
 
-If you are using the link:#jetty-maven-plugin[jetty maven plugin] you should copy the `etc/jetty-jmx.xml` file into your webapp project somewhere, such as `src/etc,` then add a `<jettyconfig>` element to the plugin `<configuration>`:
+If you are using the link:#jetty-maven-plugin[Jetty Maven plugin] you should copy the `/etc/jetty-jmx.xml` file into your webapp project somewhere, such as `/src/etc,` then add a `<jettyconfig>` element to the plugin `<configuration>`:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -111,19 +116,18 @@ If you are using the link:#jetty-maven-plugin[jetty maven plugin] you should cop
     <jettyXml>src/etc/jetty-jmx.xml</jettyXml>
   </configuration>
 </plugin>
-        
 ----
 
 
 [[enabling-jmxconnectorserver-for-remote-access]]
 ==== Enabling JMXConnectorServer for Remote Access
 
-There are two ways of enabling remote connectivity so that JConsole can connect to visualize MBeans.
+There are two ways of enabling remote connectivity so that JConsole or JMC can connect to visualize MBeans.
 
-* Use the `com.sun.management.jmxremote` system property on the command line. 
-Unfortunately, this solution does not play well with firewalls and it is not flexible.
-* Use Jetty's `ConnectorServer` class. 
-To enable use of this class, uncomment the correspondent portion in `etc/jetty-jmx.xml,` like this:
+* Use the `com.sun.management.jmxremote` system property on the command line.
+Unfortunately, this solution does not work well with firewalls and is not flexible.
+* Use Jetty's `ConnectorServer` class.
+To enable use of this class, uncomment the correspondent portion in `/etc/jetty-jmx.xml,` like this:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -139,18 +143,18 @@ To enable use of this class, uncomment the correspondent portion in `etc/jetty-j
   <Arg>org.eclipse.jetty.jmx:name=rmiconnectorserver</Arg>
   <Call name="start" />
 </New>
-        
+
 ----
 
-This configuration snippet starts an RMIRegistry and a JMXConnectorServer both on port 1099 (by default), so that firewalls should open just that one port to allow connections from JConsole.
+This configuration snippet starts an `RMIRegistry` and a `JMXConnectorServer` both on port 1099 (by default), so that firewalls should open just that one port to allow connections from JConsole or JMC.
 
 [[securing-remote-access]]
 ==== Securing Remote Access
 
-JMXConnectorServer several options to restrict access. 
+`JMXConnectorServer` several options to restrict access.
 For a complete guide to controlling authentication and authorization in JMX, see https://blogs.oracle.com/lmalventosa/entry/jmx_authentication_authorization[Authentication and Authorization in JMX RMI connectors] in Luis-Miguel Alventosa's blog.
 
-To restrict access to the JMXConnectorServer, you can use this configuration, where the `jmx.password` and `jmx.access` files have the format specified in the blog entry above:
+To restrict access to the `JMXConnectorServer`, you can use this configuration, where the `jmx.password` and `jmx.access` files have the format specified in the blog entry above:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -184,16 +188,16 @@ To restrict access to the JMXConnectorServer, you can use this configuration, wh
   <Call name="start" />
 </New>
 
-          
+
 ----
 
 [[custom-monitor-applcation]]
 ==== Custom Monitor Application
 
-Using the JMX API, you can also write a custom application to monitor your Jetty server. 
-To allow this application to connect to your Jetty server, you need to uncomment the last section of your `etc/jetty-jmx.xml` configuration file and optionally modify the endpoint name. 
+Using the JMX API, you can also write a custom application to monitor your Jetty server.
+To allow this application to connect to your Jetty server, you need to uncomment the last section of the `/etc/jetty-jmx.xml` configuration file and optionally modify the endpoint name.
 Doing so creates a JMX HTTP connector and registers a JMX URL that outputs to the `Stderr` log.
 
-You should provide the URL that appears in the log to your monitor application in order to create an ` MBeanServerConnection.` 
-You can use the same URL to connect to your Jetty instance from a remote machine using JConsole. 
+You should provide the URL that appears in the log to your monitor application in order to create an `MBeanServerConnection.`
+You can use the same URL to connect to your Jetty instance from a remote machine using JConsole or JMC.
 See the link:{GITBROWSEURL}/jetty-jmx/src/main/config/etc/jetty-jmx.xml[configuration file] for more details.
