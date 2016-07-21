@@ -20,14 +20,15 @@ package org.eclipse.jetty.websocket.common.io;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
@@ -163,7 +164,7 @@ public class FrameFlusher
             {
                 while ((entries.size() <= maxGather) && !queue.isEmpty())
                 {
-                    FrameEntry entry = queue.remove(0);
+                    FrameEntry entry = queue.poll();
                     currentBatchMode = BatchMode.max(currentBatchMode,entry.batchMode);
 
                     // Force flush if we need to.
@@ -293,7 +294,7 @@ public class FrameFlusher
     private final Generator generator;
     private final int maxGather;
     private final Object lock = new Object();
-    private final ArrayQueue<FrameEntry> queue = new ArrayQueue<>(16,16,lock);
+    private final Deque<FrameEntry> queue = new ArrayDeque<>();
     private final Flusher flusher;
     private final AtomicBoolean closed = new AtomicBoolean();
     private volatile Throwable failure;
@@ -353,7 +354,7 @@ public class FrameFlusher
                 case OpCode.PING:
                 {
                     // Prepend PINGs so they are processed first.
-                    queue.add(0,entry);
+                    queue.offerFirst(entry);
                     break;
                 }
                 case OpCode.CLOSE:
@@ -362,12 +363,12 @@ public class FrameFlusher
                     // added after this close frame, but we will
                     // fail them later to keep it simple here.
                     closed.set(true);
-                    queue.add(entry);
+                    queue.offer(entry);
                     break;
                 }
                 default:
                 {
-                    queue.add(entry);
+                    queue.offer(entry);
                     break;
                 }
             }

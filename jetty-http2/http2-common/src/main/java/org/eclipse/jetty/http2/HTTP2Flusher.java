@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Queue;
 
@@ -29,7 +30,6 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
@@ -40,7 +40,7 @@ public class HTTP2Flusher extends IteratingCallback
     private static final Logger LOG = Log.getLogger(HTTP2Flusher.class);
 
     private final Queue<WindowEntry> windows = new ArrayDeque<>();
-    private final ArrayQueue<Entry> frames = new ArrayQueue<>(ArrayQueue.DEFAULT_CAPACITY, ArrayQueue.DEFAULT_GROWTH, this);
+    private final Deque<Entry> frames = new ArrayDeque<>();
     private final Queue<Entry> entries = new ArrayDeque<>();
     private final List<Entry> actives = new ArrayList<>();
     private final HTTP2Session session;
@@ -76,7 +76,7 @@ public class HTTP2Flusher extends IteratingCallback
             closed = terminated;
             if (!closed)
             {
-                frames.add(0, entry);
+                frames.offerFirst(entry);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Prepended {}, frames={}", entry, frames.size());
             }
