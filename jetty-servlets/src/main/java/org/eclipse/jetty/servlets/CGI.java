@@ -321,6 +321,8 @@ public class CGI extends HttpServlet
         while (enm.hasMoreElements())
         {
             String name = enm.nextElement();
+            if (name.equalsIgnoreCase("Proxy"))
+                continue;
             String value = req.getHeader(name);
             env.set("HTTP_" + name.toUpperCase(Locale.ENGLISH).replace('-', '_'), value);
         }
