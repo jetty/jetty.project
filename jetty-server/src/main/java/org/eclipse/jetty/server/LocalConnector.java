@@ -382,21 +382,23 @@ public class LocalConnector extends AbstractConnector
             }
         }
         
-        /** Wait for a response using a parser to detect the end of message
+        /** 
+         * Wait for a response using a parser to detect the end of message
          * @return Buffer containing full response or null for EOF;
-         * @throws Exception
+         * @throws Exception if the response cannot be parsed
          */
         public String getResponse() throws Exception
         {
             return getResponse(false,30,TimeUnit.SECONDS);
         }
         
-        /** Wait for a response using a parser to detect the end of message
-         * @param head
-         * @param time
-         * @param unit
+        /** 
+         * Wait for a response using a parser to detect the end of message
+         * @param head whether the request is a HEAD request
+         * @param time the maximum time to wait
+         * @param unit the time unit of the {@code timeout} argument
          * @return Buffer containing full response or null for EOF;
-         * @throws Exception
+         * @throws Exception if the response cannot be parsed
          */
         public String getResponse(boolean head, long time,TimeUnit unit) throws Exception
         {
@@ -406,12 +408,13 @@ public class LocalConnector extends AbstractConnector
             return null;
         }
         
-        /** Wait for a response using a parser to detect the end of message
-         * @param head
-         * @param time
-         * @param unit
+        /** 
+         * Wait for a response using a parser to detect the end of message
+         * @param head whether the request is a HEAD request
+         * @param time the maximum time to wait
+         * @param unit the time unit of the {@code timeout} argument
          * @return Buffer containing full response or null for EOF;
-         * @throws Exception
+         * @throws Exception if the response cannot be parsed
          */
         public ByteBuffer waitForResponse(boolean head, long time,TimeUnit unit) throws Exception
         {

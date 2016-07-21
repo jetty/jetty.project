@@ -222,6 +222,9 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     }
 
     /**
+     * @param request the HTTP request to log
+     * @param b the build to write logs into
+     * @throws IOException for no reason
      * @deprecated override {@link #logExtended(StringBuilder, Request, Response)} instead
      */
     @Deprecated

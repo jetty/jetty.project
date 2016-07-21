@@ -39,7 +39,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -118,17 +117,17 @@ public class ErrorHandler extends AbstractHandler
         generateAcceptableResponse(baseRequest,request,response,response.getStatus(),baseRequest.getResponse().getReason());
     }
 
-    /* ------------------------------------------------------------ */
-    /** Generate an acceptable error response.
+    /** 
+     * Generate an acceptable error response.
      * <p>This method is called to generate an Error page of a mime type that is 
      * acceptable to the user-agent.  The Accept header is evaluated in 
      * quality order and the method 
-     * {@link #generateAcceptableResponse(Request, HttpServletRequest, HttpServletResponse, String)}
+     * {@link #generateAcceptableResponse(Request, HttpServletRequest, HttpServletResponse, int, String, String)}
      * is called for each mimetype until {@link Request#isHandled()} is true.</p>
      * @param baseRequest The base request
      * @param request The servlet request (may be wrapped)
      * @param response The response (may be wrapped)
-     * @throws IOException
+     * @throws IOException if the response cannot be generated
      */
     protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message)
         throws IOException
@@ -149,8 +148,8 @@ public class ErrorHandler extends AbstractHandler
         baseRequest.setHandled(true);
     }
 
-    /* ------------------------------------------------------------ */
-    /** get an acceptable writer for an error page.
+    /** 
+     * Returns an acceptable writer for an error page.
      * <p>Uses the user-agent's <code>Accept-Charset</code> to get response
      * {@link Writer}.  The acceptable charsets are tested in quality order 
      * if they are known to the JVM and the first known is set on
@@ -164,7 +163,7 @@ public class ErrorHandler extends AbstractHandler
      * @param request The servlet request (may be wrapped)
      * @param response The response (may be wrapped)
      * @return A {@link Writer} if there is a known acceptable charset or null
-     * @throws IOException
+     * @throws IOException if a Writer cannot be returned
      */
     protected Writer getAcceptableWriter(Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException
@@ -204,7 +203,7 @@ public class ErrorHandler extends AbstractHandler
      * @param request The servlet request (may be wrapped)
      * @param response The response (may be wrapped)
      * @param mimeType The mimetype to generate (may be *&#47;*or other wildcard)
-     * @throws IOException
+     * @throws IOException if a response cannot be generated
      */
     protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String mimeType)
         throws IOException
