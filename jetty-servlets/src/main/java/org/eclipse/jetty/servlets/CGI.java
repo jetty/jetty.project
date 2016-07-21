@@ -84,7 +84,6 @@ public class CGI extends HttpServlet
     private boolean _ignoreExitState;
     private boolean _relative;
 
-    /* ------------------------------------------------------------ */
     @Override
     public void init() throws ServletException
     {
@@ -141,13 +140,13 @@ public class CGI extends HttpServlet
         }
         catch (IOException e)
         {
-            LOG.warn("CGI: CGI bin failed - " + dir,e);
+            LOG.warn("CGI: CGI bin failed - " + dir, e);
             return;
         }
 
         _path = getInitParameter("Path");
         if (_path != null)
-            _env.set("PATH",_path);
+            _env.set("PATH", _path);
 
         _ignoreExitState = "true".equalsIgnoreCase(getInitParameter("ignoreExitState"));
         Enumeration<String> e = getInitParameterNames();
@@ -155,21 +154,20 @@ public class CGI extends HttpServlet
         {
             String n = e.nextElement();
             if (n != null && n.startsWith("ENV_"))
-                _env.set(n.substring(4),getInitParameter(n));
+                _env.set(n.substring(4), getInitParameter(n));
         }
         if (!_env.envMap.containsKey("SystemRoot"))
         {
             String os = System.getProperty("os.name");
-            if (os != null && os.toLowerCase(Locale.ENGLISH).indexOf("windows") != -1)
+            if (os != null && os.toLowerCase(Locale.ENGLISH).contains("windows"))
             {
-                _env.set("SystemRoot","C:\\WINDOWS");
+                _env.set("SystemRoot", "C:\\WINDOWS");
             }
         }
 
         _ok = true;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void service(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
     {
@@ -196,7 +194,7 @@ public class CGI extends HttpServlet
         File execCmd = new File(_docRoot, pathInContext);
         String pathInfo = pathInContext;
 
-        if(!_useFullPath)
+        if (!_useFullPath)
         {
             String path = pathInContext;
             String info = "";
@@ -205,30 +203,31 @@ public class CGI extends HttpServlet
             while ((path.endsWith("/") || !execCmd.exists()) && path.length() >= 0)
             {
                 int index = path.lastIndexOf('/');
-                path = path.substring(0,index);
-                info = pathInContext.substring(index,pathInContext.length());
-                execCmd = new File(_docRoot,path);
+                path = path.substring(0, index);
+                info = pathInContext.substring(index, pathInContext.length());
+                execCmd = new File(_docRoot, path);
             }
-    
+
             if (path.length() == 0 || !execCmd.exists() || execCmd.isDirectory() || !execCmd.getCanonicalPath().equals(execCmd.getAbsolutePath()))
             {
                 res.sendError(404);
             }
-            
+
             pathInfo = info;
         }
-        exec(execCmd,pathInfo,req,res);
+        exec(execCmd, pathInfo, req, res);
     }
 
-    /** executes the CGI process
-    /*
-     * @param command the command to execute, this command is prefixed by
-     *  the context parameter "commandPrefix".
+    /**
+     * executes the CGI process
+     *
+     * @param command  the command to execute, this command is prefixed by
+     *                 the context parameter "commandPrefix".
      * @param pathInfo The PATH_INFO to process,
-     *  see http://docs.oracle.com/javaee/6/api/javax/servlet/http/HttpServletRequest.html#getPathInfo%28%29. Cannot be null
-     * @param req
-     * @param res
-     * @exception IOException
+     *                 see http://docs.oracle.com/javaee/6/api/javax/servlet/http/HttpServletRequest.html#getPathInfo%28%29. Cannot be null
+     * @param req the HTTP request
+     * @param res the HTTP response
+     * @throws IOException if the execution of the CGI process throws
      */
     private void exec(File command, String pathInfo, HttpServletRequest req, HttpServletResponse res) throws IOException
     {
@@ -244,9 +243,9 @@ public class CGI extends HttpServlet
         }
 
         String bodyFormEncoded = null;
-        if ((HttpMethod.POST.equals(req.getMethod()) || HttpMethod.PUT.equals(req.getMethod())) && "application/x-www-form-urlencoded".equals(req.getContentType()))
+        if ((HttpMethod.POST.is(req.getMethod()) || HttpMethod.PUT.is(req.getMethod())) && "application/x-www-form-urlencoded".equals(req.getContentType()))
         {
-            MultiMap<String> parameterMap = new MultiMap<String>();
+            MultiMap<String> parameterMap = new MultiMap<>();
             Enumeration<String> names = req.getParameterNames();
             while (names.hasMoreElements())
             {
@@ -299,15 +298,15 @@ public class CGI extends HttpServlet
         String scriptPath;
         String scriptName;
         // use docRoot for scriptPath, too
-        if(_cgiBinProvided) 
+        if (_cgiBinProvided)
         {
             scriptPath = command.getAbsolutePath();
             scriptName = scriptPath.substring(_docRoot.getAbsolutePath().length());
-        } 
-        else 
+        }
+        else
         {
             String requestURI = req.getRequestURI();
-            scriptName = requestURI.substring(0,requestURI.length() - pathInfo.length());
+            scriptName = requestURI.substring(0, requestURI.length() - pathInfo.length());
             scriptPath = getServletContext().getRealPath(scriptName);
         }
         env.set("SCRIPT_FILENAME", scriptPath);
@@ -322,12 +321,14 @@ public class CGI extends HttpServlet
         while (enm.hasMoreElements())
         {
             String name = enm.nextElement();
+            if (name.equalsIgnoreCase("Proxy"))
+                continue;
             String value = req.getHeader(name);
-            env.set("HTTP_" + name.toUpperCase(Locale.ENGLISH).replace('-','_'),value);
+            env.set("HTTP_" + name.toUpperCase(Locale.ENGLISH).replace('-', '_'), value);
         }
 
         // these extra ones were from printenv on www.dev.nomura.co.uk
-        env.set("HTTPS", (req.isSecure()?"ON":"OFF"));
+        env.set("HTTPS", (req.isSecure() ? "ON" : "OFF"));
         // "DOCUMENT_ROOT" => root + "/docs",
         // "SERVER_URL" => "NYI - http://us0245",
         // "TZ" => System.getProperty("user.timezone"),
@@ -339,13 +340,12 @@ public class CGI extends HttpServlet
         String execCmd = absolutePath;
 
         // escape the execCommand
-        if (execCmd.length() > 0 && execCmd.charAt(0) != '"' && execCmd.indexOf(" ") >= 0)
+        if (execCmd.length() > 0 && execCmd.charAt(0) != '"' && execCmd.contains(" "))
             execCmd = "\"" + execCmd + "\"";
 
         if (_cmdPrefix != null)
             execCmd = _cmdPrefix + " " + execCmd;
 
-        assert execCmd != null;
         LOG.debug("Environment: " + env.getExportString());
         LOG.debug("Command: " + execCmd);
 
@@ -360,7 +360,7 @@ public class CGI extends HttpServlet
         // hook processes output to browser's input (sync)
         // if browser closes stream, we should detect it and kill process...
         OutputStream os = null;
-        AsyncContext async=req.startAsync();
+        AsyncContext async = req.startAsync();
         try
         {
             async.start(new Runnable()
@@ -393,7 +393,7 @@ public class CGI extends HttpServlet
                     int k = line.indexOf(':');
                     if (k > 0)
                     {
-                        String key = line.substring(0,k).trim();
+                        String key = line.substring(0, k).trim();
                         String value = line.substring(k + 1).trim();
                         if ("Location".equals(key))
                         {
@@ -408,14 +408,14 @@ public class CGI extends HttpServlet
                         else
                         {
                             // add remaining header items to our response header
-                            res.addHeader(key,value);
+                            res.addHeader(key, value);
                         }
                     }
                 }
             }
             // copy cgi content to response stream...
             os = res.getOutputStream();
-            IO.copy(inFromCgi,os);
+            IO.copy(inFromCgi, os);
             p.waitFor();
 
             if (!_ignoreExitState)
@@ -425,7 +425,7 @@ public class CGI extends HttpServlet
                 {
                     LOG.warn("Non-zero exit status (" + exitValue + ") from CGI program: " + absolutePath);
                     if (!res.isCommitted())
-                        res.sendError(500,"Failed to exec CGI");
+                        res.sendError(500, "Failed to exec CGI");
                 }
             }
         }
@@ -506,10 +506,9 @@ public class CGI extends HttpServlet
     /**
      * Utility method to get a line of text from the input stream.
      *
-     * @param is
-     *            the input stream
+     * @param is the input stream
      * @return the line of text
-     * @throws IOException
+     * @throws IOException if reading from the input stream throws
      */
     private static String getTextLineFromStream(InputStream is) throws IOException
     {
@@ -523,7 +522,6 @@ public class CGI extends HttpServlet
         return buffer.toString().trim();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * private utility class that manages the Environment passed to exec.
      */
@@ -533,26 +531,28 @@ public class CGI extends HttpServlet
 
         EnvList()
         {
-            envMap = new HashMap<String, String>();
+            envMap = new HashMap<>();
         }
 
         EnvList(EnvList l)
         {
-            envMap = new HashMap<String,String>(l.envMap);
+            envMap = new HashMap<>(l.envMap);
         }
 
         /**
          * Set a name/value pair, null values will be treated as an empty String
+         *
          * @param name the name
          * @param value the value
          */
         public void set(String name, String value)
         {
-            envMap.put(name,name + "=" + StringUtil.nonNull(value));
+            envMap.put(name, name + "=" + StringUtil.nonNull(value));
         }
 
         /** 
          * Get representation suitable for passing to exec. 
+         *
          * @return the env map as an array 
          */
         public String[] getEnvArray()

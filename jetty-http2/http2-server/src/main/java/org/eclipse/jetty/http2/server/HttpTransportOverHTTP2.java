@@ -31,7 +31,6 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -218,17 +217,16 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         // If the stream is not closed, it is still reading the request content.
         // Send a reset to the other end so that it stops sending data.
         if (!stream.isClosed())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP2 Response #{}: unconsumed request content, resetting stream", stream.getId());
             stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        }
 
         // Consume the existing queued data frames to
         // avoid stalling the session flow control.
-        consumeInput();
-    }
-
-    protected void consumeInput()
-    {
-        HttpChannel channel = (HttpChannel)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-        channel.getRequest().getHttpInput().consumeAll();
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+        channel.consumeInput();
     }
 
     @Override
