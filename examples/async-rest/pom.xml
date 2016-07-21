@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.examples</groupId>
     <artifactId>examples-parent</artifactId>
-    <version>9.2.18.v20160721</version>
+    <version>9.2.19-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>  
   <modelVersion>4.0.0</modelVersion>
