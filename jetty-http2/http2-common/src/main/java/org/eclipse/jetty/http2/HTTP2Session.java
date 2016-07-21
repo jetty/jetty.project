@@ -320,9 +320,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 }
                 case SettingsFrame.MAX_HEADER_LIST_SIZE:
                 {
-                    // TODO implement
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("NOT IMPLEMENTED max header list size to {}", value);
+                    // Allow HTTP2SErverSessionListener to handle
                     break;
                 }
                 default:
