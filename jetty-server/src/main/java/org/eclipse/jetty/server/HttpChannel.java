@@ -627,6 +627,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     protected boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete, final Callback callback)
     {
         boolean committing = _committed.compareAndSet(false, true);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendResponse info={} content={} complete={} committing={} callback={}",
+                info,
+                BufferUtil.toDetailString(content),
+                complete,
+                committing,
+                callback);
+        
         if (committing)
         {
             // We need an info to commit
