@@ -107,7 +107,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             HttpConfiguration httpConfig = getHttpConfiguration();
             Integer mhls = frame.getSettings().get(SettingsFrame.MAX_HEADER_LIST_SIZE);
             if (mhls != null && mhls < httpConfig.getResponseHeaderSize())
-                httpConfig.setResponseHeaderSize(mhls);
+                LOG.warn("MAX_HEADER_LIST_SIZE<{} for {}",getHttpConfiguration().getResponseHeaderSize(),session);
         }
 
         @Override
