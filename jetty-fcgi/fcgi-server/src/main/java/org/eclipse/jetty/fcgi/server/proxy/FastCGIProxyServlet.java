@@ -191,6 +191,8 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
 
     protected void customizeFastCGIHeaders(Request proxyRequest, HttpFields fastCGIHeaders)
     {
+        fastCGIHeaders.remove("HTTP_PROXY");
+
         fastCGIHeaders.put(FCGI.Headers.REMOTE_ADDR, (String)proxyRequest.getAttributes().get(REMOTE_ADDR_ATTRIBUTE));
         fastCGIHeaders.put(FCGI.Headers.REMOTE_PORT, (String)proxyRequest.getAttributes().get(REMOTE_PORT_ATTRIBUTE));
         fastCGIHeaders.put(FCGI.Headers.SERVER_NAME, (String)proxyRequest.getAttributes().get(SERVER_NAME_ATTRIBUTE));
