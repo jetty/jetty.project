@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-jmx-parent</artifactId>
-    <version>9.2.18-SNAPSHOT</version>
+    <version>9.2.18.v20160721</version>
   </parent>
   <artifactId>jmx-webapp</artifactId>
   <packaging>war</packaging>
