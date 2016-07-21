@@ -216,12 +216,12 @@ public class HpackContextTest
         assertEquals(62,ctx.index(entry[0]));
         assertEquals(entry[0],ctx.get(62));
         
-        // and statics have moved up 0
-        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
-        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+0).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
-        assertEquals(null,ctx.get(62+0+ctx.size()));
+        // and statics still OK
+        assertEquals(":authority",ctx.get(1).getHttpField().getName());
+        assertEquals(3,ctx.index(ctx.get(methodPost)));
+        assertEquals(methodPost,ctx.get(3).getHttpField());
+        assertEquals("www-authenticate",ctx.get(61).getHttpField().getName());
+        assertEquals(null,ctx.get(62+ctx.size()));
         
 
         // Add 4 more entries
@@ -238,12 +238,12 @@ public class HpackContextTest
             index--;
         }
 
-        // and statics have moved up 0
-        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
-        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+0).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
-        assertEquals(null,ctx.get(62+0+ctx.size()));
+        // and statics still OK
+        assertEquals(":authority",ctx.get(1).getHttpField().getName());
+        assertEquals(3,ctx.index(ctx.get(methodPost)));
+        assertEquals(methodPost,ctx.get(3).getHttpField());
+        assertEquals("www-authenticate",ctx.get(61).getHttpField().getName());
+        assertEquals(null,ctx.get(62+ctx.size()));
         
         // add 1 more entry and this should cause an eviction!
         entry[5]=ctx.add(field[5]);
@@ -260,12 +260,12 @@ public class HpackContextTest
         assertNull(ctx.get(field[0]));
         assertEquals(0,ctx.index(entry[0]));
 
-        // and statics have moved up 0
-        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
-        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+0).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
-        assertEquals(null,ctx.get(62+0+ctx.size()));
+        // and statics still OK
+        assertEquals(":authority",ctx.get(1).getHttpField().getName());
+        assertEquals(3,ctx.index(ctx.get(methodPost)));
+        assertEquals(methodPost,ctx.get(3).getHttpField());
+        assertEquals("www-authenticate",ctx.get(61).getHttpField().getName());
+        assertEquals(null,ctx.get(62+ctx.size()));
         
         // Add 4 more entries
         for (int i=6;i<=9;i++)  
@@ -306,7 +306,6 @@ public class HpackContextTest
     {
         // Only enough space for 5 entries
         HpackContext ctx = new HpackContext(38*5);
-        HttpField methodPost = new HttpField(":method","POST");
         
         HttpField[] field = 
         {
@@ -339,15 +338,6 @@ public class HpackContextTest
             index--;
         }
 
-        // and statics have moved up 0
-        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
-        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+0).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
-        assertEquals(null,ctx.get(62+ctx.size()));
-        
-        
-        
         // resize so that only 2 entries may be held
         ctx.resize(38*2);
         assertEquals(2,ctx.size());
@@ -360,13 +350,6 @@ public class HpackContextTest
             assertEquals(entry[i],ctx.get(index));
             index--;
         }
-
-        // and statics have moved up 0
-        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
-        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+0).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
-        assertEquals(null,ctx.get(62+ctx.size()));
         
         // resize so that 6.5 entries may be held
         ctx.resize(38*6+19);
@@ -380,13 +363,6 @@ public class HpackContextTest
             assertEquals(entry[i],ctx.get(index));
             index--;
         }
-
-        // and statics have moved up 0
-        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
-        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+0).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
-        assertEquals(null,ctx.get(62+ctx.size()));
         
 
         // Add 5 entries
@@ -403,13 +379,33 @@ public class HpackContextTest
             assertEquals(entry[i],ctx.get(index));
             index--;
         }
+        
 
-        // and statics have moved up 0
-        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
-        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+0).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
-        assertEquals(null,ctx.get(62+ctx.size()));
+        // resize so that only 100 entries may be held
+        ctx.resize(38*100);
+        assertEquals(6,ctx.size());
+        // check indexes
+        index=67;
+        for (int i=4;i<=9;i++)  
+        {
+            assertEquals(index,ctx.index(entry[i]));
+            assertEquals(entry[i],ctx.get(index));
+            index--;
+        }
+        
+        // add 50 fields
+        for (int i=0;i<50;i++)
+            ctx.add(new HttpField("n"+i,"v"+i));
+
+        // check indexes
+        index=67+50;
+        for (int i=4;i<=9;i++)  
+        {
+            assertEquals(index,ctx.index(entry[i]));
+            assertEquals(entry[i],ctx.get(index));
+            index--;
+        }
+        
         
     }
     
