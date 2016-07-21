@@ -191,6 +191,17 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
     public Runnable requestContent(DataFrame frame, final Callback callback)
     {
+        Stream stream = getStream();
+        if (stream.isReset())
+        {
+            // Consume previously queued content to
+            // enlarge the session flow control window.
+            consumeInput();
+            // Consume immediately this content.
+            callback.succeeded();
+            return null;
+        }
+
         // We must copy the data since we do not know when the
         // application will consume the bytes (we queue them by
         // calling onContent()), and the parsing will continue
@@ -233,7 +244,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
         if (LOG.isDebugEnabled())
         {
-            Stream stream = getStream();
             LOG.debug("HTTP2 Request #{}/{}: {} bytes of {} content, handle: {}",
                     stream.getId(),
                     Integer.toHexString(stream.getSession().hashCode()),
@@ -246,6 +256,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         _delayedUntilContent = false;
 
         return handle || delayed ? this : null;
+    }
+
+    protected void consumeInput()
+    {
+        getRequest().getHttpInput().consumeAll();
     }
 
     /**

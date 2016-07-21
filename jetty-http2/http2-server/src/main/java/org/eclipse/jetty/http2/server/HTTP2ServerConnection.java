@@ -204,6 +204,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         @Override
         public void recycle()
         {
+            getStream().removeAttribute(IStream.CHANNEL_ATTRIBUTE);
             super.recycle();
             channels.offer(this);
         }
@@ -212,18 +213,20 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         public void onCompleted()
         {
             super.onCompleted();
-            recycle();
+            if (!getStream().isReset())
+                recycle();
         }
 
         @Override
         public void reject()
         {
             IStream stream = getStream();
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP2 Request #{}/{} rejected", stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
             stream.reset(new ResetFrame(stream.getId(), ErrorCode.ENHANCE_YOUR_CALM_ERROR.code), Callback.NOOP);
             // Consume the existing queued data frames to
             // avoid stalling the session flow control.
-            getHttpTransport().consumeInput();
-            recycle();
+            consumeInput();
         }
     }
 }
