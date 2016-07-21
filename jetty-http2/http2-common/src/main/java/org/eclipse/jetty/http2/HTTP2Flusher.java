@@ -31,7 +31,6 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
@@ -42,7 +41,7 @@ public class HTTP2Flusher extends IteratingCallback
     private static final Logger LOG = Log.getLogger(HTTP2Flusher.class);
 
     private final Queue<WindowEntry> windows = new ArrayDeque<>();
-    private final ArrayQueue<Entry> frames = new ArrayQueue<>(ArrayQueue.DEFAULT_CAPACITY, ArrayQueue.DEFAULT_GROWTH, this);
+    private final List<Entry> frames = new ArrayList<>();
     private final Map<IStream, Integer> streams = new HashMap<>();
     private final List<Entry> resets = new ArrayList<>();
     private final List<Entry> actives = new ArrayList<>();
@@ -96,7 +95,7 @@ public class HTTP2Flusher extends IteratingCallback
             closed = terminated;
             if (!closed)
             {
-                frames.offer(entry);
+                frames.add(entry);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Appended {}, frames={}", entry, frames.size());
             }
@@ -110,10 +109,7 @@ public class HTTP2Flusher extends IteratingCallback
     {
         synchronized (this)
         {
-            if (index == 0)
-                return frames.pollUnsafe();
-            else
-                return frames.remove(index);
+            return frames.remove(index);
         }
     }
 

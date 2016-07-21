@@ -22,7 +22,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -35,7 +37,6 @@ import org.eclipse.jetty.client.Synchronizable;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
@@ -90,7 +91,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
     private static final Chunk CLOSE = new Chunk(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
 
     private final Object lock = this;
-    private final ArrayQueue<Chunk> chunks = new ArrayQueue<>(4, 64, lock);
+    private final Deque<Chunk> chunks = new ArrayDeque<>();
     private final AtomicReference<Listener> listener = new AtomicReference<>();
     private final DeferredContentProviderIterator iterator = new DeferredContentProviderIterator();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -259,7 +260,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
                 {
                     // Slow path: reinsert the CLOSE chunk
                     // so that hasNext() works correctly.
-                    chunks.add(0, CLOSE);
+                    chunks.offerFirst(CLOSE);
                     throw new NoSuchElementException();
                 }
                 return chunk == null ? null : chunk.buffer;
