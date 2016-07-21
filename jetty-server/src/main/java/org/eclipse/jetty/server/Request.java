@@ -2416,13 +2416,51 @@ public class Request implements HttpServletRequest
     public Mapping getMapping() 
     {
         final PathSpec pathSpec = _pathSpec;
-        final String servletPath = _servletPath;
+        final MappingMatch match;
+        final String mapping;
+        if (pathSpec instanceof ServletPathSpec)
+        {
+            switch(((ServletPathSpec)pathSpec).getGroup())
+            {
+                case ROOT:
+                    match = MappingMatch.CONTEXT_ROOT;
+                    mapping = "";
+                    break;
+                case DEFAULT:
+                    match = MappingMatch.DEFAULT;
+                    mapping = "/";
+                    break;
+                case EXACT:
+                    match = MappingMatch.EXACT;
+                    mapping = _servletPath;
+                    break;
+                case SUFFIX_GLOB:
+                    match = MappingMatch.EXTENSION;
+                    int dot = _servletPath.lastIndexOf('.');
+                    mapping = _servletPath.substring(0,dot);
+                    break;
+                case PREFIX_GLOB:
+                    match = MappingMatch.PATH;
+                    mapping = _servletPath;
+                    break;
+                default:
+                    match = MappingMatch.UNKNOWN;
+                    mapping = _servletPath;
+                    break;
+            }
+        }
+        else
+        {
+            match = MappingMatch.UNKNOWN;
+            mapping = _servletPath;
+        }
+        
         return new Mapping()
         {
             @Override
             public String getMatchValue()
             {   
-                return servletPath;
+                return mapping;
             }
 
             @Override
@@ -2436,27 +2474,13 @@ public class Request implements HttpServletRequest
             @Override
             public MappingMatch getMatchType()
             {
-                if (pathSpec instanceof ServletPathSpec)
-                {
-                    switch(((ServletPathSpec)pathSpec).getGroup())
-                    {
-                        case EXACT:
-                            return MappingMatch.EXACT;
-                        case ROOT:
-                            return MappingMatch.CONTEXT_ROOT;
-                        case PREFIX_GLOB:
-                            return MappingMatch.PATH;
-                        case SUFFIX_GLOB:
-                            return MappingMatch.EXTENSION;
-                                                        
-                        default:
-                            return MappingMatch.UNKNOWN;
-                    }
-                }
-                else
-                    return MappingMatch.UNKNOWN;
+                return match;
             }
             
+            public String getServletName() 
+            {
+                return null;
+            }
         };
     }
 
