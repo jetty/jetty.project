@@ -47,7 +47,6 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
@@ -84,7 +83,7 @@ public class XmlConfiguration
     private static final Class<?>[] __boxedPrimitives =
             {Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, Void.class};
     private static final Class<?>[] __supportedCollections =
-            {ArrayList.class, ArrayQueue.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class};
+            {ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class};
     private static final Iterable<ConfigurationProcessorFactory> __factoryLoader = ServiceLoader.load(ConfigurationProcessorFactory.class);
     private static final XmlParser __parser = initParser();
     private static XmlParser initParser()
@@ -605,12 +604,6 @@ public class XmlConfiguration
                     collection = convertArrayToArrayList(array);
                 else if (collectionType.isAssignableFrom(HashSet.class))
                     collection = new HashSet<>(convertArrayToArrayList(array));
-                else if (collectionType.isAssignableFrom(ArrayQueue.class))
-                {
-                    ArrayQueue<Object> q= new ArrayQueue<>();
-                    q.addAll(convertArrayToArrayList(array));
-                    collection=q;
-                }
             }
             if (collection==null)
                 throw new IllegalArgumentException("Can't convert \"" + array.getClass() + "\" to " + collectionType);
