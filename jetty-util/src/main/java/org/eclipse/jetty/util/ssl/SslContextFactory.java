@@ -249,10 +249,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         setTrustAll(trustAll);
         addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
-        setExcludeCipherSuites(
-                "^.*_RSA_.*_(MD5|SHA|SHA1)$",
-                "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-                "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
+        setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
     }
 
     /**

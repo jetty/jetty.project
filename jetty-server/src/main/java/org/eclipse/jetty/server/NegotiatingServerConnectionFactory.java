@@ -98,10 +98,12 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
         {
             // Generate list of protocols that we can negotiate
             negotiated = connector.getProtocols().stream()
-            .map(p->connector.getConnectionFactory(p))
-            .filter(f->!(f instanceof SslConnectionFactory)&&!(f instanceof NegotiatingServerConnectionFactory))
-            .map(p->p.getProtocol())
-            .collect(Collectors.toList());
+            .filter(p->
+            {
+                ConnectionFactory f=connector.getConnectionFactory(p);
+                return !(f instanceof SslConnectionFactory)&&!(f instanceof NegotiatingServerConnectionFactory);
+            })
+            .collect(Collectors.toList());            
         }
 
         // if default protocol is not set, then it is either HTTP/1.1 or 

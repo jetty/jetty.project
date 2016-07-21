@@ -28,7 +28,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
@@ -117,6 +116,7 @@ public class HpackContext
     private static final Trie<StaticEntry> __staticNameMap = new ArrayTernaryTrie<>(true,512);
     private static final StaticEntry[] __staticTableByHeader = new StaticEntry[HttpHeader.UNKNOWN.ordinal()];
     private static final StaticEntry[] __staticTable=new StaticEntry[STATIC_TABLE.length];
+    private static final int STATIC_SIZE = STATIC_TABLE.length-1;
     static
     {
         Set<String> added = new HashSet<>();
@@ -196,7 +196,7 @@ public class HpackContext
     {
         _maxDynamicTableSizeInBytes=maxDynamicTableSize;
         int guesstimateEntries = 10+maxDynamicTableSize/(32+10+10);
-        _dynamicTable=new DynamicTable(guesstimateEntries,guesstimateEntries+10);
+        _dynamicTable=new DynamicTable(guesstimateEntries);
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("HdrTbl[%x] created max=%d",hashCode(),maxDynamicTableSize));
     }
@@ -206,9 +206,7 @@ public class HpackContext
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("HdrTbl[%x] resized max=%d->%d",hashCode(),_maxDynamicTableSizeInBytes,newMaxDynamicTableSize));
         _maxDynamicTableSizeInBytes=newMaxDynamicTableSize;
-        int guesstimateEntries = 10+newMaxDynamicTableSize/(32+10+10);
-        evict();
-        _dynamicTable.resizeUnsafe(guesstimateEntries);
+        _dynamicTable.evict();
     }
 
     public Entry get(HttpField field)
@@ -229,14 +227,10 @@ public class HpackContext
 
     public Entry get(int index)
     {
-        if (index<__staticTable.length)
+        if (index<=STATIC_SIZE)
             return __staticTable[index];
 
-        int d=_dynamicTable.size()-index+__staticTable.length-1;
-
-        if (d>=0)
-            return _dynamicTable.getUnsafe(d);
-        return null;
+        return _dynamicTable.get(index);
     }
 
     public Entry get(HttpHeader header)
@@ -254,8 +248,7 @@ public class HpackContext
 
     public Entry add(HttpField field)
     {
-        int slot=_dynamicTable.getNextSlotUnsafe();
-        Entry entry=new Entry(slot,field);
+        Entry entry=new Entry(field);
         int size = entry.getSize();
         if (size>_maxDynamicTableSizeInBytes)
         {
@@ -264,13 +257,13 @@ public class HpackContext
             return null;
         }
         _dynamicTableSizeInBytes+=size;
-        _dynamicTable.addUnsafe(entry);
+        _dynamicTable.add(entry);
         _fieldMap.put(field,entry);
         _nameMap.put(StringUtil.asciiToLowerCase(field.getName()),entry);
 
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("HdrTbl[%x] added %s",hashCode(),entry));
-        evict();
+        _dynamicTable.evict();
         return entry;
     }
 
@@ -305,7 +298,7 @@ public class HpackContext
         if (entry.isStatic())
             return entry._slot;
 
-        return _dynamicTable.index(entry)+__staticTable.length-1;
+        return _dynamicTable.index(entry);
     }
 
     public static int staticIndex(HttpHeader header)
@@ -315,26 +308,9 @@ public class HpackContext
         Entry entry=__staticNameMap.get(header.asString());
         if (entry==null)
             return 0;
-        return entry.getSlot();
+        return entry._slot;
     }
 
-    private void evict()
-    {
-        while (_dynamicTableSizeInBytes>_maxDynamicTableSizeInBytes)
-        {
-            Entry entry = _dynamicTable.pollUnsafe();
-            if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HdrTbl[%x] evict %s",hashCode(),entry));
-            _dynamicTableSizeInBytes-=entry.getSize();
-            entry._slot=-1;
-            _fieldMap.remove(entry.getHttpField());
-            String lc=StringUtil.asciiToLowerCase(entry.getHttpField().getName());
-            if (entry==_nameMap.get(lc))
-                _nameMap.remove(lc);
-        }
-        if (LOG.isDebugEnabled())
-            LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d",hashCode(),_dynamicTable.size(),_dynamicTableSizeInBytes,_maxDynamicTableSizeInBytes));
-    }
 
     @Override
     public String toString()
@@ -342,69 +318,94 @@ public class HpackContext
         return String.format("HpackContext@%x{entries=%d,size=%d,max=%d}",hashCode(),_dynamicTable.size(),_dynamicTableSizeInBytes,_maxDynamicTableSizeInBytes);
     }
 
-    private class DynamicTable extends ArrayQueue<HpackContext.Entry>
+    private class DynamicTable 
     {
-        private DynamicTable(int initCapacity, int growBy)
+        Entry[] _entries;
+        int _size;
+        int _offset;
+        int _growby;
+        
+        private DynamicTable(int initCapacity)
         {
-            super(initCapacity,growBy);
+            _entries=new Entry[initCapacity];
+            _growby=initCapacity;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.ArrayQueue#growUnsafe()
-         */
-        @Override
-        protected void resizeUnsafe(int newCapacity)
+        public void add(Entry entry)
         {
-            // Relay on super.growUnsafe to pack all entries 0 to _nextSlot
-            super.resizeUnsafe(newCapacity);
-            for (int s=0;s<_nextSlot;s++)
-                ((Entry)_elements[s])._slot=s;
+            if (_size==_entries.length)
+            {
+                Entry[] entries = new Entry[_entries.length+_growby];
+                for (int i=0;i<_size;i++)
+                {
+                    int slot = (_offset+i)%_entries.length;
+                    entries[i]=_entries[slot];
+                    entries[i]._slot=i;
+                }
+                _entries=entries;
+                _offset=0;
+            }
+            int slot=(_size++ + _offset)%_entries.length;
+            _entries[slot]=entry;
+            entry._slot=slot;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.ArrayQueue#enqueue(java.lang.Object)
-         */
-        @Override
-        public boolean enqueue(Entry e)
+        public int index(Entry entry)
         {
-            return super.enqueue(e);
+            return STATIC_SIZE + _size-(entry._slot-_offset+_entries.length)%_entries.length;
+        }
+        
+        public Entry get(int index)
+        {
+            int d = index-STATIC_SIZE-1;
+            if (d<0 || d>=_size)
+                return null;
+            int slot = (_offset+_size-d-1)%_entries.length;
+            return _entries[slot];
         }
 
-        /**
-         * @see org.eclipse.jetty.util.ArrayQueue#dequeue()
-         */
-        @Override
-        public Entry dequeue()
+        public int size()
         {
-            return super.dequeue();
+            return _size;
         }
 
-        private int index(Entry entry)
+        private void evict()
         {
-            return entry._slot>=_nextE?_size-entry._slot+_nextE:_nextSlot-entry._slot;
+            while (_dynamicTableSizeInBytes>_maxDynamicTableSizeInBytes)
+            {
+                Entry entry = _entries[_offset];
+                _entries[_offset]=null;
+                _offset = (_offset+1)%_entries.length;
+                _size--;
+                if (LOG.isDebugEnabled())
+                    LOG.debug(String.format("HdrTbl[%x] evict %s",hashCode(),entry));
+                _dynamicTableSizeInBytes-=entry.getSize();
+                entry._slot=-1;
+                _fieldMap.remove(entry.getHttpField());
+                String lc=StringUtil.asciiToLowerCase(entry.getHttpField().getName());
+                if (entry==_nameMap.get(lc))
+                    _nameMap.remove(lc);
+
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d",hashCode(),_dynamicTable.size(),_dynamicTableSizeInBytes,_maxDynamicTableSizeInBytes));
         }
+
     }
 
     public static class Entry
     {
         final HttpField _field;
-        int _slot;
+        int _slot; // The index within it's array
 
         Entry()
         {
-            _slot=0;
+            _slot=-1;
             _field=null;
         }
 
-        Entry(int index,String name, String value)
+        Entry(HttpField field)
         {
-            _slot=index;
-            _field=new HttpField(name,value);
-        }
-
-        Entry(int slot, HttpField field)
-        {
-            _slot=slot;
             _field=field;
         }
 
@@ -429,11 +430,6 @@ public class HpackContext
             return null;
         }
 
-        public int getSlot()
-        {
-            return _slot;
-        }
-
         public String toString()
         {
             return String.format("{%s,%d,%s,%x}",isStatic()?"S":"D",_slot,_field,hashCode());
@@ -447,7 +443,8 @@ public class HpackContext
 
         StaticEntry(int index,HttpField field)
         {
-            super(index,field);
+            super(field);
+            _slot=index;
             String value = field.getValue();
             if (value!=null && value.length()>0)
             {
