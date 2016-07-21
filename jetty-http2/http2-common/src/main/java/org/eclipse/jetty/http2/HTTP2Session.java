@@ -320,7 +320,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 }
                 case SettingsFrame.MAX_HEADER_LIST_SIZE:
                 {
-                    // Allow HTTP2SErverSessionListener to handle
+                    // Handled by HTTP2ServerConnectionFactory.HTTPServerSessionListener.
                     break;
                 }
                 default:
