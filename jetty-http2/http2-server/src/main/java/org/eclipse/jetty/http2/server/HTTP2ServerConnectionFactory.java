@@ -96,17 +96,17 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             int maxConcurrentStreams = getMaxConcurrentStreams();
             if (maxConcurrentStreams >= 0)
                 settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrentStreams);
-            settings.put(SettingsFrame.MAX_HEADER_LIST_SIZE,getHttpConfiguration().getRequestHeaderSize());
+            settings.put(SettingsFrame.MAX_HEADER_LIST_SIZE, getHttpConfiguration().getRequestHeaderSize());
             return settings;
         }
 
         @Override
         public void onSettings(Session session, SettingsFrame frame)
         {
-            super.onSettings(session,frame);
+            HttpConfiguration httpConfig = getHttpConfiguration();
             Integer mhls = frame.getSettings().get(SettingsFrame.MAX_HEADER_LIST_SIZE);
-            if (mhls != null && mhls.intValue()<getHttpConfiguration().getResponseHeaderSize())
-                LOG.warn("MAX_HEADER_LIST_SIZE<{} for {}",getHttpConfiguration().getResponseHeaderSize(),session);
+            if (mhls != null && mhls < httpConfig.getResponseHeaderSize())
+                httpConfig.setResponseHeaderSize(mhls);
         }
 
         @Override
