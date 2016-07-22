@@ -252,7 +252,7 @@ public class Dispatcher implements RequestDispatcher
 
     private void commitResponse(ServletResponse response, Request baseRequest) throws IOException
     {
-        if (!(response instanceof Response) || baseRequest.getResponse().isWriting())
+        if (baseRequest.getResponse().isWriting())
         {
             try
             {
