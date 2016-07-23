@@ -201,7 +201,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Read the response.
             String response = readResponse(client);
 
-            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 413 "));
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 431 "));
         }
     }
 
@@ -356,7 +356,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Read the response.
             String response = readResponse(client);
 
-            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 413 "));
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 431 "));
         }
     }
 

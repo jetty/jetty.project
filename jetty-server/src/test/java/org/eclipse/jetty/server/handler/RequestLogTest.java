@@ -177,7 +177,7 @@ public class RequestLogTest
         _connector.getResponses("METHOD /foo HTTP/1.0\name: f+"+ooo+"\n\n");
         String log = _log.exchange(null,5,TimeUnit.SECONDS);
         assertThat(log,containsString("\"METHOD /foo HTTP/1.0\""));
-        assertThat(log,containsString(" 413 0 "));
+        assertThat(log,containsString(" 431 0 "));
     }
     
     @Test

@@ -102,15 +102,6 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public void onSettings(Session session, SettingsFrame frame)
-        {
-            HttpConfiguration httpConfig = getHttpConfiguration();
-            Integer mhls = frame.getSettings().get(SettingsFrame.MAX_HEADER_LIST_SIZE);
-            if (mhls != null && mhls < httpConfig.getResponseHeaderSize())
-                LOG.warn("MAX_HEADER_LIST_SIZE<{} for {}",getHttpConfiguration().getResponseHeaderSize(),session);
-        }
-
-        @Override
         public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
         {
             getConnection().onNewStream(connector, (IStream)stream, frame);

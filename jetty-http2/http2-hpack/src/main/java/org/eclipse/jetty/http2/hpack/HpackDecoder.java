@@ -47,7 +47,7 @@ public class HpackDecoder
 
     /**
      * @param localMaxDynamicTableSize  The maximum allowed size of the local dynamic header field table.
-     * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters.
+     * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
      */
     public HpackDecoder(int localMaxDynamicTableSize, int maxHeaderSize)
     {
@@ -73,8 +73,7 @@ public class HpackDecoder
 
         // If the buffer is big, don't even think about decoding it
         if (buffer.remaining()>_builder.getMaxSize())
-            throw new BadMessageException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,"Header frame size "+buffer.remaining()+">"+_builder.getMaxSize());
-
+            throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,"Header frame size "+buffer.remaining()+">"+_builder.getMaxSize());
 
         while(buffer.hasRemaining())
         {
@@ -144,7 +143,6 @@ public class HpackDecoder
                         name_index=NBitInteger.decode(buffer,4);
                         break;
 
-
                     case 4: // 7.2.1
                     case 5: // 7.2.1
                     case 6: // 7.2.1
@@ -156,7 +154,6 @@ public class HpackDecoder
                     default:
                         throw new IllegalStateException();
                 }
-
 
                 boolean huffmanName=false;
 
