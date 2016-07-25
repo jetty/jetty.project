@@ -7,25 +7,25 @@ node {
   List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
   mvnEnv.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
 
-  stage `Compile`
+  stage 'Compile'
 
   withEnv(mvnEnv) {
     sh "mvn clean install -DskipTests"
   }
 
-  stage `Javadoc`
+  stage 'Javadoc'
 
   withEnv(mvnEnv) {
     sh "mvn javadoc:jar"
   }
 
-  stage `Test`
+  stage 'Test'
 
   withEnv(mvnEnv) {
     sh "mvn test -Dmaven.test.failure.ignore=true"
   }
 
-  stage `Documentation`
+  stage 'Documentation'
 
   dir("jetty-documentation") {
     withEnv(mvnEnv) {
@@ -33,7 +33,7 @@ node {
     }
   }
 
-  stage `Compact3`
+  stage 'Compact3'
 
   dir("aggregates/jetty-all-compact3") {
     withEnv(mvnEnv) {
