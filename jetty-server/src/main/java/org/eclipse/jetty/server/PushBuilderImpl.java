@@ -248,7 +248,7 @@ public class PushBuilderImpl implements PushBuilder
                 _fields.add(HttpHeader.IF_MODIFIED_SINCE,_lastModified);
         }
 
-        HttpURI uri = HttpURI.createHttpURI(_request.getScheme(),_request.getServerName(),_request.getServerPort(),path,param,query,null);
+        HttpURI uri = new HttpURI(_request.getScheme(),_request.getServerName(),_request.getServerPort(),path,param,query,null);
         MetaData.Request push = new MetaData.Request(_method,uri,_request.getHttpVersion(),_fields);
 
         if (LOG.isDebugEnabled())

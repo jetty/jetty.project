@@ -33,13 +33,15 @@ import org.eclipse.jetty.util.UrlEncoded;
 /* ------------------------------------------------------------ */
 /** Http URI.
  * Parse a HTTP URI from a string or byte array.  Given a URI
- * <code>http://user@host:port/path/info;param?query#fragment</code>
+ * <code>http://user:password@host:port/path;ignored/%69nfo;param?query#fragment</code>
  * this class will split it into the following undecoded optional elements:<ul>
  * <li>{@link #getScheme()} - http:</li>
- * <li>{@link #getAuthority()} - //name@host:port</li>
+ * <li>{@link #getUser()} - user:password</li>
+ * <li>{@link #getAuthority()} - host:port</li>
  * <li>{@link #getHost()} - host</li>
  * <li>{@link #getPort()} - port</li>
- * <li>{@link #getPath()} - /path/info</li>
+ * <li>{@link #getPath()} - /path;ignored/%69nfo;param</li>
+ * <li>{@link #getDecodedPath()} - /path/info</li>
  * <li>{@link #getParam()} - param</li>
  * <li>{@link #getQuery()} - query</li>
  * <li>{@link #getFragment()} - fragment</li>
@@ -75,28 +77,6 @@ public class HttpURI
     
     String _uri;
     String _decodedPath;
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Construct a normalized URI.
-     * Port is not set if it is the default port.
-     * @param scheme the URI scheme
-     * @param host the URI hose
-     * @param port the URI port
-     * @param path the URI path
-     * @param param the URI param
-     * @param query the URI query
-     * @param fragment the URI fragment
-     * @return the normalized URI
-     */
-    public static HttpURI createHttpURI(String scheme, String host, int port, String path, String param, String query, String fragment)
-    {
-        if (port==80 && HttpScheme.HTTP.is(scheme))
-            port=0;
-        if (port==443 && HttpScheme.HTTPS.is(scheme))
-            port=0;
-        return new HttpURI(scheme,host,port,path,param,query,fragment);
-    }
     
     /* ------------------------------------------------------------ */
     public HttpURI()
@@ -108,17 +88,18 @@ public class HttpURI
     {
         _scheme = scheme;
         _host = host;
-        _port = port;
+        _port = (port<0 && (HttpScheme.HTTP.is(_scheme)||HttpScheme.HTTPS.is(_scheme)))?0:port;
         _path = path;
         _param = param;
         _query = query;
-        _fragment = fragment;
+        _fragment = fragment;            
     }
 
     /* ------------------------------------------------------------ */
     public HttpURI(HttpURI uri)
     {
         this(uri._scheme,uri._host,uri._port,uri._path,uri._param,uri._query,uri._fragment);
+        _user=uri._user;
         _uri=uri._uri;
     }
     
@@ -126,7 +107,7 @@ public class HttpURI
     public HttpURI(String uri)
     {
         _port=-1;
-        parse(State.START,uri,0,uri.length());
+        parse(State.START,uri);
     }
 
     /* ------------------------------------------------------------ */
@@ -158,22 +139,11 @@ public class HttpURI
     /* ------------------------------------------------------------ */
     public HttpURI(String scheme, String host, int port, String pathQuery)
     {
-        _uri=null;
-        
         _scheme=scheme;
         _host=host;
-        _port=port;
-
-        parse(State.PATH,pathQuery,0,pathQuery.length());
-        
-    }
-
-    /* ------------------------------------------------------------ */
-    public void parse(String uri)
-    {
-        clear();
-        _uri=uri;
-        parse(State.START,uri,0,uri.length());
+        _port = (port<0 && (HttpScheme.HTTP.is(_scheme)||HttpScheme.HTTPS.is(_scheme)))?0:port;
+        parse(State.PATH,pathQuery);
+        _uri=null;
     }
 
     /* ------------------------------------------------------------ */
@@ -190,35 +160,18 @@ public class HttpURI
         if (HttpMethod.CONNECT.is(method))
             _path=uri;
         else
-            parse(uri.startsWith("/")?State.PATH:State.START,uri,0,uri.length());
+            parse(uri.startsWith("/")?State.PATH:State.START,uri);
     }
 
     /* ------------------------------------------------------------ */
-    @Deprecated
-    public void parseConnect(String uri)
-    {
-        clear();
-        _uri=uri;
-        _path=uri;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void parse(String uri, int offset, int length)
-    {
-        clear();
-        int end=offset+length;
-        _uri=uri.substring(offset,end);
-        parse(State.START,uri,offset,end);
-    }
-
-    /* ------------------------------------------------------------ */
-    private void parse(State state, final String uri, final int offset, final int end)
+    private void parse(State state, final String uri)
     {
         boolean encoded=false;
-        int mark=offset;
+        int mark=0;
+        int end=uri.length();
         int path_mark=0;
         
-        for (int i=offset; i<end; i++)
+        for (int i=0; i<end; i++)
         {
             char c=uri.charAt(i);
 
@@ -342,12 +295,13 @@ public class HttpURI
                     {
                         case '/':
                             _host = uri.substring(mark,i);
+                            _port = 0;
                             path_mark=mark=i;
                             state=State.PATH;
                             break;
                         case ':':
-                            if (i > mark)
-                                _host=uri.substring(mark,i);
+                            _host=(i > mark)?uri.substring(mark,i):"";
+                            _port = 0;
                             mark=i+1;
                             state=State.PORT;
                             break;
@@ -561,6 +515,13 @@ public class HttpURI
     /* ------------------------------------------------------------ */
     public int getPort()
     {
+        if (_port==0)
+        {
+            if (HttpScheme.HTTP.is(_scheme)) 
+                return 80;
+            if (HttpScheme.HTTPS.is(_scheme)) 
+                return 443;
+        }
         return _port;
     }
 
@@ -674,7 +635,7 @@ public class HttpURI
                 out.append(_host);
             }
             
-            if (_port>0)
+            if (_port>0 && !(_port==80&&HttpScheme.HTTP.is(_scheme)) && !(_port==443&&HttpScheme.HTTPS.is(_scheme)))
                 out.append(':').append(_port);
             
             if (_path!=null)
@@ -743,7 +704,7 @@ public class HttpURI
         _param=null;
         _fragment=null;
         if (path!=null)
-            parse(State.PATH,path,0,path.length());
+            parse(State.PATH,path);
     }
     
     /* ------------------------------------------------------------ */
@@ -780,6 +741,4 @@ public class HttpURI
     {
         return _user;
     }
-
-
 }
