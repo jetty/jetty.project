@@ -7,6 +7,10 @@ node {
   List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
   mvnEnv.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
 
+  stage 'Checkout'
+
+  checkout scm
+
   stage 'Compile'
 
   withEnv(mvnEnv) {
