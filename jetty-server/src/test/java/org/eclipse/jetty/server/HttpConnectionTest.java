@@ -769,7 +769,7 @@ public class HttpConnectionTest
                 "Cookie: "+cookie+"\r\n"+
                 "\r\n"
              );
-            checkContains(response, offset, "HTTP/1.1 413");
+            checkContains(response, offset, "HTTP/1.1 431");
         }
         catch(Exception e)
         {
@@ -798,8 +798,8 @@ public class HttpConnectionTest
         request.append("\r\n");
 
         String response = connector.getResponse(request.toString());
-        offset = checkContains(response, offset, "HTTP/1.1 413");
-        checkContains(response, offset, "<h1>Bad Message 413</h1><pre>reason: Request Entity Too Large</pre>");
+        offset = checkContains(response, offset, "HTTP/1.1 431");
+        checkContains(response, offset, "<h1>Bad Message 431</h1>");
     }
 
     @Test

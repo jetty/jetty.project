@@ -101,7 +101,7 @@ public class HpackTest
     public void encodeDecodeTooLargeTest()
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096,101);
+        HpackDecoder decoder = new HpackDecoder(4096,164);
         ByteBuffer buffer = BufferUtil.allocate(16*1024);
         
         HttpFields fields0 = new HttpFields();
@@ -132,7 +132,7 @@ public class HpackTest
         }
         catch(BadMessageException e)
         {
-            assertEquals(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,e.getCode());
+            assertEquals(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,e.getCode());
         }
     }
 

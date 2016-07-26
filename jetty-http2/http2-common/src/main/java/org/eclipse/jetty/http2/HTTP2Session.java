@@ -320,7 +320,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 }
                 case SettingsFrame.MAX_HEADER_LIST_SIZE:
                 {
-                    // Handled by HTTP2ServerConnectionFactory.HTTPServerSessionListener.
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Update max header list size to {}", value);
+                    generator.setMaxHeaderListSize(value);
                     break;
                 }
                 default:

@@ -84,4 +84,9 @@ public class Generator
     {
         return dataGenerator.generate(lease, frame, maxLength);
     }
+
+    public void setMaxHeaderListSize(int value)
+    {
+        hpackEncoder.setMaxHeaderListSize(value);
+    }
 }
