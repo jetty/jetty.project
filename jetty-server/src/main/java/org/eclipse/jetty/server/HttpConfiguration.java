@@ -310,7 +310,7 @@ public class HttpConfiguration
 
     /* ------------------------------------------------------------ */
     /**
-     * @param delay if true, use direct byte buffers for requests
+     * @param useDirectByteBuffers if true, use direct byte buffers for requests
      */
     public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
     {
