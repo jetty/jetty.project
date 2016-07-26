@@ -14,13 +14,13 @@ node {
   stage 'Compile'
 
   withEnv(mvnEnv) {
-    sh "mvn clean install -Dtest=None"
+    sh "mvn -B clean install -Dtest=None"
   }
 
   stage 'Javadoc'
 
   withEnv(mvnEnv) {
-    sh "mvn javadoc:javadoc"
+    sh "mvn -B javadoc:javadoc"
   }
 
   /*
@@ -36,22 +36,25 @@ node {
   stage 'Test'
 
   withEnv(mvnEnv) {
-    sh "mvn test -Dmaven.test.failure.ignore=true"
+    // Run package then test phase / skip main compilation / ignore failures
+    sh "mvn -B package test -Dmaven.main.skip=true -Dmaven.test.failure.ignore=true"
+    // Report failures in the jenkins UI
+    step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
   }
 
   stage 'Compact3'
 
   dir("aggregates/jetty-all-compact3") {
     withEnv(mvnEnv) {
-      sh "mvn -Pcompact3 clean install"
+      sh "mvn -B -Pcompact3 clean install"
     }
   }
 
+  /*
   stage 'Deploy SNAPSHOT'
 
-  /*
   withEnv(mvnEnv) {
-    sh "mvn -Peclipse-release clean compile javadoc:jar source:jar gpg:sign deploy"
+    sh "mvn -B -Peclipse-release clean compile javadoc:jar source:jar gpg:sign deploy"
   }
    */
 }
