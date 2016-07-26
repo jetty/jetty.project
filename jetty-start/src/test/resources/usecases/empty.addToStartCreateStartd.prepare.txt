@@ -1,2 +1,3 @@
---add=extra
---create-startd --add=optional
+--add-to-start=extra
+--create-startd
+--add-to-start=optional

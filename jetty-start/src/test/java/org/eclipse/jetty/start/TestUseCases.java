@@ -125,7 +125,7 @@ public class TestUseCases
 
             Main main = new Main();
             List<String> cmdLine = new ArrayList<>();
-            // cmdLine.add("--debug");
+            cmdLine.add("--debug");
             if (commandLineArgs != null)
             {
                 for (String arg : commandLineArgs)
