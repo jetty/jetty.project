@@ -28,17 +28,16 @@
 [[cgi-servlet-usage]]
 ==== Usage
 
-The CGI servlet class extends the abstract HttpServlet class. 
-When the init parameter is called, the cgi bin directory is set with the cgibinResourceBase. 
-Otherwise, it defaults to the resource base of the context. 
-See CGI javadoc.
+The CGI servlet class extends the abstract HttpServlet class.
+When the init parameter is called, the cgi bin directory is set with the `cgibinResourceBase`.
+Otherwise, it defaults to the resource base of the context.
 
 The cgi bin uses three parameters:
 
 commandPrefix::
-  The init parameter obtained when there is a prefix set to all commands directed to the method exec.
+The init parameter obtained when there is a prefix set to all commands directed to the method exec.
 Path::
-  An init parameter passed to the exec environment as a PATH. 
-  This must be run unpacked somewhere in the filesystem.
+An init parameter passed to the exec environment as a PATH.
+This must be run unpacked somewhere in the filesystem.
 ENV_::
-  An init parameter that points to an environment variable with the name stripped of the leading ENV_ and using the init parameter value.
+An init parameter that points to an environment variable with the name stripped of the leading ENV_ and using the init parameter value.
