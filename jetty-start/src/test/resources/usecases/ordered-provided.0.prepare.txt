@@ -1,1 +1,2 @@
---create-startd --add=abstractB,abstractA
+--create-startd
+--add-to-start=abstractB,abstractA
