@@ -72,7 +72,8 @@ public interface SessionIdManager extends LifeCycle
      * @param nodeId the node id
      * @return the cluster id
      */
-    public default String getClusterId(String nodeId) {
+    public default String getClusterId(String nodeId)
+    {
         int dot=nodeId.lastIndexOf('.');
         return (dot>0)?nodeId.substring(0,dot):nodeId;
     }

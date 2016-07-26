@@ -301,22 +301,28 @@ public class AnnotationParser
      */
     public static interface Handler
     {
-        public default void handle(ClassInfo classInfo) {
+        public default void handle(ClassInfo classInfo)
+        {
            //no-op
         }
-        public default void handle(MethodInfo methodInfo) {
+        public default void handle(MethodInfo methodInfo)
+        {
             // no-op           
         }
-        public default void handle (FieldInfo fieldInfo) {
+        public default void handle (FieldInfo fieldInfo)
+        {
             // no-op 
         }
-        public default void handle (ClassInfo info, String annotationName) {
+        public default void handle (ClassInfo info, String annotationName)
+        {
             // no-op 
         }
-        public default void handle (MethodInfo info, String annotationName) {
+        public default void handle (MethodInfo info, String annotationName)
+        {
             // no-op            
         }
-        public default void handle (FieldInfo info, String annotationName) {
+        public default void handle (FieldInfo info, String annotationName)
+        {
            // no-op
         }
     }

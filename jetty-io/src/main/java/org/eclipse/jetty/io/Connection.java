@@ -88,16 +88,20 @@ public interface Connection extends Closeable
         return true;
     }
 
-    public default int getMessagesIn() {
+    public default int getMessagesIn()
+    {
         return -1;
     }
-    public default int getMessagesOut() {
+    public default int getMessagesOut()
+    {
         return -1;
     }
-    public default long getBytesIn() {
+    public default long getBytesIn()
+    {
         return -1;
     }
-    public default long getBytesOut() {
+    public default long getBytesOut()
+    {
         return -1;
     }
     public long getCreatedTimeStamp();
