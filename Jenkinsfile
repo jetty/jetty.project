@@ -14,21 +14,16 @@ node {
   stage 'Compile'
 
   withEnv(mvnEnv) {
-    sh "mvn clean install -DskipTests"
+    sh "mvn clean install -Dtest=None"
   }
 
   stage 'Javadoc'
 
   withEnv(mvnEnv) {
-    sh "mvn javadoc:jar"
+    sh "mvn javadoc:javadoc"
   }
 
-  stage 'Test'
-
-  withEnv(mvnEnv) {
-    sh "mvn test -Dmaven.test.failure.ignore=true"
-  }
-
+  /*
   stage 'Documentation'
 
   dir("jetty-documentation") {
@@ -36,12 +31,27 @@ node {
       sh "mvn clean install"
     }
   }
+  */
+
+  stage 'Test'
+
+  withEnv(mvnEnv) {
+    sh "mvn test -Dmaven.test.failure.ignore=true"
+  }
 
   stage 'Compact3'
 
   dir("aggregates/jetty-all-compact3") {
     withEnv(mvnEnv) {
-      sh "${mvnHome}/bin/mvn -Pcompact3 clean install"
+      sh "mvn -Pcompact3 clean install"
     }
   }
+
+  stage 'Deploy SNAPSHOT'
+
+  /*
+  withEnv(mvnEnv) {
+    sh "mvn -Peclipse-release clean compile javadoc:jar source:jar gpg:sign deploy"
+  }
+   */
 }
