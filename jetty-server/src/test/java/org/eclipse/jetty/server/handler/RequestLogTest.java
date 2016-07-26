@@ -188,11 +188,31 @@ public class RequestLogTest
         assertThat(log,containsString("GET /foo "));
         assertThat(log,containsString(" 400 0 "));
     }
-    
+
+    @Test
+    public void testUseragentWithout() throws Exception
+    {
+        _connector.getResponses("GET http://[:1]/foo HTTP/1.1\nReferer: http://other.site\n\n");
+        String log = _log.exchange(null,5,TimeUnit.SECONDS);
+        assertThat(log,containsString("GET http://[:1]/foo "));
+        assertThat(log,containsString(" 400 0 \"http://other.site\" \"-\" - "));
+    }
+
+    @Test
+    public void testUseragentWith() throws Exception
+    {
+        _connector.getResponses("GET http://[:1]/foo HTTP/1.1\nReferer: http://other.site\nUser-Agent: Mozilla/5.0 (test)\n\n");
+        String log = _log.exchange(null,5,TimeUnit.SECONDS);
+        assertThat(log,containsString("GET http://[:1]/foo "));
+        assertThat(log,containsString(" 400 0 \"http://other.site\" \"Mozilla/5.0 (test)\" - "));
+    }
+
     private class Log extends AbstractNCSARequestLog
     {
         {
             super.setExtended(true);
+            super.setLogLatency(true);
+            super.setLogCookies(true);
         }
 
         @Override
