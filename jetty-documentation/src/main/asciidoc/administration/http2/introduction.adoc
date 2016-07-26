@@ -30,7 +30,7 @@ This is done automatically when using the Jetty distribution's start.jar link:#s
 ____
 
 [[http2-modules]]
-=== Jetty HTTP/2 Sub Projects
+==== Jetty HTTP/2 Sub Projects
 
 The Jetty HTTP/2 implementation consists of the following sub-projects (each producing a jar file):
 
