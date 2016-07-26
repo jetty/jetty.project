@@ -50,7 +50,7 @@ import org.junit.Test;
 
 public class TestAnnotationParser
 {
-    public static class TrackingAnnotationHandler extends AnnotationParser.AbstractHandler
+    public static class TrackingAnnotationHandler implements Handler
     {
         private final String annotationName;
         public final Set<String> foundClasses;
@@ -80,7 +80,7 @@ public class TestAnnotationParser
         { "org.eclipse.jetty.annotations.ClassA" };
         AnnotationParser parser = new AnnotationParser();
 
-        class SampleAnnotationHandler extends AnnotationParser.AbstractHandler
+        class SampleAnnotationHandler implements AnnotationParser.Handler
         {
             private List<String> methods = Arrays.asList("a","b","c","d","l");
 
@@ -136,7 +136,7 @@ public class TestAnnotationParser
         { "org.eclipse.jetty.annotations.ClassB" };
         AnnotationParser parser = new AnnotationParser();
 
-        class MultiAnnotationHandler extends AnnotationParser.AbstractHandler
+        class MultiAnnotationHandler implements AnnotationParser.Handler
         {
             public void handle(ClassInfo info, String annotation)
             {

@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.annotations;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -28,7 +28,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * Base class for handling the discovery of an annotation.
  * 
  */
-public abstract class AbstractDiscoverableAnnotationHandler extends AbstractHandler
+public abstract class AbstractDiscoverableAnnotationHandler implements Handler
 {
     protected WebAppContext _context;
   

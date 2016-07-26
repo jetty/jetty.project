@@ -20,7 +20,7 @@ package org.eclipse.jetty.annotations;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.log.Log;
@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * As asm scans for classes, remember the type hierarchy.
  */
-public class ClassInheritanceHandler extends AbstractHandler
+public class ClassInheritanceHandler implements Handler
 {
     private static final Logger LOG = Log.getLogger(ClassInheritanceHandler.class);
     
