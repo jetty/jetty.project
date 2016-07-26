@@ -37,8 +37,8 @@ public interface EventDriver extends IncomingFrames
     public WebSocketSession getSession();
     
     public default BatchMode getBatchMode() {
-	    return null;
-	}
+        return null;
+    }
 
     public void onBinaryFrame(ByteBuffer buffer, boolean fin) throws IOException;
 
@@ -53,18 +53,18 @@ public interface EventDriver extends IncomingFrames
     public void onError(Throwable t);
 
     public default void onFrame(Frame frame) {
-	    /* Ignored, not supported by JSR-356 */
-	}
+        /* Ignored, not supported by JSR-356 */
+    }
 
     public void onInputStream(InputStream stream) throws IOException;
 
     public default void onPing(ByteBuffer buffer) {
-	    /* TODO: provide annotation in future */
-	}
+        /* TODO: provide annotation in future */
+    }
     
     public default void onPong(ByteBuffer buffer) {
-	    /* TODO: provide annotation in future */
-	}
+        /* TODO: provide annotation in future */
+    }
 
     public void onReader(Reader reader) throws IOException;
 

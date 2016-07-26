@@ -1735,7 +1735,7 @@ public class HttpParser
          * during the parsing of a HTTP message
          */
         public default void earlyEOF() {
-		}
+        }
 
         /* ------------------------------------------------------------ */
         /** Called to signal that a bad HTTP message has been received.
@@ -1743,15 +1743,15 @@ public class HttpParser
          * @param reason The textual reason for badness
          */
         public default void badMessage(int status, String reason) {
-		    throw new RuntimeException(reason);
-		}
+            throw new RuntimeException(reason);
+        }
 
         /* ------------------------------------------------------------ */
         /** @return the size in bytes of the per parser header cache
          */
         public default int getHeaderCacheSize() {
-		    return 0;
-		}
+            return 0;
+        }
     }
 
     /* ------------------------------------------------------------------------------- */

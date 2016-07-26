@@ -96,8 +96,8 @@ public interface Frame
     public int getPayloadLength();
 
     public default Type getType() {
-	    return Type.from(getOpCode());
-	}
+        return Type.from(getOpCode());
+    }
 
     public boolean hasPayload();
 
