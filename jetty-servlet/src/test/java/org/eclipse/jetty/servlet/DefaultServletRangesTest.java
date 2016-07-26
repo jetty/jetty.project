@@ -208,7 +208,7 @@ public class DefaultServletRangesTest
                 "Connection: close\r\n"+
                 "Range: bytes=100-110\r\n" +
                 "\r\n");
-        assertResponseContains("416 Requested Range Not Satisfiable", response);
+        assertResponseContains("416 Range Not Satisfiable", response);
     }
 
 

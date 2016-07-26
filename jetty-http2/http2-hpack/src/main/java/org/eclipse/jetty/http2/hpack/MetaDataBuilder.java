@@ -72,9 +72,9 @@ public class MetaDataBuilder
         String name = field.getName();
         String value = field.getValue();
         int field_size = name.length() + (value == null ? 0 : value.length());
-        _size+=field_size;
+        _size+=field_size+32;
         if (_size>_maxSize)
-            throw new BadMessageException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,"Header size "+_size+">"+_maxSize);
+            throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,"Header size "+_size+">"+_maxSize);
 
         if (field instanceof StaticTableHttpField)
         {
@@ -191,6 +191,6 @@ public class MetaDataBuilder
         if (huffman)
             length=(length*4)/3;
         if ((_size+length)>_maxSize)
-            throw new BadMessageException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,"Header size "+(_size+length)+">"+_maxSize);
+            throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,"Header size "+(_size+length)+">"+_maxSize);
     }
 }
