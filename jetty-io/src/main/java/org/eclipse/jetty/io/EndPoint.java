@@ -250,8 +250,8 @@ public interface EndPoint extends Closeable
      * @return True if direct buffers can be used optimally.
      */
     default boolean isOptimizedForDirectBuffers() {
-	    return false;
-	}
+        return false;
+    }
 
 
     /** Upgrade connections.

@@ -69,8 +69,8 @@ public interface Authenticator
      * @param request the request to manipulate
      */
     default void prepareRequest(ServletRequest request) {
-	    //empty implementation as the default
-	}
+        //empty implementation as the default
+    }
     
 
     /* ------------------------------------------------------------ */

@@ -30,6 +30,6 @@ public interface Dumpable
     String dump();
     
     default void dump(Appendable out,String indent) throws IOException {
-	    out.append(toString()).append(System.lineSeparator());
-	}
+        out.append(toString()).append(System.lineSeparator());
+    }
 }

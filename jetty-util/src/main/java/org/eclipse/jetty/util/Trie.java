@@ -43,15 +43,15 @@ public interface Trie<V>
      * @return True if the Trie had capacity to add the field.
      */
     public default boolean put(V v) {
-	    return put(v.toString(),v);
-	}
+        return put(v.toString(),v);
+    }
 
     /* ------------------------------------------------------------ */
     public default V remove(String s) {
-	    V o=get(s);
-	    put(s,null);
-	    return o;
-	}
+        V o=get(s);
+        put(s,null);
+        return o;
+    }
 
     /* ------------------------------------------------------------ */
     /** Get and exact match from a String key
@@ -59,8 +59,8 @@ public interface Trie<V>
      * @return the value for the string key
      */
     public default V get(String s) {
-	    return get(s,0,s.length());
-	}
+        return get(s,0,s.length());
+    }
 
     /* ------------------------------------------------------------ */
     /** Get and exact match from a String key
@@ -77,8 +77,8 @@ public interface Trie<V>
      * @return The value or null if not found
      */
     public default V get(ByteBuffer b) {
-	    return get(b,0,b.remaining());
-	}
+        return get(b,0,b.remaining());
+    }
 
     /* ------------------------------------------------------------ */
     /** Get and exact match from a segment of a ByteBuufer as key
@@ -95,8 +95,8 @@ public interface Trie<V>
      * @return The value or null if not found
      */
     public default V getBest(String s) {
-	    return getBest(s,0,s.length());
-	}
+        return getBest(s,0,s.length());
+    }
     
     /* ------------------------------------------------------------ */
     /** Get the best match from key in a String.
@@ -116,8 +116,8 @@ public interface Trie<V>
      * @return The value or null if not found
      */
     public default V getBest(byte[] b,int offset,int len) {
-	    return getBest(new String(b,offset,len,StandardCharsets.ISO_8859_1));
-	}
+        return getBest(new String(b,offset,len,StandardCharsets.ISO_8859_1));
+    }
 
     /* ------------------------------------------------------------ */
     /** Get the best match from key in a byte buffer.
