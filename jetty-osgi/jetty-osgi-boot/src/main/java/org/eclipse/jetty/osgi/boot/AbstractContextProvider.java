@@ -22,7 +22,6 @@ import java.io.File;
 import java.util.Dictionary;
 import java.util.HashMap;
 
-import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
@@ -227,22 +226,6 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     public ServerInstanceWrapper getServerInstanceWrapper()
     {
         return _serverWrapper;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** 
-     * @see org.eclipse.jetty.deploy.AppProvider#createContextHandler(org.eclipse.jetty.deploy.App)
-     */
-    public ContextHandler createContextHandler(App app) throws Exception
-    {
-        if (app == null)
-            return null;
-        if (!(app instanceof OSGiApp))
-            throw new IllegalStateException(app+" is not a BundleApp");
-        
-        //Create a ContextHandler suitable to deploy in OSGi
-        ContextHandler h = ((OSGiApp)app).createContextHandler();           
-        return h;
     }
     
     /* ------------------------------------------------------------ */

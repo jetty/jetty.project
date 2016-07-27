@@ -213,13 +213,4 @@ public abstract class AbstractLogger implements Logger
         dense.append(parts[parts.length - 1]);
         return dense.toString();
     }
-
-
-    public void debug(String msg, long arg)
-    {
-        if (isDebugEnabled())
-        {
-            debug(msg,new Object[] { new Long(arg) });
-        }
-    }
 }
