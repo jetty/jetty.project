@@ -321,14 +321,6 @@ public class AnnotationParser
 		}
     }
     
-    /**
-     * AbstractHandler
-     *
-     * Convenience base class to provide no-ops for all Handler methods.
-     */
-    public static abstract class AbstractHandler implements Handler
-    {        
-    }
 
     
     
