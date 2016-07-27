@@ -28,39 +28,39 @@
 [[default-servlet-usage]]
 ==== Usage
 
-The DefaultServlet implements the ResourceFactory interface and extends the HttpServlet abstract class. 
-It is usually mapped to / and provides handling for static content, OPTION and TRACE methods for the context.
-The MOVE method is allowed if PUT and DELETE are allowed. 
-See DefaultServlet link:{JDURL}/org/eclipse/jetty/servlet/DefaultServlet.html[javadoc].
+The `DefaultServlet` implements the `ResourceFactory` interface and extends the `HttpServlet` abstract class.
+It is usually mapped to "/" and provides handling for static content, `OPTION` and `TRACE` methods for the context.
+The `MOVE` method is allowed if `PUT` and `DELETE` are allowed.
+See the `DefaultServlet` link:{JDURL}/org/eclipse/jetty/servlet/DefaultServlet.html[javadoc].
 
 [[default-servlet-init]]
 ==== Init Parameters
 
-Jetty supports the following initParameters:
+Jetty supports the following `initParameters`:
 
 acceptRanges::
-  If true, range requests and responses are supported.
+If true, range requests and responses are supported.
 dirAllowed::
-  If true, directory listings are returned if no welcome file is found.
-  Otherwise 403 Forbidden displays.
+If true, directory listings are returned if no welcome file is found.
+Otherwise 403 Forbidden displays.
 redirectWelcome::
-  If true, welcome files are redirected rather that forwarded.
+If true, welcome files are redirected rather that forwarded.
 gzip::
-  If set to true, then static content is served as gzip content encoded if a matching resource is found ending with ".gz".
+If set to true, then static content is served as gzip content encoded if a matching resource is found ending with ".gz".
 resourceBase::
-  Set to replace the context resource base.
+Set to replace the context resource base.
 aliases::
-  If true, aliases of resources are allowed (that is, symbolic links and caps variations) and may bypass security constraints.
+If true, aliases of resources are allowed (that is, symbolic links and caps variations) and may bypass security constraints.
 maxCacheSize::
-  Maximum total size of the cache or 0 for no cache.
+Maximum total size of the cache or 0 for no cache.
 maxCachedFileSize::
-  Maximum size of a file to cache.
+Maximum size of a file to cache.
 maxCachedFiles::
-  Maximum number of files to cache.
+Maximum number of files to cache.
 useFileMappedBuffer::
-  If set to true, mapped file buffer serves static content. 
-  Setting this value to false means that a direct buffer is used instead of a mapped file buffer. 
-  By default, this is set to true.
+If set to true, mapped file buffer serves static content.
+Setting this value to false means that a direct buffer is used instead of a mapped file buffer.
+By default, this is set to true.
 otherGzipFileExtensions::
-  A comma separated list of other file extensions that signify that a file is gzip compressed. 
-  If you don't explicitly set this, it defaults to ".svgz".
+A comma separated list of other file extensions that signify that a file is gzip compressed.
+If you don't explicitly set this, it defaults to ".svgz".
