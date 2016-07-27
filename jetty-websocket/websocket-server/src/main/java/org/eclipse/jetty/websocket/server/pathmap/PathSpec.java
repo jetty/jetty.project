@@ -19,13 +19,20 @@
 package org.eclipse.jetty.websocket.server.pathmap;
 
 /**
- * @deprecated moved to jetty-http {@link org.eclipse.jetty.http.pathmap.ServletPathSpec} (this facade will be removed in Jetty 9.4) 
+ * @deprecated moved to jetty-http {@link org.eclipse.jetty.http.pathmap.PathSpec} (this facade will be removed in Jetty 9.4)
  */
 @Deprecated
-public class ServletPathSpec extends PathSpec
+public abstract class PathSpec
 {
-    public ServletPathSpec(String servletPathSpec)
+    private final String spec;
+    
+    protected PathSpec(String spec)
     {
-        super(servletPathSpec);
+        this.spec = spec;
+    }
+    
+    public String getSpec()
+    {
+        return spec;
     }
 }
