@@ -26,6 +26,7 @@
     <module>test-jetty-osgi-webapp</module>
     <module>test-jetty-osgi-context</module>
     <module>test-jetty-osgi-fragment</module>
+    <module>test-jetty-osgi-server</module>
     <module>jetty-osgi-alpn</module>
     <module>test-jetty-osgi</module>
   </modules>

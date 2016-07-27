@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,6 +56,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 public class CachedContentFactory implements HttpContent.ContentFactory
 {
     private static final Logger LOG = Log.getLogger(CachedContentFactory.class);
+    private final static Map<CompressedContentFormat, CachedPrecompressedHttpContent> NO_PRECOMPRESSED = Collections.unmodifiableMap(Collections.emptyMap());
 
     private final ConcurrentMap<String,CachedHttpContent> _cache;
     private final AtomicInteger _cachedSize;
@@ -456,7 +458,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             }
             else
             {
-                _precompressed = null;
+                _precompressed = NO_PRECOMPRESSED;
             }
         }
         
@@ -678,7 +680,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         @Override
         public String toString()
         {
-            return String.format("CachedContent@%x{r=%s,e=%b,lm=%s,ct=%s,c=%b}",hashCode(),_resource,_resource.exists(),_lastModified,_contentType,!_precompressed.isEmpty());
+            return String.format("CachedContent@%x{r=%s,e=%b,lm=%s,ct=%s,c=%d}",hashCode(),_resource,_resource.exists(),_lastModified,_contentType,_precompressed.size());
         }
 
         /* ------------------------------------------------------------ */

@@ -21,16 +21,14 @@ package com.acme.osgi;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
 /**
- * Bootstrap a ContextHandler
+ * Bootstrap a Server
  * 
  * 
  */
@@ -38,32 +36,23 @@ public class Activator implements BundleActivator
 {
 
     private ServiceRegistration _sr;
+    
     /**
      * 
      * @param context
      */
-    public void start(final BundleContext context) throws Exception
-    {
-        ContextHandler ch = new ContextHandler();
-        ch.addEventListener(new ServletContextListener () {
+    public void start(BundleContext context) throws Exception
+    {    
+        Server server = new Server(9999);
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
 
-            @Override
-            public void contextInitialized(ServletContextEvent sce)
-            {
-               //System.err.println("Context is initialized");
-            }
-
-            @Override
-            public void contextDestroyed(ServletContextEvent sce)
-            {
-                //System.err.println("CONTEXT IS DESTROYED!");                
-            }
-            
-        });
-        Dictionary props = new Hashtable();
-        props.put("contextPath","/acme");
-        props.put("Jetty-ContextFilePath", "acme.xml");
-        _sr = context.registerService(ContextHandler.class.getName(),ch,props);
+        Dictionary serverProps = new Hashtable();
+        //define the unique name of the server instance
+        serverProps.put("managedServerName", "fooServer");
+        //serverProps.put("jetty.http.port", "9999");
+        //register as an OSGi Service for Jetty to find 
+        _sr = context.registerService(Server.class.getName(), server, serverProps);
     }
 
     /**

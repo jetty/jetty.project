@@ -20,18 +20,13 @@ package org.eclipse.jetty.osgi.boot;
 
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.JettyServerServiceTracker;
-import org.eclipse.jetty.osgi.boot.internal.webapp.BundleWatcher;
-import org.eclipse.jetty.osgi.boot.internal.webapp.ServiceWatcher;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.util.tracker.BundleTracker;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
@@ -55,14 +50,10 @@ public class JettyBootstrapActivator implements BundleActivator
     }
 
     private ServiceRegistration _registeredServer;
-
-    private ServiceTracker _contextHandlerTracker;
     
     private PackageAdminServiceTracker _packageAdminServiceTracker;
 
-    private BundleTracker _webBundleTracker;
-
-    private JettyServerServiceTracker _jettyServerServiceTracker;
+    private ServiceTracker _jettyServerServiceTracker;
     
     
     
@@ -77,7 +68,6 @@ public class JettyBootstrapActivator implements BundleActivator
      */
     public void start(final BundleContext context) throws Exception
     {
-        try {
         INSTANCE = this;
 
         // track other bundles and fragments attached to this bundle that we
@@ -85,27 +75,15 @@ public class JettyBootstrapActivator implements BundleActivator
         _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
 
         // track jetty Server instances that we should support as deployment targets
-        _jettyServerServiceTracker = new JettyServerServiceTracker();
-        context.addServiceListener(_jettyServerServiceTracker, "(objectclass=" + Server.class.getName() + ")");
-
+        _jettyServerServiceTracker = new ServiceTracker(context, context.createFilter("(objectclass=" + Server.class.getName() + ")"), new JettyServerServiceTracker());
+        _jettyServerServiceTracker.open();
+        
         // Create a default jetty instance right now.
         Server defaultServer = DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
-        
-        // track ContextHandler class instances and deploy them to one of the known Servers
-        _contextHandlerTracker = new ServiceTracker(context, context.createFilter("(objectclass=" + ContextHandler.class.getName() + ")"), new ServiceWatcher());
-        _contextHandlerTracker.open();
-
-        //Create a bundle tracker to help deploy webapps and ContextHandlers
-        BundleWatcher bundleTrackerCustomizer = new BundleWatcher();
-        bundleTrackerCustomizer.setWaitForDefaultServer(defaultServer != null);
-        _webBundleTracker =  new BundleTracker(context, Bundle.ACTIVE | Bundle.STOPPING, bundleTrackerCustomizer);
-        bundleTrackerCustomizer.setBundleTracker(_webBundleTracker);
-        bundleTrackerCustomizer.open();
-        } catch (Exception e) { e.printStackTrace();}
     }
-    
-    
-    
+
+
+
     /* ------------------------------------------------------------ */
     /**
      * Stop the activator.
@@ -117,20 +95,9 @@ public class JettyBootstrapActivator implements BundleActivator
     {
         try
         {
-            if (_webBundleTracker != null)
-            {
-                _webBundleTracker.close();
-                _webBundleTracker = null;
-            }
-            if (_contextHandlerTracker != null)
-            {
-                _contextHandlerTracker.close();
-                _contextHandlerTracker = null;
-            }
             if (_jettyServerServiceTracker != null)
             {
-                _jettyServerServiceTracker.stop();
-                context.removeServiceListener(_jettyServerServiceTracker);
+                _jettyServerServiceTracker.close();
                 _jettyServerServiceTracker = null;
             }
             if (_packageAdminServiceTracker != null)
