@@ -28,13 +28,12 @@
 [[debug-handler-usage]]
 ==== Usage
 
-A simple handler that is useful to debug incoming traffic. 
-It will log entry and exit points of http requests as well as the response code.
+A simple handler that is useful to debug incoming traffic.
+It will log entry and exit points of HTTP requests as well as the response code.
 
 ==== Usage in standard distribution
 
-Simply include jetty-debug.xml in your *.ini configs. 
-For example in start.ini.
+The debug handler can be added to Jetty by activating the debug module.
 
 ==== Embedded usage
 
@@ -49,10 +48,9 @@ debugHandler.setHandler(server.getHandler());
 
 server.setHandler(debugHandler);
 server.start();
-          
 ----
 
-==== Some example output
+==== Example output
 
 [source,bash]
 ----
@@ -66,5 +64,4 @@ server.start();
 15:14:07.248:qtp551889550-59:http://0:0:0:0:0:0:0:1:8080/favicon.ico REQUEST 0:0:0:0:0:0:0:1 GET __utma=111872281.10102721.1321534299.1369833564.1370447492.35; __utmz=111872281.1321534299.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); _opt_vi_RPY720HZ=75E12E63-0CD0-4D6F-8383-C90D5C8397C7; visited=yes; Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:22.0) Gecko/20100101 Firefox/22.0
 15:14:07.251:qtp551889550-59:http://0:0:0:0:0:0:0:1:8080/favicon.ico RESPONSE 404 text/html;charset=ISO-8859-1
 15:14:09.330:qtp551889550-57 CLOSED HttpConnection@e910ee4{INTERESTED},g=HttpGenerator{s=START},p=HttpParser{s=START,0 of -1}
-      
 ----

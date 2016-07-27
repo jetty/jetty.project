@@ -17,7 +17,8 @@
 [[rewrite-handler]]
 === Rewrite Handler
 
-The RewriteHandler matches a request against a set of rules, and modifies the request accordingly for any rules that match. The most common use is to rewrite request URIs, but it is capable of much more: rules can also be configured to redirect the response, set a cookie or response code on the response, modify the header, etc.
+The `RewriteHandler` matches a request against a set of rules, and modifies the request accordingly for any rules that match.
+The most common use is to rewrite request URIs, but it is capable of much more: rules can also be configured to redirect the response, set a cookie or response code on the response, modify the header, etc.
 
 [[rewrite-handler-metadata]]
 ==== Info
@@ -31,9 +32,7 @@ The standard Jetty distribution bundle contains the `jetty-rewrite` link:#startu
 
 [source, screen, subs="{sub-order}"]
 ....
-
-$ java -jar start.jar --add-to-startd=rewrite
-    
+$ java -jar start.jar --add-to-start=rewrite
 ....
 
 _____
@@ -43,14 +42,14 @@ _____
 
 ==== Usage
 
-The rewrite module enables the following jetty xml config file on the execution path:
+The rewrite module enables the following Jetty xml config file on the execution path:
 
 [source, xml, subs="{sub-order}"]
 ----
 include::{SRCDIR}/jetty-rewrite/src/main/config/etc/jetty-rewrite.xml[]
 ----
 
-As the commented out code shows, you configure the RewriteHandler by adding various rules.
+As the commented out code shows, you configure the `RewriteHandler` by adding various rules.
 
 There is an example of link:#rewrite-rules[rules] configuration in the standard distribution in the `demo-base/etc/demo-rewrite-rules.xml` file:
 
@@ -65,32 +64,29 @@ This is an example for embedded Jetty, which does something similar to the confi
 
 [source, java, subs="{sub-order}"]
 ----
-
   Server server = new Server();
- 
+
   RewriteHandler rewrite = new RewriteHandler();
   rewrite.setRewriteRequestURI(true);
   rewrite.setRewritePathInfo(false);
   rewrite.originalPathAttribute("requestedPath");
- 
+
   RedirectPatternRule redirect = new RedirectPatternRule();
   redirect.setPattern("/redirect/*");
-  redirect.setReplacement("/redirected");  
+  redirect.setReplacement("/redirected");
   rewrite.addRule(redirect);
- 
+
   RewritePatternRule oldToNew = new RewritePatternRule();
   oldToNew.setPattern("/some/old/context");
   oldToNew.setReplacement("/some/new/context");
   rewrite.addRule(oldToNew);
- 
+
   RewriteRegexRule reverse = new RewriteRegexRule();
   reverse.setRegex("/reverse/([^/]*)/(.*)");
   reverse.setReplacement("/reverse/$2/$1");
   rewrite.addRule(reverse);
- 
+
   server.setHandler(rewrite);
-  
-      
 ----
 
 [[rewrite-rules]]
@@ -103,45 +99,46 @@ There are several types of rules that are written extending useful base rule cla
 Matches against the request URI using the servlet pattern syntax.
 
 link:{JXURL}/org/eclipse/jetty/rewrite/handler/CookiePatternRule.html[CookiePatternRule]::
-  Adds a cookie to the response.
+Adds a cookie to the response.
 link:{JXURL}/org/eclipse/jetty/rewrite/handler/HeaderPatternRule.html[HeaderPatternRule]::
-  Adds/modifies a header in the response.
+Adds/modifies a header in the response.
 link:{JXURL}/org/eclipse/jetty/rewrite/handler/RedirectPatternRule.html[RedirectPatternRule]::
-  Redirects the response.
+Redirects the response.
 link:{JXURL}/org/eclipse/jetty/rewrite/handler/ResponsePatternRule.html[ResponsePatternRule]::
-  Sends the response code (status or error).
+Sends the response code (status or error).
 link:{JXURL}/org/eclipse/jetty/rewrite/handler/RewritePatternRule.html[RewritePatternRule]::
-  Rewrite the URI by replacing the matched request path with a fixed string.
+Rewrite the URI by replacing the matched request path with a fixed string.
 
 ===== RegexRule
 
 Matches against the request URI using regular expressions.
 
 link:{JXURL}/org/eclipse/jetty/rewrite/handler/RedirectRegexRule.html[RedirectRegexRule]::
-  Redirect the response.
+Redirect the response.
 link:{JXURL}/org/eclipse/jetty/rewrite/handler/RewriteRegexRule.html[RewriteRegexRule]::
-  Rewrite the URI by matching with a regular expression. 
-  (The replacement string may use Template:$n to replace the nth capture group.)
+Rewrite the URI by matching with a regular expression.
+(The replacement string may use `Template:$n` to replace the nth capture group.)
 
 ===== HeaderRule
 
-Match against request headers. Match either on a header name + specific value, or on the presence of a header (with any value).
+Match against request headers. Match either on a header name and specific value, or on the presence of a header (with any value).
 
 link:{JXURL}/org/eclipse/jetty/rewrite/handler/ForwardedSchemeHeaderRule.html[ForwardedSchemaHeaderRule]::
-  Set the scheme on the request (defaulting to https).
+Set the scheme on the request (defaulting to HTTPS).
 
 ===== Others
 
-Oddball rules that defy classification.
+Extra rules that defy standard classification.
 
 link:{JXURL}/org/eclipse/jetty/rewrite/handler/MsieSslRule.html[MsieSslRule]::
-  Disables the keep alive for SSL from IE5 or IE6.
+Disables the keep alive for SSL from IE5 or IE6.
 link:{JXURL}/org/eclipse/jetty/rewrite/handler/LegacyRule.html[LegacyRule]::
-  Implements the legacy API of RewriteHandler
+Implements the legacy API of RewriteHandler
 
 ===== RuleContainer
 
-Groups rules together. The contained rules will only be processed if the conditions for the RuleContainer evaluate to true.
+Groups rules together.
+The contained rules will only be processed if the conditions for the `RuleContainer` evaluate to true.
 
 link:{JXURL}/org/eclipse/jetty/rewrite/handler/VirtualHostRuleContainer.html[VirtualHostRuleContainer]::
-  Groups rules that apply only to a specific virtual host or a set of virtual hosts
+Groups rules that apply only to a specific virtual host or a set of virtual hosts

@@ -17,6 +17,6 @@
 [[runner]]
 == Jetty Runner
 
-This chapter explains how to use the jetty-runner to run your webapps without needing an installation of jetty.
+This chapter explains how to use the `jetty-runner` to run your webapps without needing an installation of Jetty.
 
 include::jetty-runner.adoc[]
