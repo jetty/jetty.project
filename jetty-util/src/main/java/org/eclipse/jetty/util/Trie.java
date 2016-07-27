@@ -42,12 +42,14 @@ public interface Trie<V>
      * @param v The value and key
      * @return True if the Trie had capacity to add the field.
      */
-    public default boolean put(V v) {
+    public default boolean put(V v)
+    {
         return put(v.toString(),v);
     }
 
     /* ------------------------------------------------------------ */
-    public default V remove(String s) {
+    public default V remove(String s)
+    {
         V o=get(s);
         put(s,null);
         return o;
@@ -58,7 +60,8 @@ public interface Trie<V>
      * @param s The key
      * @return the value for the string key
      */
-    public default V get(String s) {
+    public default V get(String s)
+    {
         return get(s,0,s.length());
     }
 
@@ -76,7 +79,8 @@ public interface Trie<V>
      * @param b The buffer
      * @return The value or null if not found
      */
-    public default V get(ByteBuffer b) {
+    public default V get(ByteBuffer b)
+    {
         return get(b,0,b.remaining());
     }
 
@@ -94,7 +98,8 @@ public interface Trie<V>
      * @param s The string
      * @return The value or null if not found
      */
-    public default V getBest(String s) {
+    public default V getBest(String s)
+    {
         return getBest(s,0,s.length());
     }
     
@@ -115,7 +120,8 @@ public interface Trie<V>
      * @param len the length of the key
      * @return The value or null if not found
      */
-    public default V getBest(byte[] b,int offset,int len) {
+    public default V getBest(byte[] b,int offset,int len)
+    {
         return getBest(new String(b,offset,len,StandardCharsets.ISO_8859_1));
     }
 

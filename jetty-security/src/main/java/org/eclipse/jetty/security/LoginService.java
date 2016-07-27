@@ -70,7 +70,8 @@ public interface LoginService
      */
     void setIdentityService(IdentityService service);
     
-    default void logout(UserIdentity user) {
+    default void logout(UserIdentity user)
+    {
         //Override in subclasses
     
     }

@@ -36,7 +36,8 @@ public interface EventDriver extends IncomingFrames
 
     public WebSocketSession getSession();
     
-    public default BatchMode getBatchMode() {
+    public default BatchMode getBatchMode()
+    {
         return null;
     }
 
@@ -52,17 +53,20 @@ public interface EventDriver extends IncomingFrames
 
     public void onError(Throwable t);
 
-    public default void onFrame(Frame frame) {
+    public default void onFrame(Frame frame)
+    {
         /* Ignored, not supported by JSR-356 */
     }
 
     public void onInputStream(InputStream stream) throws IOException;
 
-    public default void onPing(ByteBuffer buffer) {
+    public default void onPing(ByteBuffer buffer)
+    {
         /* TODO: provide annotation in future */
     }
     
-    public default void onPong(ByteBuffer buffer) {
+    public default void onPong(ByteBuffer buffer)
+    {
         /* TODO: provide annotation in future */
     }
 

@@ -1734,7 +1734,8 @@ public class HttpParser
         /** Called to signal that an EOF was received unexpectedly
          * during the parsing of a HTTP message
          */
-        public default void earlyEOF() {
+        public default void earlyEOF()
+        {
         }
 
         /* ------------------------------------------------------------ */
@@ -1742,14 +1743,16 @@ public class HttpParser
          * @param status The bad status to send
          * @param reason The textual reason for badness
          */
-        public default void badMessage(int status, String reason) {
+        public default void badMessage(int status, String reason)
+        {
             throw new RuntimeException(reason);
         }
 
         /* ------------------------------------------------------------ */
         /** @return the size in bytes of the per parser header cache
          */
-        public default int getHeaderCacheSize() {
+        public default int getHeaderCacheSize()
+        {
             return 0;
         }
     }

@@ -84,20 +84,25 @@ public interface Connection extends Closeable
      * @return true to let the EndPoint handle the idle timeout,
      *         false to tell the EndPoint to halt the handling of the idle timeout.
      */
-    public default boolean onIdleExpired() {
+    public default boolean onIdleExpired()
+    {
         return true;
     }
 
-    public default int getMessagesIn() {
+    public default int getMessagesIn()
+    {
         return -1;
     }
-    public default int getMessagesOut() {
+    public default int getMessagesOut()
+    {
         return -1;
     }
-    public default long getBytesIn() {
+    public default long getBytesIn()
+    {
         return -1;
     }
-    public default long getBytesOut() {
+    public default long getBytesOut()
+    {
         return -1;
     }
     public long getCreatedTimeStamp();
