@@ -45,15 +45,38 @@ public class HttpURITest
 
     private void assertInvalidURI(String invalidURI, String message)
     {
+        HttpURI uri = new HttpURI();
         try
         {
-            new HttpURI(invalidURI);
+            uri.parse(invalidURI);
             fail(message);
         }
         catch (IllegalArgumentException e)
         {
             assertTrue(true);
         }
+    }
+
+    @Test
+    public void testParse()
+    {
+        HttpURI uri = new HttpURI();
+
+        uri.parse("*");
+        assertThat(uri.getHost(),nullValue());
+        assertThat(uri.getPath(),is("*"));
+        
+        uri.parse("/foo/bar");
+        assertThat(uri.getHost(),nullValue());
+        assertThat(uri.getPath(),is("/foo/bar"));
+        
+        uri.parse("//foo/bar");
+        assertThat(uri.getHost(),is("foo"));
+        assertThat(uri.getPath(),is("/bar"));
+        
+        uri.parse("http://foo/bar");
+        assertThat(uri.getHost(),is("foo"));
+        assertThat(uri.getPath(),is("/bar"));
     }
 
     @Test
@@ -227,47 +250,4 @@ public class HttpURITest
         assertEquals(uri.getAuthority(), "example.com:8888");
         assertEquals(uri.getUser(), "user:password");
     }
-    
-    @Test
-    public void testComplete() throws Exception
-    {
-        HttpURI uri = new HttpURI("scheme://user:password@host:99/path;ignored/%69nfo;param?query+string#fragment");
-
-        assertEquals("scheme",uri.getScheme());
-        assertEquals("user:password",uri.getUser());
-        assertEquals("host",uri.getHost());
-        assertEquals(99,uri.getPort());
-        assertEquals("host:99",uri.getAuthority());
-        assertEquals("/path;ignored/%69nfo;param",uri.getPath());
-        assertEquals("/path/info",uri.getDecodedPath());
-        assertEquals("param",uri.getParam());
-        assertEquals("query+string",uri.getQuery());
-        assertEquals("fragment",uri.getFragment());    
-    }
-    
-    @Test
-    public void testDefaultPorts() throws Exception
-    {
-        HttpURI uri = new HttpURI("/path/info");
-        assertEquals(-1,uri.getPort());
-    
-        uri = new HttpURI("http:/path/info");
-        assertEquals(-1,uri.getPort());
-        
-        uri = new HttpURI("http://host/path/info");
-        assertEquals(80,uri.getPort());
-        
-        uri = new HttpURI("https://host/path/info");
-        assertEquals(443,uri.getPort());
-        
-        uri = new HttpURI("http://host:8080/path/info");
-        assertEquals(8080,uri.getPort());
-        
-        uri = new HttpURI("http","host",-1,"/path?query");
-        assertEquals(80,uri.getPort());
-        
-        
-    }
-    
-    
 }
