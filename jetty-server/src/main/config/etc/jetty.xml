@@ -122,7 +122,7 @@
     <!-- extra server options                                        -->
     <!-- =========================================================== -->
     <Set name="stopAtShutdown"><Property name="jetty.server.stopAtShutdown" default="true"/></Set>
-    <Set name="stopTimeout">5000</Set>
+    <Set name="stopTimeout"><Property name="jetty.server.stopTimeout" default="5000"/></Set>
     <Set name="dumpAfterStart"><Property name="jetty.server.dumpAfterStart" deprecated="jetty.dump.start" default="false"/></Set>
     <Set name="dumpBeforeStop"><Property name="jetty.server.dumpBeforeStop" deprecated="jetty.dump.stop" default="false"/></Set>
 
