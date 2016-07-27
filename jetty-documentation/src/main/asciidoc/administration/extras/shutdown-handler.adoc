@@ -28,30 +28,27 @@
 [[shutdown-handler-usage]]
 ==== Usage
 
-A handler that shuts the server down on a valid request. 
-Used to do "soft" restarts from Java. 
-If _exitJvm is set to true a hard System.exit() call is being made.
+A handler that shuts the server down on a valid request.
+This is used to perform "soft" restarts from Java.
+If `_exitJvm` is set to true a hard `System.exit()` call is being made.
 
-This is an example of how you can setup this handler directly with the Server, it can be added as a part of handler chain or collection as well.
+This is an example of how you can setup this handler directly with the Server.
+It can also be added as a part of handler chain or collection.
 
 [source, java, subs="{sub-order}"]
 ----
-
     Server server = new Server(8080);
     HandlerList handlers = new HandlerList();
     handlers.setHandlers(new Handler[]
     { someOtherHandler, new ShutdownHandler(server,"secret password") });
     server.setHandler(handlers);
     server.start();
-
-    
 ----
 
-And this is an example that you can use to call the shutdown handler from within java.
+This is an example that you can use to call the shutdown handler from within java.
 
 [source, java, subs="{sub-order}"]
 ----
-
    public static void attemptShutdown(int port, String shutdownCookie) {
         try {
             URL url = new URL("http://localhost:" + port + "/shutdown?token=" + shutdownCookie);
@@ -66,6 +63,4 @@ And this is an example that you can use to call the shutdown handler from within
             throw new RuntimeException(e);
         }
     }
-
-    
 ----
