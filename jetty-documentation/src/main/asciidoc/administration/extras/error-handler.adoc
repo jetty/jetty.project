@@ -28,6 +28,6 @@
 [[error-handler-usage]]
 ==== Usage
 
-A handler that is used to report errors from servlet contexts and webapp contexts to report error conditions. 
-Primarily handles setting the various servlet spec specific response headers for error conditions. 
-Can be customized by extending, for more information on this see xref:custom-error-pages[].
+A handler that is used to report errors from servlet contexts and webapp contexts to report error conditions.
+Primarily handles setting the various servlet spec specific response headers for error conditions.
+Can be customized by extending; for more information on this see xref:custom-error-pages[].

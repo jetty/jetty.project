@@ -30,25 +30,24 @@
 [[moved-context-handler-usage]]
 ==== Usage
 
-You can use the MovedContextHandler to relocate or redirect a context that has changed context path and/or virtual hosts.
+You can use the `MovedContextHandler` to relocate or redirect a context that has changed context path and/or virtual hosts.
 
-You can configure it to _permanently_ redirect the old URL to the new URL, in which case Jetty sends a Http Status code of 301 to the browser with the new URL. 
+You can configure it to _permanently_ redirect the old URL to the new URL, in which case Jetty sends a Http Status code of 301 to the browser with the new URL.
 Alternatively, you can make it non-permanent, in which case Jetty sends a 302 Http Status code along with the new URL.
 
 In addition, as with any other context, you can configure a list of virtual hosts, meaning that this context responds only to requests to one of the listed host names.
 
-Suppose you have a context deployed at /foo, but that now you want to deploy at the root context / instead.
+Suppose you have a context deployed at `/foo`, but that now you want to deploy at the root context `/` instead.
 
 * First you reconfigure and redeploy the context on Jetty.
-* Next you need a way to redirect all the browsers who have bookmarked /foo to the new path. 
-You create a new context xml file in $JETTY_HOME/contexts and configure the MovedContextHandler to do the redirection from /foo to /.
+* Next you need a way to redirect all the browsers who have bookmarked `/foo` to the new path.
+You create a new xref:configuring-contexts[context xml] file in `{$jetty/.base}/webapps` and configure the `MovedContextHandler` to do the redirection from `/foo` to `/`.
 
-Here's an example. 
-This is a permanent redirection, which also preserves pathinfo and query strings on the redirect:
+Below is an example.
+This is a permanent redirection, which also preserves `pathinfo` and query strings on the redirect:
 
 [source, xml, subs="{sub-order}"]
 ----
-
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
@@ -69,6 +68,4 @@ This is a permanent redirection, which also preserves pathinfo and query strings
     </Array>
   </Set>
 </Configure>
-
-      
 ----
