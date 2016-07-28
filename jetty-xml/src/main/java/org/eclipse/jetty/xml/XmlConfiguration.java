@@ -640,7 +640,7 @@ public class XmlConfiguration
 
         /*
          * Call a get method. Any object returned from the call is passed to the configure method to consume the remaining elements. @param obj @param node
-         *
+         * If class attribute is given and the name is "class", then the class instance itself is returned.
          * @return @exception Exception
          */
         private Object get(Object obj, XmlParser.Node node) throws Exception
@@ -658,9 +658,15 @@ public class XmlConfiguration
 
             try
             {
-                // try calling a getXxx method.
-                Method method = oClass.getMethod("get" + name.substring(0,1).toUpperCase(Locale.ENGLISH) + name.substring(1),(java.lang.Class[])null);
-                obj = method.invoke(obj,(java.lang.Object[])null);
+                // Handle getClass explicitly
+                if ("class".equalsIgnoreCase(name))
+                    obj=oClass;
+                else
+                {
+                    // try calling a getXxx method.
+                    Method method = oClass.getMethod("get" + name.substring(0,1).toUpperCase(Locale.ENGLISH) + name.substring(1),(java.lang.Class[])null);
+                    obj = method.invoke(obj,(java.lang.Object[])null);
+                }
                 if (id!=null)
                     _configuration.getIdMap().put(id,obj);
                 configure(obj,node,0);

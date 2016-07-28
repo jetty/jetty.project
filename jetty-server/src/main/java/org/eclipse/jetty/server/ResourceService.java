@@ -271,7 +271,7 @@ public class ResourceService
                 
             // Precompressed variant available?
             Map<CompressedContentFormat,? extends HttpContent> precompressedContents = checkPrecompressedVariants?content.getPrecompressedContents():null;
-            if (precompressedContents!=null)
+            if (precompressedContents!=null && precompressedContents.size()>0)
             {
                 // Tell caches that response may vary by accept-encoding
                 response.addHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
