@@ -17,14 +17,13 @@
 [[http2-configuring-push]]
 === Configuring HTTP/2 Push
 
-HTTP/2 Push is a mechanism that allows the server to send multiple resources to the client for a single client request. 
-This will reduce the amount of round-trips necessary to retrieve all the resources that make up a web page, and can significantly improve the page load time.
+HTTP/2 Push is a mechanism that allows the server to send multiple resources to the client for a single client request.
+This will reduce the amount of round-trips necessary to retrieve all the resources that make up a web page and can significantly improve the page load time.
 
-HTTP/2 Push can be automated in your application by simply configuring a link:{JDURL}/org/eclipse/jetty/servlets/PushCacheFilter.html[`PushCacheFilter`] in your `web.xml`, in this way:
+HTTP/2 Push can be automated in your application by configuring a link:{JDURL}/org/eclipse/jetty/servlets/PushCacheFilter.html[`PushCacheFilter`] in the `web.xml`, in this way:
 
 [source, xml, subs="{sub-order}"]
 ----
-
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app
     xmlns="http://xmlns.jcp.org/xml/ns/javaee"
@@ -34,7 +33,6 @@ HTTP/2 Push can be automated in your application by simply configuring a link:{J
     version="3.1">
 
     ...
-
     <filter>
         <filter-name>PushFilter</filter-name>
         <filter-class>org.eclipse.jetty.servlets.PushCacheFilter</filter-class>
@@ -44,17 +42,14 @@ HTTP/2 Push can be automated in your application by simply configuring a link:{J
         <filter-name>PushFilter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
-
     ...
 
 </web-app>
-
-        
 ----
 
-`PushCacheFilter` analyzes the HTTP requests for resources that arrive to your web application. 
-Some of these requests contain the HTTP `Referrer` header that points to a resource that has been requested previously. 
-This allows the `PushCacheFilter` to organize resources in _primary_ resources (those referenced by the `Referrer` header) and _secondary_ resources (those that have the `Referer` header).
+`PushCacheFilter` analyzes the HTTP requests for resources that arrive to your web application.
+Some of these requests contain the HTTP `Referrer` header that points to a resource that has been requested previously.
+This allows the `PushCacheFilter` to organize resources in to two categories: _primary_ resources (those referenced by the `Referrer` header) and _secondary_ resources (those that have the `Referer` header).
 
 `PushCacheFilter` associates secondary resources to primary resources.
 Only secondary resources that have been requested within a time window from the request of the primary resource are associated with the primary resource.
@@ -62,4 +57,3 @@ Only secondary resources that have been requested within a time window from the 
 `PushCacheFilter` can be configured with the following `init-params`::
 * `associatePeriod`: the time window, in milliseconds, within which a request for a secondary resource will be associated to a primary resource.
 * `maxAssociations`: the max number of secondary resources that may be associated to a primary resource.
-

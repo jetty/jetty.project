@@ -29,18 +29,18 @@
 [[gzip-filter-usage]]
 ==== Usage
 
-The Jetty GzipHandler is a compression handler that you can apply to any dynamic resource (servlet). 
-It fixes many of the bugs in commonly available compression filters: it works with asynchronous servlets; it handles all ways to set content length. 
-We have tested it with Jetty continuations and suspending requests. 
+The Jetty `GzipHandler` is a compression handler that you can apply to any dynamic resource (servlet).
+It fixes many of the bugs in commonly available compression filters: it works with asynchronous servlets; it handles all ways to set content length.
+It has been tested with Jetty continuations and suspending requests.
 Some user-agents might be excluded from compression to avoid common browser bugs (yes, this means IE!).
 
-The GzipHandler is added to the entire server by the etc/jetty-gzip.xml file from the gzip.mod module. 
+The `GzipHandler` is added to the entire server by the `etc/jetty-gzip.xml` file from the `gzip.mod` module.
 It may also be added to individual contexts in a context xml file.
 
 [[gzip-filter-rules]]
 ==== Gzip Rules
 
-GZIP Handler will gzip or deflate the content of a response if:
+`GzipHandler` will gzip or deflate the content of a response if:
 
 * It is mapped to a matching path
 * The request method is configured to support gzip
@@ -53,33 +53,35 @@ GZIP Handler will gzip or deflate the content of a response if:
 
 If both gzip and deflate are specified in the accept-encoding header, then gzip will be used.
 
-Compressing the content can greatly improve the network bandwidth usage, but at a cost of memory and CPU cycles. 
-The link:#default-servlet[DefaultServlet] is capable of serving pre-compressed static content, which saves memory and CPU. 
-By default, the GzipHandler will check to see if pre-compressed content exists, and pass the request through to be handled by the DefaultServlet.
+Compressing the content can greatly improve the network bandwidth usage, but at the cost of memory and CPU cycles.
+The link:#default-servlet[DefaultServlet] is capable of serving pre-compressed static content, which saves memory and CPU.
+By default, the `GzipHandler` will check to see if pre-compressed content exists, and pass the request through to be handled by the `DefaultServlet`.
 
 [[gzip-filter-init]]
 ==== Gzip Configuration
 
 minGzipSize::
-  Content will only be compressed if content length is either unknown or greater than minGzipSize.
+Content will only be compressed if content length is either unknown or greater than `minGzipSize`.
 checkGzExists::
-  True by default. If set to false, the handler will not check for pre-compressed content.
+True by default.
+If set to false, the handler will not check for pre-compressed content.
 compressionLevel::
-  The compression level used for deflate compression. (0-9).
+The compression level used for deflate compression. (0-9).
 includedMethods::
-  List of HTTP methods to compress. If not set, only GET requests are compressed.
+List of HTTP methods to compress.
+If not set, only `GET` requests are compressed.
 includedMimeTypes::
-  List of mime types to compress.
+List of MIME types to compress.
 excludedMimeTypes::
-  List of mime types not to compress.
+List of MIME types not to compress.
 excludedAgentPatterns::
-  A list of regex patterns for User-Agent names from which requests should not be compressed.
+A list of regex patterns for User-Agent names from which requests should not be compressed.
 excludedPaths::
-  List of paths to exclude from compression. 
-  Does a String.startsWith(String) comparison to check if the path matches.
-  If it does match -> no compression. 
-  To match subpaths use excludePathPatterns instead.
+List of paths to exclude from compression.
+Performs a `String.startsWith(String)` comparison to check if the path matches.
+If it does match then there is no compression.
+To match subpaths use excludePathPatterns instead.
 includedPaths::
-  List of paths to consider for compression.
+List of paths to consider for compression.
 includePaths::
-  List of paths to definitely consider for compression.
+List of paths to definitely consider for compression.

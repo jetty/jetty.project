@@ -22,7 +22,7 @@ package org.eclipse.jetty.websocket.server.pathmap;
  * @deprecated moved to jetty-http {@link org.eclipse.jetty.http.pathmap.ServletPathSpec} (this facade will be removed in Jetty 9.4) 
  */
 @Deprecated
-public class ServletPathSpec extends org.eclipse.jetty.http.pathmap.ServletPathSpec
+public class ServletPathSpec extends PathSpec
 {
     public ServletPathSpec(String servletPathSpec)
     {

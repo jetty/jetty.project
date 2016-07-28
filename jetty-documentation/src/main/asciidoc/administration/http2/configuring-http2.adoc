@@ -17,16 +17,16 @@
 [[http2-configuring]]
 === Configuring HTTP/2
 
-Enabling the HTTP/2 module in the jetty server does not create a HTTP/2 specific connector, but rather it adds a HTTP/2 Connection factory to an
-existing connector. 
-Thus configuring HTTP/2 is a combination of configuring common properties on the connector and HTTP/2 specific properties on the connection factory. 
+Enabling the HTTP/2 module in the Jetty server does not create a HTTP/2 specific connector, but rather it adds a HTTP/2 Connection factory to an
+existing connector.
+Thus configuring HTTP/2 is a combination of configuring common properties on the connector and HTTP/2 specific properties on the connection factory.
 The modules and XML files involved can be seen with the following commands:
 
-[source,shell]
-----
+[source,screen, subs="{sub-order}"]
+....
 $ java -jar $JETTY_HOME/start.jar --list-modules
     ...
-    1) protonego-boot  <transitive> 
+    1) protonego-boot  <transitive>
     ...
     2) http            ${jetty.base}/start.d/http.ini
     2) ssl             ${jetty.base}/start.d/ssl.ini
@@ -46,13 +46,18 @@ $ java -jar $JETTY_HOME/start.jar --list-config
  ...
  ${jetty.home}/etc/jetty-http2.xml
  ${jetty.home}/etc/jetty-https.xml
-        
-----
+....
 
-The common properties associated with connectors (host,port, timeouts, etc.) can be set in the module ini files (or start.ini if --add-to-start was used): `${jetty.base}/start.d/http.ini` `${jetty.base}/start.d/ssl.ini`. 
+The common properties associated with connectors (host,port, timeouts, etc.) can be set in the module ini files (or `start.ini` if `--add-to-start` was used): `${jetty.base}/start.d/http.ini` and `${jetty.base}/start.d/ssl.ini`.
 These properties are instantiated in the associated XML files: `${jetty.home}/etc/jetty-http.xml`; `${jetty.home}/etc/jetty-ssl.xml`, plus the SSL keystore is instantiated in `${jetty.home}/etc/jetty-ssl-context.xml`.
 
-HTTP/2 specific properties can be set in the module ini files: `${jetty.base}/start.d/http2.ini`; `${jetty.base}/start.d/http2c.ini`, which are instantiated in the associated XML files: `${jetty.home}/etc/jetty-http2.xml`; `${jetty.home}/etc/jetty-http2c.xml`. 
+____
+[NOTE]
+If you are planning to edit XML files, make sure to copy them to your `{$jetty.base}/etc/` directory before doing so.
+The XML files that come with the Jetty distribution should *not* be modified directly.
+____
+
+HTTP/2 specific properties can be set in the module ini files: `${jetty.base}/start.d/http2.ini` and `${jetty.base}/start.d/http2c.ini`, which are instantiated in the associated XML files: `${jetty.home}/etc/jetty-http2.xml`; `${jetty.home}/etc/jetty-http2c.xml`, respectively.
 Currently there are very few HTTP/2 configuration properties and the default values are reasonable:
 
 .HTTP/2 Configuration Properties

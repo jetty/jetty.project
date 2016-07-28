@@ -23,10 +23,11 @@ There is one entry per request received, and commonly in the standard NCSA forma
 [[constructing-request-log-entry]]
 ==== Constructing a Request Log Entry
 
-A standard request log entry includes the client IP address, date, method, URL, result, size, referrer, user agent and latency for example:
+A standard request log entry includes the client IP address, date, method, URL, result, size, referrer, user agent and latency.
+For example:
 
 ....
-123.4.5.6 - - [27/Aug/2004:10:16:17 +0000]
+123.4.5.6 - - [20/Jul/2016:10:16:17 +0000]
   "GET /jetty/tut/XmlConfiguration.html HTTP/1.1"
   200 76793 "http://localhost:8080/jetty/tut/logging.html"
   "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040614 Firefox/0.8" 342
@@ -67,15 +68,20 @@ requestLog.setAppend(true);
 requestLog.setExtended(false);
 requestLog.setLogTimeZone("GMT");
 requestLog.setLogLatency(true);
+requestLog.setRetainDays("90");
 
 server.setRequestLog(requestLog);
 ----
 
 This configures a request log in `{$jetty.home}/logs` with filenames including the date.
-By defaukt, log files are kept for 90 days before being deleted.
 Existing log files are appended to and the extended NCSA format is used in the GMT time zone.
 
-To examine many more configuration options, see link:{JDURL}/org/eclipse/jetty/server/NCSARequestLog.html[NCSARequestLog.java].
+You can customize the number of days you wish to keep request logs.
+By default, log files are kept for 90 days before being deleted.
+The value for `retainDays` (xml) or `setRetainDays` (Java) should be configured as _1 + n_ days.
+For example, if you wanted to keep the logs for the current day and the day prior you would set the `retainDays` (or `setRetainDays`) value to 2.
+
+To examine more configuration options, see link:{JDURL}/org/eclipse/jetty/server/NCSARequestLog.html[NCSARequestLog.java].
 
 [[configuring-separate-request-log-for-web-application]]
 ==== Configuring a Separate Request Log For a Web Application

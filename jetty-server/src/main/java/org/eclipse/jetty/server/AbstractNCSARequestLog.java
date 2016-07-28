@@ -242,7 +242,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
         String agent = request.getHeader(HttpHeader.USER_AGENT.toString());
         if (agent == null)
-            b.append("\"-\" ");
+            b.append("\"-\"");
         else
         {
             b.append('"');

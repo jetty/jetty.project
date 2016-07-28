@@ -25,18 +25,18 @@ A server deployed over TLS (SSL) normally advertises the HTTP/2 protocol via the
 
 ____
 [IMPORTANT]
-To use HTTP/2 in Jetty via a TLS connector you need to add the link:#alpn-starting[ALPN boot Jar in the boot classpath.] 
-This is done automatically when using the jetty distributions start.jar module system, but must be configured directly otherwise.
+To use HTTP/2 in Jetty via a TLS connector you need to add the link:#alpn-starting[ALPN boot jar] in the boot classpath.
+This is done automatically when using the Jetty distribution's start.jar link:#startup-modules[module system], but must be configured directly otherwise.
 ____
 
 [[http2-modules]]
 ==== Jetty HTTP/2 Sub Projects
 
-The Jetty HTTP/2 implementation consists of the following sub-projects (each producing a jar):
+The Jetty HTTP/2 implementation consists of the following sub-projects (each producing a jar file):
 
-1.  `http2-common`: contains the HTTP/2 API and a partial implementation shared across other modules.
-2.  `http2-hpack`: contains the HTTP/2 HPACK implementation for HTTP header compression.
-3.  `http2-server`: provides the server-side implementation of HTTP/2.
-4.  `http2-client`: provides the implementation of HTTP/2 client with a low level HTTP/2 API, dealing with HTTP/2 streams, frames, etc.
-5.  `http2-http-client-transport`: provides the implementation of the HTTP/2 transport for `HttpClient` (see xref:http-client[]). 
+1.  `http2-common`: Contains the HTTP/2 API and a partial implementation shared across other modules.
+2.  `http2-hpack`: Contains the HTTP/2 HPACK implementation for HTTP header compression.
+3.  `http2-server`: Provides the server-side implementation of HTTP/2.
+4.  `http2-client`: Provides the implementation of HTTP/2 client with a low level HTTP/2 API, dealing with HTTP/2 streams, frames, etc.
+5.  `http2-http-client-transport`: Provides the implementation of the HTTP/2 transport for `HttpClient` (see xref:http-client[]).
 Applications can use the higher level API provided by `HttpClient` to send HTTP requests and receive HTTP responses, and the HTTP/2 transport will take care of converting them in HTTP/2 format (see also https://webtide.com/http2-support-for-httpclient/[this blog entry]).

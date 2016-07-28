@@ -1,6 +1,7 @@
+//
 //  ========================================================================
 //  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
-//  ========================================================================
+//  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
 //  and Apache License v2.0 which accompanies this distribution.
@@ -13,12 +14,25 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
+//
 
-[[http2]]
-== HTTP/2
+package org.eclipse.jetty.websocket.server.pathmap;
 
-include::introduction.adoc[]
-include::enabling-http2.adoc[]
-include::configuring-http2.adoc[]
-include::configuring-push.adoc[]
-include::configuring-haproxy.adoc[]
+/**
+ * @deprecated moved to jetty-http {@link org.eclipse.jetty.http.pathmap.PathSpec} (this facade will be removed in Jetty 9.4)
+ */
+@Deprecated
+public abstract class PathSpec
+{
+    private final String spec;
+    
+    protected PathSpec(String spec)
+    {
+        this.spec = spec;
+    }
+    
+    public String getSpec()
+    {
+        return spec;
+    }
+}
