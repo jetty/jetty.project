@@ -27,7 +27,7 @@ node {
 
   withEnv(mvnEnv) {
     // Run package then test phase / skip main compilation / ignore failures
-    sh "mvn -B package test -Dmaven.main.skip=true -Dmaven.test.failure.ignore=true"
+    sh "mvn -B install test -Dmaven.main.skip=true -Dmaven.test.failure.ignore=true"
     // Report failures in the jenkins UI
     step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
   }
