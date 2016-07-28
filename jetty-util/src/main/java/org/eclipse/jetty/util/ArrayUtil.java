@@ -55,6 +55,25 @@ public class ArrayUtil
     }
 
     /* ------------------------------------------------------------ */
+    /** Add arrays
+     * @param array1 An array to add to (or null)
+     * @param array2 An array to add to (or null)
+     * @return new array with contents of both arrays, or null if both arrays are null
+     * @param <T> the array entry type
+     */
+    public static<T> T[] add(T[] array1, T[] array2)
+    {
+        if (array1==null || array1.length==0)
+            return array2;
+        if (array2==null || array2.length==0)
+            return array1;
+                    
+        T[] na = Arrays.copyOf(array1,array1.length+array2.length);
+        System.arraycopy(array2,0,na,array1.length,array2.length);
+        return na;
+    }
+    
+    /* ------------------------------------------------------------ */
     /** Add element to an array
      * @param array The array to add to (or null)
      * @param item The item to add
