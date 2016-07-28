@@ -11,24 +11,17 @@ node {
 
   checkout scm
 
-  stage 'Compile'
+  stage 'Build & Test'
 
   withEnv(mvnEnv) {
-    sh "mvn -B clean install -Dtest=None"
+    sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
+    // Report failures in the jenkins UI
+    step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
   }
 
   stage 'Javadoc'
 
   withEnv(mvnEnv) {
     sh "mvn -B javadoc:javadoc"
-  }
-
-  stage 'Test'
-
-  withEnv(mvnEnv) {
-    // Run package then test phase / skip main compilation / ignore failures
-    sh "mvn -B package test -Dmaven.main.skip=true -Dmaven.test.failure.ignore=true"
-    // Report failures in the jenkins UI
-    step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
   }
 }
