@@ -17,11 +17,11 @@
 [[optimizing]]
 == Optimizing Jetty
 
-There are many ways to optimize Jetty, which vary depending on the situation. 
-Are you trying to optimize for number of requests within a given amount of time? 
-Are you trying to optimize the serving of static content? 
-Do you have a large bit of hardware that you want to give entirely over to Jetty to use to its heart's delight? 
-Here are a few of the many different ways to optimize Jetty.
+There are many ways to optimize Jetty which vary depending on the situation.
+Are you trying to optimize for number of requests within a given amount of time?
+Are you trying to optimize the serving of static content?
+Do you have a large bit of hardware that you want to give entirely over to Jetty to use to its heart's delight?
+This chapter examines a few of the many different ways to optimize Jetty.
 
 include::garbage-collection.adoc[]
 include::high-load.adoc[]
