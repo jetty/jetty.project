@@ -48,7 +48,7 @@ public class RedirectSessionTest
     @Test
     public void testSessionRedirect() throws Exception
     {
-        AbstractTestServer testServer = new HashTestServer(0);
+        AbstractTestServer testServer = new HashTestServer(0, -1, 60, SessionCache.NEVER_EVICT);
         ServletContextHandler testServletContextHandler = testServer.addContext("/context");
         testServletContextHandler.addServlet(Servlet1.class, "/one");
         testServletContextHandler.addServlet(Servlet2.class, "/two");
