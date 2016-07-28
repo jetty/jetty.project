@@ -1,3 +1,5 @@
+#!groovy
+
 node('linux') {
   // System Dependent Locations
   def mvntool = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
@@ -35,26 +37,4 @@ node('linux') {
   }
 }
 
-node('windows') {
-  // System Dependent Locations
-  def mvntool = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
-  def jdktool = tool name: 'jdk7', type: 'hudson.model.JDK'
-
-  // Environment
-  List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
-  mvnEnv.add("MAVEN_OPTS=-Xms256m -Xmx1024m -XX:MaxPermSize=512m -Djava.awt.headless=true")
-
-  stage 'Checkout (Windows)'
-
-  checkout scm
-
-  stage 'Build + Test (Windows)'
-
-  timeout(60) {
-    withEnv(mvnEnv) {
-      bat "mvn -B clean install -Dmaven.test.failure.ignore=true"
-      // Report failures in the jenkins UI
-      step([$class: 'JUnitResultArchiver', testResults: '**\\target\\surefire-reports\\TEST-*.xml'])
-    }
-  }
-}
+// vim: et:ts=2:sw=2:ft=groovy
