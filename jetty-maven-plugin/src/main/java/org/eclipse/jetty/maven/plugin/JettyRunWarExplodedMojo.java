@@ -98,21 +98,31 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
     {
         scanner.watch(project.getFile().toPath());
         File webInfDir = new File(war,"WEB-INF");
-        scanner.watch(new File(webInfDir, "web.xml").toPath());
+        File webXml = new File(webInfDir, "web.xml");
+        if (webXml.exists())
+            scanner.watch(webXml.toPath());
         File jettyWebXmlFile = findJettyWebXmlFile(webInfDir);
         if (jettyWebXmlFile != null)
             scanner.watch(jettyWebXmlFile.toPath());
         File jettyEnvXmlFile = new File(webInfDir, "jetty-env.xml");
         if (jettyEnvXmlFile.exists())
             scanner.watch(jettyEnvXmlFile.toPath());
-        
-        PathWatcher.Config classesConfig = new PathWatcher.Config(new File(webInfDir, "classes").toPath());
-        classesConfig.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-        scanner.watch(classesConfig);
-        
-        PathWatcher.Config libConfig = new PathWatcher.Config(new File(webInfDir, "lib").toPath());
-        libConfig.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-        scanner.watch(libConfig);   
+
+        File classes = new File(webInfDir, "classes");
+        if (classes.exists())
+        {
+            PathWatcher.Config classesConfig = new PathWatcher.Config(classes.toPath());
+            classesConfig.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+            scanner.watch(classesConfig);
+        }
+
+        File lib = new File(webInfDir, "lib");
+        if (lib.exists())
+        {
+            PathWatcher.Config libConfig = new PathWatcher.Config(lib.toPath());
+            libConfig.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+            scanner.watch(libConfig);   
+        }
 
         scanner.addListener(new PathWatcher.EventListListener()
         {

@@ -477,7 +477,7 @@ public class JettyRunMojo extends AbstractJettyMojo
 
         scanner.watch(project.getFile().toPath());
 
-        if (webApp.getTestClasses() != null)
+        if (webApp.getTestClasses() != null && webApp.getTestClasses().exists())
         {
             PathWatcher.Config config = new PathWatcher.Config(webApp.getTestClasses().toPath());
             config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);           
@@ -491,7 +491,7 @@ public class JettyRunMojo extends AbstractJettyMojo
             scanner.watch(config);
         }
         
-        if (webApp.getClasses() != null)
+        if (webApp.getClasses() != null && webApp.getClasses().exists())
         {
             PathWatcher.Config config = new PathWatcher.Config(webApp.getClasses().toPath());
             config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
