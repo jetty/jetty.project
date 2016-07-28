@@ -687,7 +687,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         @Override
         public Map<CompressedContentFormat,? extends HttpContent> getPrecompressedContents()
         {
-            if (_precompressed==null)
+            if (_precompressed.size()==0)
                 return null;
             Map<CompressedContentFormat, CachedPrecompressedHttpContent> ret=_precompressed;
             for (Map.Entry<CompressedContentFormat, CachedPrecompressedHttpContent> entry:_precompressed.entrySet())

@@ -115,7 +115,7 @@ public class DefaultServletTest
         StringBuffer req1 = new StringBuffer();
         req1.append("GET /context/;JSESSIONID=1234567890 HTTP/1.0\n\n");
 
-        String response = connector.getResponses(req1.toString());
+        String response = connector.getResponse(req1.toString());
 
         assertResponseContains("/one/;JSESSIONID=1234567890", response);
         assertResponseContains("/two/;JSESSIONID=1234567890", response);
@@ -156,7 +156,7 @@ public class DefaultServletTest
         req1.append("GET /context/;<script>window.alert(\"hi\");</script> HTTP/1.0\n");
         req1.append("\n");
 
-        String response = connector.getResponses(req1.toString());
+        String response = connector.getResponse(req1.toString());
 
         assertResponseNotContains("<script>", response);
     }
@@ -194,12 +194,12 @@ public class DefaultServletTest
         defholder.setInitParameter("resourceBase", resBasePath);
 
         // First send request in improper, unencoded way.
-        String response = connector.getResponses("GET /context/dir;/ HTTP/1.0\r\n\r\n");
+        String response = connector.getResponse("GET /context/dir;/ HTTP/1.0\r\n\r\n");
 
         assertResponseContains("HTTP/1.1 404 Not Found", response);
 
         // Now send request in proper, encoded format.
-        response = connector.getResponses("GET /context/dir%3B/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir%3B/ HTTP/1.0\r\n\r\n");
 
         // Should not see double-encoded ";"
         // First encoding: ";" -> "%3b"
@@ -240,7 +240,7 @@ public class DefaultServletTest
         assertTrue(wackyDir.mkdirs());
 
         /* create some content outside of the docroot */
-        File sekret = testdir.getFile("sekret");
+        File sekret = testdir.getPathFile("sekret").toFile();
         assertTrue(sekret.mkdirs());
         File pass = new File(sekret, "pass");
         createFile(pass, "Sssh, you shouldn't be seeing this");
@@ -260,63 +260,63 @@ public class DefaultServletTest
 
         String response;
 
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
-        response = connector.getResponses("GET /context/dir?/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir?/ HTTP/1.0\r\n\r\n");
         assertResponseContains("404", response);
 
         if (!OS.IS_WINDOWS)
         {
-            response = connector.getResponses("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
             assertResponseContains("Directory: /context/dir?/<", response);
         }
         else
             assertResponseContains("404", response);
 
-        response = connector.getResponses("GET /context/index.html HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/index.html HTTP/1.0\r\n\r\n");
         assertResponseContains("Hello Index", response);
 
-        response = connector.getResponses("GET /context/dir%3F/../index.html HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir%3F/../index.html HTTP/1.0\r\n\r\n");
         assertResponseContains("Hello Index", response);
 
-        response = connector.getResponses("GET /context/dir%3F/../../ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir%3F/../../ HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Directory: ", response);
 
-        response = connector.getResponses("GET /context/dir%3F/../../sekret/pass HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir%3F/../../sekret/pass HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Sssh", response);
 
-        response = connector.getResponses("GET /context/dir?/../../ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir?/../../ HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Directory: ", response);
 
-        response = connector.getResponses("GET /context/dir?/../../sekret/pass HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir?/../../sekret/pass HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Sssh", response);
 
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
-        response = connector.getResponses("GET /context/dir;/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir;/ HTTP/1.0\r\n\r\n");
         assertResponseContains("404", response);
 
-        response = connector.getResponses("GET /context/dir%3B/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir%3B/ HTTP/1.0\r\n\r\n");
         assertResponseContains("Directory: /context/dir;/<", response);
 
-        response = connector.getResponses("GET /context/index.html HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/index.html HTTP/1.0\r\n\r\n");
         assertResponseContains("Hello Index", response);
 
-        response = connector.getResponses("GET /context/dir%3B/../index.html HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir%3B/../index.html HTTP/1.0\r\n\r\n");
         assertResponseContains("Hello Index", response);
 
-        response = connector.getResponses("GET /context/dir%3B/../../ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir%3B/../../ HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Directory: ", response);
 
-        response = connector.getResponses("GET /context/dir%3B/../../sekret/pass HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir%3B/../../sekret/pass HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Sssh", response);
 
-        response = connector.getResponses("GET /context/dir;/../../ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir;/../../ HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Directory: ", response);
 
-        response = connector.getResponses("GET /context/dir;/../../sekret/pass HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir;/../../sekret/pass HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Sssh", response);
     }
 
@@ -344,23 +344,23 @@ public class DefaultServletTest
         @SuppressWarnings("unused")
         ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
 
-        String response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        String response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("403", response);
 
         createFile(index, "<h1>Hello Index</h1>");
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
         createFile(inde, "<h1>Hello Inde</h1>");
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
         assertTrue(index.delete());
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Inde</h1>", response);
 
         assertTrue(inde.delete());
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("403", response);
     }
 
@@ -387,15 +387,15 @@ public class DefaultServletTest
 
         String response;
 
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("JSP support not configured", response);
 
         createFile(index, "<h1>Hello Index</h1>");
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
         createFile(inde, "<h1>Hello Inde</h1>");
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
         // In Windows it's impossible to delete files that are somehow in use
@@ -403,11 +403,11 @@ public class DefaultServletTest
         if (!OS.IS_WINDOWS)
         {
             deleteFile(index);
-            response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
             assertResponseContains("<h1>Hello Inde</h1>", response);
 
             deleteFile(inde);
-            response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
             assertResponseContains("JSP support not configured", response);
         }
     }
@@ -435,7 +435,7 @@ public class DefaultServletTest
 
         String response;
 
-        response = connector.getResponses("GET /context/dir/foobar.txt HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir/foobar.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Foo Bar", response);
 
         if (!OS.IS_WINDOWS)
@@ -446,32 +446,32 @@ public class DefaultServletTest
             Files.createSymbolicLink(dirRLink.toPath(),new File("dir").toPath());
             Files.createSymbolicLink(link.toPath(),foobar.toPath());
             Files.createSymbolicLink(rLink.toPath(),new File("foobar.txt").toPath());
-            response = connector.getResponses("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("404", response);
-            response = connector.getResponses("GET /context/dir/rlink.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dir/rlink.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("404", response);
-            response = connector.getResponses("GET /context/dirlink/foobar.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dirlink/foobar.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("404", response);
-            response = connector.getResponses("GET /context/dirrlink/foobar.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dirrlink/foobar.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("404", response);
-            response = connector.getResponses("GET /context/dirlink/link.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dirlink/link.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("404", response);
-            response = connector.getResponses("GET /context/dirrlink/rlink.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dirrlink/rlink.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("404", response);
             
             context.addAliasCheck(new AllowSymLinkAliasChecker());
             
-            response = connector.getResponses("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("Foo Bar", response);
-            response = connector.getResponses("GET /context/dir/rlink.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dir/rlink.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("Foo Bar", response);
-            response = connector.getResponses("GET /context/dirlink/foobar.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dirlink/foobar.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("Foo Bar", response);
-            response = connector.getResponses("GET /context/dirrlink/foobar.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dirrlink/foobar.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("Foo Bar", response);
-            response = connector.getResponses("GET /context/dirlink/link.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dirlink/link.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("Foo Bar", response);
-            response = connector.getResponses("GET /context/dirrlink/link.txt HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/dirrlink/link.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("Foo Bar", response);
         }
     }
@@ -499,15 +499,15 @@ public class DefaultServletTest
 
         String response;
 
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("JSP support not configured", response);
 
         createFile(index, "<h1>Hello Index</h1>");
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
         createFile(inde, "<h1>Hello Inde</h1>");
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
         // In Windows it's impossible to delete files that are somehow in use
@@ -515,11 +515,11 @@ public class DefaultServletTest
         if (!OS.IS_WINDOWS)
         {
             deleteFile(index);
-            response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
             assertResponseContains("<h1>Hello Inde</h1>", response);
 
             deleteFile(inde);
-            response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+            response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
             assertResponseContains("JSP support not configured", response);
         }
     }
@@ -548,7 +548,7 @@ public class DefaultServletTest
 
         String response;
 
-        response = connector.getResponses("GET /context/index.html HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/index.html HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello World</h1>", response);
         
         ResourceContentFactory factory = (ResourceContentFactory)context.getServletContext().getAttribute("resourceCache");
@@ -581,7 +581,7 @@ public class DefaultServletTest
         defholder.setInitParameter("acceptRanges", "true");
         defholder.setInitParameter("resourceBase", resBasePath);
 
-        String response = connector.getResponses("GET /context/data.txt HTTP/1.1\r\n" +
+        String response = connector.getResponse("GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n\r\n");
         assertResponseContains("200 OK", response);
@@ -589,7 +589,7 @@ public class DefaultServletTest
 
 
 
-        response = connector.getResponses("GET /context/data.txt HTTP/1.1\r\n" +
+        response = connector.getResponse("GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n"+
                 "Range: bytes=0-9\r\n" +
@@ -600,7 +600,7 @@ public class DefaultServletTest
         assertResponseContains("Content-Range: bytes 0-9/80", response);
 
 
-        response = connector.getResponses("GET /context/data.txt HTTP/1.1\r\n" +
+        response = connector.getResponse("GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n"+
                 "Range: bytes=0-9,20-29,40-49\r\n" +
@@ -615,7 +615,7 @@ public class DefaultServletTest
         assertResponseContains("Content-Length: " + body.length(), response);
         assertTrue(body.endsWith(boundary + "--\r\n"));
 
-        response = connector.getResponses("GET /context/data.txt HTTP/1.1\r\n" +
+        response = connector.getResponse("GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n"+
                 "Range: bytes=0-9,20-29,40-49,70-79\r\n" +
@@ -631,7 +631,7 @@ public class DefaultServletTest
         assertResponseContains("Content-Length: " + body.length(), response);
         assertTrue(body.endsWith(boundary + "--\r\n"));
 
-        response = connector.getResponses("GET /context/data.txt HTTP/1.1\r\n" +
+        response = connector.getResponse("GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n"+
                 "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
@@ -653,7 +653,7 @@ public class DefaultServletTest
         File nofilesuffix = new File(resBase, "nofilesuffix");
         createFile(nofilesuffix, "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
-        response = connector.getResponses("GET /context/nofilesuffix HTTP/1.1\r\n" +
+        response = connector.getResponse("GET /context/nofilesuffix HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n"+  
                 "\r\n");
@@ -662,7 +662,7 @@ public class DefaultServletTest
 
 
 
-        response = connector.getResponses("GET /context/nofilesuffix HTTP/1.1\r\n" +
+        response = connector.getResponse("GET /context/nofilesuffix HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n"+
                 "Range: bytes=0-9\r\n" +
@@ -672,7 +672,7 @@ public class DefaultServletTest
         assertTrue(!response.contains("Content-Type:"));
         assertResponseContains("Content-Range: bytes 0-9/80", response);
 
-        response = connector.getResponses("GET /context/nofilesuffix HTTP/1.1\r\n" +
+        response = connector.getResponse("GET /context/nofilesuffix HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n"+     
                 "Range: bytes=0-9,20-29,40-49\r\n" +
@@ -689,7 +689,7 @@ public class DefaultServletTest
 
 
 
-        response = connector.getResponses("GET /context/nofilesuffix HTTP/1.1\r\n" +
+        response = connector.getResponse("GET /context/nofilesuffix HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n"+    
                 "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
@@ -728,7 +728,7 @@ public class DefaultServletTest
         defholder.setInitParameter("gzip", "false");
         defholder.setInitParameter("resourceBase", resBasePath);
 
-        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\n\r\n");
+        String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
         assertResponseNotContains("Extra Info", response);
 
@@ -736,7 +736,7 @@ public class DefaultServletTest
         context.addFilter(OutputFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         server.start();
         
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);
         assertResponseNotContains("Content-Length: 12", response);
@@ -747,7 +747,7 @@ public class DefaultServletTest
         context.addFilter(WriterFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         server.start();
         
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);
         assertResponseNotContains("Content-Length: 12", response);
@@ -775,7 +775,7 @@ public class DefaultServletTest
         defholder.setInitParameter("etags", "true");
         defholder.setInitParameter("resourceBase", resBasePath);
 
-        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
+        String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
         assertResponseContains("Content-Type: text/plain",response);
         assertResponseContains("Hello Text 0",response);
@@ -786,7 +786,7 @@ public class DefaultServletTest
         String etag = response.substring(e+6,response.indexOf('"',e+11)+1);
         String etag_gzip = etag.substring(0,etag.length()-1)+"--gzip\"";
         
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
         assertResponseContains("Content-Type: text/plain",response);
@@ -794,7 +794,7 @@ public class DefaultServletTest
         assertResponseContains("Content-Encoding: gzip",response);
         assertResponseContains("ETag: "+etag_gzip,response);
         
-        response = connector.getResponses("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
         assertResponseContains("Content-Type: application/gzip",response);
@@ -803,7 +803,7 @@ public class DefaultServletTest
         assertResponseNotContains("ETag: "+etag_gzip,response);
         assertResponseContains("ETag: ",response);   
         
-        response = connector.getResponses("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"wobble\"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"wobble\"\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
         assertResponseContains("Content-Type: application/gzip",response);
@@ -812,19 +812,19 @@ public class DefaultServletTest
         assertResponseNotContains("ETag: "+etag_gzip,response);
         assertResponseContains("ETag: ",response);   
         
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag_gzip,response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
         
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag_gzip,response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
         
@@ -854,7 +854,7 @@ public class DefaultServletTest
         defholder.setInitParameter("maxCachedFileSize", "200000000");
         defholder.setInitParameter("maxCacheSize", "256000000"); 
 
-        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
+        String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
         assertResponseContains("Content-Type: text/plain",response);
         assertResponseContains("Hello Text 0",response);
@@ -865,7 +865,7 @@ public class DefaultServletTest
         String etag = response.substring(e+6,response.indexOf('"',e+11)+1);
         String etag_gzip = etag.substring(0,etag.length()-1)+"--gzip\"";
         
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
         assertResponseContains("Content-Type: text/plain",response);
@@ -873,28 +873,29 @@ public class DefaultServletTest
         assertResponseContains("Content-Encoding: gzip",response);
         assertResponseContains("ETag: "+etag_gzip,response);
         
-        response = connector.getResponses("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
         assertResponseContains("Content-Type: application/gzip",response);
+        System.err.println(response);
         assertResponseNotContains("Vary: Accept-Encoding",response);
         assertResponseNotContains("Content-Encoding: gzip",response);
         assertResponseNotContains("ETag: "+etag_gzip,response);
         assertResponseContains("ETag: ",response);
         
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag_gzip,response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
         
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag_gzip,response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
     }
@@ -920,7 +921,7 @@ public class DefaultServletTest
         defholder.setInitParameter("etags", "true");
         defholder.setInitParameter("resourceBase", resBasePath);
 
-        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
+        String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
         assertResponseContains("Content-Type: text/plain",response);
         assertResponseContains("Hello Text 0",response);
@@ -931,7 +932,7 @@ public class DefaultServletTest
         String etag = response.substring(e+6,response.indexOf('"',e+11)+1);
         String etag_br = etag.substring(0,etag.length()-1)+"--br\"";
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip;q=0.9,br\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip;q=0.9,br\r\n\r\n");
         assertResponseContains("Content-Length: 11", response);
         assertResponseContains("fake br",response);
         assertResponseContains("Content-Type: text/plain",response);
@@ -939,7 +940,7 @@ public class DefaultServletTest
         assertResponseContains("Content-Encoding: br",response);
         assertResponseContains("ETag: "+etag_br,response);
 
-        response = connector.getResponses("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br,gzip\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br,gzip\r\n\r\n");
         assertResponseContains("Content-Length: 11", response);
         assertResponseContains("fake br",response);
         assertResponseContains("Content-Type: application/brotli",response);
@@ -948,7 +949,7 @@ public class DefaultServletTest
         assertResponseNotContains("ETag: "+etag_br,response);
         assertResponseContains("ETag: ",response);
 
-        response = connector.getResponses("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"wobble\"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"wobble\"\r\n\r\n");
         assertResponseContains("Content-Length: 11", response);
         assertResponseContains("fake brotli",response);
         assertResponseContains("Content-Type: application/brotli",response);
@@ -957,19 +958,19 @@ public class DefaultServletTest
         assertResponseNotContains("ETag: "+etag_br,response);
         assertResponseContains("ETag: ",response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: "+etag_br+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: "+etag_br+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag_br,response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: "+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\","+etag_br+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\","+etag_br+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag_br,response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
     }
@@ -998,7 +999,7 @@ public class DefaultServletTest
         defholder.setInitParameter("maxCachedFileSize", "200000000");
         defholder.setInitParameter("maxCacheSize", "256000000");
 
-        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
+        String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
         assertResponseContains("Content-Type: text/plain",response);
         assertResponseContains("Hello Text 0",response);
@@ -1009,7 +1010,7 @@ public class DefaultServletTest
         String etag = response.substring(e+6,response.indexOf('"',e+11)+1);
         String etag_gzip = etag.substring(0,etag.length()-1)+"--br\"";
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\n\r\n");
         assertResponseContains("Content-Length: 11", response);
         assertResponseContains("fake brotli",response);
         assertResponseContains("Content-Type: text/plain",response);
@@ -1017,7 +1018,7 @@ public class DefaultServletTest
         assertResponseContains("Content-Encoding: br",response);
         assertResponseContains("ETag: "+etag_gzip,response);
 
-        response = connector.getResponses("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\n\r\n");
         assertResponseContains("Content-Length: 11", response);
         assertResponseContains("fake brotli",response);
         assertResponseContains("Content-Type: application/br",response);
@@ -1026,19 +1027,19 @@ public class DefaultServletTest
         assertResponseNotContains("ETag: "+etag_gzip,response);
         assertResponseContains("ETag: ",response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag_gzip,response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: "+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag_gzip,response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
     }
@@ -1060,14 +1061,14 @@ public class DefaultServletTest
         defholder.setInitParameter("precompressed", "true");
         defholder.setInitParameter("resourceBase", resBase.getAbsolutePath());
 
-        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip, compress, br\r\n\r\n");
+        String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip, compress, br\r\n\r\n");
         assertResponseContains("Content-Length: 11", response);
         assertResponseContains("fake br",response);
         assertResponseContains("Content-Type: text/plain",response);
         assertResponseContains("Vary: Accept-Encoding",response);
         assertResponseContains("Content-Encoding: br",response);
 
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip, compress, br;q=0.9\r\n\r\n");
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip, compress, br;q=0.9\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
         assertResponseContains("Content-Type: text/plain",response);
@@ -1092,7 +1093,7 @@ public class DefaultServletTest
         defholder.setInitParameter("precompressed", "bzip2=.bz2,gzip=.gz,br=.br");
         defholder.setInitParameter("resourceBase", resBase.getAbsolutePath());
 
-        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:bzip2, br, gzip\r\n\r\n");
+        String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:bzip2, br, gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
         assertResponseContains("Content-Type: text/plain",response);
@@ -1127,29 +1128,29 @@ public class DefaultServletTest
         defholder.setInitParameter("maxCachedFileSize", "25");
         defholder.setInitParameter("maxCachedFiles", "100");
 
-        String response = connector.getResponses("GET /context/file.txt HTTP/1.0\r\n\r\n");
+        String response = connector.getResponse("GET /context/file.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("404", response);
 
         createFile(file, content);
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
 
         assertResponseContains("200", response);
         assertResponseContains("Last-Modified", response);
         String last_modified = getHeaderValue("Last-Modified",response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+last_modified+"\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+last_modified+"\r\n\r\n");
         assertResponseContains("304", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+DateGenerator.formatDate(System.currentTimeMillis()-10000)+"\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+DateGenerator.formatDate(System.currentTimeMillis()-10000)+"\r\n\r\n");
         assertResponseContains("200", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+DateGenerator.formatDate(System.currentTimeMillis()+10000)+"\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+DateGenerator.formatDate(System.currentTimeMillis()+10000)+"\r\n\r\n");
         assertResponseContains("304", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: "+DateGenerator.formatDate(System.currentTimeMillis()+10000)+"\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: "+DateGenerator.formatDate(System.currentTimeMillis()+10000)+"\r\n\r\n");
         assertResponseContains("200", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: "+DateGenerator.formatDate(System.currentTimeMillis()-10000)+"\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: "+DateGenerator.formatDate(System.currentTimeMillis()-10000)+"\r\n\r\n");
         assertResponseContains("412", response);
     }
 
@@ -1184,34 +1185,34 @@ public class DefaultServletTest
         String response;
 
         createFile(file, content);
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
 
         assertResponseContains("200", response);
         assertResponseContains("ETag", response);
         String etag = getHeaderValue("ETag",response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: "+etag+"\r\n\r\n");
         assertResponseContains("304", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble,"+etag+",wobble\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble,"+etag+",wobble\r\n\r\n");
         assertResponseContains("304", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble\r\n\r\n");
         assertResponseContains("200", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble, wobble\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble, wobble\r\n\r\n");
         assertResponseContains("200", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: "+etag+"\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: "+etag+"\r\n\r\n");
         assertResponseContains("200", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble,"+etag+",wobble\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble,"+etag+",wobble\r\n\r\n");
         assertResponseContains("200", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble\r\n\r\n");
         assertResponseContains("412", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble, wobble\r\n\r\n");
+        response = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble, wobble\r\n\r\n");
         assertResponseContains("412", response);
         
     }
