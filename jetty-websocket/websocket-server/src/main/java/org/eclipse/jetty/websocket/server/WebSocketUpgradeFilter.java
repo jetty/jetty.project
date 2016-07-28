@@ -36,6 +36,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.RegexPathSpec;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -141,6 +143,26 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     public void addMapping(PathSpec spec, WebSocketCreator creator)
     {
         pathmap.put(spec,creator);
+    }
+    
+    /**
+     * @deprecated use new {@link #addMapping(org.eclipse.jetty.http.pathmap.PathSpec, WebSocketCreator)} instead
+     */
+    @Deprecated
+    public void addMapping(org.eclipse.jetty.websocket.server.pathmap.PathSpec spec, WebSocketCreator creator)
+    {
+        if (spec instanceof org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec)
+        {
+            addMapping(new ServletPathSpec(spec.getSpec()), creator);
+        }
+        else if (spec instanceof org.eclipse.jetty.websocket.server.pathmap.RegexPathSpec)
+        {
+            addMapping(new RegexPathSpec(spec.getSpec()), creator);
+        }
+        else
+        {
+            throw new RuntimeException("Unsupported (Deprecated) PathSpec implementation: " + spec.getClass().getName());
+        }
     }
 
     @Override
