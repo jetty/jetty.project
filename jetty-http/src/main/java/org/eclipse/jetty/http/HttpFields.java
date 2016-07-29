@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -95,6 +97,11 @@ public class HttpFields implements Iterable<HttpField>
     public Iterator<HttpField> iterator()
     {
         return new Itr();
+    }
+    
+    public Stream<HttpField> stream()
+    {
+        return StreamSupport.stream(Arrays.spliterator(_fields,0,_size),false);
     }
 
     /**

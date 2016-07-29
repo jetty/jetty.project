@@ -547,6 +547,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             fields.put(_connector.getServer().getDateField());
 
         _request.setMetaData(request);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("REQUEST for {} on {}{}{} {} {}{}{}",request.getURIString(),this,System.lineSeparator(),
+                request.getMethod(),request.getURIString(),request.getVersion(),System.lineSeparator(),
+                request.getFields());
     }
 
     public boolean onContent(HttpInput.Content content)
@@ -566,6 +571,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public void onCompleted()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("COMPLETE for {} written={}",getRequest().getRequestURI(),getBytesWritten());
+        
         if (_requestLog!=null )
             _requestLog.log(_request, _response);
 
@@ -683,7 +691,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         _committedMetaData=info;
         if (LOG.isDebugEnabled())
-            LOG.debug("Commit {} to {}",info,this);
+            LOG.debug("COMMIT for {} on {}{}{} {} {}{}{}",getRequest().getRequestURI(),this,System.lineSeparator(),
+                info.getStatus(),info.getReason(),info.getVersion(),System.lineSeparator(),
+                info.getFields());
     }
 
     public boolean isCommitted()
