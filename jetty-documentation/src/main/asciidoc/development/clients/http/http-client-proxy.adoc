@@ -19,12 +19,10 @@
 
 Jetty's HTTP client can be configured to use proxies to connect to destinations.
 
-Two types of proxies are available out of the box: a HTTP proxy (provided by
-class `org.eclipse.jetty.client.HttpProxy`) and a SOCKS 4 proxy (provided by
-class `org.eclipse.jetty.client.Socks4Proxy`).
+Two types of proxies are available out of the box: a HTTP proxy (provided by class `org.eclipse.jetty.client.HttpProxy`) and a SOCKS 4 proxy (provided by class `org.eclipse.jetty.client.Socks4Proxy`).
 Other implementations may be written by subclassing `ProxyConfiguration.Proxy`.
 
-A typical configuration is the following:
+The following is a typical configuration:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -40,22 +38,16 @@ proxyConfig.getProxies().add(proxy);
 ContentResponse response = httpClient.GET(uri);
 ----
 
-You specify the proxy host and port, and optionally also the addresses that
-you do not want to be proxied, and then add the proxy configuration on the
-`ProxyConfiguration` instance.
+You specify the proxy host and port, and optionally also the addresses that you do not want to be proxied, and then add the proxy configuration on the `ProxyConfiguration` instance.
 
-Configured in this way, `HttpClient` makes requests to the HTTP proxy
-(for plain-text HTTP requests) or establishes a tunnel via HTTP CONNECT
-(for encrypted HTTPS requests).
+Configured in this way, `HttpClient` makes requests to the HTTP proxy (for plain-text HTTP requests) or establishes a tunnel via `HTTP CONNECT` (for encrypted HTTPS requests).
 
 [[http-client-proxy-authentication]]
 ==== Proxy Authentication Support
 
-Jetty's HTTP client support proxy authentication in the same way it supports
-<<http-client-authentication,server authentication>>.
+Jetty's HTTP client support proxy authentication in the same way it supports link:#http-client-authentication[server authentication].
 
-In the example below, the proxy requires Basic authentication, but the server
-requires Digest authentication, and therefore:
+In the example below, the proxy requires Basic authentication, but the server requires Digest authentication, and therefore:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -80,8 +72,7 @@ ContentResponse response = httpClient.newRequest(serverURI)
         .get(5, TimeUnit.SECONDS);
 ----
 
-The HTTP conversation for successful authentications on both the proxy and the
-server is the following:
+The HTTP conversation for successful authentications on both the proxy and the server is the following:
 
 ----
 Application  HttpClient                         Proxy                    Server
@@ -105,9 +96,6 @@ Application  HttpClient                         Proxy                    Server
      |<-- 200 ---|<------------ 200 --------------|<--------- 200 ----------|
 ----
 
-The application does not receive events related to the responses with code 407
-and 401 since they are handled internally by `HttpClient`.
+The application does not receive events related to the responses with code 407 and 401 since they are handled internally by `HttpClient`.
 
-Similarly to the <<http-client-authentication,authentication section>>, the
-proxy authentication result and the server authentication result can be
-preempted to avoid, respectively, the 407 and 401 roundtrips.
+Similarly to the link:#http-client-authentication[authentication section], the proxy authentication result and the server authentication result can be preempted to avoid, respectively, the 407 and 401 roundtrips.

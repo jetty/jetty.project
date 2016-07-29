@@ -17,25 +17,18 @@
 [[http-client-transport]]
 === Pluggable Transports
 
-Jetty's HTTP client can be configured to use different transports to carry
-the semantic of HTTP requests and responses.
+Jetty's HTTP client can be configured to use different transports to carry the semantic of HTTP requests and responses.
 
-This means that the intention of a client to request resource `/index.html`
-using the `GET` method can be carried over the network in different formats.
+This means that the intention of a client to request resource `/index.html` using the `GET` method can be carried over the network in different formats.
 
-A HTTP client transport is the component that is in charge of converting
-a high-level, semantic, HTTP requests such as "GET resource /index.html"
-into the specific format understood by the server (for example, HTTP/2),
-and to convert the server response from the specific format (HTTP/2) into
-high-level, semantic objects that can be used by applications.
+A HTTP client transport is the component that is in charge of converting a high-level, semantic, HTTP requests such as "GET resource /index.html" into the specific format understood by the server (for example, HTTP/2), and to convert the server response from the specific format (HTTP/2) into high-level, semantic objects that can be used by applications.
 
 In this way, applications are not aware of the actual protocol being used.
-They can write their logic against a high-level API that hides the details
-of the specific protocol being used over the network.
+This allows them to write their logic against a high-level API that hides the details of the specific protocol being used over the network.
 
-The most common protocol format is HTTP/1.1, a text-based protocol with
-lines separated by `\r\n`:
+The most common protocol format is HTTP/1.1, a text-based protocol with lines separated by `\r\n`:
 
+[source, screen, subs="{sub-order}"]
 ----
 GET /index.html HTTP/1.1\r\n
 Host: domain.com\r\n
@@ -45,6 +38,7 @@ Host: domain.com\r\n
 
 However, the same request can be made using FastCGI, a binary protocol:
 
+[source, screen, subs="{sub-order}"]
 ----
 x01 x01 x00 x01 x00 x08 x00 x00
 x00 x01 x01 x00 x00 x00 x00 x00
@@ -56,8 +50,7 @@ x0C x0B  D   O   C   U   M   E
 ...
 ----
 
-Similarly, HTTP/2 is a binary protocol that transports the same information
-in a yet different format.
+Similarly, HTTP/2 is a binary protocol that transports the same information in a yet different format.
 
 ==== HTTP/1.1 Transport
 
@@ -70,8 +63,7 @@ HttpClient client = new HttpClient();
 client.start();
 ----
 
-If you want to customize the HTTP/1.1 transport, you can explicitly configure
-`HttpClient` in this way:
+If you want to customize the HTTP/1.1 transport, you can explicitly configure `HttpClient` in this way:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -82,8 +74,7 @@ HttpClient client = new HttpClient(transport, null);
 client.start();
 ----
 
-The example above allows you to customize the number of NIO selectors that
-`HttpClient` will be using.
+The example above allows you to customize the number of NIO selectors that `HttpClient` will be using.
 
 ==== HTTP/2 Transport
 
@@ -99,11 +90,9 @@ HttpClient client = new HttpClient(transport, null);
 client.start();
 ----
 
-`HTTP2Client` is the lower-level client that provides an API based on HTTP/2
-concepts such as _sessions_, _streams_ and _frames_ that are specific to HTTP/2.
+`HTTP2Client` is the lower-level client that provides an API based on HTTP/2 concepts such as _sessions_, _streams_ and _frames_ that are specific to HTTP/2.
 
-`HttpClientTransportOverHTTP2` uses `HTTP2Client` to format high-level semantic
-HTTP requests ("GET resource /index.html") into the HTTP/2 specific format.
+`HttpClientTransportOverHTTP2` uses `HTTP2Client` to format high-level semantic HTTP requests ("GET resource /index.html") into the HTTP/2 specific format.
 
 ==== FastCGI Transport
 
@@ -119,9 +108,6 @@ HttpClient client = new HttpClient(transport, null);
 client.start();
 ----
 
-In order to make requests using the FastCGI transport, you need to have a
-FastCGI server such as https://en.wikipedia.org/wiki/PHP#PHPFPM[PHP-FPM]
-(see also http://php.net/manual/en/install.fpm.php).
+In order to make requests using the FastCGI transport, you need to have a FastCGI server such as https://en.wikipedia.org/wiki/PHP#PHPFPM[PHP-FPM] (see also http://php.net/manual/en/install.fpm.php).
 
-The FastCGI transport is primarily used by Jetty's <<fastcgi,FastCGI support>>
-to serve PHP pages (for example WordPress).
+The FastCGI transport is primarily used by Jetty's link:#fastcgi[FastCGI support] to serve PHP pages (WordPress for example).
