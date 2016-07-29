@@ -77,7 +77,7 @@ context.setAttribute("org.eclipse.jetty.webapp.basetempdir", "/tmp/foo");
 
 There are several ways to use a particular directory as the temporary directory:
 
-====== Call WebAppContext.setTempDirectory(String dir)
+===== Call WebAppContext.setTempDirectory(String dir)
 As before this can be accomplished with an xml file or directly in code. Here's an example of setting the temp directory in xml:
 
 [source, xml, subs="{sub-order}"]
@@ -101,7 +101,7 @@ context.setWar("foo.war");
 context.setTempDirectory(new File("/some/dir/foo"));
 ----
 
-====== Set the javax.servlet.context.tempdir context attribute
+===== Set the javax.servlet.context.tempdir context attribute
 You should set this context attribute with the name of directory you want to use as the temp directory. Again, you can do this in xml:
 
 [source, xml, subs="{sub-order}"]
