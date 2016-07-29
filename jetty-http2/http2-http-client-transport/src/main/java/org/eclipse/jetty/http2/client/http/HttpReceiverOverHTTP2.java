@@ -20,7 +20,9 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.Locale;
+import java.util.Queue;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
@@ -38,10 +40,12 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.CompletableCallback;
+import org.eclipse.jetty.util.IteratingCallback;
 
 public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listener
 {
+    private final ContentNotifier contentNotifier = new ContentNotifier();
+
     public HttpReceiverOverHTTP2(HttpChannel channel)
     {
         super(channel);
@@ -111,40 +115,8 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         copy.put(original);
         BufferUtil.flipToFlush(copy, 0);
 
-        CompletableCallback delegate = new CompletableCallback()
-        {
-            @Override
-            public void succeeded()
-            {
-                byteBufferPool.release(copy);
-                callback.succeeded();
-                super.succeeded();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                byteBufferPool.release(copy);
-                callback.failed(x);
-                super.failed(x);
-            }
-
-            @Override
-            public void resume()
-            {
-                if (frame.isEndStream())
-                    responseSuccess(exchange);
-            }
-
-            @Override
-            public void abort(Throwable failure)
-            {
-            }
-        };
-
-        responseContent(exchange, copy, delegate);
-        if (!delegate.tryComplete())
-            delegate.resume();
+        contentNotifier.offer(new DataInfo(exchange, copy, callback, frame.isEndStream()));
+        contentNotifier.iterate();
     }
 
     @Override
@@ -163,5 +135,71 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     public void onTimeout(Stream stream, Throwable failure)
     {
         responseFailure(failure);
+    }
+
+    private class ContentNotifier extends IteratingCallback
+    {
+        private final Queue<DataInfo> queue = new ArrayDeque<>();
+        private DataInfo dataInfo;
+
+        private boolean offer(DataInfo dataInfo)
+        {
+            synchronized (this)
+            {
+                return queue.offer(dataInfo);
+            }
+        }
+
+        @Override
+        protected Action process() throws Exception
+        {
+            DataInfo dataInfo;
+            synchronized (this)
+            {
+                dataInfo = queue.poll();
+            }
+            if (dataInfo == null)
+                return Action.IDLE;
+
+            this.dataInfo = dataInfo;
+            responseContent(dataInfo.exchange, dataInfo.buffer, this);
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            ByteBufferPool byteBufferPool = getHttpDestination().getHttpClient().getByteBufferPool();
+            byteBufferPool.release(dataInfo.buffer);
+            dataInfo.callback.succeeded();
+            if (dataInfo.last)
+                responseSuccess(dataInfo.exchange);
+            super.succeeded();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable failure)
+        {
+            ByteBufferPool byteBufferPool = getHttpDestination().getHttpClient().getByteBufferPool();
+            byteBufferPool.release(dataInfo.buffer);
+            dataInfo.callback.failed(failure);
+            responseFailure(failure);
+        }
+    }
+
+    private static class DataInfo
+    {
+        private final HttpExchange exchange;
+        private final ByteBuffer buffer;
+        private final Callback callback;
+        private final boolean last;
+
+        private DataInfo(HttpExchange exchange, ByteBuffer buffer, Callback callback, boolean last)
+        {
+            this.exchange = exchange;
+            this.buffer = buffer;
+            this.callback = callback;
+            this.last = last;
+        }
     }
 }
