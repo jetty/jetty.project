@@ -30,7 +30,7 @@ node('linux') {
   timeout(60) {
     withEnv(mvnEnv) {
       // Run test phase / ignore test failures
-      sh "mvn -B test -Dmaven.test.failure.ignore=true"
+      sh "mvn -B install -Dmaven.test.failure.ignore=true"
       // Report failures in the jenkins UI
       step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
     }
