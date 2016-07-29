@@ -27,8 +27,10 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
@@ -1180,14 +1182,24 @@ public class Response implements HttpServletResponse
     @Override
     public void reset()
     {
+        reset(false);
+    }
+
+    public void reset(boolean preserveCookies)
+    { 
         resetForForward();
         _status = 200;
         _reason = null;
         _contentLength = -1;
+        
+        List<HttpField> cookies = preserveCookies
+            ?_fields.stream()
+            .filter(f->f.getHeader()==HttpHeader.SET_COOKIE)
+            .collect(Collectors.toList()):null;
+        
         _fields.clear();
 
-        String connection = _channel.getRequest().getHeader(HttpHeader.CONNECTION.asString());
-                
+        String connection = _channel.getRequest().getHeader(HttpHeader.CONNECTION.asString());  
         if (connection != null)
         {
             for (String value: StringUtil.csvSplit(null,connection,0,connection.length()))
@@ -1214,21 +1226,23 @@ public class Response implements HttpServletResponse
                 }
             }
         }
-    }
 
-    public void reset(boolean preserveCookies)
-    { 
-        if (!preserveCookies)
-            reset();
+        if (preserveCookies)
+            cookies.forEach(f->_fields.add(f));
         else
         {
-            ArrayList<String> cookieValues = new ArrayList<String>(5);
-            Enumeration<String> vals = _fields.getValues(HttpHeader.SET_COOKIE.asString());
-            while (vals.hasMoreElements())
-                cookieValues.add(vals.nextElement());
-            reset();
-            for (String v:cookieValues)
-                _fields.add(HttpHeader.SET_COOKIE, v);
+            Request request = getHttpChannel().getRequest();
+            HttpSession session = request.getSession(false);
+            if (session!=null && session.isNew())
+            {
+                SessionManager sm = request.getSessionManager();
+                if (sm!=null)
+                {
+                    HttpCookie c=sm.getSessionCookie(session,request.getContextPath(),request.isSecure());
+                    if (c!=null)
+                        addCookie(c);
+                }
+            }
         }
     }
 

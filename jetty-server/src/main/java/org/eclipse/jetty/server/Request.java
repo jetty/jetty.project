@@ -1469,9 +1469,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * Add @override when 3.1 api is available
-     */
+    @Override
     public String changeSessionId()
     {
         HttpSession session = getSession(false);
