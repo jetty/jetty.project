@@ -18,14 +18,10 @@
 === Cookies Support
 
 Jetty HTTP client supports cookies out of the box.
-The `HttpClient` instance receives cookies from HTTP responses and stores them
-in a `java.net.CookieStore`, a class that is part of the JDK.
-When new requests are made, the cookie store is consulted and if there are
-matching cookies (that is, cookies that are not expired and that match domain
-and path of the request) then they are added to the requests.
+The `HttpClient` instance receives cookies from HTTP responses and stores them in a `java.net.CookieStore`, a class that is part of the JDK.
+When new requests are made, the cookie store is consulted and if there are matching cookies (that is, cookies that are not expired and that match domain and path of the request) then they are added to the requests.
 
-Applications can programmatically access the cookie store to find the cookies
-that have been set:
+Applications can programmatically access the cookie store to find the cookies that have been set:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -65,16 +61,14 @@ for (HttpCookie cookie : cookies)
     cookieStore.remove(uri, cookie);
 ----
 
-If you want to totally disable cookie handling, you can install a
-`HttpCookieStore.Empty` instance in this way:
+If you want to totally disable cookie handling, you can install a `HttpCookieStore.Empty` instance in this way:
 
 [source, java, subs="{sub-order}"]
 ----
 httpClient.setCookieStore(new HttpCookieStore.Empty());
 ----
 
-You can enable cookie filtering by installing a cookie store that performs the
-filtering logic in this way:
+You can enable cookie filtering by installing a cookie store that performs the filtering logic in this way:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -91,5 +85,4 @@ public class GoogleOnlyCookieStore extends HttpCookieStore
 }
 ----
 
-The example above will retain only cookies that come from the `google.com`
-domain or sub-domains.
+The example above will retain only cookies that come from the `google.com` domain or sub-domains.

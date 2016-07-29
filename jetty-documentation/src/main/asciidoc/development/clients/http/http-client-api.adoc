@@ -20,25 +20,19 @@
 [[http-client-blocking]]
 ==== Blocking APIs
 
-The simpler way to perform a HTTP request is the following:
+The simple way to perform a HTTP request is the following:
 
 [source, java, subs="{sub-order}"]
 ----
 ContentResponse response = httpClient.GET("http://domain.com/path?query");
 ----
 
-Method `HttpClient.GET(...)` performs a HTTP GET request to the given URI and
-returns a `ContentResponse` when the request/response conversation completes
-successfully.
+The method `HttpClient.GET(...)` performs a HTTP `GET` request to the given URI and returns a `ContentResponse` when the request/response conversation completes successfully.
 
-The `ContentResponse` object contains the HTTP response information: status
-code, headers and possibly a content.
-The content length is limited by default to 2 MiB; for larger content see
-xref:http-client-response-content[].
+The `ContentResponse` object contains the HTTP response information: status code, headers and possibly content.
+The content length is limited by default to 2 MiB; for larger content see xref:http-client-response-content[].
 
-If you want to customize the request, for example by issuing a HEAD request
-instead of a GET, and simulating a browser user agent, you can do it in this
-way:
+If you want to customize the request, for example by issuing a `HEAD` request instead of a `GET`, and simulating a browser user agent, you can do it in this way:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -58,13 +52,10 @@ request.agent("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:17.0) Gecko/20100101 F
 ContentResponse response = request.send();
 ----
 
-You first create a request object using `httpClient.newRequest(...)`, and then
-you customize it using the fluent API style (that is, chained invocation of
-methods on the request object).
-When the request object is customized, you call `Request.send()` that produces
-the `ContentResponse` when the request/response conversation is complete.
+You first create a request object using `httpClient.newRequest(...)`, and then you customize it using the fluent API style (that is, a chained invocation of methods on the request object).
+When the request object is customized, you call `request.send()` that produces the `ContentResponse` when the request/response conversation is complete.
 
-Simple POST requests also have a shortcut method:
+Simple `POST` requests also have a shortcut method:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -73,14 +64,10 @@ ContentResponse response = httpClient.POST("http://domain.com/entity/1")
         .send();
 ----
 
-The POST parameter values added via the `param()` method are automatically
-URL-encoded.
+The `POST` parameter values added via the `param()` method are automatically URL-encoded.
 
-Jetty's HTTP client automatically follows redirects, so automatically handles
-the typical web pattern http://en.wikipedia.org/wiki/Post/Redirect/Get[POST/Redirect/GET],
-and the response object contains the content of the response of the GET request.
-Following redirects is a feature that you can enable/disable on a per-request
-basis or globally.
+Jetty's HTTP client automatically follows redirects, so it handles the typical web pattern http://en.wikipedia.org/wiki/Post/Redirect/Get[POST/Redirect/GET], and the response object contains the content of the response of the `GET` request.
+Following redirects is a feature that you can enable/disable on a per-request basis or globally.
 
 File uploads also require one line, and make use of JDK 7′s `java.nio.file` classes:
 
@@ -92,8 +79,7 @@ ContentResponse response = httpClient.newRequest("http://domain.com/upload")
         .send();
 ----
 
-It is possible to impose a total timeout for the request/response conversation
-using the `Request.timeout(...)` method, in this way:
+It is possible to impose a total timeout for the request/response conversation using the `Request.timeout(...)` method as follows:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -102,69 +88,38 @@ ContentResponse response = httpClient.newRequest("http://domain.com/path?query")
         .send();
 ----
 
-In the example above, when the 5 seconds expire, the request is aborted and a
-`java.util.concurrent.TimeoutException` is thrown.
+In the example above, when the 5 seconds expire, the request is aborted and a `java.util.concurrent.TimeoutException` is thrown.
 
 [[http-client-async]]
 ==== Non-Blocking APIs
 
-So far we have shown how to use Jetty HTTP client in a blocking style, that is
-the thread that issues the request blocks until the request/response conversation
-is complete.
+So far we have shown how to use Jetty HTTP client in a blocking style - that is, the thread that issues the request blocks until the request/response conversation is complete.
 
-In this section we will look at Jetty's HTTP client non-blocking, asynchronous,
-APIs that are perfectly suited for large content downloads, for parallel
-processing of requests/responses and in all those cases where performance and
-efficient thread and resource utilization is a key factor.
+This section will look at Jetty's HTTP client non-blocking, asynchronous APIs that are perfectly suited for large content downloads, for parallel processing of requests/responses and in cases where performance and efficient thread and resource utilization is a key factor.
 
-The asynchronous APIs rely heavily on listeners that are invoked at various stages
-of request and response processing.
+The asynchronous APIs rely heavily on listeners that are invoked at various stages of request and response processing.
 These listeners are implemented by applications and may perform any kind of logic.
-The implementation invokes these listeners in the same thread that is used to
-process the request or response.
-Therefore, if the application code in these listeners takes a long time to execute,
-the request or response processing is delayed until the listener returns.
+The implementation invokes these listeners in the same thread that is used to process the request or response.
+Therefore, if the application code in these listeners takes a long time to execute, the request or response processing is delayed until the listener returns.
 
-If you need to execute application code that takes long time inside a listener,
-you must spawn your own thread, and remember to deep copy any data provided by
-the listener that you will need in your code, because when the listener returns
-the data it provides may be recycled/cleared/destroyed.
+If you need to execute application code that takes long time inside a listener, you must spawn your own thread and remember to deep copy any data provided by the listener that you will need in your code, because when the listener returns the data it provides may be recycled/cleared/destroyed.
 
-Request and response processing are executed by two different threads and
-therefore may happen concurrently.
-A typical example of this concurrent processing is an echo server, where a
-large upload may be concurrent with the large download echoed back.
-As a side note, remember that responses may be processed and completed _before_
-requests; a typical example is a large upload that triggers a quick response -
-for example an error - by the server: the response may arrive and be completed
-while the request content is still being uploaded.
+Request and response processing are executed by two different threads and therefore may happen concurrently.
+A typical example of this concurrent processing is an echo server, where a large upload may be concurrent with the large download echoed back.
+As a side note, remember that responses may be processed and completed _before_ requests; a typical example is a large upload that triggers a quick response - for example an error - by the server: the response may arrive and be completed while the request content is still being uploaded.
 
-The application thread that calls `Request.send(Response.CompleteListener)`
-performs the processing of the request until either the request is fully
-processed or until it would block on I/O, then it returns (and therefore never
-blocks).
-If it would block on I/O, the thread asks the I/O system to emit an event when
-the I/O will be ready to continue, then returns.
-When such an event is fired, a thread taken from the `HttpClient` thread pool
-will resume the processing of the request.
+The application thread that calls `Request.send(Response.CompleteListener)` performs the processing of the request until either the request is fully processed or until it would block on I/O, then it returns (and therefore never blocks).
+If it would block on I/O, the thread asks the I/O system to emit an event when the I/O will be ready to continue, then returns.
+When such an event is fired, a thread taken from the `HttpClient` thread pool will resume the processing of the request.
 
-Response are processed from the I/O thread that fires the event that bytes are
-ready to be read.
-Response processing continues until either the response is fully processed or
-until it would block for I/O.
-If it would block for I/O, the thread asks the I/O system to emit an event when
-the I/O will be ready to continue, then returns.
-When such an event is fired, a thread taken from the `HttpClient` thread pool
-will resume the processing of the response.
+Response are processed from the I/O thread that fires the event that bytes are ready to be read.
+Response processing continues until either the response is fully processed or until it would block for I/O.
+If it would block for I/O, the thread asks the I/O system to emit an event when the I/O will be ready to continue, then returns.
+When such an event is fired, a thread taken from the `HttpClient` thread pool will resume the processing of the response.
 
-When the request and the response are both fully processed, the thread that
-finished the last processing (usually the thread that processes the response,
-but may also be the thread that processes the request - if the request takes
-more time than the response to be processed) is used to dequeue the next
-request for the same destination and processes it.
+When the request and the response are both fully processed, the thread that finished the last processing (usually the thread that processes the response, but may also be the thread that processes the request - if the request takes more time than the response to be processed) is used to de-queue the next request for the same destination and processes it.
 
-A simple asynchronous GET request that discards the response content can be
-written in this way:
+A simple asynchronous `GET` request that discards the response content can be written in this way:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -179,10 +134,7 @@ httpClient.newRequest("http://domain.com/path")
         });
 ----
 
-Method `Request.send(Response.CompleteListener)` returns `void` and does not
-block; the `Response.CompleteListener` provided as a parameter is notified when
-the request/response conversation is complete, and the `Result` parameter
-allows you to access the response object.
+Method `Request.send(Response.CompleteListener)` returns `void` and does not block; the `Response.CompleteListener` provided as a parameter is notified when the request/response conversation is complete, and the `Result` parameter allows you to access the response object.
 
 You can write the same code using JDK 8′s lambda expressions:
 
@@ -192,8 +144,7 @@ httpClient.newRequest("http://domain.com/path")
         .send(result -> { /* Your logic here */ });
 ----
 
-You can impose a total timeout for the request/response conversation in the
-same way used by the synchronous API:
+You can impose a total timeout for the request/response conversation in the same way used by the synchronous API:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -202,12 +153,9 @@ Request request = httpClient.newRequest("http://domain.com/path")
         .send(result -> { /* Your logic here */ });
 ----
 
-The example above will impose a total timeout of 3 seconds on the request/response
-conversation.
+The example above will impose a total timeout of 3 seconds on the request/response conversation.
 
-The HTTP client APIs use listeners extensively to provide hooks for all possible
-request and response events, and with JDK 8′s lambda expressions they’re even
-more fun to use:
+The HTTP client APIs use listeners extensively to provide hooks for all possible request and response events, and with JDK 8′s lambda expressions they are even more fun to use:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -226,14 +174,9 @@ httpClient.newRequest("http://domain.com/path")
         .send(result -> { ... });
 ----
 
-This makes Jetty HTTP client suitable for HTTP load testing because, for example,
-you can accurately time every step of the request/response conversation (thus
-knowing where the request/response time is really spent).
+This makes Jetty HTTP client suitable for HTTP load testing because, for example, you can accurately time every step of the request/response conversation (thus knowing where the request/response time is really spent).
 
-Have a look at the link:{JDURL}/org/eclipse/jetty/client/api/Request.Listener.html[`Request.Listener`]
-class to know about request events, and to the
-link:{JDURL}/org/eclipse/jetty/client/api/Response.Listener.html[`Response.Listener`]
-class to know about response events.
+Have a look at the link:{JDURL}/org/eclipse/jetty/client/api/Request.Listener.html[`Request.Listener`] class to know about request events, and to the link:{JDURL}/org/eclipse/jetty/client/api/Response.Listener.html[`Response.Listener`] class to know about response events.
 
 [[http-client-content]]
 ==== Content Handling
@@ -241,12 +184,9 @@ class to know about response events.
 [[http-client-request-content]]
 ===== Request Content Handling
 
-Jetty's HTTP client provides a number of utility classes off the shelf to handle
-request content.
+Jetty's HTTP client provides a number of utility classes off the shelf to handle request content.
 
-You can provide request content as `String`, `byte[]`, `ByteBuffer`,
-`java.nio.file.Path`, `InputStream`, and provide your own implementation of
-`org.eclipse.jetty.client.api.ContentProvider`.
+You can provide request content as `String`, `byte[]`, `ByteBuffer`, `java.nio.file.Path`, `InputStream`, and provide your own implementation of `org.eclipse.jetty.client.api.ContentProvider`.
 Here’s an example that provides the request content using `java.nio.file.Paths`:
 
 [source, java, subs="{sub-order}"]
@@ -277,12 +217,9 @@ ContentResponse response = httpClient.newRequest("http://domain.com/upload")
         .send();
 ----
 
-Since `InputStream` is blocking, then also the send of the request will block
-if the input stream blocks, even in case of usage of the asynchronous
-`HttpClient` APIs.
+Since `InputStream` is blocking, then also the send of the request will block if the input stream blocks, even in case of usage of the asynchronous `HttpClient` APIs.
 
-If you have already read the content in memory, you can pass it as a `byte[]`
-using the `BytesContentProvider` utility class:
+If you have already read the content in memory, you can pass it as a `byte[]` using the `BytesContentProvider` utility class:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -293,9 +230,7 @@ ContentResponse response = httpClient.newRequest("http://domain.com/upload")
         .send();
 ----
 
-If the request content is not immediately available, but your application will
-be notified of the content to send, you can use `DeferredContentProvider` in
-this way:
+If the request content is not immediately available, but your application will be notified of the content to send, you can use `DeferredContentProvider` in this way:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -326,17 +261,12 @@ content.offer(ByteBuffer.wrap(bytes));
 content.close();
 ----
 
-While the request content is awaited and consequently uploaded by the client
-application, the server may be able to respond (at least with the response
-headers) completely asynchronously. In this case, `Response.Listener` callbacks
-will be invoked before the request is fully sent.
-This allows fine-grained control of the request/response conversation: for
-example the server may reject contents that are too big, send a response to the
-client, which in turn may stop the content upload.
+While the request content is awaited and consequently uploaded by the client application, the server may be able to respond (at least with the response headers) completely asynchronously.
+In this case, `Response.Listener` callbacks will be invoked before the request is fully sent.
+This allows fine-grained control of the request/response conversation: for example the server may reject contents that are too big, send a response to the client, which in turn may stop the content upload.
 
 Another way to provide request content is by using an `OutputStreamContentProvider`,
-which allows applications to write request content when it is available to the
-`OutputStream` provided by `OutputStreamContentProvider`:
+which allows applications to write request content when it is available to the `OutputStream` provided by `OutputStreamContentProvider`:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -370,13 +300,9 @@ try (OutputStream output = content.getOutputStream())
 
 Jetty HTTP client allows applications to handle response content in different ways.
 
-The first way is to buffer the response content in memory; this is done when
-using the blocking APIs (see xref:http-client-blocking[]) and the content is
-buffered within a `ContentResponse` up to 2 MiB.
+The first way is to buffer the response content in memory; this is done when using the blocking APIs (see xref:http-client-blocking[]) and the content is buffered within a `ContentResponse` up to 2 MiB.
 
-If you want to control the length of the response content (for example limiting
-to values smaller than the default of 2 MiB), then you can use a
-`org.eclipse.jetty.client.util.FutureResponseListener`in this way:
+If you want to control the length of the response content (for example limiting to values smaller than the default of 2 MiB), then you can use a `org.eclipse.jetty.client.util.FutureResponseListener` in this way:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -390,11 +316,9 @@ request.send(listener);
 ContentResponse response = listener.get(5, TimeUnit.SECONDS);
 ----
 
-If the response content length is exceeded, the response will be aborted, and
-an exception will be thrown by method `get()`.
+If the response content length is exceeded, the response will be aborted, and an exception will be thrown by method `get()`.
 
-If you are using the asynchronous APIs (see xref:http-client-async[]), you can
-use the `BufferingResponseListener` utility class:
+If you are using the asynchronous APIs (see xref:http-client-async[]), you can use the `BufferingResponseListener` utility class:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -414,14 +338,9 @@ httpClient.newRequest("http://domain.com/path")
         });
 ----
 
-The second way is the most efficient (because it avoids content copies) and
-allows you to specify a `Response.ContentListener`, or a subclass, to handle
-the content as soon as it arrives.
-In the example below, `Response.Listener.Adapter` is a class that implements
-both `Response.ContentListener` and `Response.CompleteListener` and can
-be passed to `Request.send()`.
-Jetty's HTTP client will invoke the `onContent()` method zero or more times
-(until there is content), and finally invoke the `onComplete()` method.
+The second way is the most efficient (because it avoids content copies) and allows you to specify a `Response.ContentListener`, or a subclass, to handle the content as soon as it arrives.
+In the example below, `Response.Listener.Adapter` is a class that implements both `Response.ContentListener` and `Response.CompleteListener` and can be passed to `Request.send()`.
+Jetty's HTTP client will invoke the `onContent()` method zero or more times (until there is content), and finally invoke the `onComplete()` method.
 
 [source, java, subs="{sub-order}"]
 ----
@@ -437,8 +356,7 @@ ContentResponse response = httpClient
         });
 ----
 
-The third way allows you to wait for the response and then stream the content
-using the `InputStreamResponseListener` utility class:
+The third way allows you to wait for the response and then stream the content using the `InputStreamResponseListener` utility class:
 
 [source, java, subs="{sub-order}"]
 ----
