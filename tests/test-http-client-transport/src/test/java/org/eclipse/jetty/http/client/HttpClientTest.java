@@ -26,6 +26,8 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import javax.servlet.ServletException;
@@ -44,6 +46,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -440,6 +443,49 @@ public class HttpClientTest extends AbstractTest
 
         Thread.sleep(2 * idleTimeout);
         Assert.assertTrue(closeLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testAsyncResponseContentBackPressure() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                // Large write to generate multiple DATA frames.
+                response.getOutputStream().write(new byte[256 * 1024]);
+            }
+        });
+
+        CountDownLatch completeLatch = new CountDownLatch(1);
+        AtomicInteger counter = new AtomicInteger();
+        AtomicReference<Callback> callbackRef = new AtomicReference<>();
+        AtomicReference<CountDownLatch> latchRef = new AtomicReference<>(new CountDownLatch(1));
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(getScheme())
+                .onResponseContentAsync((response, content, callback) ->
+                {
+                    if (counter.incrementAndGet() == 1)
+                    {
+                        callbackRef.set(callback);
+                        latchRef.get().countDown();
+                    }
+                    else
+                    {
+                        callback.succeeded();
+                    }
+                })
+                .send(result -> completeLatch.countDown());
+
+        Assert.assertTrue(latchRef.get().await(5, TimeUnit.SECONDS));
+        // Wait some time to verify that back pressure is applied correctly.
+        Thread.sleep(1000);
+        Assert.assertEquals(1, counter.get());
+        callbackRef.get().succeeded();
+
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
     }
 
     private void sleep(long time) throws IOException
