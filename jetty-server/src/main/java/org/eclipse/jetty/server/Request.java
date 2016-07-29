@@ -1439,9 +1439,6 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    /** 
-     * @see javax.servlet.http.HttpServletRequest#changeSessionId()
-     */
     @Override
     public String changeSessionId()
     {
