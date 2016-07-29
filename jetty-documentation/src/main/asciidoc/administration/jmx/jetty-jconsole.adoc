@@ -20,7 +20,7 @@
 JConsole and the Java Mission Control (JMX) are graphical tools; they allow you to remotely manage and monitor your server and web application status using JMX.
 When following the instructions given below, please also ensure that you make any necessary changes to any anti-virus software you may be using which may prevent JConsole or JMC from running.
 
-===== Starting Jetty Standalone
+==== Starting Jetty Standalone
 
 The simplest way to enable support is to add the JMX-Remote support module to your `{$jetty.base}`.
 
