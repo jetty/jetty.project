@@ -31,6 +31,37 @@ import org.junit.Test;
 
 public class UnorderedSignatureTest
 {
+    public static class A
+    {
+        private final String id;
+        
+        public A(String id)
+        {
+            this.id = id;
+        }
+        
+        public String toString()
+        {
+            return String.format("A:%s",id);
+        }
+    }
+    
+    public static class B
+    {
+        private final int val;
+        
+        public B(int val)
+        {
+            this.val = val;
+        }
+        
+        public String toString()
+        {
+            return String.format("B:%d",val);
+        }
+    }
+    
+    @SuppressWarnings("unused")
     public static class SampleSignatures
     {
         public String sigEmpty()
@@ -61,6 +92,11 @@ public class UnorderedSignatureTest
         public String sigByteArray(byte[] buf, @Name("offset") int offset, @Name("length") int len)
         {
             return String.format("sigByteArray<%s,%d,%d>", buf == null ? "<null>" : ("[" + buf.length + "]"), offset, len);
+        }
+        
+        public String sigObjectArgs(A a, B b)
+        {
+            return String.format("sigObjectArgs<%s,%s>", q(a), q(b));
         }
         
         private String q(Object obj)

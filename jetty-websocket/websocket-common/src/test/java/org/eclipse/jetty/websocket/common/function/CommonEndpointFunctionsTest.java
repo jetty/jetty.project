@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.component.CloseableLifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
@@ -57,6 +56,21 @@ public class CommonEndpointFunctionsTest
 
     @Rule
     public TestName testname = new TestName();
+    
+    private class CloseableEndpointFunctions extends CommonEndpointFunctions implements AutoCloseable
+    {
+        public CloseableEndpointFunctions(Object endpoint, WebSocketContainerScope containerScope) throws Exception
+        {
+            super(endpoint, containerScope.getPolicy(), containerScope.getExecutor());
+            start();
+        }
+    
+        @Override
+        public void close() throws Exception
+        {
+            stop();
+        }
+    }
 
     public Session initSession(Object websocket)
     {
@@ -90,14 +104,11 @@ public class CommonEndpointFunctionsTest
         // Setup
         ConnectionOnly socket = new ConnectionOnly();
         Session session = initSession(socket);
-        try (CloseableLifeCycle<CommonEndpointFunctions> lifecycle = new CloseableLifeCycle<>(
-                new CommonEndpointFunctions(socket, containerScope.getPolicy(), containerScope.getExecutor())))
+        try (CloseableEndpointFunctions endpointFunctions = new CloseableEndpointFunctions(socket, containerScope))
         {
-            EndpointFunctions<Session> endpointFunctions = lifecycle.get();
-
             // Trigger Events
             endpointFunctions.onOpen(session);
-            endpointFunctions.onText(BufferUtil.toBuffer("Hello World", UTF8), true);
+            endpointFunctions.onText(BufferUtil.toBuffer("Hello?", UTF8), true);
             endpointFunctions.onClose(new CloseInfo(StatusCode.NORMAL, "Normal"));
         }
 
@@ -128,21 +139,18 @@ public class CommonEndpointFunctionsTest
         // Setup
         DataConnection socket = new DataConnection();
         Session session = initSession(socket);
-        try (CloseableLifeCycle<CommonEndpointFunctions> lifecycle = new CloseableLifeCycle<>(
-                new CommonEndpointFunctions(socket, containerScope.getPolicy(), containerScope.getExecutor())))
+        try (CloseableEndpointFunctions endpointFunctions = new CloseableEndpointFunctions(socket, containerScope))
         {
-            EndpointFunctions<Session> endpointFunctions = lifecycle.get();
-
             // Trigger Events
             endpointFunctions.onOpen(session);
-            endpointFunctions.onText(BufferUtil.toBuffer("Hello World", UTF8), true);
+            endpointFunctions.onText(BufferUtil.toBuffer("Hello Text", UTF8), true);
             endpointFunctions.onClose(new CloseInfo(StatusCode.NORMAL, "Normal"));
         }
 
         // Validate Events
         socket.assertCaptured(
                 "onWebSocketConnect\\([^\\)]*\\)",
-                "onWebSocketText\\(Hello World\\)",
+                "onWebSocketText\\(Hello Text\\)",
                 "onWebSocketClose\\([^\\)]*\\)");
     }
 
@@ -175,14 +183,12 @@ public class CommonEndpointFunctionsTest
         // Setup
         StreamedText socket = new StreamedText(1);
         Session session = initSession(socket);
-
-        try (CloseableLifeCycle<CommonEndpointFunctions> lifecycle = new CloseableLifeCycle<>(
-                new CommonEndpointFunctions(socket, containerScope.getPolicy(), containerScope.getExecutor())))
+    
+        try (CloseableEndpointFunctions endpointFunctions = new CloseableEndpointFunctions(socket, containerScope))
         {
-            EndpointFunctions<Session> endpointFunctions = lifecycle.get();
             // Trigger Events
             endpointFunctions.onOpen(session);
-            endpointFunctions.onText(BufferUtil.toBuffer("Hello World", UTF8), true);
+            endpointFunctions.onText(BufferUtil.toBuffer("Hello Text Stream", UTF8), true);
             endpointFunctions.onClose(new CloseInfo(StatusCode.NORMAL, "Normal"));
         }
 
@@ -190,7 +196,7 @@ public class CommonEndpointFunctionsTest
         socket.streamLatch.await(2, TimeUnit.SECONDS);
 
         // Validate Events
-        socket.assertCaptured("onTextStream\\(Hello World\\)");
+        socket.assertCaptured("onTextStream\\(Hello Text Stream\\)");
     }
 
     @Test(timeout = 1000)
@@ -199,10 +205,8 @@ public class CommonEndpointFunctionsTest
         // Setup
         StreamedText socket = new StreamedText(1);
         Session session = initSession(socket);
-        try (CloseableLifeCycle<CommonEndpointFunctions> lifecycle = new CloseableLifeCycle<>(
-                new CommonEndpointFunctions(socket, containerScope.getPolicy(), containerScope.getExecutor())))
+        try (CloseableEndpointFunctions endpointFunctions = new CloseableEndpointFunctions(socket, containerScope))
         {
-            EndpointFunctions<Session> endpointFunctions = lifecycle.get();
             // Trigger Events
             endpointFunctions.onOpen(session);
             endpointFunctions.onText(BufferUtil.toBuffer("Hel"), false);
@@ -240,27 +244,22 @@ public class CommonEndpointFunctionsTest
         // Setup
         PartialData socket = new PartialData();
         Session session = initSession(socket);
-        try (CloseableLifeCycle<CommonEndpointFunctions> lifecycle = new CloseableLifeCycle<>(
-                new CommonEndpointFunctions(socket, containerScope.getPolicy(), containerScope.getExecutor())))
+        try (CloseableEndpointFunctions endpointFunctions = new CloseableEndpointFunctions(socket, containerScope))
         {
-            EndpointFunctions<Session> endpointFunctions = lifecycle.get();
-
             // Trigger Events
             endpointFunctions.onOpen(session);
-            endpointFunctions.onText(BufferUtil.toBuffer("Hel"), false);
-            endpointFunctions.onText(BufferUtil.toBuffer("lo "), false);
-            endpointFunctions.onText(BufferUtil.toBuffer("Wor"), false);
-            endpointFunctions.onText(BufferUtil.toBuffer("ld"), true);
+            endpointFunctions.onText(BufferUtil.toBuffer("Hello"), false);
+            endpointFunctions.onText(BufferUtil.toBuffer(" "), false);
+            endpointFunctions.onText(BufferUtil.toBuffer("World"), true);
             endpointFunctions.onClose(new CloseInfo(StatusCode.NORMAL, "Normal"));
         }
 
         // Validate Events
         socket.assertCaptured(
                 "onWebSocketConnect\\([^\\)]*\\)",
-                "onWebSocketPartialText\\(Hel, false\\)",
-                "onWebSocketPartialText\\(lo , false\\)",
-                "onWebSocketPartialText\\(Wor, false\\)",
-                "onWebSocketPartialText\\(ld, true\\)",
+                "onWebSocketPartialText\\(Hello, false\\)",
+                "onWebSocketPartialText\\( , false\\)",
+                "onWebSocketPartialText\\(World, true\\)",
                 "onWebSocketClose\\([^\\)]*\\)"
         );
     }
