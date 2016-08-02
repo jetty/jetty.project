@@ -81,8 +81,9 @@ public class ServletUpgradeResponse extends UpgradeResponse
     public void sendError(int statusCode, String message) throws IOException
     {
         setSuccess(false);
-        commitHeaders();
+        applyHeaders();
         response.sendError(statusCode, message);
+        response.flushBuffer(); // commit response
         response = null;
     }
 
@@ -90,8 +91,9 @@ public class ServletUpgradeResponse extends UpgradeResponse
     public void sendForbidden(String message) throws IOException
     {
         setSuccess(false);
-        commitHeaders();
+        applyHeaders();
         response.sendError(HttpServletResponse.SC_FORBIDDEN, message);
+        response.flushBuffer(); // commit response
         response = null;
     }
 
@@ -111,11 +113,11 @@ public class ServletUpgradeResponse extends UpgradeResponse
 
     public void complete()
     {
-        commitHeaders();
+        applyHeaders();
         response = null;
     }
 
-    private void commitHeaders()
+    private void applyHeaders()
     {
         // Transfer all headers to the real HTTP response
         for (Map.Entry<String, List<String>> entry : getHeaders().entrySet())
