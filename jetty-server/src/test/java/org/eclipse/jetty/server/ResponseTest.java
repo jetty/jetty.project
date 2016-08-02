@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -42,7 +47,9 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
@@ -56,6 +63,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.HashedSession;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
@@ -135,7 +143,7 @@ public class ResponseTest
     @Test
     public void testContentType() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         assertEquals(null, response.getContentType());
 
@@ -240,7 +248,7 @@ public class ResponseTest
     @Test
     public void testStrangeContentType() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         assertEquals(null, response.getContentType());
 
@@ -254,7 +262,7 @@ public class ResponseTest
     @Test
     public void testLocale() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         ContextHandler context = new ContextHandler();
         context.addLocaleEncoding(Locale.ENGLISH.toString(), "ISO-8859-1");
@@ -277,7 +285,7 @@ public class ResponseTest
     @Test
     public void testContentTypeCharacterEncoding() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         response.setContentType("foo/bar");
         response.setCharacterEncoding("utf-8");
@@ -305,7 +313,7 @@ public class ResponseTest
     @Test
     public void testCharacterEncodingContentType() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
         response.setCharacterEncoding("utf-8");
         response.setContentType("foo/bar");
         assertEquals("foo/bar;charset=utf-8", response.getContentType());
@@ -332,7 +340,7 @@ public class ResponseTest
     @Test
     public void testContentTypeWithCharacterEncoding() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         response.setCharacterEncoding("utf16");
         response.setContentType("foo/bar; charset=UTF-8");
@@ -369,9 +377,46 @@ public class ResponseTest
     }
 
     @Test
+    public void testResetWithNewSession() throws Exception
+    {
+        Response response = getResponse();
+        Request request = response.getHttpChannel().getRequest();
+        
+        SessionHandler session_handler = new SessionHandler();
+        session_handler.setServer(_server);
+        HashSessionManager session_manager = new HashSessionManager();
+        session_handler.setSessionManager(session_manager);
+        session_manager.setUsingCookies(true);
+        session_handler.start();
+        request.setSessionManager(session_manager);
+        HttpSession session = request.getSession(true);
+        
+        assertThat(session,not(nullValue()));
+        assertTrue(session.isNew());
+        
+        HttpField set_cookie = response.getHttpFields().getField(HttpHeader.SET_COOKIE);
+        assertThat(set_cookie,not(nullValue()));
+        assertThat(set_cookie.getValue(),startsWith("JSESSIONID"));
+        assertThat(set_cookie.getValue(),containsString(session.getId()));
+        response.setHeader("Some","Header");
+        response.addCookie(new Cookie("Some","Cookie"));
+        response.getOutputStream().print("X");
+        assertThat(response.getHttpFields().size(),is(4));
+        
+        response.reset();
+        
+        set_cookie = response.getHttpFields().getField(HttpHeader.SET_COOKIE);
+        assertThat(set_cookie,not(nullValue()));
+        assertThat(set_cookie.getValue(),startsWith("JSESSIONID"));
+        assertThat(set_cookie.getValue(),containsString(session.getId()));
+        assertThat(response.getHttpFields().size(),is(2));
+        response.getWriter();
+    }
+    
+    @Test
     public void testResetContentTypeWithoutCharacterEncoding() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         response.setCharacterEncoding("utf-8");
         response.setContentType("wrong/answer");
@@ -386,7 +431,7 @@ public class ResponseTest
     @Test
     public void testResetContentTypeWithCharacterEncoding() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         response.setContentType("wrong/answer;charset=utf-8");
         response.setContentType("foo/bar");
@@ -403,7 +448,7 @@ public class ResponseTest
     @Test
     public void testContentTypeWithOther() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         response.setContentType("foo/bar; other=xyz");
         assertEquals("foo/bar; other=xyz", response.getContentType());
@@ -426,7 +471,7 @@ public class ResponseTest
     @Test
     public void testContentTypeWithCharacterEncodingAndOther() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         response.setCharacterEncoding("utf16");
         response.setContentType("foo/bar; charset=utf-8 other=xyz");
@@ -454,26 +499,26 @@ public class ResponseTest
     @Test
     public void testStatusCodes() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         response.sendError(404);
         assertEquals(404, response.getStatus());
         assertEquals(null, response.getReason());
 
-        response = newResponse();
+        response = getResponse();
 
         response.sendError(500, "Database Error");
         assertEquals(500, response.getStatus());
         assertEquals("Database Error", response.getReason());
         assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
 
-        response = newResponse();
+        response = getResponse();
 
         response.setStatus(200);
         assertEquals(200, response.getStatus());
         assertEquals(null, response.getReason());
 
-        response = newResponse();
+        response = getResponse();
 
         response.sendError(406, "Super Nanny");
         assertEquals(406, response.getStatus());
@@ -484,7 +529,7 @@ public class ResponseTest
     @Test
     public void testWriteRuntimeIOException() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         PrintWriter writer = response.getWriter();
         writer.println("test");
@@ -511,7 +556,7 @@ public class ResponseTest
     public void testEncodeRedirect()
             throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
         request.setAuthority("myhost",8888);
         request.setContextPath("/path");
@@ -586,7 +631,7 @@ public class ResponseTest
             {
                 for (int i=0;i<tests.length;i++)
                 {
-                    Response response = newResponse();
+                    Response response = getResponse();
                     Request request = response.getHttpChannel().getRequest();
 
                     request.setScheme("http");
@@ -615,7 +660,7 @@ public class ResponseTest
     @Test
     public void testSetBufferSizeAfterHavingWrittenContent() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
         response.setBufferSize(20 * 1024);
         response.getWriter().print("hello");
         try
@@ -632,7 +677,7 @@ public class ResponseTest
     @Test
     public void testZeroContent() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
         PrintWriter writer = response.getWriter();
         response.setContentLength(0);
         assertTrue(!response.isCommitted());
@@ -701,7 +746,7 @@ public class ResponseTest
     @Test
     public void testAddCookie() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         Cookie cookie = new Cookie("name", "value");
         cookie.setDomain("domain");
@@ -720,7 +765,7 @@ public class ResponseTest
     @Test
     public void testCookiesWithReset() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
 
         Cookie cookie=new Cookie("name","value");
         cookie.setDomain("domain");
@@ -755,7 +800,7 @@ public class ResponseTest
     @Test
     public void testFlushAfterFullContent() throws Exception
     {
-        Response response = newResponse();
+        Response response = getResponse();
         byte[] data = new byte[]{(byte)0xCA, (byte)0xFE};
         ServletOutputStream output = response.getOutputStream();
         response.setContentLength(data.length);
@@ -764,7 +809,6 @@ public class ResponseTest
         // Must not throw
         output.flush();
     }
-
 
     @Test
     public void testSetCookie() throws Exception
@@ -882,14 +926,13 @@ public class ResponseTest
         response.addSetCookie("name","value%=",null,null,-1,null,false,false,0);
         setCookie=fields.get("Set-Cookie");
         assertEquals("name=value%=",setCookie);
-
     }
 
-    private Response newResponse()
+    private Response getResponse()
     {
         _channel.recycle();
         _channel.getRequest().setMetaData(new MetaData.Request("GET",new HttpURI("/path/info"),HttpVersion.HTTP_1_0,new HttpFields()));
-        return new Response(_channel, _channel.getResponse().getHttpOutput());
+        return _channel.getResponse();
     }
 
     private static class TestSession extends HashedSession
