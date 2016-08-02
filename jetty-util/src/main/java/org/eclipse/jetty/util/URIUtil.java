@@ -34,10 +34,6 @@ import org.eclipse.jetty.util.log.Logger;
  * communications ability, but it does assist with query string
  * formatting.
  * </p>
- * <p>
- * UTF-8 encoding is used by default for % encoded characters. This
- * may be overridden with the org.eclipse.jetty.util.URI.charset system property.
- * </p>
  * 
  * @see UrlEncoded
  */
