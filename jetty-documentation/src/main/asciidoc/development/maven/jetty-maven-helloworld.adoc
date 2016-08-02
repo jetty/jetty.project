@@ -23,6 +23,13 @@ Based on the concept of a project object model (POM), Maven can manage a project
 It is an ideal tool to build a web application project, and such projects can use the link:#jetty-maven-plugin[jetty-maven-plugin] to easily run the web application and save time in development.
 You can also use Maven to build, test and run a project which embeds Jetty.
 
+____
+[NOTE]
+Use of Maven and the jetty-maven-plugin is *not* required.
+Using Maven for Jetty implementations is a popular choice, but users encouraged to manage their projects in whatever way suits their needs.
+Other popular tools include Ant and Gradle. 
+____
+
 First we'll have a look at a very simple HelloWorld java application that embeds Jetty, then a simple webapp which makes use of the link:#jetty-maven-plugin[jetty-maven-plugin] to speed up the development cycle.
 
 [[configuring-embedded-jetty-with-maven]]
@@ -30,7 +37,7 @@ First we'll have a look at a very simple HelloWorld java application that embeds
 
 To understand the basic operations of building and running against Jetty, first review:
 
-* link:#advanced-embedding[embedding with Jetty]
+* link:#advanced-embedding[Embedding with Jetty]
 * link:#jetty-helloworld[Jetty HelloWorld example]
 
 Maven uses convention over configuration, so it is best to use the project structure Maven recommends.
@@ -65,7 +72,7 @@ public class HelloWorld extends AbstractHandler
     public void handle(String target,
                        Request baseRequest,
                        HttpServletRequest request,
-                       HttpServletResponse response) 
+                       HttpServletResponse response)
         throws IOException, ServletException
     {
         response.setContentType("text/html;charset=utf-8");
@@ -78,23 +85,23 @@ public class HelloWorld extends AbstractHandler
     {
         Server server = new Server(8080);
         server.setHandler(new HelloWorld());
- 
+
         server.start();
         server.join();
     }
-}   
+}
 ----
 
 [[creating-embedded-pom-descriptor]]
 ===== Creating the POM Descriptor
 
 The `pom.xml` file declares the project name and its dependencies.
-Use an editor to create the file `pom.xml` with the following contents:
+Use an editor to create the file `pom.xml` in the `JettyMavenHelloWorld` directory with the following contents:
 
-[source, java, subs="{sub-order}"]
+[source, xml, subs="{sub-order}"]
 ----
-<project xmlns="http://maven.apache.org/POM/4.0.0" 
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
@@ -108,7 +115,7 @@ Use an editor to create the file `pom.xml` with the following contents:
       <!-- Adapt this to a version found on
            http://central.maven.org/maven2/org/eclipse/jetty/jetty-maven-plugin/
         -->
-      <jettyVersion>9.0.2.v20130417</jettyVersion>
+      <jettyVersion>9.3.9.v20160517</jettyVersion>
   </properties>
 
   <dependencies>
@@ -134,7 +141,7 @@ Use an editor to create the file `pom.xml` with the following contents:
       </plugin>
     </plugins>
   </build>
-</project>   
+</project>
 ----
 
 [[buildng-and-running-embedded-helloworld]]
@@ -144,36 +151,37 @@ You can now compile and execute the HelloWorld class by using these commands:
 
 [source, screen, subs="{sub-order}"]
 ....
-> mvn clean compile exec:java  
+> mvn clean compile exec:java
 ....
 
-You can point your browser to `http://localhost:8080` to see the hello world page.
+You can point your browser to `http://localhost:8080` to see the _Hello World_ page.
 You can observe what Maven is doing for you behind the scenes by using the `mvn dependency:tree` command, which reveals the transitive dependency resolved and downloaded as:
 
 [source, screen, subs="{sub-order}"]
 ....
 > mvn dependency:tree
 [INFO] Scanning for projects...
-[INFO] Searching repository for plugin with prefix: 'dependency'.
+...
+[INFO]
 [INFO] ------------------------------------------------------------------------
-[INFO] Building Jetty HelloWorld
-[INFO]    task-segment: [dependency:tree]
+[INFO] Building Jetty HelloWorld 0.1-SNAPSHOT
 [INFO] ------------------------------------------------------------------------
-[INFO] [dependency:tree {execution: default-cli}]
+[INFO]
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ hello-world ---
+...
 [INFO] org.example:hello-world:jar:0.1-SNAPSHOT
-[INFO] \- org.eclipse.jetty:jetty-server:jar:9.0.0:compile
-[INFO]    +- org.eclipse.jetty:javax.servlet:jar:3.0.0.v201112011016:compile
-[INFO]    +- org.eclipse.jetty:jetty-continuation:jar:9.0.0:compile
-[INFO]    \- org.eclipse.jetty:jetty-http:jar:9.0.0:compile
-[INFO]       \- org.eclipse.jetty:jetty-io:jar:9.0.0:compile
-[INFO]          \- org.eclipse.jetty:jetty-util:jar:9.0.0:compile
+[INFO] \- org.eclipse.jetty:jetty-server:jar:9.3.9.v20160517:compile
+[INFO]    +- javax.servlet:javax.servlet-api:jar:3.1.0:compile
+[INFO]    +- org.eclipse.jetty:jetty-http:jar:9.3.9.v20160517:compile
+[INFO]    |  \- org.eclipse.jetty:jetty-util:jar:9.3.9.v20160517:compile
+[INFO]    \- org.eclipse.jetty:jetty-io:jar:9.3.9.v20160517:compile
 [INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESSFUL
+[INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time: 4 seconds
-[INFO] Finished at: Thu Jan 24 16:19:08 EST 2013
-[INFO] Final Memory: 11M/68M
-[INFO] ------------------------------------------------------------------------      
+[INFO] Total time: 4.145 s
+[INFO] Finished at: 2016-08-01T13:46:42-04:00
+[INFO] Final Memory: 15M/209M
+[INFO] ------------------------------------------------------------------------
 ....
 
 [[developing-standard-webapp-with-jetty-and-maven]]
@@ -218,12 +226,12 @@ public class HelloServlet extends HttpServlet
 }
 ----
 
-You need to declare this servlet in the deployment descriptor, so edit the file `src/main/webapp/WEB-INF/web.xml` and add the following contents:
+You need to declare this servlet in the deployment descriptor, so create the file `src/main/webapp/WEB-INF/web.xml` and add the following contents:
 
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app 
+<web-app
    xmlns="http://xmlns.jcp.org/xml/ns/javaee"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
@@ -246,12 +254,12 @@ You need to declare this servlet in the deployment descriptor, so edit the file 
 ===== Creating the POM Descriptor
 
 The `pom.xml` file declares the project name and its dependencies.
-Use an editor to create the file `pom.xml` with the following contents, noting particularly the declaration of the link:#jetty-maven-plugin[jetty-maven-plugin]:
+Use an editor to create the file `pom.xml` with the following contents in the `JettyMavenHelloWarApp` directory, noting particularly the declaration of the link:#jetty-maven-plugin[jetty-maven-plugin]:
 
-[source, java, subs="{sub-order}"]
+[source, xml, subs="{sub-order}"]
 ----
-<project xmlns="http://maven.apache.org/POM/4.0.0" 
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
@@ -284,7 +292,7 @@ Use an editor to create the file `pom.xml` with the following contents, noting p
     </plugins>
   </build>
 
-</project>   
+</project>
 ----
 
 [[building-and-running-web-application]]
@@ -309,7 +317,7 @@ You can create a Web Application Archive (WAR) file from the project with the co
 
 [source, screen, subs="{sub-order}"]
 ....
-> mvn package    
+> mvn package
 ....
 
 The resulting war file is in the `target` directory and may be deployed on any standard servlet server, including link:#configuring-deployment[Jetty].
