@@ -204,7 +204,7 @@ public class MimeTypes
         try
         {
             String resourceName = "org/eclipse/jetty/http/mime.properties";
-            URL mimeTypesUrl = Loader.getResource(__dftMimeMap.getClass(), resourceName);
+            URL mimeTypesUrl = Loader.getResource(MimeTypes.class, resourceName);
             if (mimeTypesUrl == null)
             {
                 LOG.warn("Missing mime-type resource: {}", resourceName);
@@ -241,7 +241,7 @@ public class MimeTypes
         try
         {
             String resourceName = "org/eclipse/jetty/http/encoding.properties";
-            URL mimeTypesUrl = Loader.getResource(__dftMimeMap.getClass(), resourceName);
+            URL mimeTypesUrl = Loader.getResource(MimeTypes.class, resourceName);
             if (mimeTypesUrl == null)
             {
                 LOG.warn("Missing mime-type resource: {}", resourceName);
