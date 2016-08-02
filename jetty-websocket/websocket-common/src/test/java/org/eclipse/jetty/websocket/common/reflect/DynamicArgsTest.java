@@ -30,6 +30,36 @@ import org.junit.Test;
 
 public class DynamicArgsTest
 {
+    public static class A
+    {
+        private final String id;
+        
+        public A(String id)
+        {
+            this.id = id;
+        }
+        
+        public String toString()
+        {
+            return String.format("A:%s",id);
+        }
+    }
+    
+    public static class B
+    {
+        private final int val;
+        
+        public B(int val)
+        {
+            this.val = val;
+        }
+        
+        public String toString()
+        {
+            return String.format("B:%d",val);
+        }
+    }
+    
     @SuppressWarnings("unused")
     public static class SampleSignatures
     {
@@ -40,27 +70,50 @@ public class DynamicArgsTest
         
         public String sigStr(String str)
         {
-            return String.format("sigStr<%s>", str);
+            return String.format("sigStr<%s>", q(str));
         }
         
         public String sigStrFile(String str, File foo)
         {
-            return String.format("sigStrFile<%s,%s>", str, foo);
+            return String.format("sigStrFile<%s,%s>", q(str), q(foo));
         }
         
         public String sigFileStr(File foo, String str)
         {
-            return String.format("sigFileStr<%s,%s>", foo, str);
+            return String.format("sigFileStr<%s,%s>", q(foo), q(str));
         }
         
         public String sigFileStrFin(File foo, String str, @Name("fin") boolean fin)
         {
-            return String.format("sigFileStrFin<%s,%s,%b>", foo, str, fin);
+            return String.format("sigFileStrFin<%s,%s,%b>", q(foo), q(str), fin);
         }
         
         public String sigByteArray(byte[] buf, @Name("offset") int offset, @Name("length") int len)
         {
             return String.format("sigByteArray<%s,%d,%d>", buf == null ? "<null>" : ("[" + buf.length + "]"), offset, len);
+        }
+        
+        public String sigObjectArgs(A a, B b)
+        {
+            return String.format("sigObjectArgs<%s,%s>", q(a), q(b));
+        }
+    
+        public String sigObjectA(A a)
+        {
+            return String.format("sigObjectA<%s>", q(a));
+        }
+    
+        public String sigObjectB(B b)
+        {
+            return String.format("sigObjectB<%s>", q(b));
+        }
+        
+        private String q(Object obj)
+        {
+            if (obj == null)
+                return "<null>";
+            else
+                return obj.toString();
         }
     }
     
@@ -183,5 +236,104 @@ public class DynamicArgsTest
         // Test with empty potential args
         result = (String) dynamicArgs.invoke(ssigs, null, 123, 456);
         assertThat("result", result, is("sigByteArray<<null>,123,456>"));
+    }
+    
+    /**
+     * Test of calling a method with 2 custom objects
+     *
+     * @throws Exception on error
+     */
+    @Test
+    public void testObjects_A_B() throws Exception
+    {
+        final Arg ARG_A = new Arg(A.class);
+        final Arg ARG_B = new Arg(B.class);
+        
+        DynamicArgs.Builder dab = new DynamicArgs.Builder();
+        dab.addSignature(ARG_A, ARG_B);
+        
+        SampleSignatures ssigs = new SampleSignatures();
+        Method m = findMethodByName(ssigs, "sigObjectArgs");
+        DynamicArgs dynamicArgs = dab.build(m, ARG_A, ARG_B);
+        assertThat("DynamicArgs", dynamicArgs, notNullValue());
+        
+        // Test with potential args
+        A a = new A("foo");
+        B b = new B(444);
+        String result = (String) dynamicArgs.invoke(ssigs, a, b);
+        assertThat("result", result, is("sigObjectArgs<A:foo,B:444>"));
+        
+        // Test with null potential args
+        result = (String) dynamicArgs.invoke(ssigs, null, b);
+        assertThat("result", result, is("sigObjectArgs<<null>,B:444>"));
+        
+        result = (String) dynamicArgs.invoke(ssigs, a, null);
+        assertThat("result", result, is("sigObjectArgs<A:foo,<null>>"));
+    }
+    
+    /**
+     * Test of calling a method with 2 custom objects, but the method only has 1 declared
+     *
+     * @throws Exception on error
+     */
+    @Test
+    public void testObjects_A() throws Exception
+    {
+        final Arg ARG_A = new Arg(A.class);
+        final Arg ARG_B = new Arg(B.class);
+        
+        DynamicArgs.Builder dab = new DynamicArgs.Builder();
+        dab.addSignature(ARG_A, ARG_B);
+        
+        SampleSignatures ssigs = new SampleSignatures();
+        Method m = findMethodByName(ssigs, "sigObjectA");
+        DynamicArgs dynamicArgs = dab.build(m, ARG_A, ARG_B);
+        assertThat("DynamicArgs", dynamicArgs, notNullValue());
+        
+        // Test with potential args
+        A a = new A("foo");
+        B b = new B(555);
+        String result = (String) dynamicArgs.invoke(ssigs, a, b);
+        assertThat("result", result, is("sigObjectA<A:foo>"));
+        
+        // Test with null potential args
+        result = (String) dynamicArgs.invoke(ssigs, null, b);
+        assertThat("result", result, is("sigObjectA<<null>>"));
+        
+        result = (String) dynamicArgs.invoke(ssigs, a, null);
+        assertThat("result", result, is("sigObjectA<A:foo>"));
+    }
+    
+    /**
+     * Test of calling a method with 2 custom objects, but the method only has 1 declared
+     *
+     * @throws Exception on error
+     */
+    @Test
+    public void testObjects_B() throws Exception
+    {
+        final Arg ARG_A = new Arg(A.class);
+        final Arg ARG_B = new Arg(B.class);
+        
+        DynamicArgs.Builder dab = new DynamicArgs.Builder();
+        dab.addSignature(ARG_A, ARG_B);
+        
+        SampleSignatures ssigs = new SampleSignatures();
+        Method m = findMethodByName(ssigs, "sigObjectB");
+        DynamicArgs dynamicArgs = dab.build(m, ARG_A, ARG_B);
+        assertThat("DynamicArgs", dynamicArgs, notNullValue());
+        
+        // Test with potential args
+        A a = new A("foo");
+        B b = new B(666);
+        String result = (String) dynamicArgs.invoke(ssigs, a, b);
+        assertThat("result", result, is("sigObjectB<B:666>"));
+        
+        // Test with null potential args
+        result = (String) dynamicArgs.invoke(ssigs, null, b);
+        assertThat("result", result, is("sigObjectB<B:666>"));
+        
+        result = (String) dynamicArgs.invoke(ssigs, a, null);
+        assertThat("result", result, is("sigObjectB<<null>>"));
     }
 }

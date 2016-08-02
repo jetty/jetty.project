@@ -40,13 +40,13 @@ public class OnReaderFunction implements Function<Reader, Void>
 {
     private static final Logger LOG = Log.getLogger(OnReaderFunction.class);
     private static final DynamicArgs.Builder ARGBUILDER;
-    private static final Arg ARG_SESSION = new Arg(1, Session.class);
-    private static final Arg ARG_STREAM = new Arg(2, Reader.class).required();
+    private static final Arg ARG_SESSION = new Arg(Session.class);
+    private static final Arg ARG_STREAM = new Arg(Reader.class).required();
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(ARG_STREAM, ARG_SESSION);
+        ARGBUILDER.addSignature(ARG_SESSION, ARG_STREAM);
     }
 
     public static DynamicArgs.Builder getDynamicArgsBuilder()
