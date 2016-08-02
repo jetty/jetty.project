@@ -27,7 +27,6 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.reflect.Arg;
 import org.eclipse.jetty.websocket.common.reflect.DynamicArgs;
-import org.eclipse.jetty.websocket.common.reflect.ExactSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 /**
@@ -37,13 +36,12 @@ public class OnErrorFunction implements Function<Throwable, Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
     private static final Arg ARG_SESSION = new Arg(1, Session.class);
-    private static final Arg ARG_CAUSE = new Arg(2, Throwable.class);
+    private static final Arg ARG_CAUSE = new Arg(2, Throwable.class).required();
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(ARG_CAUSE));
-        ARGBUILDER.addSignature(new ExactSignature(ARG_SESSION, ARG_CAUSE));
+        ARGBUILDER.addSignature(ARG_SESSION, ARG_CAUSE);
     }
 
     private final Session session;

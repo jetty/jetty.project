@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import java.net.URISyntaxException;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 import java.util.Arrays;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
@@ -39,10 +42,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-
 public class MessageOutputStreamTest
 {
     private static final Logger LOG = Log.getLogger(MessageOutputStreamTest.class);
@@ -59,16 +58,19 @@ public class MessageOutputStreamTest
     private WebSocketPolicy policy;
     private TrackingSocket remoteSocket;
     private LocalWebSocketSession session;
-
+    private WebSocketSession remoteSession;
+    
     @After
     public void closeSession() throws Exception
     {
         session.close();
         session.stop();
+        remoteSession.close();
+        remoteSession.stop();
     }
 
     @Before
-    public void setupSession() throws URISyntaxException
+    public void setupSession() throws Exception
     {
         policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
@@ -79,8 +81,9 @@ public class MessageOutputStreamTest
 
         // remote socket
         remoteSocket = new TrackingSocket("remote");
-        WebSocketSession remoteSession = new LocalWebSocketSession(containerScope,testname,remoteSocket);
+        remoteSession = new LocalWebSocketSession(containerScope,testname,remoteSocket);
         OutgoingFrames socketPipe = FramePipes.to(remoteSession);
+        remoteSession.start();
         remoteSession.open();
 
         // Local Session

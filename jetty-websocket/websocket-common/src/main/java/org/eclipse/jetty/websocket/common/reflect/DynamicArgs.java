@@ -123,9 +123,9 @@ public class DynamicArgs
             return null;
         }
 
-        public Builder addSignature(Signature sig)
+        public Builder addSignature(Arg... args)
         {
-            signatures.add(sig);
+            signatures.add(new UnorderedSignature(args));
             return this;
         }
 

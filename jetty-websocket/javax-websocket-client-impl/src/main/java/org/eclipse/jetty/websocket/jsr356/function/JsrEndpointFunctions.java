@@ -47,7 +47,6 @@ import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.function.CommonEndpointFunctions;
 import org.eclipse.jetty.websocket.common.reflect.Arg;
 import org.eclipse.jetty.websocket.common.reflect.DynamicArgs;
-import org.eclipse.jetty.websocket.common.reflect.UnorderedSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
@@ -420,7 +419,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
             }
         }
 
-        argBuilder.addSignature(new UnorderedSignature(callArgs));
+        argBuilder.addSignature(callArgs);
 
         return argBuilder;
     }

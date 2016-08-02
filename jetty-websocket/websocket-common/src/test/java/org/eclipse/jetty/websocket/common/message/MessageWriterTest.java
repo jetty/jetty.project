@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.common.message;
 import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
@@ -65,10 +64,11 @@ public class MessageWriterTest
     {
         session.close();
         remoteSession.close();
+        remoteSession.stop();
     }
 
     @Before
-    public void setupSession() throws URISyntaxException
+    public void setupSession() throws Exception
     {
         policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
@@ -83,6 +83,7 @@ public class MessageWriterTest
         LocalWebSocketConnection remoteConnection = new LocalWebSocketConnection(bufferPool);
         remoteSession = new WebSocketSession(containerScope,remoteURI,remoteSocket,remoteConnection);
         OutgoingFrames socketPipe = FramePipes.to(remoteSession);
+        remoteSession.start();
         remoteSession.open();
 
         // Local Session

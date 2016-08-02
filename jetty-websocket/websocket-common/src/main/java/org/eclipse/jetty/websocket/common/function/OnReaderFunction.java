@@ -20,15 +20,17 @@ package org.eclipse.jetty.websocket.common.function;
 
 import java.io.Reader;
 import java.lang.reflect.Method;
+import java.util.Objects;
 import java.util.function.Function;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.reflect.Arg;
 import org.eclipse.jetty.websocket.common.reflect.DynamicArgs;
-import org.eclipse.jetty.websocket.common.reflect.ExactSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 /**
@@ -36,15 +38,15 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
  */
 public class OnReaderFunction implements Function<Reader, Void>
 {
+    private static final Logger LOG = Log.getLogger(OnReaderFunction.class);
     private static final DynamicArgs.Builder ARGBUILDER;
     private static final Arg ARG_SESSION = new Arg(1, Session.class);
-    private static final Arg ARG_STREAM = new Arg(2, Reader.class);
+    private static final Arg ARG_STREAM = new Arg(2, Reader.class).required();
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(ARG_STREAM));
-        ARGBUILDER.addSignature(new ExactSignature(ARG_SESSION, ARG_STREAM));
+        ARGBUILDER.addSignature(ARG_STREAM, ARG_SESSION);
     }
 
     public static DynamicArgs.Builder getDynamicArgsBuilder()
@@ -82,6 +84,11 @@ public class OnReaderFunction implements Function<Reader, Void>
     @Override
     public Void apply(Reader stream)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("apply({}, {}, {})", endpoint, session, stream);
+    
+        Objects.requireNonNull(stream, "Reader cannot be null");
+        
         this.callable.invoke(endpoint, session, stream);
         return null;
     }
