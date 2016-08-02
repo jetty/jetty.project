@@ -23,8 +23,12 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 public class ReaderMessageSink implements MessageSink
 {
+    private static final Logger LOG = Log.getLogger(ReaderMessageSink.class);
     private final Executor executor;
     private final Function<Reader, Void> onStreamFunction;
     private MessageReader stream;
@@ -54,6 +58,8 @@ public class ReaderMessageSink implements MessageSink
                 executor.execute(() -> {
                     // processing of errors is the responsibility
                     // of the stream function
+                    if(LOG.isDebugEnabled())
+                        LOG.debug("onStreamFunction.apply({})", stream);
                     onStreamFunction.apply(stream);
                 });
             }
@@ -62,7 +68,11 @@ public class ReaderMessageSink implements MessageSink
         {
             if (fin)
             {
+                if(LOG.isDebugEnabled())
+                    LOG.debug("stream.awaitClose() - {}", stream);
                 stream.awaitClose();
+                if(LOG.isDebugEnabled())
+                    LOG.debug("stream recycled - {}", stream);
                 stream = null;
             }
         }

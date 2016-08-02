@@ -28,7 +28,6 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.reflect.Arg;
 import org.eclipse.jetty.websocket.common.reflect.DynamicArgs;
-import org.eclipse.jetty.websocket.common.reflect.ExactSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 /**
@@ -44,10 +43,7 @@ public class OnCloseFunction implements Function<CloseInfo, Void>
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature());
-        ARGBUILDER.addSignature(new ExactSignature(ARG_SESSION));
-        ARGBUILDER.addSignature(new ExactSignature(ARG_STATUS_CODE, ARG_REASON));
-        ARGBUILDER.addSignature(new ExactSignature(ARG_SESSION, ARG_STATUS_CODE, ARG_REASON));
+        ARGBUILDER.addSignature(ARG_SESSION, ARG_STATUS_CODE, ARG_REASON);
     }
 
     private final Session session;

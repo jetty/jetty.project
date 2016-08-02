@@ -27,7 +27,6 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.reflect.Arg;
 import org.eclipse.jetty.websocket.common.reflect.DynamicArgs;
-import org.eclipse.jetty.websocket.common.reflect.ExactSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 /**
@@ -37,17 +36,14 @@ public class OnByteArrayFunction implements Function<byte[], Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
     private static final Arg ARG_SESSION = new Arg(1, Session.class);
-    private static final Arg ARG_BUFFER = new Arg(2, byte[].class);
+    private static final Arg ARG_BUFFER = new Arg(2, byte[].class).required();
     private static final Arg ARG_OFFSET = new Arg(3, int.class);
     private static final Arg ARG_LENGTH = new Arg(4, int.class);
 
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(ARG_BUFFER));
-        ARGBUILDER.addSignature(new ExactSignature(ARG_BUFFER, ARG_OFFSET, ARG_LENGTH));
-        ARGBUILDER.addSignature(new ExactSignature(ARG_SESSION, ARG_BUFFER));
-        ARGBUILDER.addSignature(new ExactSignature(ARG_SESSION, ARG_BUFFER, ARG_OFFSET, ARG_LENGTH));
+        ARGBUILDER.addSignature(ARG_SESSION, ARG_BUFFER, ARG_OFFSET, ARG_LENGTH);
     }
 
     public static DynamicArgs.Builder getDynamicArgsBuilder()

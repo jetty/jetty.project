@@ -27,7 +27,6 @@ import javax.websocket.Session;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.reflect.Arg;
 import org.eclipse.jetty.websocket.common.reflect.DynamicArgs;
-import org.eclipse.jetty.websocket.common.reflect.UnorderedSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 /**
@@ -80,7 +79,7 @@ public class JsrOnByteArrayFunction implements Function<byte[], Void>
             callArgs[idx++] = arg;
         }
 
-        argBuilder.addSignature(new UnorderedSignature(callArgs));
+        argBuilder.addSignature(callArgs);
 
         // Attempt to build callable
         this.callable = argBuilder.build(method);
