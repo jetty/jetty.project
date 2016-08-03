@@ -18,14 +18,17 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import javax.websocket.OnClose;
-
 /**
  * Callable for {@link javax.websocket.OnClose} annotated methods
  */
 @Deprecated
 public class OnCloseCallable extends JsrCallable
 {
+    @Override
+    public void setDecodingType(Class<?> decodingType)
+    {
+        
+    }
     /*private int idxCloseReason = -1;
 
     public OnCloseCallable(Class<?> pojo, Method method)

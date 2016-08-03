@@ -246,7 +246,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
 //        synchronized (endpointClientMetadataCache)
 //        {
-//            metadata = endpointClientMetadataCache.get(endpoint);
+//
 //
 //            if (metadata != null)
 //            {
@@ -282,7 +282,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 //            endpointClientMetadataCache.put(endpoint,metadata);
 //            return metadata;
 //        }
-        return metadata;
+        return null;
     }
 
     public DecoderFactory getDecoderFactory()

@@ -32,6 +32,7 @@ import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.eclipse.jetty.websocket.common.test.Fuzzer.SendMode;
 import org.junit.Test;
 
+@SuppressWarnings("Duplicates")
 public class TestABCase1 extends AbstractABCase
 {
     /**

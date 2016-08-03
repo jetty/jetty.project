@@ -217,13 +217,9 @@ public class DynamicArgsTest
         DynamicArgs.Builder dab = new DynamicArgs.Builder();
         dab.addSignature(ARG_BYTEARRAY, ARG_OFFSET, ARG_LENGTH);
         
-        final Arg CALL_BYTEARRAY = new Arg(byte[].class);
-        final Arg CALL_OFFSET = new Arg(int.class).setTag("offset");
-        final Arg CALL_LENGTH = new Arg(int.class).setTag("length");
-        
         SampleSignatures ssigs = new SampleSignatures();
         Method m = findMethodByName(ssigs, "sigByteArray");
-        DynamicArgs dynamicArgs = dab.build(m, CALL_BYTEARRAY, CALL_OFFSET, CALL_LENGTH);
+        DynamicArgs dynamicArgs = dab.build(m, ARG_BYTEARRAY, ARG_OFFSET, ARG_LENGTH);
         assertThat("DynamicArgs", dynamicArgs, notNullValue());
         
         // Test with potential args

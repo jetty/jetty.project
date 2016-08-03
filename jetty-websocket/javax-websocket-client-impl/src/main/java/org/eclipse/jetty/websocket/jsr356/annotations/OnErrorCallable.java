@@ -26,6 +26,11 @@ import javax.websocket.OnError;
 @Deprecated
 public class OnErrorCallable extends JsrCallable
 {
+    @Override
+    public void setDecodingType(Class<?> decodingType)
+    {
+        
+    }
 /*    private int idxThrowable = -1;
 
     public OnErrorCallable(Class<?> pojo, Method method)

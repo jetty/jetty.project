@@ -21,6 +21,12 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 @Deprecated
 public class OnMessageCallable extends JsrCallable
 {
+    @Override
+    public void setDecodingType(Class<?> decodingType)
+    {
+        
+    }
+    
 /*    protected final Class<?> returnType;
     protected Encoder returnEncoder;
     protected Class<?> decodingType;
