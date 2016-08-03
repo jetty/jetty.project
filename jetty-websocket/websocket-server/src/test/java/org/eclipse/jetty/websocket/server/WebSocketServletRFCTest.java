@@ -209,24 +209,21 @@ public class WebSocketServletRFCTest
     @Test
     public void testInternalError() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
-        try
+        try (BlockheadClient client = new BlockheadClient(server.getServerUri());
+             StacklessLogging stackless=new StacklessLogging(RFCSocket.class))
         {
             client.connect();
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
-            try (StacklessLogging context = new StacklessLogging(RFCSocket.class))
-            {
-                // Generate text frame
-                client.write(new TextFrame().setPayload("CRASH"));
+            // Generate text frame
+            client.write(new TextFrame().setPayload("CRASH"));
 
-                // Read frame (hopefully close frame)
-                EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
-                Frame cf = frames.poll();
-                CloseInfo close = new CloseInfo(cf);
-                Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
-            }
+            // Read frame (hopefully close frame)
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
+            Frame cf = frames.poll();
+            CloseInfo close = new CloseInfo(cf);
+            Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
         }
         finally
         {
