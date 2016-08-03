@@ -41,7 +41,7 @@ public class OnTextFunction implements Function<String, Void>
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(ARG_TEXT, ARG_SESSION);
+        ARGBUILDER.addSignature(ARG_SESSION, ARG_TEXT);
     }
 
     public static DynamicArgs.Builder getDynamicArgsBuilder()
