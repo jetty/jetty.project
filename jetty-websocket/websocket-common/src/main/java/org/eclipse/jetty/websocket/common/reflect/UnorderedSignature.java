@@ -31,6 +31,26 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 class UnorderedSignature implements Signature, Predicate<Method>
 {
+    private class SelectedArg extends Arg
+    {
+        private boolean selected = false;
+        
+        public SelectedArg(Arg arg)
+        {
+            super(arg);
+        }
+    
+        public boolean isSelected()
+        {
+            return selected;
+        }
+    
+        public void selected()
+        {
+            this.selected = true;
+        }
+    }
+    
     private final static Logger LOG = Log.getLogger(UnorderedSignature.class);
     private final Arg[] params;
     
@@ -118,6 +138,13 @@ class UnorderedSignature implements Signature, Predicate<Method>
                 methodArgs[pi] = argId.apply(methodArgs[pi]);
         }
         
+        // Selected Args
+        SelectedArg selectedArgs[] = new SelectedArg[callArgs.length];
+        for (int ci = 0; ci < selectedArgs.length; ci++)
+        {
+            selectedArgs[ci] = new SelectedArg(callArgs[ci]);
+        }
+        
         // Iterate through mappings, looking for a callArg that fits it
         for (int ai = 0; ai < argMappingLength; ai++)
         {
@@ -126,8 +153,9 @@ class UnorderedSignature implements Signature, Predicate<Method>
             // Find reference to argument in callArgs
             for (int ci = 0; ci < callArgsLen; ci++)
             {
-                if (methodArgs[ai].matches(callArgs[ci]))
+                if (!selectedArgs[ci].selected && methodArgs[ai].matches(selectedArgs[ci]))
                 {
+                    selectedArgs[ci].selected();
                     ref = ci;
                     break;
                 }
@@ -171,32 +199,20 @@ class UnorderedSignature implements Signature, Predicate<Method>
         // Ensure that required arguments are present in the mapping
         for (int ci = 0; ci < callArgsLen; ci++)
         {
-            if (callArgs[ci].isRequired())
+            if (selectedArgs[ci].isRequired() && !selectedArgs[ci].isSelected())
             {
-                boolean found = false;
-                for (int ai = 0; ai < argMappingLength; ai++)
+                StringBuilder err = new StringBuilder();
+                err.append("Unable to find required type [");
+                err.append(callArgs[ci].getType());
+                err.append("] in method ");
+                ReflectUtils.append(err, method);
+                
+                if (throwOnFailure)
+                    throw new DynamicArgsException(err.toString());
+                else
                 {
-                    if (argMapping[ai] == ci)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found)
-                {
-                    StringBuilder err = new StringBuilder();
-                    err.append("Unable to find required type [");
-                    err.append(callArgs[ci].getType());
-                    err.append("] in method ");
-                    ReflectUtils.append(err, method);
-                    
-                    if (throwOnFailure)
-                        throw new DynamicArgsException(err.toString());
-                    else
-                    {
-                        LOG.debug("{}", err.toString());
-                        return null;
-                    }
+                    LOG.debug("{}", err.toString());
+                    return null;
                 }
             }
         }

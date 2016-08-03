@@ -49,7 +49,16 @@ public class Arg
         this.index = idx;
         this.type = type;
     }
-
+    
+    public Arg(Arg arg)
+    {
+        this.method = arg.method;
+        this.index = arg.index;
+        this.type = arg.type;
+        this.tag = arg.tag;
+        this.required = arg.required;
+    }
+    
     public <T extends Annotation> T getAnnotation(Class<T> annoClass)
     {
         if (method == null)

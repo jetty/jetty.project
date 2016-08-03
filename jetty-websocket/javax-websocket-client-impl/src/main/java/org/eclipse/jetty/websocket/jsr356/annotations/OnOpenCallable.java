@@ -18,14 +18,17 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import javax.websocket.OnOpen;
-
 /**
  * Callable for {@link javax.websocket.OnOpen} annotated methods
  */
 @Deprecated
 public class OnOpenCallable extends JsrCallable
 {
+    @Override
+    public void setDecodingType(Class<?> decodingType)
+    {
+        
+    }
 /*    private int idxEndpointConfig = -1;
 
     public OnOpenCallable(Class<?> pojo, Method method)

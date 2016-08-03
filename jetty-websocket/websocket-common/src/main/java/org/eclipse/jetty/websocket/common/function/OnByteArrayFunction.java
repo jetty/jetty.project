@@ -35,10 +35,10 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 public class OnByteArrayFunction implements Function<byte[], Void>
 {
     private static final DynamicArgs.Builder ARGBUILDER;
-    private static final Arg ARG_SESSION = new Arg(1, Session.class);
-    private static final Arg ARG_BUFFER = new Arg(2, byte[].class).required();
-    private static final Arg ARG_OFFSET = new Arg(3, int.class);
-    private static final Arg ARG_LENGTH = new Arg(4, int.class);
+    private static final Arg ARG_SESSION = new Arg(Session.class);
+    private static final Arg ARG_BUFFER = new Arg(byte[].class).required();
+    private static final Arg ARG_OFFSET = new Arg(int.class);
+    private static final Arg ARG_LENGTH = new Arg(int.class);
 
     static
     {
