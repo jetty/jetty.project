@@ -150,6 +150,11 @@ public class TestJettyOSGiBootWebAppAsService
             String content = new String(response.getContent());
             assertTrue(content.indexOf("<h1>Test OSGi WebAppA</h1>") != -1);
 
+            response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_HTTP_PORT + "/acme/mime");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            content = new String(response.getContent());
+            assertTrue(content.indexOf("MIMETYPE=application/gzip") != -1);
+
             response = client.GET("http://127.0.0.1:" + "9999" + "/acme/index.html");
             assertEquals(HttpStatus.OK_200, response.getStatus());
             content = new String(response.getContent());
