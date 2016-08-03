@@ -72,11 +72,11 @@
  org.xml.sax.helpers,
  *
                         </Import-Package>
+                        <Export-Package>com.acme.osgi</Export-Package>
                         <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
                     </instructions>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-  
 </project>
