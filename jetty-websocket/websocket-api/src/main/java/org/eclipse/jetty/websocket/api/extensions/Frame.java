@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.api.extensions;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.extensions.Frame.Type;
+
 /**
  * An immutable websocket frame.
  */
@@ -93,7 +95,10 @@ public interface Frame
      */
     public int getPayloadLength();
 
-    public Type getType();
+    public default Type getType()
+    {
+        return Type.from(getOpCode());
+    }
 
     public boolean hasPayload();
 

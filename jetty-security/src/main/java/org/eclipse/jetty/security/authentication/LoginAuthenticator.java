@@ -48,14 +48,6 @@ public abstract class LoginAuthenticator implements Authenticator
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public void prepareRequest(ServletRequest request)
-    {
-        //empty implementation as the default
-    }
-
-
-    /* ------------------------------------------------------------ */
     public UserIdentity login(String username, Object password, ServletRequest request)
     {
         UserIdentity user = _loginService.login(username,password, request);

@@ -223,17 +223,6 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
 
    
     /* ------------------------------------------------------------ */
-    /** 
-     * @see org.eclipse.jetty.security.LoginService#logout(org.eclipse.jetty.server.UserIdentity)
-     */
-    @Override
-    public void logout(UserIdentity user)
-    {
-        //Override in subclasses
-
-    }
-
-    /* ------------------------------------------------------------ */
     public boolean isFullValidate()
     {
         return _fullValidate;

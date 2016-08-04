@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 
@@ -41,17 +42,28 @@ public interface Trie<V>
      * @param v The value and key
      * @return True if the Trie had capacity to add the field.
      */
-    public boolean put(V v);
+    public default boolean put(V v)
+    {
+        return put(v.toString(),v);
+    }
 
     /* ------------------------------------------------------------ */
-    public V remove(String s);
+    public default V remove(String s)
+    {
+        V o=get(s);
+        put(s,null);
+        return o;
+    }
 
     /* ------------------------------------------------------------ */
     /** Get and exact match from a String key
      * @param s The key
      * @return the value for the string key
      */
-    public V get(String s);
+    public default V get(String s)
+    {
+        return get(s,0,s.length());
+    }
 
     /* ------------------------------------------------------------ */
     /** Get and exact match from a String key
@@ -67,7 +79,10 @@ public interface Trie<V>
      * @param b The buffer
      * @return The value or null if not found
      */
-    public V get(ByteBuffer b);
+    public default V get(ByteBuffer b)
+    {
+        return get(b,0,b.remaining());
+    }
 
     /* ------------------------------------------------------------ */
     /** Get and exact match from a segment of a ByteBuufer as key
@@ -83,7 +98,10 @@ public interface Trie<V>
      * @param s The string
      * @return The value or null if not found
      */
-    public V getBest(String s);
+    public default V getBest(String s)
+    {
+        return getBest(s,0,s.length());
+    }
     
     /* ------------------------------------------------------------ */
     /** Get the best match from key in a String.
@@ -102,7 +120,10 @@ public interface Trie<V>
      * @param len the length of the key
      * @return The value or null if not found
      */
-    public V getBest(byte[] b,int offset,int len);
+    public default V getBest(byte[] b,int offset,int len)
+    {
+        return getBest(new String(b,offset,len,StandardCharsets.ISO_8859_1));
+    }
 
     /* ------------------------------------------------------------ */
     /** Get the best match from key in a byte buffer.
