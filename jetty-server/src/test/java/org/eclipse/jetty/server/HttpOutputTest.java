@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
@@ -139,6 +140,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     @Test
@@ -162,6 +164,7 @@ public class HttpOutputTest
         
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("Transfer-Encoding: chunked"));
+        assertThat(response, containsString("1\tThis is a big file"));
         assertThat(response,containsString("400\tThis is a big file"));
         assertThat(response,containsString("\r\n0\r\n"));
     }
@@ -184,7 +187,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     @Test
@@ -195,7 +198,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("Content-Length"));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     @Test
@@ -206,7 +209,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("Content-Length"));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     
@@ -254,6 +257,8 @@ public class HttpOutputTest
         
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("Transfer-Encoding: chunked"));
+        assertThat(response, containsString("1\tThis is a big file"));
+        assertThat(response, containsString("400\tThis is a big file"));
         assertThat(response,containsString("\r\n0\r\n"));
     }
 
@@ -268,7 +273,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
 
     @Test
@@ -282,7 +287,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     @Test
@@ -296,7 +301,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     @Test
@@ -310,7 +315,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
 
     @Test
@@ -324,7 +329,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("Content-Length"));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
 
     @Test
@@ -338,7 +343,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("Content-Length"));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     @Test
@@ -352,7 +357,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("Content-Length"));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
 
     @Test
@@ -366,7 +371,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("Content-Length"));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
 
     
@@ -397,7 +402,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
 
     @Test
@@ -411,7 +416,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     @Test
@@ -425,7 +430,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
 
 
@@ -441,7 +446,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     @Test
@@ -456,7 +461,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     @Test
@@ -471,7 +476,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     @Test
@@ -486,7 +491,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
 
     
@@ -520,7 +525,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
 
     @Test
@@ -535,7 +540,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     @Test
@@ -550,7 +555,7 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,containsString("400\tThis is a big file"));
+        assertThat(response, endsWith(toUTF8String(big)));
     }
     
     @Test
@@ -567,7 +572,8 @@ public class HttpOutputTest
         assertThat(_handler._owp.get()-start,Matchers.greaterThan(0));
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
-        assertThat(response,Matchers.not(containsString("400\tThis is a big file")));
+        assertThat(response, Matchers.not(containsString("1\tThis is a big file")));
+        assertThat(response, Matchers.not(containsString("400\tThis is a big file")));
     }
 
     @Test
@@ -645,6 +651,12 @@ public class HttpOutputTest
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
         assertThat(response,containsString("400\tTHIS IS A BIGGER FILE"));
+    }
+
+    private static String toUTF8String(Resource resource)
+            throws IOException
+    {
+        return BufferUtil.toUTF8String(BufferUtil.toBuffer(resource, false));
     }
     
     interface ChainedInterceptor extends HttpOutput.Interceptor 
