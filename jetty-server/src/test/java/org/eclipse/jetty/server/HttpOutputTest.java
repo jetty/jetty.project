@@ -792,6 +792,8 @@ public class HttpOutputTest
                     final AsyncContext async = request.startAsync();
                     out.setWriteListener(new WriteListener()
                     {
+                        private boolean isFirstWrite = true;
+
                         @Override
                         public void onWritePossible() throws IOException
                         {
@@ -799,6 +801,7 @@ public class HttpOutputTest
                             
                             while (out.isReady())
                             {
+                                Assert.assertTrue(isFirstWrite || !_byteBuffer.hasRemaining());
                                 Assert.assertTrue(out.isReady());
                                 if(BufferUtil.isEmpty(_content))
                                 {
@@ -810,6 +813,7 @@ public class HttpOutputTest
                                 BufferUtil.put(_content,_byteBuffer);
                                 BufferUtil.flipToFlush(_byteBuffer,0);
                                 out.write(_byteBuffer);
+                                isFirstWrite = false;
                             }
                         }
 

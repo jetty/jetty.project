@@ -1075,7 +1075,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             else
             {
                 _slice=_buffer.duplicate();
-                _buffer.position(_buffer.limit());
             }
         }
 
