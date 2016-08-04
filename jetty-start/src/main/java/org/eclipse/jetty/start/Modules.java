@@ -271,9 +271,13 @@ public class Modules implements Iterable<Module>
         }
       
         // Enable the  module
-        if (module.enable(enabledFrom,transitive))
+        if (module.isEnabled() && !transitive)
         {
-            StartLog.debug("enabled %s",module.getName());
+            StartLog.info("Module %s has already been enabled.", module.getName());
+        }
+        else if (module.enable(enabledFrom,transitive))
+        {
+            StartLog.debug("Enabled %s",module.getName());
             newlyEnabled.add(module.getName());
             
             // Expand module properties
@@ -290,8 +294,7 @@ public class Modules implements Iterable<Module>
         }
         else if (module.isTransitive() && module.hasIniTemplate())
             newlyEnabled.add(module.getName());
-        
-        
+
         // Process module dependencies (always processed as may be dynamic)
         for(String dependsOn:module.getDepends())
         {
