@@ -1,7 +1,9 @@
 jetty-9.3.12-SNAPSHOT
 
 jetty-9.3.11.v20160721 - 21 July 2016
+ + 230 customize Content-Type in ErrorHandler's default error page 
  + 592 Support no-value Host header in HttpParser
+ + 631 SLOTH protection
  + 643 NPE in passing websocket client test
  + 649 LDAPLoginModule should disallow blank username and password
  + 658 Add memcached option for gcloud-sessions in jetty-9.3
@@ -11,6 +13,7 @@ jetty-9.3.11.v20160721 - 21 July 2016
    outside of ${jetty.base}
  + 668 Introduce optional `jetty.deploy.defaultsDescriptorPath` for
    jetty-deploy defaults descriptor outside of ${jetty.home}
+ + 669 Support UNC paths in PathResource
  + 671 Incorrect ALPN default protocol
  + 672 Allow logging configuration announcement to be programmatically disabled
  + 673 ClasspathPattern needs a match all pattern
@@ -35,15 +38,18 @@ jetty-9.3.11.v20160721 - 21 July 2016
  + 701 Document CachingWebAppClassLoader
  + 706 org.apache.jasper.compiler.disablejsr199 is no longer present in Jetty
    9.3+
- + 708 SslContextFactory: newSslServerSocket/newSslSocket are not completely
-   customized
+ + 708 SslContextFactory: newSslServerSocket/newSslSocket customization
  + 717 GzipHandler.minGzipSize still compresses small responses
  + 718 Document HttpClient transports
  + 720 asciiToLowerCase throws NullPointerException
  + 721 HTTP Response header value encoding is invalid for RFC7230
  + 723 Improve bad/missing mime.properties reporting
+ + 726 Http2 Client parse error
  + 730 "Slow" client causes IllegalStateException
+ + 733 Allow setCharacterEncoding after getOutputStream
  + 739 Illegal WindowUpdate frame with delta=0
+ + 742 Fixed link to webtide.com
+ + 745 Removed README.txt
  + 747 Update documentation to reflect TLS and SSL support
  + 751 Remove usages of ArrayQueue
  + 752 Implement support for HTTP2 SETTINGS_MAX_HEADER_LIST_SIZE
@@ -61,6 +67,7 @@ jetty-9.2.18.v20160721 - 21 July 2016
 jetty-9.3.11.M0 - 22 June 2016
  + 425 Incorrect @ServerEndpoint Encoder/Decoder lifecycle
  + 624 AsyncContext.onCompleted called twice
+ + 645 jetty-requestlog.xml default log path
  + 654 Jetty 9.3 ServletContext.getResourceAsStream("/") returns an unusable
    stream
  + 659 CONNECT request fails spuriously
