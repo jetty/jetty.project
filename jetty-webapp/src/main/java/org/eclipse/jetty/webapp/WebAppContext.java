@@ -139,7 +139,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     // with a more automatic distributed mechanism
     public final static String[] __dftServerClasses =
     {
-        "-org.eclipse.jetty.session.infinispan.", //don't hide infinispan support classes
+        "-org.eclipse.jetty.server.session.SessionData", //don't hide SessionData for de/serialization purposes
         "-org.eclipse.jetty.jmx.",          // don't hide jmx classes
         "-org.eclipse.jetty.util.annotation.", // don't hide jmx annotation
         "-org.eclipse.jetty.continuation.", // don't hide continuation classes

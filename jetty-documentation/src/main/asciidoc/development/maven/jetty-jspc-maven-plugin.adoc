@@ -17,7 +17,7 @@
 [[jetty-jspc-maven-plugin]]
 === Jetty Jspc Maven Plugin
 
-This plugin will help you pre-compile your jsps and works in conjunction with the maven war plugin to put them inside an assembled war.
+This plugin will help you pre-compile your jsps and works in conjunction with the Maven war plugin to put them inside an assembled war.
 
 [[jspc-config]]
 ==== Configuration
@@ -26,7 +26,6 @@ Here's the basic setup required to put the jspc plugin into your build:
 
 [source, xml, subs="{sub-order}"]
 ----
-
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
    <artifactId>jetty-jspc-maven-plugin</artifactId>
@@ -42,85 +41,82 @@ Here's the basic setup required to put the jspc plugin into your build:
      </execution>
    </executions>
  </plugin>
- 
-      
 ----
 
 The configurable parameters are as follows:
 
 webXmlFragment::
-  Default value: $\{project.basedir}/target/webfrag.xml
-  +
-  File into which to generate the servlet declarations.
-  Will be merged with an existing web.xml.
+Default value: `$\{project.basedir}/target/webfrag.xml`
++
+File into which to generate the servlet declarations.
+Will be merged with an existing `web.xml`.
 webAppSourceDirectory::
-  Default value: $\{project.basedir}/src/main/webapp
-  +
-  Root of resources directory where jsps, tags etc are located.
+Default value: `$\{project.basedir}/src/main/webapp`
++
+Root of resources directory where jsps, tags etc are located.
 webXml::
-  Default value: $\{project.basedir}/src/main/webapp/WEB-INF/web.xml
-  +
-  The web.xml file to use to merge with the generated fragments.
+Default value: `$\{project.basedir}/src/main/webapp/WEB-INF/web.xml`
++
+The web.xml file to use to merge with the generated fragments.
 includes::
-  Default value: **\/*.jsp, **\/*.jspx
-  +
-  The comma separated list of patterns for file extensions to be processed.
+Default value: `**\/*.jsp, **\/*.jspx`
++
+The comma separated list of patterns for file extensions to be processed.
 excludes::
-  Default value: **\/.svn\/**
-  +
-  The comma separated list of patterns for file extensions to be skipped.
+Default value: `**\/.svn\/**`
++
+The comma separated list of patterns for file extensions to be skipped.
 classesDirectory::
-  Default value: $\{project.build.outputDirectory}
-  +
-  Location of classes for the webapp.
+Default value: `$\{project.build.outputDirectory}`
++
+Location of classes for the webapp.
 generatedClasses::
-  Default value: $\{project.build.outputDirectory}
-  +
-  Location to put the generated classes for the jsps.
+Default value: `$\{project.build.outputDirectory}`
++
+Location to put the generated classes for the jsps.
 insertionMarker::
-  Default value: _none_
-  +
-  A marker string in the src web.xml file which indicates where to merge in the generated web.xml fragment.
-  Note that the marker string will NOT be preserved during the insertion. Can be left blank, in which case the generated fragment is inserted just before the line containing </web-app>.
+Default value: _none_
++
+A marker string in the src `web.xml` file which indicates where to merge in the generated web.xml fragment.
+Note that the marker string will NOT be preserved during the insertion.
+Can be left blank, in which case the generated fragment is inserted just before the line containing `</web-app>`.
 useProvidedScope::
-  Default value: false
-  +
-  If true, jars of dependencies marked with <scope>provided</scope> will
-  be placed on the compilation classpath.
+Default value: false
++
+If true, jars of dependencies marked with <scope>provided</scope> will be placed on the compilation classpath.
 mergeFragment::
-  Default value: true
-  +
-  Whether or not to merge the generated fragment file with the source web.xml.
-  The merged file will go into the same directory as the webXmlFragment.
+Default value: true
++
+Whether or not to merge the generated fragment file with the source web.xml.
+The merged file will go into the same directory as the webXmlFragment.
 keepSources::
-  Default value: false
-  +
-  If true, the generated .java files are not deleted at the end of processing.
+Default value: false
++
+If true, the generated .java files are not deleted at the end of processing.
 sourceVersion::
-  Since jetty-9.3.6.
-  Java version of jsp source files.
-  Defaults to 1.7.
+Introduced in Jetty 9.3.6.
+Java version of jsp source files.
+Defaults to 1.7.
 targetVersion::
-  Since jetty-9.3.6.
-  Java version of class files generated from jsps.
-  Defaults to 1.7.
+Introduced in Jetty 9.3.6.
+Java version of class files generated from jsps.
+Defaults to 1.7.
 tldJarNamePatterns::
-  Default value: .*taglibs[^/]*\.jar|.*jstl-impl[^/]*\.jar$
-  +
-  Patterns of jars on the 'system' (ie container) path that contain tlds.
-  Use | to separate each pattern.
+Default value: `.*taglibs[^/]*\.jar|.*jstl-impl[^/]*\.jar$`
++
+Patterns of jars on the 'system' (ie container) path that contain tlds.
+Use | to separate each pattern.
 jspc::
-  Default value: the org.apache.jasper.JspC instance being configured.
-  +
-  The JspC class actually performs the pre-compilation.
-  All setters on the JspC class are available.
-  You can http://central.maven.org/maven2/org/glassfish/web/javax.servlet.jsp/2.3.2/javax.servlet.jsp-2.3.2-javadoc.jar[download] the javadoc from http://central.maven.org/maven2/org/glassfish/web/javax.servlet.jsp/2.3.2/javax.servlet.jsp-2.3.2-javadoc.jar[here].
+Default value: the `org.apache.jasper.JspC` instance being configured.
++
+The JspC class actually performs the pre-compilation.
+All setters on the JspC class are available.
+You can download the javadoc http://central.maven.org/maven2/org/glassfish/web/javax.servlet.jsp/2.3.2/javax.servlet.jsp-2.3.2-javadoc.jar[here].
 
-Taking all the default settings, here's how to configure the war plugin to use the generated web.xml that includes all of the jsp servlet declarations:
+Taking all the default settings, here's how to configure the war plugin to use the generated `web.xml` that includes all of the jsp servlet declarations:
 
 [source, xml, subs="{sub-order}"]
 ----
-
 <plugin>
   <groupId>org.apache.maven.plugins</groupId>
   <artifactId>maven-war-plugin</artifactId>
@@ -128,8 +124,6 @@ Taking all the default settings, here's how to configure the war plugin to use t
     <webXml>${project.basedir}/target/web.xml</webXml>
   </configuration>
 </plugin>
-
-      
 ----
 
 [[jspc-production-precompile]]
@@ -141,7 +135,6 @@ For example, the following profile will only be invoked if the flag `-Dprod` is 
 
 [source, xml, subs="{sub-order}"]
 ----
-
 <profiles>
     <profile>
       <id>prod</id>
@@ -165,18 +158,13 @@ For example, the following profile will only be invoked if the flag `-Dprod` is 
       </build>
     </profile>
   </profiles>
-  
-      
 ----
 
-So, the following invocation would cause your code to be compiled, the jsps to be compiled, the <servlet> and <servlet-mapping>s inserted in the web.xml and your webapp assembled into a war:
+The following invocation would cause your code to be compiled, the jsps to be compiled, the <servlet> and <servlet-mapping>s inserted in the `web.xml` and your webapp assembled into a war:
 
 [source, screen, subs="{sub-order}"]
 ....
-
 $ mvn -Dprod package
-
-    
 ....
 
 [[jspc-overlay-precompile]]
@@ -186,14 +174,13 @@ Precompiling jsps with an overlaid war requires a bit more configuration.
 This is because you need to separate the steps of unpacking the overlaid war and then repacking the final target war so the jetty-jspc-maven-plugin has the opportunity to access the overlaid resources.
 
 In the example we'll show, we will use an overlaid war.
-The overlaid war will provide the web.xml file but the jsps will be in src/main/webapp (ie part of the project that uses the overlay).
-We will unpack the overlaid war file, compile the jsps and merge their servlet definitions into the extracted web.xml, then war up the lot.
+The overlaid war will provide the `web.xml` file but the jsps will be in `src/main/webapp` (i.e. part of the project that uses the overlay).
+We will unpack the overlaid war file, compile the jsps and merge their servlet definitions into the extracted `web.xml`, then pack everything into a war.
 
 Here's an example configuration of the war plugin that separate those phases into an unpack phase, and then a packing phase:
 
 [source, xml, subs="{sub-order}"]
 ----
-
 <plugin>
     <artifactId>maven-war-plugin</artifactId>
     <executions>
@@ -223,17 +210,14 @@ Here's an example configuration of the war plugin that separate those phases int
       </execution>
     </executions>
 </plugin>
-
-      
 ----
 
-Now you also need to configure the jetty-jspc-maven-plugin so that it can use the web.xml that was extracted by the war unpacking and merge in the generated definitions of the servlets.
-This is in target/foo/WEB-INF/web.xml.
-Using the default settings, the web.xml merged with the jsp servlet definitions will be put into target/web.xml.
+Now you also need to configure the `jetty-jspc-maven-plugin` so that it can use the web.xml that was extracted by the war unpacking and merge in the generated definitions of the servlets.
+This is in `target/foo/WEB-INF/web.xml`.
+Using the default settings, the `web.xml` merged with the jsp servlet definitions will be put into `target/web.xml`.
 
 [source, xml, subs="{sub-order}"]
 ----
-
 <plugin>
     <groupId>org.eclipse.jetty</groupId>
      <artifactId>jetty-jspc-maven-plugin</artifactId>
@@ -252,6 +236,4 @@ Using the default settings, the web.xml merged with the jsp servlet definitions 
       </execution>
     </executions>
 </plugin>
-
-      
 ----

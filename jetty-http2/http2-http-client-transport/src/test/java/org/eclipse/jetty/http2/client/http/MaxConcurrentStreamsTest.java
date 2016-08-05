@@ -52,7 +52,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     @Test
     public void testOneConcurrentStream() throws Exception
     {
-        long sleep = 1000;
+        long sleep = 2000;
         start(1, new AbstractHandler()
         {
             @Override

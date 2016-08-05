@@ -344,7 +344,7 @@ public class Response implements HttpServletResponse
         }
 
         // add the set cookie
-        _fields.add(HttpHeader.SET_COOKIE.toString(), buf.toString());
+        _fields.add(HttpHeader.SET_COOKIE, buf.toString());
 
         // Expire responses with set-cookie headers so they do not get cached.
         _fields.put(__EXPIRES_01JAN1970);
