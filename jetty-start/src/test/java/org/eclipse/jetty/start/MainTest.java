@@ -30,7 +30,7 @@ import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.toolchain.test.IO;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;

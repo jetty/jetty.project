@@ -19,5 +19,9 @@ PROP|optional.prop=value0
 
 # Files / Directories to create
 EXISTS|maindir/
-EXISTS|start.d/start.ini
+EXISTS|start.d/main.ini
+EXISTS|start.d/extra.ini
 EXISTS|start.d/optional.ini
+
+# Output Assertions [regex!] (order is irrelevant)
+OUTPUT|MKDIR: \$\{jetty.base\}/maindir

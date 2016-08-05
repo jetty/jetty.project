@@ -34,8 +34,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.TopologicalSort;
-
 /**
  * Access for all modules declared, as well as what is enabled.
  */
@@ -205,15 +203,8 @@ public class Modules implements Iterable<Module>
             module.getDepends().forEach(add);
             module.getOptional().forEach(add);
         }
-        try
-        {
-            sort.sort(_modules);
-        }
-        catch (IllegalStateException e)
-        {
-            System.err.println(sort.dump());
-            throw e;
-        }
+        
+        sort.sort(_modules);
     }
 
     public List<Module> getEnabled()
