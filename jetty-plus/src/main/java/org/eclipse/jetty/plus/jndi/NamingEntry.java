@@ -55,9 +55,18 @@ public abstract class NamingEntry
     }
  
     
+    /**
+     * Create a naming entry.
+     * 
+     * @param scope an object representing the scope of the name to be bound into jndi, where null means jvm scope.
+     * @param jndiName the name that will be associated with an object bound into jndi
+     * @throws NamingException
+     */
     protected NamingEntry (Object scope, String jndiName)
     throws NamingException
     {
+        if (jndiName == null)
+            throw new NamingException("jndi name is null");
         this._scope=scope;
         this._jndiName = jndiName;
     }
