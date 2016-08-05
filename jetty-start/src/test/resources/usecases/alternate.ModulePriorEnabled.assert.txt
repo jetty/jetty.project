@@ -9,3 +9,5 @@ LIB|${jetty.home}/lib/other.jar
 
 # The Properties we expect (order is irrelevant)
 PROP|main.prop=value0
+
+OUTPUT|INFO : Module base has already been enabled.
