@@ -20,15 +20,19 @@ package org.eclipse.jetty.start;
 
 import static java.util.stream.Collectors.toList;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FilenameFilter;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -46,107 +50,114 @@ public class TestUseCases
 {
     @Parameters(name = "{0}")
     public static List<Object[]> getCases() throws Exception
-    {        
+    {
         File usecases = MavenTestingUtils.getTestResourceDir("usecases/");
-        File[] cases=usecases.listFiles(new FilenameFilter()
-        {
-            @Override
-            public boolean accept(File dir, String name)
-            {
-                return name.endsWith(".assert.txt");
-            }
-        });
-        
+        File[] cases = usecases.listFiles((dir, name) -> name.endsWith(".assert.txt"));
         Arrays.sort(cases);
         
         List<Object[]> ret = new ArrayList<>();
-        for(File assertTxt:cases)
+        for (File assertTxt : cases)
         {
-            String caseName=assertTxt.getName().replace(".assert.txt","");
-            String baseName=caseName.split("\\.")[0];
-            ret.add(new Object[] {caseName,baseName, assertTxt, lines(new File(usecases,caseName+".prepare.txt")),lines(new File(usecases,caseName+".cmdline.txt"))});
+            String caseName = assertTxt.getName().replace(".assert.txt", "");
+            ret.add(new Object[]{caseName});
         }
         
         return ret;
-    }
-
-    static String[] lines(File file) throws IOException
-    {
-        if (!file.exists() || !file.canRead())
-            return new String[0];
-        return IO.readToString(file).split("[\n\r]+");
     }
     
     @Parameter(0)
     public String caseName;
     
-    @Parameter(1)
-    public String baseName;
-    
-    @Parameter(2)
-    public File assertFile;
-
-    @Parameter(3)
-    public String[] prepare;
-    
-    @Parameter(4)
-    public String[] commandLineArgs;
-
     @Test
     public void testUseCase() throws Exception
     {
+        String baseName = caseName.replaceFirst("\\..*$", "");
+        File assertFile = MavenTestingUtils.getTestResourceFile("usecases/" + caseName + ".assert.txt");
+        
         Path homeDir = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
         
         Path baseSrcDir = MavenTestingUtils.getTestResourceDir("usecases/" + baseName).toPath().toRealPath();
         Path baseDir = MavenTestingUtils.getTargetTestingPath(caseName);
-        if (baseDir.toFile().exists())
-            org.eclipse.jetty.toolchain.test.FS.cleanDirectory(baseDir);
-        else
-            baseDir.toFile().mkdirs();
-        org.eclipse.jetty.toolchain.test.IO.copyDir(baseSrcDir.toFile(),baseDir.toFile());
+        org.eclipse.jetty.toolchain.test.FS.ensureEmpty(baseDir);
+        org.eclipse.jetty.toolchain.test.IO.copyDir(baseSrcDir.toFile(), baseDir.toFile());
         
+        System.setProperty("jetty.home", homeDir.toString());
+        System.setProperty("jetty.base", baseDir.toString());
         
-        System.setProperty("jetty.home",homeDir.toString());
-        System.setProperty("jetty.base",baseDir.toString());
-
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream originalStream = StartLog.setStream(new PrintStream(out));
         try
         {
-            if (prepare != null && prepare.length>0)
+            // If there is a "{caseName}.prepare.txt" then use those
+            // lines as if you are calling start.jar once to setup
+            // the base directory.
+            List<String> prepareArgs = lines(caseName + ".prepare.txt");
+            if (!prepareArgs.isEmpty())
             {
-                for (String arg : prepare)
-                {
-                    Main main = new Main();
-                    List<String> cmdLine = new ArrayList<>();
-                    cmdLine.add("--testing-mode");
-                    cmdLine.addAll(Arrays.asList(arg.split(" ")));
-                    main.start(main.processCommandLine(cmdLine));
-                }
+                Main main = new Main();
+                List<String> cmdLine = new ArrayList<>();
+                cmdLine.add("--testing-mode");
+                cmdLine.addAll(prepareArgs);
+                
+                main.start(main.processCommandLine(cmdLine));
             }
-
+            
             Main main = new Main();
             List<String> cmdLine = new ArrayList<>();
-            cmdLine.add("--debug");
-            if (commandLineArgs != null)
-            {
-                for (String arg : commandLineArgs)
-                    cmdLine.add(arg);
-            }
-
+            // cmdLine.add("--debug");
+            
+            // If there is a "{caseName}.cmdline.txt" then these
+            // entries are extra command line argument to use for
+            // the actual testcase
+            cmdLine.addAll(lines(caseName + ".cmdline.txt"));
             StartArgs args = main.processCommandLine(cmdLine);
             args.getAllModules().checkEnabledModules();
             BaseHome baseHome = main.getBaseHome();
-            ConfigurationAssert.assertConfiguration(baseHome,args,assertFile);
+            
+            StartLog.setStream(originalStream);
+            String output = out.toString(StandardCharsets.UTF_8.name());
+            ConfigurationAssert.assertConfiguration(baseHome, args, output, assertFile);
         }
         catch (Exception e)
         {
-            List<String> exceptions = Arrays.asList(lines(assertFile)).stream().filter(s->s.startsWith("EX|")).collect(toList());
+            List<String> exceptions = lines(assertFile).stream().filter(s -> s.startsWith("EX|")).collect(toList());
             if (exceptions.isEmpty())
                 throw e;
-            for (String ex:exceptions)
+            for (String ex : exceptions)
             {
-                ex=ex.substring(3);
-                Assert.assertThat(e.toString(),Matchers.containsString(ex));
+                ex = ex.substring(3);
+                Assert.assertThat(e.toString(), Matchers.containsString(ex));
             }
         }
+        finally
+        {
+            StartLog.setStream(originalStream);
+        }
+    }
+    
+    private List<String> lines(String filename) throws IOException
+    {
+        return lines(MavenTestingUtils.getTestResourcesPath().resolve("usecases" + File.separator + filename).toFile());
+    }
+    
+    private List<String> lines(File file) throws IOException
+    {
+        if (!file.exists() || !file.canRead())
+            return Collections.emptyList();
+        List<String> ret = new ArrayList<>();
+        try (FileReader reader = new FileReader(file);
+             BufferedReader buf = new BufferedReader(reader))
+        {
+            String line;
+            while ((line = buf.readLine()) != null)
+            {
+                line = line.trim();
+                if (line.length() > 0)
+                {
+                    ret.add(line);
+                }
+            }
+        }
+        return ret;
     }
 }

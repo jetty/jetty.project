@@ -1,1 +1,2 @@
---create-startd --add=tom
+--create-startd
+--add-to-start=tom
