@@ -23,6 +23,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -237,6 +238,35 @@ public class TestNamingEntries
         assertNull(ne);
         testLink();
     }
+
+
+    @Test
+    public void testNullJndiName () throws Exception
+    {
+        try
+        {
+            InitialContext icontext = new InitialContext();
+            Resource resource = new Resource (null,"foo");
+            fail ("Null jndi name should not be permitted");
+        }
+        catch (NamingException e)
+        {
+            //expected
+        }
+    }
+
+    @Test
+    public void testNullObject () throws Exception
+    {
+        InitialContext icontext = new InitialContext();
+        Resource resource = new Resource ("foo/bar", null);
+        NamingEntry ne = NamingEntryUtil.lookupNamingEntry(null, "foo/bar");
+        assertNotNull(ne);
+        Object o = icontext.lookup("foo/bar");
+        assertNull(o);
+
+    }
+
 
     @Test
     public void testLink () throws Exception

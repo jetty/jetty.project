@@ -268,7 +268,7 @@ public class ByteArrayEndPointTest
     @Test
     public void testIdle() throws Exception
     {
-        long idleTimeout = 500;
+        long idleTimeout = 1500;
         ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, idleTimeout);
         endp.addInput("test");
         endp.setGrowOutput(false);
@@ -284,7 +284,7 @@ public class ByteArrayEndPointTest
         FutureCallback fcb = new FutureCallback();
 
         endp.fillInterested(fcb);
-        fcb.get(100,TimeUnit.MILLISECONDS);
+        fcb.get(idleTimeout,TimeUnit.MILLISECONDS);
         assertTrue(fcb.isDone());
         assertEquals(null, fcb.get());
         assertEquals(4, endp.fill(buffer));
