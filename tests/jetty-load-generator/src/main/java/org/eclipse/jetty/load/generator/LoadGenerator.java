@@ -229,6 +229,33 @@ public class LoadGenerator
         throws Exception
     {
         HttpClient httpClient = new HttpClient( transport, sslContextFactory );
+        switch ( this.transport )
+        {
+            case HTTP:
+            case HTTPS:
+            {
+                httpClient.setMaxConnectionsPerDestination( 7 );
+            }
+            case H2C:
+            case H2:
+            {
+                httpClient.setMaxConnectionsPerDestination( 1 );
+            }
+            /*
+            TODO
+            case FCGI:
+            {
+
+            }
+            */
+            default:
+            {
+                // nothing this weird case already handled by #provideClientTransport
+            }
+
+        }
+
+
         // FIXME weird circularity
         transport.setHttpClient( httpClient );
         httpClient.start();

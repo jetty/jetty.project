@@ -58,7 +58,8 @@ public class LoadGeneratorTest
     public static Object[] parameters()
         throws Exception
     {
-        return new Object[]{ LoadGenerator.Transport.HTTP };// LoadGenerator.Transport.values();
+        // FIXME LoadGenerator.Transport.H2, issue with ALPN
+        return new Object[]{ LoadGenerator.Transport.HTTP, LoadGenerator.Transport.HTTPS, LoadGenerator.Transport.H2C };// LoadGenerator.Transport.values();
     }
 
     @Test
