@@ -38,20 +38,20 @@ public class WebInfConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(WebInfConfiguration.class);
 
     public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
-    
+
     @Deprecated
     public static final String CONTAINER_JAR_PATTERN = MetaInfConfiguration.CONTAINER_JAR_PATTERN;
     @Deprecated
     public static final String WEBINF_JAR_PATTERN = MetaInfConfiguration.WEBINF_JAR_PATTERN;
     @Deprecated
     public static final String RESOURCE_DIRS = MetaInfConfiguration.RESOURCE_DIRS;
-    
+
     protected Resource _preUnpackBaseResource;
-    
+
     public WebInfConfiguration()
     {
     }
-    
+
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
@@ -88,11 +88,11 @@ public class WebInfConfiguration extends AbstractConfiguration
         //if we're not persisting the temp dir contents delete it
         if (!context.isPersistTempDirectory())
         {
-           IO.delete(context.getTempDirectory());
+            IO.delete(context.getTempDirectory());
         }
-        
+
         //if it wasn't explicitly configured by the user, then unset it
-       Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
+        Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
         if (tmpdirConfigured != null && !tmpdirConfigured) 
             context.setTempDirectory(null);
 
@@ -151,7 +151,7 @@ public class WebInfConfiguration extends AbstractConfiguration
      * @throws Exception if unable to resolve the temp directory
      */
     public void resolveTempDirectory (WebAppContext context)
-    throws Exception
+        throws Exception
     {
         //If a tmp directory is already set we should use it
         File tmpDir = context.getTempDirectory();
@@ -230,7 +230,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
 
     public void makeTempDirectory (File parent, WebAppContext context)
-            throws Exception
+        throws Exception
     {
         if (parent == null || !parent.exists() || !parent.canWrite() || !parent.isDirectory())
             throw new IllegalStateException("Parent for temp dir not configured correctly: "+(parent==null?"null":"writeable="+parent.canWrite()));
@@ -297,7 +297,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 web_app = context.newResource(war);
             else
                 web_app=context.getBaseResource();
-            
+
             if (web_app == null)
                 throw new IllegalStateException("No resourceBase or war set for context");
 
@@ -321,11 +321,11 @@ public class WebInfConfiguration extends AbstractConfiguration
 
             // If we should extract or the URL is still not usable
             if (web_app.exists()  && (
-                    (context.isCopyWebDir() && web_app.getFile() != null && web_app.getFile().isDirectory()) ||
-                    (context.isExtractWAR() && web_app.getFile() != null && !web_app.getFile().isDirectory()) ||
-                    (context.isExtractWAR() && web_app.getFile() == null) ||
-                    !web_app.isDirectory())
-                            )
+                (context.isCopyWebDir() && web_app.getFile() != null && web_app.getFile().isDirectory()) ||
+                (context.isExtractWAR() && web_app.getFile() != null && !web_app.getFile().isDirectory()) ||
+                (context.isExtractWAR() && web_app.getFile() == null) ||
+                !web_app.isDirectory())
+                )
             {
                 // Look for sibling directory.
                 File extractedWebAppDir = null;
@@ -505,24 +505,28 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (resource == null)
             {
                 if (context.getWar()==null || context.getWar().length()==0)
-                   throw new IllegalStateException("No resourceBase or war set for context");
+                    throw new IllegalStateException("No resourceBase or war set for context");
 
                 // Set dir or WAR
                 resource = context.newResource(context.getWar());
             }
-            String tmp = URIUtil.decodePath(resource.getURI().getPath());
-            if (tmp.endsWith("/"))
-                tmp = tmp.substring(0, tmp.length()-1);
-            if (tmp.endsWith("!"))
-                tmp = tmp.substring(0, tmp.length() -1);
-            //get just the last part which is the filename
-            int i = tmp.lastIndexOf("/");
-            canonicalName.append(tmp.substring(i+1, tmp.length()));
+
+            if (resource.getURI().getPath()!=null)
+            {
+                String tmp = URIUtil.decodePath(resource.getURI().getPath());
+                if (tmp.endsWith("/"))
+                    tmp = tmp.substring(0, tmp.length()-1);
+                if (tmp.endsWith("!"))
+                    tmp = tmp.substring(0, tmp.length() -1);
+                //get just the last part which is the filename
+                int i = tmp.lastIndexOf("/");
+                canonicalName.append(tmp.substring(i+1, tmp.length()));
+            }
             canonicalName.append("-");
         }
         catch (Exception e)
         {
-            LOG.warn("Can't generate resourceBase as part of webapp tmp dir name: " + e);
+            LOG.warn("Can't generate resourceBase as part of webapp tmp dir name "+e);
             LOG.debug(e);
         }
 
@@ -549,10 +553,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
 
         canonicalName.append("-");
-
+        
         return canonicalName.toString();
     }
-
-    
-    
 }
