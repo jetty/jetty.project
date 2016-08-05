@@ -19,6 +19,9 @@ bin/
 *.backup
 *.debug
 *.dump
+out/
+.java-version
+
 
 # vim 
 .*.sw[a-p]

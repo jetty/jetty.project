@@ -105,6 +105,11 @@
             <artifactId>jetty-test-helper</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.tests</groupId>
+            <artifactId>jetty-load-generator</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
