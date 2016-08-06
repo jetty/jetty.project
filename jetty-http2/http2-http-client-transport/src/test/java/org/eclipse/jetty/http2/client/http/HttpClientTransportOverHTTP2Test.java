@@ -19,8 +19,15 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -33,6 +40,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
@@ -41,6 +49,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -51,10 +60,15 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -388,6 +402,107 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         }
 
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testClientStopsServerDoesNotCloseClientCloses() throws Exception
+    {
+        try (ServerSocket server = new ServerSocket(0))
+        {
+            List<Session> sessions = new ArrayList<>();
+            HTTP2Client h2Client = new HTTP2Client();
+            HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client)
+            {
+                @Override
+                protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
+                {
+                    sessions.add(session);
+                    return super.newHttpConnection(destination, session);
+                }
+            }, null);
+            QueuedThreadPool clientExecutor = new QueuedThreadPool();
+            clientExecutor.setName("client");
+            client.setExecutor(clientExecutor);
+            client.start();
+
+            CountDownLatch resultLatch = new CountDownLatch(1);
+            client.newRequest("localhost", server.getLocalPort())
+                    .send(result ->
+                    {
+                        if (result.getResponse().getStatus() == HttpStatus.OK_200)
+                            resultLatch.countDown();
+                    });
+
+            ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            Generator generator = new Generator(byteBufferPool);
+
+            try (Socket socket = server.accept())
+            {
+                socket.setSoTimeout(1000);
+                OutputStream output = socket.getOutputStream();
+                InputStream input = socket.getInputStream();
+
+                ServerParser parser = new ServerParser(byteBufferPool, new ServerParser.Listener.Adapter()
+                {
+                    @Override
+                    public void onHeaders(HeadersFrame request)
+                    {
+                        // Server's preface.
+                        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+                        // Reply to client's SETTINGS.
+                        generator.control(lease, new SettingsFrame(new HashMap<>(), true));
+                        // Response.
+                        MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                        HeadersFrame response = new HeadersFrame(request.getStreamId(), metaData, null, true);
+                        generator.control(lease, response);
+
+                        try
+                        {
+                            // Write the frames.
+                            for (ByteBuffer buffer : lease.getByteBuffers())
+                                output.write(BufferUtil.toArray(buffer));
+                        }
+                        catch (Throwable x)
+                        {
+                            x.printStackTrace();
+                        }
+                    }
+                }, 4096, 8192);
+
+                byte[] bytes = new byte[1024];
+                while (true)
+                {
+                    try
+                    {
+                        int read = input.read(bytes);
+                        if (read < 0)
+                            Assert.fail();
+                        parser.parse(ByteBuffer.wrap(bytes, 0, read));
+                    }
+                    catch (SocketTimeoutException x)
+                    {
+                        break;
+                    }
+                }
+
+                Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+
+                // The client will send a GO_AWAY, but the server will not close.
+                client.stop();
+
+                // Give some time to process the stop/close operations.
+                Thread.sleep(1000);
+
+                Assert.assertTrue(h2Client.getBeans(Session.class).isEmpty());
+
+                for (Session session : sessions)
+                {
+                    Assert.assertTrue(session.isClosed());
+                    Assert.assertTrue(((HTTP2Session)session).isDisconnected());
+                }
+            }
+        }
     }
 
     @Ignore

@@ -113,6 +113,26 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         super.doStart();
     }
 
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        close(ErrorCode.NO_ERROR.code, "stop", new Callback.NonBlocking()
+        {
+            @Override
+            public void succeeded()
+            {
+                disconnect();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                disconnect();
+            }
+        });
+    }
+
     @ManagedAttribute(value = "The flow control strategy", readonly = true)
     public FlowControlStrategy getFlowControlStrategy()
     {
