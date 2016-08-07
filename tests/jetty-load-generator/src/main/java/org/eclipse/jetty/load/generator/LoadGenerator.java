@@ -193,34 +193,35 @@ public class LoadGenerator
 
         return Executors.newFixedThreadPool( 1 ).submit( () -> //
         {
-
-                LoadGeneratorResult loadGeneratorResult = new LoadGeneratorResult();
-
-                HttpClientTransport httpClientTransport = LoadGenerator.this.httpClientTransport != null ? //
-                    LoadGenerator.this.httpClientTransport : provideClientTransport( LoadGenerator.this.transport );
-
-                HttpClient httpClient = newHttpClient( httpClientTransport, sslContextFactory );
-
-                LoadGenerator.this.clients.add( httpClient );
-
-                httpClient.getRequestListeners().addAll( LoadGenerator.this.getRequestListeners() );
-
-                // TODO calculate request number per user
-                LoadGeneratorRunner loadGeneratorRunner =
-                    new LoadGeneratorRunner( httpClient, requestNumber.get(), LoadGenerator.this, url,
-                                             loadGeneratorResult );
-
-
-                executorService.submit( loadGeneratorRunner );
-
-                while ( requestNumber.get() > 0 )
+            LoadGeneratorResult loadGeneratorResult = new LoadGeneratorResult();
+            
+            for (int i = LoadGenerator.this.getUsers(); i > 0; i--)
                 {
-                    // wait until all requests send
-                    Thread.sleep( 1 );
+
+                    HttpClientTransport httpClientTransport = LoadGenerator.this.httpClientTransport != null ? //
+                        LoadGenerator.this.httpClientTransport : provideClientTransport( LoadGenerator.this.transport );
+
+                    HttpClient httpClient = newHttpClient( httpClientTransport, sslContextFactory );
+
+                    LoadGenerator.this.clients.add( httpClient );
+
+                    httpClient.getRequestListeners().addAll( LoadGenerator.this.getRequestListeners() );
+
+                    // TODO calculate request number per user
+                    LoadGeneratorRunner loadGeneratorRunner =
+                        new LoadGeneratorRunner( httpClient, requestNumber.get(), LoadGenerator.this, url,
+                                                 loadGeneratorResult );
+
+                    executorService.submit( loadGeneratorRunner );
                 }
 
-                return loadGeneratorResult;
+            while ( requestNumber.get() > 0 )
+            {
+                // wait until all requests send
+                Thread.sleep( 1 );
+            }
 
+            return loadGeneratorResult;
         } );
     }
 

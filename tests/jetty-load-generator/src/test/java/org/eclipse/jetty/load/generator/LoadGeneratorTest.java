@@ -97,6 +97,40 @@ public class LoadGeneratorTest
     }
 
     @Test
+    public void two_users_with_one_request()
+        throws Exception
+    {
+
+        TestResultHandler testResponseHandler = new TestResultHandler();
+
+        TestRequestListener testRequestListener = new TestRequestListener();
+
+        startServer( new LoadHandler() );
+
+        LoadGenerator loadGenerator = LoadGenerator.Builder.builder() //
+            .setHost( "localhost" ) //
+            .setPort( connector.getLocalPort() ) //
+            .setUsers( 2 ) //
+            .setRequestNumber( 1 ) //
+            .setResultHandlers( Arrays.asList( testResponseHandler ) ) //
+            .setRequestListeners( Arrays.asList( testRequestListener ) ) //
+            .setTransport( LoadGenerator.Transport.HTTP ) //
+            .build() //
+            .start();
+
+        Future<LoadGeneratorResult> result = loadGenerator.run();
+
+        LoadGeneratorResult loadGeneratorResult = result.get( 10, TimeUnit.MINUTES );
+
+        Assert.assertEquals( 1, testResponseHandler.reponsesReceived.longValue() );
+
+        Assert.assertEquals( 1, testResponseHandler.reponsesReceived.longValue() );
+
+        Assert.assertNotNull( loadGeneratorResult );
+
+    }
+
+    @Test
     public void one_user_with_ten_request()
         throws Exception
     {
