@@ -24,7 +24,7 @@ import java.util.Locale;
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -54,7 +54,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
     private String[] _ignorePaths;
     private boolean _extended;
-    private transient PathMap<String> _ignorePathMap;
+    private PathMappings<String> _ignorePathMap;
     private boolean _logLatency = false;
     private boolean _logCookies = false;
     private boolean _logServer = false;
@@ -423,7 +423,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
         if (_ignorePaths != null && _ignorePaths.length > 0)
         {
-            _ignorePathMap = new PathMap<>();
+            _ignorePathMap = new PathMappings<>();
             for (int i = 0; i < _ignorePaths.length; i++)
                 _ignorePathMap.put(_ignorePaths[i], _ignorePaths[i]);
         }

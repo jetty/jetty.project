@@ -258,8 +258,6 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
 
             // Read the response.
             String response = readResponse(client);
-
-            System.err.println(response);
             
             assertThat(response, containsString("HTTP/1.1 200 OK"));
             assertThat(response, containsString("Hello world"));

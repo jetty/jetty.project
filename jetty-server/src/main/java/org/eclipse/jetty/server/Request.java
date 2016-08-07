@@ -171,7 +171,7 @@ public class Request implements HttpServletRequest
     private final HttpInput _input;
 
     private MetaData.Request _metaData;
-    private String _originalURI;
+    private String _originalUri;
 
     private String _contextPath;
     private String _servletPath;
@@ -359,18 +359,19 @@ public class Request implements HttpServletRequest
     private void extractQueryParameters()
     {
         MetaData.Request metadata = _metaData;
-        if (metadata==null || metadata.getURI() == null || !metadata.getURI().hasQuery())
+        HttpURI uri = metadata==null?null:metadata.getURI();
+        if (uri==null || !uri.hasQuery())
             _queryParameters=NO_PARAMS;
         else
         {
             _queryParameters = new MultiMap<>();
             if (_queryEncoding == null)
-                metadata.getURI().decodeQueryTo(_queryParameters);
+                uri.decodeQueryTo(_queryParameters);
             else
             {
                 try
                 {
-                    metadata.getURI().decodeQueryTo(_queryParameters, _queryEncoding);
+                    uri.decodeQueryTo(_queryParameters, _queryEncoding);
                 }
                 catch (UnsupportedEncodingException e)
                 {
@@ -951,7 +952,9 @@ public class Request implements HttpServletRequest
     public String getMethod()
     {
         MetaData.Request metadata = _metaData;
-        return metadata==null?null:metadata.getMethod();
+        if (metadata!=null)
+            return metadata.getMethod();
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1253,7 +1256,7 @@ public class Request implements HttpServletRequest
     public String getRequestURI()
     {
         MetaData.Request metadata = _metaData;
-        return (metadata==null)?null:metadata.getURI().getPath();
+        return metadata==null?null:metadata.getURI().getPath();
     }
 
     /* ------------------------------------------------------------ */
@@ -1301,7 +1304,7 @@ public class Request implements HttpServletRequest
     public String getScheme()
     {
         MetaData.Request metadata = _metaData;
-        String scheme=metadata==null?null:metadata.getURI().getScheme();
+        String scheme = metadata==null?null:metadata.getURI().getScheme();
         return scheme==null?HttpScheme.HTTP.asString():scheme;
     }
 
@@ -1314,7 +1317,7 @@ public class Request implements HttpServletRequest
     {
         MetaData.Request metadata = _metaData;
         String name = metadata==null?null:metadata.getURI().getHost();
-
+        
         // Return already determined host
         if (name != null)
             return name;
@@ -1325,21 +1328,6 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private String findServerName()
     {
-        MetaData.Request metadata = _metaData;
-        // Return host from header field
-        HttpField host = metadata==null?null:metadata.getFields().getField(HttpHeader.HOST);
-        if (host!=null)
-        {
-            if (!(host instanceof HostPortHttpField) && host.getValue()!=null && !host.getValue().isEmpty())
-                host=new HostPortHttpField(host.getValue());    
-            if (host instanceof HostPortHttpField)
-            {
-                HostPortHttpField authority = (HostPortHttpField)host;
-                metadata.getURI().setAuthority(authority.getHost(),authority.getPort());
-                return authority.getHost();
-            }
-        }
-
         // Return host from connection
         String name=getLocalName();
         if (name != null)
@@ -1383,19 +1371,6 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private int findServerPort()
     {
-        MetaData.Request metadata = _metaData;
-        // Return host from header field
-        HttpField host = metadata==null?null:metadata.getFields().getField(HttpHeader.HOST);
-        if (host!=null)
-        {
-            // TODO is this needed now?
-            HostPortHttpField authority = (host instanceof HostPortHttpField)
-                ?((HostPortHttpField)host)
-                :new HostPortHttpField(host.getValue());
-            metadata.getURI().setAuthority(authority.getHost(),authority.getPort());
-            return authority.getPort();
-        }
-
         // Return host from connection
         if (_channel != null)
             return getLocalPort();
@@ -1537,8 +1512,9 @@ public class Request implements HttpServletRequest
      */
     public String getOriginalURI()
     {
-        return _originalURI;
+        return _originalUri;
     }
+    
     /* ------------------------------------------------------------ */
     /**
      * @param uri the URI to set
@@ -1546,7 +1522,8 @@ public class Request implements HttpServletRequest
     public void setHttpURI(HttpURI uri)
     {
         MetaData.Request metadata = _metaData;
-        metadata.setURI(uri);
+        if (metadata!=null)
+            metadata.setURI(uri);
     }
 
     /* ------------------------------------------------------------ */
@@ -1701,45 +1678,42 @@ public class Request implements HttpServletRequest
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
     {
         _metaData=request;
-        _originalURI=_metaData.getURIString();
-        setMethod(request.getMethod());
         HttpURI uri = request.getURI();
-
-        String path = uri.getDecodedPath();
-        String info;
-        if (path==null || path.length()==0)
+        _originalUri = uri.toString();
+        
+        if (uri.getScheme()==null)
+            uri.setScheme("http");
+        
+        if (!uri.hasAuthority())
         {
-            if (uri.isAbsolute())
+            HttpField field = getHttpFields().getField(HttpHeader.HOST);
+            if (field instanceof HostPortHttpField)
             {
-                path="/";
-                uri.setPath(path);
+                HostPortHttpField authority = (HostPortHttpField)field;
+                uri.setAuthority(authority.getHost(),authority.getPort());
             }
-            else
+        }
+        
+        String pathInfo = uri.getDecodedPath();
+        if (pathInfo==null || pathInfo.length()==0)
+        {
+            // If null path was not from an absolute http without a path
+            if (!request.getURI().isAbsolute() || uri.getPath()!=null)
             {
                 setPathInfo("");
                 throw new BadMessageException(400,"Bad URI");
             }
-            info=path;
-        }
-        else if (!path.startsWith("/"))
-        {
-            if (!"*".equals(path) && !HttpMethod.CONNECT.is(getMethod()))
-            {
-                setPathInfo(path);
-                throw new BadMessageException(400,"Bad URI");
-            }
-            info=path;
-        }
-        else
-            info = URIUtil.canonicalPath(path);// TODO should this be done prior to decoding???
 
-        if (info == null)
+            pathInfo="/";
+            uri.setDecodedPath(pathInfo);
+        }
+        else if (!(pathInfo.startsWith("/") || "*".equals(request.getURI().getPath()) || HttpMethod.CONNECT.is(getMethod())))
         {
-            setPathInfo(path);
+            setPathInfo(pathInfo);
             throw new BadMessageException(400,"Bad URI");
         }
 
-        setPathInfo(info);
+        setPathInfo(pathInfo);
     }
 
     /* ------------------------------------------------------------ */
@@ -1758,7 +1732,6 @@ public class Request implements HttpServletRequest
     protected void recycle()
     {
         _metaData=null;
-        _originalURI=null;
 
         if (_context != null)
             throw new IllegalStateException("Request in context!");
@@ -2015,21 +1988,19 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @param method
-     *            The method to set.
+     * @param method The method to set.
      */
     public void setMethod(String method)
     {
         MetaData.Request metadata = _metaData;
         if (metadata!=null)
-            metadata.setMethod(method);
+             metadata.setMethod(method);
     }
 
     /* ------------------------------------------------------------ */
     public boolean isHead()
     {
-        MetaData.Request metadata = _metaData;
-        return metadata!=null && HttpMethod.HEAD.is(metadata.getMethod());
+        return HttpMethod.HEAD.is(getMethod());
     }
 
     /* ------------------------------------------------------------ */
@@ -2064,8 +2035,9 @@ public class Request implements HttpServletRequest
     public void setQueryString(String queryString)
     {
         MetaData.Request metadata = _metaData;
-        if (metadata!=null)
-            metadata.getURI().setQuery(queryString);
+        HttpURI uri = metadata==null?null:metadata.getURI();
+        if (uri!=null)
+            uri.setQuery(queryString);
         _queryEncoding = null; //assume utf-8
     }
 
@@ -2103,8 +2075,9 @@ public class Request implements HttpServletRequest
     public void setURIPathQuery(String requestURI)
     {
         MetaData.Request metadata = _metaData;
-        if (metadata!=null)
-            metadata.getURI().setPathQuery(requestURI);
+        HttpURI uri = metadata==null?null:metadata.getURI();
+        if (uri!=null)
+            uri.setPathQuery(requestURI);
     }
 
     /* ------------------------------------------------------------ */
@@ -2115,8 +2088,9 @@ public class Request implements HttpServletRequest
     public void setScheme(String scheme)
     {
         MetaData.Request metadata = _metaData;
-        if (metadata!=null)
-            metadata.getURI().setScheme(scheme);
+        HttpURI uri = metadata==null?null:metadata.getURI();
+        if (uri!=null)
+            uri.setScheme(scheme);
     }
 
     /* ------------------------------------------------------------ */
@@ -2129,8 +2103,9 @@ public class Request implements HttpServletRequest
     public void setAuthority(String host,int port)
     {
         MetaData.Request metadata = _metaData;
-        if (metadata!=null)
-            metadata.getURI().setAuthority(host,port);
+        HttpURI uri = metadata==null?null:metadata.getURI();
+        if (uri!=null)
+            uri.setAuthority(host,port);
     }
 
     /* ------------------------------------------------------------ */

@@ -232,7 +232,8 @@ public class FormAuthenticator extends LoginAuthenticator
             return; //this request is not for the same url as the original
         
         //restore the original request's method on this request
-        if (LOG.isDebugEnabled()) LOG.debug("Restoring original method {} for {} with method {}", method, juri,httpRequest.getMethod());
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("Restoring original method {} for {} with method {}", method, juri,httpRequest.getMethod());
         Request base_request = Request.getBaseRequest(request);
         base_request.setMethod(method);
     }

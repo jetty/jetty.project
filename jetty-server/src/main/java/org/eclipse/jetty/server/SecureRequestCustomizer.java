@@ -170,8 +170,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             SSLEngine sslEngine=sslConnection.getSSLEngine();
             customize(sslEngine,request);
 
-            if (request.getHttpURI().getScheme()==null)
-                request.setScheme(HttpScheme.HTTPS.asString());
+            request.setScheme(HttpScheme.HTTPS.asString());
         }
         else if (endp instanceof ProxyConnectionFactory.ProxyEndPoint)
         {

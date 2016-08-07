@@ -40,7 +40,11 @@ public class HostPortHttpField extends HttpField
     {
         super(header,name,authority);
         if (authority==null || authority.length()==0)
-            throw new IllegalArgumentException("No Authority");
+        {
+            _host="";
+            _port=0;
+            return;
+        }
         try
         {
             if (authority.charAt(0)=='[')
