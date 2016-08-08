@@ -117,7 +117,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     protected void doStop() throws Exception
     {
         super.doStop();
-        close(ErrorCode.NO_ERROR.code, "stop", new Callback.NonBlocking()
+        close(ErrorCode.NO_ERROR.code, "stop", new Callback()
         {
             @Override
             public void succeeded()
@@ -129,6 +129,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             public void failed(Throwable x)
             {
                 disconnect();
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
             }
         });
     }
