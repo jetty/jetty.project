@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -101,6 +102,23 @@ public class Module extends Node<Module>
 
         init(basehome);
         process(basehome);
+    }
+    
+    public void addModule(Module module, Map<String, List<String>> licenseMap)
+    {
+        if (!module.hasLicense())
+        {
+            // skip, no license
+            return;
+        }
+
+        if (licenseMap.containsKey(module.getName()))
+        {
+            // skip, already being tracked
+            return;
+        }
+
+        licenseMap.put(module.getName(),module.getLicense());
     }
 
     @Override

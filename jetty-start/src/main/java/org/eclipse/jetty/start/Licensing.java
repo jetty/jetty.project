@@ -34,22 +34,7 @@ public class Licensing
     private static final String PROP_ACK_LICENSES = "org.eclipse.jetty.start.ack.licenses";
     public Map<String, List<String>> licenseMap = new TreeMap<>(new NaturalSort.Strings());
 
-    public void addModule(Module module)
-    {
-        if (!module.hasLicense())
-        {
-            // skip, no license
-            return;
-        }
 
-        if (licenseMap.containsKey(module.getName()))
-        {
-            // skip, already being tracked
-            return;
-        }
-
-        licenseMap.put(module.getName(),module.getLicense());
-    }
 
     public boolean hasLicenses()
     {
