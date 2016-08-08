@@ -128,7 +128,6 @@ public class AsyncRestServlet extends AbstractRestServlet
 		}
 
 		// We have results!
-
 		// Generate the response
 		String thumbs = generateThumbs(results);
 
@@ -137,7 +136,8 @@ public class AsyncRestServlet extends AbstractRestServlet
 		setOutStream(out, request, start, thumbs);
 
 	}
-	//Refactored logic to set output stream
+	//Refactored long method
+	//Logic block moved to a different method
 	private void setOutStream(PrintWriter out, HttpServletRequest request, Long start, String thumbs){
 		out.println("<html><head>");
 		out.println(STYLE);
@@ -166,7 +166,6 @@ public class AsyncRestServlet extends AbstractRestServlet
 		out.println("</small>");
 		out.println("</body></html>");
 		out.close();
-
 	}
 
 	private abstract class AsyncRestRequest extends Response.Listener.Adapter
