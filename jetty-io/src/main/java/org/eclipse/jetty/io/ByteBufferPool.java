@@ -67,7 +67,6 @@ public interface ByteBufferPool
             this.byteBufferPool = byteBufferPool;
             this.buffers = new ArrayList<>();
             this.recycles = new ArrayList<>();
-            
         }
 
         public ByteBuffer acquire(int capacity, boolean direct)
