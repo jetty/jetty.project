@@ -53,7 +53,6 @@ public abstract class AbstractConnection implements Connection
         _endPoint = endp;
         _executor = executor;
         _readCallback = new ReadCallback();
-        
     }
 
     @Override
