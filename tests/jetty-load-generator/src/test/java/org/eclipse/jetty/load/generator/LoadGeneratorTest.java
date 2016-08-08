@@ -9,14 +9,15 @@ import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -26,16 +27,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 @RunWith( Parameterized.class )
@@ -63,7 +64,7 @@ public class LoadGeneratorTest
     }
 
     @Test
-    public void one_user_with_one_request()
+    public void one_user()
         throws Exception
     {
 
@@ -77,27 +78,26 @@ public class LoadGeneratorTest
             .setHost( "localhost" ) //
             .setPort( connector.getLocalPort() ) //
             .setUsers( 1 ) //
-            .setRequestNumber( 1 ) //
             .setResultHandlers( Arrays.asList( testResponseHandler ) ) //
             .setRequestListeners( Arrays.asList( testRequestListener ) ) //
             .setTransport( LoadGenerator.Transport.HTTP ) //
             .build() //
             .start();
 
-        Future<LoadGeneratorResult> result = loadGenerator.run();
+        LoadGeneratorResult result = loadGenerator.run();
 
-        LoadGeneratorResult loadGeneratorResult = result.get( 10, TimeUnit.MINUTES );
+        Thread.sleep( 1000 );
 
-        Assert.assertEquals( 1, testResponseHandler.reponsesReceived.longValue() );
+        loadGenerator.stop();
 
-        Assert.assertEquals( 1, testResponseHandler.reponsesReceived.longValue() );
+        Assert.assertTrue( testResponseHandler.reponsesReceived.longValue() > 1);
 
-        Assert.assertNotNull( loadGeneratorResult );
+        Assert.assertNotNull( result );
 
     }
 
     @Test
-    public void two_users_with_one_request()
+    public void two_users()
         throws Exception
     {
 
@@ -111,56 +111,21 @@ public class LoadGeneratorTest
             .setHost( "localhost" ) //
             .setPort( connector.getLocalPort() ) //
             .setUsers( 2 ) //
-            .setRequestNumber( 1 ) //
             .setResultHandlers( Arrays.asList( testResponseHandler ) ) //
             .setRequestListeners( Arrays.asList( testRequestListener ) ) //
             .setTransport( LoadGenerator.Transport.HTTP ) //
             .build() //
             .start();
 
-        Future<LoadGeneratorResult> result = loadGenerator.run();
+        LoadGeneratorResult result = loadGenerator.run();
 
-        LoadGeneratorResult loadGeneratorResult = result.get( 10, TimeUnit.MINUTES );
+        Thread.sleep( 1000 );
 
-        Assert.assertEquals( 1, testResponseHandler.reponsesReceived.longValue() );
+        loadGenerator.stop();
 
-        Assert.assertEquals( 1, testResponseHandler.reponsesReceived.longValue() );
+        Assert.assertTrue( testResponseHandler.reponsesReceived.longValue() > 1);
 
-        Assert.assertNotNull( loadGeneratorResult );
-
-    }
-
-    @Test
-    public void one_user_with_ten_request()
-        throws Exception
-    {
-
-        TestResultHandler testResponseHandler = new TestResultHandler();
-
-        TestRequestListener testRequestListener = new TestRequestListener();
-
-        startServer( new LoadHandler() );
-
-        LoadGenerator loadGenerator = LoadGenerator.Builder.builder() //
-            .setHost( "localhost" ) //
-            .setPort( connector.getLocalPort() ) //
-            .setUsers( 1 ) //
-            .setRequestNumber( 10 ) //
-            .setResultHandlers( Arrays.asList( testResponseHandler ) ) //
-            .setRequestListeners( Arrays.asList( testRequestListener ) ) //
-            .setTransport( LoadGenerator.Transport.HTTP ) //
-            .build() //
-            .start();
-
-        Future<LoadGeneratorResult> result = loadGenerator.run();
-
-        LoadGeneratorResult loadGeneratorResult = result.get( 10, TimeUnit.MINUTES );
-
-        Assert.assertEquals( 10, testResponseHandler.reponsesReceived.longValue() );
-
-        Assert.assertEquals( 10, testResponseHandler.reponsesReceived.longValue() );
-
-        Assert.assertNotNull( loadGeneratorResult );
+        Assert.assertNotNull( result );
 
     }
 
@@ -231,7 +196,7 @@ public class LoadGeneratorTest
     }
 
 
-    protected void startServer( Handler handler )
+    protected void startServer( HttpServlet handler )
         throws Exception
     {
         sslContextFactory = new SslContextFactory();
@@ -244,9 +209,25 @@ public class LoadGeneratorTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName( "server" );
         server = new Server( serverThreads );
+        server.setSessionIdManager( new HashSessionIdManager() );
         connector = newServerConnector( server );
         server.addConnector( connector );
-        server.setHandler( handler );
+        //server.setHandler( handler );
+
+        /*
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler( contexts );
+
+        ServletContextHandler root = new ServletContextHandler( contexts, "/", ServletContextHandler.SESSIONS);
+
+        root.setHandler( handler );
+        */
+
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/");
+        server.setHandler(context);
+        context.addServlet( new ServletHolder( handler ), "/*" );
+
         server.start();
     }
 
@@ -307,14 +288,18 @@ public class LoadGeneratorTest
     }
 
     private class LoadHandler
-        extends AbstractHandler
+        extends HttpServlet
     {
+
         @Override
-        public void handle( String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request,
-                            HttpServletResponse response )
-            throws IOException, ServletException
+        protected void service( HttpServletRequest request, HttpServletResponse response )
+            throws ServletException, IOException
         {
+
             String method = request.getMethod().toUpperCase( Locale.ENGLISH );
+
+            HttpSession httpSession = request.getSession( true );
+
             switch ( method )
             {
                 case "GET":
@@ -340,7 +325,8 @@ public class LoadGeneratorTest
                 response.setHeader( "Connection", "close" );
             }
 
-            baseRequest.setHandled( true );
+
+            //baseRequest.setHandled( true );
         }
     }
 

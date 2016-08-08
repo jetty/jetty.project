@@ -14,6 +14,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -28,7 +30,9 @@ public class LoadGenerator
 
     private long responseSize;
 
-    private AtomicLong requestNumber;
+    private AtomicInteger requestRate;
+
+    private AtomicBoolean stop;
 
     private int selectors = 1;
 
@@ -65,15 +69,16 @@ public class LoadGenerator
         FCGI
     }
 
-    LoadGenerator( int users, long payloadSize, long requestNumber, String host, int port, String path, String method )
+    LoadGenerator( int users, long payloadSize, int requestRate, String host, int port, String path, String method )
     {
         this.users = users;
         this.payloadSize = payloadSize;
-        this.requestNumber = new AtomicLong( requestNumber );
+        this.requestRate = new AtomicInteger( requestRate );
         this.host = host;
         this.port = port;
         this.path = path;
         this.method = method;
+        this.stop = new AtomicBoolean( false );
     }
 
     //--------------------------------------------------------------
@@ -90,9 +95,9 @@ public class LoadGenerator
         return payloadSize;
     }
 
-    public AtomicLong getRequestNumber()
+    public AtomicInteger getRequestRate()
     {
-        return requestNumber;
+        return requestRate;
     }
 
     public String getHost()
@@ -150,6 +155,11 @@ public class LoadGenerator
         return requestListeners;
     }
 
+    public AtomicBoolean getStop()
+    {
+        return stop;
+    }
+
     //--------------------------------------------------------------
     //  component implementation
     //--------------------------------------------------------------
@@ -168,6 +178,7 @@ public class LoadGenerator
      */
     public LoadGenerator stop()
     {
+        this.stop.set( true );
         try
         {
             for ( HttpClient httpClient : this.clients )
@@ -185,44 +196,62 @@ public class LoadGenerator
     /**
      * run the defined load (users / request numbers)
      */
-    public Future<LoadGeneratorResult> run()
+    public LoadGeneratorResult run()
         throws Exception
     {
 
+        LoadGeneratorResult loadGeneratorResult = new LoadGeneratorResult();
+
         final String url = this.scheme + "://" + this.host + ":" + this.port + ( this.path == null ? "" : this.path );
 
-        return Executors.newFixedThreadPool( 1 ).submit( () -> //
+        Executors.newSingleThreadScheduledExecutor().submit( () -> //
         {
-            LoadGeneratorResult loadGeneratorResult = new LoadGeneratorResult();
-            
+
+
+            HttpClientTransport httpClientTransport = LoadGenerator.this.httpClientTransport != null ? //
+                LoadGenerator.this.httpClientTransport : provideClientTransport( LoadGenerator.this.transport );
+
             for (int i = LoadGenerator.this.getUsers(); i > 0; i--)
+            {
+                try
                 {
-
-                    HttpClientTransport httpClientTransport = LoadGenerator.this.httpClientTransport != null ? //
-                        LoadGenerator.this.httpClientTransport : provideClientTransport( LoadGenerator.this.transport );
-
                     HttpClient httpClient = newHttpClient( httpClientTransport, sslContextFactory );
 
                     LoadGenerator.this.clients.add( httpClient );
 
                     httpClient.getRequestListeners().addAll( LoadGenerator.this.getRequestListeners() );
 
-                    // TODO calculate request number per user
                     LoadGeneratorRunner loadGeneratorRunner =
-                        new LoadGeneratorRunner( httpClient, requestNumber.get(), LoadGenerator.this, url,
+                        new LoadGeneratorRunner( httpClient, requestRate, LoadGenerator.this, url,
                                                  loadGeneratorResult );
 
                     executorService.submit( loadGeneratorRunner );
                 }
-
-            while ( requestNumber.get() > 0 )
-            {
-                // wait until all requests send
-                Thread.sleep( 1 );
+                catch ( Exception e )
+                {
+                    // FIXME use any logging mechanism
+                    e.printStackTrace();
+                }
             }
 
-            return loadGeneratorResult;
+            try
+            {
+                while ( !this.stop.get() )
+                {
+                    // wait until stopped
+                    Thread.sleep( 1 );
+                }
+            }
+            catch ( Throwable e )
+            {
+                // FIXME use any logging mechanism
+                e.printStackTrace();
+            }
+
+
         } );
+
+        return loadGeneratorResult;
     }
 
 
@@ -313,7 +342,7 @@ public class LoadGenerator
 
         private long responseSize;
 
-        private long requestNumber;
+        private int requestRate;
 
         private String scheme = "http";
 
@@ -354,9 +383,9 @@ public class LoadGenerator
             return this;
         }
 
-        public Builder setRequestNumber( long requestNumber )
+        public Builder setRequestRate( int requestRate )
         {
-            this.requestNumber = requestNumber;
+            this.requestRate = requestRate;
             return this;
         }
 
@@ -436,7 +465,7 @@ public class LoadGenerator
         {
             // FIXME control more data input
             LoadGenerator loadGenerator =
-                new LoadGenerator( users, payloadSize, requestNumber, host, port, path, method );
+                new LoadGenerator( users, payloadSize, requestRate, host, port, path, method );
             loadGenerator.transport = this.transport;
             loadGenerator.resultHandlers = this.resultHandlers == null ? new CopyOnWriteArrayList<>() //
                 : new CopyOnWriteArrayList<>( this.resultHandlers );

@@ -5,6 +5,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -15,7 +16,7 @@ public class LoadGeneratorRunner
 {
     private final HttpClient httpClient;
 
-    private AtomicLong requestNumber;
+    private AtomicInteger requestRate;
 
     private final LoadGenerator loadGenerator;
 
@@ -23,11 +24,11 @@ public class LoadGeneratorRunner
 
     private final LoadGeneratorResult loadGeneratorResult;
 
-    public LoadGeneratorRunner( HttpClient httpClient, long requestNumber, LoadGenerator loadGenerator, String url,
+    public LoadGeneratorRunner( HttpClient httpClient, AtomicInteger requestRate, LoadGenerator loadGenerator, String url,
                                 LoadGeneratorResult loadGeneratorResult )
     {
         this.httpClient = httpClient;
-        this.requestNumber = new AtomicLong( requestNumber );
+        this.requestRate = requestRate;
         this.loadGenerator = loadGenerator;
         this.url = url;
         this.loadGeneratorResult = loadGeneratorResult;
@@ -38,7 +39,7 @@ public class LoadGeneratorRunner
     {
 
         LoadGeneratorResponseListener loadGeneratorResponseListener =
-            new LoadGeneratorResponseListener( loadGenerator.getResultHandlers(), loadGenerator.getRequestNumber() );
+            new LoadGeneratorResponseListener( loadGenerator.getResultHandlers() );
         // FIXME populate loadGeneratorResult with statistics values
         try
         {
@@ -46,14 +47,11 @@ public class LoadGeneratorRunner
             {
                 httpClient.newRequest( url ).send( loadGeneratorResponseListener );
 
-                // olamy: should we decrement on response rather than after request send?
-                if ( this.requestNumber.decrementAndGet() < 1 )
+                if ( this.loadGenerator.getStop().get() )
                 {
                     break;
                 }
             }
-            int size = httpClient.getRequestBufferSize();
-            httpClient.stop();
         }
         catch ( Exception e )
         {
@@ -66,12 +64,9 @@ public class LoadGeneratorRunner
     {
         private final List<ResultHandler> resultHandlers;
 
-        private final AtomicLong requestNumber;
-
-        public LoadGeneratorResponseListener( List<ResultHandler> resultHandlers, AtomicLong requestNumber )
+        public LoadGeneratorResponseListener( List<ResultHandler> resultHandlers)
         {
             this.resultHandlers = resultHandlers;
-            this.requestNumber = requestNumber;
         }
 
         @Override
@@ -81,8 +76,6 @@ public class LoadGeneratorRunner
             {
                 resultHandler.onResponse( result );
             }
-            // here we decrement the global request number
-            this.requestNumber.decrementAndGet();
         }
     }
 }
