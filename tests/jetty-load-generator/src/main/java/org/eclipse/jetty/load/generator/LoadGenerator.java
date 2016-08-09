@@ -206,8 +206,6 @@ public class LoadGenerator
 
         Executors.newSingleThreadScheduledExecutor().submit( () -> //
         {
-
-
             HttpClientTransport httpClientTransport = LoadGenerator.this.httpClientTransport != null ? //
                 LoadGenerator.this.httpClientTransport : provideClientTransport( LoadGenerator.this.transport );
 
@@ -217,13 +215,15 @@ public class LoadGenerator
                 {
                     HttpClient httpClient = newHttpClient( httpClientTransport, sslContextFactory );
 
+                    // TODO dynamic depending on the rate??
+                    httpClient.setMaxRequestsQueuedPerDestination( 2048 );
+
                     LoadGenerator.this.clients.add( httpClient );
 
                     httpClient.getRequestListeners().addAll( LoadGenerator.this.getRequestListeners() );
 
                     LoadGeneratorRunner loadGeneratorRunner =
-                        new LoadGeneratorRunner( httpClient, requestRate, LoadGenerator.this, url,
-                                                 loadGeneratorResult );
+                        new LoadGeneratorRunner( httpClient, LoadGenerator.this, url, loadGeneratorResult );
 
                     executorService.submit( loadGeneratorRunner );
                 }
@@ -383,6 +383,11 @@ public class LoadGenerator
             return this;
         }
 
+        /**
+         *
+         * @param requestRate number of requests per second
+         * @return {@link Builder}
+         */
         public Builder setRequestRate( int requestRate )
         {
             this.requestRate = requestRate;

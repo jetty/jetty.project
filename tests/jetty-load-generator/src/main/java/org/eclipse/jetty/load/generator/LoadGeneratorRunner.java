@@ -3,10 +3,16 @@ package org.eclipse.jetty.load.generator;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
+import java.net.HttpCookie;
 import java.util.List;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Delayed;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
@@ -14,9 +20,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class LoadGeneratorRunner
     implements Runnable
 {
-    private final HttpClient httpClient;
 
-    private AtomicInteger requestRate;
+    private static final Logger LOGGER = Log.getLogger(LoadGeneratorRunner.class);
+
+    private final HttpClient httpClient;
 
     private final LoadGenerator loadGenerator;
 
@@ -24,11 +31,12 @@ public class LoadGeneratorRunner
 
     private final LoadGeneratorResult loadGeneratorResult;
 
-    public LoadGeneratorRunner( HttpClient httpClient, AtomicInteger requestRate, LoadGenerator loadGenerator, String url,
+    private static final HttpCookie HTTP_COOKIE = new HttpCookie( "beer", Long.toString( System.nanoTime() ) );
+
+    public LoadGeneratorRunner( HttpClient httpClient, LoadGenerator loadGenerator, String url,
                                 LoadGeneratorResult loadGeneratorResult )
     {
         this.httpClient = httpClient;
-        this.requestRate = requestRate;
         this.loadGenerator = loadGenerator;
         this.url = url;
         this.loadGeneratorResult = loadGeneratorResult;
@@ -37,20 +45,53 @@ public class LoadGeneratorRunner
     @Override
     public void run()
     {
+        int rate = this.loadGenerator.getRequestRate().get();
+        long start  = System.currentTimeMillis();
+        AtomicInteger sent = new AtomicInteger( 0 );
 
         LoadGeneratorResponseListener loadGeneratorResponseListener =
-            new LoadGeneratorResponseListener( loadGenerator.getResultHandlers() );
+            new LoadGeneratorResponseListener( loadGenerator.getResultHandlers(), this );
+
+        final ScheduledThreadPoolExecutor service = new ScheduledThreadPoolExecutor( 1);
+
+        //DelayQueue<DelayedSend> delayedSends = new DelayQueue<>(  );
+        //delayedSends.add( new DelayedSend( loadGenerator.getRequestRate().get() ) );
+
         // FIXME populate loadGeneratorResult with statistics values
         try
         {
             while ( true )
             {
-                httpClient.newRequest( url ).send( loadGeneratorResponseListener );
+                httpClient.newRequest( url ).cookie( HTTP_COOKIE ).send( loadGeneratorResponseListener );
+                Thread.sleep( 1000 );
+                /*
+                int delay = 1000;//000 * service.getQueue().size() / loadGenerator.getRequestRate().get();
+                service.schedule( () -> {
+
+                    sent.incrementAndGet();
+                    LOGGER.info( "sent request" );
+                }, delay, TimeUnit.MILLISECONDS);
+                */
+                /*
+                DelayedSend delayedSend = delayedSends.poll();
+
+                if (delayedSend != null) {
+                    delayedSends.add( new DelayedSend( loadGenerator.getRequestRate().get() ) );
+                    httpClient.newRequest( url ).cookie( HTTP_COOKIE ).send( loadGeneratorResponseListener );
+                    sent++;
+                }
+                */
 
                 if ( this.loadGenerator.getStop().get() )
                 {
                     break;
                 }
+
+
+                /*if (sent > 10) {
+                    Thread.sleep( 500 );
+                }*/
+
             }
         }
         catch ( Exception e )
@@ -59,14 +100,39 @@ public class LoadGeneratorRunner
         }
     }
 
+    private static class DelayedSend implements Delayed
+    {
+        private long requestRate;
+
+        private DelayedSend( long requestRate) {
+            this.requestRate = requestRate;
+        }
+
+        @Override
+        public long getDelay( TimeUnit unit )
+        {
+            return unit.convert( requestRate, TimeUnit.SECONDS );
+        }
+
+        @Override
+        public int compareTo( Delayed o )
+        {
+            // we don't mind
+            return 0;
+        }
+    }
+
     static class LoadGeneratorResponseListener
         implements Response.CompleteListener
     {
         private final List<ResultHandler> resultHandlers;
 
-        public LoadGeneratorResponseListener( List<ResultHandler> resultHandlers)
+        private final LoadGeneratorRunner loadGeneratorRunner;
+
+        public LoadGeneratorResponseListener( List<ResultHandler> resultHandlers, LoadGeneratorRunner loadGeneratorRunner)
         {
             this.resultHandlers = resultHandlers;
+            this.loadGeneratorRunner = loadGeneratorRunner;
         }
 
         @Override

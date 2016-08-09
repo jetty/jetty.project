@@ -19,6 +19,8 @@ import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
@@ -50,6 +52,8 @@ public class LoadGeneratorTest
 
     protected final LoadGenerator.Transport transport;
 
+    Logger logger = Log.getLogger( getClass());
+
     public LoadGeneratorTest( LoadGenerator.Transport transport )
     {
         this.transport = transport;
@@ -60,7 +64,9 @@ public class LoadGeneratorTest
         throws Exception
     {
         // FIXME LoadGenerator.Transport.H2, issue with ALPN
-        return new Object[]{ LoadGenerator.Transport.HTTP, LoadGenerator.Transport.HTTPS, LoadGenerator.Transport.H2C };// LoadGenerator.Transport.values();
+        return new Object[]{
+            LoadGenerator.Transport.HTTP }; //, LoadGenerator.Transport.HTTPS,
+            //LoadGenerator.Transport.H2C }; // LoadGenerator.Transport.values(); LoadGenerator.Transport.H2,
     }
 
     @Test
@@ -78,6 +84,7 @@ public class LoadGeneratorTest
             .setHost( "localhost" ) //
             .setPort( connector.getLocalPort() ) //
             .setUsers( 1 ) //
+            .setRequestRate( 1 ) //
             .setResultHandlers( Arrays.asList( testResponseHandler ) ) //
             .setRequestListeners( Arrays.asList( testRequestListener ) ) //
             .setTransport( LoadGenerator.Transport.HTTP ) //
@@ -86,13 +93,19 @@ public class LoadGeneratorTest
 
         LoadGeneratorResult result = loadGenerator.run();
 
-        Thread.sleep( 1000 );
+        Thread.sleep( 10000 );
 
-        loadGenerator.stop();
+        Assert.assertTrue("successReponsesReceived :" + testResponseHandler.successReponsesReceived.get(), //
+                          testResponseHandler.successReponsesReceived.get() > 1);
 
-        Assert.assertTrue( testResponseHandler.reponsesReceived.longValue() > 1);
+        logger.info( "successReponsesReceived: {}", testResponseHandler.successReponsesReceived.get() );
+
+        Assert.assertTrue("failedReponsesReceived: " + testResponseHandler.failedReponsesReceived.get(), //
+                          testResponseHandler.failedReponsesReceived.get() < 1);
 
         Assert.assertNotNull( result );
+
+        loadGenerator.stop();
 
     }
 
@@ -123,7 +136,9 @@ public class LoadGeneratorTest
 
         loadGenerator.stop();
 
-        Assert.assertTrue( testResponseHandler.reponsesReceived.longValue() > 1);
+        Assert.assertTrue( testResponseHandler.successReponsesReceived.longValue() > 1);
+
+        Assert.assertTrue( testResponseHandler.failedReponsesReceived.longValue() < 1);
 
         Assert.assertNotNull( result );
 
@@ -137,12 +152,22 @@ public class LoadGeneratorTest
         implements ResultHandler
     {
 
-        AtomicLong reponsesReceived = new AtomicLong();
+        AtomicLong successReponsesReceived = new AtomicLong();
+
+        AtomicLong failedReponsesReceived = new AtomicLong();
 
         @Override
         public void onResponse( Result result )
         {
-            reponsesReceived.incrementAndGet();
+            if (result.isSucceeded())
+            {
+                successReponsesReceived.incrementAndGet();
+            }
+            if (result.isFailed())
+            {
+                result.getFailure().printStackTrace();
+                failedReponsesReceived.incrementAndGet();
+            }
         }
 
     }
@@ -212,16 +237,6 @@ public class LoadGeneratorTest
         server.setSessionIdManager( new HashSessionIdManager() );
         connector = newServerConnector( server );
         server.addConnector( connector );
-        //server.setHandler( handler );
-
-        /*
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler( contexts );
-
-        ServletContextHandler root = new ServletContextHandler( contexts, "/", ServletContextHandler.SESSIONS);
-
-        root.setHandler( handler );
-        */
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
@@ -298,7 +313,7 @@ public class LoadGeneratorTest
 
             String method = request.getMethod().toUpperCase( Locale.ENGLISH );
 
-            HttpSession httpSession = request.getSession( true );
+            HttpSession httpSession = request.getSession( );
 
             switch ( method )
             {
@@ -324,9 +339,6 @@ public class LoadGeneratorTest
             {
                 response.setHeader( "Connection", "close" );
             }
-
-
-            //baseRequest.setHandled( true );
         }
     }
 
