@@ -104,6 +104,11 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         removeBean(client);
     }
 
+    protected HttpClient getHttpClient()
+    {
+        return httpClient;
+    }
+
     @Override
     public void setHttpClient(HttpClient client)
     {
