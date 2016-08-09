@@ -189,7 +189,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
     }
 
-    public Runnable requestContent(DataFrame frame, final Callback callback)
+    public Runnable onRequestContent(DataFrame frame, final Callback callback)
     {
         Stream stream = getStream();
         if (stream.isReset())
@@ -256,6 +256,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         _delayedUntilContent = false;
 
         return handle || delayed ? this : null;
+    }
+
+    public void onFailure(Throwable failure)
+    {
+        onEarlyEOF();
+        getState().asyncError(failure);
     }
 
     protected void consumeInput()

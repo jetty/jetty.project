@@ -310,6 +310,45 @@ public class HttpChannelState
         }
     }
 
+    public void asyncError(Throwable failure)
+    {
+        AsyncContextEvent event = null;
+        try (Locker.Lock lock= _locker.lock())
+        {
+            switch (_state)
+            {
+                case IDLE:
+                case DISPATCHED:
+                case COMPLETING:
+                case COMPLETED:
+                case UPGRADED:
+                case ASYNC_IO:
+                case ASYNC_WOKEN:
+                {
+                    break;
+                }
+                case ASYNC_WAIT:
+                {
+                    _event.addThrowable(failure);
+                    _state=State.ASYNC_WOKEN;
+                    _async=Async.ERRORING;
+                    event=_event;
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalStateException(getStatusStringLocked());
+                }
+            }
+        }
+
+        if (event != null)
+        {
+            cancelTimeout(event);
+            runInContext(event, _channel);
+        }
+    }
+
     /**
      * Signal that the HttpConnection has finished handling the request.
      * For blocking connectors, this call may block if the request has

@@ -34,6 +34,7 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
@@ -124,9 +125,26 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-        Runnable task = channel.requestContent(frame, callback);
+        Runnable task = channel.onRequestContent(frame, callback);
         if (task != null)
             offerTask(task, false);
+    }
+
+    public void onStreamFailure(IStream stream, Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Processing failure on {}: {}", stream, failure);
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+        channel.onFailure(failure);
+    }
+
+    public void onSessionFailure(Throwable failure)
+    {
+        ISession session = getSession();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Processing failure on {}: {}", session, failure);
+        for (Stream stream : session.getStreams())
+            onStreamFailure((IStream)stream, failure);
     }
 
     public void push(Connector connector, IStream stream, MetaData.Request request)
