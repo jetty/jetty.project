@@ -216,6 +216,27 @@
               </artifactItems>
             </configuration>
           </execution>
+          <execution>
+            <id>unpack-test-webapp-config</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                 <artifactId>test-jetty-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+              <excludes>META-INF/**</excludes>
+            </configuration>
+          </execution>
 
           <execution>
             <id>unpack-test-jaas-config</id>
