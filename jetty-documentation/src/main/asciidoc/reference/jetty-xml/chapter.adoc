@@ -15,7 +15,7 @@
 //  ========================================================================
 
 [[reference-section]]
-== Reference Section
+== Jetty XML Reference
 
 include::jetty-xml-syntax.adoc[]
 include::jetty-xml-usage.adoc[]
