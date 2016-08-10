@@ -215,7 +215,7 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>test-jetty-webapp</artifactId>
+                 <artifactId>test-jetty-webapp</artifactId>
                   <version>${project.version}</version>
                   <classifier>config</classifier>
                   <type>jar</type>
