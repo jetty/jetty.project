@@ -282,7 +282,9 @@ public class BufferedResponseHandler extends HandlerWrapper
         protected void commit(Queue<ByteBuffer> buffers, Callback callback)
         {
             // If only 1 buffer
-            if (_buffers.size()==1)
+            if (_buffers.size()==0)
+                getNextInterceptor().write(BufferUtil.EMPTY_BUFFER,true,callback);
+            else if (_buffers.size()==1)
                 // just flush it with the last callback
                 getNextInterceptor().write(_buffers.remove(),true,callback);
             else
