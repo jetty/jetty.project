@@ -886,42 +886,11 @@ public class AnnotationParser
             if (LOG.isDebugEnabled()) {LOG.debug("Scanning jar {}", jarResource);};
 
             //treat it as a jar that we need to open and scan all entries from  
-            //TODO alternative impl
-            /*
-            long start = System.nanoTime();
-            Collection<Resource> resources = Resource.newResource("jar:"+jarResource+"!/").getAllResources();
-            System.err.println(jarResource+String.valueOf(resources.size())+" resources listed in "+ ((TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS))));
-            for (Resource r:resources)
-            {
-                //skip directories
-                if (r.isDirectory())
-                    continue;
-
-                String name = r.getName();
-                name = name.substring(name.indexOf("!/")+2);
-
-                //check file is a valid class file name
-                if (isValidClassFileName(name) && isValidClassFilePath(name))
-                {
-                    String shortName =  name.replace('/', '.').substring(0,name.length()-6);
-
-                    if ((resolver == null)
-                            ||
-                        (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
-                    {
-                        if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", r);};
-                        scanClass(handlers, jarResource, r.getInputStream());
-                    }
-                }
-            }
-            */
-
-           InputStream in = jarResource.getInputStream();
+            InputStream in = jarResource.getInputStream();
             if (in==null)
                 return;
 
             MultiException me = new MultiException();
-            
             JarInputStream jar_in = new JarInputStream(in);
             try
             { 
@@ -939,10 +908,15 @@ public class AnnotationParser
                     entry = jar_in.getNextJarEntry();
                 }
             }
+            catch (Exception e)
+            {
+                me.add(new RuntimeException("Error scanning jar "+jarResource, e));
+            }
             finally
             {
                 jar_in.close();
             }
+            
             me.ifExceptionThrow();
         }        
     }
