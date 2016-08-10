@@ -92,12 +92,15 @@ public class LoadGeneratorTest
             .start();
 
         LoadGeneratorResult result = loadGenerator.run();
+        loadGenerator.setResponseSize( 100 );
 
         Thread.sleep( 5000 );
 
         loadGenerator.setRequestRate( 10 );
 
-        Thread.sleep( 5000 );
+        loadGenerator.setResponseSize( 0 );
+
+        Thread.sleep( 3000 );
 
         Assert.assertTrue("successReponsesReceived :" + testResponseHandler.successReponsesReceived.get(), //
                           testResponseHandler.successReponsesReceived.get() > 1);
@@ -326,6 +329,7 @@ public class LoadGeneratorTest
                     int contentLength = request.getIntHeader( "X-Download" );
                     if ( contentLength > 0 )
                     {
+                        Log.getLogger( getClass() ).info( "contentLength: {}", contentLength );
                         response.setHeader( "X-Content", String.valueOf( contentLength ) );
                         response.getOutputStream().write( new byte[contentLength] );
                     }

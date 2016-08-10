@@ -28,9 +28,9 @@ public class LoadGenerator
 
     private long payloadSize;
 
-    private long responseSize;
+    private volatile int responseSize = 0;
 
-    private AtomicInteger requestRate;
+    private volatile int requestRate;
 
     private AtomicBoolean stop;
 
@@ -73,7 +73,7 @@ public class LoadGenerator
     {
         this.users = users;
         this.payloadSize = payloadSize;
-        this.requestRate = new AtomicInteger( requestRate );
+        this.requestRate = requestRate;
         this.host = host;
         this.port = port;
         this.path = path;
@@ -95,14 +95,14 @@ public class LoadGenerator
         return payloadSize;
     }
 
-    public AtomicInteger getRequestRate()
+    public int getRequestRate()
     {
         return requestRate;
     }
 
     public void setRequestRate( int requestRate )
     {
-        this.requestRate.set( requestRate );
+        this.requestRate = requestRate;
     }
 
     public String getHost()
@@ -135,9 +135,14 @@ public class LoadGenerator
         return resultHandlers;
     }
 
-    public long getResponseSize()
+    public int getResponseSize()
     {
         return responseSize;
+    }
+
+    public void setResponseSize( int responseSize )
+    {
+        this.responseSize = responseSize;
     }
 
     public HttpClientTransport getHttpClientTransport()
@@ -345,7 +350,7 @@ public class LoadGenerator
 
         private long payloadSize;
 
-        private long responseSize;
+        private int responseSize;
 
         private int requestRate;
 
@@ -435,7 +440,7 @@ public class LoadGenerator
             return this;
         }
 
-        public Builder setResponseSize( long responseSize )
+        public Builder setResponseSize( int responseSize )
         {
             this.responseSize = responseSize;
             return this;

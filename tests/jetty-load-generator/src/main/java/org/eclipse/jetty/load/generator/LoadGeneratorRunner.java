@@ -9,6 +9,7 @@ import org.eclipse.jetty.util.log.Logger;
 import java.net.HttpCookie;
 import java.util.List;
 import java.util.concurrent.Delayed;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -28,7 +29,8 @@ public class LoadGeneratorRunner
 
     private final LoadGeneratorResult loadGeneratorResult;
 
-    private static final HttpCookie HTTP_COOKIE = new HttpCookie( "beer", Long.toString( System.nanoTime() ) );
+    private static final HttpCookie HTTP_COOKIE = new HttpCookie( "XXX-Jetty-LoadGenerator", //
+                                                                  Long.toString( System.nanoTime() ) );
 
     public LoadGeneratorRunner( HttpClient httpClient, LoadGenerator loadGenerator, String url,
                                 LoadGeneratorResult loadGeneratorResult )
@@ -79,20 +81,27 @@ public class LoadGeneratorRunner
                 }
                 */
 
-                httpClient.newRequest( url ).cookie( HTTP_COOKIE ).send( loadGeneratorResponseListener );
+                httpClient.newRequest( url ) //
+                    .cookie( HTTP_COOKIE ) //
+                    .header( "X-Download", Integer.toString( loadGenerator.getResponseSize() ) ) //
+                    .send( loadGeneratorResponseListener );
 
-                if ( this.loadGenerator.getStop().get() )
+                if ( this.loadGenerator.getStop().get() || httpClient.isStopped() )
                 {
                     break;
                 }
 
-                long waitTime = 1000 / loadGenerator.getRequestRate().get();
+                long waitTime = 1000 / loadGenerator.getRequestRate();
 
                 waitBlock( waitTime );
 
             }
+        } catch ( RejectedExecutionException e )
+        {
+            // can happen if the client has been stopped
+            LOGGER.debug( "ignore RejectedExecutionException", e );
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             LOGGER.warn( "ignoring exception", e );
             // TODO record error in generator report
