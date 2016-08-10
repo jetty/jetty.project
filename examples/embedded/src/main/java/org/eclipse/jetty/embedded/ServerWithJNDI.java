@@ -47,7 +47,7 @@ public class ServerWithJNDI
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
         File warFile = new File(
-                "../../jetty-distribution/target/distribution/demo-base/webapps/test.war");
+                "../../jetty-distribution/target/distribution/demo-base/webapps/test-jndi.war");
         webapp.setWar(warFile.getAbsolutePath());
         server.setHandler(webapp);
 
