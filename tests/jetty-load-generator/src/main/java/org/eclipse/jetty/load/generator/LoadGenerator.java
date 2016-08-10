@@ -100,6 +100,11 @@ public class LoadGenerator
         return requestRate;
     }
 
+    public void setRequestRate( int requestRate )
+    {
+        this.requestRate.set( requestRate );
+    }
+
     public String getHost()
     {
         return host;

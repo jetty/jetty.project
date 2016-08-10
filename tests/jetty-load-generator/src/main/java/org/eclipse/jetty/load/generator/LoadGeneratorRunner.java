@@ -8,11 +8,8 @@ import org.eclipse.jetty.util.log.Logger;
 
 import java.net.HttpCookie;
 import java.util.List;
-import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -45,14 +42,14 @@ public class LoadGeneratorRunner
     @Override
     public void run()
     {
-        int rate = this.loadGenerator.getRequestRate().get();
-        long start  = System.currentTimeMillis();
-        AtomicInteger sent = new AtomicInteger( 0 );
+        //int rate = this.loadGenerator.getRequestRate().get();
+        //long start  = System.currentTimeMillis();
+        //AtomicInteger sent = new AtomicInteger( 0 );
 
         LoadGeneratorResponseListener loadGeneratorResponseListener =
             new LoadGeneratorResponseListener( loadGenerator.getResultHandlers(), this );
 
-        final ScheduledThreadPoolExecutor service = new ScheduledThreadPoolExecutor( 1);
+        //final ScheduledThreadPoolExecutor service = new ScheduledThreadPoolExecutor( 1);
 
         //DelayQueue<DelayedSend> delayedSends = new DelayQueue<>(  );
         //delayedSends.add( new DelayedSend( loadGenerator.getRequestRate().get() ) );
@@ -62,8 +59,8 @@ public class LoadGeneratorRunner
         {
             while ( true )
             {
-                httpClient.newRequest( url ).cookie( HTTP_COOKIE ).send( loadGeneratorResponseListener );
-                Thread.sleep( 1000 );
+
+                //Thread.sleep( 1000 );
                 /*
                 int delay = 1000;//000 * service.getQueue().size() / loadGenerator.getRequestRate().get();
                 service.schedule( () -> {
@@ -82,21 +79,35 @@ public class LoadGeneratorRunner
                 }
                 */
 
+                httpClient.newRequest( url ).cookie( HTTP_COOKIE ).send( loadGeneratorResponseListener );
+
                 if ( this.loadGenerator.getStop().get() )
                 {
                     break;
                 }
 
+                long waitTime = 1000 / loadGenerator.getRequestRate().get();
 
-                /*if (sent > 10) {
-                    Thread.sleep( 500 );
-                }*/
+                waitBlock( waitTime );
 
             }
         }
         catch ( Exception e )
         {
+            LOGGER.warn( "ignoring exception", e );
             // TODO record error in generator report
+        }
+    }
+
+    private void waitBlock( long timeToWait )
+    {
+        long start = System.nanoTime();
+        while ( true )
+        {
+            if ( TimeUnit.NANOSECONDS.toMillis( System.nanoTime() - start ) >= timeToWait ) //
+            {
+                return;
+            }
         }
     }
 
@@ -144,4 +155,5 @@ public class LoadGeneratorRunner
             }
         }
     }
+
 }

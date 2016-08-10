@@ -93,7 +93,11 @@ public class LoadGeneratorTest
 
         LoadGeneratorResult result = loadGenerator.run();
 
-        Thread.sleep( 10000 );
+        Thread.sleep( 5000 );
+
+        loadGenerator.setRequestRate( 10 );
+
+        Thread.sleep( 5000 );
 
         Assert.assertTrue("successReponsesReceived :" + testResponseHandler.successReponsesReceived.get(), //
                           testResponseHandler.successReponsesReceived.get() > 1);
@@ -132,7 +136,7 @@ public class LoadGeneratorTest
 
         LoadGeneratorResult result = loadGenerator.run();
 
-        Thread.sleep( 1000 );
+        Thread.sleep( 5000 );
 
         loadGenerator.stop();
 
