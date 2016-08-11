@@ -125,7 +125,7 @@ public class LoadGeneratorTest
 
         for ( LoadGenerator.Transport transport : transports) {
             for (Integer userNumber : users){
-                parameters.add( new Object[]{transport, userNumber});// Arrays.asList( transport, userNumber) .toArray( new Object[2] )  );
+                parameters.add( new Object[]{transport, userNumber});
             }
 
         }
@@ -186,43 +186,6 @@ public class LoadGeneratorTest
         loadGenerator.stop();
 
     }
-
-    /*
-    @Test
-    public void two_users()
-        throws Exception
-    {
-
-        TestResultHandler testResponseHandler = new TestResultHandler();
-
-        TestRequestListener testRequestListener = new TestRequestListener();
-
-        startServer( new LoadHandler() );
-
-        LoadGenerator loadGenerator = LoadGenerator.Builder.builder() //
-            .setHost( "localhost" ) //
-            .setPort( connector.getLocalPort() ) //
-            .setUsers( 2 ) //
-            .setResultHandlers( Arrays.asList( testResponseHandler ) ) //
-            .setRequestListeners( Arrays.asList( testRequestListener ) ) //
-            .setTransport( LoadGenerator.Transport.HTTP ) //
-            .build() //
-            .start();
-
-        LoadGeneratorResult result = loadGenerator.run();
-
-        Thread.sleep( 5000 );
-
-        loadGenerator.stop();
-
-        Assert.assertTrue( testResponseHandler.successReponsesReceived.longValue() > 1);
-
-        Assert.assertTrue( testResponseHandler.failedReponsesReceived.longValue() < 1);
-
-        Assert.assertNotNull( result );
-
-    }
-    */
 
     //---------------------------------------------------
     // utilities
