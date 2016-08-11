@@ -18,40 +18,35 @@
 
 package org.eclipse.jetty.load.generator;
 
-import java.util.concurrent.atomic.AtomicLong;
+import org.eclipse.jetty.client.api.Result;
 
-public class LoadGeneratorResult
+/**
+ *
+ */
+public class LoadGeneratorResultHandler
+    implements ResultHandler
 {
-    private AtomicLong totalRequest = new AtomicLong( 0 );
 
-    private AtomicLong totalResponse = new AtomicLong( 0 );
+    private final LoadGeneratorResult loadGeneratorResult;
 
-    private AtomicLong totalSuccess = new AtomicLong( 0 );
-
-    private AtomicLong totalFailure = new AtomicLong( 0 );
-
-    public LoadGeneratorResult()
+    public LoadGeneratorResultHandler( LoadGeneratorResult loadGeneratorResult )
     {
-        // no op
+        this.loadGeneratorResult = loadGeneratorResult;
     }
 
-    public AtomicLong getTotalRequest()
+    @Override
+    public void onResponse( Result result )
     {
-        return totalRequest;
-    }
+        this.loadGeneratorResult.getTotalResponse().incrementAndGet();
 
-    public AtomicLong getTotalResponse()
-    {
-        return totalResponse;
-    }
+        if ( result.isSucceeded() )
+        {
+            this.loadGeneratorResult.getTotalSuccess().incrementAndGet();
+        }
+        else
+        {
+            this.loadGeneratorResult.getTotalFailure().incrementAndGet();
+        }
 
-    public AtomicLong getTotalSuccess()
-    {
-        return totalSuccess;
-    }
-
-    public AtomicLong getTotalFailure()
-    {
-        return totalFailure;
     }
 }

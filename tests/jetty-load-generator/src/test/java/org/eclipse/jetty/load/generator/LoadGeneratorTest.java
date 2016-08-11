@@ -175,6 +175,10 @@ public class LoadGeneratorTest
         Assert.assertTrue("failedReponsesReceived: " + testResponseHandler.failedReponsesReceived.get(), //
                           testResponseHandler.failedReponsesReceived.get() < 1);
 
+        Assert.assertEquals( testResponseHandler.successReponsesReceived.get(), result.getTotalResponse().longValue() );
+
+        Assert.assertEquals( testResponseHandler.successReponsesReceived.get(), result.getTotalSuccess().longValue() );
+
         Assert.assertNotNull( result );
 
         loadGenerator.stop();

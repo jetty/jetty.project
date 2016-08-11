@@ -241,6 +241,10 @@ public class LoadGenerator
 
         LoadGeneratorResult loadGeneratorResult = new LoadGeneratorResult();
 
+        LoadGeneratorResultHandler loadGeneratorResultHandler = new LoadGeneratorResultHandler(loadGeneratorResult);
+
+        this.resultHandlers.add( loadGeneratorResultHandler );
+
         final String url = this.scheme + "://" + this.host + ":" + this.port + ( this.path == null ? "" : this.path );
 
         Executors.newSingleThreadScheduledExecutor().submit( () -> //
@@ -298,7 +302,7 @@ public class LoadGenerator
         throws Exception
     {
         HttpClient httpClient = new HttpClient( transport, sslContextFactory );
-        switch ( this.transport )
+        switch ( this.getTransport() )
         {
             case HTTP:
             case HTTPS:

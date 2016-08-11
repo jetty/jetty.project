@@ -81,6 +81,11 @@ public class LoadGeneratorRunner
         {
             while ( true )
             {
+                if ( this.loadGenerator.getStop().get() || httpClient.isStopped() )
+                {
+                    break;
+                }
+
 
                 //Thread.sleep( 1000 );
                 /*
@@ -113,10 +118,7 @@ public class LoadGeneratorRunner
 
                 request.send( loadGeneratorResponseListener );
 
-                if ( this.loadGenerator.getStop().get() || httpClient.isStopped() )
-                {
-                    break;
-                }
+                loadGeneratorResult.getTotalRequest().incrementAndGet();
 
                 long waitTime = 1000 / loadGenerator.getRequestRate();
 
@@ -189,6 +191,7 @@ public class LoadGeneratorRunner
         @Override
         public void onComplete( Result result )
         {
+            // TODO make that async?
             for ( ResultHandler resultHandler : resultHandlers )
             {
                 resultHandler.onResponse( result );
