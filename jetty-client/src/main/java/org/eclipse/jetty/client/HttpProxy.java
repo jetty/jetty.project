@@ -162,6 +162,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                     .header(HttpHeader.HOST, target)
                     .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS)
                     .timeout(connectTimeout, TimeUnit.MILLISECONDS);
+            ProxyConfiguration.Proxy proxy = destination.getProxy();
+            if (proxy != null && proxy.isSecure())
+                connect.scheme(HttpScheme.HTTPS.asString());
 
             final HttpConversation conversation = ((HttpRequest)connect).getConversation();
             conversation.setAttribute(EndPoint.class.getName(), endPoint);
