@@ -77,6 +77,7 @@ public class QuotedQualityCSVTest
         values.addValue("*");
         values.addValue("compress;q=0.5, gzip;q=1.0");
         values.addValue("gzip;q=1.0, identity; q=0.5, *;q=0");
+        
         Assert.assertThat(values,Matchers.contains(
                 "compress",
                 "gzip",

@@ -31,10 +31,11 @@ public class QuotedCSVTest
     public void testOWS()
     {
         QuotedCSV values = new QuotedCSV();
-        values.addValue("  value 0.5  ;  p = v  ;  q =0.5  ,  value 1.0 ");
+        values.addValue("  value 0.5  ;  pqy = vwz  ;  q =0.5  ,  value 1.0 ,  other ; param ");
         Assert.assertThat(values,Matchers.contains(
-                "value 0.5;p=v;q=0.5",
-                "value 1.0"));
+                "value 0.5;pqy=vwz;q=0.5",
+                "value 1.0",
+                "other;param"));
     }
     
     @Test
@@ -88,6 +89,57 @@ public class QuotedCSVTest
                 "value;p=v"));
     }
 
+    @Test
+    public void testParamsOnly()
+    {
+        QuotedCSV values = new QuotedCSV(false);
+        values.addValue("for=192.0.2.43, for=\"[2001:db8:cafe::17]\", for=unknown");
+        assertThat(values,Matchers.contains(
+                "for=192.0.2.43",
+                "for=[2001:db8:cafe::17]",
+                "for=unknown"));
+    }
+
+    @Test
+    public void testMutation()
+    {
+        QuotedCSV values = new QuotedCSV(false)
+        {
+
+            @Override
+            protected void parsedValue(StringBuffer buffer)
+            {
+                if (buffer.toString().contains("DELETE"))
+                {
+                    String s = buffer.toString().replace("DELETE","");
+                    buffer.setLength(0);
+                    buffer.append(s);
+                }
+                if (buffer.toString().contains("APPEND"))
+                {
+                    String s = buffer.toString().replace("APPEND","Append")+"!";
+                    buffer.setLength(0);
+                    buffer.append(s);
+                }
+            }
+
+            @Override
+            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+            {
+                String name = paramValue>0?buffer.substring(paramName,paramValue-1):buffer.substring(paramName);
+                if ("IGNORE".equals(name))
+                    buffer.setLength(paramName-1);
+            }
+            
+        };
+            
+        values.addValue("normal;param=val, testAPPENDandDELETEvalue ; n=v; IGNORE = this; x=y ");
+        assertThat(values,Matchers.contains(
+                "normal;param=val",
+                "testAppendandvalue!;n=v;x=y"));
+    }
+    
+    
     @Test
     public void testUnQuote()
     {
