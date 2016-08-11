@@ -106,7 +106,9 @@ public class LoadGeneratorTest
     public static Collection<Object[]> data() {
 
 
-        List<LoadGenerator.Transport> transports = Arrays.asList( LoadGenerator.Transport.HTTP );
+        List<LoadGenerator.Transport> transports = new ArrayList<>(  );
+
+        transports.add( LoadGenerator.Transport.HTTP );
 
         // FIXME LoadGenerator.Transport.H2, issue with ALPN
         // FIXME other transports
@@ -148,7 +150,7 @@ public class LoadGeneratorTest
             .setRequestRate( 1 ) //
             .setResultHandlers( Arrays.asList( testResponseHandler ) ) //
             .setRequestListeners( Arrays.asList( testRequestListener ) ) //
-            .setTransport( LoadGenerator.Transport.HTTP ) //
+            .setTransport( this.transport ) //
             .build() //
             .start();
 

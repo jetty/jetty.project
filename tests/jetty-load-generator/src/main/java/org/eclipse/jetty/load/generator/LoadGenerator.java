@@ -25,6 +25,7 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import java.util.ArrayList;
@@ -32,10 +33,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
@@ -511,7 +509,7 @@ public class LoadGenerator
 
         public LoadGenerator build()
         {
-            // FIXME control more data input
+            this.validate();
             LoadGenerator loadGenerator =
                 new LoadGenerator( users, payloadSize, requestRate, host, port, path, //
                                    method == null ? HttpMethod.GET.asString() : method );
@@ -526,6 +524,29 @@ public class LoadGenerator
             loadGenerator.selectors = selectors;
             loadGenerator.scheme = scheme;
             return loadGenerator;
+        }
+
+        public void validate()
+        {
+            if (users < 1)
+            {
+                throw new IllegalArgumentException( "users number must be at least 1" );
+            }
+
+            if (requestRate < 0) {
+                throw new IllegalArgumentException( "users number must be at least 0" );
+            }
+
+            if ( StringUtil.isBlank( host )) {
+                throw new IllegalArgumentException( "host cannot be null or blank" );
+            }
+
+            if ( port < 1) {
+                throw new IllegalArgumentException( "port must be a positive integer" );
+            }
+
+            //if (this.)
+
         }
 
     }
