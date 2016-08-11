@@ -122,6 +122,9 @@ public class ProxyConfiguration
          */
         public boolean matches(Origin origin)
         {
+            if (getAddress().equals(origin.getAddress()))
+                return false;
+
             boolean result = included.isEmpty();
             Origin.Address address = origin.getAddress();
             for (String included : this.included)

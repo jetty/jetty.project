@@ -117,7 +117,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
             Authentication authentication = null;
             Authentication.HeaderInfo headerInfo = null;
-            URI authURI = getAuthenticationURI(request);
+            URI authURI = resolveURI(request, getAuthenticationURI(request));
             if (authURI != null)
             {
                 for (Authentication.HeaderInfo element : headerInfos)
@@ -155,11 +155,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 String path = null;
                 if (requestURI == null)
                 {
-                    String uri = request.getScheme() + "://" + request.getHost();
-                    int port = request.getPort();
-                    if (port > 0)
-                        uri += ":" + port;
-                    requestURI = URI.create(uri);
+                    requestURI = resolveURI(request, null);
                     path = request.getPath();
                 }
                 Request newRequest = client.copyRequest(request, requestURI);
@@ -185,6 +181,17 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                     LOG.debug("Authentication failed", x);
                 forwardFailureComplete(request, null, response, x);
             }
+        }
+
+        private URI resolveURI(HttpRequest request, URI uri)
+        {
+            if (uri != null)
+                return uri;
+            String target = request.getScheme() + "://" + request.getHost();
+            int port = request.getPort();
+            if (port > 0)
+                target += ":" + port;
+            return URI.create(target);
         }
 
         private void copyIfAbsent(HttpRequest oldRequest, Request newRequest, HttpHeader header)

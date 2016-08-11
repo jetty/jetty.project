@@ -505,6 +505,29 @@ public class ForwardProxyTLSServerTest
     }
 
     @Test
+    public void testProxyAuthenticationWithIncludedAddressWithResponseContent() throws Exception
+    {
+        final String realm = "test-realm";
+        testProxyAuthentication(realm, new ConnectHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                String proxyAuth = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                if (proxyAuth == null)
+                {
+                    baseRequest.setHandled(true);
+                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
+                    response.getOutputStream().write(new byte[1024]);
+                    return;
+                }
+                super.handle(target, baseRequest, request, response);
+            }
+        }, true);
+    }
+
+    @Test
     public void testProxyAuthenticationClosesConnection() throws Exception
     {
         final String realm = "test-realm";
@@ -530,11 +553,19 @@ public class ForwardProxyTLSServerTest
 
     private void testProxyAuthentication(String realm, ConnectHandler connectHandler) throws Exception
     {
+        testProxyAuthentication(realm, connectHandler, false);
+    }
+
+    private void testProxyAuthentication(String realm, ConnectHandler connectHandler, boolean includeAddress) throws Exception
+    {
         startTLSServer(new ServerHandler());
         startProxy(connectHandler);
 
         HttpClient httpClient = new HttpClient(newSslContextFactory());
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        HttpProxy httpProxy = newHttpProxy();
+        if (includeAddress)
+            httpProxy.getIncludedAddresses().add("localhost:" + serverConnector.getLocalPort());
+        httpClient.getProxyConfiguration().getProxies().add(httpProxy);
         URI uri = URI.create((proxySslContextFactory == null ? "http" : "https") + "://localhost:" + proxyConnector.getLocalPort());
         httpClient.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "proxyUser", "proxyPassword"));
         httpClient.start();
