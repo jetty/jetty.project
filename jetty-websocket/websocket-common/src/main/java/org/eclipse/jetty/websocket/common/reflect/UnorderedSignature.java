@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.reflect.DynamicArgs.Signature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
-class UnorderedSignature implements Signature, Predicate<Method>
+public class UnorderedSignature implements Signature, Predicate<Method>
 {
     private class SelectedArg extends Arg
     {
@@ -52,17 +52,17 @@ class UnorderedSignature implements Signature, Predicate<Method>
     }
     
     private final static Logger LOG = Log.getLogger(UnorderedSignature.class);
-    private final Arg[] params;
+    private final Arg[] callArgs;
     
     public UnorderedSignature(Arg... args)
     {
-        this.params = args;
+        this.callArgs = args;
     }
     
     @Override
     public Arg[] getCallArgs()
     {
-        return this.params;
+        return this.callArgs;
     }
     
     @Override
@@ -74,14 +74,14 @@ class UnorderedSignature implements Signature, Predicate<Method>
     @Override
     public boolean test(Method method)
     {
-        return getArgMapping(method, false, params) != null;
+        return getArgMapping(method, false, callArgs) != null;
     }
     
     public void appendDescription(StringBuilder str)
     {
         str.append('(');
         boolean delim = false;
-        for (Arg arg : params)
+        for (Arg arg : callArgs)
         {
             if (delim)
             {
@@ -224,6 +224,20 @@ class UnorderedSignature implements Signature, Predicate<Method>
     public BiFunction<Object, Object[], Object> getInvoker(Method method, Arg... callArgs)
     {
         int argMapping[] = getArgMapping(method, true, callArgs);
+        
+        // Return function capable of calling method
+        return new UnorderedParamsFunction(method, argMapping);
+    }
+    
+    /**
+     * Generate BiFunction for this signature.
+     *
+     * @param method the method to get the invoker function for
+     * @return BiFunction of Endpoint Object, Call Args, Return Type
+     */
+    public BiFunction<Object, Object[], Object> newFunction(Method method)
+    {
+        int argMapping[] = getArgMapping(method, true, this.callArgs);
         
         // Return function capable of calling method
         return new UnorderedParamsFunction(method, argMapping);

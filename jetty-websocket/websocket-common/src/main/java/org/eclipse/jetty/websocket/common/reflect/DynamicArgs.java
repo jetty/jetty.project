@@ -166,7 +166,7 @@ public class DynamicArgs
      */
     private final BiFunction<Object, Object[], Object> invoker;
 
-    private DynamicArgs(BiFunction<Object, Object[], Object> invoker)
+    public DynamicArgs(BiFunction<Object, Object[], Object> invoker)
     {
         this.invoker = invoker;
     }

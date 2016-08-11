@@ -18,58 +18,20 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
-public class ByteBufferMessageSink implements MessageSink
+public class ByteBufferMessageSink extends ByteArrayMessageSink
 {
-    private static final int BUFFER_SIZE = 65535;
-    private final WebSocketPolicy policy;
-    private final Function<ByteBuffer, Void> onMessageFunction;
-    private ByteArrayOutputStream out;
-    private int size;
-
     public ByteBufferMessageSink(WebSocketPolicy policy, Function<ByteBuffer, Void> onMessageFunction)
     {
-        this.policy = policy;
-        this.onMessageFunction = onMessageFunction;
-    }
-
-    @Override
-    public void accept(ByteBuffer payload, Boolean fin)
-    {
-        try
+        super(policy, (byteArray) ->
         {
-            if (payload != null)
-            {
-                policy.assertValidBinaryMessageSize(size + payload.remaining());
-                size += payload.remaining();
-
-                if (out == null)
-                    out = new ByteArrayOutputStream(BUFFER_SIZE);
-
-                BufferUtil.writeTo(payload,out);
-            }
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException("Unable to append Binary Message", e);
-        }
-        finally
-        {
-            if (fin)
-            {
-                ByteBuffer bbuf = ByteBuffer.wrap(out.toByteArray());
-                onMessageFunction.apply(bbuf);
-                // reset
-                out = null;
-                size = 0;
-            }
-        }
+            ByteBuffer bbuf = ByteBuffer.wrap(byteArray);
+            onMessageFunction.apply(bbuf);
+            return null;
+        });
     }
 }

@@ -43,6 +43,7 @@ public class StringMessageSink implements MessageSink
         this.size = 0;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void accept(ByteBuffer payload, Boolean fin)
     {

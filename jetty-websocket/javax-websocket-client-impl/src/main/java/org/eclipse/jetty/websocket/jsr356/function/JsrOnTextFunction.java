@@ -24,69 +24,56 @@ import java.util.function.Function;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 
+import org.eclipse.jetty.websocket.common.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.reflect.Arg;
+import org.eclipse.jetty.websocket.common.reflect.DynamicArgs;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 /**
  * javax.websocket {@link OnMessage} method {@link Function} for TEXT/{@link String} types
  */
-@Deprecated
-public class JsrOnTextFunction implements Function<String, Void>
+public class JsrOnTextFunction<T> implements Function<T, Object>
 {
-/*    private static final DynamicArgs.Builder ARGBUILDER;
-    private static final int SESSION = 1;
-    private static final int TEXT = 2;
-
+    private static final DynamicArgs.Builder ARGBUILDER;
+    private static final Arg SESSION = new Arg(Session.class);
+    private static final Arg TEXT = new Arg(String.class).required();
+    
     static
     {
         ARGBUILDER = new DynamicArgs.Builder();
-        ARGBUILDER.addSignature(new ExactSignature(String.class).indexedAs(TEXT));
-        ARGBUILDER.addSignature(new ExactSignature(Session.class,String.class).indexedAs(SESSION,TEXT));
-    }
-    
-    public static DynamicArgs.Builder getDynamicArgsBuilder()
-    {
-        return ARGBUILDER;
+        ARGBUILDER.addSignature(SESSION, TEXT);
     }
     
     public static boolean hasMatchingSignature(Method method)
     {
         return ARGBUILDER.hasMatchingSignature(method);
-    }*/
-
+    }
+    
     private final Session session;
     private final Object endpoint;
     private final Method method;
-
+    private final DynamicArgs callable;
+    
     public JsrOnTextFunction(Session session, Object endpoint, Method method)
     {
         this.session = session;
         this.endpoint = endpoint;
         this.method = method;
-
-        ReflectUtils.assertIsAnnotated(method,OnMessage.class);
+        
+        ReflectUtils.assertIsAnnotated(method, OnMessage.class);
         ReflectUtils.assertIsPublicNonStatic(method);
-        ReflectUtils.assertIsReturn(method,Void.TYPE);
-
-        /*this.callable = ARGBUILDER.build(method);
+        ReflectUtils.assertIsReturn(method, Void.TYPE);
+        
+        this.callable = ARGBUILDER.build(method, SESSION, TEXT);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method,OnMessage.class,ARGBUILDER);
+            throw InvalidSignatureException.build(method, OnMessage.class, ARGBUILDER);
         }
-        this.callable.setArgReferences(SESSION,TEXT);*/
     }
-
+    
     @Override
-    public Void apply(String text)
+    public Object apply(T text)
     {
-        /*Object args[] = this.callable.toArgs(session,text);
-        try
-        {
-            method.invoke(endpoint,args);
-        }
-        catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
-        {
-            throw new WebSocketException("Unable to call text message method " + ReflectUtils.toString(endpoint.getClass(),method),e);
-        }*/
-        return null;
+        return this.callable.invoke(endpoint, session, text);
     }
 }

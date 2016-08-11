@@ -18,13 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356.function;
 
-import java.lang.reflect.InvocationTargetException;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
@@ -46,20 +49,20 @@ import org.junit.Test;
 public class JsrEndpointFunctions_OnMessage_BinaryTest
 {
     private static ClientContainer container;
-
+    
     @BeforeClass
     public static void initContainer()
     {
         container = new ClientContainer();
     }
-
+    
     private AvailableEncoders encoders = new AvailableEncoders();
     private AvailableDecoders decoders = new AvailableDecoders();
     private Map<String, String> uriParams = new HashMap<>();
     private EndpointConfig endpointConfig = new EmptyClientEndpointConfig();
-
+    
     private String expectedBuffer;
-
+    
     public JsrSession newSession(Object websocket)
     {
         String id = JsrEndpointFunctions_OnMessage_BinaryTest.class.getSimpleName();
@@ -70,8 +73,8 @@ public class JsrEndpointFunctions_OnMessage_BinaryTest
         ConfiguredEndpoint ei = new ConfiguredEndpoint(websocket, config);
         return new JsrSession(container, id, requestURI, ei, connection);
     }
-
-    private void assertOnMessageInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws InvocationTargetException, IllegalAccessException
+    
+    private void assertOnMessageInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
     {
         JsrEndpointFunctions endpointFunctions = new JsrEndpointFunctions(
                 socket, container.getPolicy(),
@@ -81,78 +84,85 @@ public class JsrEndpointFunctions_OnMessage_BinaryTest
                 uriParams,
                 endpointConfig
         );
-
+        endpointFunctions.start();
+        
+        assertThat("Has BinarySink", endpointFunctions.hasBinarySink(), is(true));
+        
         // This invocation is the same for all tests
         ByteBuffer byteBuffer = ByteBuffer.wrap("Hello World".getBytes(StandardCharsets.UTF_8));
         expectedBuffer = BufferUtil.toDetailString(byteBuffer);
         endpointFunctions.onBinary(byteBuffer, true);
         socket.assertEvent(String.format(expectedEventFormat, args));
     }
-
+    
+    @ClientEndpoint
     public static class MessageSocket extends TrackingSocket
     {
-        // TODO: Ambiguous declaration
+        // Invalid OnMessage - mandatory type (TEXT/BINARY) missing
+        @SuppressWarnings("IncorrectOnMessageMethodsInspection")
         @OnMessage
         public void onMessage()
         {
             addEvent("onMessage()");
         }
     }
-
+    
     @Test
-    public void testInvokeMessage() throws InvocationTargetException, IllegalAccessException
+    public void testInvokeMessage() throws Exception
     {
         assertOnMessageInvocation(new MessageSocket(), "onMessage()");
     }
-
-    public static class MessageTextSocket extends TrackingSocket
+    
+    @ClientEndpoint
+    public static class MessageByteBufferSocket extends TrackingSocket
     {
         @OnMessage
-        public void onMessage(String msg)
+        public void onMessage(ByteBuffer msg)
         {
-            addEvent("onMessage(%s)", msg);
+            addEvent("onMessage(%s)", BufferUtil.toUTF8String(msg));
         }
     }
-
+    
     @Test
-    public void testInvokeMessageText() throws InvocationTargetException, IllegalAccessException
+    public void testInvokeMessageByteBuffer() throws Exception
     {
-        assertOnMessageInvocation(new MessageTextSocket(), "onMessage(Hello World)");
+        assertOnMessageInvocation(new MessageByteBufferSocket(), "onMessage(Hello World)");
     }
-
+    
+    @ClientEndpoint
     public static class MessageSessionSocket extends TrackingSocket
     {
-        // TODO: Ambiguous declaration
+        // Invalid OnMessage - mandatory type (TEXT/BINARY) missing
         @OnMessage
         public void onMessage(Session session)
         {
             addEvent("onMessage(%s)", session);
         }
     }
-
+    
     @Test
-    public void testInvokeMessageSession() throws InvocationTargetException, IllegalAccessException
+    public void testInvokeMessageSession() throws Exception
     {
         assertOnMessageInvocation(new MessageSessionSocket(),
                 "onMessage(JsrSession[CLIENT,%s,DummyConnection])",
                 MessageSessionSocket.class.getName());
     }
-
-    public static class MessageSessionTextSocket extends TrackingSocket
+    
+    @ClientEndpoint
+    public static class MessageSessionByteBufferSocket extends TrackingSocket
     {
         @OnMessage
-        public void onMessage(Session session, String msg)
+        public void onMessage(Session session, ByteBuffer msg)
         {
-
-            addEvent("onMessage(%s, %s)", session, msg);
+            addEvent("onMessage(%s, %s)", session, BufferUtil.toUTF8String(msg));
         }
     }
-
+    
     @Test
-    public void testInvokeMessageSessionText() throws InvocationTargetException, IllegalAccessException
+    public void testInvokeMessageSessionByteBuffer() throws Exception
     {
-        assertOnMessageInvocation(new MessageSessionTextSocket(),
+        assertOnMessageInvocation(new MessageSessionByteBufferSocket(),
                 "onMessage(JsrSession[CLIENT,%s,DummyConnection], Hello World)",
-                MessageSessionTextSocket.class.getName());
+                MessageSessionByteBufferSocket.class.getName());
     }
 }

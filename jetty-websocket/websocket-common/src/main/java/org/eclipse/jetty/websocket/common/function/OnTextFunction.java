@@ -68,7 +68,7 @@ public class OnTextFunction implements Function<String, Void>
         ReflectUtils.assertIsAnnotated(method, OnWebSocketMessage.class);
         ReflectUtils.assertIsPublicNonStatic(method);
         ReflectUtils.assertIsReturn(method, Void.TYPE);
-
+        
         this.callable = ARGBUILDER.build(method, ARG_SESSION, ARG_TEXT);
         if (this.callable == null)
         {
