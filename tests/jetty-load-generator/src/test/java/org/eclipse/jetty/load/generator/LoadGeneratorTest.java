@@ -5,6 +5,7 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
@@ -37,6 +38,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
@@ -44,33 +46,74 @@ import java.util.concurrent.atomic.AtomicLong;
 @RunWith( Parameterized.class )
 public class LoadGeneratorTest
 {
-    protected SslContextFactory sslContextFactory;
+    SslContextFactory sslContextFactory;
 
-    protected Server server;
+    Server server;
 
-    protected ServerConnector connector;
+    ServerConnector connector;
 
-    protected final LoadGenerator.Transport transport;
+    final LoadGenerator.Transport transport;
+
+    final int usersNumber;
 
     Logger logger = Log.getLogger( getClass());
 
-    public LoadGeneratorTest( LoadGenerator.Transport transport )
+    public LoadGeneratorTest( LoadGenerator.Transport transport, int usersNumber )
     {
         this.transport = transport;
+        this.usersNumber = usersNumber;
     }
 
+    /*
     @Parameterized.Parameters( name = "transport: {0}" )
     public static Object[] parameters()
         throws Exception
     {
-        // FIXME LoadGenerator.Transport.H2, issue with ALPN
+
         return new Object[]{
             LoadGenerator.Transport.HTTP }; //, LoadGenerator.Transport.HTTPS,
             //LoadGenerator.Transport.H2C }; // LoadGenerator.Transport.values(); LoadGenerator.Transport.H2,
     }
 
+    @Parameterized.Parameters( name = "usersNumber: {0}" )
+    public static Object[] usersNumber()
+        throws Exception
+    {
+        return new Object[]{ new Integer( 1 ) };
+    }
+
+    */
+
+    @Parameterized.Parameters(name = "transport/users: {0},{1}")
+    public static Collection<Object[]> data() {
+
+
+        List<LoadGenerator.Transport> transports = Arrays.asList( LoadGenerator.Transport.HTTP );
+
+        // FIXME LoadGenerator.Transport.H2, issue with ALPN
+        // FIXME other transports
+        //transports.add( LoadGenerator.Transport.HTTPS );
+        //transports.add( LoadGenerator.Transport.H2 );
+        //transports.add( LoadGenerator.Transport.H2C );
+        //transports.add( LoadGenerator.Transport.FCGI);
+
+
+        // number of users
+        List<Integer> users = Arrays.asList( 1, 2 );
+
+        List<Object[]> parameters = new ArrayList<>(  );
+
+        for ( LoadGenerator.Transport transport : transports) {
+            for (Integer userNumber : users){
+                parameters.add( new Object[]{transport, userNumber});// Arrays.asList( transport, userNumber) .toArray( new Object[2] )  );
+            }
+
+        }
+        return parameters;
+    }
+
     @Test
-    public void one_user()
+    public void simple_test()
         throws Exception
     {
 
@@ -100,6 +143,10 @@ public class LoadGeneratorTest
 
         loadGenerator.setResponseSize( 0 );
 
+        loadGenerator.setMethod( HttpMethod.POST.asString() );
+
+        loadGenerator.setPayloadSize( 1000 );
+
         Thread.sleep( 3000 );
 
         Assert.assertTrue("successReponsesReceived :" + testResponseHandler.successReponsesReceived.get(), //
@@ -116,6 +163,7 @@ public class LoadGeneratorTest
 
     }
 
+    /*
     @Test
     public void two_users()
         throws Exception
@@ -150,6 +198,7 @@ public class LoadGeneratorTest
         Assert.assertNotNull( result );
 
     }
+    */
 
     //---------------------------------------------------
     // utilities
@@ -337,6 +386,7 @@ public class LoadGeneratorTest
                 }
                 case "POST":
                 {
+                    Log.getLogger( getClass() ).info( "method: {}", method );
                     response.setHeader( "X-Content", request.getHeader( "X-Upload" ) );
                     IO.copy( request.getInputStream(), response.getOutputStream() );
                     break;

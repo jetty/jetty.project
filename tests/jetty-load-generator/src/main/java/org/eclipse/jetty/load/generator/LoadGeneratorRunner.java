@@ -1,8 +1,11 @@
 package org.eclipse.jetty.load.generator;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -81,10 +84,17 @@ public class LoadGeneratorRunner
                 }
                 */
 
-                httpClient.newRequest( url ) //
+                Request request = httpClient.newRequest( url ) //
                     .cookie( HTTP_COOKIE ) //
                     .header( "X-Download", Integer.toString( loadGenerator.getResponseSize() ) ) //
-                    .send( loadGeneratorResponseListener );
+                    .method( loadGenerator.getMethod() );
+                
+
+                if (loadGenerator.getPayloadSize() > 0) {
+                    request.content( new BytesContentProvider(new byte[loadGenerator.getPayloadSize()]) );
+                }
+
+                request.send( loadGeneratorResponseListener );
 
                 if ( this.loadGenerator.getStop().get() || httpClient.isStopped() )
                 {
@@ -108,6 +118,10 @@ public class LoadGeneratorRunner
         }
     }
 
+    /**
+     * really naive implementation of wait x millis
+     * @param timeToWait
+     */
     private void waitBlock( long timeToWait )
     {
         long start = System.nanoTime();

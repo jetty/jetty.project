@@ -4,6 +4,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -26,7 +27,7 @@ public class LoadGenerator
 
     private int users;
 
-    private long payloadSize;
+    private volatile int payloadSize;
 
     private volatile int responseSize = 0;
 
@@ -69,7 +70,7 @@ public class LoadGenerator
         FCGI
     }
 
-    LoadGenerator( int users, long payloadSize, int requestRate, String host, int port, String path, String method )
+    LoadGenerator( int users, int payloadSize, int requestRate, String host, int port, String path, String method )
     {
         this.users = users;
         this.payloadSize = payloadSize;
@@ -90,7 +91,7 @@ public class LoadGenerator
         return users;
     }
 
-    public long getPayloadSize()
+    public int getPayloadSize()
     {
         return payloadSize;
     }
@@ -168,6 +169,16 @@ public class LoadGenerator
     public AtomicBoolean getStop()
     {
         return stop;
+    }
+
+    public void setPayloadSize( int payloadSize )
+    {
+        this.payloadSize = payloadSize;
+    }
+
+    public void setMethod( String method )
+    {
+        this.method = method;
     }
 
     //--------------------------------------------------------------
@@ -348,7 +359,7 @@ public class LoadGenerator
 
         private int users;
 
-        private long payloadSize;
+        private int payloadSize;
 
         private int responseSize;
 
@@ -387,7 +398,7 @@ public class LoadGenerator
             return this;
         }
 
-        public Builder setPayloadSize( long payloadSize )
+        public Builder setPayloadSize( int payloadSize )
         {
             this.payloadSize = payloadSize;
             return this;
@@ -480,7 +491,8 @@ public class LoadGenerator
         {
             // FIXME control more data input
             LoadGenerator loadGenerator =
-                new LoadGenerator( users, payloadSize, requestRate, host, port, path, method );
+                new LoadGenerator( users, payloadSize, requestRate, host, port, path, //
+                                   method == null ? HttpMethod.GET.asString() : method );
             loadGenerator.transport = this.transport;
             loadGenerator.resultHandlers = this.resultHandlers == null ? new CopyOnWriteArrayList<>() //
                 : new CopyOnWriteArrayList<>( this.resultHandlers );
