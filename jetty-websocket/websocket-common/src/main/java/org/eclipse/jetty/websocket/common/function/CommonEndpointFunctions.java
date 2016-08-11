@@ -66,11 +66,11 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycle implements EndpointFunctions<T>
 {
     private static final Logger LOG = Log.getLogger(CommonEndpointFunctions.class);
-
+    
     protected final Object endpoint;
     protected final WebSocketPolicy policy;
     protected final Executor executor;
-
+    
     private T session;
     private Function<T, Void> onOpenFunction;
     private Function<CloseInfo, Void> onCloseFunction;
@@ -78,19 +78,19 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     private Function<Frame, Void> onFrameFunction;
     private Function<ByteBuffer, Void> onPingFunction;
     private Function<ByteBuffer, Void> onPongFunction;
-
+    
     private MessageSink onTextSink;
     private MessageSink onBinarySink;
-
+    
     private BatchMode batchMode;
-
+    
     public CommonEndpointFunctions(Object endpoint, WebSocketPolicy policy, Executor executor)
     {
         Object e = endpoint;
         // unwrap endpoint
         while (e instanceof ManagedEndpoint)
             e = ((ManagedEndpoint) e).getRawEndpoint();
-
+        
         Objects.requireNonNull(endpoint, "Endpoint cannot be null");
         Objects.requireNonNull(policy, "WebSocketPolicy cannot be null");
         Objects.requireNonNull(executor, "Executor cannot be null");
@@ -98,65 +98,71 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         this.policy = policy;
         this.executor = executor;
     }
-
+    
     @Override
     protected void doStart() throws Exception
     {
         super.doStart();
         discoverEndpointFunctions(this.endpoint);
     }
-
+    
     protected void discoverEndpointFunctions(Object endpoint)
     {
         boolean supportAnnotations = true;
-
+        
         // Connection Listener
         if (endpoint instanceof WebSocketConnectionListener)
         {
             WebSocketConnectionListener listener = (WebSocketConnectionListener) endpoint;
-            setOnOpen((session) -> {
+            setOnOpen((session) ->
+                    {
                         listener.onWebSocketConnect(session);
                         return null;
                     },
                     ReflectUtils.findMethod(endpoint.getClass(), "onWebSocketConnect", Session.class)
             );
-            setOnClose((close) -> {
+            setOnClose((close) ->
+                    {
                         listener.onWebSocketClose(close.getStatusCode(), close.getReason());
                         return null;
                     },
                     ReflectUtils.findMethod(endpoint.getClass(), "onWebSocketClose", int.class, String.class)
             );
-            setOnError((cause) -> {
+            setOnError((cause) ->
+                    {
                         listener.onWebSocketError(cause);
                         return null;
                     },
                     ReflectUtils.findMethod(endpoint.getClass(), "onWebSocketError", Throwable.class));
             supportAnnotations = false;
         }
-
+        
         // Simple Data Listener
         if (endpoint instanceof WebSocketListener)
         {
             WebSocketListener listener = (WebSocketListener) endpoint;
-
-            setOnText(new StringMessageSink(policy, (payload) -> {
+            
+            setOnText(new StringMessageSink(policy, (payload) ->
+                    {
                         listener.onWebSocketText(payload);
                         return null;
                     }),
                     ReflectUtils.findMethod(endpoint.getClass(), "onWebSocketText", String.class));
-            setOnBinary(new ByteArrayMessageSink(policy, (payload) -> {
+            setOnBinary(new ByteArrayMessageSink(policy, (payload) ->
+                    {
                         listener.onWebSocketBinary(payload, 0, payload.length);
                         return null;
                     }),
                     ReflectUtils.findMethod(endpoint.getClass(), "onWebSocketBinary", byte[].class, int.class, int.class));
             supportAnnotations = false;
         }
-
+        
         // Ping/Pong Listener
         if (endpoint instanceof WebSocketPingPongListener)
         {
             WebSocketPingPongListener listener = (WebSocketPingPongListener) endpoint;
-            setOnPong((pong) -> {
+            setOnPong((pong) ->
+                    {
                         ByteBuffer payload = pong;
                         if (pong == null)
                             payload = BufferUtil.EMPTY_BUFFER;
@@ -164,7 +170,8 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
                         return null;
                     },
                     ReflectUtils.findMethod(endpoint.getClass(), "onWebSocketPong", ByteBuffer.class));
-            setOnPing((ping) -> {
+            setOnPing((ping) ->
+                    {
                         ByteBuffer payload = ping;
                         if (ping == null)
                             payload = BufferUtil.EMPTY_BUFFER;
@@ -174,44 +181,47 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
                     ReflectUtils.findMethod(endpoint.getClass(), "onWebSocketPing", ByteBuffer.class));
             supportAnnotations = false;
         }
-
+        
         // Partial Data / Message Listener
         if (endpoint instanceof WebSocketPartialListener)
         {
             WebSocketPartialListener listener = (WebSocketPartialListener) endpoint;
-            setOnText(new PartialTextMessageSink((partial) -> {
+            setOnText(new PartialTextMessageSink((partial) ->
+                    {
                         listener.onWebSocketPartialText(partial.getPayload(), partial.isFin());
                         return null;
                     }),
                     ReflectUtils.findMethod(endpoint.getClass(), "onWebSocketPartialText", String.class, boolean.class));
-            setOnBinary(new PartialBinaryMessageSink((partial) -> {
+            setOnBinary(new PartialBinaryMessageSink((partial) ->
+                    {
                         listener.onWebSocketPartialBinary(partial.getPayload(), partial.isFin());
                         return null;
                     }),
                     ReflectUtils.findMethod(endpoint.getClass(), "onWebSocketPartialBinary", ByteBuffer.class, boolean.class));
             supportAnnotations = false;
         }
-
+        
         // Frame Listener
         if (endpoint instanceof WebSocketFrameListener)
         {
             WebSocketFrameListener listener = (WebSocketFrameListener) endpoint;
-            setOnFrame((frame) -> {
+            setOnFrame((frame) ->
+                    {
                         listener.onWebSocketFrame(new ReadOnlyDelegatedFrame(frame));
                         return null;
                     },
                     ReflectUtils.findMethod(endpoint.getClass(), "onWebSocketFrame", Frame.class));
             supportAnnotations = false;
         }
-
+        
         if (supportAnnotations)
             discoverAnnotatedEndpointFunctions(endpoint);
     }
-
+    
     protected void discoverAnnotatedEndpointFunctions(Object endpoint)
     {
         // Test for annotated websocket endpoint
-
+        
         Class<?> endpointClass = endpoint.getClass();
         WebSocket websocket = endpointClass.getAnnotation(WebSocket.class);
         if (websocket != null)
@@ -220,11 +230,11 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             policy.setMaxBinaryMessageSize(websocket.maxBinaryMessageSize());
             policy.setMaxTextMessageSize(websocket.maxTextMessageSize());
             policy.setIdleTimeout(websocket.maxIdleTime());
-
+            
             this.batchMode = websocket.batchMode();
-
+            
             Method onmethod = null;
-
+            
             // OnWebSocketConnect [0..1]
             onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketConnect.class);
             if (onmethod != null)
@@ -294,17 +304,17 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             }
         }
     }
-
+    
     public BatchMode getBatchMode()
     {
         return batchMode;
     }
-
+    
     public T getSession()
     {
         return session;
     }
-
+    
     public void setOnOpen(Function<T, Void> function, Object origin)
     {
         assertNotSet(this.onOpenFunction, "Open Handler", origin);
@@ -314,7 +324,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             LOG.debug("Assigned onOpen to " + describeOrigin(origin));
         }
     }
-
+    
     public void setOnClose(Function<CloseInfo, Void> function, Object origin)
     {
         assertNotSet(this.onCloseFunction, "Close Handler", origin);
@@ -324,7 +334,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             LOG.debug("Assigned onClose to " + describeOrigin(origin));
         }
     }
-
+    
     public void setOnError(Function<Throwable, Void> function, Object origin)
     {
         assertNotSet(this.onErrorFunction, "Error Handler", origin);
@@ -334,7 +344,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             LOG.debug("Assigned onError to " + describeOrigin(origin));
         }
     }
-
+    
     public void setOnText(MessageSink messageSink, Object origin)
     {
         assertNotSet(this.onTextSink, "TEXT Handler", origin);
@@ -344,7 +354,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             LOG.debug("Assigned onText to " + describeOrigin(origin));
         }
     }
-
+    
     public void setOnBinary(MessageSink messageSink, Object origin)
     {
         assertNotSet(this.onBinarySink, "BINARY Handler", origin);
@@ -354,7 +364,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             LOG.debug("Assigned onBinary to " + describeOrigin(origin));
         }
     }
-
+    
     public void setOnFrame(Function<Frame, Void> function, Object origin)
     {
         assertNotSet(this.onFrameFunction, "Frame Handler", origin);
@@ -364,7 +374,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             LOG.debug("Assigned onFrame to " + describeOrigin(origin));
         }
     }
-
+    
     public void setOnPing(Function<ByteBuffer, Void> function, Object origin)
     {
         assertNotSet(this.onPingFunction, "Ping Handler", origin);
@@ -374,7 +384,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             LOG.debug("Assigned onPing to " + describeOrigin(origin));
         }
     }
-
+    
     public void setOnPong(Function<ByteBuffer, Void> function, Object origin)
     {
         assertNotSet(this.onPongFunction, "Pong Handler", origin);
@@ -384,111 +394,121 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             LOG.debug("Assigned onPong to " + describeOrigin(origin));
         }
     }
-
+    
+    public boolean hasBinarySink()
+    {
+        return this.onBinarySink != null;
+    }
+    
+    public boolean hasTextSink()
+    {
+        return this.onTextSink != null;
+    }
+    
     private String describeOrigin(Object obj)
     {
         if (obj == null)
         {
             return "<undefined>";
         }
-
+        
         return obj.toString();
     }
-
+    
     protected void assertNotSet(Object val, String role, Object origin)
     {
         if (val == null)
             return;
-
+        
         StringBuilder err = new StringBuilder();
         err.append("Cannot replace previously assigned ");
         err.append(role);
         err.append(" with ");
         err.append(describeOrigin(origin));
-
+        
         throw new InvalidWebSocketException(err.toString());
     }
-
+    
     @Override
     public void onOpen(T session)
     {
         if (!isStarted())
             throw new IllegalStateException(this.getClass().getName() + " not started");
-
+        
         this.session = session;
-
+        
         if (onOpenFunction != null)
             onOpenFunction.apply(this.session);
     }
-
+    
     @Override
     public void onClose(CloseInfo close)
     {
         if (!isStarted())
             throw new IllegalStateException(this.getClass().getName() + " not started");
-
+        
         if (onCloseFunction != null)
             onCloseFunction.apply(close);
     }
-
+    
     @Override
     public void onFrame(Frame frame)
     {
         if (!isStarted())
             throw new IllegalStateException(this.getClass().getName() + " not started");
-
+        
         if (onFrameFunction != null)
             onFrameFunction.apply(frame);
     }
-
+    
     @Override
     public void onError(Throwable cause)
     {
         if (!isStarted())
             throw new IllegalStateException(this.getClass().getName() + " not started");
-
+        
         if (onErrorFunction != null)
             onErrorFunction.apply(cause);
         else
             LOG.debug(cause);
     }
-
+    
     @Override
     public void onText(ByteBuffer payload, boolean fin)
     {
         if (!isStarted())
             throw new IllegalStateException(this.getClass().getName() + " not started");
-
+        
         if (onTextSink != null)
             onTextSink.accept(payload, fin);
     }
-
+    
     @Override
     public void onBinary(ByteBuffer payload, boolean fin)
     {
         if (!isStarted())
             throw new IllegalStateException(this.getClass().getName() + " not started");
-
+        
         if (onBinarySink != null)
             onBinarySink.accept(payload, fin);
     }
-
+    
     @Override
     public void onPing(ByteBuffer payload)
     {
         if (!isStarted())
             throw new IllegalStateException(this.getClass().getName() + " not started");
-
+        
         if (onPingFunction != null)
             onPingFunction.apply(payload);
     }
-
+    
     @Override
     public void onPong(ByteBuffer payload)
     {
         if (!isStarted())
             throw new IllegalStateException(this.getClass().getName() + " not started");
-
+        
         if (onPongFunction != null)
             onPongFunction.apply(payload);
     }
