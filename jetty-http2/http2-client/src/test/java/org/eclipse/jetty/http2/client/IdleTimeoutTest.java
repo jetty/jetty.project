@@ -357,10 +357,11 @@ public class IdleTimeoutTest extends AbstractTest
             }
 
             @Override
-            public void onTimeout(Stream stream, Throwable x)
+            public boolean onIdleTimeout(Stream stream, Throwable x)
             {
                 Assert.assertThat(x, Matchers.instanceOf(TimeoutException.class));
                 timeoutLatch.countDown();
+                return true;
             }
         });
 
@@ -387,9 +388,10 @@ public class IdleTimeoutTest extends AbstractTest
                 return new Stream.Listener.Adapter()
                 {
                     @Override
-                    public void onTimeout(Stream stream, Throwable x)
+                    public boolean onIdleTimeout(Stream stream, Throwable x)
                     {
                         timeoutLatch.countDown();
+                        return true;
                     }
                 };
             }
@@ -431,9 +433,10 @@ public class IdleTimeoutTest extends AbstractTest
                 return new Stream.Listener.Adapter()
                 {
                     @Override
-                    public void onTimeout(Stream stream, Throwable x)
+                    public boolean onIdleTimeout(Stream stream, Throwable x)
                     {
                         timeoutLatch.countDown();
+                        return true;
                     }
                 };
             }

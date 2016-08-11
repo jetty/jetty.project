@@ -115,12 +115,11 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         public boolean onIdleTimeout(Session session)
         {
             boolean close = super.onIdleTimeout(session);
-            if (close)
-            {
-                long idleTimeout = getConnection().getEndPoint().getIdleTimeout();
-                getConnection().onSessionFailure(new TimeoutException("Session idle timeout " + idleTimeout + " ms"));
-            }
-            return close;
+            if (!close)
+                return false;
+
+            long idleTimeout = getConnection().getEndPoint().getIdleTimeout();
+            return getConnection().onSessionTimeout(new TimeoutException("Session idle timeout " + idleTimeout + " ms"));
         }
 
         @Override
@@ -166,9 +165,9 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public void onTimeout(Stream stream, Throwable failure)
+        public boolean onIdleTimeout(Stream stream, Throwable x)
         {
-            getConnection().onStreamFailure((IStream)stream, failure);
+            return getConnection().onStreamTimeout((IStream)stream, x);
         }
 
         private void close(Stream stream, String reason)
