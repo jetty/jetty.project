@@ -77,7 +77,7 @@ public class OnReaderFunction implements Function<Reader, Void>
         this.callable = ARGBUILDER.build(method, ARG_SESSION, ARG_STREAM);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method, OnWebSocketMessage.class, ARGBUILDER);
+            throw InvalidSignatureException.build(endpoint.getClass(), OnWebSocketMessage.class, method);
         }
     }
 

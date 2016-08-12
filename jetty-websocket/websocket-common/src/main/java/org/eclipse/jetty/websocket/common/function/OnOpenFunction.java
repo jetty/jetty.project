@@ -59,7 +59,7 @@ public class OnOpenFunction<T extends Session> implements Function<T, Void>
         this.callable = ARGBUILDER.build(method, ARG_SESSION);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method, OnWebSocketConnect.class, ARGBUILDER);
+            throw InvalidSignatureException.build(endpoint.getClass(), OnWebSocketConnect.class, method);
         }
     }
 

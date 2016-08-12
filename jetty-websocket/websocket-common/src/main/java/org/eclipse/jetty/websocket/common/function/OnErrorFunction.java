@@ -62,7 +62,7 @@ public class OnErrorFunction implements Function<Throwable, Void>
         this.callable = ARGBUILDER.build(method, ARG_SESSION, ARG_CAUSE);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method, OnWebSocketError.class, ARGBUILDER);
+            throw InvalidSignatureException.build(endpoint.getClass(), OnWebSocketError.class, method);
         }
     }
 

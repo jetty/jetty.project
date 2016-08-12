@@ -28,10 +28,12 @@ import java.util.stream.Collectors;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.jsr356.InitException;
 
 public class AvailableDecoders implements Predicate<Class<?>>
 {
@@ -40,6 +42,7 @@ public class AvailableDecoders implements Predicate<Class<?>>
         public final Class<? extends Decoder> decoder;
         public final Class<? extends Decoder> interfaceType;
         public final Class<?> objectType;
+        public Decoder instance;
         
         public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType)
         {
@@ -58,11 +61,13 @@ public class AvailableDecoders implements Predicate<Class<?>>
             return objectType.isAssignableFrom(type);
         }
     }
-    
+
+    private final EndpointConfig config;
     private LinkedList<RegisteredDecoder> registeredDecoders;
     
-    public AvailableDecoders()
+    public AvailableDecoders(EndpointConfig config)
     {
+        this.config = config;
         registeredDecoders = new LinkedList<>();
         
         // TEXT based [via Class reference]
@@ -179,19 +184,47 @@ public class AvailableDecoders implements Predicate<Class<?>>
                 .collect(Collectors.toList());
     }
     
+    public RegisteredDecoder getRegisteredDecoderFor(Class<?> type)
+    {
+        return registeredDecoders.stream()
+                .filter(registered -> registered.isType(type))
+                .findFirst()
+                .get();
+    }
+    
     public Class<? extends Decoder> getDecoderFor(Class<?> type)
     {
         try
         {
-            return registeredDecoders.stream()
-                    .filter(registered -> registered.isType(type))
-                    .findFirst()
-                    .get()
-                    .decoder;
+            return getRegisteredDecoderFor(type).decoder;
         }
         catch (NoSuchElementException e)
         {
             throw new InvalidWebSocketException("No Decoder found for type " + type);
+        }
+    }
+    
+    public Decoder getInstanceFor(Class<?> type)
+    {
+        try
+        {
+            RegisteredDecoder registeredDecoder = getRegisteredDecoderFor(type);
+            if (registeredDecoder.instance != null)
+            {
+                return registeredDecoder.instance;
+            }
+            
+            registeredDecoder.instance = registeredDecoder.decoder.newInstance();
+            registeredDecoder.instance.init(this.config);
+            return registeredDecoder.instance;
+        }
+        catch (NoSuchElementException e)
+        {
+            throw new InvalidWebSocketException("No Decoder found for type " + type);
+        }
+        catch (InstantiationException | IllegalAccessException e)
+        {
+            throw new InitException("Unable to init Decoder for type:" + type.getName(), e);
         }
     }
     

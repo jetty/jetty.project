@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common.function;
 
 import java.lang.reflect.Method;
+import java.util.Objects;
 import java.util.function.Function;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -61,6 +62,9 @@ public class OnTextFunction implements Function<String, Void>
 
     public OnTextFunction(Session session, Object endpoint, Method method)
     {
+        Objects.requireNonNull(session);
+        Objects.requireNonNull(endpoint);
+        Objects.requireNonNull(method);
         this.session = session;
         this.endpoint = endpoint;
         this.method = method;
@@ -72,7 +76,7 @@ public class OnTextFunction implements Function<String, Void>
         this.callable = ARGBUILDER.build(method, ARG_SESSION, ARG_TEXT);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method, OnWebSocketMessage.class, ARGBUILDER);
+            throw InvalidSignatureException.build(endpoint.getClass(), OnWebSocketMessage.class, method);
         }
     }
 
