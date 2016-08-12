@@ -27,6 +27,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,6 +77,8 @@ public class LoadGenerator
     private ExecutorService executorService;
 
     private CopyOnWriteArrayList<HttpClient> clients = new CopyOnWriteArrayList<>();
+
+    private Scheduler httpScheduler;
 
     protected enum Transport
     {
@@ -195,6 +198,11 @@ public class LoadGenerator
     public void setMethod( String method )
     {
         this.method = method;
+    }
+
+    public Scheduler getHttpScheduler()
+    {
+        return httpScheduler;
     }
 
     //--------------------------------------------------------------
@@ -330,6 +338,12 @@ public class LoadGenerator
         // FIXME weird circularity
         transport.setHttpClient( httpClient );
         httpClient.start();
+
+        if ( this.getHttpScheduler() != null )
+        {
+            httpClient.setScheduler( this.getHttpScheduler() );
+        }
+
         return httpClient;
     }
 
@@ -406,6 +420,8 @@ public class LoadGenerator
         private int selectors = 1;
 
         private List<Request.Listener> requestListeners;
+
+        private Scheduler httpScheduler;
 
         public static Builder builder()
         {
@@ -507,6 +523,12 @@ public class LoadGenerator
             return this;
         }
 
+        public Builder setHttpClientScheduler( Scheduler scheduler )
+        {
+            this.httpScheduler = scheduler;
+            return this;
+        }
+
         public LoadGenerator build()
         {
             this.validate();
@@ -523,6 +545,7 @@ public class LoadGenerator
             loadGenerator.sslContextFactory = sslContextFactory;
             loadGenerator.selectors = selectors;
             loadGenerator.scheme = scheme;
+            loadGenerator.httpScheduler = httpScheduler;
             return loadGenerator;
         }
 

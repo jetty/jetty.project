@@ -42,6 +42,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -143,6 +145,8 @@ public class LoadGeneratorTest
 
         startServer( new LoadHandler() );
 
+        Scheduler scheduler = new ScheduledExecutorScheduler( getClass().getName() + "-scheduler", false);
+
         LoadGenerator loadGenerator = LoadGenerator.Builder.builder() //
             .setHost( "localhost" ) //
             .setPort( connector.getLocalPort() ) //
@@ -151,6 +155,7 @@ public class LoadGeneratorTest
             .setResultHandlers( Arrays.asList( testResponseHandler ) ) //
             .setRequestListeners( Arrays.asList( testRequestListener ) ) //
             .setTransport( this.transport ) //
+            .setHttpClientScheduler( scheduler ) //
             .build() //
             .start();
 
