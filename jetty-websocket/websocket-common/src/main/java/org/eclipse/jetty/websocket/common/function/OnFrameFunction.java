@@ -64,7 +64,7 @@ public class OnFrameFunction implements Function<Frame, Void>
         this.callable = ARGBUILDER.build(method, ARG_SESSION, ARG_FRAME);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method, OnWebSocketFrame.class, ARGBUILDER);
+            throw InvalidSignatureException.build(endpoint.getClass(), OnWebSocketFrame.class, method);
         }
     }
 

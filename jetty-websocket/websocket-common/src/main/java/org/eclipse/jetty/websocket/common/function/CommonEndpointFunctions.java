@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.websocket.common.function;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -56,6 +59,8 @@ import org.eclipse.jetty.websocket.common.message.PartialBinaryMessageSink;
 import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
 import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
+import org.eclipse.jetty.websocket.common.reflect.Arg;
+import org.eclipse.jetty.websocket.common.reflect.UnorderedSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 /**
@@ -81,6 +86,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     
     private MessageSink onTextSink;
     private MessageSink onBinarySink;
+    private MessageSink activeMessageSink;
     
     private BatchMode batchMode;
     
@@ -239,18 +245,50 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketConnect.class);
             if (onmethod != null)
             {
-                setOnOpen(new OnOpenFunction(endpoint, onmethod), onmethod);
+                final Arg SESSION = new Arg(Session.class).required();
+                UnorderedSignature sig = new UnorderedSignature(SESSION);
+                if (sig.test(onmethod))
+                {
+                    assertSignatureValid(onmethod, OnWebSocketConnect.class);
+                    BiFunction<Object, Object[], Object> invoker = sig.newFunction(onmethod);
+                    final Object[] args = new Object[1];
+                    setOnOpen((newSession) ->
+                    {
+                        args[0] = newSession;
+                        invoker.apply(endpoint, args);
+                        return null;
+                    }, onmethod);
+                }
             }
             // OnWebSocketClose [0..1]
             onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketClose.class);
             if (onmethod != null)
             {
-                setOnClose(new OnCloseFunction(session, endpoint, onmethod), onmethod);
+                final Arg SESSION = new Arg(Session.class);
+                final Arg STATUS_CODE = new Arg(int.class);
+                final Arg REASON = new Arg(String.class);
+                UnorderedSignature sig = new UnorderedSignature(SESSION, STATUS_CODE, REASON);
+                if (sig.test(onmethod))
+                {
+                    assertSignatureValid(onmethod, OnWebSocketClose.class);
+                    BiFunction<Object, Object[], Object> invoker = sig.newFunction(onmethod);
+                    final Object[] args = new Object[3];
+                    setOnClose((closeInfo) ->
+                    {
+                        args[0] = getSession();
+                        args[1] = closeInfo.getStatusCode();
+                        args[2] = closeInfo.getReason();
+                        invoker.apply(endpoint, args);
+                        return null;
+                    }, onmethod);
+                }
             }
             // OnWebSocketError [0..1]
             onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketError.class);
             if (onmethod != null)
             {
+                final Arg SESSION = new Arg(Session.class);
+                final Arg
                 setOnError(new OnErrorFunction(session, endpoint, onmethod), onmethod);
             }
             // OnWebSocketFrame [0..1]
@@ -260,49 +298,81 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
                 setOnFrame(new OnFrameFunction(session, endpoint, onmethod), onmethod);
             }
             // OnWebSocketMessage [0..2]
-            Method onmessages[] = ReflectUtils.findAnnotatedMethods(endpointClass, OnWebSocketMessage.class);
-            if (onmessages != null && onmessages.length > 0)
+            Method onMessages[] = ReflectUtils.findAnnotatedMethods(endpointClass, OnWebSocketMessage.class);
+            if (onMessages != null && onMessages.length > 0)
             {
-                for (Method onmsg : onmessages)
+                for (Method onMsg : onMessages)
                 {
-                    if (OnTextFunction.hasMatchingSignature(onmsg))
+                    if (OnTextFunction.hasMatchingSignature(onMsg))
                     {
                         // Normal Text Message
-                        setOnText(new StringMessageSink(policy, new OnTextFunction(session, endpoint, onmsg)), onmsg);
+                        setOnText(new StringMessageSink(policy, new OnTextFunction(session, endpoint, onMsg)), onMsg);
                     }
-                    else if (OnByteBufferFunction.hasMatchingSignature(onmsg))
+                    else if (OnByteBufferFunction.hasMatchingSignature(onMsg))
                     {
                         // ByteBuffer Binary Message
-                        setOnBinary(new ByteBufferMessageSink(policy, new OnByteBufferFunction(session, endpoint, onmsg)), onmsg);
+                        setOnBinary(new ByteBufferMessageSink(policy, new OnByteBufferFunction(session, endpoint, onMsg)), onMsg);
                     }
-                    else if (OnByteArrayFunction.hasMatchingSignature(onmsg))
+                    else if (OnByteArrayFunction.hasMatchingSignature(onMsg))
                     {
                         // byte[] Binary Message
-                        setOnBinary(new ByteArrayMessageSink(policy, new OnByteArrayFunction(session, endpoint, onmsg)), onmsg);
+                        setOnBinary(new ByteArrayMessageSink(policy, new OnByteArrayFunction(session, endpoint, onMsg)), onMsg);
                     }
-                    else if (OnInputStreamFunction.hasMatchingSignature(onmsg))
+                    else if (OnInputStreamFunction.hasMatchingSignature(onMsg))
                     {
                         // InputStream Binary Message
-                        setOnBinary(new InputStreamMessageSink(executor, new OnInputStreamFunction(session, endpoint, onmsg)), onmsg);
+                        setOnBinary(new InputStreamMessageSink(executor, new OnInputStreamFunction(session, endpoint, onMsg)), onMsg);
                     }
-                    else if (OnReaderFunction.hasMatchingSignature(onmsg))
+                    else if (OnReaderFunction.hasMatchingSignature(onMsg))
                     {
                         // Reader Text Message
-                        setOnText(new ReaderMessageSink(executor, new OnReaderFunction(session, endpoint, onmsg)), onmsg);
+                        setOnText(new ReaderMessageSink(executor, new OnReaderFunction(session, endpoint, onMsg)), onMsg);
                     }
                     else
                     {
                         // Not a valid @OnWebSocketMessage declaration signature
-                        throw InvalidSignatureException.build(onmsg, OnWebSocketMessage.class,
-                                OnTextFunction.getDynamicArgsBuilder(),
-                                OnByteBufferFunction.getDynamicArgsBuilder(),
-                                OnByteArrayFunction.getDynamicArgsBuilder(),
-                                OnInputStreamFunction.getDynamicArgsBuilder(),
-                                OnReaderFunction.getDynamicArgsBuilder());
+                        throw InvalidSignatureException.build(endpoint.getClass(), OnWebSocketMessage.class, onMsg);
                     }
                 }
             }
         }
+    }
+    
+    private void assertSignatureValid(Method method, Class<? extends Annotation> annotationClass)
+    {
+        // Test modifiers
+        int mods = method.getModifiers();
+        if (!Modifier.isPublic(mods))
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("@").append(annotationClass.getSimpleName());
+            err.append(" method must be public: ");
+            ReflectUtils.append(err, endpoint.getClass(), method);
+            throw new InvalidSignatureException(err.toString());
+        }
+        
+        if (Modifier.isStatic(mods))
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("@").append(annotationClass.getSimpleName());
+            err.append(" method must NOT be static: ");
+            ReflectUtils.append(err, endpoint.getClass(), method);
+            throw new InvalidSignatureException(err.toString());
+        }
+        
+        // Test return type
+        Class<?> returnType = method.getReturnType();
+        if ((returnType == Void.TYPE) || (returnType == Void.class))
+        {
+            // Void is 100% valid, always
+            return;
+        }
+        
+        StringBuilder err = new StringBuilder();
+        err.append("@").append(annotationClass.getSimpleName());
+        err.append(" return must be void: ");
+        ReflectUtils.append(err, endpoint.getClass(), method);
+        throw new InvalidSignatureException(err.toString());
     }
     
     public BatchMode getBatchMode()
@@ -405,6 +475,26 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         return this.onTextSink != null;
     }
     
+    public boolean hasOnOpen()
+    {
+        return this.onOpenFunction != null;
+    }
+    
+    public boolean hasOnClose()
+    {
+        return this.onCloseFunction != null;
+    }
+    
+    public boolean hasOnError()
+    {
+        return this.onErrorFunction != null;
+    }
+    
+    public boolean hasOnFrame()
+    {
+        return this.onFrameFunction != null;
+    }
+    
     private String describeOrigin(Object obj)
     {
         if (obj == null)
@@ -432,8 +522,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     @Override
     public void onOpen(T session)
     {
-        if (!isStarted())
-            throw new IllegalStateException(this.getClass().getName() + " not started");
+        assertIsStarted();
         
         this.session = session;
         
@@ -444,8 +533,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     @Override
     public void onClose(CloseInfo close)
     {
-        if (!isStarted())
-            throw new IllegalStateException(this.getClass().getName() + " not started");
+        assertIsStarted();
         
         if (onCloseFunction != null)
             onCloseFunction.apply(close);
@@ -454,8 +542,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     @Override
     public void onFrame(Frame frame)
     {
-        if (!isStarted())
-            throw new IllegalStateException(this.getClass().getName() + " not started");
+        assertIsStarted();
         
         if (onFrameFunction != null)
             onFrameFunction.apply(frame);
@@ -464,8 +551,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     @Override
     public void onError(Throwable cause)
     {
-        if (!isStarted())
-            throw new IllegalStateException(this.getClass().getName() + " not started");
+        assertIsStarted();
         
         if (onErrorFunction != null)
             onErrorFunction.apply(cause);
@@ -476,28 +562,47 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     @Override
     public void onText(ByteBuffer payload, boolean fin)
     {
-        if (!isStarted())
-            throw new IllegalStateException(this.getClass().getName() + " not started");
+        assertIsStarted();
         
-        if (onTextSink != null)
-            onTextSink.accept(payload, fin);
+        if (activeMessageSink == null)
+            activeMessageSink = onTextSink;
+        
+        acceptMessage(payload, fin);
     }
     
     @Override
     public void onBinary(ByteBuffer payload, boolean fin)
     {
-        if (!isStarted())
-            throw new IllegalStateException(this.getClass().getName() + " not started");
+        assertIsStarted();
         
-        if (onBinarySink != null)
-            onBinarySink.accept(payload, fin);
+        if (activeMessageSink == null)
+            activeMessageSink = onBinarySink;
+        
+        acceptMessage(payload, fin);
+    }
+    
+    @Override
+    public void onContinuation(ByteBuffer payload, boolean fin)
+    {
+        acceptMessage(payload, fin);
+    }
+    
+    private void acceptMessage(ByteBuffer payload, boolean fin)
+    {
+        // No message sink is active
+        if (activeMessageSink == null)
+            return;
+        
+        // Accept the payload into the message sink
+        activeMessageSink.accept(payload, fin);
+        if (fin)
+            activeMessageSink = null;
     }
     
     @Override
     public void onPing(ByteBuffer payload)
     {
-        if (!isStarted())
-            throw new IllegalStateException(this.getClass().getName() + " not started");
+        assertIsStarted();
         
         if (onPingFunction != null)
             onPingFunction.apply(payload);
@@ -506,10 +611,15 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     @Override
     public void onPong(ByteBuffer payload)
     {
-        if (!isStarted())
-            throw new IllegalStateException(this.getClass().getName() + " not started");
+        assertIsStarted();
         
         if (onPongFunction != null)
             onPongFunction.apply(payload);
+    }
+    
+    protected void assertIsStarted()
+    {
+        if (!isStarted())
+            throw new IllegalStateException(this.getClass().getName() + " not started");
     }
 }

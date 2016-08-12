@@ -41,7 +41,9 @@ public interface EndpointFunctions<T>
     void onText(ByteBuffer payload, boolean fin);
 
     void onBinary(ByteBuffer payload, boolean fin);
-
+    
+    void onContinuation(ByteBuffer payload, boolean fin);
+    
     void onPing(ByteBuffer payload);
 
     void onPong(ByteBuffer payload);

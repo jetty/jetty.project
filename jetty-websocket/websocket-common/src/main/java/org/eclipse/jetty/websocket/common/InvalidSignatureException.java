@@ -22,7 +22,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.common.reflect.DynamicArgs;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 @SuppressWarnings("serial")
@@ -31,6 +30,7 @@ public class InvalidSignatureException extends InvalidWebSocketException
     public static InvalidSignatureException build(Class<?> pojo, Class<? extends Annotation> methodAnnotationClass, Method method)
     {
         StringBuilder err = new StringBuilder();
+        err.append("Invalid ");
         if (methodAnnotationClass != null)
         {
             err.append("@");
@@ -44,25 +44,6 @@ public class InvalidSignatureException extends InvalidWebSocketException
         else
         {
             ReflectUtils.append(err, pojo, method);
-        }
-        return new InvalidSignatureException(err.toString());
-    }
-
-    public static InvalidSignatureException build(Method method, Class<? extends Annotation> annoClass, DynamicArgs.Builder... dynArgsBuilders)
-    {
-        // Build big detailed exception to help the developer
-        StringBuilder err = new StringBuilder();
-        err.append("Invalid declaration of ");
-        err.append(method);
-        err.append(System.lineSeparator());
-
-        err.append("Acceptable #").append(method.getName());
-        err.append("() argument declarations for @");
-        err.append(annoClass.getSimpleName());
-        err.append(" are:");
-        for (DynamicArgs.Builder argsBuilder : dynArgsBuilders)
-        {
-            argsBuilder.appendDescription(err);
         }
         return new InvalidSignatureException(err.toString());
     }

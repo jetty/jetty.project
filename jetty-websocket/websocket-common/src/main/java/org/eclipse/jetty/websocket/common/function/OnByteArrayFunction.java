@@ -74,7 +74,7 @@ public class OnByteArrayFunction implements Function<byte[], Void>
         this.callable = ARGBUILDER.build(method, ARG_SESSION, ARG_BUFFER, ARG_OFFSET, ARG_LENGTH);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method, OnWebSocketMessage.class, ARGBUILDER);
+            throw InvalidSignatureException.build(endpoint.getClass(), OnWebSocketMessage.class, method);
         }
     }
 

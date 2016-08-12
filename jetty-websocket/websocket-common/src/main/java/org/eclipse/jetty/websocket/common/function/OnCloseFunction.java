@@ -64,7 +64,7 @@ public class OnCloseFunction implements Function<CloseInfo, Void>
         this.callable = ARGBUILDER.build(method, ARG_SESSION, ARG_STATUS_CODE, ARG_REASON);
         if (this.callable == null)
         {
-            throw InvalidSignatureException.build(method, OnWebSocketClose.class, ARGBUILDER);
+            throw InvalidSignatureException.build(endpoint.getClass(), OnWebSocketClose.class, method);
         }
     }
 
