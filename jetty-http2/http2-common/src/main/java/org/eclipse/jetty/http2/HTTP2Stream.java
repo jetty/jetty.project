@@ -174,15 +174,12 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
         if (LOG.isDebugEnabled())
             LOG.debug("Idle timeout {}ms expired on {}", getIdleTimeout(), this);
 
-        // The stream is now gone, we must close it to
-        // avoid that its idle timeout is rescheduled.
-        close();
-
-        // Tell the other peer that we timed out.
-        reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-
         // Notify the application.
-        notifyTimeout(this, timeout);
+        if (notifyIdleTimeout(this, timeout))
+        {
+            // Tell the other peer that we timed out.
+            reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        }
     }
 
     private ConcurrentMap<String, Object> attributes()
@@ -425,18 +422,19 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
         }
     }
 
-    private void notifyTimeout(Stream stream, Throwable failure)
+    private boolean notifyIdleTimeout(Stream stream, Throwable failure)
     {
         Listener listener = this.listener;
         if (listener == null)
-            return;
+            return true;
         try
         {
-            listener.onTimeout(stream, failure);
+            return listener.onIdleTimeout(stream, failure);
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
+            return true;
         }
     }
 

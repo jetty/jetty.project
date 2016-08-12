@@ -132,9 +132,10 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
-    public void onTimeout(Stream stream, Throwable failure)
+    public boolean onIdleTimeout(Stream stream, Throwable x)
     {
-        responseFailure(failure);
+        responseFailure(x);
+        return true;
     }
 
     private class ContentNotifier extends IteratingCallback
