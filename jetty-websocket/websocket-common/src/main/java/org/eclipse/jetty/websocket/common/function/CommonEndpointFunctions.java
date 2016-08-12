@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.function;
 
+import java.io.InputStream;
+import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -288,45 +290,147 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             if (onmethod != null)
             {
                 final Arg SESSION = new Arg(Session.class);
-                final Arg
-                setOnError(new OnErrorFunction(session, endpoint, onmethod), onmethod);
+                final Arg CAUSE = new Arg(Throwable.class).required();
+                UnorderedSignature sig = new UnorderedSignature(SESSION, CAUSE);
+                if(sig.test(onmethod))
+                {
+                    assertSignatureValid(onmethod, OnWebSocketError.class);
+                    BiFunction<Object,Object[],Object> invoker = sig.newFunction(onmethod);
+                    final Object[] args = new Object[2];
+                    setOnError((throwable) -> {
+                        args[0] = getSession();
+                        args[1] = throwable;
+                        invoker.apply(endpoint, args);
+                        return null;
+                    }, onmethod);
+                }
             }
             // OnWebSocketFrame [0..1]
             onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketFrame.class);
             if (onmethod != null)
             {
-                setOnFrame(new OnFrameFunction(session, endpoint, onmethod), onmethod);
+                final Arg SESSION = new Arg(Session.class);
+                final Arg FRAME = new Arg(Frame.class).required();
+                UnorderedSignature sig = new UnorderedSignature(SESSION, FRAME);
+                if(sig.test(onmethod))
+                {
+                    assertSignatureValid(onmethod, OnWebSocketFrame.class);
+                    BiFunction<Object,Object[],Object> invoker = sig.newFunction(onmethod);
+                    final Object[] args = new Object[2];
+                    setOnFrame((frame) -> {
+                        args[0] = getSession();
+                        args[1] = frame;
+                        invoker.apply(endpoint, args);
+                        return null;
+                    }, onmethod);
+                }
             }
             // OnWebSocketMessage [0..2]
             Method onMessages[] = ReflectUtils.findAnnotatedMethods(endpointClass, OnWebSocketMessage.class);
             if (onMessages != null && onMessages.length > 0)
             {
+                Arg SESSION = new Arg(Session.class);
+                
+                Arg TEXT = new Arg(String.class).required();
+                UnorderedSignature sigText = new UnorderedSignature(SESSION, TEXT);
+                
+                Arg BYTE_BUFFER = new Arg(ByteBuffer.class).required();
+                UnorderedSignature sigBinaryBuffer = new UnorderedSignature(SESSION, BYTE_BUFFER);
+                
+                Arg BYTE_ARRAY = new Arg(byte[].class).required();
+                Arg OFFSET = new Arg(int.class);
+                Arg LENGTH = new Arg(int.class);
+                UnorderedSignature sigBinaryArray = new UnorderedSignature(SESSION, BYTE_ARRAY, OFFSET, LENGTH);
+                
+                Arg INPUT_STREAM = new Arg(InputStream.class).required();
+                UnorderedSignature sigInputStream = new UnorderedSignature(SESSION, INPUT_STREAM);
+                
+                Arg READER = new Arg(Reader.class).required();
+                UnorderedSignature sigReader = new UnorderedSignature(SESSION, READER);
+                
                 for (Method onMsg : onMessages)
                 {
-                    if (OnTextFunction.hasMatchingSignature(onMsg))
+                    if(sigText.test(onMsg))
                     {
                         // Normal Text Message
-                        setOnText(new StringMessageSink(policy, new OnTextFunction(session, endpoint, onMsg)), onMsg);
+                        assertSignatureValid(onMsg, OnWebSocketMessage.class);
+                        BiFunction<Object, Object[], Object> invoker = sigText.newFunction(onMsg);
+                        final Object[] args = new Object[2];
+                        StringMessageSink messageSink = new StringMessageSink(policy,
+                                (msg) ->
+                                {
+                                    args[0] = getSession();
+                                    args[1] = msg;
+                                    invoker.apply(endpoint, args);
+                                    return null;
+                                });
+                        setOnText(messageSink, onMsg);
                     }
-                    else if (OnByteBufferFunction.hasMatchingSignature(onMsg))
+                    else if (sigBinaryBuffer.test(onMsg))
                     {
                         // ByteBuffer Binary Message
-                        setOnBinary(new ByteBufferMessageSink(policy, new OnByteBufferFunction(session, endpoint, onMsg)), onMsg);
+                        assertSignatureValid(onMsg, OnWebSocketMessage.class);
+                        BiFunction<Object, Object[], Object> invoker = sigBinaryBuffer.newFunction(onMsg);
+                        final Object[] args = new Object[2];
+                        ByteBufferMessageSink messageSink = new ByteBufferMessageSink(policy,
+                                (buffer) ->
+                                {
+                                    args[0] = getSession();
+                                    args[1] = buffer;
+                                    invoker.apply(endpoint, args);
+                                    return null;
+                                });
+                        setOnBinary(messageSink, onMsg);
                     }
-                    else if (OnByteArrayFunction.hasMatchingSignature(onMsg))
+                    else if (sigBinaryArray.test(onMsg))
                     {
                         // byte[] Binary Message
-                        setOnBinary(new ByteArrayMessageSink(policy, new OnByteArrayFunction(session, endpoint, onMsg)), onMsg);
+                        assertSignatureValid(onMsg, OnWebSocketMessage.class);
+                        BiFunction<Object, Object[], Object> invoker = sigBinaryArray.newFunction(onMsg);
+                        final Object[] args = new Object[4];
+                        ByteArrayMessageSink messageSink = new ByteArrayMessageSink(policy,
+                                (buffer) ->
+                                {
+                                    args[0] = getSession();
+                                    args[1] = buffer;
+                                    args[2] = 0;
+                                    args[3] = buffer.length;
+                                    invoker.apply(endpoint, args);
+                                    return null;
+                                });
+                        setOnBinary(messageSink, onMsg);
                     }
-                    else if (OnInputStreamFunction.hasMatchingSignature(onMsg))
+                    else if (sigInputStream.test(onMsg))
                     {
                         // InputStream Binary Message
-                        setOnBinary(new InputStreamMessageSink(executor, new OnInputStreamFunction(session, endpoint, onMsg)), onMsg);
+                        assertSignatureValid(onMsg, OnWebSocketMessage.class);
+                        BiFunction<Object, Object[], Object> invoker = sigInputStream.newFunction(onMsg);
+                        final Object[] args = new Object[2];
+                        InputStreamMessageSink messageSink = new InputStreamMessageSink(executor,
+                                (stream) ->
+                                {
+                                    args[0] = getSession();
+                                    args[1] = stream;
+                                    invoker.apply(endpoint, args);
+                                    return null;
+                                });
+                        setOnBinary(messageSink, onMsg);
                     }
-                    else if (OnReaderFunction.hasMatchingSignature(onMsg))
+                    else if (sigReader.test(onMsg))
                     {
                         // Reader Text Message
-                        setOnText(new ReaderMessageSink(executor, new OnReaderFunction(session, endpoint, onMsg)), onMsg);
+                        assertSignatureValid(onMsg, OnWebSocketMessage.class);
+                        BiFunction<Object, Object[], Object> invoker = sigReader.newFunction(onMsg);
+                        final Object[] args = new Object[2];
+                        ReaderMessageSink messageSink = new ReaderMessageSink(executor,
+                                (reader) ->
+                                {
+                                    args[0] = getSession();
+                                    args[1] = reader;
+                                    invoker.apply(endpoint, args);
+                                    return null;
+                                });
+                        setOnText(messageSink, onMsg);
                     }
                     else
                     {
@@ -355,7 +459,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         {
             StringBuilder err = new StringBuilder();
             err.append("@").append(annotationClass.getSimpleName());
-            err.append(" method must NOT be static: ");
+            err.append(" method must not be static: ");
             ReflectUtils.append(err, endpoint.getClass(), method);
             throw new InvalidSignatureException(err.toString());
         }
