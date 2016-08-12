@@ -23,6 +23,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.toolchain.perf.PlatformTimer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -49,8 +50,10 @@ public class LoadGeneratorRunner
 
     private final LoadGeneratorResult loadGeneratorResult;
 
-    private static final HttpCookie HTTP_COOKIE = new HttpCookie( "XXX-Jetty-LoadGenerator", //
+    private final HttpCookie HTTP_COOKIE = new HttpCookie( "XXX-Jetty-LoadGenerator", //
                                                                   Long.toString( System.nanoTime() ) );
+
+    private static final PlatformTimer PLATFORM_TIMER = PlatformTimer.detect();
 
     public LoadGeneratorRunner( HttpClient httpClient, LoadGenerator loadGenerator, String url,
                                 LoadGeneratorResult loadGeneratorResult )
@@ -122,7 +125,8 @@ public class LoadGeneratorRunner
 
                 long waitTime = 1000 / loadGenerator.getRequestRate();
 
-                waitBlock( waitTime );
+                //waitBlock( waitTime );
+                PLATFORM_TIMER.sleep( TimeUnit.MILLISECONDS.toMicros( waitTime ) );
 
             }
         } catch ( RejectedExecutionException e )

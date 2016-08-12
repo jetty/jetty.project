@@ -261,12 +261,12 @@ public class LoadGenerator
 
         final String url = this.scheme + "://" + this.host + ":" + this.port + ( this.path == null ? "" : this.path );
 
-        Executors.newSingleThreadScheduledExecutor().submit( () -> //
+        Executors.newWorkStealingPool( this.getUsers()).submit( () -> //
         {
             HttpClientTransport httpClientTransport = this.getHttpClientTransport() != null ? //
                 this.getHttpClientTransport() : provideClientTransport( this.getTransport() );
 
-            for (int i = LoadGenerator.this.getUsers(); i > 0; i--)
+            for (int i = this.getUsers(); i > 0; i--)
             {
                 try
                 {

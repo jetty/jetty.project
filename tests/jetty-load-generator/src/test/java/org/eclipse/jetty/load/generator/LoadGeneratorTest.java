@@ -84,26 +84,6 @@ public class LoadGeneratorTest
         this.usersNumber = usersNumber;
     }
 
-    /*
-    @Parameterized.Parameters( name = "transport: {0}" )
-    public static Object[] parameters()
-        throws Exception
-    {
-
-        return new Object[]{
-            LoadGenerator.Transport.HTTP }; //, LoadGenerator.Transport.HTTPS,
-            //LoadGenerator.Transport.H2C }; // LoadGenerator.Transport.values(); LoadGenerator.Transport.H2,
-    }
-
-    @Parameterized.Parameters( name = "usersNumber: {0}" )
-    public static Object[] usersNumber()
-        throws Exception
-    {
-        return new Object[]{ new Integer( 1 ) };
-    }
-
-    */
-
     @Parameterized.Parameters(name = "transport/users: {0},{1}")
     public static Collection<Object[]> data() {
 
@@ -121,7 +101,7 @@ public class LoadGeneratorTest
 
 
         // number of users
-        List<Integer> users = Arrays.asList( 1, 2 );
+        List<Integer> users = Arrays.asList( 1, 2, 4 );
 
         List<Object[]> parameters = new ArrayList<>(  );
 
@@ -150,7 +130,7 @@ public class LoadGeneratorTest
         LoadGenerator loadGenerator = LoadGenerator.Builder.builder() //
             .setHost( "localhost" ) //
             .setPort( connector.getLocalPort() ) //
-            .setUsers( 1 ) //
+            .setUsers( this.usersNumber ) //
             .setRequestRate( 1 ) //
             .setResultHandlers( Arrays.asList( testResponseHandler ) ) //
             .setRequestListeners( Arrays.asList( testRequestListener ) ) //
@@ -354,6 +334,8 @@ public class LoadGeneratorTest
         extends HttpServlet
     {
 
+        private final Logger LOGGER = Log.getLogger( getClass() );
+
         @Override
         protected void service( HttpServletRequest request, HttpServletResponse response )
             throws ServletException, IOException
@@ -363,14 +345,16 @@ public class LoadGeneratorTest
 
             HttpSession httpSession = request.getSession( );
 
+            int contentLength = request.getIntHeader( "X-Download" );
+
+            LOGGER.info( "method: {}, contentLength: {}, id: {}", method, contentLength, httpSession.getId()  );
+
             switch ( method )
             {
                 case "GET":
                 {
-                    int contentLength = request.getIntHeader( "X-Download" );
                     if ( contentLength > 0 )
                     {
-                        Log.getLogger( getClass() ).info( "contentLength: {}", contentLength );
                         response.setHeader( "X-Content", String.valueOf( contentLength ) );
                         response.getOutputStream().write( new byte[contentLength] );
                     }
@@ -378,7 +362,6 @@ public class LoadGeneratorTest
                 }
                 case "POST":
                 {
-                    Log.getLogger( getClass() ).info( "method: {}", method );
                     response.setHeader( "X-Content", request.getHeader( "X-Upload" ) );
                     IO.copy( request.getInputStream(), response.getOutputStream() );
                     break;
