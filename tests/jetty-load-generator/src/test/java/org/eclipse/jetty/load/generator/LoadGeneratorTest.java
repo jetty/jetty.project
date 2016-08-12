@@ -172,51 +172,15 @@ public class LoadGeneratorTest
 
 
     static class TestRequestListener
-        implements Request.Listener
+        extends Request.Listener.Adapter
     {
         AtomicLong onSuccessNumber = new AtomicLong();
-
-        @Override
-        public void onQueued( Request request )
-        {
-
-        }
-
-        @Override
-        public void onBegin( Request request )
-        {
-
-        }
-
-        @Override
-        public void onHeaders( Request request )
-        {
-
-        }
-
-        @Override
-        public void onCommit( Request request )
-        {
-
-        }
-
-        @Override
-        public void onContent( Request request, ByteBuffer content )
-        {
-
-        }
-
         @Override
         public void onSuccess( Request request )
         {
             onSuccessNumber.incrementAndGet();
         }
 
-        @Override
-        public void onFailure( Request request, Throwable failure )
-        {
-
-        }
     }
 
 
