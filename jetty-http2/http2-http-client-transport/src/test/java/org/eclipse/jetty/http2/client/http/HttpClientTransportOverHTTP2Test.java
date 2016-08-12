@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -50,7 +51,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Session;
-import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -237,8 +237,32 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
         CountDownLatch latch = new CountDownLatch(2);
         AtomicInteger lastStream = new AtomicInteger();
+        AtomicReference<Stream> streamRef = new AtomicReference<>();
+        CountDownLatch streamLatch = new CountDownLatch(1);
         client = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client())
         {
+            @Override
+            protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
+            {
+                return new HttpConnectionOverHTTP2(destination, session)
+                {
+                    @Override
+                    protected HttpChannelOverHTTP2 newHttpChannel()
+                    {
+                        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession())
+                        {
+                            @Override
+                            public void setStream(Stream stream)
+                            {
+                                super.setStream(stream);
+                                streamRef.set(stream);
+                                streamLatch.countDown();
+                            }
+                        };
+                    }
+                };
+            }
+
             @Override
             protected void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
             {
@@ -268,9 +292,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 latch.countDown();
         });
 
+        Assert.assertTrue(streamLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        Stream stream = (Stream)request.getAttributes().get(HTTP2Stream.class.getName());
+        Stream stream = streamRef.get();
         Assert.assertNotNull(stream);
         Assert.assertEquals(lastStream.get(), stream.getId());
     }
