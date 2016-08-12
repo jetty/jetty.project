@@ -281,7 +281,10 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
+          <!-- this upgrade cause build issue -->
+          <!--
           <version>3.0.2</version>
+          -->
           <configuration>
             <archive>
               <manifestEntries>
