@@ -58,14 +58,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Rule
     public TestTracker tracker = new TestTracker();
     
-    protected static final int MAX_IDLE_TIME=500;
+    protected static final int MAX_IDLE_TIME=2000;
     private int sleepTime = MAX_IDLE_TIME + MAX_IDLE_TIME/5;
     private int minimumTestRuntime = MAX_IDLE_TIME-MAX_IDLE_TIME/5;
     private int maximumTestRuntime = MAX_IDLE_TIME*10;
 
     static
     {
-        System.setProperty("org.eclipse.jetty.io.nio.IDLE_TICK","100");
+        System.setProperty("org.eclipse.jetty.io.nio.IDLE_TICK","500");
     }
 
     @Before
@@ -732,6 +732,41 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         int offset=in.indexOf("Hello World");
         Assert.assertTrue(offset > 0);
     }
+    
+
+
+    @Test(timeout=60000)
+    public void testMaxIdleWithDelayedDispatch() throws Exception
+    {
+        configureServer(new EchoHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        InputStream is=client.getInputStream();
+
+        String content="Wibble";
+        byte[] contentB=content.getBytes("utf-8");
+        os.write((
+                "POST /echo HTTP/1.1\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+                "content-type: text/plain; charset=utf-8\r\n"+
+                "content-length: "+contentB.length+"\r\n"+
+        "\r\n").getBytes("utf-8"));
+        os.flush();
+
+        long start = System.currentTimeMillis();
+        IO.toString(is);
+
+        Thread.sleep(sleepTime);
+        Assert.assertEquals(-1, is.read());
+
+        Assert.assertTrue(System.currentTimeMillis() - start > minimumTestRuntime);
+        Assert.assertTrue(System.currentTimeMillis() - start < maximumTestRuntime);
+    }
+    
 
     protected static class SlowResponseHandler extends AbstractHandler
     {
