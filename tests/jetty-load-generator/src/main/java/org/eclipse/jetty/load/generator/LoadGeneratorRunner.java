@@ -20,15 +20,12 @@ package org.eclipse.jetty.load.generator;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.toolchain.perf.PlatformTimer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import java.net.HttpCookie;
-import java.util.List;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +45,7 @@ public class LoadGeneratorRunner
 
     private final String url;
 
-    private final LoadGeneratorResult loadGeneratorResult;
+    private final LoadGeneratorResultHandler loadGeneratorResultHandler;
 
     private final HttpCookie HTTP_COOKIE = new HttpCookie( "XXX-Jetty-LoadGenerator", //
                                                                   Long.toString( System.nanoTime() ) );
@@ -56,12 +53,12 @@ public class LoadGeneratorRunner
     private static final PlatformTimer PLATFORM_TIMER = PlatformTimer.detect();
 
     public LoadGeneratorRunner( HttpClient httpClient, LoadGenerator loadGenerator, String url,
-                                LoadGeneratorResult loadGeneratorResult )
+                                LoadGeneratorResultHandler loadGeneratorResultHandler )
     {
         this.httpClient = httpClient;
         this.loadGenerator = loadGenerator;
         this.url = url;
-        this.loadGeneratorResult = loadGeneratorResult;
+        this.loadGeneratorResultHandler = loadGeneratorResultHandler;
     }
 
     @Override
@@ -70,9 +67,6 @@ public class LoadGeneratorRunner
         //int rate = this.loadGenerator.getRequestRate().get();
         //long start  = System.currentTimeMillis();
         //AtomicInteger sent = new AtomicInteger( 0 );
-
-        LoadGeneratorResponseListener loadGeneratorResponseListener =
-            new LoadGeneratorResponseListener( loadGenerator.getResultHandlers(), this );
 
         //final ScheduledThreadPoolExecutor service = new ScheduledThreadPoolExecutor( 1);
 
@@ -119,9 +113,9 @@ public class LoadGeneratorRunner
                     request.content( new BytesContentProvider(new byte[loadGenerator.getPayloadSize()]) );
                 }
 
-                request.send( loadGeneratorResponseListener );
+                request.send( loadGeneratorResultHandler );
 
-                loadGeneratorResult.getTotalRequest().incrementAndGet();
+                loadGeneratorResultHandler.getLoadGeneratorResult().getTotalRequest().incrementAndGet();
 
                 long waitTime = 1000 / loadGenerator.getRequestRate();
 
@@ -179,28 +173,5 @@ public class LoadGeneratorRunner
         }
     }
 
-    static class LoadGeneratorResponseListener
-        implements Response.CompleteListener
-    {
-        private final List<ResultHandler> resultHandlers;
-
-        private final LoadGeneratorRunner loadGeneratorRunner;
-
-        public LoadGeneratorResponseListener( List<ResultHandler> resultHandlers, LoadGeneratorRunner loadGeneratorRunner)
-        {
-            this.resultHandlers = resultHandlers;
-            this.loadGeneratorRunner = loadGeneratorRunner;
-        }
-
-        @Override
-        public void onComplete( Result result )
-        {
-            // TODO make that async?
-            for ( ResultHandler resultHandler : resultHandlers )
-            {
-                resultHandler.onResponse( result );
-            }
-        }
-    }
 
 }

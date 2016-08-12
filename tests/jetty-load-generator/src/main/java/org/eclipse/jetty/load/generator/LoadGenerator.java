@@ -71,8 +71,6 @@ public class LoadGenerator
 
     private SslContextFactory sslContextFactory;
 
-    private CopyOnWriteArrayList<ResultHandler> resultHandlers;
-
     private List<Request.Listener> requestListeners;
 
     private ExecutorService executorService;
@@ -151,11 +149,6 @@ public class LoadGenerator
     public Transport getTransport()
     {
         return transport;
-    }
-
-    public List<ResultHandler> getResultHandlers()
-    {
-        return resultHandlers;
     }
 
     public int getResponseSize()
@@ -257,8 +250,6 @@ public class LoadGenerator
 
         LoadGeneratorResultHandler loadGeneratorResultHandler = new LoadGeneratorResultHandler(loadGeneratorResult);
 
-        this.resultHandlers.add( loadGeneratorResultHandler );
-
         final String url = this.scheme + "://" + this.host + ":" + this.port + ( this.path == null ? "" : this.path );
 
         Executors.newWorkStealingPool( this.getUsers()).submit( () -> //
@@ -282,7 +273,7 @@ public class LoadGenerator
                     httpClient.getRequestListeners().addAll( this.getRequestListeners() );
 
                     LoadGeneratorRunner loadGeneratorRunner =
-                        new LoadGeneratorRunner( httpClient, this, url, loadGeneratorResult );
+                        new LoadGeneratorRunner( httpClient, this, url, loadGeneratorResultHandler );
 
                     this.executorService.submit( loadGeneratorRunner );
                 }
@@ -421,8 +412,6 @@ public class LoadGenerator
 
         private Transport transport;
 
-        private List<ResultHandler> resultHandlers;
-
         private HttpClientTransport httpClientTransport;
 
         private SslContextFactory sslContextFactory;
@@ -493,12 +482,6 @@ public class LoadGenerator
             return this;
         }
 
-        public Builder setResultHandlers( List<ResultHandler> resultHandlers )
-        {
-            this.resultHandlers = resultHandlers;
-            return this;
-        }
-
         public Builder setResponseSize( int responseSize )
         {
             this.responseSize = responseSize;
@@ -554,8 +537,6 @@ public class LoadGenerator
                 new LoadGenerator( users, payloadSize, requestRate, host, port, path, //
                                    method == null ? HttpMethod.GET.asString() : method );
             loadGenerator.transport = this.transport;
-            loadGenerator.resultHandlers = this.resultHandlers == null ? new CopyOnWriteArrayList<>() //
-                : new CopyOnWriteArrayList<>( this.resultHandlers );
             loadGenerator.requestListeners = this.requestListeners == null ? new ArrayList<>() // //
                 : this.requestListeners;
             loadGenerator.responseSize = responseSize;

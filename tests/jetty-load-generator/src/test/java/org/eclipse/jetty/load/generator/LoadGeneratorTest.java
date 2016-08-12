@@ -119,7 +119,6 @@ public class LoadGeneratorTest
         throws Exception
     {
 
-        TestResultHandler testResponseHandler = new TestResultHandler();
 
         TestRequestListener testRequestListener = new TestRequestListener();
 
@@ -132,7 +131,6 @@ public class LoadGeneratorTest
             .setPort( connector.getLocalPort() ) //
             .setUsers( this.usersNumber ) //
             .setRequestRate( 1 ) //
-            .setResultHandlers( Arrays.asList( testResponseHandler ) ) //
             .setRequestListeners( Arrays.asList( testRequestListener ) ) //
             .setTransport( this.transport ) //
             .setHttpClientScheduler( scheduler ) //
@@ -154,17 +152,13 @@ public class LoadGeneratorTest
 
         Thread.sleep( 3000 );
 
-        Assert.assertTrue("successReponsesReceived :" + testResponseHandler.successReponsesReceived.get(), //
-                          testResponseHandler.successReponsesReceived.get() > 1);
+        Assert.assertTrue("successReponsesReceived :" + result.getTotalSuccess().get(), //
+                          result.getTotalSuccess().get() > 1);
 
-        logger.info( "successReponsesReceived: {}", testResponseHandler.successReponsesReceived.get() );
+        logger.info( "successReponsesReceived: {}", result.getTotalSuccess().get() );
 
-        Assert.assertTrue("failedReponsesReceived: " + testResponseHandler.failedReponsesReceived.get(), //
-                          testResponseHandler.failedReponsesReceived.get() < 1);
-
-        Assert.assertEquals( testResponseHandler.successReponsesReceived.get(), result.getTotalResponse().longValue() );
-
-        Assert.assertEquals( testResponseHandler.successReponsesReceived.get(), result.getTotalSuccess().longValue() );
+        Assert.assertTrue("failedReponsesReceived: " + result.getTotalFailure().get(), //
+                          result.getTotalFailure().get() < 1);
 
         Assert.assertNotNull( result );
 
@@ -176,29 +170,6 @@ public class LoadGeneratorTest
     // utilities
     //---------------------------------------------------
 
-    static class TestResultHandler
-        implements ResultHandler
-    {
-
-        AtomicLong successReponsesReceived = new AtomicLong();
-
-        AtomicLong failedReponsesReceived = new AtomicLong();
-
-        @Override
-        public void onResponse( Result result )
-        {
-            if (result.isSucceeded())
-            {
-                successReponsesReceived.incrementAndGet();
-            }
-            if (result.isFailed())
-            {
-                result.getFailure().printStackTrace();
-                failedReponsesReceived.incrementAndGet();
-            }
-        }
-
-    }
 
     static class TestRequestListener
         implements Request.Listener

@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.load.generator;
 
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 
 /**
  *
  */
 public class LoadGeneratorResultHandler
-    implements ResultHandler
+    implements Response.CompleteListener
 {
 
     private final LoadGeneratorResult loadGeneratorResult;
@@ -35,7 +36,7 @@ public class LoadGeneratorResultHandler
     }
 
     @Override
-    public void onResponse( Result result )
+    public void onComplete( Result result )
     {
         this.loadGeneratorResult.getTotalResponse().incrementAndGet();
 
@@ -47,6 +48,10 @@ public class LoadGeneratorResultHandler
         {
             this.loadGeneratorResult.getTotalFailure().incrementAndGet();
         }
+    }
 
+    public LoadGeneratorResult getLoadGeneratorResult()
+    {
+        return loadGeneratorResult;
     }
 }
