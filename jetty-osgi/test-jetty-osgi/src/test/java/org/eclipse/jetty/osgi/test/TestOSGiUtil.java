@@ -19,6 +19,7 @@
 package org.eclipse.jetty.osgi.test;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -183,5 +184,42 @@ public class TestOSGiUtil
         {
             client.stop();
         }
+    }
+
+    public static int findFreePort(String systemProperty)
+    {
+        String freeport = System.getProperty(systemProperty);
+        if (freeport!=null)
+            return Integer.valueOf(freeport);
+        
+        try (ServerSocket socket = new ServerSocket(0))
+        {
+            socket.setReuseAddress(true);
+            int port = socket.getLocalPort();
+            System.setProperty(systemProperty,Integer.toString(port));
+            return port;
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    
+    public static void main(String... args)
+    {
+        int freeport = TestOSGiUtil.findFreePort("test");
+        System.err.println("Found Free port="+freeport);
+
+        
+        try (ServerSocket socket = new ServerSocket(TestOSGiUtil.findFreePort("test")))
+        {
+            System.err.println("reused port="+socket.getLocalPort());
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        
     }
 }

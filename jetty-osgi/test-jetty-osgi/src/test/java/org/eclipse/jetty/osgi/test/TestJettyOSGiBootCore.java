@@ -47,10 +47,16 @@ public class TestJettyOSGiBootCore
 {
     private static final String LOG_LEVEL = "WARN";
     
-    // TODO these should be dynamic
-    public static final int DEFAULT_HTTP_PORT = 9876;
-    public static final int DEFAULT_SSL_PORT = 9877;
+    public static final int DEFAULT_HTTP_PORT=TestOSGiUtil.findFreePort("jetty.http.port");
+    public static final int DEFAULT_SSL_PORT=TestOSGiUtil.findFreePort("jetty.ssl.port");
 
+    static
+    {
+        System.err.println("DEFAULT_HTTP_PORT="+DEFAULT_HTTP_PORT);
+        System.err.println("DEFAULT_SSL_PORT="+DEFAULT_SSL_PORT);
+    }
+    
+    
     @Inject
     private BundleContext bundleContext;
 
@@ -175,4 +181,5 @@ public class TestJettyOSGiBootCore
     {
         TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", DEFAULT_HTTP_PORT);
     }
+
 }
