@@ -413,20 +413,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     {
                         // We received a GO_AWAY, so try to write
                         // what's in the queue and then disconnect.
-                        control(null, new Callback()
-                        {
-                            @Override
-                            public void succeeded()
-                            {
-                                notifyClose(HTTP2Session.this, frame);
-                            }
-
-                            @Override
-                            public void failed(Throwable x)
-                            {
-                                notifyClose(HTTP2Session.this, frame);
-                            }
-                        }, new DisconnectFrame());
+                        notifyClose(this, frame);
+                        control(null, Callback.NOOP, new DisconnectFrame());
                         return;
                     }
                     break;

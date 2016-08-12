@@ -115,10 +115,13 @@ public class HTTP2Connection extends AbstractConnection
     @Override
     public boolean onIdleExpired()
     {
-        boolean close = session.onIdleTimeout();
         boolean idle = isFillInterested();
-        if (close && idle)
-            session.close(ErrorCode.NO_ERROR.code, "idle_timeout", Callback.NOOP);
+        if (idle)
+        {
+            boolean close = session.onIdleTimeout();
+            if (close)
+                session.close(ErrorCode.NO_ERROR.code, "idle_timeout", Callback.NOOP);
+        }
         return false;
     }
 

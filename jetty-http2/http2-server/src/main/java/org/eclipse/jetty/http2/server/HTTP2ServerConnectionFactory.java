@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
@@ -28,6 +30,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -72,7 +75,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         return acceptable;
     }
 
-    private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
+    protected class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
     {
         private final Connector connector;
         private final EndPoint endPoint;
@@ -83,7 +86,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             this.endPoint = endPoint;
         }
 
-        private HTTP2ServerConnection getConnection()
+        protected HTTP2ServerConnection getConnection()
         {
             return (HTTP2ServerConnection)endPoint.getConnection();
         }
@@ -105,7 +108,30 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
         {
             getConnection().onNewStream(connector, (IStream)stream, frame);
-            return frame.isEndStream() ? null : this;
+            return this;
+        }
+
+        @Override
+        public boolean onIdleTimeout(Session session)
+        {
+            boolean close = super.onIdleTimeout(session);
+            if (!close)
+                return false;
+
+            long idleTimeout = getConnection().getEndPoint().getIdleTimeout();
+            return getConnection().onSessionTimeout(new TimeoutException("Session idle timeout " + idleTimeout + " ms"));
+        }
+
+        @Override
+        public void onClose(Session session, GoAwayFrame frame)
+        {
+            ErrorCode error = ErrorCode.from(frame.getError());
+            if (error == null)
+                error = ErrorCode.STREAM_CLOSED_ERROR;
+            String reason = frame.tryConvertPayload();
+            if (reason != null && !reason.isEmpty())
+                reason = " (" + reason + ")";
+            getConnection().onSessionFailure(new IOException("HTTP/2 " + error + reason));
         }
 
         @Override
@@ -132,20 +158,21 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public void onReset(Stream stream, ResetFrame frame)
         {
-            // TODO:
+            ErrorCode error = ErrorCode.from(frame.getError());
+            if (error == null)
+                error = ErrorCode.CANCEL_STREAM_ERROR;
+            getConnection().onStreamFailure((IStream)stream, new IOException("HTTP/2 " + error));
         }
 
         @Override
-        public void onTimeout(Stream stream, Throwable x)
+        public boolean onIdleTimeout(Stream stream, Throwable x)
         {
-            // TODO
+            return getConnection().onStreamTimeout((IStream)stream, x);
         }
 
         private void close(Stream stream, String reason)
         {
-            final Session session = stream.getSession();
-            session.close(ErrorCode.PROTOCOL_ERROR.code, reason, Callback.NOOP);
+            stream.getSession().close(ErrorCode.PROTOCOL_ERROR.code, reason, Callback.NOOP);
         }
     }
-
 }

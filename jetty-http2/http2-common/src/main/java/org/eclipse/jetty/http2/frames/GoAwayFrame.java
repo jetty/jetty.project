@@ -18,10 +18,9 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.util.BufferUtil;
 
 public class GoAwayFrame extends Frame
 {
@@ -54,16 +53,15 @@ public class GoAwayFrame extends Frame
 
     public String tryConvertPayload()
     {
-        if (payload == null)
+        if (payload == null || payload.length == 0)
             return "";
-        ByteBuffer buffer = BufferUtil.toBuffer(payload);
         try
         {
-            return BufferUtil.toUTF8String(buffer);
+            return new String(payload, StandardCharsets.UTF_8);
         }
         catch (Throwable x)
         {
-            return BufferUtil.toDetailString(buffer);
+            return "";
         }
     }
 
