@@ -19,11 +19,15 @@
 package org.eclipse.jetty.server;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -34,6 +38,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,6 +48,11 @@ public class ForwardedRequestCustomizerTest
     private LocalConnector _connector;
     private RequestHandler _handler;
     final Deque<String> _results = new ArrayDeque<>();
+    final AtomicBoolean _wasSecure = new AtomicBoolean(false);
+    final AtomicReference<String> _sslSession = new AtomicReference<>();
+    final AtomicReference<String> _sslCertificate = new AtomicReference<>();
+    
+    ForwardedRequestCustomizer _customizer;
 
     @Before
     public void init() throws Exception
@@ -53,7 +63,7 @@ public class ForwardedRequestCustomizerTest
         http.getHttpConfiguration().setRequestHeaderSize(512);
         http.getHttpConfiguration().setResponseHeaderSize(512);
         http.getHttpConfiguration().setOutputBufferSize(2048);
-        http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
+        http.getHttpConfiguration().addCustomizer(_customizer=new ForwardedRequestCustomizer());
         _connector = new LocalConnector(_server,http);
         _server.addConnector(_connector);
         _handler = new RequestHandler();
@@ -64,6 +74,9 @@ public class ForwardedRequestCustomizerTest
             @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
+                _wasSecure.set(request.isSecure());
+                _sslSession.set(String.valueOf(request.getAttribute("javax.servlet.request.ssl_session_id")));
+                _sslCertificate.set(String.valueOf(request.getAttribute("javax.servlet.request.cipher_suite")));
                 _results.add(request.getScheme());
                 _results.add(request.getServerName());
                 _results.add(Integer.toString(request.getServerPort()));
@@ -203,7 +216,83 @@ public class ForwardedRequestCustomizerTest
         assertEquals("443",_results.poll());
         assertEquals("0.0.0.0",_results.poll());
         assertEquals("0",_results.poll());
+        assertTrue(_wasSecure.get());
     }
+
+    @Test
+    public void testSslSession() throws Exception
+    {
+        _customizer.setSslIsSecure(false);
+        String response=_connector.getResponse(
+             "GET / HTTP/1.1\n"+
+             "Host: myhost\n"+
+             "Proxy-Ssl-Id: Wibble\n"+
+             "\n");
+        
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals("http",_results.poll());
+        assertEquals("myhost",_results.poll());
+        assertEquals("80",_results.poll());
+        assertEquals("0.0.0.0",_results.poll());
+        assertEquals("0",_results.poll());
+        assertFalse(_wasSecure.get());
+        assertEquals("Wibble",_sslSession.get());
+      
+        _customizer.setSslIsSecure(true);  
+        response=_connector.getResponse(
+             "GET / HTTP/1.1\n"+
+             "Host: myhost\n"+
+             "Proxy-Ssl-Id: 0123456789abcdef\n"+
+             "\n");
+        
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals("https",_results.poll());
+        assertEquals("myhost",_results.poll());
+        assertEquals("443",_results.poll());
+        assertEquals("0.0.0.0",_results.poll());
+        assertEquals("0",_results.poll());
+        assertTrue(_wasSecure.get());
+        assertEquals("0123456789abcdef",_sslSession.get());
+    }
+    
+    @Test
+    public void testSslCertificate() throws Exception
+    {
+        _customizer.setSslIsSecure(false);
+        String response=_connector.getResponse(
+             "GET / HTTP/1.1\n"+
+             "Host: myhost\n"+
+             "Proxy-auth-cert: Wibble\n"+
+             "\n");
+        
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals("http",_results.poll());
+        assertEquals("myhost",_results.poll());
+        assertEquals("80",_results.poll());
+        assertEquals("0.0.0.0",_results.poll());
+        assertEquals("0",_results.poll());
+        assertFalse(_wasSecure.get());
+        assertEquals("Wibble",_sslCertificate.get());
+        
+      
+        _customizer.setSslIsSecure(true);  
+        response=_connector.getResponse(
+             "GET / HTTP/1.1\n"+
+             "Host: myhost\n"+
+             "Proxy-auth-cert: 0123456789abcdef\n"+
+             "\n");
+        
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals("https",_results.poll());
+        assertEquals("myhost",_results.poll());
+        assertEquals("443",_results.poll());
+        assertEquals("0.0.0.0",_results.poll());
+        assertEquals("0",_results.poll());
+        assertTrue(_wasSecure.get());
+        assertEquals("0123456789abcdef",_sslCertificate.get());
+    }
+    
+    
     
     interface RequestTester
     {

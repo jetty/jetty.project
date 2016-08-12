@@ -54,7 +54,6 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class ForwardedRequestCustomizer implements Customizer
 {
-
     private HostPortHttpField _forcedHost;
     private String _forwardedHeader = HttpHeader.FORWARDED.toString();
     private String _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
@@ -62,11 +61,11 @@ public class ForwardedRequestCustomizer implements Customizer
     private String _forwardedForHeader = HttpHeader.X_FORWARDED_FOR.toString();
     private String _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO.toString();
     private String _forwardedHttpsHeader = "X-Proxied-Https";
-    private String _forwardedCipherSuiteHeader;
-    private String _forwardedSslSessionIdHeader;
+    private String _forwardedCipherSuiteHeader = "Proxy-auth-cert";
+    private String _forwardedSslSessionIdHeader = "Proxy-ssl-id";
     private boolean _proxyAsAuthority=false;
+    private boolean _sslIsSecure=true;
     
-
     /**
      * @return true if the proxy address obtained via
      * X-Forwarded-Server or RFC7239 "by" is used as
@@ -77,7 +76,6 @@ public class ForwardedRequestCustomizer implements Customizer
         return _proxyAsAuthority;
     }
 
-
     /**
      * @param proxyAsAuthority if true, use the proxy address obtained via
      * X-Forwarded-Server or RFC7239 "by" as the request authority.
@@ -87,15 +85,19 @@ public class ForwardedRequestCustomizer implements Customizer
         _proxyAsAuthority = proxyAsAuthority;
     }
 
-
     /**
      * Configure to only support the RFC7239 Forwarded header and to
-     * not support any X-Forwarded- headers.
+     * not support any X-Forwarded- headers.   This convenience method
+     * clears all the non RFC headers if passed true and sets them to
+     * the default values (if not already set) if passed false.
      */
     public void setForwardedOnly(boolean rfc7239only)
     {
         if (rfc7239only)
         {
+            if (_forwardedHeader==null)
+                _forwardedHeader=HttpHeader.FORWARDED.toString();
+            _forwardedHostHeader=null;
             _forwardedHostHeader=null;
             _forwardedServerHeader=null;
             _forwardedForHeader=null;
@@ -104,14 +106,18 @@ public class ForwardedRequestCustomizer implements Customizer
         }
         else
         {
-            _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
-            _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
-            _forwardedForHeader = HttpHeader.X_FORWARDED_FOR.toString();
-            _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO.toString();
-            _forwardedHttpsHeader = "X-Proxied-Https";
+            if (_forwardedHostHeader==null)
+                _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
+            if (_forwardedServerHeader==null)
+                _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
+            if (_forwardedForHeader==null)
+                _forwardedForHeader = HttpHeader.X_FORWARDED_FOR.toString();
+            if (_forwardedProtoHeader==null)
+                _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO.toString();
+            if (_forwardedHttpsHeader==null)
+                _forwardedHttpsHeader = "X-Proxied-Https";
         }
     }
-    
     
     public String getForcedHost()
     {
@@ -127,6 +133,23 @@ public class ForwardedRequestCustomizer implements Customizer
     public void setForcedHost(String hostAndPort)
     {
         _forcedHost = new HostPortHttpField(hostAndPort);
+    }
+
+    /**
+     * @return The header name for RFC forwarded (default Forwarded)
+     */
+    public String getForwardedHeader()
+    {
+        return _forwardedHeader;
+    }
+
+    /**
+     * @param forwardedHeader 
+     *            The header name for RFC forwarded (default Forwarded)
+     */
+    public void setForwardedHeader(String forwardedHeader)
+    {
+        _forwardedHeader = forwardedHeader;
     }
 
     public String getForwardedHostHeader()
@@ -199,7 +222,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @return The header name holding a forwarded cipher suite (default null)
+     * @return The header name holding a forwarded cipher suite (default Proxy-auth-cert)
      */
     public String getForwardedCipherSuiteHeader()
     {
@@ -208,7 +231,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param forwardedCipherSuite
-     *            The header name holding a forwarded cipher suite (default null)
+     *            The header name holding a forwarded cipher suite (default Proxy-auth-cert)
      */
     public void setForwardedCipherSuiteHeader(String forwardedCipherSuite)
     {
@@ -216,7 +239,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @return The header name holding a forwarded SSL Session ID (default null)
+     * @return The header name holding a forwarded SSL Session ID (default Proxy-ssl-id)
      */
     public String getForwardedSslSessionIdHeader()
     {
@@ -225,7 +248,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param forwardedSslSessionId
-     *            The header name holding a forwarded SSL Session ID (default null)
+     *            The header name holding a forwarded SSL Session ID (default Proxy-ssl-id)
      */
     public void setForwardedSslSessionIdHeader(String forwardedSslSessionId)
     {
@@ -247,6 +270,24 @@ public class ForwardedRequestCustomizer implements Customizer
     {
         _forwardedHttpsHeader = forwardedHttpsHeader;
     }
+    
+    /**
+     * @return true if the presence of a SSL session or certificate header is sufficient
+     * to indicate a secure request (default is true)
+     */
+    public boolean isSslIsSecure()
+    {
+        return _sslIsSecure;
+    }
+
+    /**
+     * @param sslIsSecure true if the presence of a SSL session or certificate header is sufficient
+     * to indicate a secure request (default is true)
+     */
+    public void setSslIsSecure(boolean sslIsSecure)
+    {
+        _sslIsSecure = sslIsSecure;
+    }
 
     @Override
     public void customize(Connector connector, HttpConfiguration config, Request request)
@@ -265,11 +306,25 @@ public class ForwardedRequestCustomizer implements Customizer
         {
             String name = field.getName();
             
-            if (getForwardedCipherSuiteHeader()!=null && httpFields.get(getForwardedCipherSuiteHeader()).equalsIgnoreCase(name))
+            if (getForwardedCipherSuiteHeader()!=null && getForwardedCipherSuiteHeader().equalsIgnoreCase(name))
+            {
                 request.setAttribute("javax.servlet.request.cipher_suite",field.getValue());
+                if (isSslIsSecure())
+                {
+                    request.setSecure(true);
+                    request.setScheme(config.getSecureScheme());
+                }
+            }
             
-            if (getForwardedSslSessionIdHeader()!=null && httpFields.get(getForwardedSslSessionIdHeader()).equalsIgnoreCase(name))
+            if (getForwardedSslSessionIdHeader()!=null && getForwardedSslSessionIdHeader().equalsIgnoreCase(name))
+            {
                 request.setAttribute("javax.servlet.request.ssl_session_id", field.getValue());
+                if (isSslIsSecure())
+                {
+                    request.setSecure(true);
+                    request.setScheme(config.getSecureScheme());
+                }
+            }
             
             if (forwardedHost==null && _forwardedHostHeader!=null && _forwardedHostHeader.equalsIgnoreCase(name))
                 forwardedHost = getLeftMost(field.getValue());
@@ -444,5 +499,4 @@ public class ForwardedRequestCustomizer implements Customizer
             }
         }
     }
-
 }
