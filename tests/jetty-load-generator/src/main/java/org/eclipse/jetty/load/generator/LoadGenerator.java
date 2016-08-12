@@ -25,6 +25,7 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -79,6 +80,8 @@ public class LoadGenerator
     private CopyOnWriteArrayList<HttpClient> clients = new CopyOnWriteArrayList<>();
 
     private Scheduler httpScheduler;
+
+    private SocketAddressResolver socketAddressResolver;
 
     protected enum Transport
     {
@@ -205,6 +208,11 @@ public class LoadGenerator
         return httpScheduler;
     }
 
+    public SocketAddressResolver getSocketAddressResolver()
+    {
+        return socketAddressResolver;
+    }
+
     //--------------------------------------------------------------
     //  component implementation
     //--------------------------------------------------------------
@@ -255,26 +263,28 @@ public class LoadGenerator
 
         Executors.newSingleThreadScheduledExecutor().submit( () -> //
         {
-            HttpClientTransport httpClientTransport = LoadGenerator.this.httpClientTransport != null ? //
-                LoadGenerator.this.httpClientTransport : provideClientTransport( LoadGenerator.this.transport );
+            HttpClientTransport httpClientTransport = this.getHttpClientTransport() != null ? //
+                this.getHttpClientTransport() : provideClientTransport( this.getTransport() );
 
             for (int i = LoadGenerator.this.getUsers(); i > 0; i--)
             {
                 try
                 {
-                    HttpClient httpClient = newHttpClient( httpClientTransport, sslContextFactory );
+                    HttpClient httpClient = newHttpClient( httpClientTransport, getSslContextFactory() );
 
                     // TODO dynamic depending on the rate??
                     httpClient.setMaxRequestsQueuedPerDestination( 2048 );
 
-                    LoadGenerator.this.clients.add( httpClient );
+                    httpClient.setSocketAddressResolver( this.getSocketAddressResolver() );
 
-                    httpClient.getRequestListeners().addAll( LoadGenerator.this.getRequestListeners() );
+                    this.clients.add( httpClient );
+
+                    httpClient.getRequestListeners().addAll( this.getRequestListeners() );
 
                     LoadGeneratorRunner loadGeneratorRunner =
-                        new LoadGeneratorRunner( httpClient, LoadGenerator.this, url, loadGeneratorResult );
+                        new LoadGeneratorRunner( httpClient, this, url, loadGeneratorResult );
 
-                    executorService.submit( loadGeneratorRunner );
+                    this.executorService.submit( loadGeneratorRunner );
                 }
                 catch ( Exception e )
                 {
@@ -423,6 +433,8 @@ public class LoadGenerator
 
         private Scheduler httpScheduler;
 
+        private SocketAddressResolver socketAddressResolver;
+
         public static Builder builder()
         {
             return new Builder();
@@ -529,6 +541,12 @@ public class LoadGenerator
             return this;
         }
 
+        public Builder setHttpClientSocketAddressResolver( SocketAddressResolver socketAddressResolver )
+        {
+            this.socketAddressResolver = socketAddressResolver;
+            return this;
+        }
+
         public LoadGenerator build()
         {
             this.validate();
@@ -546,6 +564,8 @@ public class LoadGenerator
             loadGenerator.selectors = selectors;
             loadGenerator.scheme = scheme;
             loadGenerator.httpScheduler = httpScheduler;
+            loadGenerator.socketAddressResolver = socketAddressResolver == null ? //
+                new SocketAddressResolver.Sync() : socketAddressResolver;
             return loadGenerator;
         }
 
