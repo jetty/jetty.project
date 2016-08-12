@@ -79,8 +79,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
-                if (session.isClosed() && ((HTTP2Session)session).isDisconnected())
-                    latch.countDown();
+                latch.countDown();
             }
         });
 
@@ -118,8 +117,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
-                if (session.isClosed() && ((HTTP2Session)session).isDisconnected())
-                    latch.countDown();
+                latch.countDown();
             }
         });
 
@@ -214,8 +212,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
-                if (session.isClosed() && ((HTTP2Session)session).isDisconnected())
-                    closeLatch.countDown();
+                closeLatch.countDown();
             }
         });
         client.setIdleTimeout(idleTimeout);
@@ -252,8 +249,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
-                if (session.isClosed() && ((HTTP2Session)session).isDisconnected())
-                    closeLatch.countDown();
+                closeLatch.countDown();
             }
         });
         client.setIdleTimeout(idleTimeout);
@@ -362,10 +358,11 @@ public class IdleTimeoutTest extends AbstractTest
             }
 
             @Override
-            public void onTimeout(Stream stream, Throwable x)
+            public boolean onIdleTimeout(Stream stream, Throwable x)
             {
                 Assert.assertThat(x, Matchers.instanceOf(TimeoutException.class));
                 timeoutLatch.countDown();
+                return true;
             }
         });
 
@@ -392,9 +389,10 @@ public class IdleTimeoutTest extends AbstractTest
                 return new Stream.Listener.Adapter()
                 {
                     @Override
-                    public void onTimeout(Stream stream, Throwable x)
+                    public boolean onIdleTimeout(Stream stream, Throwable x)
                     {
                         timeoutLatch.countDown();
+                        return true;
                     }
                 };
             }
@@ -436,9 +434,10 @@ public class IdleTimeoutTest extends AbstractTest
                 return new Stream.Listener.Adapter()
                 {
                     @Override
-                    public void onTimeout(Stream stream, Throwable x)
+                    public boolean onIdleTimeout(Stream stream, Throwable x)
                     {
                         timeoutLatch.countDown();
+                        return true;
                     }
                 };
             }

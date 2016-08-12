@@ -87,7 +87,7 @@ public class AbstractTest
         server.addConnector(connector);
     }
 
-    private void prepareClient()
+    protected void prepareClient()
     {
         client = new HTTP2Client();
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
