@@ -52,7 +52,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     @Test
     public void testOneConcurrentStream() throws Exception
     {
-        long sleep = 2000;
+        long sleep = 1000;
         start(1, new AbstractHandler()
         {
             @Override
@@ -65,8 +65,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         });
         client.setMaxConnectionsPerDestination(1);
 
-        // Prime the connection so that the maxConcurrentStream setting arrives to the client.
-        client.newRequest("localhost", connector.getLocalPort()).path("/prime").send();
+        primeConnection();
 
         CountDownLatch latch = new CountDownLatch(2);
 
@@ -108,8 +107,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         });
         client.setMaxConnectionsPerDestination(1);
 
-        // Prime the connection so that the maxConcurrentStream setting arrives to the client.
-        client.newRequest("localhost", connector.getLocalPort()).path("/prime").send();
+        primeConnection();
 
         // Send requests up to the max allowed.
         for (int i = 0; i < maxStreams; ++i)
@@ -153,8 +151,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         });
         client.setMaxConnectionsPerDestination(1);
 
-        // Prime the connection so that the maxConcurrentStream setting arrives to the client.
-        client.newRequest("localhost", connector.getLocalPort()).path("/prime").send();
+        primeConnection();
 
         // Send a request that is aborted while queued.
         client.newRequest("localhost", connector.getLocalPort())
@@ -195,6 +192,14 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         // The requests should be processed in parallel, not sequentially.
         Assert.assertTrue(latch.await(maxConcurrent * sleep / 2, TimeUnit.MILLISECONDS));
+    }
+
+    private void primeConnection() throws Exception
+    {
+        // Prime the connection so that the maxConcurrentStream setting arrives to the client.
+        client.newRequest("localhost", connector.getLocalPort()).path("/prime").send();
+        // Wait for the server to clean up and remove the stream that primes the connection.
+        sleep(1000);
     }
 
     private void sleep(long time)
