@@ -178,7 +178,7 @@ public interface Stream
          * @param stream the stream
          * @param x      the timeout failure
          * @see #getIdleTimeout()
-         * @deprecated
+         * @deprecated use {@link #onIdleTimeout(Stream, Throwable)} instead
          */
         @Deprecated
         public default void onTimeout(Stream stream, Throwable x)
