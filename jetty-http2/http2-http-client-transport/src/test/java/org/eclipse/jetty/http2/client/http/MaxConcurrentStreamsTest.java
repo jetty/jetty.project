@@ -64,8 +64,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             }
         });
 
-        // Prime the connection so that the maxConcurrentStream setting arrives to the client.
-        client.newRequest("localhost", connector.getLocalPort()).path("/prime").send();
+        primeConnection();
 
         CountDownLatch latch = new CountDownLatch(2);
 
@@ -106,8 +105,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             }
         });
 
-        // Prime the connection so that the maxConcurrentStream setting arrives to the client.
-        client.newRequest("localhost", connector.getLocalPort()).path("/prime").send();
+        primeConnection();
 
         // Send requests up to the max allowed.
         for (int i = 0; i < maxStreams; ++i)
@@ -150,8 +148,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             }
         });
 
-        // Prime the connection so that the maxConcurrentStream setting arrives to the client.
-        client.newRequest("localhost", connector.getLocalPort()).path("/prime").send();
+        primeConnection();
 
         // Send a request that is aborted while queued.
         client.newRequest("localhost", connector.getLocalPort())
@@ -163,6 +160,14 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort()).path("/check").send();
 
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    private void primeConnection() throws Exception
+    {
+        // Prime the connection so that the maxConcurrentStream setting arrives to the client.
+        client.newRequest("localhost", connector.getLocalPort()).path("/prime").send();
+        // Wait for the server to clean up and remove the stream that primes the connection.
+        sleep(1000);
     }
 
     private void sleep(long time)
