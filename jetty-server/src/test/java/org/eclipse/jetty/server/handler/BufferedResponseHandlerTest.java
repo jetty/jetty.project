@@ -41,8 +41,6 @@ import org.junit.Test;
 
 /**
  * Resource Handler test
- * 
- * TODO: increase the testing going on here
  */
 public class BufferedResponseHandlerTest
 {
@@ -95,6 +93,7 @@ public class BufferedResponseHandlerTest
         _test._writes=10;
         _test._flush=false;
         _test._close=false;
+        _test._reset=false;
     }
 
     @Test
@@ -218,6 +217,18 @@ public class BufferedResponseHandlerTest
         assertThat(response,not(containsString("Write: 1")));
         assertThat(response,containsString("Written: true"));
     }
+
+    @Test
+    public void testReset() throws Exception
+    {
+        _test._reset=true;
+        String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        assertThat(response,containsString(" 200 OK"));
+        assertThat(response,containsString("Write: 0"));
+        assertThat(response,containsString("Write: 9"));
+        assertThat(response,containsString("Written: true"));
+        assertThat(response,not(containsString("RESET")));
+    }
     
     public static class TestHandler extends AbstractHandler
     {
@@ -227,16 +238,25 @@ public class BufferedResponseHandlerTest
         int _writes;
         boolean _flush;
         boolean _close;
+        boolean _reset;
 
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
+            
             if (_bufferSize>0)
                 response.setBufferSize(_bufferSize);
             if (_mimeType!=null)
                 response.setContentType(_mimeType);
-            
+
+            if (_reset)
+            {
+                response.getOutputStream().print("THIS WILL BE RESET");
+                response.getOutputStream().flush();
+                response.getOutputStream().print("THIS WILL BE RESET");
+                response.resetBuffer();
+            }
             for (int i=0;i<_writes;i++)
             {
                 response.addHeader("Write",Integer.toString(i));
@@ -248,7 +268,6 @@ public class BufferedResponseHandlerTest
             if (_close)
                 response.getOutputStream().close();
             response.addHeader("Written","true");
-        }
-        
+        }  
     }
 }
