@@ -83,7 +83,6 @@
     <module>jetty-quickstart</module>
     <module>jetty-distribution</module>
     <module>jetty-runner</module>
-    <!-- <module>jetty-monitor</module> -->
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
     <module>jetty-alpn</module>
