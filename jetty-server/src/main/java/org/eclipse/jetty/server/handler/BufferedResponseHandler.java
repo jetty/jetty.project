@@ -201,6 +201,14 @@ public class BufferedResponseHandler extends HandlerWrapper
             _next=interceptor;
             _channel=httpChannel;
         }
+        
+        @Override
+        public void resetBuffer() 
+        {
+            _buffers.clear();
+            _aggregating=null;
+            _aggregate=null;
+        };
 
         @Override
         public void write(ByteBuffer content, boolean last, Callback callback)
