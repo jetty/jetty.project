@@ -61,23 +61,28 @@ node('linux') {
   }
 }
 
+// True if this build is part of the "active" branches
+// for Jetty.
 def isActiveBranch()
 {
   def branchName = "${env.BRANCH_NAME}"
   return ( branchName == "master" ||
-           branchName.startsWith("jetty-") ||
-           branchName.startsWith("jenkins-") );
+           branchName.startsWith("jetty-") );
 }
 
+// Test if the Jenkins Pipeline or Step has marked the
+// current build as unstable
 def isUnstable()
 {
   return currentBuild.result == "UNSTABLE"
 }
 
+// Send a notification about the build status
 def notifyBuild(String buildStatus)
 {
   if ( !isActiveBranch() )
   {
+    // don't send notifications on transient branches
     return
   }
 
