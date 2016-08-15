@@ -119,7 +119,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         }
         
         getJsrEndpointFunctions().setMessageHandler(clazz, handler);
-        messageHandlerSet.add(handler);
+        registerMessageHandler(handler);
     }
     
     /**
@@ -136,7 +136,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
             LOG.debug("MessageHandler.Whole class: {}", handler.getClass());
         }
         getJsrEndpointFunctions().setMessageHandler(clazz, handler);
-        messageHandlerSet.add(handler);
+        registerMessageHandler(handler);
     }
     
     /**
@@ -150,21 +150,36 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     {
         Objects.requireNonNull(handler, "MessageHandler cannot be null");
         Class<? extends MessageHandler> handlerClass = handler.getClass();
+        boolean added = false;
         
         if (MessageHandler.Whole.class.isAssignableFrom(handlerClass))
         {
             Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handlerClass, MessageHandler.Whole.class);
             addMessageHandler(onMessageClass, (MessageHandler.Whole) handler);
+            added = true;
         }
         
         if (MessageHandler.Partial.class.isAssignableFrom(handlerClass))
         {
             Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handlerClass, MessageHandler.Partial.class);
             addMessageHandler(onMessageClass, (MessageHandler.Partial) handler);
+            added = true;
         }
         
-        // Should not be possible
-        throw new IllegalStateException("Not a recognized " + MessageHandler.class.getName() + " type: " + handler.getClass());
+        if (!added)
+        {
+            // Should not be possible
+            throw new IllegalStateException("Not a recognized " + MessageHandler.class.getName() + " type: " + handler.getClass());
+        }
+    }
+    
+    protected synchronized void registerMessageHandler(MessageHandler handler)
+    {
+        if (messageHandlerSet == null)
+        {
+            messageHandlerSet = new HashSet<>();
+        }
+        messageHandlerSet.add(handler);
     }
     
     @Override
@@ -241,6 +256,11 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public Set<MessageHandler> getMessageHandlers()
     {
+        if (messageHandlerSet == null)
+        {
+            return Collections.emptySet();
+        }
+        
         // Always return copy of set, as it is common to iterate and remove from the real set.
         return new HashSet<MessageHandler>(messageHandlerSet);
     }
@@ -309,7 +329,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public synchronized void removeMessageHandler(MessageHandler handler)
     {
-        if (messageHandlerSet.remove(handler))
+        if (messageHandlerSet != null && messageHandlerSet.remove(handler))
         {
             // remove from endpoint functions too
             getJsrEndpointFunctions().removeMessageHandler(handler);

@@ -26,14 +26,15 @@ import javax.websocket.Decoder;
 import javax.websocket.EncodeException;
 
 import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
 
 public class DecodedTextMessageSink extends StringMessageSink
 {
-    public DecodedTextMessageSink(JsrSession session, Decoder.Text decoder, Function<Object, Object> onMessageFunction)
+    public DecodedTextMessageSink(WebSocketPolicy policy, JsrEndpointFunctions endpointFunctions, Decoder.Text decoder, Function<Object, Object> onMessageFunction)
     {
-        super(session.getPolicy(), (message) ->
+        super(policy, (message) ->
         {
             try
             {
@@ -45,7 +46,7 @@ public class DecodedTextMessageSink extends StringMessageSink
                 if (ret != null)
                 {
                     // send response
-                    session.getBasicRemote().sendObject(ret);
+                    endpointFunctions.getSession().getBasicRemote().sendObject(ret);
                 }
                 
                 return null;

@@ -27,13 +27,13 @@ import javax.websocket.EncodeException;
 
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
 
 public class DecodedReaderMessageSink extends ReaderMessageSink
 {
-    public DecodedReaderMessageSink(JsrSession session, Decoder.TextStream decoder, Function<Object, Object> onMessageFunction)
+    public DecodedReaderMessageSink(JsrEndpointFunctions endpointFunctions, Decoder.TextStream decoder, Function<Object, Object> onMessageFunction)
     {
-        super(session.getExecutor(), (reader) ->
+        super(endpointFunctions.getExecutor(), (reader) ->
         {
             try
             {
@@ -45,7 +45,7 @@ public class DecodedReaderMessageSink extends ReaderMessageSink
                 if (ret != null)
                 {
                     // send response
-                    session.getBasicRemote().sendObject(ret);
+                    endpointFunctions.getSession().getBasicRemote().sendObject(ret);
                 }
                 
                 return null;

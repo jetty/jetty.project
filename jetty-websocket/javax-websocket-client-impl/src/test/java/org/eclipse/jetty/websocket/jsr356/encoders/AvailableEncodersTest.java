@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.encoders;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
@@ -37,7 +38,9 @@ import javax.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class AvailableEncodersTest
 {
@@ -48,28 +51,24 @@ public class AvailableEncodersTest
     {
         testConfig = new EmptyClientEndpointConfig();
     }
-
-    private AvailableEncoders encoders = new AvailableEncoders();
+    
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+    
+    private AvailableEncoders encoders = new AvailableEncoders(testConfig);
 
     public <T> void assertTextEncoder(Class<T> type, T value, String expectedEncoded) throws IllegalAccessException, InstantiationException, EncodeException
     {
-        Class<? extends Encoder> encoderClass = encoders.getEncoderFor(type);
-        assertThat("Encoder Class", encoderClass, notNullValue());
-
-        Encoder.Text<T> encoder = (Encoder.Text<T>) encoderClass.newInstance();
-        encoder.init(testConfig);
+        Encoder.Text<T> encoder = (Encoder.Text<T>) encoders.getInstanceFor(type);
+        assertThat("Encoder", encoder, notNullValue());
         String encoded = encoder.encode(value);
-
         assertThat("Encoded", encoded, is(expectedEncoded));
     }
 
     public <T> void assertTextStreamEncoder(Class<T> type, T value, String expectedEncoded) throws IllegalAccessException, InstantiationException, EncodeException, IOException
     {
-        Class<? extends Encoder> encoderClass = encoders.getEncoderFor(type);
-        assertThat("Encoder Class", encoderClass, notNullValue());
-
-        Encoder.TextStream<T> encoder = (Encoder.TextStream<T>) encoderClass.newInstance();
-        encoder.init(testConfig);
+        Encoder.TextStream<T> encoder = (Encoder.TextStream<T>) encoders.getInstanceFor(type);
+        assertThat("Encoder", encoder, notNullValue());
         StringWriter writer = new StringWriter();
         encoder.encode(value, writer);
 
@@ -78,12 +77,8 @@ public class AvailableEncodersTest
 
     public <T> void assertBinaryEncoder(Class<T> type, T value, String expectedEncodedHex) throws IllegalAccessException, InstantiationException, EncodeException
     {
-        AvailableEncoders encoders = new AvailableEncoders();
-        Class<? extends Encoder> encoderClass = encoders.getEncoderFor(type);
-        assertThat("Encoder Class", encoderClass, notNullValue());
-
-        Encoder.Binary<T> encoder = (Encoder.Binary<T>) encoderClass.newInstance();
-        encoder.init(testConfig);
+        Encoder.Binary<T> encoder = (Encoder.Binary<T>) encoders.getInstanceFor(type);
+        assertThat("Encoder", encoder, notNullValue());
         ByteBuffer encoded = encoder.encode(value);
 
         String hexEncoded = Hex.asHex(encoded);
@@ -92,11 +87,8 @@ public class AvailableEncodersTest
 
     public <T> void assertBinaryStreamEncoder(Class<T> type, T value, String expectedEncodedHex) throws IllegalAccessException, InstantiationException, EncodeException, IOException
     {
-        Class<? extends Encoder> encoderClass = encoders.getEncoderFor(type);
-        assertThat("Encoder Class", encoderClass, notNullValue());
-
-        Encoder.BinaryStream<T> encoder = (Encoder.BinaryStream<T>) encoderClass.newInstance();
-        encoder.init(testConfig);
+        Encoder.BinaryStream<T> encoder = (Encoder.BinaryStream<T>) encoders.getInstanceFor(type);
+        assertThat("Encoder", encoder, notNullValue());
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         encoder.encode(value, out);
 
@@ -210,6 +202,15 @@ public class AvailableEncodersTest
         byte buf[] = Hex.asByteArray("998877665544332211");
         assertBinaryEncoder(byte[].class, buf, "998877665544332211");
     }
+    
+    @Test
+    public void testCustomEncoder_Integer() throws IllegalAccessException, InstantiationException, EncodeException
+    {
+        encoders.register(IntegerEncoder.class);
+        int val = 99887766;
+        String expected = "99887766";
+        assertTextEncoder(Integer.class, val, expected);
+    }
 
     @Test
     public void testCustomEncoder_Time() throws IllegalAccessException, InstantiationException, EncodeException, IOException
@@ -273,5 +274,26 @@ public class AvailableEncodersTest
         encoders.register(ValidDualEncoder.class);
         long value = 0x112233445566L;
         assertBinaryStreamEncoder(Long.class, value, "5B00001122334455665D");
+    }
+    
+    @Test
+    public void testCustomEncoder_Register_Duplicate()
+    {
+        // has duplicated support for the same target Type
+        expectedException.expect(IllegalStateException.class);
+        expectedException.expectMessage(containsString("Duplicate"));
+        encoders.register(BadDualEncoder.class);
+    }
+    
+    @Test
+    public void testCustomEncoder_Register_OtherDuplicate()
+    {
+        // Register DateEncoder (decodes java.util.Date)
+        encoders.register(DateEncoder.class);
+    
+        // Register TimeEncoder (which also wants to decode java.util.Date)
+        expectedException.expect(IllegalStateException.class);
+        expectedException.expectMessage(containsString("Duplicate"));
+        encoders.register(TimeEncoder.class);
     }
 }

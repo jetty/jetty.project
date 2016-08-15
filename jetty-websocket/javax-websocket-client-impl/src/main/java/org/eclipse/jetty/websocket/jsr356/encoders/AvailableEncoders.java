@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -65,6 +66,7 @@ public class AvailableEncoders implements Predicate<Class<?>>
     
     public AvailableEncoders(EndpointConfig config)
     {
+        Objects.requireNonNull(config);
         this.config = config;
         registeredEncoders = new LinkedList<>();
         
