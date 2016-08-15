@@ -764,6 +764,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _written+=BufferUtil.length(content);
         sendResponse(null,content,complete,callback);
     }
+    
+    @Override 
+    public void resetBuffer()
+    {
+        if(isCommitted())
+            throw new IllegalStateException("Committed");
+    }
 
     public HttpOutput.Interceptor getNextInterceptor()
     {

@@ -54,12 +54,66 @@ import org.eclipse.jetty.util.log.Logger;
  * close the stream, to be reopened after the inclusion ends.</p>
  */
 public class HttpOutput extends ServletOutputStream implements Runnable
-{
+{   
+    
+    /**
+     * The HttpOutput.Inteceptor is a single intercept point for all 
+     * output written to the HttpOutput: via writer; via output stream; 
+     * asynchronously; or blocking.
+     * <p>
+     * The Interceptor can be used to implement translations (eg Gzip) or 
+     * additional buffering that acts on all output.  Interceptors are 
+     * created in a chain, so that multiple concerns may intercept.
+     * <p>
+     * The {@link HttpChannel} is an {@link Interceptor} and is always the 
+     * last link in any Interceptor chain.
+     * <p>
+     * Responses are committed by the first call to 
+     * {@link #write(ByteBuffer, boolean, Callback)}
+     * and closed by a call to {@link #write(ByteBuffer, boolean, Callback)} 
+     * with the last boolean set true.  If no content is available to commit 
+     * or close, then a null buffer is passed.
+     */
     public interface Interceptor
     {
-        void write(ByteBuffer content, boolean complete, Callback callback);
+        /** 
+         * Write content.
+         * The response is committed by the first call to write and is closed by
+         * a call with last == true. Empty content buffers may be passed to 
+         * force a commit or close.
+         * @param content The content to be written or an empty buffer.
+         * @param last True if this is the last call to write 
+         * @param callback The callback to use to indicate {@link Callback#succeeded()} 
+         * or {@link Callback#failed(Throwable)}.
+         */
+        void write(ByteBuffer content, boolean last, Callback callback);
+        
+        /**
+         * @return The next Interceptor in the chain or null if this is the 
+         * last Interceptor in the chain.
+         */
         Interceptor getNextInterceptor();
+        
+        /**
+         * @return True if the Interceptor is optimized to receive direct 
+         * {@link ByteBuffer}s in the {@link #write(ByteBuffer, boolean, Callback)}
+         * method.   If false is returned, then passing direct buffers may cause 
+         * inefficiencies.
+         */
         boolean isOptimizedForDirectBuffers();
+        
+        /**
+         * Reset the buffers.
+         * <p>If the Interceptor contains buffers then reset them.
+         * @throws IllegalStateException Thrown if the response has been 
+         * committed and buffers and/or headers cannot be reset.
+         */
+        default void resetBuffer() throws IllegalStateException
+        {
+            Interceptor next = getNextInterceptor();
+            if (next!=null)
+                next.resetBuffer();
+        };
     }
 
     private static Logger LOG = Log.getLogger(HttpOutput.class);
@@ -820,15 +874,19 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public void recycle()
     {
-        resetBuffer();
         _interceptor=_channel;
+        if (BufferUtil.hasContent(_aggregate))
+            BufferUtil.clear(_aggregate);
+        _written = 0;
+        reopen();
     }
 
     public void resetBuffer()
     {
-        _written = 0;
+        _interceptor.resetBuffer();
         if (BufferUtil.hasContent(_aggregate))
             BufferUtil.clear(_aggregate);
+        _written = 0;
         reopen();
     }
 

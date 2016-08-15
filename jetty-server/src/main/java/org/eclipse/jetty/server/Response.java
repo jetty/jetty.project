@@ -543,8 +543,9 @@ public class Response implements HttpServletResponse
 
         if (isCommitted())
             LOG.warn("cannot sendError("+code+", "+message+") response already committed");
-
-        resetBuffer();
+        else
+            resetBuffer();
+        
         _characterEncoding=null;
         setHeader(HttpHeader.EXPIRES,null);
         setHeader(HttpHeader.LAST_MODIFIED,null);
@@ -1255,9 +1256,6 @@ public class Response implements HttpServletResponse
     @Override
     public void resetBuffer()
     {
-        if (isCommitted())
-            throw new IllegalStateException("cannot reset buffer on committed response");
-
         _out.resetBuffer();
     }
 
