@@ -26,14 +26,15 @@ import javax.websocket.Decoder;
 import javax.websocket.EncodeException;
 
 import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
 
 public class DecodedBinaryMessageSink extends ByteBufferMessageSink
 {
-    public DecodedBinaryMessageSink(JsrSession session, Decoder.Binary decoder, Function<Object, Object> onMessageFunction)
+    public DecodedBinaryMessageSink(WebSocketPolicy policy, JsrEndpointFunctions endpointFunctions, Decoder.Binary decoder, Function<Object, Object> onMessageFunction)
     {
-        super(session.getPolicy(), (byteBuf) ->
+        super(policy, (byteBuf) ->
         {
             try
             {
@@ -47,7 +48,7 @@ public class DecodedBinaryMessageSink extends ByteBufferMessageSink
                 if (ret != null)
                 {
                     // send response
-                    session.getBasicRemote().sendObject(ret);
+                    endpointFunctions.getSession().getBasicRemote().sendObject(ret);
                 }
                 
                 return null;

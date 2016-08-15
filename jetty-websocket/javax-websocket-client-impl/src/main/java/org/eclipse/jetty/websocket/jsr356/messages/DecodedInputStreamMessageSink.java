@@ -28,14 +28,15 @@ import javax.websocket.EncodeException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
 
 public class DecodedInputStreamMessageSink extends InputStreamMessageSink
 {
-    public DecodedInputStreamMessageSink(JsrSession session,
+    public DecodedInputStreamMessageSink(JsrEndpointFunctions endpointFunctions,
                                          Decoder.BinaryStream decoder,
                                          Function<Object, Object> onMessageFunction)
     {
-        super(session.getExecutor(), (reader) ->
+        super(endpointFunctions.getExecutor(), (reader) ->
         {
             try
             {
@@ -47,7 +48,7 @@ public class DecodedInputStreamMessageSink extends InputStreamMessageSink
                 if (ret != null)
                 {
                     // send response
-                    session.getBasicRemote().sendObject(ret);
+                    endpointFunctions.getSession().getBasicRemote().sendObject(ret);
                 }
             
                 return null;

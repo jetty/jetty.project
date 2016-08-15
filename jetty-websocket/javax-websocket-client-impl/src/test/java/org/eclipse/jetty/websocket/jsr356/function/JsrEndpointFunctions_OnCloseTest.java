@@ -53,11 +53,19 @@ public class JsrEndpointFunctions_OnCloseTest
     {
         container = new ClientContainer();
     }
-
-    private AvailableEncoders encoders = new AvailableEncoders();
-    private AvailableDecoders decoders = new AvailableDecoders();
-    private Map<String,String> uriParams = new HashMap<>();
-    private EndpointConfig endpointConfig = new EmptyClientEndpointConfig();
+    
+    private AvailableEncoders encoders;
+    private AvailableDecoders decoders;
+    private Map<String, String> uriParams = new HashMap<>();
+    private EndpointConfig endpointConfig;
+    
+    public JsrEndpointFunctions_OnCloseTest()
+    {
+        endpointConfig = new EmptyClientEndpointConfig();
+        encoders = new AvailableEncoders(endpointConfig);
+        decoders = new AvailableDecoders(endpointConfig);
+        uriParams = new HashMap<>();
+    }
 
     public JsrSession newSession(Object websocket)
     {

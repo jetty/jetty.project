@@ -42,13 +42,20 @@ public class AvailableDecoders implements Predicate<Class<?>>
         public final Class<? extends Decoder> decoder;
         public final Class<? extends Decoder> interfaceType;
         public final Class<?> objectType;
+        public final boolean primitive;
         public Decoder instance;
         
         public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType)
         {
+            this(decoder, interfaceType, objectType, false);
+        }
+        
+        public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType, boolean primitive)
+        {
             this.decoder = decoder;
             this.interfaceType = interfaceType;
             this.objectType = objectType;
+            this.primitive = primitive;
         }
         
         public boolean implementsInterface(Class<? extends Decoder> type)
@@ -61,7 +68,7 @@ public class AvailableDecoders implements Predicate<Class<?>>
             return objectType.isAssignableFrom(type);
         }
     }
-
+    
     private final EndpointConfig config;
     private LinkedList<RegisteredDecoder> registeredDecoders;
     
@@ -71,36 +78,36 @@ public class AvailableDecoders implements Predicate<Class<?>>
         registeredDecoders = new LinkedList<>();
         
         // TEXT based [via Class reference]
-        register(BooleanDecoder.class, Decoder.Text.class, Boolean.class);
-        register(ByteDecoder.class, Decoder.Text.class, Byte.class);
-        register(CharacterDecoder.class, Decoder.Text.class, Character.class);
-        register(DoubleDecoder.class, Decoder.Text.class, Double.class);
-        register(FloatDecoder.class, Decoder.Text.class, Float.class);
-        register(IntegerDecoder.class, Decoder.Text.class, Integer.class);
-        register(LongDecoder.class, Decoder.Text.class, Long.class);
-        register(StringDecoder.class, Decoder.Text.class, String.class);
+        registerPrimitive(BooleanDecoder.class, Decoder.Text.class, Boolean.class);
+        registerPrimitive(ByteDecoder.class, Decoder.Text.class, Byte.class);
+        registerPrimitive(CharacterDecoder.class, Decoder.Text.class, Character.class);
+        registerPrimitive(DoubleDecoder.class, Decoder.Text.class, Double.class);
+        registerPrimitive(FloatDecoder.class, Decoder.Text.class, Float.class);
+        registerPrimitive(IntegerDecoder.class, Decoder.Text.class, Integer.class);
+        registerPrimitive(LongDecoder.class, Decoder.Text.class, Long.class);
+        registerPrimitive(StringDecoder.class, Decoder.Text.class, String.class);
         
         // TEXT based [via Primitive reference]
-        register(BooleanDecoder.class, Decoder.Text.class, Boolean.TYPE);
-        register(ByteDecoder.class, Decoder.Text.class, Byte.TYPE);
-        register(CharacterDecoder.class, Decoder.Text.class, Character.TYPE);
-        register(DoubleDecoder.class, Decoder.Text.class, Double.TYPE);
-        register(FloatDecoder.class, Decoder.Text.class, Float.TYPE);
-        register(IntegerDecoder.class, Decoder.Text.class, Integer.TYPE);
-        register(LongDecoder.class, Decoder.Text.class, Long.TYPE);
+        registerPrimitive(BooleanDecoder.class, Decoder.Text.class, Boolean.TYPE);
+        registerPrimitive(ByteDecoder.class, Decoder.Text.class, Byte.TYPE);
+        registerPrimitive(CharacterDecoder.class, Decoder.Text.class, Character.TYPE);
+        registerPrimitive(DoubleDecoder.class, Decoder.Text.class, Double.TYPE);
+        registerPrimitive(FloatDecoder.class, Decoder.Text.class, Float.TYPE);
+        registerPrimitive(IntegerDecoder.class, Decoder.Text.class, Integer.TYPE);
+        registerPrimitive(LongDecoder.class, Decoder.Text.class, Long.TYPE);
         
         // BINARY based
-        register(ByteBufferDecoder.class, Decoder.Binary.class, ByteBuffer.class);
-        register(ByteArrayDecoder.class, Decoder.Binary.class, byte[].class);
+        registerPrimitive(ByteBufferDecoder.class, Decoder.Binary.class, ByteBuffer.class);
+        registerPrimitive(ByteArrayDecoder.class, Decoder.Binary.class, byte[].class);
         
         // STREAMING based
-        register(ReaderDecoder.class, Decoder.TextStream.class, Reader.class);
-        register(InputStreamDecoder.class, Decoder.BinaryStream.class, InputStreamDecoder.class);
+        registerPrimitive(ReaderDecoder.class, Decoder.TextStream.class, Reader.class);
+        registerPrimitive(InputStreamDecoder.class, Decoder.BinaryStream.class, InputStreamDecoder.class);
     }
     
-    private void register(Class<? extends Decoder> decoderClass, Class<? extends Decoder> interfaceType, Class<?> type)
+    private void registerPrimitive(Class<? extends Decoder> decoderClass, Class<? extends Decoder> interfaceType, Class<?> type)
     {
-        registeredDecoders.add(new RegisteredDecoder(decoderClass, interfaceType, type));
+        registeredDecoders.add(new RegisteredDecoder(decoderClass, interfaceType, type, true));
     }
     
     public void register(Class<? extends Decoder> decoder)
@@ -167,14 +174,34 @@ public class AvailableDecoders implements Predicate<Class<?>>
         if (objectType == null)
         {
             StringBuilder err = new StringBuilder();
-            err.append("Invalid Decoder Object type declared for interface ");
+            err.append("Unknown Decoder Object type declared for interface ");
             err.append(interfaceClass.getName());
             err.append(" on class ");
             err.append(decoder);
             throw new InvalidWebSocketException(err.toString());
         }
         
-        registeredDecoders.add(new RegisteredDecoder(decoder, interfaceClass, objectType));
+        try
+        {
+            RegisteredDecoder conflicts = registeredDecoders.stream()
+                    .filter(registered -> registered.isType(objectType))
+                    .filter(registered -> !registered.primitive)
+                    .findFirst()
+                    .get();
+            
+            StringBuilder err = new StringBuilder();
+            err.append("Duplicate Decoder Object type ");
+            err.append(objectType.getName());
+            err.append(" in ");
+            err.append(decoder.getName());
+            err.append(", previously declared in ");
+            err.append(conflicts.decoder.getName());
+            throw new InvalidWebSocketException(err.toString());
+        }
+        catch (NoSuchElementException e)
+        {
+            registeredDecoders.addFirst(new RegisteredDecoder(decoder, interfaceClass, objectType));
+        }
     }
     
     public List<RegisteredDecoder> supporting(Class<? extends Decoder> interfaceType)
@@ -204,27 +231,35 @@ public class AvailableDecoders implements Predicate<Class<?>>
         }
     }
     
-    public Decoder getInstanceFor(Class<?> type)
+    public <T extends Decoder> T getInstanceOf(RegisteredDecoder registeredDecoder)
+    {
+        if (registeredDecoder.instance != null)
+        {
+            return (T) registeredDecoder.instance;
+        }
+        
+        try
+        {
+            registeredDecoder.instance = registeredDecoder.decoder.newInstance();
+            registeredDecoder.instance.init(this.config);
+            return (T) registeredDecoder.instance;
+        }
+        catch (InstantiationException | IllegalAccessException e)
+        {
+            throw new InitException("Unable to init Decoder for type:" + registeredDecoder.decoder.getName(), e);
+        }
+    }
+    
+    public <T extends Decoder> T getInstanceFor(Class<?> type)
     {
         try
         {
             RegisteredDecoder registeredDecoder = getRegisteredDecoderFor(type);
-            if (registeredDecoder.instance != null)
-            {
-                return registeredDecoder.instance;
-            }
-            
-            registeredDecoder.instance = registeredDecoder.decoder.newInstance();
-            registeredDecoder.instance.init(this.config);
-            return registeredDecoder.instance;
+            return getInstanceOf(registeredDecoder);
         }
         catch (NoSuchElementException e)
         {
             throw new InvalidWebSocketException("No Decoder found for type " + type);
-        }
-        catch (InstantiationException | IllegalAccessException e)
-        {
-            throw new InitException("Unable to init Decoder for type:" + type.getName(), e);
         }
     }
     

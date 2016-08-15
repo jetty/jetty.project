@@ -206,6 +206,7 @@ public class EncoderTest
         }
     }
 
+    @SuppressWarnings("Duplicates")
     private Quotes getQuotes(String filename) throws IOException
     {
         Quotes quotes = new Quotes();

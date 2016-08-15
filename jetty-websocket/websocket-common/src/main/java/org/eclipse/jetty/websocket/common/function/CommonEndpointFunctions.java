@@ -479,14 +479,49 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         throw new InvalidSignatureException(err.toString());
     }
     
+    protected void clearOnPongFunction()
+    {
+        
+    }
+    
+    protected void clearOnTextSink()
+    {
+        
+    }
+    
+    protected void clearOnBinarySink()
+    {
+        
+    }
+    
     public BatchMode getBatchMode()
     {
         return batchMode;
     }
     
+    public Executor getExecutor()
+    {
+        return executor;
+    }
+    
     public T getSession()
     {
         return session;
+    }
+    
+    protected MessageSink getOnTextSink()
+    {
+        return onTextSink;
+    }
+    
+    protected MessageSink getOnBinarySink()
+    {
+        return onBinarySink;
+    }
+    
+    protected Function<ByteBuffer, Void> getOnPongFunction()
+    {
+        return onPongFunction;
     }
     
     public void setOnOpen(Function<T, Void> function, Object origin)

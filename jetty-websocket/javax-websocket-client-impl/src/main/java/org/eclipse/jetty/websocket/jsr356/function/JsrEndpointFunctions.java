@@ -27,8 +27,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.websocket.ClientEndpoint;
@@ -55,6 +57,7 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.function.CommonEndpointFunctions;
+import org.eclipse.jetty.websocket.common.message.MessageSink;
 import org.eclipse.jetty.websocket.common.message.PartialBinaryMessageSink;
 import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
 import org.eclipse.jetty.websocket.common.reflect.Arg;
@@ -77,6 +80,42 @@ import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextMessageSink;
 public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
 {
     private static final Logger LOG = Log.getLogger(JsrEndpointFunctions.class);
+    
+    protected static class MessageHandlerPongFunction implements Function<ByteBuffer, Void>
+    {
+        public final MessageHandler messageHandler;
+        public final Function<ByteBuffer, Void> function;
+        
+        public MessageHandlerPongFunction(MessageHandler messageHandler, Function<ByteBuffer, Void> function)
+        {
+            this.messageHandler = messageHandler;
+            this.function = function;
+        }
+        
+        @Override
+        public Void apply(ByteBuffer byteBuffer)
+        {
+            return function.apply(byteBuffer);
+        }
+    }
+    
+    protected static class MessageHandlerSink implements MessageSink
+    {
+        public final MessageHandler messageHandler;
+        public final MessageSink delegateSink;
+        
+        public MessageHandlerSink(MessageHandler messageHandler, MessageSink messageSink)
+        {
+            this.messageHandler = messageHandler;
+            this.delegateSink = messageSink;
+        }
+        
+        @Override
+        public void accept(ByteBuffer payload, Boolean fin)
+        {
+            this.delegateSink.accept(payload, fin);
+        }
+    }
     
     /**
      * Represents a static value (as seen from a URI PathParam)
@@ -125,6 +164,212 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                     .map(entry -> new StaticArg(entry.getKey(), entry.getValue()))
                     .sorted()
                     .collect(Collectors.toList()));
+        }
+    }
+    
+    public AvailableDecoders getAvailableDecoders()
+    {
+        return decoders;
+    }
+    
+    /**
+     * Identify the message sink the handler belongs to and remove it.
+     * Block if the message sink is actively being used.
+     *
+     * @param handler the handler to remove from possible message sinks
+     * @see {@link javax.websocket.Session#removeMessageHandler(MessageHandler)}
+     * @since JSR356 v1.0
+     */
+    public void removeMessageHandler(MessageHandler handler)
+    {
+        Function<ByteBuffer, Void> pongFunction = getOnPongFunction();
+        if (pongFunction instanceof MessageHandlerPongFunction)
+        {
+            MessageHandlerPongFunction handlerFunction = (MessageHandlerPongFunction) pongFunction;
+            if (handlerFunction.messageHandler == handler)
+                clearOnPongFunction();
+        }
+        
+        MessageSink textSink = getOnTextSink();
+        if (textSink instanceof MessageHandlerSink)
+        {
+            MessageHandlerSink handlerSink = (MessageHandlerSink) textSink;
+            if (handlerSink.messageHandler == handler)
+                clearOnTextSink();
+        }
+        
+        MessageSink binarySink = getOnBinarySink();
+        if (binarySink instanceof MessageHandlerSink)
+        {
+            MessageHandlerSink handlerSink = (MessageHandlerSink) binarySink;
+            if (handlerSink.messageHandler == handler)
+                clearOnBinarySink();
+        }
+    }
+    
+    /**
+     * Create a message sink from the provided partial message handler.
+     *
+     * @param clazz the object type
+     * @param handler the partial message handler
+     * @param <T> the generic defined type
+     * @throws IllegalStateException if unable to process message handler
+     * @see {@link javax.websocket.Session#addMessageHandler(Class, MessageHandler.Partial)}
+     * @since JSR356 v1.1
+     */
+    public <T> void setMessageHandler(Class<T> clazz, MessageHandler.Partial<T> handler) throws IllegalStateException
+    {
+        if (String.class.isAssignableFrom(clazz))
+        {
+            PartialTextMessageSink sink = new PartialTextMessageSink((partial) ->
+            {
+                handler.onMessage((T) partial.getPayload(), partial.isFin());
+                return null;
+            });
+            setOnText(new MessageHandlerSink(handler, sink), handler);
+            return;
+        }
+        
+        if (ByteBuffer.class.isAssignableFrom(clazz))
+        {
+            PartialBinaryMessageSink sink = new PartialBinaryMessageSink((partial) ->
+            {
+                handler.onMessage((T) partial.getPayload(), partial.isFin());
+                return null;
+            });
+            setOnBinary(new MessageHandlerSink(handler, sink), handler);
+            return;
+        }
+        
+        if (byte[].class.isAssignableFrom(clazz))
+        {
+            PartialBinaryMessageSink sink = new PartialBinaryMessageSink((partial) ->
+            {
+                handler.onMessage((T) BufferUtil.toArray(partial.getPayload()), partial.isFin());
+                return null;
+            });
+            setOnBinary(new MessageHandlerSink(handler, sink), handler);
+            return;
+        }
+        
+        // If we reached this point, then the Partial type is unrecognized
+        StringBuilder err = new StringBuilder();
+        err.append("Unrecognized ").append(MessageHandler.Partial.class.getName());
+        err.append(" type <");
+        err.append(clazz.getName());
+        err.append("> on ");
+        err.append(handler.getClass().getName());
+        throw new IllegalStateException(err.toString());
+    }
+    
+    /**
+     * Create a message sink from the provided whole message handler.
+     *
+     * @param clazz the object type
+     * @param handler the whole message handler
+     * @param <T> the generic defined type
+     * @throws IllegalStateException if unable to process message handler
+     * @see {@link javax.websocket.Session#addMessageHandler(Class, MessageHandler.Whole)}
+     * @since JSR356 v1.1
+     */
+    public <T> void setMessageHandler(Class<T> clazz, MessageHandler.Whole<T> handler) throws IllegalStateException
+    {
+        try
+        {
+            // Is this a PongMessage?
+            if (PongMessage.class.isAssignableFrom(PongMessage.class))
+            {
+                Function<ByteBuffer, Void> pongFunction = (payload) ->
+                {
+                    handler.onMessage((T) new JsrPongMessage(payload));
+                    return null;
+                };
+                setOnPong(new MessageHandlerPongFunction(handler, pongFunction), handler);
+                return;
+            }
+            
+            // Try to determine TEXT / BINARY
+            AvailableDecoders.RegisteredDecoder registeredDecoder = decoders.getRegisteredDecoderFor(clazz);
+            
+            if (registeredDecoder.implementsInterface(Decoder.Text.class))
+            {
+                Decoder.Text decoderInstance = decoders.getInstanceOf(registeredDecoder);
+                DecodedTextMessageSink textSink = new DecodedTextMessageSink(
+                        policy, this, decoderInstance,
+                        (msg) ->
+                        {
+                            handler.onMessage((T) msg);
+                            return null;
+                        }
+                );
+                setOnText(new MessageHandlerSink(handler, textSink), handler);
+                return;
+            }
+            
+            if (registeredDecoder.implementsInterface(Decoder.Binary.class))
+            {
+                Decoder.Binary decoderInstance = decoders.getInstanceOf(registeredDecoder);
+                DecodedBinaryMessageSink binarySink = new DecodedBinaryMessageSink(
+                        policy, this, decoderInstance,
+                        (msg) ->
+                        {
+                            handler.onMessage((T) msg);
+                            return null;
+                        }
+                );
+                setOnBinary(new MessageHandlerSink(handler, binarySink), handler);
+                return;
+            }
+            
+            if (registeredDecoder.implementsInterface(Decoder.TextStream.class))
+            {
+                Decoder.TextStream decoderInstance = decoders.getInstanceOf(registeredDecoder);
+                DecodedReaderMessageSink textSink = new DecodedReaderMessageSink(
+                        this, decoderInstance,
+                        (msg) ->
+                        {
+                            handler.onMessage((T) msg);
+                            return null;
+                        }
+                );
+                setOnText(new MessageHandlerSink(handler, textSink), handler);
+                return;
+            }
+            
+            if (registeredDecoder.implementsInterface(Decoder.BinaryStream.class))
+            {
+                Decoder.BinaryStream decoderInstance = decoders.getInstanceOf(registeredDecoder);
+                DecodedInputStreamMessageSink binarySink = new DecodedInputStreamMessageSink(
+                        this, decoderInstance,
+                        (msg) ->
+                        {
+                            handler.onMessage((T) msg);
+                            return null;
+                        }
+                );
+                setOnBinary(new MessageHandlerSink(handler, binarySink), handler);
+                return;
+            }
+            
+            // If we reached this point, then the Whole Message Type is unrecognized
+            StringBuilder err = new StringBuilder();
+            err.append("Unrecognized message type ");
+            err.append(MessageHandler.Whole.class.getName());
+            err.append("<").append(clazz.getName());
+            err.append("> on ");
+            err.append(handler.getClass().getName());
+            throw new IllegalStateException(err.toString());
+        }
+        catch (NoSuchElementException e)
+        {
+            // No valid decoder for type found
+            StringBuilder err = new StringBuilder();
+            err.append("Not a valid ").append(MessageHandler.Whole.class.getName());
+            err.append(" type <");
+            err.append(clazz.getName());
+            err.append("> on ");
+            err.append(handler.getClass().getName());
+            throw new IllegalStateException(err.toString());
         }
     }
     
@@ -296,228 +541,21 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
             onmsgloop:
             for (Method onMsg : onMessages)
             {
-                boolean foundMatch = false;
+                // Whole TEXT / Binary Message
+                if (discoverOnMessageWholeText(onMsg)) continue onmsgloop;
+                if (discoverOnMessageWholeBinary(onMsg)) continue onmsgloop;
                 
-                // Try to determine Message type (BINARY / TEXT) from signature
+                // Partial TEXT / BINARY
+                if (discoverOnMessagePartialText(onMsg)) continue onmsgloop;
+                if (discoverOnMessagePartialBinaryArray(onMsg)) continue onmsgloop;
+                if (discoverOnMessagePartialBinaryBuffer(onMsg)) continue onmsgloop;
                 
-                Arg SESSION = new Arg(Session.class);
+                // Streaming TEXT / BINARY
+                if (discoverOnMessageTextStream(onMsg)) continue onmsgloop;
+                if (discoverOnMessageBinaryStream(onMsg)) continue onmsgloop;
                 
-                // --------------------
-                // -- Whole Messages --
-                // --------------------
-                
-                // Whole TEXT
-                for (AvailableDecoders.RegisteredDecoder decoder : decoders.supporting(Decoder.Text.class))
-                {
-                    UnorderedSignature sig = new UnorderedSignature(createCallArgs(SESSION, new Arg(decoder.objectType).required()));
-                    if (sig.test(onMsg))
-                    {
-                        assertOnMessageSignature(onMsg);
-                        
-                        final Object[] args = newCallArgs(sig.getCallArgs());
-                        args[0] = getSession();
-                        BiFunction<Object, Object[], Object> invoker = sig.newFunction(onMsg);
-                        Decoder.Text decoderInstance = getDecoderInstance(decoder, Decoder.Text.class);
-                        DecodedTextMessageSink textSink = new DecodedTextMessageSink(
-                                getSession(),
-                                decoderInstance,
-                                (msg) ->
-                                {
-                                    args[1] = msg;
-                                    return invoker.apply(endpoint, args);
-                                }
-                        );
-                        setOnText(textSink, onMsg);
-                        continue onmsgloop;
-                    }
-                }
-                
-                // Whole BINARY
-                for (AvailableDecoders.RegisteredDecoder decoder : decoders.supporting(Decoder.Binary.class))
-                {
-                    UnorderedSignature sig = new UnorderedSignature(createCallArgs(SESSION, new Arg(decoder.objectType).required()));
-                    if (sig.test(onMsg))
-                    {
-                        assertOnMessageSignature(onMsg);
-                        
-                        final Object[] args = newCallArgs(sig.getCallArgs());
-                        args[0] = getSession();
-                        BiFunction<Object, Object[], Object> invoker = sig.newFunction(onMsg);
-                        Decoder.Binary decoderInstance = getDecoderInstance(decoder, Decoder.Binary.class);
-                        DecodedBinaryMessageSink binarySink = new DecodedBinaryMessageSink(
-                                getSession(),
-                                decoderInstance,
-                                (msg) ->
-                                {
-                                    args[1] = msg;
-                                    return invoker.apply(endpoint, args);
-                                }
-                        );
-                        setOnBinary(binarySink, onMsg);
-                        continue onmsgloop;
-                    }
-                }
-                
-                // ----------------------
-                // -- Partial Messages --
-                // ----------------------
-                
-                Arg ARG_PARTIAL_BOOL = new Arg(boolean.class).required();
-                
-                // Partial Text
-                Arg ARG_STRING = new Arg(String.class).required();
-                UnorderedSignature sigPartialText = new UnorderedSignature(createCallArgs(SESSION, ARG_STRING, ARG_PARTIAL_BOOL));
-                if (sigPartialText.test(onMsg))
-                {
-                    // Found partial text args
-                    assertOnMessageSignature(onMsg);
-                    
-                    final Object[] args = newCallArgs(sigPartialText.getCallArgs());
-                    args[0] = getSession();
-                    BiFunction<Object, Object[], Object> invoker = sigPartialText.newFunction(onMsg);
-                    // No decoders for Partial messages per JSR-356 (PFD1 spec)
-                    setOnText(new PartialTextMessageSink((partial) ->
-                    {
-                        args[1] = partial.getPayload();
-                        args[2] = partial.isFin();
-                        invoker.apply(endpoint, args);
-                        return null;
-                    }), onMsg);
-                    continue onmsgloop;
-                }
-                
-                // Partial Binary
-                Arg ARG_BYTE_ARRAY = new Arg(byte[].class).required();
-                UnorderedSignature sigPartialBinaryArray = new UnorderedSignature(createCallArgs(SESSION, ARG_BYTE_ARRAY, ARG_PARTIAL_BOOL));
-                if (sigPartialBinaryArray.test(onMsg))
-                {
-                    // Found partial binary array args
-                    assertOnMessageSignature(onMsg);
-                    
-                    final Object[] args = newCallArgs(sigPartialBinaryArray.getCallArgs());
-                    args[0] = getSession();
-                    BiFunction<Object, Object[], Object> invoker = sigPartialBinaryArray.newFunction(onMsg);
-                    // No decoders for Partial messages per JSR-356 (PFD1 spec)
-                    setOnBinary(new PartialBinaryMessageSink((partial) ->
-                    {
-                        args[1] = BufferUtil.toArray(partial.getPayload());
-                        args[2] = partial.isFin();
-                        invoker.apply(endpoint, args);
-                        return null;
-                    }), onMsg);
-                    continue onmsgloop;
-                }
-                
-                Arg ARG_BYTE_BUFFER = new Arg(ByteBuffer.class).required();
-                UnorderedSignature sigPartialByteBuffer = new UnorderedSignature(createCallArgs(SESSION, ARG_BYTE_BUFFER, ARG_PARTIAL_BOOL));
-                if (sigPartialByteBuffer.test(onMsg))
-                {
-                    // Found partial binary array args
-                    assertOnMessageSignature(onMsg);
-                    
-                    final Object[] args = newCallArgs(sigPartialBinaryArray.getCallArgs());
-                    args[0] = getSession();
-                    BiFunction<Object, Object[], Object> invoker = sigPartialBinaryArray.newFunction(onMsg);
-                    // No decoders for Partial messages per JSR-356 (PFD1 spec)
-                    setOnBinary(new PartialBinaryMessageSink((partial) ->
-                    {
-                        args[1] = partial.getPayload();
-                        args[2] = partial.isFin();
-                        invoker.apply(endpoint, args);
-                        return null;
-                    }), onMsg);
-                    continue onmsgloop;
-                }
-                
-                // ------------------------
-                // -- Streaming Messages --
-                // ------------------------
-                
-                // Streaming TEXT ---
-                for (AvailableDecoders.RegisteredDecoder decoder : decoders.supporting(Decoder.TextStream.class))
-                {
-                    UnorderedSignature sig = new UnorderedSignature(createCallArgs(SESSION, new Arg(decoder.objectType).required()));
-                    if (sig.test(onMsg))
-                    {
-                        assertOnMessageSignature(onMsg);
-                        
-                        final Object[] args = newCallArgs(sig.getCallArgs());
-                        args[0] = getSession();
-                        BiFunction<Object, Object[], Object> invoker = sig.newFunction(onMsg);
-                        Decoder.TextStream decoderInstance = getDecoderInstance(decoder, Decoder.TextStream.class);
-                        DecodedReaderMessageSink textSink = new DecodedReaderMessageSink(
-                                getSession(),
-                                decoderInstance,
-                                (msg) ->
-                                {
-                                    args[1] = msg;
-                                    return invoker.apply(endpoint, args);
-                                }
-                        );
-                        setOnText(textSink, onMsg);
-                        continue onmsgloop;
-                    }
-                }
-                
-                // Streaming BINARY ---
-                for (AvailableDecoders.RegisteredDecoder decoder : decoders.supporting(Decoder.BinaryStream.class))
-                {
-                    UnorderedSignature sig = new UnorderedSignature(createCallArgs(SESSION, new Arg(decoder.objectType).required()));
-                    if (sig.test(onMsg))
-                    {
-                        assertOnMessageSignature(onMsg);
-                        
-                        final Object[] args = newCallArgs(sig.getCallArgs());
-                        args[0] = getSession();
-                        BiFunction<Object, Object[], Object> invoker = sig.newFunction(onMsg);
-                        Decoder.BinaryStream decoderInstance = getDecoderInstance(decoder, Decoder.BinaryStream.class);
-                        DecodedInputStreamMessageSink textSink = new DecodedInputStreamMessageSink(
-                                getSession(),
-                                decoderInstance,
-                                (msg) ->
-                                {
-                                    args[1] = msg;
-                                    return invoker.apply(endpoint, args);
-                                }
-                        );
-                        setOnText(textSink, onMsg);
-                        continue onmsgloop;
-                    }
-                }
-                
-                // -------------------
-                // -- Pong Messages --
-                // -------------------
-                
-                // Test for PONG
-                UnorderedSignature sigPong = new UnorderedSignature(createCallArgs(SESSION, new Arg(PongMessage.class).required()));
-                if (sigPong.test(onMsg))
-                {
-                    assertOnMessageSignature(onMsg);
-                    
-                    final Object[] args = newCallArgs(sigPong.getCallArgs());
-                    args[0] = getSession();
-                    BiFunction<Object, Object[], Object> invoker = sigPong.newFunction(onMsg);
-                    // No decoder for PongMessage
-                    setOnPing((pong) ->
-                    {
-                        args[1] = new JsrPongMessage(pong);
-                        Object ret = invoker.apply(endpoint, args);
-                        if (ret != null)
-                        {
-                            try
-                            {
-                                getSession().getBasicRemote().sendObject(ret);
-                            }
-                            catch (EncodeException | IOException e)
-                            {
-                                throw new WebSocketException(e);
-                            }
-                        }
-                        return null;
-                    }, onMsg);
-                    continue onmsgloop;
-                }
+                // PONG
+                if (discoverOnMessagePong(onMsg)) continue onmsgloop;
                 
                 // If we reached this point, then we have a @OnMessage annotated method
                 // that doesn't match any known signature above.
@@ -527,58 +565,243 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         }
     }
     
-    /**
-     * Create a message sink from the provided partial message handler.
-     *
-     * @param clazz the object type
-     * @param handler the partial message handler
-     * @param <T> the generic defined type
-     * @see {@link javax.websocket.Session#addMessageHandler(Class, MessageHandler.Partial)}
-     */
-    public <T> void setMessageHandler(Class<T> clazz, MessageHandler.Partial<T> handler)
+    private boolean discoverOnMessagePong(Method onMsg) throws DecodeException
     {
-        // TODO: implement
-    }
-    
-    /**
-     * Create a message sink from the provided whole message handler.
-     *
-     * @param clazz the object type
-     * @param handler the whole message handler
-     * @param <T> the generic defined type
-     * @see {@link javax.websocket.Session#addMessageHandler(Class, MessageHandler.Whole)}
-     */
-    public <T> void setMessageHandler(Class<T> clazz, MessageHandler.Whole<T> handler)
-    {
-        // TODO: implement
-    }
-    
-    /**
-     * Identify the message sink the handler belongs to and remove it.
-     * Block if the message sink is actively being used.
-     * @param handler the handler to remove from possible message sinks
-     * @see {@link javax.websocket.Session#removeMessageHandler(MessageHandler)}
-     */
-    public void removeMessageHandler(MessageHandler handler)
-    {
-        // TODO: implement
-    }
-    
-    private <T extends Decoder> T getDecoderInstance(AvailableDecoders.RegisteredDecoder registeredDecoder, Class<T> interfaceType)
-    {
-        // TODO: Return previous instantiated decoders here
-        
-        Class<? extends Decoder> decoderClass = registeredDecoder.decoder;
-        try
+        Arg SESSION = new Arg(Session.class);
+        UnorderedSignature sigPong = new UnorderedSignature(createCallArgs(SESSION, new Arg(PongMessage.class).required()));
+        if (sigPong.test(onMsg))
         {
-            Decoder decoder = decoderClass.newInstance();
-            decoder.init(this.endpointConfig);
-            return (T) decoder;
+            assertOnMessageSignature(onMsg);
+            
+            final Object[] args = newCallArgs(sigPong.getCallArgs());
+            BiFunction<Object, Object[], Object> invoker = sigPong.newFunction(onMsg);
+            // No decoder for PongMessage
+            setOnPong((pong) ->
+            {
+                args[0] = getSession();
+                args[1] = new JsrPongMessage(pong);
+                Object ret = invoker.apply(endpoint, args);
+                if (ret != null)
+                {
+                    try
+                    {
+                        getSession().getBasicRemote().sendObject(ret);
+                    }
+                    catch (EncodeException | IOException e)
+                    {
+                        throw new WebSocketException(e);
+                    }
+                }
+                return null;
+            }, onMsg);
+            return true;
         }
-        catch (Throwable t)
+        return false;
+    }
+    
+    private boolean discoverOnMessageBinaryStream(Method onMsg) throws DecodeException
+    {
+        Arg SESSION = new Arg(Session.class);
+        for (AvailableDecoders.RegisteredDecoder decoder : decoders.supporting(Decoder.BinaryStream.class))
         {
-            throw new InvalidWebSocketException("Unable to initialize required Decoder: " + decoderClass.getName(), t);
+            UnorderedSignature sig = new UnorderedSignature(createCallArgs(SESSION, new Arg(decoder.objectType).required()));
+            if (sig.test(onMsg))
+            {
+                assertOnMessageSignature(onMsg);
+                
+                final Object[] args = newCallArgs(sig.getCallArgs());
+                BiFunction<Object, Object[], Object> invoker = sig.newFunction(onMsg);
+                Decoder.BinaryStream decoderInstance = decoders.getInstanceOf(decoder);
+                DecodedInputStreamMessageSink streamSink = new DecodedInputStreamMessageSink(
+                        this,
+                        decoderInstance,
+                        (msg) ->
+                        {
+                            args[0] = getSession();
+                            args[1] = msg;
+                            return invoker.apply(endpoint, args);
+                        }
+                );
+                setOnBinary(streamSink, onMsg);
+                return true;
+            }
         }
+        return false;
+    }
+    
+    private boolean discoverOnMessageTextStream(Method onMsg) throws DecodeException
+    {
+        Arg SESSION = new Arg(Session.class);
+        for (AvailableDecoders.RegisteredDecoder decoder : decoders.supporting(Decoder.TextStream.class))
+        {
+            UnorderedSignature sig = new UnorderedSignature(createCallArgs(SESSION, new Arg(decoder.objectType).required()));
+            if (sig.test(onMsg))
+            {
+                assertOnMessageSignature(onMsg);
+                
+                final Object[] args = newCallArgs(sig.getCallArgs());
+                BiFunction<Object, Object[], Object> invoker = sig.newFunction(onMsg);
+                Decoder.TextStream decoderInstance = decoders.getInstanceOf(decoder);
+                DecodedReaderMessageSink streamSink = new DecodedReaderMessageSink(
+                        this,
+                        decoderInstance,
+                        (msg) ->
+                        {
+                            args[0] = getSession();
+                            args[1] = msg;
+                            return invoker.apply(endpoint, args);
+                        }
+                );
+                setOnText(streamSink, onMsg);
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    @SuppressWarnings("Duplicates")
+    private boolean discoverOnMessagePartialBinaryBuffer(Method onMsg) throws DecodeException
+    {
+        Arg SESSION = new Arg(Session.class);
+        Arg ARG_BYTE_BUFFER = new Arg(ByteBuffer.class).required();
+        Arg ARG_PARTIAL_BOOL = new Arg(boolean.class).required();
+        UnorderedSignature sigPartialByteBuffer = new UnorderedSignature(createCallArgs(SESSION, ARG_BYTE_BUFFER, ARG_PARTIAL_BOOL));
+        if (sigPartialByteBuffer.test(onMsg))
+        {
+            // Found partial binary array args
+            assertOnMessageSignature(onMsg);
+            
+            final Object[] args = newCallArgs(sigPartialByteBuffer.getCallArgs());
+            BiFunction<Object, Object[], Object> invoker = sigPartialByteBuffer.newFunction(onMsg);
+            // No decoders for Partial messages per JSR-356 (PFD1 spec)
+            setOnBinary(new PartialBinaryMessageSink((partial) ->
+            {
+                args[0] = getSession();
+                args[1] = partial.getPayload();
+                args[2] = partial.isFin();
+                invoker.apply(endpoint, args);
+                return null;
+            }), onMsg);
+            return true;
+        }
+        return false;
+    }
+    
+    private boolean discoverOnMessagePartialBinaryArray(Method onMsg) throws DecodeException
+    {
+        Arg SESSION = new Arg(Session.class);
+        Arg ARG_BYTE_ARRAY = new Arg(byte[].class).required();
+        Arg ARG_PARTIAL_BOOL = new Arg(boolean.class).required();
+        UnorderedSignature sigPartialBinaryArray = new UnorderedSignature(createCallArgs(SESSION, ARG_BYTE_ARRAY, ARG_PARTIAL_BOOL));
+        if (sigPartialBinaryArray.test(onMsg))
+        {
+            // Found partial binary array args
+            assertOnMessageSignature(onMsg);
+            
+            final Object[] args = newCallArgs(sigPartialBinaryArray.getCallArgs());
+            BiFunction<Object, Object[], Object> invoker = sigPartialBinaryArray.newFunction(onMsg);
+            // No decoders for Partial messages per JSR-356 (PFD1 spec)
+            setOnBinary(new PartialBinaryMessageSink((partial) ->
+            {
+                args[0] = getSession();
+                args[1] = BufferUtil.toArray(partial.getPayload());
+                args[2] = partial.isFin();
+                invoker.apply(endpoint, args);
+                return null;
+            }), onMsg);
+            return true;
+        }
+        return false;
+    }
+    
+    @SuppressWarnings("Duplicates")
+    private boolean discoverOnMessagePartialText(Method onMsg) throws DecodeException
+    {
+        Arg SESSION = new Arg(Session.class);
+        Arg ARG_PARTIAL_BOOL = new Arg(boolean.class).required();
+        Arg ARG_STRING = new Arg(String.class).required();
+        UnorderedSignature sigPartialText = new UnorderedSignature(createCallArgs(SESSION, ARG_STRING, ARG_PARTIAL_BOOL));
+        if (sigPartialText.test(onMsg))
+        {
+            // Found partial text args
+            assertOnMessageSignature(onMsg);
+            
+            final Object[] args = newCallArgs(sigPartialText.getCallArgs());
+            BiFunction<Object, Object[], Object> invoker = sigPartialText.newFunction(onMsg);
+            // No decoders for Partial messages per JSR-356 (PFD1 spec)
+            setOnText(new PartialTextMessageSink((partial) ->
+            {
+                args[0] = getSession();
+                args[1] = partial.getPayload();
+                args[2] = partial.isFin();
+                invoker.apply(endpoint, args);
+                return null;
+            }), onMsg);
+            return true;
+        }
+        return false;
+    }
+    
+    private boolean discoverOnMessageWholeBinary(Method onMsg) throws DecodeException
+    {
+        Arg SESSION = new Arg(Session.class);
+        for (AvailableDecoders.RegisteredDecoder decoder : decoders.supporting(Decoder.Binary.class))
+        {
+            UnorderedSignature sig = new UnorderedSignature(createCallArgs(SESSION, new Arg(decoder.objectType).required()));
+            if (sig.test(onMsg))
+            {
+                assertOnMessageSignature(onMsg);
+                
+                final Object[] args = newCallArgs(sig.getCallArgs());
+                BiFunction<Object, Object[], Object> invoker = sig.newFunction(onMsg);
+                Decoder.Binary decoderInstance = decoders.getInstanceOf(decoder);
+                DecodedBinaryMessageSink binarySink = new DecodedBinaryMessageSink(
+                        policy,
+                        this,
+                        decoderInstance,
+                        (msg) ->
+                        {
+                            args[0] = getSession();
+                            args[1] = msg;
+                            return invoker.apply(endpoint, args);
+                        }
+                );
+                setOnBinary(binarySink, onMsg);
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private boolean discoverOnMessageWholeText(Method onMsg) throws DecodeException
+    {
+        Arg SESSION = new Arg(Session.class);
+        for (AvailableDecoders.RegisteredDecoder decoder : decoders.supporting(Decoder.Text.class))
+        {
+            UnorderedSignature sig = new UnorderedSignature(createCallArgs(SESSION, new Arg(decoder.objectType).required()));
+            if (sig.test(onMsg))
+            {
+                assertOnMessageSignature(onMsg);
+                
+                final Object[] args = newCallArgs(sig.getCallArgs());
+                BiFunction<Object, Object[], Object> invoker = sig.newFunction(onMsg);
+                Decoder.Text decoderInstance = decoders.getInstanceOf(decoder);
+                DecodedTextMessageSink textSink = new DecodedTextMessageSink(
+                        policy,
+                        this,
+                        decoderInstance,
+                        (msg) ->
+                        {
+                            args[0] = getSession();
+                            args[1] = msg;
+                            return invoker.apply(endpoint, args);
+                        }
+                );
+                setOnText(textSink, onMsg);
+                return true;
+            }
+        }
+        return false;
     }
     
     private void assertSignatureValid(DynamicArgs.Signature sig, Class<? extends Annotation> annotationClass, Method method)
@@ -629,11 +852,6 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
             ReflectUtils.append(err, endpoint.getClass(), method);
             throw new InvalidSignatureException(err.toString());
         }
-    }
-    
-    public AvailableDecoders getAvailableDecoders()
-    {
-        return decoders;
     }
     
     protected Object[] newCallArgs(Arg[] callArgs) throws DecodeException
