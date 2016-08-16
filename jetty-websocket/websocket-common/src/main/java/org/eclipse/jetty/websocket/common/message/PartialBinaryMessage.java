@@ -21,6 +21,8 @@ package org.eclipse.jetty.websocket.common.message;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
+import org.eclipse.jetty.util.BufferUtil;
+
 /**
  * {@link Function} argument for Partial Binary Messages
  */
@@ -31,15 +33,15 @@ public class PartialBinaryMessage
     
     public PartialBinaryMessage(ByteBuffer payload, boolean fin)
     {
-        this.payload = payload;
+        this.payload = payload == null ? BufferUtil.EMPTY_BUFFER : payload;
         this.fin = fin;
     }
-
+    
     public ByteBuffer getPayload()
     {
         return payload;
     }
-
+    
     public boolean isFin()
     {
         return fin;

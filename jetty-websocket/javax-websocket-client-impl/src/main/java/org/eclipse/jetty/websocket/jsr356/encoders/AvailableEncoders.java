@@ -41,13 +41,20 @@ public class AvailableEncoders implements Predicate<Class<?>>
         public final Class<? extends Encoder> encoder;
         public final Class<? extends Encoder> interfaceType;
         public final Class<?> objectType;
+        public final boolean primitive;
         public Encoder instance;
         
         public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType)
         {
+            this(encoder, interfaceType, objectType, false);
+        }
+        
+        public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType, boolean primitive)
+        {
             this.encoder = encoder;
             this.interfaceType = interfaceType;
             this.objectType = objectType;
+            this.primitive = primitive;
         }
         
         public boolean implementsInterface(Class<? extends Encoder> type)
@@ -71,27 +78,27 @@ public class AvailableEncoders implements Predicate<Class<?>>
         registeredEncoders = new LinkedList<>();
         
         // TEXT based [via Class reference]
-        register(BooleanEncoder.class, Encoder.Text.class, Boolean.class);
-        register(ByteEncoder.class, Encoder.Text.class, Byte.class);
-        register(CharacterEncoder.class, Encoder.Text.class, Character.class);
-        register(DoubleEncoder.class, Encoder.Text.class, Double.class);
-        register(FloatEncoder.class, Encoder.Text.class, Float.class);
-        register(IntegerEncoder.class, Encoder.Text.class, Integer.class);
-        register(LongEncoder.class, Encoder.Text.class, Long.class);
-        register(StringEncoder.class, Encoder.Text.class, String.class);
+        registerPrimitive(BooleanEncoder.class, Encoder.Text.class, Boolean.class);
+        registerPrimitive(ByteEncoder.class, Encoder.Text.class, Byte.class);
+        registerPrimitive(CharacterEncoder.class, Encoder.Text.class, Character.class);
+        registerPrimitive(DoubleEncoder.class, Encoder.Text.class, Double.class);
+        registerPrimitive(FloatEncoder.class, Encoder.Text.class, Float.class);
+        registerPrimitive(IntegerEncoder.class, Encoder.Text.class, Integer.class);
+        registerPrimitive(LongEncoder.class, Encoder.Text.class, Long.class);
+        registerPrimitive(StringEncoder.class, Encoder.Text.class, String.class);
         
         // TEXT based [via Primitive reference]
-        register(BooleanEncoder.class, Encoder.Text.class, Boolean.TYPE);
-        register(ByteEncoder.class, Encoder.Text.class, Byte.TYPE);
-        register(CharacterEncoder.class, Encoder.Text.class, Character.TYPE);
-        register(DoubleEncoder.class, Encoder.Text.class, Double.TYPE);
-        register(FloatEncoder.class, Encoder.Text.class, Float.TYPE);
-        register(IntegerEncoder.class, Encoder.Text.class, Integer.TYPE);
-        register(LongEncoder.class, Encoder.Text.class, Long.TYPE);
+        registerPrimitive(BooleanEncoder.class, Encoder.Text.class, Boolean.TYPE);
+        registerPrimitive(ByteEncoder.class, Encoder.Text.class, Byte.TYPE);
+        registerPrimitive(CharacterEncoder.class, Encoder.Text.class, Character.TYPE);
+        registerPrimitive(DoubleEncoder.class, Encoder.Text.class, Double.TYPE);
+        registerPrimitive(FloatEncoder.class, Encoder.Text.class, Float.TYPE);
+        registerPrimitive(IntegerEncoder.class, Encoder.Text.class, Integer.TYPE);
+        registerPrimitive(LongEncoder.class, Encoder.Text.class, Long.TYPE);
         
         // BINARY based
-        register(ByteBufferEncoder.class, Encoder.Binary.class, ByteBuffer.class);
-        register(ByteArrayEncoder.class, Encoder.Binary.class, byte[].class);
+        registerPrimitive(ByteBufferEncoder.class, Encoder.Binary.class, ByteBuffer.class);
+        registerPrimitive(ByteArrayEncoder.class, Encoder.Binary.class, byte[].class);
         
         // STREAMING based
         // Note: Streams (Writer / OutputStream) are not present here
@@ -99,11 +106,14 @@ public class AvailableEncoders implements Predicate<Class<?>>
         // encoder to write an object to a Stream
         // register(WriterEncoder.class, Encoder.TextStream.class, Writer.class);
         // register(OutputStreamEncoder.class, Encoder.BinaryStream.class, OutputStream.class);
+        
+        // Config Based
+        registerAll(config.getEncoders());
     }
     
-    private void register(Class<? extends Encoder> encoderClass, Class<? extends Encoder> interfaceType, Class<?> type)
+    private void registerPrimitive(Class<? extends Encoder> encoderClass, Class<? extends Encoder> interfaceType, Class<?> type)
     {
-        registeredEncoders.add(new RegisteredEncoder(encoderClass, interfaceType, type));
+        registeredEncoders.add(new RegisteredEncoder(encoderClass, interfaceType, type, true));
     }
     
     public void register(Class<? extends Encoder> encoder)
@@ -177,7 +187,33 @@ public class AvailableEncoders implements Predicate<Class<?>>
             throw new InvalidWebSocketException(err.toString());
         }
         
-        registeredEncoders.add(new RegisteredEncoder(encoder, interfaceClass, objectType));
+        try
+        {
+            RegisteredEncoder conflicts = registeredEncoders.stream()
+                    .filter(registered -> registered.isType(objectType))
+                    .filter(registered -> !registered.primitive)
+                    .findFirst()
+                    .get();
+            
+            if (conflicts.encoder.equals(encoder) && conflicts.implementsInterface(interfaceClass))
+            {
+                // Same encoder as what is there already, don't bother adding it again.
+                return;
+            }
+            
+            StringBuilder err = new StringBuilder();
+            err.append("Duplicate Encoder Object type ");
+            err.append(objectType.getName());
+            err.append(" in ");
+            err.append(encoder.getName());
+            err.append(", previously declared in ");
+            err.append(conflicts.encoder.getName());
+            throw new InvalidWebSocketException(err.toString());
+        }
+        catch (NoSuchElementException e)
+        {
+            registeredEncoders.addFirst(new RegisteredEncoder(encoder, interfaceClass, objectType));
+        }
     }
     
     public List<RegisteredEncoder> supporting(Class<? extends Encoder> interfaceType)

@@ -162,9 +162,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         if (LOG.isDebugEnabled())
             LOG.debug("starting - {}", this);
     
-        this.endpointFunctions = newEndpointFunctions(this.endpoint);
-        addBean(this.endpointFunctions);
-        
         Iterator<RemoteEndpointFactory> iter = ServiceLoader.load(RemoteEndpointFactory.class).iterator();
         if (iter.hasNext())
             remoteEndpointFactory = iter.next();
@@ -174,7 +171,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
         if (LOG.isDebugEnabled())
             LOG.debug("Using RemoteEndpointFactory: {}", remoteEndpointFactory);
-
+    
+        this.endpointFunctions = newEndpointFunctions(this.endpoint);
+        addBean(this.endpointFunctions);
+    
         super.doStart();
     }
 

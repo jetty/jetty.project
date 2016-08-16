@@ -38,6 +38,7 @@ public class DummyConnection implements LogicalConnection
     private static final Logger LOG = Log.getLogger(DummyConnection.class);
     private IOState iostate;
     private WebSocketPolicy policy;
+    
 
     @Deprecated
     public DummyConnection()
