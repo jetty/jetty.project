@@ -25,6 +25,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ReadListener;
@@ -146,18 +147,16 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
-            long now=System.currentTimeMillis();
-            
             if (_blockingTimeoutAt>=0 && !isAsync())
-                _blockingTimeoutAt=now+getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
+                _blockingTimeoutAt=System.currentTimeMillis()+getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
 
             int minRequestDataRate=_channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
             if (minRequestDataRate>0 && _firstByteTimeStamp!=-1)
             {
-                long period=now-_firstByteTimeStamp;
+                long period=System.nanoTime()-_firstByteTimeStamp;
                 if (period>=1000)
                 {
-                    double data_rate = _contentArrived / (0.001*period);
+                    double data_rate = _contentArrived / ((1.0*period)/TimeUnit.SECONDS.toNanos(1));
                     if (data_rate<minRequestDataRate)
                         throw new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,String.format("Request Data rate %f < %d B/s",data_rate,minRequestDataRate));
                 }
@@ -432,7 +431,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         synchronized (_inputQ)
         {
             if (_firstByteTimeStamp==-1)
-                _firstByteTimeStamp=System.currentTimeMillis();
+                _firstByteTimeStamp=System.nanoTime();
             _contentArrived+=item.remaining();
             _inputQ.offer(item);
             if (LOG.isDebugEnabled())
