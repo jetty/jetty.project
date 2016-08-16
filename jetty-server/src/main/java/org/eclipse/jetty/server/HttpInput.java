@@ -58,6 +58,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     private final HttpChannelState _channelState;
     private ReadListener _listener;
     private State _state = STREAM;
+    private long _firstByteTimeStamp=-1;
     private long _contentArrived;
     private long _contentConsumed;
     private long _blockingTimeoutAt = -1;
@@ -88,6 +89,8 @@ public class HttpInput extends ServletInputStream implements Runnable
             _state = STREAM;
             _contentArrived = 0;
             _contentConsumed = 0;
+            _firstByteTimeStamp = -1;
+            _blockingTimeoutAt = -1;
         }
     }
 
@@ -149,12 +152,12 @@ public class HttpInput extends ServletInputStream implements Runnable
                 _blockingTimeoutAt=now+getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
 
             int minRequestDataRate=_channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
-            if (minRequestDataRate>0)
+            if (minRequestDataRate>0 && _firstByteTimeStamp!=-1)
             {
-                long period=now-_channelState.getHttpChannel().getRequest().getTimeStamp();
+                long period=now-_firstByteTimeStamp;
                 if (period>=1000)
                 {
-                    double data_rate = _contentArrived / (0.001*(now-_channelState.getHttpChannel().getRequest().getTimeStamp()));
+                    double data_rate = _contentArrived / (0.001*period);
                     if (data_rate<minRequestDataRate)
                         throw new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,String.format("Request Data rate %f < %d B/s",data_rate,minRequestDataRate));
                 }
@@ -428,6 +431,8 @@ public class HttpInput extends ServletInputStream implements Runnable
         boolean woken=false;
         synchronized (_inputQ)
         {
+            if (_firstByteTimeStamp==-1)
+                _firstByteTimeStamp=System.currentTimeMillis();
             _contentArrived+=item.remaining();
             _inputQ.offer(item);
             if (LOG.isDebugEnabled())
