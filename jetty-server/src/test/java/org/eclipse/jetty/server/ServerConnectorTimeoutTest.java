@@ -38,7 +38,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     public void init() throws Exception
     {
         ServerConnector connector = new ServerConnector(_server,1,1);
-        connector.setIdleTimeout(MAX_IDLE_TIME); // 250 msec max idle
+        connector.setIdleTimeout(MAX_IDLE_TIME);
         startServer(connector);
     }
 

@@ -78,6 +78,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             _httpConfiguration.setBlockingTimeout(-1L);
             _httpConfiguration.setMinRequestDataRate(-1);
+            _httpConfiguration.setIdleTimeout(-1);
         }
         
     }
@@ -880,6 +881,43 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         String response =IO.toString(is);
         Assert.assertThat(response,containsString(" 200 "));
         Assert.assertThat(response,containsString("========="));
+    }
+
+
+    @Test(timeout=60000)
+    public void testHttpIdleTime() throws Exception
+    {
+        _httpConfiguration.setIdleTimeout(500);
+        configureServer(new EchoHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        InputStream is=client.getInputStream();
+
+        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
+        {
+            os.write((
+                "POST /echo HTTP/1.0\r\n"+
+                    "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+                    "content-type: text/plain; charset=utf-8\r\n"+
+                    "content-length: 20\r\n"+
+                "\r\n").getBytes("utf-8"));
+            os.flush();
+
+            os.write("123456789\n".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(1000);
+            os.write("=========\n".getBytes("utf-8"));
+            os.flush();
+
+            String response =IO.toString(is);
+            Assert.assertThat(response,containsString(" 500 "));
+            Assert.assertThat(response,containsString("/500 ms"));
+            Assert.assertThat(response,Matchers.not(containsString("=========")));
+        }
     }
 
     
