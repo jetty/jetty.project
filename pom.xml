@@ -39,6 +39,7 @@
     <connection>scm:git:https://github.com/eclipse/jetty.project.git</connection>
     <developerConnection>scm:git:git@github.com:eclipse/jetty.project.git</developerConnection>
     <url>https://github.com/eclipse/jetty.project</url>
+    <tag>HEAD</tag>
   </scm>
 
   <modules>
