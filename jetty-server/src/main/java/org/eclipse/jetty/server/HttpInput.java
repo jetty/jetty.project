@@ -156,7 +156,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 long period=System.nanoTime()-_firstByteTimeStamp;
                 if (period>=1000)
                 {
-                    double data_rate = _contentArrived / ((1.0*period)/TimeUnit.SECONDS.toNanos(1));
+                    double data_rate = _contentArrived / (((double)period)/TimeUnit.SECONDS.toNanos(1));
                     if (data_rate<minRequestDataRate)
                         throw new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,String.format("Request Data rate %f < %d B/s",data_rate,minRequestDataRate));
                 }
