@@ -254,10 +254,10 @@ public class EncoderTest
     @Test
     public void testSingleQuotes() throws Exception
     {
-        EchoServer eserver = new EchoServer(server);
+        EchoServer echoServer = new EchoServer(server);
         try
         {
-            eserver.start();
+            echoServer.start();
 
             QuotesSocket quoter = new QuotesSocket();
 
@@ -278,17 +278,17 @@ public class EncoderTest
         }
         finally
         {
-            eserver.stop();
+            echoServer.stop();
         }
     }
 
     @Test
     public void testTwoQuotes() throws Exception
     {
-        EchoServer eserver = new EchoServer(server);
+        EchoServer echoServer = new EchoServer(server);
         try
         {
-            eserver.start();
+            echoServer.start();
 
             QuotesSocket quoter = new QuotesSocket();
             ClientEndpointConfig.Builder builder = ClientEndpointConfig.Builder.create();
@@ -312,7 +312,7 @@ public class EncoderTest
         }
         finally
         {
-            eserver.stop();
+            echoServer.stop();
         }
     }
 }

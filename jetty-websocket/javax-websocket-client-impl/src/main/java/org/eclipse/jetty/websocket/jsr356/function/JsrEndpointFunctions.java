@@ -115,6 +115,12 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         {
             this.delegateSink.accept(payload, fin);
         }
+    
+        @Override
+        public String toString()
+        {
+            return String.format("MessageSink[%s]",messageHandler.getClass().getName());
+        }
     }
     
     /**
@@ -277,7 +283,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         try
         {
             // Is this a PongMessage?
-            if (PongMessage.class.isAssignableFrom(PongMessage.class))
+            if (PongMessage.class.isAssignableFrom(clazz))
             {
                 Function<ByteBuffer, Void> pongFunction = (payload) ->
                 {

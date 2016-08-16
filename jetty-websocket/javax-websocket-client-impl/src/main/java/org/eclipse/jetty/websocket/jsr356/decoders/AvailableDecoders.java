@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -74,6 +75,7 @@ public class AvailableDecoders implements Predicate<Class<?>>
     
     public AvailableDecoders(EndpointConfig config)
     {
+        Objects.requireNonNull(config);
         this.config = config;
         registeredDecoders = new LinkedList<>();
         
@@ -103,6 +105,9 @@ public class AvailableDecoders implements Predicate<Class<?>>
         // STREAMING based
         registerPrimitive(ReaderDecoder.class, Decoder.TextStream.class, Reader.class);
         registerPrimitive(InputStreamDecoder.class, Decoder.BinaryStream.class, InputStreamDecoder.class);
+        
+        // Config Based
+        registerAll(config.getDecoders());
     }
     
     private void registerPrimitive(Class<? extends Decoder> decoderClass, Class<? extends Decoder> interfaceType, Class<?> type)
@@ -188,6 +193,12 @@ public class AvailableDecoders implements Predicate<Class<?>>
                     .filter(registered -> !registered.primitive)
                     .findFirst()
                     .get();
+            
+            if (conflicts.decoder.equals(decoder) && conflicts.implementsInterface(interfaceClass))
+            {
+                // Same decoder as what is there already, don't bother adding it again.
+                return;
+            }
             
             StringBuilder err = new StringBuilder();
             err.append("Duplicate Decoder Object type ");

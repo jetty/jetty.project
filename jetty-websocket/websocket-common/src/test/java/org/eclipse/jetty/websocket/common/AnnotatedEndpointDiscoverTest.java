@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -72,7 +73,7 @@ public class AnnotatedEndpointDiscoverTest
     {
         // Should toss exception
         thrown.expect(InvalidWebSocketException.class);
-        thrown.expectMessage(containsString("Cannot replace previously assigned BINARY Handler with "));
+        thrown.expectMessage(allOf(containsString("Cannot replace previously assigned"), containsString("BINARY Handler")));
         createSession(new BadDuplicateBinarySocket());
     }
     

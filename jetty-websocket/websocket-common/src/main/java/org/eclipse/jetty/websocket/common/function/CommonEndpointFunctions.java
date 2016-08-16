@@ -481,17 +481,17 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     
     protected void clearOnPongFunction()
     {
-        
+        onPongFunction = null;
     }
     
     protected void clearOnTextSink()
     {
-        
+        onTextSink = null;
     }
     
     protected void clearOnBinarySink()
     {
-        
+        onBinarySink = null;
     }
     
     public BatchMode getBatchMode()
@@ -650,8 +650,9 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             return;
         
         StringBuilder err = new StringBuilder();
-        err.append("Cannot replace previously assigned ");
+        err.append("Cannot replace previously assigned [");
         err.append(role);
+        err.append("] at ").append(describeOrigin(val));
         err.append(" with ");
         err.append(describeOrigin(origin));
         
