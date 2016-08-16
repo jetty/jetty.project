@@ -76,6 +76,7 @@ db-connection-type=datasource
 ----
 
 jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
 
 db-connection-type::
 jetty.session.datasourceName::
@@ -97,18 +98,3 @@ jetty.sessionTableSchema.virtualHostColumn::
 jetty.sessionTableSchema.maxIntervalColumn::
 jetty.sessionTableSchema.mapColumn::
 jetty.sessionTableSchema.table::
-
-jetty.jdbcSession.workerName::
-  The name that uniquely identifies this node in the cluster.
-  This value will also be used by the sticky load balancer to identify the node.
-  Don't forget to change the value of this property on *each* node on which you enable jdbc session clustering.
-jetty.jdbcSession.scavenge::
-  The time in seconds between sweeps of a task which scavenges old expired sessions.
-  The default is 10 minutess.
-  Increasing the frequency is not recommended as doing so increases the load on the database with very little gain.
-jetty.jdbcSession.datasource::
-  The name of a `javax.sql.DataSource` that gives access to the database that holds the session information.
-  You should configure *either* this or the jdbc driver information described next.
-jetty.jdbcSession.datasource and jetty.jdbcSession.connectionURL::
-  This is the name of the jdbc driver class, and a jdbc connection url suitable for that driver.
-  You should configure *either* this or the jdbc datasource name described above.

@@ -50,7 +50,12 @@ When the `--add-to-start` argument was added to the command line, it enabled the
 It also downloaded the needed Mongo-specific jar file and created a directory named `${jetty.base}/lib/nosql/` to house it.
 In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `{$jetty.base}`.
 
-Opening the `start.d/session-store-jdbc.ini` will show a list of all the configurable options for the JDBC module:
+____
+[NOTE]
+If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+____
+
+Opening the `start.d/session-store-mongo.ini` will show a list of all the configurable options for the MongoDB module:
 
 [source, screen, subs="{sub-order}"]
 ----
@@ -66,5 +71,8 @@ Opening the `start.d/session-store-jdbc.ini` will show a list of all the configu
 ----
 
 jetty.session.dbName::
+Name of the database in Mongo used to store the Session collection.
 jetty.session.collectionName::
+Name of the collection in Mongo used to keep all of the Sessions.
 jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.

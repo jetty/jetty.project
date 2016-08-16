@@ -39,7 +39,7 @@ By default Session files will be saved to this directory.
 
 In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `{$jetty.base}`.
 
-Opening the `start.d/session-store-file.ini` will show a list of all the configurable options for the JDBC module:
+Opening the `start.d/session-store-file.ini` will show a list of all the configurable options for the file system session module:
 
 [source, screen, subs="{sub-order}"]
 ----
@@ -57,4 +57,4 @@ jetty.session.storeDir::
 This defines the location for storage of Session files.
 jetty.session.deleteUnrestorableFiles::
 Boolean.
-If set to true, the server will delete files during the scavenging process for Sessions that have expired or otherwise unable to be restored.
+If set to true, unreadable files will be deleted: this is useful to prevent repeated logging of the same error when the scavenger periodically (re-) attempts to load the corrupted information for a session in order to expire it.

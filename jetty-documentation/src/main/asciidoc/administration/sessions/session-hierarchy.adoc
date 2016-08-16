@@ -21,21 +21,23 @@
 The architecture of Session Management Jetty changed significantly in Jetty 9.4.
 These changes have resulted in Sessions not only being easier to configure but making them much more pluggable for various technologies.
 
-In previous versions of Jetty, users were required to have a separate `SessionIdManager` for each kind of session manager implemented (JDBC, MongoDB..etc.); now there is a singular `SessionIdManager` for the entire Jetty instance.
+In previous versions of Jetty, users were required to configure a separate `SessionIdManager` for each kind of session clustering technology being implemented (JDBC, MongoDB..etc.).
+In Jetty 9.4, there is now a single `SessionIdManager` implementation which works across all types of session clustering technologies.
 Likewise, prior to Jetty 9.4 there were several different instances of the `SessionManager` class.
 Instead of a single `SessionManager` though, it has been done away with entirely, with most of it's functionality moved to the `SesssionHandler` class.
 Additionally, Jetty 9.4 introduced the concepts of a `SessionCache` and an associated `SessionDataStore` (both explained below).
 
 Finally, Session scavenging has been re-worked.
 Where previously each `SessionManager` instance would periodically scan the in-memory (or clustered) sessions for expired sessions, there is now a single generic scavenger thread which instructs the `SessionHandler` to clean up expired sessions.
-
+Session expiration has been changed to use a much more efficient timer-based mechanism that avoids constant iteration over all current sessions in memory by the scavenger.
 
 ==== Session Architecture Hierarchy
 
 Each Jetty instance has a singular `SessionIdManager` to handle all session requests, regardless of clustering technology.
-For each context on the server there is one (1) `SessionCache` which acts as a cache of Session objects for the given context.
-The purpose of the `SessionCache` is to ensure that simultaneous requests always operate on the same Session object.
-By default Session information is kept in-memory, but this can be configured.
+For each context on the server there is one (1) `SessionCache` which contains all of the Session objects for the given context.
+The benefit of the `SessionCache` is to ensure that simultaneous requests accessing the same Session Id in the same context always operate on the same Session object.
+The SessionCache implementation supplied with the Jetty distribution does just that: keeps Session objects in memory so that they can be shared between simultaneous requests.
+However, it is possible to provide your own implementation that never shares Session objects should you require it.
 
 Where the `SessionCache` handles Session information, Session data is stored in a `SessionDataStore` that is specific to the clustering technology being implemented.
 There is only one (1) `SessionDataStore` per `SessionCache`.
