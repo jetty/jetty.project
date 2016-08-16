@@ -16,14 +16,11 @@
 
 [source, screen, subs="{sub-order}"]
 ....
-[mybase]$ java -jar /opt/jetty-distribution/start.jar --add-to-start=http,webapp,deploy
-
-INFO: server          initialised (transitively) in ${jetty.base}/start.ini
-INFO: http            initialised in ${jetty.base}/start.ini
-INFO: security        initialised (transitively) in ${jetty.base}/start.ini
-INFO: servlet         initialised (transitively) in ${jetty.base}/start.ini
-INFO: webapp          initialised in ${jetty.base}/start.ini
-INFO: deploy          initialised in ${jetty.base}/start.ini
+[mybase]$ java -jar ../start.jar --add-to-start=http,webapp,deploy
+INFO : webapp          initialised in ${jetty.base}/start.d/webapp.ini
+INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
+INFO : http            initialised in ${jetty.base}/start.d/http.ini
+INFO : deploy          initialised in ${jetty.base}/start.d/deploy.ini
 MKDIR: ${jetty.base}/webapps
-INFO: Base directory was modified
+INFO : Base directory was modified
 ....
