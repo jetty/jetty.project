@@ -170,7 +170,6 @@ public class ChannelEndPoint extends AbstractEndPoint
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
-        System.err.println("FLUSH: "+Arrays.stream(buffers).map(b->BufferUtil.toDetailString(b)).collect(Collectors.toList()));
         long flushed=0;
         try
         {
