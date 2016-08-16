@@ -1,3 +1,5 @@
+jetty-9.4.0-SNAPSHOT
+
 jetty-9.4.0.M1 - 15 August 2016
  + 185 Implement RFC 7239 (Forwarded header)
  + 213 jetty.osgi.boot requires Server services registered before
