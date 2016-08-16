@@ -71,6 +71,18 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         return _expect100Continue;
     }
 
+    @Override
+    public void setIdleTimeout(long timeoutMs)
+    {
+        getStream().setIdleTimeout(timeoutMs);
+    }
+
+    @Override
+    public long getIdleTimeout()
+    {
+        return getStream().getIdleTimeout();
+    }
+
     public Runnable onRequest(HeadersFrame frame)
     {
         try

@@ -56,6 +56,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     private final HttpChannelState _channelState;
     private ReadListener _listener;
     private State _state = STREAM;
+    private long _contentArrived;
     private long _contentConsumed;
     private long _blockingTimeoutAt = -1;
 
@@ -83,6 +84,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             }
             _listener = null;
             _state = STREAM;
+            _contentArrived = 0;
             _contentConsumed = 0;
         }
     }
@@ -139,9 +141,23 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
+            long now=System.currentTimeMillis();
+            
             if (_blockingTimeoutAt>=0 && !isAsync())
-                _blockingTimeoutAt=System.currentTimeMillis()+getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
+                _blockingTimeoutAt=now+getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
 
+            int minRequestDataRate=_channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
+            if (minRequestDataRate>0)
+            {
+                long period=now-_channelState.getHttpChannel().getRequest().getTimeStamp();
+                if (period>=1000)
+                {
+                    long data_rate = _contentArrived / (now-_channelState.getHttpChannel().getRequest().getTimeStamp());
+                    if (data_rate<minRequestDataRate)
+                        throw new IOException(String.format("Request Data rate %d < %d B/s",data_rate,minRequestDataRate));
+                }
+            }
+            
             while(true)
             {
                 Content item = nextContent();
@@ -410,6 +426,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         boolean woken=false;
         synchronized (_inputQ)
         {
+            _contentArrived+=item.remaining();
             _inputQ.offer(item);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} addContent {}", this, item);

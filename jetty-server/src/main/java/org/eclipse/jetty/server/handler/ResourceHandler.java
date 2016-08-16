@@ -546,7 +546,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
                 };
 
                 // Can we use a memory mapped file?
-                if (_minMemoryMappedContentLength>0 && 
+                if (_minMemoryMappedContentLength>=0 && 
                     resource.length()>_minMemoryMappedContentLength &&
                     resource.length()<Integer.MAX_VALUE &&
                     resource instanceof PathResource)

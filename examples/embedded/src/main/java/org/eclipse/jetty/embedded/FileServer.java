@@ -45,15 +45,19 @@ public class FileServer
         // In this example it is the current directory but it can be configured to anything that the jvm has access to.
         resource_handler.setDirectoriesListed(true);
         resource_handler.setWelcomeFiles(new String[]{ "index.html" });
-        resource_handler.setResourceBase(".");
+        resource_handler.setResourceBase("/tmp/docroot");
 
         // Add the ResourceHandler to the server.
-        GzipHandler gzip = new GzipHandler();
-        server.setHandler(gzip);
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[] { resource_handler, new DefaultHandler() });
+        server.setHandler(handlers);
+        
+        /*
+        GzipHandler gzip = new GzipHandler();
+        server.setHandler(gzip);
         gzip.setHandler(handlers);
-
+         */
+        
         // Start things up! By using the server.join() the server thread will join with the current thread.
         // See "http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Thread.html#join()" for more details.
         server.start();

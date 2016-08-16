@@ -24,6 +24,8 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -168,6 +170,7 @@ public class ChannelEndPoint extends AbstractEndPoint
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
+        System.err.println("FLUSH: "+Arrays.stream(buffers).map(b->BufferUtil.toDetailString(b)).collect(Collectors.toList()));
         long flushed=0;
         try
         {
