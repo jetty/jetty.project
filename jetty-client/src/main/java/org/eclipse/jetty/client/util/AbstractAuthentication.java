@@ -52,7 +52,7 @@ public abstract class AbstractAuthentication implements Authentication
         if (!getType().equalsIgnoreCase(type))
             return false;
 
-        if (!this.realm.equals(realm))
+        if (!this.realm.equals(ANY_REALM) && !this.realm.equals(realm))
             return false;
 
         return matchesURI(this.uri, uri);
