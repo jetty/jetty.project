@@ -30,8 +30,10 @@ import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -39,7 +41,8 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Container class for the MBean instances
  */
-public class MBeanContainer implements Container.InheritedListener, Dumpable
+@ManagedObject("The component that registers beans as MBeans")
+public class MBeanContainer implements Container.InheritedListener, Dumpable, Destroyable
 {
     private final static Logger LOG = Log.getLogger(MBeanContainer.class.getName());
     private final static ConcurrentMap<String, AtomicInteger> __unique = new ConcurrentHashMap<>();
@@ -254,6 +257,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
         return ContainerLifeCycle.dump(this);
     }
 
+    @Override
     public void destroy()
     {
         _beans.values().stream()
