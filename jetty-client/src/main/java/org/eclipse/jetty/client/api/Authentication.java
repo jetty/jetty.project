@@ -39,6 +39,12 @@ import org.eclipse.jetty.util.Attributes;
 public interface Authentication
 {
     /**
+     * Constant used to indicate that any realm will match.
+     * @see #matches(String, URI, String)
+     */
+    public static final String ANY_REALM = "<<ANY_REALM>>";
+
+    /**
      * Matches {@link Authentication}s based on the given parameters
      * @param type the {@link Authentication} type such as "Basic" or "Digest"
      * @param uri the request URI

@@ -120,6 +120,14 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     }
 
     @Test
+    public void test_BasicAnyRealm() throws Exception
+    {
+        startBasic(new EmptyServerHandler());
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
+        test_Authentication(new BasicAuthentication(uri, Authentication.ANY_REALM, "basic", "basic"));
+    }
+
+    @Test
     public void test_DigestAuthentication() throws Exception
     {
         startDigest(new EmptyServerHandler());
