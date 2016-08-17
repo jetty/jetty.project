@@ -31,7 +31,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class MBeanContainerTest
+public class MBeanContainerLifeCycleTest
 {
     private ContainerLifeCycle container;
     private MBeanServer mbeanServer;
