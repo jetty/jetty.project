@@ -37,12 +37,16 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /**
- * AbstractSessionIdManager
+ * DefaultSessionIdManager
  * 
  * Manages session ids to ensure each session id within a context is unique, and that
  * session ids can be shared across contexts (but not session contents).
  * 
  * There is only 1 session id manager per Server instance.
+ * 
+ * Runs a HouseKeeper thread to periodically check for expired Sessions.
+ * 
+ * @See HouseKeeper
  */
 public class DefaultSessionIdManager extends AbstractLifeCycle implements SessionIdManager
 {

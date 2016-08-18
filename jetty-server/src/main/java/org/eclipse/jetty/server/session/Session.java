@@ -47,7 +47,18 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
 /**
  * Session
  *
- *
+ * A heavy-weight Session object representing a HttpSession. Session objects
+ * relating to a context are kept in a {@link SessionCache}. The purpose of
+ * the SessionCache is to keep the working set of Session objects in memory
+ * so that they may be accessed quickly, and facilitate the sharing of a
+ * Session object amongst multiple simultaneous requests referring to the
+ * same session id.
+ * 
+ * The {@link SessionHandler} coordinates 
+ * the lifecycle of Session objects with the help of the SessionCache.
+ * 
+ * @see SessionHandler
+ * @see org.eclipse.jetty.server.SessionIdManager
  */
 public class Session implements SessionHandler.SessionIf
 {
@@ -87,13 +98,16 @@ public class Session implements SessionHandler.SessionIf
     /* ------------------------------------------------------------- */
     /**
      * SessionInactivityTimeout
-     *
+     * 
+     * Each Session has a timer associated with it that fires whenever 
+     * it has been idle (ie not referenced by a request) for a 
+     * configurable amount of time, or the Session expires. 
+     * 
+     * @see SessionCache
      *
      */
     public class SessionInactivityTimeout extends IdleTimeout
     {
-
-
         /**
          * 
          */
@@ -146,7 +160,7 @@ public class Session implements SessionHandler.SessionIf
     /* ------------------------------------------------------------- */
     /**
      * Create a new session
-     * @param handler TODO
+     * @param handler the SessionHandler that manages this session
      * @param request the request the session should be based on
      * @param data the session data
      */
@@ -162,8 +176,9 @@ public class Session implements SessionHandler.SessionIf
 
     /* ------------------------------------------------------------- */
     /**
-     * Re-create an existing session
-     * @param handler TODO
+     * Re-inflate an existing session from some eg persistent store.
+     * 
+     * @param handler the SessionHandler managing the session
      * @param data the session data
      */
     public Session (SessionHandler handler, SessionData data)
@@ -175,9 +190,9 @@ public class Session implements SessionHandler.SessionIf
 
     /* ------------------------------------------------------------- */
     /**
-     * Should call this method with a lock held if you want to
-     * make decision on what to do with the session
-     * 
+     *  Returns the current number of requests that are active in the
+     *  Session.
+     *  
      * @return the number of active requests for this session
      */
     public long getRequests()
@@ -242,7 +257,8 @@ public class Session implements SessionHandler.SessionIf
 
     /* ------------------------------------------------------------- */
     /** Check to see if session has expired as at the time given.
-     * @param time the time in milliseconds
+     * 
+     * @param time the time since the epoch in ms
      * @return true if expired
      */
     protected boolean isExpiredAt(long time)
@@ -254,6 +270,12 @@ public class Session implements SessionHandler.SessionIf
     }
     
     
+    /* ------------------------------------------------------------- */
+    /** Check if the Session has been idle longer than a number of seconds.
+     * 
+     * @param sec the number of seconds
+     * @return true if the session has been idle longer than the interval
+     */
     protected boolean isIdleLongerThan (int sec)
     {
         long now = System.currentTimeMillis();
@@ -320,7 +342,7 @@ public class Session implements SessionHandler.SessionIf
     /* ------------------------------------------------------------- */
     /**
      * Call the activation listeners. This must be called holding the
-     * _lock.
+     * lock.
      */
     public void didActivate()
     {
@@ -340,7 +362,7 @@ public class Session implements SessionHandler.SessionIf
     /* ------------------------------------------------------------- */
     /**
      * Call the passivation listeners. This must be called holding the
-     * _lock
+     * lock
      */
     public void willPassivate()
     {
@@ -573,7 +595,8 @@ public class Session implements SessionHandler.SessionIf
     
     /* ------------------------------------------------------------- */
     /**
-     * asserts that the session is valid
+     * Check that the session can be modified.
+     * 
      * @throws IllegalStateException if the session is invalid
      */
     protected void checkValidForWrite() throws IllegalStateException
@@ -590,7 +613,8 @@ public class Session implements SessionHandler.SessionIf
     
     /* ------------------------------------------------------------- */
     /**
-     * asserts that the session is valid
+     * Chech that the session data can be read.
+     * 
      * @throws IllegalStateException if the session is invalid
      */
     protected void checkValidForRead () throws IllegalStateException
@@ -764,6 +788,10 @@ public class Session implements SessionHandler.SessionIf
     }
 
     /* ------------------------------------------------------------ */
+    /** Force a change to the id of a session.
+     * 
+     * @param request the Request associated with the call to change id.
+     */
     public void renewId(HttpServletRequest request)
     {
         if (_handler == null)
@@ -846,6 +874,11 @@ public class Session implements SessionHandler.SessionIf
     }
 
     /* ------------------------------------------------------------- */
+    /** Call HttpSessionAttributeListeners as part of invalidating
+     * a Session.
+     * 
+     * @throws IllegalStateException
+     */
     protected void doInvalidate() throws IllegalStateException
     {
         try (Lock lock = _lock.lockIfNotHeld())
@@ -928,12 +961,13 @@ public class Session implements SessionHandler.SessionIf
         return _sessionData;
     }
 
-
+    /* ------------------------------------------------------------- */
     public void setResident (boolean resident)
     {
         _resident = resident;
     }
     
+    /* ------------------------------------------------------------- */
     public boolean isResident ()
     {
         return _resident;

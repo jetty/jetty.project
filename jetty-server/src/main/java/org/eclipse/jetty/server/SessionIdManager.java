@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 
 /** 
  * Session ID Manager.
+ * 
  * Manages session IDs across multiple contexts.
  */
 public interface SessionIdManager extends LifeCycle
