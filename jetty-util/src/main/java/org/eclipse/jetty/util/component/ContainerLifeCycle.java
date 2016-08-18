@@ -78,6 +78,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();
     private final List<Container.Listener> _listeners = new CopyOnWriteArrayList<>();
     private boolean _doStarted;
+    private boolean _destroyed;
 
     /**
      * Starts the managed lifecycle beans in the order they were added.
@@ -85,6 +86,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @Override
     protected void doStart() throws Exception
     {
+        if (_destroyed)
+            throw new IllegalStateException("Destroyed container cannot be restarted");
+
         // indicate that we are started, so that addBean will start other beans added.
         _doStarted = true;
 
@@ -164,6 +168,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @Override
     public void destroy()
     {
+        _destroyed = true;
         List<Bean> reverse = new ArrayList<>(_beans);
         Collections.reverse(reverse);
         for (Bean b : reverse)
