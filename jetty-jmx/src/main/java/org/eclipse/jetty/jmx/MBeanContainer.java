@@ -34,6 +34,7 @@ import javax.management.ObjectName;
 
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -41,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Container class for the MBean instances
  */
-public class MBeanContainer implements Container.InheritedListener, Dumpable
+public class MBeanContainer implements Container.InheritedListener, Dumpable, Destroyable
 {
     private final static Logger LOG = Log.getLogger(MBeanContainer.class.getName());
     private final static ConcurrentMap<String, AtomicInteger> __unique = new ConcurrentHashMap<String, AtomicInteger>();
@@ -268,6 +269,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
         return ContainerLifeCycle.dump(this);
     }
 
+    @Override
     public void destroy()
     {
         for (ObjectName oname : _beans.values())
