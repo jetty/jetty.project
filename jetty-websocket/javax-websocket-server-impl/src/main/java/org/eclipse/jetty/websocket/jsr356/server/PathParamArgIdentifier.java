@@ -18,13 +18,23 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import javax.websocket.server.ServerEndpointConfig;
+import javax.websocket.server.PathParam;
 
-import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
+import org.eclipse.jetty.websocket.common.reflect.Arg;
+import org.eclipse.jetty.websocket.common.reflect.ArgIdentifier;
 
-public interface ServerEndpointMetadata extends EndpointMetadata
+/**
+ * Identify method parameters tagged with &#064;{@link javax.websocket.server.PathParam}
+ */
+@SuppressWarnings("unused")
+public class PathParamArgIdentifier implements ArgIdentifier
 {
-    ServerEndpointConfig getConfig();
-    
-    public String getPath();
+    @Override
+    public Arg apply(Arg arg)
+    {
+        PathParam param = arg.getAnnotation(PathParam.class);
+        if (param != null)
+            arg.setTag(param.value());
+        return arg;
+    }
 }

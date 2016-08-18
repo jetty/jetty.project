@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import static org.hamcrest.Matchers.containsString;
 
-import java.io.File;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Queue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +55,7 @@ public class AnnotatedServerEndpointTest
     @BeforeClass
     public static void startServer() throws Exception
     {
-        File testdir = MavenTestingUtils.getTargetTestingDir(AnnotatedServerEndpointTest.class.getName());
+        Path testdir = MavenTestingUtils.getTargetTestingPath(AnnotatedServerEndpointTest.class.getName());
         server = new WSServer(testdir,"app");
         server.createWebInf();
         server.copyEndpoint(ConfiguredEchoSocket.class);

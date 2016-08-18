@@ -95,6 +95,16 @@ public class EchoClientSocket extends TrackingSocket
     {
         return eventCountLatch.await(timeout,unit);
     }
+    
+    public void sendText(String msg) throws IOException, EncodeException
+    {
+        remote.sendText(msg);
+    }
+    
+    public void sendBinary(ByteBuffer msg) throws IOException, EncodeException
+    {
+        remote.sendBinary(msg);
+    }
 
     public void sendObject(Object obj) throws IOException, EncodeException
     {

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +37,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JsrExtension;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -49,13 +49,13 @@ public class JsrCreator implements WebSocketCreator
     public static final String PROP_LOCALES = "javax.websocket.upgrade.locales";
     private static final Logger LOG = Log.getLogger(JsrCreator.class);
     private final WebSocketContainerScope containerScope;
-    private final ServerEndpointMetadata metadata;
+    private final ServerEndpointConfig baseConfig;
     private final ExtensionFactory extensionFactory;
 
-    public JsrCreator(WebSocketContainerScope containerScope, ServerEndpointMetadata metadata, ExtensionFactory extensionFactory)
+    public JsrCreator(WebSocketContainerScope containerScope, ServerEndpointConfig config, ExtensionFactory extensionFactory)
     {
         this.containerScope = containerScope;
-        this.metadata = metadata;
+        this.baseConfig = config;
         this.extensionFactory = extensionFactory;
     }
 
@@ -65,12 +65,18 @@ public class JsrCreator implements WebSocketCreator
         JsrHandshakeRequest jsrHandshakeRequest = new JsrHandshakeRequest(req);
         JsrHandshakeResponse jsrHandshakeResponse = new JsrHandshakeResponse(resp);
 
-        // Get raw config, as defined when the endpoint was added to the container
-        ServerEndpointConfig config = metadata.getConfig();
-        
         // Establish a copy of the config, so that the UserProperties are unique
         // per upgrade request.
-        config = new BasicServerEndpointConfig(containerScope, config);
+        ServerEndpointConfig config = new ServerEndpointConfigWrapper(baseConfig)
+        {
+            Map<String,Object> userProperties = new HashMap<>(baseConfig.getUserProperties());
+    
+            @Override
+            public Map<String, Object> getUserProperties()
+            {
+                return userProperties;
+            }
+        };
         
         // Bug 444617 - Expose localAddress and remoteAddress for jsr modify handshake to use
         // This is being implemented as an optional set of userProperties so that
@@ -143,7 +149,7 @@ public class JsrCreator implements WebSocketCreator
             UriTemplatePathSpec wspathSpec = (UriTemplatePathSpec)pathSpec;
             String requestPath = req.getRequestPath();
             // Wrap the config with the path spec information
-            config = new PathParamServerEndpointConfig(containerScope,config,wspathSpec,requestPath);
+            config = new PathParamServerEndpointConfig(config,wspathSpec,requestPath);
         }
 
         // [JSR] Step 5: Call modifyHandshake
@@ -156,16 +162,7 @@ public class JsrCreator implements WebSocketCreator
             Object endpoint = config.getConfigurator().getEndpointInstance(endpointClass);
             // Do not decorate here (let the Connection and Session start first)
             // This will allow CDI to see Session for injection into Endpoint classes.
-            PathSpec pathSpec = hsreq.getRequestPathSpec();
-            if (pathSpec instanceof UriTemplatePathSpec)
-            {
-                // We have a PathParam path spec
-                UriTemplatePathSpec wspathSpec = (UriTemplatePathSpec)pathSpec;
-                String requestPath = req.getRequestPath();
-                // Wrap the config with the path spec information
-                config = new PathParamServerEndpointConfig(containerScope,config,wspathSpec,requestPath);
-            }
-            return new ConfiguredEndpoint(endpoint,config);
+            return endpoint;
         }
         catch (InstantiationException e)
         {
@@ -178,6 +175,6 @@ public class JsrCreator implements WebSocketCreator
     @Override
     public String toString()
     {
-        return String.format("%s[metadata=%s]",this.getClass().getName(),metadata);
+        return String.format("%s[config=%s]",this.getClass().getName(),baseConfig);
     }
 }

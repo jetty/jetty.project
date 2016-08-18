@@ -114,7 +114,7 @@ public class SessionTest
     @Before
     public void startServer() throws Exception
     {
-        server = new WSServer(MavenTestingUtils.getTargetTestingDir(SessionTest.class.getSimpleName() + "-" + ID.incrementAndGet()),"app");
+        server = new WSServer(MavenTestingUtils.getTargetTestingPath(SessionTest.class.getSimpleName() + "-" + ID.incrementAndGet()),"app");
         server.copyWebInf("empty-web.xml");
         server.copyClass(SessionInfoSocket.class);
         server.copyClass(SessionAltConfig.class);

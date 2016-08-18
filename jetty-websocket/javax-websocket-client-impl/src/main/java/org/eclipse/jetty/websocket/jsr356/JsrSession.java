@@ -83,6 +83,12 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         this.availableDecoders = new AvailableDecoders(this.config);
         this.availableEncoders = new AvailableEncoders(this.config);
         
+        if(this.config instanceof PathParamProvider)
+        {
+            PathParamProvider pathParamProvider = (PathParamProvider) this.config;
+            pathParameters.putAll(pathParamProvider.getPathParams());
+        }
+        
         this.id = id;
     }
     

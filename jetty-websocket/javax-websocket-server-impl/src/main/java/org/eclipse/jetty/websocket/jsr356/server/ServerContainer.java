@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 
 import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
@@ -38,13 +38,9 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
-import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
-import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
-import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
-import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
+import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 
 @ManagedObject("JSR356 Server Container")
@@ -52,122 +48,121 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 {
     private static final Logger LOG = Log.getLogger(ServerContainer.class);
     
-    /**
-     * Get the WebSocketContainer out of the current ThreadLocal reference
-     * of the active ContextHandler.
-     *
-     * @return the WebSocketContainer if found, null if not found.
-     */
-    public static WebSocketContainer getWebSocketContainer()
-    {
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
-        if (context == null)
-            return null;
-        
-        ContextHandler handler = ContextHandler.getContextHandler(context);
-        if (handler == null)
-            return null;
-        
-        if (!(handler instanceof ServletContextHandler))
-            return null;
-        
-        return (javax.websocket.WebSocketContainer) handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
-    }
-    
-    private final NativeWebSocketConfiguration configuration;
+    private final MappedWebSocketCreator mappedCreator;
+    private final WebSocketServerFactory webSocketServerFactory;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
     
-    /**
-     * @deprecated use {@code ServerContainer(NativeWebSocketConfiguration, HttpClient)} instead
-     */
-    @Deprecated
-    public ServerContainer(NativeWebSocketConfiguration configuration, Executor executor)
+    public ServerContainer(MappedWebSocketCreator creator, WebSocketServerFactory factory, Executor executor)
     {
-        this(configuration, (HttpClient) null);
+        super(factory);
+        this.mappedCreator = creator;
+        this.webSocketServerFactory = factory;
+        this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this));
+        addBean(webSocketServerFactory);
     }
     
-    public ServerContainer(NativeWebSocketConfiguration configuration, HttpClient httpClient)
+    @Override
+    protected EndpointConfig newEmptyConfig(Object endpoint)
     {
-        super(configuration.getFactory(), httpClient);
-        this.configuration = configuration;
-        EventDriverFactory eventDriverFactory = this.configuration.getFactory().getEventDriverFactory();
-        eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
-        eventDriverFactory.addImplementation(new JsrServerExtendsEndpointImpl());
-        this.configuration.getFactory().addSessionFactory(new JsrSessionFactory(this));
-        addBean(this.configuration);
+        return new UndefinedServerEndpointConfig(endpoint.getClass());
     }
     
-    public ConfiguredEndpoint newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
+    protected EndpointConfig readAnnotatedConfig(Object endpoint, EndpointConfig config) throws DeploymentException
     {
-        EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass(),config);
-        ServerEndpointConfig cec = config;
-        if (config == null)
+        ServerEndpoint anno = endpoint.getClass().getAnnotation(ServerEndpoint.class);
+        if (anno != null)
         {
-            if (metadata instanceof AnnotatedServerEndpointMetadata)
-            {
-                cec = ((AnnotatedServerEndpointMetadata)metadata).getConfig();
-            }
-            else
-            {
-                cec = new BasicServerEndpointConfig(this,endpoint.getClass(),path);
-            }
+            // Overwrite Config from Annotation
+            // TODO: should we merge with provided config?
+            return new AnnotatedServerEndpointConfig(this, endpoint.getClass(), anno, config);
         }
-        return new ConfiguredEndpoint(endpoint,cec,metadata);
+        return config;
     }
-
+    
+    /**
+     * Register a &#064;{@link ServerEndpoint} annotated endpoint class to
+     * the server
+     *
+     * @param endpointClass the annotated endpoint class to add to the server
+     * @throws DeploymentException if unable to deploy that endpoint class
+     * @see javax.websocket.server.ServerContainer#addEndpoint(Class)
+     */
     @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
+        if (endpointClass == null)
+        {
+            throw new DeploymentException("EndpointClass is null");
+        }
+        
         if (isStarted() || isStarting())
         {
-            ServerEndpointMetadata metadata = getServerEndpointMetadata(endpointClass,null);
-            addEndpoint(metadata);
+            ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+            if (anno == null)
+            {
+                throw new DeploymentException(String.format("Class must be @%s annotated: %s",
+                        ServerEndpoint.class.getName(), endpointClass.getName()));
+            }
+            
+            ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
+            addEndpointMapping(config);
         }
         else
         {
             if (deferredEndpointClasses == null)
             {
-                deferredEndpointClasses = new ArrayList<Class<?>>();
+                deferredEndpointClasses = new ArrayList<>();
             }
             deferredEndpointClasses.add(endpointClass);
         }
     }
-
-    private void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
-    {
-        JsrCreator creator = new JsrCreator(this,metadata,this.configuration.getFactory().getExtensionFactory());
-        this.configuration.addMapping("uri-template|" + metadata.getPath(), creator);
-    }
-
+    
+    /**
+     * Register a ServerEndpointConfig to the server
+     *
+     * @param config the endpoint config to add
+     * @throws DeploymentException if unable to deploy that endpoint class
+     * @see javax.websocket.server.ServerContainer#addEndpoint(ServerEndpointConfig)
+     */
     @Override
     public void addEndpoint(ServerEndpointConfig config) throws DeploymentException
     {
+        if (config == null)
+        {
+            throw new DeploymentException("ServerEndpointConfig is null");
+        }
+        
         if (isStarted() || isStarting())
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("addEndpoint({}) path={} endpoint={}",config,config.getPath(),config.getEndpointClass());
+                LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), config.getEndpointClass());
             }
-            ServerEndpointMetadata metadata = getServerEndpointMetadata(config.getEndpointClass(),config);
-            addEndpoint(metadata);
+            addEndpointMapping(config);
         }
         else
         {
             if (deferredEndpointConfigs == null)
             {
-                deferredEndpointConfigs = new ArrayList<ServerEndpointConfig>();
+                deferredEndpointConfigs = new ArrayList<>();
             }
             deferredEndpointConfigs.add(config);
         }
     }
-
+    
+    private void addEndpointMapping(ServerEndpointConfig config) throws DeploymentException
+    {
+        JsrCreator creator = new JsrCreator(this, config, webSocketServerFactory.getExtensionFactory());
+        mappedCreator.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
+    }
+    
     @Override
     protected void doStart() throws Exception
     {
         // Proceed with Normal Startup
         super.doStart();
-
+        
         // Process Deferred Endpoints
         if (deferredEndpointClasses != null)
         {
@@ -177,7 +172,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             }
             deferredEndpointClasses.clear();
         }
-
+        
         if (deferredEndpointConfigs != null)
         {
             for (ServerEndpointConfig config : deferredEndpointConfigs)
@@ -187,58 +182,25 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             deferredEndpointConfigs.clear();
         }
     }
-
-    public ServerEndpointMetadata getServerEndpointMetadata(final Class<?> endpoint, final ServerEndpointConfig config) throws DeploymentException
-    {
-        ServerEndpointMetadata metadata = null;
-
-        ServerEndpoint anno = endpoint.getAnnotation(ServerEndpoint.class);
-        if (anno != null)
-        {
-            // Annotated takes precedence here
-            AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(this,endpoint,config);
-            AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(ametadata);
-            metadata = ametadata;
-            scanner.scan();
-        }
-        else if (Endpoint.class.isAssignableFrom(endpoint))
-        {
-            // extends Endpoint
-            @SuppressWarnings("unchecked")
-            Class<? extends Endpoint> eendpoint = (Class<? extends Endpoint>)endpoint;
-            metadata = new SimpleServerEndpointMetadata(eendpoint,config);
-        }
-        else
-        {
-            StringBuilder err = new StringBuilder();
-            err.append("Not a recognized websocket [");
-            err.append(endpoint.getName());
-            err.append("] does not extend @").append(ServerEndpoint.class.getName());
-            err.append(" or extend from ").append(Endpoint.class.getName());
-            throw new DeploymentException("Unable to identify as valid Endpoint: " + endpoint);
-        }
-
-        return metadata;
-    }
     
     @Override
     public long getDefaultAsyncSendTimeout()
     {
         return this.configuration.getPolicy().getAsyncWriteTimeout();
     }
-
+    
     @Override
     public int getDefaultMaxBinaryMessageBufferSize()
     {
         return this.configuration.getPolicy().getMaxBinaryMessageSize();
     }
-
+    
     @Override
     public long getDefaultMaxSessionIdleTimeout()
     {
         return this.configuration.getPolicy().getIdleTimeout();
     }
-
+    
     @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
@@ -249,14 +211,14 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         return this.configuration.getFactory();
     }
-
+    
     @Override
     public void setAsyncSendTimeout(long ms)
     {
         super.setAsyncSendTimeout(ms);
         this.configuration.getPolicy().setAsyncWriteTimeout(ms);
     }
-
+    
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
@@ -266,14 +228,14 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         // incoming streaming buffer size
         this.configuration.getPolicy().setMaxBinaryMessageBufferSize(max);
     }
-
+    
     @Override
     public void setDefaultMaxSessionIdleTimeout(long ms)
     {
         super.setDefaultMaxSessionIdleTimeout(ms);
         this.configuration.getPolicy().setIdleTimeout(ms);
     }
-
+    
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {
@@ -283,19 +245,19 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         // incoming streaming buffer size
         this.configuration.getPolicy().setMaxTextMessageBufferSize(max);
     }
-
+    
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
         getWebSocketServerFactory().onSessionClosed(session);
     }
-
+    
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
         getWebSocketServerFactory().onSessionOpened(session);
     }
-
+    
     @Override
     public Set<Session> getOpenSessions()
     {
