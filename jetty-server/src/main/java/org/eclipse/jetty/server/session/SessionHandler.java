@@ -1285,10 +1285,7 @@ public class SessionHandler extends ScopedHandler
      * when either the session has not been accessed for a 
      * configurable amount of time, or the session itself
      * has passed its expiry.
-     * <ul>
-     * <li> for being expired </li>
-     * <li> for being idle </li>
-     * </ul>
+     * 
      * @param session
      */
     public void sessionInactivityTimerExpired (Session session)
