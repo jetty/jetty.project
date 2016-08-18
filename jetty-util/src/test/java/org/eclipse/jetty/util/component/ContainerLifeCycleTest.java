@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.util.component;
 
+import static org.hamcrest.CoreMatchers.containsString;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -27,10 +29,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class ContainerLifeCycleTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+    
     @Test
     public void testStartStopDestroy() throws Exception
     {
@@ -96,8 +103,15 @@ public class ContainerLifeCycleTest
         Assert.assertEquals(2,started.get());
         Assert.assertEquals(2,stopped.get());
         Assert.assertEquals(1,destroyed.get());
-
-        a0.start();
+    
+        try
+        {
+            a0.start();
+            expectedException.reportMissingExceptionWithMessage("Expected IllegalStateException");
+        } catch(IllegalStateException ignore) {
+            // ignored
+        }
+        
         Assert.assertEquals(2,started.get());
         Assert.assertEquals(2,stopped.get());
         Assert.assertEquals(1,destroyed.get());
@@ -107,11 +121,27 @@ public class ContainerLifeCycleTest
         Assert.assertEquals(2,stopped.get());
         Assert.assertEquals(1,destroyed.get());
         Assert.assertFalse(a0.isManaged(a1));
-        a0.start();
+    
+        try
+        {
+            a0.start();
+            expectedException.reportMissingExceptionWithMessage("Expected IllegalStateException");
+        } catch(IllegalStateException ignore) {
+            // ignored
+        }
+        
         Assert.assertEquals(2,started.get());
         Assert.assertEquals(2,stopped.get());
         Assert.assertEquals(1,destroyed.get());
-        a1.start();
+        
+        try
+        {
+            a1.start();
+            expectedException.reportMissingExceptionWithMessage("Expected IllegalStateException");
+        } catch(IllegalStateException ignore) {
+            // ignored
+        }
+        
         a0.manage(a1);
         Assert.assertEquals(3,started.get());
         Assert.assertEquals(2,stopped.get());
@@ -139,7 +169,7 @@ public class ContainerLifeCycleTest
         Assert.assertEquals(2,destroyed.get());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testIllegalToStartAfterDestroy() throws Exception
     {
         ContainerLifeCycle container = new ContainerLifeCycle();
@@ -148,6 +178,8 @@ public class ContainerLifeCycleTest
         container.destroy();
 
         // Should throw IllegalStateException.
+        expectedException.expect(IllegalStateException.class);
+        expectedException.expectMessage(containsString("Destroyed"));
         container.start();
     }
 
