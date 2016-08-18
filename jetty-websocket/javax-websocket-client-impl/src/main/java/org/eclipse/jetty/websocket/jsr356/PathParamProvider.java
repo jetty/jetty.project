@@ -16,15 +16,19 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.jsr356;
 
-import javax.websocket.server.ServerEndpointConfig;
+import java.util.Map;
 
-import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
-
-public interface ServerEndpointMetadata extends EndpointMetadata
+/**
+ * Optional interface for custom {@link javax.websocket.EndpointConfig} implementations
+ * in Jetty to expose Path Param values used during the {@link org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions}
+ * resolution of methods.
+ * <p>
+ *     Mostly a feature of the JSR356 Server implementation and its <code>&#064;javax.websocket.server.PathParam</code> annotation.
+ * </p>
+ */
+public interface PathParamProvider
 {
-    ServerEndpointConfig getConfig();
-    
-    public String getPath();
+    Map<String,String> getPathParams();
 }

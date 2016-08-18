@@ -34,12 +34,10 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
-import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.IdleTimeoutContextListener;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.OnOpenIdleTimeoutEndpoint;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.OnOpenIdleTimeoutSocket;
@@ -63,7 +61,7 @@ public class IdleTimeoutTest
     @BeforeClass
     public static void setupServer() throws Exception
     {
-        server = new WSServer(MavenTestingUtils.getTargetTestingDir(IdleTimeoutTest.class.getName()),"app");
+        server = new WSServer(MavenTestingUtils.getTargetTestingPath(IdleTimeoutTest.class.getName()),"app");
         server.copyWebInf("idle-timeout-config-web.xml");
         // the endpoint (extends javax.websocket.Endpoint)
         server.copyClass(OnOpenIdleTimeoutEndpoint.class);
@@ -129,11 +127,8 @@ public class IdleTimeoutTest
     @Test
     public void testAnnotated() throws Exception
     {
-        try(StacklessLogging stackless = new StacklessLogging(JsrEvents.class))
-        {
-            URI uri = server.getServerBaseURI();
-            assertConnectionTimeout(uri.resolve("idle-onopen-socket"));
-        }
+        URI uri = server.getServerBaseURI();
+        assertConnectionTimeout(uri.resolve("idle-onopen-socket"));
     }
 
     @Test

@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.contains;
+import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
+import static org.junit.Assert.assertThat;
 
-import java.io.File;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -36,6 +38,21 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jsr356.server.EchoCase.PartialBinary;
 import org.eclipse.jetty.websocket.jsr356.server.EchoCase.PartialText;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseReasonSessionSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseReasonSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseSessionReasonSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorSessionSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorSessionThrowableSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorThrowableSessionSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorThrowableSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicOpenSessionSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicOpenSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicPongMessageSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicTextMessageStringSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.StatelessTextMessageStringSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.beans.DateTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.binary.ByteBufferSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.partial.PartialTextSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.partial.PartialTextSocket;
@@ -61,7 +78,6 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderParamSo
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.StringReturnReaderParamSocket;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -182,6 +198,10 @@ public class EchoTest
         // PathParam based
         EchoCase.add(TESTCASES,IntParamTextSocket.class).requestPath("/echo/primitives/integer/params/5678").addMessage(1234).expect("1234|5678");
         
+        // Text based
+        EchoCase.add(TESTCASES,BasicTextMessageStringSocket.class).addMessage("Hello").expect("Hello");
+        EchoCase.add(TESTCASES,StatelessTextMessageStringSocket.class).addMessage("Hello").expect("Hello");
+        
         // ByteBuffer based
         EchoCase.add(TESTCASES,ByteBufferSocket.class).addMessage(BufferUtil.toBuffer("Hello World")).expect("Hello World");
 
@@ -201,12 +221,35 @@ public class EchoTest
         EchoCase.add(TESTCASES,PartialTextSessionSocket.class)
           .addSplitMessage("Built"," for"," the"," future")
           .expect("('Built',false)(' for',false)(' the',false)(' future',true)");
+        
+        // Beans
+        EchoCase.add(TESTCASES, DateTextSocket.class).addMessage("Ooops").expect("");
+        
+        // Pong
+        EchoCase.add(TESTCASES, BasicPongMessageSocket.class).addMessage("send-ping").expect("Pong[]");
+        
+        // Open Events
+        EchoCase.add(TESTCASES, BasicOpenSocket.class).expect("Open[]");
+        EchoCase.add(TESTCASES, BasicOpenSessionSocket.class).expect("Open[Session]");
+        
+        // Close Events
+        EchoCase.add(TESTCASES, BasicCloseSocket.class).expect("Close[]");
+        EchoCase.add(TESTCASES, BasicCloseReasonSocket.class).expect("Close[Reason]");
+        EchoCase.add(TESTCASES, BasicCloseReasonSessionSocket.class).expect("Close[Reason,Session]");
+        EchoCase.add(TESTCASES, BasicCloseSessionReasonSocket.class).expect("Close[Session,Reason]");
+        
+        // Error Events
+        EchoCase.add(TESTCASES, BasicErrorSocket.class).expect("Error[]");
+        EchoCase.add(TESTCASES, BasicErrorSessionSocket.class).expect("Error[Session]");
+        EchoCase.add(TESTCASES, BasicErrorSessionThrowableSocket.class).expect("Error[Session,Throwable]");
+        EchoCase.add(TESTCASES, BasicErrorThrowableSocket.class).expect("Error[Throwable]");
+        EchoCase.add(TESTCASES, BasicErrorThrowableSessionSocket.class).expect("Error[Throwable,Session]");
     }
 
     @BeforeClass
     public static void startServer() throws Exception
     {
-        File testdir = MavenTestingUtils.getTargetTestingDir(EchoTest.class.getName());
+        Path testdir = MavenTestingUtils.getTargetTestingPath(EchoTest.class.getName());
         server = new WSServer(testdir,"app");
         server.copyWebInf("empty-web.xml");
 
@@ -277,6 +320,14 @@ public class EchoTest
                     PartialBinary pb = (PartialBinary)msg;
                     socket.sendPartialBinary(pb.part,pb.fin);
                 }
+                else if (msg instanceof ByteBuffer)
+                {
+                    socket.sendBinary((ByteBuffer) msg);
+                }
+                else if (msg instanceof String)
+                {
+                    socket.sendText((String) msg);
+                }
                 else
                 {
                     socket.sendObject(msg);
@@ -286,12 +337,9 @@ public class EchoTest
             // Collect Responses
             socket.awaitAllEvents(1,TimeUnit.SECONDS);
             EventQueue<String> received = socket.eventQueue;
-
+    
             // Validate Responses
-            for (String expected : testcase.expectedStrings)
-            {
-                Assert.assertThat("Received Echo Responses",received,contains(expected));
-            }
+            assertThat("Received Events", received, ordered(testcase.expectedStrings));
         }
         finally
         {

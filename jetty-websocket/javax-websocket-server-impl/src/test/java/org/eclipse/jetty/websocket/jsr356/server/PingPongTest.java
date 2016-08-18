@@ -21,8 +21,8 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 
-import java.io.File;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ContainerProvider;
@@ -48,7 +48,7 @@ public class PingPongTest
     @BeforeClass
     public static void startServer() throws Exception
     {
-        File testdir = MavenTestingUtils.getTargetTestingDir(PingPongTest.class.getName());
+        Path testdir = MavenTestingUtils.getTargetTestingPath(PingPongTest.class.getName());
         server = new WSServer(testdir,"app");
         server.copyWebInf("pong-config-web.xml");
 

@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
@@ -36,11 +37,10 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
@@ -57,22 +57,22 @@ import org.junit.Assert;
 public class WSServer
 {
     private static final Logger LOG = Log.getLogger(WSServer.class);
-    private final File contextDir;
+    private final Path contextDir;
     private final String contextPath;
     private Server server;
     private URI serverUri;
     private ContextHandlerCollection contexts;
-    private File webinf;
-    private File classesDir;
+    private Path webinf;
+    private Path classesDir;
 
     public WSServer(TestingDir testdir, String contextName)
     {
-        this(testdir.getDir(),contextName);
+        this(testdir.getPath(),contextName);
     }
 
-    public WSServer(File testdir, String contextName)
+    public WSServer(Path testdir, String contextName)
     {
-        this.contextDir = new File(testdir,contextName);
+        this.contextDir = testdir.resolve(contextName);
         this.contextPath = "/" + contextName;
         FS.ensureEmpty(contextDir);
     }
@@ -83,10 +83,10 @@ public class WSServer
         String endpointPath = clazz.getName().replace('.','/') + ".class";
         URL classUrl = cl.getResource(endpointPath);
         Assert.assertThat("Class URL for: " + clazz,classUrl,notNullValue());
-        File destFile = new File(classesDir,OS.separators(endpointPath));
-        FS.ensureDirExists(destFile.getParentFile());
+        Path destFile = classesDir.resolve(endpointPath);
+        FS.ensureDirExists(destFile.getParent());
         File srcFile = new File(classUrl.toURI());
-        IO.copy(srcFile,destFile);
+        IO.copy(srcFile,destFile.toFile());
     }
 
     public void copyEndpoint(Class<?> endpointClass) throws Exception
@@ -96,20 +96,20 @@ public class WSServer
 
     public void copyWebInf(String testResourceName) throws IOException
     {
-        webinf = new File(contextDir,"WEB-INF");
+        webinf = contextDir.resolve("WEB-INF");
         FS.ensureDirExists(webinf);
-        classesDir = new File(webinf,"classes");
+        classesDir = webinf.resolve("classes");
         FS.ensureDirExists(classesDir);
-        File webxml = new File(webinf,"web.xml");
+        Path webxml = webinf.resolve("web.xml");
         File testWebXml = MavenTestingUtils.getTestResourceFile(testResourceName);
-        IO.copy(testWebXml,webxml);
+        IO.copy(testWebXml,webxml.toFile());
     }
 
     public WebAppContext createWebAppContext() throws MalformedURLException, IOException
     {
         WebAppContext context = new WebAppContext();
         context.setContextPath(this.contextPath);
-        context.setBaseResource(Resource.newResource(this.contextDir));
+        context.setBaseResource(new PathResource(this.contextDir));
         context.setAttribute("org.eclipse.jetty.websocket.jsr356",Boolean.TRUE);
 
         // @formatter:off
@@ -152,7 +152,7 @@ public class WSServer
         return serverUri;
     }
 
-    public File getWebAppDir()
+    public Path getWebAppDir()
     {
         return this.contextDir;
     }

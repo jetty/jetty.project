@@ -20,30 +20,21 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import javax.websocket.server.PathParam;
 
-import org.eclipse.jetty.websocket.common.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.annotations.IJsrParamId;
-import org.eclipse.jetty.websocket.jsr356.annotations.JsrCallable;
-import org.eclipse.jetty.websocket.jsr356.annotations.Param;
-import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
+import org.eclipse.jetty.websocket.common.reflect.Arg;
+import org.eclipse.jetty.websocket.common.reflect.ArgIdentifier;
 
 /**
- * Param handling for static parameters annotated with &#064;{@link PathParam}
+ * Identify method parameters tagged with &#064;{@link javax.websocket.server.PathParam}
  */
-public class JsrPathParamId implements IJsrParamId
+@SuppressWarnings("unused")
+public class PathParamArgIdentifier implements ArgIdentifier
 {
-    public static final IJsrParamId INSTANCE = new JsrPathParamId();
-
     @Override
-    public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
+    public Arg apply(Arg arg)
     {
-        PathParam pathparam = param.getAnnotation(PathParam.class);
-        if(pathparam != null)
-        {
-            param.bind(Role.PATH_PARAM);
-            param.setPathParamName(pathparam.value());
-            return true;
-        }
-
-        return false;
+        PathParam param = arg.getAnnotation(PathParam.class);
+        if (param != null)
+            arg.setTag(param.value());
+        return arg;
     }
 }

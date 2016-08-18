@@ -24,28 +24,30 @@ import java.util.Map;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.jsr356.PathParamProvider;
 
 /**
- * Wrapper for a {@link ServerEndpointConfig} where there PathParm information from the incoming request.
+ * Make {@link javax.websocket.server.PathParam} information from the incoming request available
+ * on {@link ServerEndpointConfig}
  */
-public class PathParamServerEndpointConfig extends BasicServerEndpointConfig implements ServerEndpointConfig
+public class PathParamServerEndpointConfig extends ServerEndpointConfigWrapper implements PathParamProvider
 {
     private final Map<String, String> pathParamMap;
-
-    public PathParamServerEndpointConfig(WebSocketContainerScope containerScope, ServerEndpointConfig config, UriTemplatePathSpec pathSpec, String requestPath)
+    
+    public PathParamServerEndpointConfig(ServerEndpointConfig config, UriTemplatePathSpec pathSpec, String requestPath)
     {
-        super(containerScope, config);
-
+        super(config);
+        
         Map<String, String> pathMap = pathSpec.getPathParams(requestPath);
-        pathParamMap = new HashMap<String, String>();
+        pathParamMap = new HashMap<>();
         if (pathMap != null)
         {
             pathParamMap.putAll(pathMap);
         }
     }
-
-    public Map<String, String> getPathParamMap()
+    
+    @Override
+    public Map<String, String> getPathParams()
     {
         return pathParamMap;
     }
