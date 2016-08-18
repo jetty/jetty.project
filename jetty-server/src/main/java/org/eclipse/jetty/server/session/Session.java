@@ -580,6 +580,7 @@ public class Session implements SessionHandler.SessionIf
      * @see javax.servlet.http.HttpSession#getSessionContext()
      */
     @Override
+    @Deprecated
     public HttpSessionContext getSessionContext()
     {
         checkValidForRead();
@@ -654,6 +655,7 @@ public class Session implements SessionHandler.SessionIf
      * @see javax.servlet.http.HttpSession#getValue(java.lang.String)
      */
     @Override
+    @Deprecated
     public Object getValue(String name)
     {
         try (Lock lock = _lock.lockIfNotHeld())
@@ -758,6 +760,7 @@ public class Session implements SessionHandler.SessionIf
      * @see javax.servlet.http.HttpSession#putValue(java.lang.String, java.lang.Object)
      */
     @Override
+    @Deprecated
     public void putValue(String name, Object value)
     {
         setAttribute(name,value);
@@ -782,6 +785,7 @@ public class Session implements SessionHandler.SessionIf
      * @see javax.servlet.http.HttpSession#removeValue(java.lang.String)
      */
     @Override
+    @Deprecated
     public void removeValue(String name)
     {
        setAttribute(name, null);

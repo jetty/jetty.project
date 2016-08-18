@@ -42,7 +42,7 @@ public class StopSessionManagerPreserveSessionTest extends AbstractStopSessionMa
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractStopSessionManagerPreserveSessionTest#checkSessionPersisted(boolean)
+     * @see org.eclipse.jetty.server.session.AbstractStopSessionManagerPreserveSessionTest#checkSessionPersisted(String, boolean)
      */
     @Override
     public void checkSessionPersisted(String id, boolean expected)

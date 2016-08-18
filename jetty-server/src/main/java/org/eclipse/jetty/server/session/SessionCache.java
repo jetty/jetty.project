@@ -80,14 +80,14 @@ public interface SessionCache extends LifeCycle
      * @param id
      * @param time
      * @param maxInactiveMs
-     * @return
+     * @return a new Session 
      */
     Session newSession (HttpServletRequest request, String id,  long time, long maxInactiveMs);
     
     /**
-     * Re-inflate a Session that has previously existed.
+     * Re-materialize a Session that has previously existed.
      * @param data
-     * @return
+     * @return a Session object for the data supplied
      */
     Session newSession (SessionData data);
     
@@ -97,7 +97,7 @@ public interface SessionCache extends LifeCycle
      * 
      * @param oldId
      * @param newId
-     * @return
+     * @return the Session after changing its id
      * @throws Exception
      */
     Session renewSessionId (String oldId, String newId) throws Exception;
@@ -108,7 +108,7 @@ public interface SessionCache extends LifeCycle
      * the session from the configured SessionDataStore.
      * 
      * @param id
-     * @return
+     * @return the Session if one exists, null otherwise
      * @throws Exception
      */
     Session get(String id) throws Exception;
@@ -144,7 +144,7 @@ public interface SessionCache extends LifeCycle
      * SessionDataStore.
      * 
      * @param id
-     * @return
+     * @return true if the session exists, false otherwise
      * @throws Exception
      */
     boolean exists (String id) throws Exception;
@@ -155,7 +155,7 @@ public interface SessionCache extends LifeCycle
      * cache and the SessionDataStore.
      * 
      * @param id
-     * @return
+     * @return the Session that was removed, null otherwise
      * @throws Exception
      */
     Session delete (String id) throws Exception;
@@ -199,7 +199,7 @@ public interface SessionCache extends LifeCycle
      * <li>evicted after a configurable period of inactivity</li>
      * </ul>
      * 
-     * @param -1 is never evict; 0 is evict-on-exit; and any other positive
+     * @param policy -1 is never evict; 0 is evict-on-exit; and any other positive
      * value is the time in seconds that a session can be idle before it can
      * be evicted.
      */

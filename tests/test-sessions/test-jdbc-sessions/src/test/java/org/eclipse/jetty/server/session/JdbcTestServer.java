@@ -91,7 +91,7 @@ public class JdbcTestServer extends AbstractTestServer
     
  
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionHandler(org.eclipse.jetty.server.SessionManager)
+     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionHandler()
      */
     @Override
     public SessionHandler newSessionHandler()

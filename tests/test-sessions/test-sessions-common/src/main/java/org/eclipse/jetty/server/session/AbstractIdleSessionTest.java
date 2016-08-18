@@ -57,7 +57,6 @@ public abstract class AbstractIdleSessionTest extends AbstractTestBase
  
 
     /**
-     * @param sessionDir
      * @param sessionId
      */
     public abstract void checkSessionIdled (String sessionId);

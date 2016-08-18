@@ -38,7 +38,7 @@ public class SessionRenewTest extends AbstractSessionRenewTest
     
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
+     * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(WebAppContext, java.lang.String, java.lang.String)
      */
     @Override
     public boolean verifyChange(WebAppContext context, String oldSessionId, String newSessionId)

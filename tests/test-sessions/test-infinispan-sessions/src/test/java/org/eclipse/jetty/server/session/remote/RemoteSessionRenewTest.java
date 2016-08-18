@@ -53,7 +53,7 @@ public class RemoteSessionRenewTest extends AbstractSessionRenewTest
     
     
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#createServer(int, int, int, int)
      */
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
@@ -68,7 +68,7 @@ public class RemoteSessionRenewTest extends AbstractSessionRenewTest
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(java.lang.String, java.lang.String)
+     * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(WebAppContext, java.lang.String, java.lang.String)
      */
     @Override
     public boolean verifyChange(WebAppContext context, String oldSessionId, String newSessionId)

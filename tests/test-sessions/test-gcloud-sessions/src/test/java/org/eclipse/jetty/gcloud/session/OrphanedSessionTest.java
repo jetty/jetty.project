@@ -41,7 +41,7 @@ public class OrphanedSessionTest extends AbstractOrphanedSessionTest
     
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractOrphanedSessionTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractOrphanedSessionTest#createServer(int, int, int, int)
      */
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge,int evictionPolicy)

@@ -32,7 +32,7 @@ public class ProxySerializationTest extends AbstractProxySerializationTest
 {
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractProxySerializationTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractProxySerializationTest#createServer(int, int, int, int)
      */
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)

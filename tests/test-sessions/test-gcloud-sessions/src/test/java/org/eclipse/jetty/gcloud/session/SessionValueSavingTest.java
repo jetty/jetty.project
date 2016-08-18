@@ -39,7 +39,7 @@ public class SessionValueSavingTest extends AbstractSessionValueSavingTest
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionValueSavingTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractSessionValueSavingTest#createServer(int, int, int, int)
      */
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
