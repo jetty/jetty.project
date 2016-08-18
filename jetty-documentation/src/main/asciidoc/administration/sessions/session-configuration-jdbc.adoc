@@ -1,0 +1,100 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[configuring-sessions-jdbc]]
+
+=== Configuring JDBC Clustering
+
+When using the Jetty distribution, you will first need to enable the `session-store-jdbc` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar ../start.jar --add-to-start=session-store-jdbc
+INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
+INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
+INFO : session-store-jdbc initialised in ${jetty.base}/start.d/session-store-jdbc.ini
+INFO : Base directory was modified
+----
+
+Doing this enables the JDBC Session module and any dependent modules or files needed for it to run on the server.
+The example above is running an fresh `{$jetty.base}` with nothing enabled.
+When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-jdbc` module as well as the `sessions` and `server` modules, which are required for JDBC session management to operate.
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `{$jetty.base}`.
+
+Opening the `start.d/session-store-jdbc.ini` will show a list of all the configurable options for the JDBC module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: session-store-jdbc
+# Enables JDBC peristent/distributed session storage.
+# ---------------------------------------
+--module=session-store-jdbc
+
+##
+##JDBC Session properties
+##
+
+#jetty.session.gracePeriod.seconds=3600
+
+## Connection type:Datasource
+db-connection-type=datasource
+#jetty.session.datasourceName=/jdbc/sessions
+
+## Connection type:driver
+#db-connection-type=driver
+#jetty.session.driverClass=
+#jetty.session.driverUrl=
+
+## Session table schema
+#jetty.sessionTableSchema.accessTimeColumn=accessTime
+#jetty.sessionTableSchema.contextPathColumn=contextPath
+#jetty.sessionTableSchema.cookieTimeColumn=cookieTime
+#jetty.sessionTableSchema.createTimeColumn=createTime
+#jetty.sessionTableSchema.expiryTimeColumn=expiryTime
+#jetty.sessionTableSchema.lastAccessTimeColumn=lastAccessTime
+#jetty.sessionTableSchema.lastSavedTimeColumn=lastSavedTime
+#jetty.sessionTableSchema.idColumn=sessionId
+#jetty.sessionTableSchema.lastNodeColumn=lastNode
+#jetty.sessionTableSchema.virtualHostColumn=virtualHost
+#jetty.sessionTableSchema.maxIntervalColumn=maxInterval
+#jetty.sessionTableSchema.mapColumn=map
+#jetty.sessionTableSchema.table=JettySessions
+----
+
+jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
+
+db-connection-type::
+jetty.session.datasourceName::
+
+db-connection-type::
+jetty.session.driverClass::
+jetty.session.driverUrl::
+
+jetty.sessionTableSchema.accessTimeColumn::
+jetty.sessionTableSchema.contextPathColumn::
+jetty.sessionTableSchema.cookieTimeColumn::
+jetty.sessionTableSchema.createTimeColumn::
+jetty.sessionTableSchema.expiryTimeColumn::
+jetty.sessionTableSchema.lastAccessTimeColumn::
+jetty.sessionTableSchema.lastSavedTimeColumn::
+jetty.sessionTableSchema.idColumn::
+jetty.sessionTableSchema.lastNodeColumn::
+jetty.sessionTableSchema.virtualHostColumn::
+jetty.sessionTableSchema.maxIntervalColumn::
+jetty.sessionTableSchema.mapColumn::
+jetty.sessionTableSchema.table::
