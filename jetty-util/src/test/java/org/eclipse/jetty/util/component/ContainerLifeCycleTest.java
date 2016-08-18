@@ -29,11 +29,8 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
-
 public class ContainerLifeCycleTest
 {
-
-
     @Test
     public void testStartStopDestroy() throws Exception
     {
@@ -65,9 +62,7 @@ public class ContainerLifeCycleTest
                 destroyed.incrementAndGet();
                 super.destroy();
             }
-
         };
-
 
         a0.addBean(a1);
 
@@ -142,7 +137,6 @@ public class ContainerLifeCycleTest
         Assert.assertEquals(3,started.get());
         Assert.assertEquals(3,stopped.get());
         Assert.assertEquals(2,destroyed.get());
-
     }
 
     @Test
@@ -176,7 +170,6 @@ public class ContainerLifeCycleTest
                 destroyed.incrementAndGet();
                 super.destroy();
             }
-
         };
 
         // Start the a1 bean before adding, makes it auto disjoint
@@ -219,7 +212,6 @@ public class ContainerLifeCycleTest
         Assert.assertEquals(1,stopped.get());
         Assert.assertEquals(0,destroyed.get());
 
-
         a0.start();
         Assert.assertEquals(2,started.get());
         Assert.assertEquals(1,stopped.get());
@@ -229,7 +221,6 @@ public class ContainerLifeCycleTest
         Assert.assertEquals(2,started.get());
         Assert.assertEquals(2,stopped.get());
         Assert.assertEquals(0,destroyed.get());
-
 
         a0.unmanage(a1);
         Assert.assertFalse(a0.isManaged(a1));
@@ -243,7 +234,6 @@ public class ContainerLifeCycleTest
         Assert.assertEquals(2,started.get());
         Assert.assertEquals(2,stopped.get());
         Assert.assertEquals(1,destroyed.get());
-
     }
 
     @Test
@@ -317,7 +307,6 @@ public class ContainerLifeCycleTest
         final ContainerLifeCycle a3 = new ContainerLifeCycle();
         final ContainerLifeCycle a4 = new ContainerLifeCycle();
 
-
         ContainerLifeCycle aa = new ContainerLifeCycle()
         {
             @Override
@@ -381,7 +370,6 @@ public class ContainerLifeCycleTest
         dump=check(dump," |   += org.eclipse.jetty.util.component.Container");
         dump=check(dump," +~ org.eclipse.jetty.util.component.ContainerLife");
         dump=check(dump,"");
-
     }
     
     @Test
@@ -414,8 +402,7 @@ public class ContainerLifeCycleTest
             
             public @Override String toString() {return "listener";}
         };
-        
-        
+
         ContainerLifeCycle c0 = new ContainerLifeCycle() { public @Override String toString() {return "c0";}};
         ContainerLifeCycle c00 = new ContainerLifeCycle() { public @Override String toString() {return "c00";}};
         c0.addBean(c00);
@@ -434,7 +421,6 @@ public class ContainerLifeCycleTest
         Assert.assertEquals(c0,parent.poll());
         Assert.assertEquals(listener,child.poll());
 
-        
         Container.InheritedListener inherited= new Container.InheritedListener()
         { 
             @Override
@@ -513,7 +499,6 @@ public class ContainerLifeCycleTest
         Assert.assertEquals("removed",operation.poll());
         Assert.assertEquals(c0,parent.poll());
         Assert.assertEquals(c00,child.poll());
-        
     }
 
     private final class InheritedListenerLifeCycle extends AbstractLifeCycle implements Container.InheritedListener
@@ -575,7 +560,4 @@ public class ContainerLifeCycleTest
 
         return r;
     }
-
-
-
 }
