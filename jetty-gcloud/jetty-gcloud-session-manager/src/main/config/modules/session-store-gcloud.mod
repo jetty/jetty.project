@@ -12,6 +12,7 @@ jcl-api
 jcl-impl
 
 [files]
+basehome:etc/sessions/gcloud/index.yaml|etc/index.yaml
 maven://com.google.cloud/gcloud-java-datastore/0.2.3|lib/gcloud/gcloud-java-datastore-0.2.3.jar
 maven://com.google.cloud/gcloud-java-core/0.2.3|lib/gcloud/gcloud-java-core-0.2.3.jar
 maven://com.google.auth/google-auth-library-credentials/0.3.1|lib/gcloud/google-auth-library-credentials-0.3.1.jar
@@ -61,6 +62,6 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 [ini-template]
 
 ## GCloudDatastore Session config
-#jetty.gcloudSession.maxRetries=
-#jetty.gcloudSession.backoffMs=
+#jetty.gcloudSession.maxRetries=5
+#jetty.gcloudSession.backoffMs=1000
 
