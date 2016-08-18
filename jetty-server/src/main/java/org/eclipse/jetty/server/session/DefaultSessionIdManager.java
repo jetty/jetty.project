@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
  * 
  * Runs a HouseKeeper thread to periodically check for expired Sessions.
  * 
- * @See HouseKeeper
+ * @see HouseKeeper
  */
 public class DefaultSessionIdManager extends AbstractLifeCycle implements SessionIdManager
 {

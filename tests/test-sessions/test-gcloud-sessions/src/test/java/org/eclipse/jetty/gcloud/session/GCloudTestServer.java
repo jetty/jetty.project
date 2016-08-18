@@ -35,7 +35,7 @@ public class GCloudTestServer extends AbstractTestServer
      * @param port
      * @param maxInactivePeriod
      * @param scavengePeriod
-     * @param sessionIdMgrConfig
+     * @param evictionPolicy
      */
     public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy)
     {
@@ -45,7 +45,7 @@ public class GCloudTestServer extends AbstractTestServer
 
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionHandler(org.eclipse.jetty.server.SessionManager)
+     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionHandler()
      */
     @Override
     public SessionHandler newSessionHandler()

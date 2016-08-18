@@ -51,7 +51,7 @@ public class RemoteSameNodeLoadTest extends AbstractSameNodeLoadTest
     }
     
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSameNodeLoadTest#createServer(int)
+     * @see org.eclipse.jetty.server.session.AbstractSameNodeLoadTest#createServer(int, int, int, int)
      */
     @Override
     public AbstractTestServer createServer(int port, int maxInactive, int scavenge, int evictionPolicy)

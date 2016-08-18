@@ -53,7 +53,7 @@ public class ImmortalSessionTest extends AbstractImmortalSessionTest
     
     
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractImmortalSessionTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractImmortalSessionTest#createServer(int, int, int, int)
      */
     @Override
     public AbstractTestServer createServer(int port, int maxInactiveMs, int scavenge, int evictionPolicy)

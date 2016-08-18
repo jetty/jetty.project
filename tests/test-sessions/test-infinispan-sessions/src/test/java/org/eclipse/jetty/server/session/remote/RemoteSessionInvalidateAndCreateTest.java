@@ -50,7 +50,7 @@ public class RemoteSessionInvalidateAndCreateTest extends AbstractSessionInvalid
     
     
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionInvalidateAndCreateTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractSessionInvalidateAndCreateTest#createServer(int, int, int, int)
      */
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
