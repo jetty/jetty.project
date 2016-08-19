@@ -31,13 +31,13 @@ import org.eclipse.jetty.websocket.api.Session;
  * Annotation for tagging methods to receive Binary or Text Message events.
  * <p>
  * Acceptable method patterns.<br>
- * Note: <code>methodName</code> can be any name you want to use.
+ * Note: {@code methodName} can be any name you want to use.
  * <p>
  * <u>Text Message Versions</u>
  * <ol>
- * <li><code>public void methodName(String text)</code></li>
+ * <li>{@code public void methodName(String text)}</li>
  * <li><code>public void methodName({@link Session} session, String text)</code></li>
- * <li><code>public void methodName(Reader reader)</code></li>
+ * <li>{@code public void methodName(Reader reader)}</li>
  * <li><code>public void methodName({@link Session} session, Reader reader)</code></li>
  * </ol>
  * Note: that the {@link Reader} in this case will always use UTF-8 encoding/charset (this is dictated by the RFC 6455 spec for Text Messages. If you need to
@@ -45,9 +45,9 @@ import org.eclipse.jetty.websocket.api.Session;
  * <p>
  * <u>Binary Message Versions</u>
  * <ol>
- * <li><code>public void methodName(byte buf[], int offset, int length)</code></li>
+ * <li>{@code public void methodName(byte buf[], int offset, int length)}</li>
  * <li><code>public void methodName({@link Session} session, byte buf[], int offset, int length)</code></li>
- * <li><code>public void methodName(InputStream stream)</code></li>
+ * <li>{@code public void methodName(InputStream stream)}</li>
  * <li><code>public void methodName({@link Session} session, InputStream stream)</code></li>
  * </ol>
  */

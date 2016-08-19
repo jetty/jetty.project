@@ -26,7 +26,7 @@ import java.util.concurrent.TimeoutException;
 import javax.websocket.Encoder;
 
 /**
- * A <code>Future&lt;Void&gt;</code> that is already failed as a result of an Encode error
+ * A {@code Future&lt;Void&gt;} that is already failed as a result of an Encode error
  */
 public class EncodeFailedFuture implements Future<Void>
 {

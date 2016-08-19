@@ -30,9 +30,9 @@ import org.eclipse.jetty.websocket.api.Session;
  * Annotation for tagging methods to receive connection close events.
  * <p>
  * Acceptable method patterns.<br>
- * Note: <code>methodName</code> can be any name you want to use.
+ * Note: {@code methodName} can be any name you want to use.
  * <ol>
- * <li><code>public void methodName(int statusCode, String reason)</code></li>
+ * <li>{@code public void methodName(int statusCode, String reason)}</li>
  * <li><code>public void methodName({@link Session} session, int statusCode, String reason)</code></li>
  * </ol>
  */

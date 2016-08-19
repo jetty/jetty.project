@@ -164,7 +164,7 @@ public class ServletUpgradeRequest extends UpgradeRequest
     /**
      * Equivalent to {@link HttpServletRequest#getLocale()}
      *
-     * @return the preferred <code>Locale</code> for the client
+     * @return the preferred {@code Locale} for the client
      */
     public Locale getLocale()
     {

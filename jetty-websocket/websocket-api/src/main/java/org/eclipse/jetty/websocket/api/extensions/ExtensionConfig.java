@@ -46,7 +46,7 @@ public class ExtensionConfig
     }
 
     /**
-     * Parse enumeration of <code>Sec-WebSocket-Extensions</code> header values into a {@link ExtensionConfig} list
+     * Parse enumeration of {@code Sec-WebSocket-Extensions} header values into a {@link ExtensionConfig} list
      * 
      * @param valuesEnum
      *            the raw header values enum
@@ -73,7 +73,7 @@ public class ExtensionConfig
     }
 
     /**
-     * Parse 1 or more raw <code>Sec-WebSocket-Extensions</code> header values into a {@link ExtensionConfig} list
+     * Parse 1 or more raw {@code Sec-WebSocket-Extensions} header values into a {@link ExtensionConfig} list
      * 
      * @param rawSecWebSocketExtensions
      *            the raw header values
