@@ -63,6 +63,7 @@ public class MessageWriterTest
     public void closeSession() throws Exception
     {
         session.close();
+        session.stop();
         remoteSession.close();
         remoteSession.stop();
     }
