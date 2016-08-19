@@ -225,10 +225,6 @@ public class WebSocketServletRFCTest
             CloseInfo close = new CloseInfo(cf);
             Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
         }
-        finally
-        {
-            client.close();
-        }
     }
 
     /**

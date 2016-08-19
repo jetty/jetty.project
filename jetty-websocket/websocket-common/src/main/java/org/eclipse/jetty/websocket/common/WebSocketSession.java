@@ -88,9 +88,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private ClassLoader classLoader;
     private ExtensionFactory extensionFactory;
     private BatchMode batchmode = BatchMode.AUTO;
+    private RemoteEndpointFactory remoteEndpointFactory;
     private String protocolVersion;
     private Map<String, String[]> parameterMap = new HashMap<>();
-    private WebSocketRemoteEndpoint remote;
+    private RemoteEndpoint remote;
     private OutgoingFrames outgoingHandler;
     private WebSocketPolicy policy;
     private UpgradeRequest upgradeRequest;
@@ -123,13 +124,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public void close()
     {
         /* This is assumed to always be a NORMAL closure, no reason phrase */
-        connection.close(StatusCode.NORMAL, null);
+        close(StatusCode.NORMAL, null);
     }
 
     @Override
     public void close(CloseStatus closeStatus)
     {
-        this.close(closeStatus.getCode(), closeStatus.getPhrase());
+        close(closeStatus.getCode(),closeStatus.getPhrase());
     }
 
     @Override
@@ -183,16 +184,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         if (LOG.isDebugEnabled())
             LOG.debug("stopping - {}", this);
 
-        if (getConnection() != null)
+        try
         {
-            try
-            {
-                getConnection().close(StatusCode.SHUTDOWN, "Shutdown");
-            }
-            catch (Throwable t)
-            {
-                LOG.debug("During Connection Shutdown", t);
-            }
+            close(StatusCode.SHUTDOWN,"Shutdown");
+        }
+        catch (Throwable t)
+        {
+            LOG.debug("During Connection Shutdown",t);
         }
         super.doStop();
     }
@@ -601,6 +599,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         }
     }
 
+    public WebSocketRemoteEndpoint newRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoingFrames, BatchMode batchMode)
+    {
+        return new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
+    }
+
     /**
      * Open/Activate the session
      */
@@ -621,7 +624,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             connection.getIOState().onConnected();
 
             // Connect remote
-            remote = new WebSocketRemoteEndpoint(connection, outgoingHandler, getBatchMode());
+            remote = remoteEndpointFactory.newRemoteEndpoint(connection,outgoingHandler,getBatchMode());
             if (LOG_OPEN.isDebugEnabled())
                 LOG_OPEN.debug("[{}] {}.open() remote={}", policy.getBehavior(), this.getClass().getSimpleName(), remote);
 
