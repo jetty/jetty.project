@@ -495,7 +495,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * @param request   the request to upgrade
      * @param response  the response to upgrade
      * @param websocket the websocket endpoint instance
-     * @throws IOException
+     * @throws IOException if unable to upgrade
      */
     private boolean upgrade(HttpConnection http, ServletUpgradeRequest request, ServletUpgradeResponse response, Object websocket) throws IOException
     {

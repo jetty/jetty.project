@@ -25,7 +25,7 @@ import java.util.Map;
  * in Jetty to expose Path Param values used during the {@link org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions}
  * resolution of methods.
  * <p>
- *     Mostly a feature of the JSR356 Server implementation and its <code>&#064;javax.websocket.server.PathParam</code> annotation.
+ *     Mostly a feature of the JSR356 Server implementation and its {@code &#064;javax.websocket.server.PathParam} annotation.
  * </p>
  */
 public interface PathParamProvider

@@ -28,7 +28,7 @@ public interface WebSocketPartialListener extends WebSocketConnectionListener
     /**
      * A WebSocket BINARY (or associated CONTINUATION) frame has been received.
      * <p>
-     * <b>Important Note</b>: The payload <code>ByteBuffer</code> cannot be modified, and the ByteBuffer object itself
+     * <b>Important Note</b>: The payload {@code ByteBuffer} cannot be modified, and the ByteBuffer object itself
      * will be recycled on completion of this method call, make a copy of the data contained within if you want to
      * retain it between calls.
      * 

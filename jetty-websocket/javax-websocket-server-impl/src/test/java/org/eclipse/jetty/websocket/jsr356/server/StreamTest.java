@@ -164,7 +164,7 @@ public class StreamTest
      * 
      * @param file
      *            the file to validate
-     * @param shaFile
+     * @param sha1File
      *            the sha1sum file to verify against
      */
     private void assertFileUpload(File file, File sha1File) throws IOException, NoSuchAlgorithmException

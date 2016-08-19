@@ -183,7 +183,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
      * Block if the message sink is actively being used.
      *
      * @param handler the handler to remove from possible message sinks
-     * @see {@link javax.websocket.Session#removeMessageHandler(MessageHandler)}
+     * @see javax.websocket.Session#removeMessageHandler(MessageHandler)
      * @since JSR356 v1.0
      */
     public void removeMessageHandler(MessageHandler handler)
@@ -220,7 +220,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
      * @param handler the partial message handler
      * @param <T> the generic defined type
      * @throws IllegalStateException if unable to process message handler
-     * @see {@link javax.websocket.Session#addMessageHandler(Class, MessageHandler.Partial)}
+     * @see javax.websocket.Session#addMessageHandler(Class, MessageHandler.Partial)
      * @since JSR356 v1.1
      */
     public <T> void setMessageHandler(Class<T> clazz, MessageHandler.Partial<T> handler) throws IllegalStateException
@@ -275,7 +275,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
      * @param handler the whole message handler
      * @param <T> the generic defined type
      * @throws IllegalStateException if unable to process message handler
-     * @see {@link javax.websocket.Session#addMessageHandler(Class, MessageHandler.Whole)}
+     * @see javax.websocket.Session#addMessageHandler(Class, MessageHandler.Whole)
      * @since JSR356 v1.1
      */
     public <T> void setMessageHandler(Class<T> clazz, MessageHandler.Whole<T> handler) throws IllegalStateException

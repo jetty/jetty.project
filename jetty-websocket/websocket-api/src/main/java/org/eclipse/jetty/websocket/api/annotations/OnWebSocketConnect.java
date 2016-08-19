@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.api.Session;
  * Annotation for tagging methods to receive connection open events.
  * <p>
  * Only 1 acceptable method pattern for this annotation.<br>
- * Note: <code>methodName</code> can be any name you want to use.
+ * Note: {@code methodName} can be any name you want to use.
  * <ol>
  * <li><code>public void methodName({@link Session} session)</code></li>
  * </ol>

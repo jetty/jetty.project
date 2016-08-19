@@ -244,8 +244,12 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return new InetSocketAddress(getLocalAddress(), getLocalPort());
     }
 
-    @Override
-    public String getMethod()
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocale()}
+     *
+     * @return the preferred {@code Locale} for the client
+     */
+    public Locale getLocale()
     {
         return request.getMethod();
     }
