@@ -936,11 +936,9 @@
       <activation>
         <jdk>[1.8,1.9)</jdk>
       </activation>
-      <!--
       <modules>
         <module>jetty-documentation</module>
       </modules>
-       -->
       <build>
         <pluginManagement>
           <plugins>
@@ -1028,7 +1026,6 @@
       <id>eclipse-release</id>
       <modules>
         <module>aggregates/jetty-all</module>
-        <module>jetty-documentation</module>
       </modules>
       <build>
         <plugins>
