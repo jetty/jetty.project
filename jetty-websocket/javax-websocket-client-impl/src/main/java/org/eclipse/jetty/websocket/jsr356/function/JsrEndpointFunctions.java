@@ -24,7 +24,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -131,7 +130,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
      * that needs it converted to an object.
      * </p>
      */
-    protected static class StaticArg implements Comparator<StaticArg>
+    protected static class StaticArg implements Comparable<StaticArg>
     {
         public final String name;
         public final String value;
@@ -143,9 +142,9 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         }
         
         @Override
-        public int compare(StaticArg o1, StaticArg o2)
+        public int compareTo(StaticArg o)
         {
-            return o1.name.compareTo(o2.name);
+            return this.name.compareTo(o.name);
         }
     }
     
