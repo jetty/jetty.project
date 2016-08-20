@@ -85,6 +85,7 @@ public class AvailableDecoders implements Predicate<Class<?>>
         registerPrimitive(CharacterDecoder.class, Decoder.Text.class, Character.class);
         registerPrimitive(DoubleDecoder.class, Decoder.Text.class, Double.class);
         registerPrimitive(FloatDecoder.class, Decoder.Text.class, Float.class);
+        registerPrimitive(ShortDecoder.class, Decoder.Text.class, Short.class);
         registerPrimitive(IntegerDecoder.class, Decoder.Text.class, Integer.class);
         registerPrimitive(LongDecoder.class, Decoder.Text.class, Long.class);
         registerPrimitive(StringDecoder.class, Decoder.Text.class, String.class);
@@ -95,6 +96,7 @@ public class AvailableDecoders implements Predicate<Class<?>>
         registerPrimitive(CharacterDecoder.class, Decoder.Text.class, Character.TYPE);
         registerPrimitive(DoubleDecoder.class, Decoder.Text.class, Double.TYPE);
         registerPrimitive(FloatDecoder.class, Decoder.Text.class, Float.TYPE);
+        registerPrimitive(ShortDecoder.class, Decoder.Text.class, Short.TYPE);
         registerPrimitive(IntegerDecoder.class, Decoder.Text.class, Integer.TYPE);
         registerPrimitive(LongDecoder.class, Decoder.Text.class, Long.TYPE);
         

@@ -149,8 +149,8 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         }
     }
     
-    private final AvailableEncoders encoders;
-    private final AvailableDecoders decoders;
+    protected final AvailableEncoders encoders;
+    protected final AvailableDecoders decoders;
     private final EndpointConfig endpointConfig;
     private List<StaticArg> staticArgs;
     
@@ -424,6 +424,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
      *
      * @param endpoint the endpoint object
      */
+    @SuppressWarnings("Duplicates")
     protected void discoverAnnotatedEndpointFunctions(Object endpoint)
     {
         Class<?> endpointClass = endpoint.getClass();

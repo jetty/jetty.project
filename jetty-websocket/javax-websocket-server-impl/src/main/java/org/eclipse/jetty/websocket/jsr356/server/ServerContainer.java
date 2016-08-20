@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
@@ -34,8 +35,11 @@ import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
+import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 
@@ -150,6 +154,22 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         JsrCreator creator = new JsrCreator(this, config, webSocketServerFactory.getExtensionFactory());
         mappedCreator.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
+    }
+    
+    @Override
+    public EndpointFunctions newJsrEndpointFunction(Object endpoint,
+                                                    AvailableEncoders availableEncoders,
+                                                    AvailableDecoders availableDecoders,
+                                                    Map<String, String> pathParameters,
+                                                    EndpointConfig config)
+    {
+        return new JsrServerEndpointFunctions(endpoint,
+                getPolicy(),
+                getExecutor(),
+                availableEncoders,
+                availableDecoders,
+                pathParameters,
+                config);
     }
     
     @Override

@@ -124,7 +124,7 @@ public class EchoCase
         StringBuilder str = new StringBuilder();
         str.append("EchoCase['");
         str.append(path);
-        str.append("',").append(serverPojo.getName());
+        str.append("',").append(serverPojo.getSimpleName());
         str.append(",messages[").append(messages.size());
         str.append("]=");
         boolean delim = false;
