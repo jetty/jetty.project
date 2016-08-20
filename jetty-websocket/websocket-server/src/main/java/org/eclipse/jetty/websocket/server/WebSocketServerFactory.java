@@ -282,8 +282,8 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
                 }
             }
         }
-        
-        throw new InvalidWebSocketException("Unable to create Session: unrecognized internal EventDriver type: " + websocket.getClass().getName());
+
+        throw new InvalidWebSocketException("Unable to create Session: unrecognized endpoint type: " + websocket.getClass().getName());
     }
     
     /**

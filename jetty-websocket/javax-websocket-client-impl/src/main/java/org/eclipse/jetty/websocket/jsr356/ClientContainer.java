@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -56,11 +57,14 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
+import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
+import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
+import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
 
 /**
  * Container for Client use of the javax.websocket API.
@@ -98,6 +102,21 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 //        annotatedConfigFunctions.add(new ClientEndpointConfigFunction());
         
         ShutdownThread.register(this);
+    }
+    
+    public EndpointFunctions newJsrEndpointFunction(Object endpoint,
+                                                    AvailableEncoders availableEncoders,
+                                                    AvailableDecoders availableDecoders,
+                                                    Map<String, String> pathParameters,
+                                                    EndpointConfig config)
+    {
+        return new JsrEndpointFunctions(endpoint,
+                getPolicy(),
+                getExecutor(),
+                availableEncoders,
+                availableDecoders,
+                pathParameters,
+                config);
     }
     
     private Session connect(ConfiguredEndpoint instance, URI path) throws IOException

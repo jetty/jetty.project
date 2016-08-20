@@ -95,9 +95,9 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public EndpointFunctions newEndpointFunctions(Object endpoint)
     {
-        return new JsrEndpointFunctions(endpoint,
-                getPolicy(),
-                getExecutor(),
+        // Delegate to container to obtain correct version of JsrEndpointFunctions
+        // Could be a Client version, or a Server version
+        return container.newJsrEndpointFunction(endpoint,
                 availableEncoders,
                 availableDecoders,
                 pathParameters,

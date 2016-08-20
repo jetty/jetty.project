@@ -83,6 +83,7 @@ public class AvailableEncoders implements Predicate<Class<?>>
         registerPrimitive(CharacterEncoder.class, Encoder.Text.class, Character.class);
         registerPrimitive(DoubleEncoder.class, Encoder.Text.class, Double.class);
         registerPrimitive(FloatEncoder.class, Encoder.Text.class, Float.class);
+        registerPrimitive(ShortEncoder.class, Encoder.Text.class, Short.class);
         registerPrimitive(IntegerEncoder.class, Encoder.Text.class, Integer.class);
         registerPrimitive(LongEncoder.class, Encoder.Text.class, Long.class);
         registerPrimitive(StringEncoder.class, Encoder.Text.class, String.class);
@@ -93,6 +94,7 @@ public class AvailableEncoders implements Predicate<Class<?>>
         registerPrimitive(CharacterEncoder.class, Encoder.Text.class, Character.TYPE);
         registerPrimitive(DoubleEncoder.class, Encoder.Text.class, Double.TYPE);
         registerPrimitive(FloatEncoder.class, Encoder.Text.class, Float.TYPE);
+        registerPrimitive(ShortEncoder.class, Encoder.Text.class, Short.TYPE);
         registerPrimitive(IntegerEncoder.class, Encoder.Text.class, Integer.TYPE);
         registerPrimitive(LongEncoder.class, Encoder.Text.class, Long.TYPE);
         

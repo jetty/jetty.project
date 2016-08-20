@@ -27,10 +27,10 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 @ClientEndpoint
 public class CloseEndpointConfigSocket extends TrackingSocket
 {
+    // Intentionally Invalid Declaration
     @OnClose
     public void onClose(EndpointConfig config)
     {
-        addEvent("onClose(EndpointConfig)");
-        closeLatch.countDown();
+        throw new RuntimeException("Should not have worked. Invalid declaration: " + this.getClass().getName());
     }
 }

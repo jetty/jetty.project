@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
 import static org.junit.Assert.assertThat;
 
 import java.net.URI;
@@ -77,7 +76,9 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.InputStreamSo
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderParamSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.StringReturnReaderParamSocket;
+import org.hamcrest.Matchers;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -280,7 +281,7 @@ public class EchoTest
         server.stop();
     }
 
-    @Parameters
+    @Parameters(name = "{0}")
     public static Collection<EchoCase[]> data() throws Exception
     {
         return TESTCASES;
@@ -339,12 +340,29 @@ public class EchoTest
             EventQueue<String> received = socket.eventQueue;
     
             // Validate Responses
-            assertThat("Received Events", received, ordered(testcase.expectedStrings));
+            assertOrdered("Received Events", testcase.expectedStrings, received);
         }
         finally
         {
             // Close
             socket.close();
+        }
+    }
+    
+    @SuppressWarnings("Duplicates")
+    public static void assertOrdered(String msg, List<String> expectedList, EventQueue<String> actualList)
+    {
+        try
+        {
+            Assert.assertEquals(msg, expectedList.size(), actualList.size());
+            if (!expectedList.isEmpty())
+                assertThat(msg, actualList, Matchers.contains(expectedList.toArray()));
+        }
+        catch (AssertionError e)
+        {
+            System.err.println("Expected: " + expectedList);
+            System.err.println("Actual  : " + actualList);
+            throw e;
         }
     }
 }
