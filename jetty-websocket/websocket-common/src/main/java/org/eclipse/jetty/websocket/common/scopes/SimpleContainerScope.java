@@ -33,28 +33,23 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
 {
     private final ByteBufferPool bufferPool;
     private final DecoratedObjectFactory objectFactory;
-    private final WebSocketPolicy policy;
-    private final Executor executor;
+    private final WebSocketPolicy containerPolicy;
+    private Executor executor;
     private SslContextFactory sslContextFactory;
 
-    public SimpleContainerScope(WebSocketPolicy policy)
+    public SimpleContainerScope(WebSocketPolicy containerPolicy)
     {
-        this(policy, new MappedByteBufferPool(), new DecoratedObjectFactory());
+        this(containerPolicy, new MappedByteBufferPool(), new DecoratedObjectFactory());
     }
 
-    public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public SimpleContainerScope(WebSocketPolicy containerPolicy, ByteBufferPool bufferPool)
     {
-        this(policy, bufferPool, new DecoratedObjectFactory());
+        this(containerPolicy, bufferPool, new DecoratedObjectFactory());
     }
 
-    public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
+    public SimpleContainerScope(WebSocketPolicy containerPolicy, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
-        this(policy, bufferPool, (Executor) null, objectFactory);
-    }
-    
-    public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, Executor executor, DecoratedObjectFactory objectFactory)
-    {
-        this.policy = policy;
+        this.containerPolicy = containerPolicy;
         this.bufferPool = bufferPool;
         this.objectFactory = objectFactory;
 
@@ -107,7 +102,7 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return this.policy;
+        return this.containerPolicy;
     }
 
     @Override

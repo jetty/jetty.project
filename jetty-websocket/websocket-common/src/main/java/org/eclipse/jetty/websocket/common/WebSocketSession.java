@@ -70,11 +70,13 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 
 @ManagedObject("A Jetty WebSocket Session")
-public class WebSocketSession extends ContainerLifeCycle implements Session, RemoteEndpointFactory, WebSocketSessionScope, IncomingFrames, Connection.Listener, ConnectionStateListener
+public class WebSocketSession extends ContainerLifeCycle implements Session, RemoteEndpointFactory,
+        WebSocketSessionScope, IncomingFrames, Connection.Listener, ConnectionStateListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private static final Logger LOG_OPEN = Log.getLogger(WebSocketSession.class.getName() + "_OPEN");
     private final WebSocketContainerScope containerScope;
+    private final WebSocketPolicy policy;
     private final URI requestURI;
     private final LogicalConnection connection;
     private final Executor executor;
@@ -98,7 +100,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private UpgradeResponse upgradeResponse;
     private CompletableFuture<Session> openFuture;
 
-    public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, Object endpoint, LogicalConnection connection)
+    public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, Object endpoint, WebSocketPolicy policy, LogicalConnection connection)
     {
         Objects.requireNonNull(containerScope, "Container Scope cannot be null");
         Objects.requireNonNull(requestURI, "Request URI cannot be null");
@@ -111,14 +113,14 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         this.executor = connection.getExecutor();
         this.outgoingHandler = connection;
         this.connection.getIOState().addListener(this);
-        this.policy = connection.getPolicy();
+        this.policy = policy;
 
         addBean(this.connection);
     }
     
     public EndpointFunctions newEndpointFunctions(Object endpoint)
     {
-        return new CommonEndpointFunctions(endpoint, this.policy, this.executor);
+        return new CommonEndpointFunctions(endpoint, getPolicy(), this.executor);
     }
     
     @Override
@@ -175,7 +177,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     
         this.endpointFunctions = newEndpointFunctions(this.endpoint);
         addBean(this.endpointFunctions);
-    
+        
         super.doStart();
     }
 
@@ -313,7 +315,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return policy;
+        return this.policy;
     }
 
     @Override
@@ -326,7 +328,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public RemoteEndpoint getRemote()
     {
         if (LOG_OPEN.isDebugEnabled())
-            LOG_OPEN.debug("[{}] {}.getRemote()", policy.getBehavior(), this.getClass().getSimpleName());
+            LOG_OPEN.debug("[{}] {}.getRemote()", getPolicy().getBehavior(), this.getClass().getSimpleName());
         ConnectionState state = connection.getIOState().getConnectionState();
 
         if ((state == ConnectionState.OPEN) || (state == ConnectionState.CONNECTED))
@@ -492,7 +494,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             notifyError(cause);
 
             // Unhandled Error, close the connection.
-            switch (policy.getBehavior())
+            switch (getPolicy().getBehavior())
             {
                 case SERVER:
                     close(StatusCode.SERVER_ERROR, cause.getClass().getSimpleName());
@@ -560,7 +562,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public void onOpened(Connection connection)
     {
         if (LOG_OPEN.isDebugEnabled())
-            LOG_OPEN.debug("[{}] {}.onOpened()", policy.getBehavior(), this.getClass().getSimpleName());
+            LOG_OPEN.debug("[{}] {}.onOpened()", getPolicy().getBehavior(), this.getClass().getSimpleName());
         open();
     }
 
@@ -613,7 +615,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public void open()
     {
         if (LOG_OPEN.isDebugEnabled())
-            LOG_OPEN.debug("[{}] {}.open()", policy.getBehavior(), this.getClass().getSimpleName());
+            LOG_OPEN.debug("[{}] {}.open()", getPolicy().getBehavior(), this.getClass().getSimpleName());
 
         if (remote != null)
         {
@@ -629,7 +631,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             // Connect remote
             remote = remoteEndpointFactory.newRemoteEndpoint(connection,outgoingHandler,getBatchMode());
             if (LOG_OPEN.isDebugEnabled())
-                LOG_OPEN.debug("[{}] {}.open() remote={}", policy.getBehavior(), this.getClass().getSimpleName(), remote);
+                LOG_OPEN.debug("[{}] {}.open() remote={}", getPolicy().getBehavior(), this.getClass().getSimpleName(), remote);
 
             // Open WebSocket
             endpointFunctions.onOpen(this);
@@ -662,7 +664,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             // Exception on end-user WS-Endpoint.
             // Fast-fail & close connection with reason.
             int statusCode = StatusCode.SERVER_ERROR;
-            if (policy.getBehavior() == WebSocketBehavior.CLIENT)
+            if (getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
             {
                 statusCode = StatusCode.POLICY_VIOLATION;
             }
@@ -692,12 +694,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public void setOutgoingHandler(OutgoingFrames outgoing)
     {
         this.outgoingHandler = outgoing;
-    }
-
-    @Deprecated
-    public void setPolicy(WebSocketPolicy policy)
-    {
-        // do nothing
     }
 
     public void setUpgradeRequest(UpgradeRequest request)

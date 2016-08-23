@@ -44,7 +44,7 @@ public interface WebSocketContainerScope
      * @return the Executor in use by the container.
      */
     Executor getExecutor();
-
+    
     /**
      * Object Factory used to create objects.
      * 
@@ -65,14 +65,7 @@ public interface WebSocketContainerScope
      * @return the SslContextFactory in use by the container (can be null if no SSL context is defined)
      */
     SslContextFactory getSslContextFactory();
-    
-    /**
-     * Test for if the container has been started.
-     *
-     * @return true if container is started and running
-     */
-    boolean isRunning();
-    
+
     /**
      * A Session has been opened
      * 

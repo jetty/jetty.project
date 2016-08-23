@@ -23,7 +23,6 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.SuspendToken;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.io.IOState;
@@ -98,12 +97,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * @return the idle timeout in milliseconds
      */
     long getMaxIdleTimeout();
-
-    /**
-     * The policy that the connection is running under.
-     * @return the policy for the connection
-     */
-    WebSocketPolicy getPolicy();
 
     /**
      * Get the remote Address in use for this connection.

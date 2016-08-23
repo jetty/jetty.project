@@ -101,7 +101,6 @@ public class OnCloseTest
     public OnCloseTest(Case testcase)
     {
         this.testcase = testcase;
-        System.err.printf("Testing @OnClose for %s%n", testcase.closeClass.getName());
     }
     
     @Test

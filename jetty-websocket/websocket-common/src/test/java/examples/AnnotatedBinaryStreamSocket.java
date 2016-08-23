@@ -18,6 +18,9 @@
 
 package examples;
 
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
+
 import java.io.InputStream;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -35,10 +38,7 @@ public class AnnotatedBinaryStreamSocket
     @OnWebSocketMessage
     public void onBinary(InputStream stream)
     {
-        if (stream == null)
-        {
-            new RuntimeException("Stream cannot be null").printStackTrace(System.err);
-        }
+        assertThat("InputStream", stream, notNullValue());
         capture.add("onBinary(%s)",stream);
     }
 

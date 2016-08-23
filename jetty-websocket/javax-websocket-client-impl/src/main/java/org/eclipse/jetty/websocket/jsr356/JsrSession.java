@@ -42,6 +42,8 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
@@ -69,9 +71,9 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
     
-    public JsrSession(ClientContainer container, String id, URI requestURI, Object websocket, LogicalConnection connection)
+    public JsrSession(ClientContainer container, String id, URI requestURI, Object websocket, WebSocketPolicy policy, LogicalConnection connection)
     {
-        super(container, requestURI, websocket, connection);
+        super(container, requestURI, websocket, policy, connection);
         
         this.container = container;
         

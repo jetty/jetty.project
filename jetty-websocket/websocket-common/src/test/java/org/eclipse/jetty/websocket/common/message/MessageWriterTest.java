@@ -82,7 +82,7 @@ public class MessageWriterTest
         remoteSocket = new TrackingSocket("remote");
         URI remoteURI = new URI("ws://localhost/remote");
         LocalWebSocketConnection remoteConnection = new LocalWebSocketConnection(bufferPool);
-        remoteSession = new WebSocketSession(containerScope,remoteURI,remoteSocket,remoteConnection);
+        remoteSession = new WebSocketSession(containerScope,remoteURI,remoteSocket,policy,remoteConnection);
         OutgoingFrames socketPipe = FramePipes.to(remoteSession);
         remoteSession.start();
         remoteSession.open();
@@ -91,9 +91,8 @@ public class MessageWriterTest
         TrackingSocket localSocket = new TrackingSocket("local");
         URI localURI = new URI("ws://localhost/local");
         LocalWebSocketConnection localConnection = new LocalWebSocketConnection(bufferPool);
-        session = new WebSocketSession(containerScope,localURI,localSocket,localConnection);
+        session = new WebSocketSession(containerScope,localURI,localSocket,policy,localConnection);
 
-        session.setPolicy(policy);
         // talk to our remote socket
         session.setOutgoingHandler(socketPipe);
         // start session

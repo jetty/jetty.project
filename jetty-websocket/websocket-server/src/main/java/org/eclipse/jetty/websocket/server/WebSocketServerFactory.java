@@ -87,7 +87,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final Scheduler scheduler = new ScheduledExecutorScheduler();
     private final List<WebSocketSession.Listener> listeners = new CopyOnWriteArrayList<>();
     private final String supportedVersions;
-    private final WebSocketPolicy defaultPolicy;
+    private final WebSocketPolicy containerPolicy;
     private final ByteBufferPool bufferPool;
     private final WebSocketExtensionFactory extensionFactory;
     private final ServletContext context; // can be null when this factory is used from WebSocketHandler
@@ -120,25 +120,16 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     
     public WebSocketServerFactory(ServletContext context, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        this(Objects.requireNonNull(context, ServletContext.class.getName()), policy, null, null, bufferPool);
-    }
-    
-    /**
-     * Protected entry point for {@link WebSocketHandler}
-     *
-     * @param policy the policy to use
-     * @param executor the executor to use
-     * @param bufferPool the buffer pool to use
-     */
-    protected WebSocketServerFactory(WebSocketPolicy policy, Executor executor, ByteBufferPool bufferPool)
-    {
-        this(null, policy, new DecoratedObjectFactory(), executor, bufferPool);
-    }
-    
-    private WebSocketServerFactory(ServletContext context, WebSocketPolicy policy, DecoratedObjectFactory objectFactory, Executor executor, ByteBufferPool bufferPool)
-    {
-        this.context = context;
-        this.defaultPolicy = policy;
+        handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
+
+        addBean(scheduler);
+        addBean(bufferPool);
+
+        this.contextClassloader = Thread.currentThread().getContextClassLoader();
+
+        this.registeredSocketClasses = new ArrayList<>();
+
+        this.containerPolicy = policy;
         this.bufferPool = bufferPool;
         
         this.creator = this;
@@ -274,7 +265,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             {
                 try
                 {
-                    return impl.createSession(requestURI, websocket, connection);
+                    return impl.createSession(requestURI, websocket, containerPolicy, connection);
                 }
                 catch (Throwable e)
                 {
@@ -374,7 +365,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return defaultPolicy;
+        return containerPolicy;
     }
     
     @Override
@@ -571,7 +562,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // Setup websocket connection
         AbstractWebSocketConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, getPolicy().clonePolicy(), bufferPool);
 
-        extensionStack.setPolicy(wsConnection.getPolicy());
+        extensionStack.setPolicy(containerPolicy);
         extensionStack.configure(wsConnection.getParser());
         extensionStack.configure(wsConnection.getGenerator());
         

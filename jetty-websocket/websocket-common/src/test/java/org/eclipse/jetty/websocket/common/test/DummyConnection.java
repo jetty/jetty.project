@@ -110,12 +110,6 @@ public class DummyConnection implements LogicalConnection
     }
 
     @Override
-    public WebSocketPolicy getPolicy()
-    {
-        return policy;
-    }
-
-    @Override
     public InetSocketAddress getRemoteAddress()
     {
         return null;

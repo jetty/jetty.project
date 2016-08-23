@@ -114,11 +114,11 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         {
             this.delegateSink.accept(payload, fin);
         }
-    
+        
         @Override
         public String toString()
         {
-            return String.format("MessageSink[%s]",messageHandler.getClass().getName());
+            return String.format("MessageSink[%s]", messageHandler.getClass().getName());
         }
     }
     
@@ -600,6 +600,15 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                 }
                 return null;
             }, onMsg);
+            OnMessage annotation = onMsg.getAnnotation(OnMessage.class);
+            if (annotation.maxMessageSize() > 0)
+            {
+                StringBuilder err = new StringBuilder();
+                err.append("@OnMessage.maxMessageSize=").append(annotation.maxMessageSize());
+                err.append(" not valid for PongMesssage types: ");
+                ReflectUtils.append(err,onMsg);
+                LOG.warn(err.toString());
+            }
             return true;
         }
         return false;
@@ -629,6 +638,15 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                         }
                 );
                 setOnBinary(streamSink, onMsg);
+                OnMessage annotation = onMsg.getAnnotation(OnMessage.class);
+                if (annotation.maxMessageSize() > 0)
+                {
+                    StringBuilder err = new StringBuilder();
+                    err.append("@OnMessage.maxMessageSize=").append(annotation.maxMessageSize());
+                    err.append(" not valid for Streaming Binary types: ");
+                    ReflectUtils.append(err,onMsg);
+                    LOG.warn(err.toString());
+                }
                 return true;
             }
         }
@@ -659,6 +677,15 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                         }
                 );
                 setOnText(streamSink, onMsg);
+                OnMessage annotation = onMsg.getAnnotation(OnMessage.class);
+                if (annotation.maxMessageSize() > 0)
+                {
+                    StringBuilder err = new StringBuilder();
+                    err.append("@OnMessage.maxMessageSize=").append(annotation.maxMessageSize());
+                    err.append(" not valid for Streaming Text types: ");
+                    ReflectUtils.append(err,onMsg);
+                    LOG.warn(err.toString());
+                }
                 return true;
             }
         }
@@ -688,6 +715,15 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                 invoker.apply(endpoint, args);
                 return null;
             }), onMsg);
+            OnMessage annotation = onMsg.getAnnotation(OnMessage.class);
+            if (annotation.maxMessageSize() > 0)
+            {
+                StringBuilder err = new StringBuilder();
+                err.append("@OnMessage.maxMessageSize=").append(annotation.maxMessageSize());
+                err.append(" not valid for Partial Binary Buffer types: ");
+                ReflectUtils.append(err,onMsg);
+                LOG.warn(err.toString());
+            }
             return true;
         }
         return false;
@@ -715,6 +751,15 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                 invoker.apply(endpoint, args);
                 return null;
             }), onMsg);
+            OnMessage annotation = onMsg.getAnnotation(OnMessage.class);
+            if (annotation.maxMessageSize() > 0)
+            {
+                StringBuilder err = new StringBuilder();
+                err.append("@OnMessage.maxMessageSize=").append(annotation.maxMessageSize());
+                err.append(" not valid for Partial Binary Array types: ");
+                ReflectUtils.append(err,onMsg);
+                LOG.warn(err.toString());
+            }
             return true;
         }
         return false;
@@ -743,6 +788,15 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                 invoker.apply(endpoint, args);
                 return null;
             }), onMsg);
+            OnMessage annotation = onMsg.getAnnotation(OnMessage.class);
+            if (annotation.maxMessageSize() > 0)
+            {
+                StringBuilder err = new StringBuilder();
+                err.append("@OnMessage.maxMessageSize=").append(annotation.maxMessageSize());
+                err.append(" not valid for Partial Text types: ");
+                ReflectUtils.append(err,onMsg);
+                LOG.warn(err.toString());
+            }
             return true;
         }
         return false;
@@ -773,6 +827,11 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                         }
                 );
                 setOnBinary(binarySink, onMsg);
+                OnMessage annotation = onMsg.getAnnotation(OnMessage.class);
+                if (annotation.maxMessageSize() > 0)
+                {
+                    policy.setMaxBinaryMessageSize(annotation.maxMessageSize());
+                }
                 return true;
             }
         }
@@ -804,6 +863,11 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                         }
                 );
                 setOnText(textSink, onMsg);
+                OnMessage annotation = onMsg.getAnnotation(OnMessage.class);
+                if (annotation.maxMessageSize() > 0)
+                {
+                    policy.setMaxTextMessageSize(annotation.maxMessageSize());
+                }
                 return true;
             }
         }
