@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common;
 import java.net.URI;
 
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
@@ -43,8 +44,8 @@ public class WebSocketSessionFactory implements SessionFactory
     }
 
     @Override
-    public WebSocketSession createSession(URI requestURI, Object websocket, LogicalConnection connection)
+    public WebSocketSession createSession(URI requestURI, Object websocket, WebSocketPolicy policy, LogicalConnection connection)
     {
-        return new WebSocketSession(containerScope, requestURI,websocket,connection);
+        return new WebSocketSession(containerScope, requestURI, websocket, policy, connection);
     }
 }

@@ -90,7 +90,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final Scheduler scheduler = new ScheduledExecutorScheduler();
     private final List<WebSocketSession.Listener> listeners = new CopyOnWriteArrayList<>();
     private final String supportedVersions;
-    private final WebSocketPolicy defaultPolicy;
+    private final WebSocketPolicy containerPolicy;
     private final ByteBufferPool bufferPool;
     private final WebSocketExtensionFactory extensionFactory;
     private Executor executor;
@@ -125,7 +125,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         this.registeredSocketClasses = new ArrayList<>();
 
-        this.defaultPolicy = policy;
+        this.containerPolicy = policy;
         this.bufferPool = bufferPool;
         this.extensionFactory = new WebSocketExtensionFactory(this);
 
@@ -255,7 +255,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             {
                 try
                 {
-                    return impl.createSession(requestURI, websocket, connection);
+                    return impl.createSession(requestURI, websocket, containerPolicy, connection);
                 }
                 catch (Throwable e)
                 {
@@ -342,7 +342,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return defaultPolicy;
+        return containerPolicy;
     }
 
     @Override
@@ -583,7 +583,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // Setup websocket connection
         AbstractWebSocketConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, getPolicy().clonePolicy(), bufferPool);
 
-        extensionStack.setPolicy(wsConnection.getPolicy());
+        extensionStack.setPolicy(containerPolicy);
         extensionStack.configure(wsConnection.getParser());
         extensionStack.configure(wsConnection.getGenerator());
 

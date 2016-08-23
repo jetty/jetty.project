@@ -95,8 +95,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         client.setSessionFactory(new JsrSessionFactory(this));
         addBean(client);
 
-//        annotatedConfigFunctions.add(new ClientEndpointConfigFunction());
-        
         ShutdownThread.register(this);
     }
     

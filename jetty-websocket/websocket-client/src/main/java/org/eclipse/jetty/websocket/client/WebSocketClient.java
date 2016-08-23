@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -65,7 +66,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 {
     private static final Logger LOG = Log.getLogger(WebSocketClient.class);
 
-    private final WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+    private final WebSocketPolicy containerPolicy;
     private final SslContextFactory sslContextFactory;
     private final WebSocketExtensionFactory extensionRegistry;
     private boolean daemon = false;
@@ -113,7 +114,27 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     
     public WebSocketClient(WebSocketContainerScope scope, SslContextFactory sslContextFactory)
     {
-        this(sslContextFactory, scope.getExecutor(), scope.getBufferPool(), scope.getObjectFactory());
+        this.containerPolicy = scope.getPolicy();
+        this.sslContextFactory = sslContextFactory;
+        this.objectFactory = scope.getObjectFactory();
+        this.extensionRegistry = new WebSocketExtensionFactory(this);
+        this.masker = new RandomMasker();
+    
+        setExecutor(scope.getExecutor());
+        setBufferPool(scope.getBufferPool());
+        
+        if (scope instanceof LifeCycle)
+        {
+            addBean(scope);
+        }
+        else
+        {
+            if (sslContextFactory != null)
+                addBean(sslContextFactory);
+            addBean(this.executor);
+            addBean(this.sslContextFactory);
+            addBean(this.bufferPool);
+        }
     }
 
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
@@ -123,18 +144,17 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
-        
+        this.containerPolicy = WebSocketPolicy.newClientPolicy();
         this.sslContextFactory = sslContextFactory;
-        if(sslContextFactory!=null)
-            addBean(sslContextFactory);
+        this.objectFactory = objectFactory;
+        this.extensionRegistry = new WebSocketExtensionFactory(this);
+        this.masker = new RandomMasker();
+    
         setExecutor(executor);
         setBufferPool(bufferPool);
         
-        this.objectFactory = objectFactory;
-        this.extensionRegistry = new WebSocketExtensionFactory(this);
-        
-        this.masker = new RandomMasker();
-        
+        if(sslContextFactory!=null)
+            addBean(sslContextFactory);
         addBean(this.executor);
         addBean(this.sslContextFactory);
         addBean(this.bufferPool);
@@ -291,7 +311,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public long getAsyncWriteTimeout()
     {
-        return this.policy.getAsyncWriteTimeout();
+        return this.containerPolicy.getAsyncWriteTimeout();
     }
 
     public SocketAddress getBindAddress()
@@ -341,7 +361,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public int getMaxBinaryMessageBufferSize()
     {
-        return this.policy.getMaxBinaryMessageBufferSize();
+        return this.containerPolicy.getMaxBinaryMessageBufferSize();
     }
 
     /**
@@ -351,7 +371,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public long getMaxBinaryMessageSize()
     {
-        return this.policy.getMaxBinaryMessageSize();
+        return this.containerPolicy.getMaxBinaryMessageSize();
     }
 
     /**
@@ -361,7 +381,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public long getMaxIdleTimeout()
     {
-        return this.policy.getIdleTimeout();
+        return this.containerPolicy.getIdleTimeout();
     }
 
     /**
@@ -371,7 +391,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public int getMaxTextMessageBufferSize()
     {
-        return this.policy.getMaxTextMessageBufferSize();
+        return this.containerPolicy.getMaxTextMessageBufferSize();
     }
 
     /**
@@ -381,7 +401,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public long getMaxTextMessageSize()
     {
-        return this.policy.getMaxTextMessageSize();
+        return this.containerPolicy.getMaxTextMessageSize();
     }
 
     @Override
@@ -397,7 +417,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     public WebSocketPolicy getPolicy()
     {
-        return this.policy;
+        return this.containerPolicy;
     }
 
     public Scheduler getScheduler()
@@ -475,7 +495,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     
     public void setAsyncWriteTimeout(long ms)
     {
-        this.policy.setAsyncWriteTimeout(ms);
+        this.containerPolicy.setAsyncWriteTimeout(ms);
     }
 
     /**
@@ -543,7 +563,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     public void setMaxBinaryMessageBufferSize(int max)
     {
-        this.policy.setMaxBinaryMessageBufferSize(max);
+        this.containerPolicy.setMaxBinaryMessageBufferSize(max);
     }
     
     /**
@@ -556,12 +576,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public void setMaxIdleTimeout(long ms)
     {
-        this.policy.setIdleTimeout(ms);
+        this.containerPolicy.setIdleTimeout(ms);
     }
 
     public void setMaxTextMessageBufferSize(int max)
     {
-        this.policy.setMaxTextMessageBufferSize(max);
+        this.containerPolicy.setMaxTextMessageBufferSize(max);
     }
 
     public void setSessionFactory(SessionFactory sessionFactory)

@@ -143,12 +143,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
-    public WebSocketPolicy getPolicy()
-    {
-        return policy;
-    }
-
-    @Override
     public InetSocketAddress getRemoteAddress()
     {
         return null;

@@ -90,7 +90,6 @@ public class MessageOutputStreamTest
         TrackingSocket localSocket = new TrackingSocket("local");
         session = new LocalWebSocketSession(containerScope,testname,localSocket);
 
-        session.setPolicy(policy);
         // talk to our remote socket
         session.setOutgoingHandler(socketPipe);
         // start session

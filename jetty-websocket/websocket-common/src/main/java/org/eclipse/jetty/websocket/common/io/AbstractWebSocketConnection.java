@@ -44,8 +44,8 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy.PolicyUpdate;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -59,15 +59,15 @@ import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 /**
  * Provides the implementation of {@link LogicalConnection} within the framework of the new {@link org.eclipse.jetty.io.Connection} framework of {@code jetty-io}.
  */
-public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, ConnectionStateListener, PolicyUpdate, Dumpable 
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, ConnectionStateListener, Dumpable
 {
     private final AtomicBoolean closed = new AtomicBoolean();
 
     private class Flusher extends FrameFlusher
     {
-        private Flusher(ByteBufferPool bufferPool, Generator generator, EndPoint endpoint)
+        private Flusher(ByteBufferPool bufferPool, int bufferSize, Generator generator, EndPoint endpoint)
         {
-            super(bufferPool,generator,endpoint,getPolicy().getMaxBinaryMessageBufferSize(),8);
+            super(bufferPool,generator,endpoint,bufferSize,8);
         }
 
         @Override
@@ -194,7 +194,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
-    private static enum ReadMode
+    private enum ReadMode
     {
         PARSE,
         DISCARD,
@@ -214,7 +214,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final Scheduler scheduler;
     private final Generator generator;
     private final Parser parser;
-    private final WebSocketPolicy policy;
+    private final WebSocketBehavior behavior;
     private final AtomicBoolean suspendToken;
     private final FrameFlusher flusher;
     private final String id;
@@ -233,7 +233,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 endp.getLocalAddress().getPort(),
                 endp.getRemoteAddress().getAddress().getHostAddress(),
                 endp.getRemoteAddress().getPort());
-        this.policy = policy;
+        this.behavior = policy.getBehavior();
         this.bufferPool = bufferPool;
         this.generator = new Generator(policy,bufferPool);
         this.parser = new Parser(policy,bufferPool);
@@ -242,15 +242,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.suspendToken = new AtomicBoolean(false);
         this.ioState = new IOState();
         this.ioState.addListener(this);
-        this.flusher = new Flusher(bufferPool,generator,endp);
-        this.setInputBufferSize(policy.getInputBufferSize());
-        this.setMaxIdleTimeout(policy.getIdleTimeout());
-        this.policy.addListener(this);
-    }
-    
-    @Override
-    public void onPolicyUpdate(WebSocketPolicy policy)
-    {
+        this.flusher = new Flusher(bufferPool,policy.getMaxBinaryMessageBufferSize(),generator,endp);
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
     }
@@ -302,14 +294,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void disconnect()
     {
         if (LOG_CLOSE.isDebugEnabled())
-            LOG_CLOSE.debug("{} disconnect()",policy.getBehavior());
+            LOG_CLOSE.debug("{} disconnect()",behavior);
         disconnect(false);
     }
 
     private void disconnect(boolean onlyOutput)
     {
         if (LOG_CLOSE.isDebugEnabled())
-            LOG_CLOSE.debug("{} disconnect({})",policy.getBehavior(),onlyOutput?"outputOnly":"both");
+            LOG_CLOSE.debug("{} disconnect({})",behavior,onlyOutput?"outputOnly":"both");
         // close FrameFlusher, we cannot write anymore at this point.
         flusher.close();
         EndPoint endPoint = getEndPoint();
@@ -399,12 +391,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public WebSocketPolicy getPolicy()
-    {
-        return this.policy;
-    }
-
-    @Override
     public InetSocketAddress getRemoteAddress()
     {
         return getEndPoint().getRemoteAddress();
@@ -441,9 +427,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onClose()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onClose()",policy.getBehavior());
+            LOG.debug("{} onClose()",behavior);
         super.onClose();
-        policy.removeListener(this);
         ioState.onDisconnected();
         flusher.close();
     }
@@ -452,7 +437,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onConnectionStateChange(ConnectionState state)
     {
         if (LOG_CLOSE.isDebugEnabled())
-            LOG_CLOSE.debug("{} Connection State Change: {}",policy.getBehavior(),state);
+            LOG_CLOSE.debug("{} Connection State Change: {}",behavior,state);
 
         switch (state)
         {
@@ -507,7 +492,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillable()",policy.getBehavior());
+            LOG.debug("{} onFillable()",behavior);
         stats.countOnFillableEvents.incrementAndGet();
 
         ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),true);
@@ -572,7 +557,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onOpen()
     {
         if(LOG_OPEN.isDebugEnabled())
-            LOG_OPEN.debug("[{}] {}.onOpened()",policy.getBehavior(),this.getClass().getSimpleName());
+            LOG_OPEN.debug("[{}] {}.onOpened()",behavior,this.getClass().getSimpleName());
         super.onOpen();
         this.ioState.onOpened();
     }
@@ -586,7 +571,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         IOState state = getIOState();
         ConnectionState cstate = state.getConnectionState();
         if (LOG_CLOSE.isDebugEnabled())
-            LOG_CLOSE.debug("{} Read Timeout - {}",policy.getBehavior(),cstate);
+            LOG_CLOSE.debug("{} Read Timeout - {}",behavior,cstate);
 
         if (cstate == ConnectionState.CLOSED)
         {

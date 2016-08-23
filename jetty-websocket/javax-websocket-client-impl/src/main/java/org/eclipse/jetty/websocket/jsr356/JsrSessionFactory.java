@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.net.URI;
 
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
@@ -34,9 +35,9 @@ public class JsrSessionFactory implements SessionFactory
     }
 
     @Override
-    public WebSocketSession createSession(URI requestURI, Object websocket, LogicalConnection connection)
+    public WebSocketSession createSession(URI requestURI, Object websocket, WebSocketPolicy policy, LogicalConnection connection)
     {
-        return new JsrSession(container,connection.getId(),requestURI,websocket,connection);
+        return new JsrSession(container,connection.getId(),requestURI,websocket,policy,connection);
     }
 
     @Override

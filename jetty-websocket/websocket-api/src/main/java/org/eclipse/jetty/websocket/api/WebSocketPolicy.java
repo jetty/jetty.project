@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.api;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Settings for WebSocket operations.
  */
@@ -107,13 +104,6 @@ public class WebSocketPolicy
      */
     private final WebSocketBehavior behavior;
     
-    public static interface PolicyUpdate
-    {
-        public void onPolicyUpdate(WebSocketPolicy policy);
-    }
-    
-    private List<PolicyUpdate> listeners = new ArrayList<>();
-
     public WebSocketPolicy(WebSocketBehavior behavior)
     {
         this.behavior = behavior;
@@ -173,24 +163,6 @@ public class WebSocketPolicy
         return clone;
     }
     
-    public void addListener(PolicyUpdate update)
-    {
-        this.listeners.add(update);
-    }
-    
-    public void removeListener(PolicyUpdate update)
-    {
-        this.listeners.remove(update);
-    }
-    
-    private void notifyOfUpdate()
-    {
-        for(PolicyUpdate update: listeners)
-        {
-            update.onPolicyUpdate(this);
-        }
-    }
-
     /**
      * The timeout in ms (milliseconds) for async write operations.
      * <p>
@@ -284,11 +256,8 @@ public class WebSocketPolicy
      */
     public void setAsyncWriteTimeout(long ms)
     {
-        boolean dirty = (this.asyncWriteTimeout != ms);
         assertLessThan("AsyncWriteTimeout",ms,"IdleTimeout",idleTimeout);
         this.asyncWriteTimeout = ms;
-        if (dirty)
-            notifyOfUpdate();
     }
 
     /**
@@ -301,11 +270,8 @@ public class WebSocketPolicy
     {
         if(ms < -1) return; // no change (likely came from annotation)
 
-        boolean dirty = (this.idleTimeout != ms);
         assertGreaterThan("IdleTimeout",ms,0);
         this.idleTimeout = ms;
-        if (dirty)
-            notifyOfUpdate();
     }
 
     /**
@@ -318,14 +284,11 @@ public class WebSocketPolicy
     {
         if(size < 0) return; // no change (likely came from annotation)
 
-        boolean dirty = (this.inputBufferSize != size);
         assertGreaterThan("InputBufferSize",size,1);
         assertLessThan("InputBufferSize",size,"MaxTextMessageBufferSize",maxTextMessageBufferSize);
         assertLessThan("InputBufferSize",size,"MaxBinaryMessageBufferSize",maxBinaryMessageBufferSize);
 
         this.inputBufferSize = size;
-        if(dirty)
-            notifyOfUpdate();
     }
 
     /**
@@ -338,14 +301,20 @@ public class WebSocketPolicy
      */
     public void setMaxBinaryMessageBufferSize(int size)
     {
-        boolean dirty = (this.maxBinaryMessageBufferSize != size);
         assertGreaterThan("MaxBinaryMessageBufferSize",size,1);
 
         this.maxBinaryMessageBufferSize = size;
-        if(dirty)
-            notifyOfUpdate();
     }
-
+    
+    public void setMaxBinaryMessageSize(long size)
+    {
+        if (size > Integer.MAX_VALUE)
+        {
+            throw new IllegalArgumentException("This implementation does not support binary message sizes over " + Integer.MAX_VALUE);
+        }
+        this.setMaxBinaryMessageSize((int) size);
+    }
+    
     /**
      * The maximum size of a binary message during parsing/generating.
      * <p>
@@ -358,12 +327,9 @@ public class WebSocketPolicy
     {
         if(size < 0) return; // no change (likely came from annotation)
 
-        boolean dirty = (this.maxBinaryMessageSize != size);
         assertGreaterThan("MaxBinaryMessageSize",size,1);
 
         this.maxBinaryMessageSize = size;
-        if(dirty)
-            notifyOfUpdate();
     }
 
     /**
@@ -376,12 +342,18 @@ public class WebSocketPolicy
      */
     public void setMaxTextMessageBufferSize(int size)
     {
-        boolean dirty = (this.maxTextMessageBufferSize != size);
         assertGreaterThan("MaxTextMessageBufferSize",size,1);
 
         this.maxTextMessageBufferSize = size;
-        if(dirty)
-            notifyOfUpdate();
+    }
+    
+    public void setMaxTextMessageSize(long size)
+    {
+        if (size > Integer.MAX_VALUE)
+        {
+            throw new IllegalArgumentException("This implementation does not support text message sizes over " + Integer.MAX_VALUE);
+        }
+        this.setMaxTextMessageSize((int) size);
     }
 
     /**
@@ -396,12 +368,9 @@ public class WebSocketPolicy
     {
         if(size < 0) return; // no change (likely came from annotation)
 
-        boolean dirty = (this.maxTextMessageSize != size);
         assertGreaterThan("MaxTextMessageSize",size,1);
 
         this.maxTextMessageSize = size;
-        if(dirty)
-            notifyOfUpdate();
     }
 
     @Override

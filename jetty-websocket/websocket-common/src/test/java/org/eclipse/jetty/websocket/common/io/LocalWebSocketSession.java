@@ -34,6 +34,7 @@ public class LocalWebSocketSession extends WebSocketSession
     public LocalWebSocketSession(WebSocketContainerScope containerScope, TestName testname, Object websocket)
     {
         super(containerScope,URI.create("ws://localhost/LocalWebSocketSesssion/" + testname.getMethodName()),websocket,
+                containerScope.getPolicy(),
                 new LocalWebSocketConnection(testname,containerScope.getBufferPool()));
         this.id = testname.getMethodName();
         outgoingCapture = new OutgoingFramesCapture();
