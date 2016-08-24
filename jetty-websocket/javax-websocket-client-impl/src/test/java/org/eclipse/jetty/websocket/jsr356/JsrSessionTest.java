@@ -63,7 +63,7 @@ public class JsrSessionTest
         ConfiguredEndpoint ei = new ConfiguredEndpoint(new DummyEndpoint(), config);
         
         // Session
-        session = new JsrSession(container, id, requestURI, ei, connection);
+        session = new JsrSession(container, id, requestURI, ei, policy, connection);
         session.start();
     }
     

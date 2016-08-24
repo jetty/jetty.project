@@ -72,7 +72,7 @@ public class JsrEndpointFunctions_OnErrorTest
         DummyConnection connection = new DummyConnection(policy);
         ClientEndpointConfig config = new EmptyClientEndpointConfig();
         ConfiguredEndpoint ei = new ConfiguredEndpoint(websocket, config);
-        return new JsrSession(container, id, requestURI, ei, connection);
+        return new JsrSession(container, id, requestURI, ei, policy, connection);
     }
 
     private void assertOnErrorInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
