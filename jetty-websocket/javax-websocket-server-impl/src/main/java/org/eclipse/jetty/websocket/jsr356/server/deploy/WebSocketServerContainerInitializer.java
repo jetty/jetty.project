@@ -35,7 +35,6 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -91,6 +90,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      * @return the created websocket server container
      * @throws ServletException if unable to create the websocket server container
      */
+    @SuppressWarnings("Duplicates")
     public static ServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
         // Create Filter
@@ -116,6 +116,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      * @return the created websocket server container
      * @throws ServletException if unable to create the websocket server container
      */
+    @SuppressWarnings("Duplicates")
     public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
     {
         // Create Filter
@@ -209,14 +210,14 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
             
             context.addListener(new ContextDestroyListener()); //make sure context is cleaned up when the context stops
             
-            // Establish the DecoratedObjectFactory thread local 
-            // for various ServiceLoader initiated components to use.
-            DecoratedObjectFactory instantiator = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
-            if (instantiator == null)
-            {
-                LOG.info("Using WebSocket local DecoratedObjectFactory - none found in ServletContext");
-                instantiator = new DecoratedObjectFactory();
-            }
+//            // Establish the DecoratedObjectFactory thread local
+//            // for various ServiceLoader initiated components to use.
+//            DecoratedObjectFactory instantiation = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
+//            if (instantiation == null)
+//            {
+//                LOG.info("Using WebSocket local DecoratedObjectFactory - none found in ServletContext");
+//                instantiation = new DecoratedObjectFactory();
+//            }
             
             if (LOG.isDebugEnabled())
             {

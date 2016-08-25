@@ -295,7 +295,7 @@ public class EchoTest
         System.err.println(testcase);
     }
 
-    @Test(timeout=2000)
+    @Test(timeout=10000)
     public void testEcho() throws Exception
     {
         int messageCount = testcase.getMessageCount();
@@ -306,7 +306,7 @@ public class EchoTest
         {
             // Connect
             client.connectToServer(socket,toUri);
-            socket.waitForConnected(2,TimeUnit.SECONDS);
+            socket.waitForConnected(10,TimeUnit.SECONDS);
 
             // Send Messages
             for (Object msg : testcase.messages)

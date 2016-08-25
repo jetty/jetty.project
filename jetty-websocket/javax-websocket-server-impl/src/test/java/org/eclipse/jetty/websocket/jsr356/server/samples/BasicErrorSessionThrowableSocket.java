@@ -24,7 +24,7 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value="/basic")
+@ServerEndpoint(value="/echo/error/session/throwable")
 public class BasicErrorSessionThrowableSocket extends TrackingSocket
 {
     @OnError

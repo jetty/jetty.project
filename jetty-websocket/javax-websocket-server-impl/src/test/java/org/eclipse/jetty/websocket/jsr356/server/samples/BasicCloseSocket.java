@@ -23,7 +23,7 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value = "/basic")
+@ServerEndpoint(value = "/echo/close")
 public class BasicCloseSocket extends TrackingSocket
 {
     @OnClose

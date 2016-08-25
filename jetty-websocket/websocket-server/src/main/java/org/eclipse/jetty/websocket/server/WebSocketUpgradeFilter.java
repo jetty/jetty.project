@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
@@ -142,6 +143,24 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     @Override
     public void addMapping(PathSpec spec, WebSocketCreator creator)
     {
+        WebSocketCreator existingCreator = pathmap.get(spec);
+        if (existingCreator != null)
+        {
+            if(existingCreator.equals(creator))
+            {
+                // Entry already exists, don't add it again.
+                return;
+            }
+    
+            StringBuilder err = new StringBuilder();
+            err.append("Duplicate path mapping for \"");
+            err.append(spec.getDeclaration());
+            err.append("\" both ");
+            err.append(existingCreator);
+            err.append(" and ");
+            err.append(creator);
+            throw new InvalidWebSocketException(err.toString());
+        }
         pathmap.put(spec,creator);
     }
     
