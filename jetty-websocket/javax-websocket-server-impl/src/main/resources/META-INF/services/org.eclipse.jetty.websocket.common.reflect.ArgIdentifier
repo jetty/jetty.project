@@ -1,1 +1,1 @@
-org.eclipse.jetty.websocket.common.reflect.NameArgIdentifier
+org.eclipse.jetty.websocket.jsr356.server.PathParamArgIdentifier

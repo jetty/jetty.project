@@ -208,6 +208,27 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
     }
     
     @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        
+        AnnotatedServerEndpointConfig that = (AnnotatedServerEndpointConfig) o;
+        
+        if (endpointClass != null ? !endpointClass.equals(that.endpointClass) : that.endpointClass != null)
+            return false;
+        return path != null ? path.equals(that.path) : that.path == null;
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        int result = endpointClass != null ? endpointClass.hashCode() : 0;
+        result = 31 * result + (path != null ? path.hashCode() : 0);
+        return result;
+    }
+    
+    @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder();

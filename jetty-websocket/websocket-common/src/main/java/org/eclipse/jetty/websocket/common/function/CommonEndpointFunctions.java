@@ -664,8 +664,10 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     {
         assertIsStarted();
         
+        // Always set session in endpoint functions
         this.session = session;
         
+        // Call (optional) on open method
         if (onOpenFunction != null)
             onOpenFunction.apply(this.session);
     }

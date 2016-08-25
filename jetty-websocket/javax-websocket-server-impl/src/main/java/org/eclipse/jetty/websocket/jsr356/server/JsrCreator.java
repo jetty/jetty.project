@@ -172,10 +172,28 @@ public class JsrCreator implements WebSocketCreator
             return null;
         }
     }
-
+    
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        
+        JsrCreator that = (JsrCreator) o;
+        
+        return baseConfig != null ? baseConfig.equals(that.baseConfig) : that.baseConfig == null;
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        int result = (baseConfig != null ? baseConfig.hashCode() : 0);
+        return result;
+    }
+    
     @Override
     public String toString()
     {
-        return String.format("%s[config=%s]",this.getClass().getName(),baseConfig);
+        return String.format("JsrCreator[%s%s]", (baseConfig instanceof AnnotatedServerEndpointConfig ? "@" : ""), baseConfig.getEndpointClass().getName());
     }
 }
