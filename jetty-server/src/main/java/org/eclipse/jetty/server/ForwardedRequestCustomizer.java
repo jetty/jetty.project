@@ -38,12 +38,12 @@ import org.eclipse.jetty.util.StringUtil;
  * This customizer looks at at HTTP request for headers that indicate
  * it has been forwarded by one or more proxies.  Specifically handled are
  * <ul>
- * <li>Forwarded, as defined by <a href="https://tools.ietf.org/html/rfc7239">rfc7239</a>
- * <li>X-Forwarded-Host</li>
- * <li>X-Forwarded-Server</li>
- * <li>X-Forwarded-For</li>
- * <li>X-Forwarded-Proto</li>
- * <li>X-Proxied-Https</li>
+ * <li>{@code Forwarded}, as defined by <a href="https://tools.ietf.org/html/rfc7239">rfc7239</a>
+ * <li>{@code X-Forwarded-Host}</li>
+ * <li>{@code X-Forwarded-Server}</li>
+ * <li>{@code X-Forwarded-For}</li>
+ * <li>{@code X-Forwarded-Proto}</li>
+ * <li>{@code X-Proxied-Https}</li>
  * </ul>
  * <p>If these headers are present, then the {@link Request} object is updated
  * so that the proxy is not seen as the other end point of the connection on which
@@ -68,7 +68,7 @@ public class ForwardedRequestCustomizer implements Customizer
     
     /**
      * @return true if the proxy address obtained via
-     * X-Forwarded-Server or RFC7239 "by" is used as
+     * {@code X-Forwarded-Server} or RFC7239 "by" is used as
      * the request authority. Default false
      */
     public boolean getProxyAsAuthority()
@@ -78,7 +78,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param proxyAsAuthority if true, use the proxy address obtained via
-     * X-Forwarded-Server or RFC7239 "by" as the request authority.
+     * {@code X-Forwarded-Server} or RFC7239 "by" as the request authority.
      */
     public void setProxyAsAuthority(boolean proxyAsAuthority)
     {
@@ -87,7 +87,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * Configure to only support the RFC7239 Forwarded header and to
-     * not support any X-Forwarded- headers.   This convenience method
+     * not support any {@code X-Forwarded-} headers.   This convenience method
      * clears all the non RFC headers if passed true and sets them to
      * the default values (if not already set) if passed false.
      */
@@ -159,7 +159,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param forwardedHostHeader
-     *            The header name for forwarded hosts (default x-forwarded-host)
+     *            The header name for forwarded hosts (default {@code X-Forwarded-Host})
      */
     public void setForwardedHostHeader(String forwardedHostHeader)
     {
@@ -176,7 +176,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param forwardedServerHeader
-     *            The header name for forwarded server (default x-forwarded-server)
+     *            The header name for forwarded server (default {@code X-Forwarded-Server})
      */
     public void setForwardedServerHeader(String forwardedServerHeader)
     {
@@ -193,7 +193,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param forwardedRemoteAddressHeader
-     *            The header name for forwarded for (default x-forwarded-for)
+     *            The header name for forwarded for (default {@code X-Forwarded-For})
      */
     public void setForwardedForHeader(String forwardedRemoteAddressHeader)
     {
@@ -203,7 +203,7 @@ public class ForwardedRequestCustomizer implements Customizer
     /**
      * Get the forwardedProtoHeader.
      *
-     * @return the forwardedProtoHeader (default X-Forwarded-For)
+     * @return the forwardedProtoHeader (default {@code X-Forwarded-Proto})
      */
     public String getForwardedProtoHeader()
     {
@@ -214,7 +214,7 @@ public class ForwardedRequestCustomizer implements Customizer
      * Set the forwardedProtoHeader.
      *
      * @param forwardedProtoHeader
-     *            the forwardedProtoHeader to set (default X-Forwarded-For)
+     *            the forwardedProtoHeader to set (default {@code X-Forwarded-Proto})
      */
     public void setForwardedProtoHeader(String forwardedProtoHeader)
     {
@@ -222,7 +222,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @return The header name holding a forwarded cipher suite (default Proxy-auth-cert)
+     * @return The header name holding a forwarded cipher suite (default {@code Proxy-auth-cert})
      */
     public String getForwardedCipherSuiteHeader()
     {
@@ -231,7 +231,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param forwardedCipherSuite
-     *            The header name holding a forwarded cipher suite (default Proxy-auth-cert)
+     *            The header name holding a forwarded cipher suite (default {@code Proxy-auth-cert})
      */
     public void setForwardedCipherSuiteHeader(String forwardedCipherSuite)
     {
@@ -239,7 +239,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @return The header name holding a forwarded SSL Session ID (default Proxy-ssl-id)
+     * @return The header name holding a forwarded SSL Session ID (default {@code Proxy-ssl-id})
      */
     public String getForwardedSslSessionIdHeader()
     {
@@ -248,7 +248,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param forwardedSslSessionId
-     *            The header name holding a forwarded SSL Session ID (default Proxy-ssl-id)
+     *            The header name holding a forwarded SSL Session ID (default {@code Proxy-ssl-id})
      */
     public void setForwardedSslSessionIdHeader(String forwardedSslSessionId)
     {
@@ -256,7 +256,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @return The header name holding a forwarded Https (on|off true|false) value
+     * @return The header name holding a forwarded Https status indicator (on|off true|false) (default {@code X-Proxied-Https})
      */
     public String getForwardedHttpsHeader()
     {
@@ -264,7 +264,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @param forwardedHttpsHeader
+     * @param forwardedHttpsHeader the header name holding a forwarded Https status indicator(default {@code X-Proxied-Https})
      */
     public void setForwardedHttpsHeader(String forwardedHttpsHeader)
     {
@@ -294,7 +294,7 @@ public class ForwardedRequestCustomizer implements Customizer
     {
         HttpFields httpFields = request.getHttpFields();
 
-        RFC7239 rfc7230 = null;
+        RFC7239 rfc7239 = null;
         String forwardedHost = null;
         String forwardedServer = null;
         String forwardedFor = null;
@@ -343,9 +343,9 @@ public class ForwardedRequestCustomizer implements Customizer
             
             if (_forwardedHeader!=null && _forwardedHeader.equalsIgnoreCase(name))
             {
-                if (rfc7230==null)
-                    rfc7230= new RFC7239();
-                rfc7230.addValue(field.getValue());
+                if (rfc7239==null)
+                    rfc7239= new RFC7239();
+                rfc7239.addValue(field.getValue());
             }
         }
         
@@ -356,9 +356,9 @@ public class ForwardedRequestCustomizer implements Customizer
             httpFields.put(_forcedHost);
             request.setAuthority(_forcedHost.getHost(),_forcedHost.getPort());
         }
-        else if (rfc7230!=null && rfc7230._host!=null)
+        else if (rfc7239!=null && rfc7239._host!=null)
         {
-            HostPortHttpField auth = rfc7230._host;
+            HostPortHttpField auth = rfc7239._host;
             httpFields.put(auth);
             request.setAuthority(auth.getHost(),auth.getPort());
         }
@@ -370,9 +370,9 @@ public class ForwardedRequestCustomizer implements Customizer
         }
         else if (_proxyAsAuthority)
         {
-            if (rfc7230!=null && rfc7230._by!=null)
+            if (rfc7239!=null && rfc7239._by!=null)
             {
-                HostPortHttpField auth = rfc7230._by;
+                HostPortHttpField auth = rfc7239._by;
                 httpFields.put(auth);
                 request.setAuthority(auth.getHost(),auth.getPort());
             }
@@ -383,9 +383,9 @@ public class ForwardedRequestCustomizer implements Customizer
         }
 
         // handle remote end identifier
-        if (rfc7230!=null && rfc7230._for!=null)
+        if (rfc7239!=null && rfc7239._for!=null)
         {
-            request.setRemoteAddr(InetSocketAddress.createUnresolved(rfc7230._for.getHost(),rfc7230._for.getPort()));
+            request.setRemoteAddr(InetSocketAddress.createUnresolved(rfc7239._for.getHost(),rfc7239._for.getPort()));
         }
         else if (forwardedFor != null)
         {
@@ -393,10 +393,10 @@ public class ForwardedRequestCustomizer implements Customizer
         }
 
         // handle protocol identifier
-        if (rfc7230!=null && rfc7230._proto!=null)
+        if (rfc7239!=null && rfc7239._proto!=null)
         {
-            request.setScheme(rfc7230._proto);
-            if (rfc7230._proto.equals(config.getSecureScheme()))
+            request.setScheme(rfc7239._proto);
+            if (rfc7239._proto.equals(config.getSecureScheme()))
                 request.setSecure(true);
         }
         else if (forwardedProto != null)
@@ -455,9 +455,6 @@ public class ForwardedRequestCustomizer implements Customizer
         _forcedHost = new HostPortHttpField(hostHeader);
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     private final class RFC7239 extends QuotedCSV
     {
         HostPortHttpField _by;
