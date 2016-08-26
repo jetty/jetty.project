@@ -24,29 +24,28 @@ This document provides an overview of how to configure SSL and TLS for Jetty.
 
 Which browser/OS supports which protocols can be https://en.wikipedia.org/wiki/Transport_Layer_Security#Web_browsers[found on Wikipedia].
 
-* TLS v1.1 and v1.2: The protocols which should be used wherever possible.
+* TLS v1.2: The protocol which should be used wherever possible.
 All CBC based ciphers are supported since Java 7, the new GCM modes are supported since Java 8.
 
 ===== Older Protocols
 
-Both TLS v1.0 and SSL v3 are no longer supported by default. If your Jetty implementation requires these protocols for legacy support, they can be enabled manually.
+TLS v1.0, v1.1 and SSL v3 are no longer supported by default. If your Jetty implementation requires these protocols for legacy support, they can be enabled manually.
 
 ____
 [NOTE]
-Once TLS v1.3 is released, there will be no workaround available for TLS v1.0.
+Once TLS v1.3 is released, there will be no workaround available for TLS v1.0 or v1.1.
 Plans for TLS v1.3 include banning ciphers with known vulnerabilities from being present at any level.
 It is recommended to upgrade any clients using these ciphers as soon as possible or face being locked into a outdated version of Jetty, Java or even OS.
 ____
 
-By default, Jetty exclused these ciphers in the link:{GITBROWSEURL}/jetty-util/src/main/java/org/eclipse/jetty/util/ssl/SslContextFactory.java#L253-L256[`SslContextFactory`.]
+By default, Jetty excludes these ciphers in the link:{GITBROWSEURL}/jetty-util/src/main/java/org/eclipse/jetty/util/ssl/SslContextFactory.java#L249-L256[`SslContextFactory`.]
 You can re-enable these by re-declaring the ciphers you want excluded in code:
 
 [source, java, subs="{sub-order}"]
 ----
 SslContextFactory sslContextFactory = new SslContextFactory();
 sslContextFactory.setExcludeCipherSuites(
-            "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-            "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
+            "^.*_(MD5|SHA|SHA1)$");
 ----
 
 If, after making these changes, you still have issues using these ciphers they are likely being blocked at the JVM level.
