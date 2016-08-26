@@ -54,33 +54,12 @@ public class SharedBlockingCallback
     final Condition _idle = _lock.newCondition();
     final Condition _complete = _lock.newCondition();
 
-    
-    private static Throwable IDLE = new Throwable()
-    {
-        @Override
-        public String toString()
-        {
-            return "IDLE";
-        }
-    };
 
-    private static Throwable SUCCEEDED = new Throwable()
-    {
-        @Override
-        public String toString()
-        {
-            return "SUCCEEDED";
-        }
-    };
-    
-    private static Throwable FAILED = new Throwable()
-    {
-        @Override
-        public String toString()
-        {
-            return "FAILED";
-        }
-    };
+    private static Throwable IDLE = new ConstantThrowable("IDLE");
+
+    private static Throwable SUCCEEDED = new ConstantThrowable("SUCCEEDED");
+
+    private static Throwable FAILED = new ConstantThrowable("FAILED");
 
     Blocker _blocker;
     

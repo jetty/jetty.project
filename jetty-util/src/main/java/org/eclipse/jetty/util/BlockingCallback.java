@@ -36,11 +36,7 @@ public class BlockingCallback implements Callback
 {
     private static final Logger LOG = Log.getLogger(BlockingCallback.class);
     
-    private static Throwable SUCCEEDED=new Throwable()
-    {
-        @Override
-        public String toString() { return "SUCCEEDED"; }
-    };
+    private static Throwable SUCCEEDED = new ConstantThrowable("SUCCEEDED");
     
     private final CountDownLatch _latch = new CountDownLatch(1);
     private final AtomicReference<Throwable> _state = new AtomicReference<>();
