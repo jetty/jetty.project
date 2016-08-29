@@ -32,9 +32,9 @@ To start Jetty on the default port of 8080, run the following command:
 2015-06-04 10:50:45.030:INFO:oejs.Server:main: Started @558ms
 ----
 
-You can point a browser at this server at link:http://localhost:8080[]. 
-However, as there are no webapps deployed in the $JETTY_HOME directory, you will see a 404 error page served by Jetty. 
-*Note* the HomeBase warning - it is _not_ recommended to run Jetty from the $JETTY_HOME directory. 
+You can point a browser at this server at link:http://localhost:8080[].
+However, as there are no webapps deployed in the $JETTY_HOME directory, you will see a 404 error page served by Jetty.
+*Note* the HomeBase warning - it is _not_ recommended to run Jetty from the $JETTY_HOME directory.
 Instead, see how to link:#creating-jetty-base[create a Jetty Base] below.
 
 [[demo-webapps-base]]
@@ -89,15 +89,15 @@ You can see the configuration of the demo-base by using the following commands:
 ...
 ----
 
- The `--list-modules` command will return a complete list of available and enabled modules for the server. 
- It will also display the location of the modules, how and in what order they are implemented, dependent modules, and associated jar files. 
+ The `--list-modules` command will return a complete list of available and enabled modules for the server.
+ It will also display the location of the modules, how and in what order they are implemented, dependent modules, and associated jar files.
  The `--list-config` command displays a trove of  information about the server including the Java and Jetty environments, the configuration order, any JVM arguments or System Properties set, general server properties, a full listing of the Jetty server class path, and active Jetty XML files.
 
 [[creating-jetty-base]]
 ==== Creating a new Jetty Base
 
-The `demo-base` directory described above is an example of the link:#startup-base-and-home[jetty.base] mechanism added in Jetty 9.1. 
-A Jetty base directory allows the configuration and web applications of a server instance to be stored separately from the Jetty distribution, so that upgrades can be done with minimal disruption. 
+The `demo-base` directory described above is an example of the link:#startup-base-and-home[jetty.base] mechanism added in Jetty 9.1.
+A Jetty base directory allows the configuration and web applications of a server instance to be stored separately from the Jetty distribution, so that upgrades can be done with minimal disruption.
 Jetty's default configuration is based on two properties:
 
 jetty.home::
@@ -127,7 +127,9 @@ WARNING: Nothing to start, exiting ...
 Usage: java -jar start.jar [options] [properties] [configs]
        java -jar start.jar --help  # for more information
 
-> java -jar $JETTY_HOME/start.jar --add-to-startd=http,deploy
+> java -jar $JETTY_HOME/start.jar --create-startd
+INFO : Base directory was modified
+> java -jar $JETTY_HOME/start.jar --add-to-start=http,deploy
 
 INFO: server          initialised (transitively) in ${jetty.base}/start.d/server.ini
 INFO: http            initialised in ${jetty.base}/start.d/http.ini
@@ -163,7 +165,7 @@ You can configure Jetty to run on a different port by setting the `jetty.http.po
 ...
 ----
 
-Alternatively, property values can be added to the effective command line built from either the `start.ini` file or `start.d/http.ini` files. 
+Alternatively, property values can be added to the effective command line built from either the `start.ini` file or `start.d/http.ini` files.
 By default, the Jetty distribution defines the `jetty.http.port` property in the `start.d/http.ini` file, which may be edited to set another value.
 
 ____
@@ -186,7 +188,7 @@ To add HTTPS and HTTP2 connectors to a Jetty configuration, the modules can be a
 
 [source, screen, subs="{sub-order}"]
 ----
-> java -jar $JETTY_HOME/start.jar --add-to-startd=https,http2
+> java -jar $JETTY_HOME/start.jar --add-to-start=https,http2
 [...]
 
 > java -jar $JETTY_HOME/start.jar
@@ -196,18 +198,13 @@ To add HTTPS and HTTP2 connectors to a Jetty configuration, the modules can be a
 [...]
 ----
 
-The `--add-to-startd` command sets up the effective command line in the ini files to run an ssl connection that supports the HTTPS and HTTP2 protocols as follows:
+The `--add-to-start` command sets up the effective command line in the ini files to run an ssl connection that supports the HTTPS and HTTP2 protocols as follows:
 
 * creates `start.d/ssl.ini` that configures an SSL connector (eg port, keystore etc.) by adding `etc/jetty-ssl.xml` and `etc/jetty-ssl-context.xml` to the effective command line.
 * creates `start.d/alpn.ini` that configures protocol negotiation on the SSL connector by adding `etc/jetty-alpn.xml` to the effective command line.
 * creates `start.d/https.ini` that configures the HTTPS protocol on the SSL connector by adding `etc/jetty-https.xml` to the effective command line.
 * creates `start.d/http2.ini` that configures the HTTP/2 protocol on the SSL connector by adding `etc/jetty-http2.xml` to the effective command line.
 * checks for the existence of a `etc/keystore` file and if not present, downloads a demonstration keystore file.
-
-____
-[NOTE]
-If a single `start.ini` file is preferred over individual `start.d/*.ini` files, then the option --add-to-start=module may be used to append the module activation to the start.ini file rather than create a file in start.d
-____
 
 [[quickstart-changing-https-port]]
 ===== Changing the Jetty HTTPS Port
@@ -220,13 +217,12 @@ You can configure the SSL connector to run on a different port by setting the `j
 > java -jar $JETTY_HOME/start.jar jetty.ssl.port=8444
 ----
 
-Alternatively, property values can be added to the effective command line built from the `start.ini` file and `start.d/*.ini` files. 
-If you used the `--add-to-startd` command to enable HTTPS , then you can edit this property in the `start.d/https.ini` file. 
-If you used `--add-to-start` command, then you can edit this property in the `start.ini` file.
+Alternatively, property values can be added to the effective command line built from the `start.ini` file or `start.d/*.ini` files, depending on your set up.
+Please see the section on link:#start-vs-startd[Start.ini vs. Start.d] for more information.
 
 ==== More start.jar options
 
-The job of the `start.jar` is to interpret the command line, `start.ini` and `start.d` directory (and associated .ini files) to build a Java classpath and list of properties and configuration files to pass to the main class of the Jetty XML configuration mechanism. 
+The job of the `start.jar` is to interpret the command line, `start.ini` and `start.d` directory (and associated .ini files) to build a Java classpath and list of properties and configuration files to pass to the main class of the Jetty XML configuration mechanism.
 The `start.jar` mechanism has many options which are documented in the xref:startup[] administration section and you can see them in summary by using the command:
 
 [source, screen, subs="{sub-order}"]

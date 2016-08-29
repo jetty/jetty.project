@@ -81,8 +81,8 @@ For more information on the alternatives see the section on link:#startup-module
 ____
 
 .  Edit the configuration for the `setuid` module to substitute the `userid` and `groupid` of the user to switch to after starting.
-If you used the `--add-to-start` command, this configuration is in the `start.ini` file.
-If you used the `--add-to-startd` command instead, this configuration is in the `start.d/setuid.ini` file instead.
+If your server instance has a `${jetty.base/start.d}` directory, this configuration is in the `start.d/setuid.ini` file instead.
+Otherwise. this configuration is in the `${jetty.base}start.ini` file.
 
   Below are the lines to configure:
 +

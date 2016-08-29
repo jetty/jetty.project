@@ -33,7 +33,7 @@ The fourth step is to create a Jetty base directory (see xref:startup-base-and-h
 ....
 $ mkdir -p /usr/jetty/wordpress
 $ cd /usr/jetty/wordpress
-$ java -jar $JETTY_HOME/start.jar --add-to-startd=fcgi,http,deploy
+$ java -jar $JETTY_HOME/start.jar --add-to-start=fcgi,http,deploy
 ....
 
 Therefore `$JETTY_BASE=/usr/jetty/wordpress`.
@@ -152,7 +152,7 @@ Enabling the `http2` is easy; in additions to the modules you have enabled above
 [source, screen, subs="{sub-order}"]
 ....
 $ cd $JETTY_BASE
-$ java -jar $JETTY_HOME/start.jar --add-to-startd=http2
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http2
 ....
 
 The command above adds the `http2` module (and its dependencies) to the existing modules and uses the default Jetty keystore to provide the key material required by TLS.

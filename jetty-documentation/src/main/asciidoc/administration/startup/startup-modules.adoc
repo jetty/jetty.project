@@ -17,7 +17,7 @@
 [[startup-modules]]
 === Managing Startup Modules
 
-Starting with Jetty 9.1, a new Module system was introduced, replacing the previous `start.config` + `OPTIONS` techniques from past Jetty Distributions.
+Jetty 9.1 a new Module system replacing the previous `start.config` + `OPTIONS` techniques from past Jetty Distributions.
 
 The standard Jetty Distribution ships with several modules defined in `${jetty.home}/modules/`.
 
@@ -43,7 +43,7 @@ List of Jetty IoC XML Configurations::
   If the default XML is not sufficient to satisfy your needs, you can override this XML by making your own in the `${jetty.base}/etc/` directory, with the same name.
   The resolution steps for Jetty Base and Jetty Home will ensure that your copy from `${jetty.base}` will be picked up over the default one in `${jetty.home}`.
 Jetty INI Template::
-  Each module can optionally declare a startup ini template that is used to insert/append/inject sample configuration elements into the `start.ini` or `start.d/*.ini` files when using the `--add-to-start=<name>` or `--add-to-startd=<name>` command line arguments in `start.jar`.
+  Each module can optionally declare a startup ini template that is used to insert/append/inject sample configuration elements into the `start.ini` or `start.d/*.ini` files when using the `--add-to-start=<name>` command line argument in `start.jar`.
   Commonly used to present some of the parameterized property options from the Jetty IoC XML configuration files also referenced in the same module.
   The `[ini-template]` section declares this section of sample configuration.
 Required Files and Directories::
@@ -62,15 +62,15 @@ Download File;;
 [[enabling-modules]]
 ==== Enabling Modules
 
-Jetty ships with many modules defined, and a small subset predefined in the `start.ini` found in the jetty distribution.
-
 ____
 [TIP]
-The default distribution has a co-mingled `${jetty.home}` and `${jetty.base}`. Where the directories for `${jetty.home}` and `${jetty.base}` point to the same location.
+The default distribution has a co-mingled `${jetty.home}` and `${jetty.base}` where the directories for `${jetty.home}` and `${jetty.base}` point to the same location.
 It is highly encouraged that you learn about the differences in link:#startup-base-and-home[Jetty Base vs Jetty Home] and take full advantage of this setup.
 ____
 
-When you want enable a module, you can use the `--module=<modulename>` syntax on the command line to enable that module and all of its dependent modules.
+Jetty ships with many modules defined in `${jetty.home}/modules`.
+Enabling a module is a simple process: simply add the `--add-to-start` syntax on the command line.
+Doing this will enable the module and any dependent modules.
 
 An example of this, with a new, empty, base directory.
 We can see from this output, that the directory is new.
@@ -95,14 +95,109 @@ include::screen-http-webapp-deploy-listconfig.adoc[]
 You now have a configured and functional server, albeit with no webapps deployed.
 At this point you can place a webapp (war file) in the `mybase/webapps/` directory and and start Jetty.
 
+[[start-vs-startd]]
+
+==== Start.ini vs. Start.d
+
+In the above example, when a module is activated the contents of that module file are added in `${jetty.base}/start.ini`.
+As additional modules are added, their contents are appended to this file.
+This can be beneficial if you want all of your module configurations in a single file, but for large server instances with lots of modules it can pose a challenge to quickly find and make changes.
+
+As an alternative to a single `start.ini` file you can opt to house modules in a `${jetty.base}/start.d` directory.
+Modules activated when a `start.d` directory exists will be stored as a single file per module.
+Below is an example of a fresh `${jetty.base}` that will create a `start.d` directory and activate several modules.
+
+[source, screen, subs="{sub-order}"]
+....
+[jetty.home]$ mkdir mybase
+[jetty.home]$ cd mybase/
+[mybase]$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+[mybase]$ ls -all
+total 0
+drwxr-xr-x   3 staff  staff  102 Aug 29 15:16 .
+drwxr-xr-x@ 26 staff  staff  884 Aug 29 15:16 ..
+drwxr-xr-x   6 staff  staff  204 Aug 29 15:19 start.d
+
+[mybase]$ java -jar ../start.jar --add-to-start=server,client,webapp,websocket
+INFO : webapp          initialised in ${jetty.base}/start.d/webapp.ini
+INFO : server          initialised in ${jetty.base}/start.d/server.ini
+INFO : websocket       initialised in ${jetty.base}/start.d/websocket.ini
+INFO : client          initialised in ${jetty.base}/start.d/client.ini
+INFO : Base directory was modified
+[mybase]$ cd start.d/
+[mybase]$ ls -all
+total 32
+drwxr-xr-x  6 staff  staff   204 Aug 29 15:19 .
+drwxr-xr-x  3 staff  staff   102 Aug 29 15:16 ..
+-rw-r--r--  1 staff  staff   175 Aug 29 15:19 client.ini
+-rw-r--r--  1 staff  staff  2250 Aug 29 15:19 server.ini
+-rw-r--r--  1 staff  staff   265 Aug 29 15:19 webapp.ini
+-rw-r--r--  1 staff  staff   177 Aug 29 15:19 websocket.ini
+....
+
+In the example, we first create a new `${jetty.base}` and then create the `start.d` directory with the `--create-startd` command.
+Next, we use the `--add-to-start` command which activates the modules and creates their respective ini files in the `start.d` directory.
+
+If you have an existing `start.ini` file but would like to use the `start.d` structure for additional modules, you can use the `--create-startd` command as well.
+Doing this will create the `start.d` directory and copy your existing `start.ini` file in to it.
+Any new modules added to the server will have their own `<module name>.ini` file created in the `start.d` directory.
+
+[source, screen, subs="{sub-order}"]
+....
+[mybase]$ java -jar ../start.jar --add-to-start=server,client,webapp,websocket
+INFO : webapp          initialised in ${jetty.base}/start.ini
+INFO : server          initialised in ${jetty.base}/start.ini
+INFO : websocket       initialised in ${jetty.base}/start.ini
+INFO : client          initialised in ${jetty.base}/start.ini
+INFO : Base directory was modified
+[mybase]$ ls -all
+total 8
+drwxr-xr-x   3 staff  staff   102 Aug 29 15:24 .
+drwxr-xr-x@ 26 staff  staff   884 Aug 29 15:16 ..
+-rw-r--r--   1 staff  staff  2867 Aug 29 15:24 start.ini
+
+[mybase]$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+[mybase]$ ls -all
+total 0
+drwxr-xr-x   3 staff  staff  102 Aug 29 15:33 .
+drwxr-xr-x@ 26 staff  staff  884 Aug 29 15:16 ..
+drwxr-xr-x   3 staff  staff  102 Aug 29 15:33 start.d
+
+[mybase]$ cd start.d/
+[start.d]$ ls -all
+total 8
+drwxr-xr-x  3 staff  staff   102 Aug 29 15:33 .
+drwxr-xr-x  3 staff  staff   102 Aug 29 15:33 ..
+-rw-r--r--  1 staff  staff  2867 Aug 29 15:24 start.ini
+
+[start.d]$ cd ..
+[mybase]$ java -jar ../start.jar --add-to-start=ssl
+INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
+INFO : Base directory was modified
+[mybase]$ cd start.d/
+[start.d]$ ls -all
+total 16
+drwxr-xr-x  4 staff  staff   136 Aug 29 15:33 .
+drwxr-xr-x  4 staff  staff   136 Aug 29 15:33 ..
+-rw-r--r--  1 staff  staff  2889 Aug 29 15:33 ssl.ini
+-rw-r--r--  1 staff  staff  2867 Aug 29 15:24 start.ini
+....
+
+[NOTE]
+--
+It is *not* recommended to use both a `${jetty.base}/start.ini` file and a `${jetty.base}/start.d` directory at the same time and doing so can cause issues.
+--
+
 [[startup-configuring-modules]]
 
 ==== Configuring Modules
 
 Once a module has been enabled for the server, it can be further configured to meet your needs.
 This is done by editing the associated ini file for the module.
-If your server setup is using a centralized ini configuration, you will edit the `{$jetty.base}/server.ini` file.
-If you have elected to manage each module within it's own ini file, you can find these files in the `{$jetty.base}/start.d` directory.
+If your server setup is using a centralized ini configuration, you will edit the `${jetty.base}/server.ini` file.
+If you have elected to manage each module within it's own ini file, you can find these files in the `${jetty.base}/start.d` directory.
 
 When a module is activated, a number of properties are set by default.
 To view these defaults, open up the associated ini file.

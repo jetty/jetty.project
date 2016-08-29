@@ -95,40 +95,31 @@ Enables debugging output of the startup procedure.
 *Note*: This does not set up debug logging for Jetty itself.
 For information on logging, please see the section on <<configuring-jetty-logging, Configuring Jetty Logging.>>
 --start-log-file=<filename>::
-  Sends all startup output to the filename specified.
-+
+Sends all startup output to the filename specified.
 Filename is relative to `${jetty.base}`.
 This is useful for capturing startup issues where the Jetty-specific logger has not yet kicked in due to a possible startup configuration error.
 --list-modules::
 Lists all the modules defined by the system.
-+
 Looks for module files using the link:#startup-base-and-home[normal `${jetty.base}` and `${jetty.home}` resolution logic].
-+
 Also lists enabled state based on information present on the command line, and all active startup INI files.
 --module=<name>,(<name>)*::
 Enables one or more modules by name (use `--list-modules` to see the list of available modules).
-+
 This enables all transitive (dependent) modules from the module system as well.
-+
 If you use this from the shell command line, it is considered a temporary effect, useful for testing out a scenario.
 If you want this module to always be enabled, add this command to your `${jetty.base}/start.ini.`
+--create-startd::
+Creates a `${jetty.base}/start.d/` directory.
+If a `${jetty.base}/start.ini` file already exists, it is copied to the `${jetty.base}/start.d` directory.
 --add-to-start=<name>,(<name>)*::
 Enables a module by appending lines to the `${jetty.base}/start.ini` file.
-+
 The lines that are added are provided by the module-defined INI templates.
-+
 Note: Transitive modules are also appended.
---add-to-startd=<name>,(<name>)*::
-Enables a module via creation of a module-specific INI file in the `${jetty.base}/start.d/` directory.
-+
-The content of the new INI is provided by the module-defined ini templates.
-+
-Note: Transitive modules are also created in the same directory as their own INI files.
 
 [NOTE]
 --
 With respect to `start.ini` and `start.d/*.ini` files, only *one* of these methods should be implemented.
 Mixing a `start.ini` with module specific ini files in the `{$jetty.base}/start.d` directory can lead to server issues unless great care is taken.
+Please see link:#start-vs-startd[Start.ini vs. Start.d] for more information.
 --
 
 --write-module-graph=<filename>::

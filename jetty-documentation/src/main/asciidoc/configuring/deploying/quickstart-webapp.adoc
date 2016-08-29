@@ -40,7 +40,7 @@ In a standard Jetty distribution it can be configured with the following command
 
 [source, screen, subs="{sub-order}"]
 ----
-$ java -jar $JETTY_HOME/start.jar --add-to-startd=quickstart
+$ java -jar $JETTY_HOME/start.jar --add-to-start=quickstart
 ----
 
 Deployed webapps need to be instances of link:{JDURL}/org/eclipse/jetty/quickstart/QuickStartWebApp.html[`org.eclipse.jetty.quickstart.QuickStartWebApp`] rather than the normal `org.eclipse.jetty.webapp.WebAppContext`.
