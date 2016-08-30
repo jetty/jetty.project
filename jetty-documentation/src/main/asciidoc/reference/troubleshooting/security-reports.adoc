@@ -19,6 +19,8 @@
 
 The following sections provide information about Jetty security issues.
 
+If you would like to report a security issue please follow these link:#security-reporting[instructions].
+
 .Resolved Issues
 [width="99%",cols="11%,19%,14%,9%,14%,14%,19%",options="header",]
 |=======================================================================
