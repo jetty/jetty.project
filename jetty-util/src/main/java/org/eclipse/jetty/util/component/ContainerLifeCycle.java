@@ -31,23 +31,26 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * An ContainerLifeCycle is an {@link LifeCycle} implementation for a collection of contained beans.
+ * A ContainerLifeCycle is an {@link LifeCycle} implementation for a collection of contained beans.
  * <p>
- * Beans can be added the ContainerLifeCycle either as managed beans or as unmanaged beans.  A managed bean is started, stopped and destroyed with the aggregate.
- * An unmanaged bean is associated with the aggregate for the purposes of {@link #dump()}, but it's lifecycle must be managed externally.
+ * Beans can be added to the ContainerLifeCycle either as managed beans or as unmanaged beans.
+ * A managed bean is started, stopped and destroyed with the aggregate.
+ * An unmanaged bean is associated with the aggregate for the purposes of {@link #dump()}, but its
+ * lifecycle must be managed externally.
  * <p>
- * When a {@link LifeCycle} bean is added without a managed state being specified the state is determined heuristically:
+ * When a {@link LifeCycle} bean is added without a managed state being specified the state is
+ * determined heuristically:
  * <ul>
- *   <li>If the added bean is running, it will be added as an unmanaged bean.
- *   <li>If the added bean is !running and the container is !running, it will be added as an AUTO bean (see below).
- *   <li>If the added bean is !running and the container is starting, it will be added as an managed bean and will be started (this handles the frequent case of 
- *   new beans added during calls to doStart).
- *   <li>If the added bean is !running and the container is started, it will be added as an unmanaged bean.
+ *   <li>If the added bean is running, it will be added as an unmanaged bean.</li>
+ *   <li>If the added bean is !running and the container is !running, it will be added as an AUTO bean (see below).</li>
+ *   <li>If the added bean is !running and the container is starting, it will be added as a managed bean
+ *   and will be started (this handles the frequent case of new beans added during calls to doStart).</li>
+ *   <li>If the added bean is !running and the container is started, it will be added as an unmanaged bean.</li>
  * </ul>
- * When the container is started, then all contained managed beans will also be started.  Any contained Auto beans 
- * will be check for their status and if already started will be switched unmanaged beans, else they will be 
- * started and switched to managed beans.  Beans added after a container is started are not started and their state needs to
- * be explicitly managed.
+ * When the container is started, then all contained managed beans will also be started.
+ * Any contained AUTO beans will be check for their status and if already started will be switched unmanaged beans,
+ * else they will be started and switched to managed beans.
+ * Beans added after a container is started are not started and their state needs to be explicitly managed.
  * <p>
  * When stopping the container, a contained bean will be stopped by this aggregate only if it
  * is started by this aggregate.
@@ -55,10 +58,11 @@ import org.eclipse.jetty.util.log.Logger;
  * The methods {@link #addBean(Object, boolean)}, {@link #manage(Object)} and {@link #unmanage(Object)} can be used to
  * explicitly control the life cycle relationship.
  * <p>
- * If adding a bean that is shared between multiple {@link ContainerLifeCycle} instances, then it should be started before being added, so it is unmanaged, or
- * the API must be used to explicitly set it as unmanaged.
+ * If adding a bean that is shared between multiple {@link ContainerLifeCycle} instances, then it should be started
+ * before being added, so it is unmanaged, or the API must be used to explicitly set it as unmanaged.
  * <p>
- * This class also provides utility methods to dump deep structures of objects.  It the dump, the following symbols are used to indicate the type of contained object:
+ * This class also provides utility methods to dump deep structures of objects.
+ * In the dump, the following symbols are used to indicate the type of contained object:
  * <pre>
  * SomeContainerLifeCycleInstance
  *   +- contained POJO instance
@@ -67,22 +71,14 @@ import org.eclipse.jetty.util.log.Logger;
  *   +? referenced AUTO object that could become MANAGED or UNMANAGED.
  * </pre>
  */
-
-/* ------------------------------------------------------------ */
-/**
- */
 @ManagedObject("Implementation of Container and LifeCycle")
 public class ContainerLifeCycle extends AbstractLifeCycle implements Container, Destroyable, Dumpable
 {
     private static final Logger LOG = Log.getLogger(ContainerLifeCycle.class);
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();
     private final List<Container.Listener> _listeners = new CopyOnWriteArrayList<>();
-    private boolean _doStarted = false;
-
-
-    public ContainerLifeCycle()
-    {
-    }
+    private boolean _doStarted;
+    private boolean _destroyed;
 
     /**
      * Starts the managed lifecycle beans in the order they were added.
@@ -90,6 +86,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @Override
     protected void doStart() throws Exception
     {
+        if (_destroyed)
+            throw new IllegalStateException("Destroyed container cannot be restarted");
+
         // indicate that we are started, so that addBean will start other beans added.
         _doStarted = true;
 
@@ -169,6 +168,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @Override
     public void destroy()
     {
+        _destroyed = true;
         List<Bean> reverse = new ArrayList<>(_beans);
         Collections.reverse(reverse);
         for (Bean b : reverse)
@@ -181,7 +181,6 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         }
         _beans.clear();
     }
-
 
     /**
      * @param bean the bean to test
@@ -325,9 +324,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         return true;
     }
 
-    
-    /* ------------------------------------------------------------ */
-    /** Add a managed lifecycle.
+    /**
+     * Adds a managed lifecycle.
      * <p>This is a convenience method that uses addBean(lifecycle,true)
      * and then ensures that the added bean is started iff this container
      * is running.  Exception from nested calls to start are caught and 
@@ -741,8 +739,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         }
     }
 
-
-    enum Managed { POJO, MANAGED, UNMANAGED, AUTO };
+    enum Managed { POJO, MANAGED, UNMANAGED, AUTO }
 
     private static class Bean
     {
