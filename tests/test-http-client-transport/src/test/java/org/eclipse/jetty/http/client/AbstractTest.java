@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -61,6 +62,7 @@ public abstract class AbstractTest
     @Rule
     public final TestTracker tracker = new TestTracker();
 
+    protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected final Transport transport;
     protected SslContextFactory sslContextFactory;
     protected Server server;
@@ -69,6 +71,7 @@ public abstract class AbstractTest
 
     public AbstractTest(Transport transport)
     {
+        Assume.assumeNotNull(transport);
         this.transport = transport;
     }
 
@@ -118,14 +121,13 @@ public abstract class AbstractTest
         {
             case HTTP:
             {
-                result.add(new HttpConnectionFactory(new HttpConfiguration()));
+                result.add(new HttpConnectionFactory(httpConfig));
                 break;
             }
             case HTTPS:
             {
-                HttpConfiguration configuration = new HttpConfiguration();
-                configuration.addCustomizer(new SecureRequestCustomizer());
-                HttpConnectionFactory http = new HttpConnectionFactory(configuration);
+                httpConfig.addCustomizer(new SecureRequestCustomizer());
+                HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
                 SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, http.getProtocol());
                 result.add(ssl);
                 result.add(http);
@@ -133,14 +135,13 @@ public abstract class AbstractTest
             }
             case H2C:
             {
-                result.add(new HTTP2CServerConnectionFactory(new HttpConfiguration()));
+                result.add(new HTTP2CServerConnectionFactory(httpConfig));
                 break;
             }
             case H2:
             {
-                HttpConfiguration configuration = new HttpConfiguration();
-                configuration.addCustomizer(new SecureRequestCustomizer());
-                HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(configuration);
+                httpConfig.addCustomizer(new SecureRequestCustomizer());
+                HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
                 ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory("h2");
                 SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
                 result.add(ssl);
@@ -150,7 +151,7 @@ public abstract class AbstractTest
             }
             case FCGI:
             {
-                result.add(new ServerFCGIConnectionFactory(new HttpConfiguration()));
+                result.add(new ServerFCGIConnectionFactory(httpConfig));
                 break;
             }
             default:

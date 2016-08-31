@@ -65,7 +65,7 @@ public class HttpConfiguration
     private boolean _delayDispatchUntilContent = true;
     private boolean _persistentConnectionsEnabled = true;
     private int _maxErrorDispatches = 10;
-    private int _minRequestDataRate;
+    private long _minRequestDataRate;
 
     /* ------------------------------------------------------------ */
     /** 
@@ -512,7 +512,7 @@ public class HttpConfiguration
     /**
      * @return The minimum request data rate in bytes per second; or &lt;=0 for no limit
      */
-    public int getMinRequestDataRate()
+    public long getMinRequestDataRate()
     {
         return _minRequestDataRate;
     }
@@ -521,7 +521,7 @@ public class HttpConfiguration
     /**
      * @param bytesPerSecond The minimum request data rate in bytes per second; or &lt;=0 for no limit
      */
-    public void setMinRequestDataRate(int bytesPerSecond)
+    public void setMinRequestDataRate(long bytesPerSecond)
     {
         _minRequestDataRate=bytesPerSecond;
     }

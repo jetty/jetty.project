@@ -120,7 +120,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static Logger LOG = Log.getLogger(HttpOutput.class);
 
     private final HttpChannel _channel;
-    private final SharedBlockingCallback _writeBlock;
+    private final SharedBlockingCallback _writeBlocker;
     private Interceptor _interceptor;
 
     /**
@@ -155,19 +155,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         _channel = channel;
         _interceptor = channel;
-        _writeBlock = new SharedBlockingCallback()
-        {
-            @Override
-            protected long getIdleTimeout()
-            {
-                long bto = getHttpChannel().getHttpConfiguration().getBlockingTimeout();
-                if (bto > 0)
-                    return bto;
-                if (bto < 0)
-                    return -1;
-                return _channel.getIdleTimeout();
-            }
-        };
+        _writeBlocker = new WriteBlocker(channel);
         HttpConfiguration config = channel.getHttpConfiguration();
         _bufferSize = config.getOutputBufferSize();
         _commitSize = config.getOutputAggregationSize();
@@ -221,12 +209,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     protected Blocker acquireWriteBlockingCallback() throws IOException
     {
-        return _writeBlock.acquire();
+        return _writeBlocker.acquire();
     }
 
     private void write(ByteBuffer content, boolean complete) throws IOException
     {
-        try (Blocker blocker = _writeBlock.acquire())
+        try (Blocker blocker = _writeBlocker.acquire())
         {
             write(content, complete, blocker);
             blocker.block();
@@ -670,7 +658,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(InputStream in) throws IOException
     {
-        try (Blocker blocker = _writeBlock.acquire())
+        try (Blocker blocker = _writeBlocker.acquire())
         {
             new InputStreamWritingCB(in, blocker).iterate();
             blocker.block();
@@ -692,7 +680,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(ReadableByteChannel in) throws IOException
     {
-        try (Blocker blocker = _writeBlock.acquire())
+        try (Blocker blocker = _writeBlocker.acquire())
         {
             new ReadableByteChannelWritingCB(in, blocker).iterate();
             blocker.block();
@@ -714,7 +702,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(HttpContent content) throws IOException
     {
-        try (Blocker blocker = _writeBlock.acquire())
+        try (Blocker blocker = _writeBlocker.acquire())
         {
             sendContent(content, blocker);
             blocker.block();
@@ -1323,6 +1311,25 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _channel.getByteBufferPool().release(_buffer);
             HttpOutput.this.close(_in);
             super.onCompleteFailure(x);
+        }
+    }
+
+    private static class WriteBlocker extends SharedBlockingCallback
+    {
+        private final HttpChannel _channel;
+
+        private WriteBlocker(HttpChannel channel)
+        {
+            _channel = channel;
+        }
+
+        @Override
+        protected long getIdleTimeout()
+        {
+            long blockingTimeout = _channel.getHttpConfiguration().getBlockingTimeout();
+            if (blockingTimeout == 0)
+                return _channel.getIdleTimeout();
+            return blockingTimeout;
         }
     }
 }

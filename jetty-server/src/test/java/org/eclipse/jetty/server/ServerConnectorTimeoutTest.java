@@ -18,19 +18,29 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.StacklessLogging;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertTrue;
 
 public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
 {
@@ -111,6 +121,52 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
             long timeElapsed = System.currentTimeMillis() - start;
             assertTrue("Time elapsed should be at least MAX_IDLE_TIME",timeElapsed > MAX_IDLE_TIME);
             return response;
+        }
+    }
+
+    @Test
+    public void testHttpWriteIdleTimeout() throws Exception
+    {
+        _httpConfiguration.setBlockingTimeout(500);
+        configureServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        InputStream is=client.getInputStream();
+
+        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
+        {
+            os.write((
+                    "POST /echo HTTP/1.0\r\n"+
+                            "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+                            "content-type: text/plain; charset=utf-8\r\n"+
+                            "content-length: 20\r\n"+
+                            "\r\n").getBytes("utf-8"));
+            os.flush();
+
+            os.write("123456789\n".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(1000);
+            os.write("=========\n".getBytes("utf-8"));
+            os.flush();
+
+            Thread.sleep(2000);
+
+            String response =IO.toString(is);
+            Assert.assertThat(response,containsString(" 500 "));
+            Assert.assertThat(response,containsString("/500 ms"));
+            Assert.assertThat(response, Matchers.not(containsString("=========")));
         }
     }
 }

@@ -62,13 +62,11 @@ public class HttpInput extends ServletInputStream implements Runnable
     private long _firstByteTimeStamp = -1;
     private long _contentArrived;
     private long _contentConsumed;
-    private long _blockingTimeoutAt = -1;
+    private long _blockUntil;
 
     public HttpInput(HttpChannelState state)
     {
         _channelState = state;
-        if (_channelState.getHttpChannel().getHttpConfiguration().getBlockingTimeout() > 0)
-            _blockingTimeoutAt = 0;
     }
 
     protected HttpChannelState getHttpChannelState()
@@ -91,7 +89,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             _contentArrived = 0;
             _contentConsumed = 0;
             _firstByteTimeStamp = -1;
-            _blockingTimeoutAt = -1;
+            _blockUntil = 0;
         }
     }
 
@@ -132,6 +130,10 @@ public class HttpInput extends ServletInputStream implements Runnable
         executor.execute(channel);
     }
 
+    private long getBlockingTimeout()
+    {
+        return getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
+    }
 
     @Override
     public int read() throws IOException
@@ -147,10 +149,17 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
-            if (_blockingTimeoutAt >= 0 && !isAsync())
-                _blockingTimeoutAt = System.currentTimeMillis() + getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
+            if (!isAsync())
+            {
+                if (_blockUntil == 0)
+                {
+                    long blockingTimeout = getBlockingTimeout();
+                    if (blockingTimeout > 0)
+                        _blockUntil = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(blockingTimeout);
+                }
+            }
 
-            int minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
+            long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
             if (minRequestDataRate > 0 && _firstByteTimeStamp != -1)
             {
                 long period = System.nanoTime() - _firstByteTimeStamp;
@@ -374,9 +383,9 @@ public class HttpInput extends ServletInputStream implements Runnable
         try
         {
             long timeout = 0;
-            if (_blockingTimeoutAt >= 0)
+            if (_blockUntil != 0)
             {
-                timeout = _blockingTimeoutAt - System.currentTimeMillis();
+                timeout = TimeUnit.NANOSECONDS.toMillis(_blockUntil - System.nanoTime());
                 if (timeout <= 0)
                     throw new TimeoutException();
             }
@@ -388,8 +397,11 @@ public class HttpInput extends ServletInputStream implements Runnable
             else
                 _inputQ.wait();
 
-            if (_blockingTimeoutAt > 0 && System.currentTimeMillis() >= _blockingTimeoutAt)
-                throw new TimeoutException();
+            // TODO: cannot return unless there is content or timeout,
+            // TODO: so spurious wakeups are not handled correctly.
+
+            if (_blockUntil != 0 && TimeUnit.NANOSECONDS.toMillis(_blockUntil - System.nanoTime()) <= 0)
+                throw new TimeoutException(String.format("Blocking timeout %d ms", getBlockingTimeout()));
         }
         catch (Throwable e)
         {
@@ -549,7 +561,6 @@ public class HttpInput extends ServletInputStream implements Runnable
             return _state instanceof EOFState;
         }
     }
-
 
     @Override
     public boolean isReady()

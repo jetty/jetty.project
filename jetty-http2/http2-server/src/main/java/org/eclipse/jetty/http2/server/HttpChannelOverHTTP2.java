@@ -267,16 +267,31 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                     handle);
         }
 
-        boolean delayed = _delayedUntilContent;
+        boolean wasDelayed = _delayedUntilContent;
         _delayedUntilContent = false;
-        if (delayed)
+        if (wasDelayed)
             _handled = true;
-        return handle || delayed ? this : null;
+        return handle || wasDelayed ? this : null;
     }
 
     public boolean isRequestHandled()
     {
         return _handled;
+    }
+
+    public boolean onStreamTimeout(Throwable failure)
+    {
+        if (!_handled)
+            return true;
+
+        HttpInput input = getRequest().getHttpInput();
+        boolean readFailed = input.failed(failure);
+        if (readFailed)
+            handle();
+
+        boolean writeFailed = getHttpTransport().onStreamTimeout(failure);
+
+        return readFailed || writeFailed;
     }
 
     public void onFailure(Throwable failure)
