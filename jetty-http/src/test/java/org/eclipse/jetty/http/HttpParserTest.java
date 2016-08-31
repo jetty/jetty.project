@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
@@ -1632,16 +1633,19 @@ public class HttpParserTest
     @Test
     public void testBadIPv6Host() throws Exception
     {
-        ByteBuffer buffer = BufferUtil.toBuffer(
+        try(StacklessLogging s = new StacklessLogging(HttpParser.class))
+        {
+            ByteBuffer buffer = BufferUtil.toBuffer(
                 "GET / HTTP/1.1\r\n"
-                        + "Host: [::1\r\n"
-                        + "Connection: close\r\n"
-                        + "\r\n");
+                    + "Host: [::1\r\n"
+                    + "Connection: close\r\n"
+                    + "\r\n");
 
-        HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
-        parser.parseNext(buffer);
-        Assert.assertThat(_bad, Matchers.containsString("Bad"));
+            HttpParser.RequestHandler handler = new Handler();
+            HttpParser parser = new HttpParser(handler);
+            parser.parseNext(buffer);
+            Assert.assertThat(_bad, Matchers.containsString("Bad"));
+        }
     }
 
     @Test
