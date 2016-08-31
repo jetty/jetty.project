@@ -40,6 +40,7 @@ import java.util.StringTokenizer;
  *           -    => 0-255
  * a,b,... - a list of wildcard specifications
  * </pre>
+ * @deprecated
  */
 @SuppressWarnings("serial")
 public class IPAddressMap<TYPE> extends HashMap<String, TYPE>

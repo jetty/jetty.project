@@ -75,6 +75,7 @@ import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
@@ -1212,46 +1213,19 @@ public class Request implements HttpServletRequest
         _port=0;
         if (hostPort != null)
         {
-            int len=hostPort.length();
-            loop: for (int i = len; i-- > 0;)
+            try
             {
-                char c2 = (char)(0xff & hostPort.charAt(i));
-                switch (c2)
-                {
-                    case ']':
-                        break loop;
-
-                    case ':':
-                        try
-                        {
-                            len=i;
-                            _port = StringUtil.toInt(hostPort.substring(i+1));
-                        }
-                        catch (NumberFormatException e)
-                        {
-                            LOG.warn(e);
-                            _serverName=hostPort;
-                            _port=0;
-                            return _serverName;
-                        }
-                        break loop;
-                }
+                HostPort authority = new HostPort(hostPort);
+                _serverName=authority.getHost();
+                _port=authority.getPort();
             }
-            if (hostPort.charAt(0)=='[')
+            catch (Exception e)
             {
-                if (hostPort.charAt(len-1)!=']')
-                {
-                    LOG.warn("Bad IPv6 "+hostPort);
-                    _serverName=hostPort;
-                    _port=0;
-                    return _serverName;
-                }
-                _serverName = hostPort.substring(0,len);
-            }
-            else if (len==hostPort.length())
+                LOG.warn(e);
                 _serverName=hostPort;
-            else
-                _serverName = hostPort.substring(0,len);
+                _port=0;
+                return _serverName;
+            }
 
             return _serverName;
         }

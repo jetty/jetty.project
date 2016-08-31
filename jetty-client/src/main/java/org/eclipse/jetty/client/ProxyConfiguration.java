@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.util.HostPort;
 
 /**
  * The configuration of the forward proxy to use with {@link org.eclipse.jetty.client.HttpClient}.
@@ -58,6 +59,7 @@ public class ProxyConfiguration
 
     public static abstract class Proxy
     {
+        // TO use IPAddress Map
         private final Set<String> included = new HashSet<>();
         private final Set<String> excluded = new HashSet<>();
         private final Origin.Address address;
@@ -146,12 +148,10 @@ public class ProxyConfiguration
         private boolean matches(Origin.Address address, String pattern)
         {
             // TODO: add support for CIDR notation like 192.168.0.0/24, see DoSFilter
-            int colon = pattern.indexOf(':');
-            if (colon < 0)
-                return pattern.equals(address.getHost());
-            String host = pattern.substring(0, colon);
-            String port = pattern.substring(colon + 1);
-            return host.equals(address.getHost()) && port.equals(String.valueOf(address.getPort()));
+            HostPort hostPort = new HostPort(pattern);
+            String host = hostPort.getHost();
+            int port = hostPort.getPort();
+            return host.equals(address.getHost())  && ( port<=0 || port==address.getPort() ); 
         }
 
         /**

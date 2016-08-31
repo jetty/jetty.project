@@ -1346,7 +1346,7 @@ public class HttpParserTest
         HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parser.parseNext(buffer);
-        assertEquals("Bad IPv6 Host header",_bad);
+        assertEquals("Bad Host header",_bad);
     }
     
     @Test

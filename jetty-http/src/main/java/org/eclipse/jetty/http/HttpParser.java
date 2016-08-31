@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
@@ -831,50 +832,22 @@ public class HttpParser
             case HOST:
                 add_to_connection_trie=_connectionFields!=null && _field==null;
                 _host=true;
-                String host=_valueString;
-                int port=0;
-                if (host==null || host.length()==0)
+                if (_valueString==null || _valueString.length()==0)
                 {
                     throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Host header");
                 }
 
-                int len=host.length();
-                loop: for (int i = len; i-- > 0;)
+                try
                 {
-                    char c2 = (char)(0xff & host.charAt(i));
-                    switch (c2)
-                    {
-                        case ']':
-                            break loop;
-
-                        case ':':
-                            try
-                            {
-                                len=i;
-                                port = StringUtil.toInt(host.substring(i+1));
-                            }
-                            catch (NumberFormatException e)
-                            {
-                                if (DEBUG)
-                                    LOG.debug(e);
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Host header");
-                            }
-                            break loop;
-                    }
+                    HostPort authority = new HostPort(_valueString);
+                    if (_requestHandler!=null)
+                        _requestHandler.parsedHostHeader(authority.getHost(),authority.getPort());
                 }
-                if (host.charAt(0)=='[')
+                catch (final Exception e)
                 {
-                    if (host.charAt(len-1)!=']') 
-                    {
-                        throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad IPv6 Host header");
-                    }
-                    host = host.substring(0,len);
+                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Host header")
+                    {{initCause(e);}};
                 }
-                else if (len!=host.length())
-                    host = host.substring(0,len);
-                
-                if (_requestHandler!=null)
-                    _requestHandler.parsedHostHeader(host,port);
                 
               break;
               

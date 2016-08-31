@@ -668,22 +668,21 @@ public class StringUtil
       
         return sidBytes;
     }
-    
 
     /**
      * Convert String to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
      * 
-     * @param string
-     *            A String containing an integer.
+     * @param string A String containing an integer.
+     * @param from The index to start parsing from
      * @return an int
      */
-    public static int toInt(String string)
+    public static int toInt(String string,int from)
     {
         int val = 0;
         boolean started = false;
         boolean minus = false;
 
-        for (int i = 0; i < string.length(); i++)
+        for (int i = from; i < string.length(); i++)
         {
             char b = string.charAt(i);
             if (b <= ' ')

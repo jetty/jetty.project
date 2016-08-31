@@ -32,6 +32,7 @@ import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -134,15 +135,10 @@ public class ConnectorServer extends AbstractLifeCycle
      */
     private String startRegistry(String hostPath) throws Exception
     {
-        int rmiPort = 1099; // default RMI registry port
-        String rmiHost = hostPath;
+        HostPort hostPort = new HostPort(hostPath);
 
-        int idx = hostPath.indexOf(':');
-        if (idx > 0)
-        {
-            rmiPort = Integer.parseInt(hostPath.substring(idx + 1));
-            rmiHost = hostPath.substring(0,idx);
-        }
+        String rmiHost = hostPort.getHost();
+        int rmiPort = hostPort.getPort(1099);
 
         // Verify that local registry is being used
         InetAddress hostAddress = InetAddress.getByName(rmiHost);
@@ -171,7 +167,7 @@ public class ConnectorServer extends AbstractLifeCycle
             _registry = LocateRegistry.createRegistry(rmiPort);
             Thread.sleep(1000);
 
-            rmiHost = InetAddress.getLocalHost().getCanonicalHostName();
+            rmiHost = HostPort.normalizeHost(InetAddress.getLocalHost().getCanonicalHostName());
             return rmiHost + ':' + Integer.toString(rmiPort);
         }
 
