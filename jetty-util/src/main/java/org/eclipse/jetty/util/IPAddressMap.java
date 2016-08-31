@@ -41,6 +41,7 @@ import java.util.StringTokenizer;
  *          a,b,...  - a list of wildcard specifications
  * </pre>
  * @param <TYPE> the Map Entry value type
+ * @deprecated
  */
 @SuppressWarnings("serial")
 public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
