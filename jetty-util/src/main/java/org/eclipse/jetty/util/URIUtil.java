@@ -720,10 +720,7 @@ public class URIUtil
      */
     public static void appendSchemeHostPort(StringBuilder url,String scheme,String server, int port)
     {
-        if (server.indexOf(':')>=0&&server.charAt(0)!='[')
-            url.append(scheme).append("://").append('[').append(server).append(']');
-        else
-            url.append(scheme).append("://").append(server);
+        url.append(scheme).append("://").append(HostPort.normalizeHost(server));
 
         if (port > 0)
         {
@@ -757,10 +754,7 @@ public class URIUtil
     {
         synchronized (url)
         {
-            if (server.indexOf(':')>=0&&server.charAt(0)!='[')
-                url.append(scheme).append("://").append('[').append(server).append(']');
-            else
-                url.append(scheme).append("://").append(server);
+            url.append(scheme).append("://").append(HostPort.normalizeHost(server));
 
             if (port > 0)
             {

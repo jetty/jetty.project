@@ -22,22 +22,21 @@ package org.eclipse.jetty.util;
  * A {@link Throwable} that may be used in static contexts. It uses Java 7
  * constructor that prevents setting stackTrace inside exception object.
  */
-public class ConstantThrowable extends Throwable {
-
-    private String name;
-
-    public ConstantThrowable() {
+public class ConstantThrowable extends Throwable
+{
+    public ConstantThrowable()
+    {
         this(null);
     }
 
-    public ConstantThrowable(String name) {
-        super(null, null, false, false);
-        this.name = name;
+    public ConstantThrowable(String name)
+    {
+        super(name, null, false, false);
     }
 
     @Override
-    public String toString() {
-        return name;
+    public String toString()
+    {
+        return String.valueOf(getMessage());
     }
-
 }
