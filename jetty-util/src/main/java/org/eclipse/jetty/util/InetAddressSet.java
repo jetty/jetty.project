@@ -30,19 +30,19 @@ import java.util.Set;
  * <p>This is a {@link Set} of String patterns that are used to match
  * a {@link Predicate} over InetAddress for containment semantics.
  * The patterns that may be set are:
- * <dl>
- * <dt>InetAddress</dt><tt>A single InetAddress either in hostname or address format. 
- * All formats supported by {@link InetAddress} are accepted.   Not ethat using hostname
- * matches may force domain lookups.  eg. "[::1]", "1.2.3.4", "::ffff:127.0.0.1"</tt>
- * <dt>InetAddress/CIDR</dt><tt>An InetAddress with a integer number of bits to indicate
- * the significant prefix. eg. "192.168.0.0/16" will match from "192.168.0.0" to
- * "192.168.255.255" </tt>
- * <dt>InetAddress-InetAddress</dt><tt>An inclusive range of InetAddresses. 
- * eg. "[a000::1]-[afff::]", "192.168.128.0-192.168.128.255"</tt>
- * <dt>Legacy format</dt><tt>The legacy format used by {@link IPAddressMap} for IPv4 only. 
- * eg. "10.10.10-14.0-128"</tt>
- * </dl>
  * </p>
+ * <dl>
+ * <dt>InetAddress</dt><dd>A single InetAddress either in hostname or address format. 
+ * All formats supported by {@link InetAddress} are accepted.   Not ethat using hostname
+ * matches may force domain lookups.  eg. "[::1]", "1.2.3.4", "::ffff:127.0.0.1"</dd>
+ * <dt>InetAddress/CIDR</dt><dd>An InetAddress with a integer number of bits to indicate
+ * the significant prefix. eg. "192.168.0.0/16" will match from "192.168.0.0" to
+ * "192.168.255.255" </dd>
+ * <dt>InetAddress-InetAddress</dt><dd>An inclusive range of InetAddresses. 
+ * eg. "[a000::1]-[afff::]", "192.168.128.0-192.168.128.255"</dd>
+ * <dt>Legacy format</dt><dd>The legacy format used by {@link IPAddressMap} for IPv4 only. 
+ * eg. "10.10.10-14.0-128"</dd>
+ * </dl>
  * <p>This class is designed to work with {@link IncludeExcludeSet}</p>
  * @see IncludeExcludeSet
  */
