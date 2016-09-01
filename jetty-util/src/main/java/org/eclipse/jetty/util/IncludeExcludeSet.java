@@ -31,7 +31,8 @@ import java.util.function.Predicate;
  * <p>The type of the underlying {@link Set} used may be passed into the 
  * constructor, so special sets like Servlet PathMap may be used.
  * <p>
- * @param <P> The type of element
+ * @param <P> The type of element of the set (often a pattern)
+ * @param <T> The type of the instance passed to the predicate 
  */
 public class IncludeExcludeSet<P,T> implements Predicate<T>
 {
@@ -70,7 +71,7 @@ public class IncludeExcludeSet<P,T> implements Predicate<T>
      * If the {@link Set} class also implements {@link Predicate}, then that Predicate is
      * used to match against the set, otherwise a simple {@link Set#contains(Object)} test is used.
      * @param setClass The type of {@link Set} to using internally
-     * @param predicate A predicate function to test if a passed ITEM is matched by the passed SET}
+     * @param <SET> The type of a set to use as the backing store
      */
     public <SET extends Set<P>> IncludeExcludeSet(Class<SET> setClass)
     {
@@ -107,6 +108,7 @@ public class IncludeExcludeSet<P,T> implements Predicate<T>
      * @param includePredicate the Predicate for included item testing (null for simple {@link Set#contains(Object)} test)
      * @param excludeSet the Set of items that represent the excluded space
      * @param excludePredicate the Predicate for excluded item testing (null for simple {@link Set#contains(Object)} test)
+     * @param <SET> The type of a set to use as the backing store
      */
     public <SET extends Set<P>> IncludeExcludeSet(Set<P> includeSet, Predicate<T> includePredicate, Set<P> excludeSet, Predicate<T> excludePredicate)
     {
