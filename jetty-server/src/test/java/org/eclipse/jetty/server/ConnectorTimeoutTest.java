@@ -43,7 +43,7 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
-    protected static final int MAX_IDLE_TIME=250;
+    protected static final int MAX_IDLE_TIME=2000;
     private int sleepTime = MAX_IDLE_TIME + MAX_IDLE_TIME/5;
     private int minimumTestRuntime = MAX_IDLE_TIME-MAX_IDLE_TIME/5;
     private int maximumTestRuntime = MAX_IDLE_TIME*10;

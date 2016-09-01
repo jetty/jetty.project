@@ -117,7 +117,7 @@ public class ExpireTest
         }
 
         // Wait to be sure that all exchanges have expired
-        assertTrue(expires.await(5, TimeUnit.SECONDS));
+        assertTrue(expires.await(30, TimeUnit.SECONDS));
     }
     
     @Test

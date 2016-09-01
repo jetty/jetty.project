@@ -23,6 +23,11 @@ jetty-8.1.19.v20160209 - 09 February 2016
 
 jetty-8.1.18.v20150929 - 29 September 2015
  + 467434 NPE in SslContextFactory
+
+jetty-7.6.19.v20160209 - 9 February 2016
+ + 486167 ServletInputStream.available() broken for pipelined requests.
+
+jetty-7.6.18.v20150929 - 29 September 2015
  + 475851 AbstractGenerator.setResponse can produce an invalid Response header
  + 477817 Fixed memory leak in QueuedThreadPool
  + 477948 Connections leaked when response contains Connection: close header.

@@ -33,7 +33,7 @@ public class BlockingChannelTimeoutTest extends ConnectorTimeoutTest
     public static void init() throws Exception
     {
         BlockingChannelConnector connector = new BlockingChannelConnector();
-        connector.setMaxIdleTime(MAX_IDLE_TIME); //250 msec max idle
+        connector.setMaxIdleTime(MAX_IDLE_TIME);
    
         startServer(connector);
     }

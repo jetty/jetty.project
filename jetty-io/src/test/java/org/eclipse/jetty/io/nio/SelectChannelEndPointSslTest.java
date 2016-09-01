@@ -94,7 +94,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         // so we can close TCP underneath SSL.
 
         SocketChannel client = SocketChannel.open(_connector.socket().getLocalSocketAddress());
-        client.socket().setSoTimeout(500);
+        client.socket().setSoTimeout(5000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
@@ -210,6 +210,12 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         filled = client.read(sslIn);
         Assert.assertEquals(-1, filled);
 
+        for (int i=0;i<30;i++)
+        {
+            if (!server.isOpen())
+                break;
+            Thread.sleep(1000);
+        }
         Assert.assertFalse(server.isOpen());
     }
 
