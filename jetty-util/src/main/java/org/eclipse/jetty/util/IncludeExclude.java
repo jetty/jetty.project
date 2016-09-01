@@ -18,149 +18,31 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.HashSet;
 import java.util.Set;
 
 
 /** Utility class to maintain a set of inclusions and exclusions.
- * <p>Maintains a set of included and excluded elements.  The method {@link #matches(Object)}
- * will return true IFF the passed object is not in the excluded set AND ( either the 
- * included set is empty OR the object is in the included set) 
- * <p>The type of the underlying {@link Set} used may be passed into the 
- * constructor, so special sets like Servlet PathMap may be used.
+ * <p>This extension of the {@link IncludeExcludeSet} class is used
+ * when the type of the set elements is the same as the type of 
+ * the predicate test.
  * <p>
  * @param <ITEM> The type of element
  */
-public class IncludeExclude<ITEM> 
+public class IncludeExclude<ITEM> extends IncludeExcludeSet<ITEM,ITEM>
 {
-    private final Set<ITEM> _includes;
-    private final Predicate<ITEM> _includePredicate;
-    private final Set<ITEM> _excludes;
-    private final Predicate<ITEM> _excludePredicate;
-    
-    private static class SetContainsPredicate<ITEM> implements Predicate<ITEM>
-    {
-        private final Set<ITEM> set;
-        
-        public SetContainsPredicate(Set<ITEM> set)
-        {
-            this.set = set;
-        }
-        
-        @Override
-        public boolean test(ITEM item)
-        {
-            return set.contains(item);
-        }
-    }
-    
-    /**
-     * Default constructor over {@link HashSet}
-     */
     public IncludeExclude()
     {
-        this(HashSet.class);
+        super();
     }
-    
-    /**
-     * Construct an IncludeExclude
-     * @param setClass The type of {@link Set} to using internally
-     * @param predicate A predicate function to test if a passed ITEM is matched by the passed SET}
-     */
+
     public <SET extends Set<ITEM>> IncludeExclude(Class<SET> setClass)
     {
-        try
-        {
-            _includes = setClass.newInstance();
-            _excludes = setClass.newInstance();
-            
-            if(_includes instanceof Predicate) {
-                _includePredicate = (Predicate<ITEM>)_includes;
-            } else {
-                _includePredicate = new SetContainsPredicate<>(_includes);
-            }
-            
-            if(_excludes instanceof Predicate) {
-                _excludePredicate = (Predicate<ITEM>)_excludes;
-            } else {
-                _excludePredicate = new SetContainsPredicate<>(_excludes);
-            }
-        }
-        catch (InstantiationException | IllegalAccessException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-    
-    /**
-     * Construct an IncludeExclude
-     * 
-     * @param includeSet the Set of items that represent the included space 
-     * @param includePredicate the Predicate for included item testing (null for simple {@link Set#contains(Object)} test)
-     * @param excludeSet the Set of items that represent the excluded space
-     * @param excludePredicate the Predicate for excluded item testing (null for simple {@link Set#contains(Object)} test)
-     */
-    public <SET extends Set<ITEM>> IncludeExclude(Set<ITEM> includeSet, Predicate<ITEM> includePredicate, Set<ITEM> excludeSet, Predicate<ITEM> excludePredicate)
-    {
-        _includes = includeSet;
-        _includePredicate = includePredicate;
-        _excludes = excludeSet;
-        _excludePredicate = excludePredicate;
-    }
-    
-    public void include(ITEM element)
-    {
-        _includes.add(element);
-    }
-    
-    public void include(ITEM... element)
-    {
-        for (ITEM e: element)
-            _includes.add(e);
+        super(setClass);
     }
 
-    public void exclude(ITEM element)
+    public <SET extends Set<ITEM>> IncludeExclude(Set<ITEM> includeSet, Predicate<ITEM> includePredicate, Set<ITEM> excludeSet,
+            Predicate<ITEM> excludePredicate)
     {
-        _excludes.add(element);
-    }
-    
-    public void exclude(ITEM... element)
-    {
-        for (ITEM e: element)
-            _excludes.add(e);
-    }
-    
-    public boolean matches(ITEM e)
-    {
-        if (!_includes.isEmpty() && !_includePredicate.test(e))
-            return false;
-        return !_excludePredicate.test(e);
-    }
-    
-    public int size()
-    {
-        return _includes.size()+_excludes.size();
-    }
-    
-    public Set<ITEM> getIncluded()
-    {
-        return _includes;
-    }
-    
-    public Set<ITEM> getExcluded()
-    {
-        return _excludes;
-    }
-
-    public void clear()
-    {
-        _includes.clear();
-        _excludes.clear();
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x{i=%s,ip=%s,e=%s,ep=%s}",this.getClass().getSimpleName(),hashCode(),_includes,_includePredicate,_excludes,_excludePredicate);
+        super(includeSet,includePredicate,excludeSet,excludePredicate);
     }
 }
