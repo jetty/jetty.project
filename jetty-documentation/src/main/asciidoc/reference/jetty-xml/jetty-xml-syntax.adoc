@@ -53,7 +53,7 @@ The following XML configuration file creates some Java objects and sets some att
       <Set name="name">demo2</Set>
     </Get>
   </Ref>
-</Configure>      
+</Configure>
 ----
 
 The XML above is equivalent to the following Java code:
@@ -72,7 +72,7 @@ bar.init(false);
 foo.setNested(bar);
 
 bar.setWibble(20);
-bar.getParent().setName("demo2");      
+bar.getParent().setName("demo2");
 ----
 
 ==== Overview
@@ -80,41 +80,27 @@ bar.getParent().setName("demo2");
 ===== Understanding DTD and Parsing
 
 The document type descriptor
-(link:{GITBROWSEURL}/jetty-xml/src/main/resources/org/eclipse/jetty/xml/configure_9_0.dtd?h=release-9[configure.dtd])
-describes all valid elements in a Jetty XML configuration file using the
-Jetty IoC format. The first two lines of an XML must reference the DTD
-to be used to validate the XML like:
+(link:{GITBROWSEURL}/jetty-xml/src/main/resources/org/eclipse/jetty/xml/configure_9_0.dtd?h=release-9[configure.dtd]) describes all valid elements in a Jetty XML configuration file using the Jetty IoC format.
+The first two lines of an XML must reference the DTD to be used to validate the XML like:
 
 [source, xml, subs="{sub-order}"]
 ----
-
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 ...
-
-      
 ----
 
-Typcically a good XML editor will fetch the DTD from the URL and use it
-to give syntax highlighting and validation while a configuration file is
-being edited. Some editors also allows DTD files to be locally cached.
-The URL may point to configure.dtd if you want the latest current
-version, or to a specific version like configure_9_0.dtd if you want a
-particular validation feature set.
+Typcically a good XML editor will fetch the DTD from the URL and use it to give syntax highlighting and validation while a configuration file is being edited.
+Some editors also allows DTD files to be locally cached.
+The URL may point to configure.dtd if you want the latest current version, or to a specific version like configure_9_0.dtd if you want a particular validation feature set.
 
-Files that conform to the configure.dtd format are processed in Jetty by
-the `XmlConfiguration` class which may also validate the XML (using a
-version of the DTD from the classes jar file), but is by default run in
-a forgiving mode that tries to work around validation failures.
+Files that conform to the configure.dtd format are processed in Jetty by the `XmlConfiguration` class which may also validate the XML (using a version of the DTD from the classes jar file), but is by default run in a forgiving mode that tries to work around validation failures.
 
 ===== Jetty XML Configuration Scope
 
-The configuration of object instances with Jetty IoC XML is done on a
-scoped basis, so that for any given XML element there is a corresponding
-Object in scope and the nested XML elements apply to that. The outer
-most scope is given by a Configure element and elements like Call, New
-and Get establish new scopes. The following example uses the name fields
-to explain the scope
+The configuration of object instances with Jetty IoC XML is done on a scoped basis, so that for any given XML element there is a corresponding Object in scope and the nested XML elements apply to that.
+The outer most scope is given by a Configure element and elements like Call, New and Get establish new scopes.
+The following example uses the name fields to explain the scope.
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -134,50 +120,36 @@ to explain the scope
     <Call name="methodOnObjectReturnedByMethodOnFooWithNoArgs"/>
   </Call>
 </Configure>
-      
 ----
 
 ===== Coercing Arguments to a Type
 
-When trying to match XML elements to java elements, Jetty
-XmlConfiguration may need to coerces values to match method arguments.
-By default it does so on a best effort basis, but you can also specify
-explicit types with the `type` attribute. Supported values for type are:
-String, Character, Short, Byte, Integer, Long, Boolean, Float, Double,
-char, short, byte, int, long, boolean, float, double, URL, InetAddress,
-InetAddrPort, void
+When trying to match XML elements to java elements, Jetty `XmlConfiguration` may need to coerces values to match method arguments.
+By default it does so on a best effort basis, but you can also specify explicit types with the `type` attribute.
+Supported values for type are: `String`, `Character`, `Short`, `Byte`, `Integer`, `Long`, `Boolean`, `Float`, `Double`, `char`, `short`, `byte`, `int`, `long`, `boolean`, `float`, `double`, `URL`, `InetAddress`, `InetAddrPort`, and `void`.
 
 ===== Referring to a Class
 
-If you do not specify the classname, Jetty assumes you are calling the
-method on the object that is current in scope (eg the object of the
-surrounding Configure, New or Get clause). If the class attribute is
-specified to a fully-qualified class name, then it is either used to
-create a new instance (Configure and New elements) or is used to access
-a static (Call, Set or Get elements).
+If you do not specify the classname, Jetty assumes you are calling the method on the object that is current in scope (eg the object of the surrounding `Configure`, `New` or `Get` clause).
+If the class attribute is specified to a fully-qualified class name, then it is either used to create a new instance (`Configure` and `New` elements) or is used to access a static (`Call`, `Set` or `Get` elements).
 
 ===== Referring to an Object
 
-You can use the id attribute to store a reference to the current object
-when first creating or referring to this object. You can then use the
-link:#jetty-xml-ref[Ref element] to reference the object later. The id
-must be unique for each object you create.
+You can use the id attribute to store a reference to the current object when first creating or referring to this object.
+You can then use the link:#jetty-xml-ref[Ref element] to reference the object later.
+The ID must be unique for each object you create.
 
 ===== Attribute vs Element Style
 
-For XML elements that contain only other XML Elements, there is a choice
-of using attributes or elements style. The following is an example of
-attribute style:
+For XML elements that contain only other XML Elements, there is a choice of using attributes or elements style.
+The following is an example of attribute style:
 
 ....
   <Call id="result" class="org.example.SomeClass" name="someMethod" arg="value0,value1"/>
 ....
 
-Attribute style has the benefit of brevity, but is limited by: values
-can only be Strings; multivalued items can not contain ','; values may
-not be subject to property expansion or other elements that return
-values. Thus the more verbose element style is available and the
-following is semantically equivalent to the attribute style above:
+Attribute style has the benefit of brevity, but is limited by: values can only be Strings; multivalued items can not contain ','; values may not be subject to property expansion or other elements that return values.
+Thus, the more verbose element style is available and the following is semantically equivalent to the attribute style above:
 
 ....
   <Call>
@@ -189,11 +161,8 @@ following is semantically equivalent to the attribute style above:
   </Call>
 ....
 
-Note that multivalued elements like Arg, must be repeated and may not be
-comma separated like they are when provided as attributes. It is
-possible to use a mix of styles and the following example shows a more
-typical example that uses property expansion as the reason for element
-style:
+Note that multivalued elements like `Arg` must be repeated and may not be comma-separated like they are when provided as attributes.
+It is possible to use a mix of styles and the following example shows a moretypical example that uses property expansion as the reason for element style:
 
 ....
   <Call id="result" name="someMethod">
@@ -205,16 +174,14 @@ style:
   </Call>
 ....
 
-Attributes may not be expressed as elements when their parent element is
-one that contains data. Thus Arg, Item, Set, Put and Get elements may
-not have their attributes expressed as elements.
+Attributes may not be expressed as elements when their parent element is one that contains data.
+Thus `Arg`, `Item`, `Set`, `Put` and `Get` elements may not have their attributes expressed as elements.
 
 [[jetty-xml-configure]]
 ==== <Configure>
 
-This is the root element that specifies the class of object that is to
-be configured. It is usually either the Server, in `jetty.xml`, or a
-WebAppContext in `jetty-web.xml`.
+This is the root element that specifies the class of object that is to be configured.
+It is usually either the Server, in `jetty.xml`, or a `WebAppContext` in `jetty-web.xml`.
 
 [cols=",,",options="header",]
 |=======================================================================
@@ -226,8 +193,8 @@ You can use this to break up configuration of an object (such as the
 Server) across multiple files.
 
 |class |no |The fully qualified classname of the object to be
-configured. Could be org.eclipse.jetty.server.Server,
-org.eclipse.jetty.webapp.WebAppContext, a handler, etc.
+configured. Could be `org.eclipse.jetty.server.Server`,
+`org.eclipse.jetty.webapp.WebAppContext`, a handler, etc.
 |=======================================================================
 
 ===== Can Contain
@@ -246,7 +213,7 @@ link:#jetty-xml-property[Property element]
 ----
 <Configure class="org.eclipse.jetty.server.Server">
   <Set name="port">8080</Set>
-</Configure>          
+</Configure>
 ----
 
 This is equivalent to:
@@ -254,46 +221,43 @@ This is equivalent to:
 [source, java, subs="{sub-order}"]
 ----
 org.eclipse.jetty.server.Server server = new org.eclipse.jetty.server.Server();
-server.setPort(8080);          
+server.setPort(8080);
 ----
 
-====== Using id to break up configuration of one object across multiple
-files
+====== Using id to break up configuration of one object across multiple files
 
-(etc/jetty.xml)
+In `etc/jetty.xml`:
 
 [source, xml, subs="{sub-order}"]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <!-- basic configuration here -->
-</Configure>          
+</Configure>
 ----
 
-(etc/jetty-logging.xml)
+In `etc/jetty-logging.xml`:
 
 [source, xml, subs="{sub-order}"]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <!-- assumes that you have the basic server configuration set up; this file only contains additional configuration for logging -->
-</Configure>         
+</Configure>
 ----
 
 Then run the combined configuration using:
 
 ....
-java -jar start.jar etc/jetty.xml jetty-logging.xml        
+java -jar start.jar etc/jetty.xml jetty-logging.xml
 ....
 
 [[jetty-xml-set]]
 ==== <Set>
 
-A Set element maps to a call to a setter method or field on the current
-object. It can contain text and/or elements such as Call, New,
-SystemProperty, etc., as values. The name and optional type attributes
-are used to select the setter method. If you do not specify a value
-type, white space is trimmed out of the value. If it contains multiple
-elements as values, they are added as strings before being converted to
-any specified type.
+A Set element maps to a call to a setter method or field on the current object.
+It can contain text and/or elements such as `Call`, `New`, `SystemProperty`, etc., as values.
+The name and optional type attributes are used to select the setter method.
+If you do not specify a value type, white space is trimmed out of the value.
+If it contains multiple elements as values, they are added as strings before being converted to any specified type.
 
 [cols=",,",options="header",]
 |=======================================================================
@@ -325,7 +289,7 @@ link:#jetty-xml-property[Property element]
 ----
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <Set name="port">8080</Set>
-</Configure>          
+</Configure>
 ----
 
 ====== Set via a System Property
@@ -334,7 +298,7 @@ link:#jetty-xml-property[Property element]
 ----
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <Set name="port"><SystemProperty name="jetty.http.port" /></Set>
-</Configure>          
+</Configure>
 ----
 
 ====== Creating a NewObject and Setting It on the Server
@@ -348,7 +312,7 @@ link:#jetty-xml-property[Property element]
       <Set name="maxThreads">1000</Set>
     </New>
   </Set>
-</Configure>          
+</Configure>
 ----
 
 This is equivalent to:
@@ -361,7 +325,7 @@ org.eclipse.jetty.util.thread.QueuedThreadPool threadPool = new org.eclipse.jett
 threadPool.setMinThreads(10);
 threadPool.setMaxThreads(1000);
 
-server.setThreadPool(threadPool);          
+server.setThreadPool(threadPool);
 ----
 
 ====== Invoking a Static Setter
@@ -370,15 +334,14 @@ server.setThreadPool(threadPool);
 ----
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <Set class="org.eclipse.jetty.util.log.Log" name="logToParent">loggerName</Set>
-</Configure">          
+</Configure>
 ----
 
 [[jetty-xml-get]]
 ==== <Get>
 
-A Get element maps to a call to a getter method or field on the current
-object. It can contain nested elements such as Set, Put, Call, etc.;
-these act on the object returned by the Get call.
+A Get element maps to a call to a getter method or field on the current object.
+It can contain nested elements such as `Set`, `Put`, `Call`, etc.; these act on the object returned by the `Get` call.
 
 [cols=",,",options="header",]
 |=======================================================================
@@ -406,14 +369,14 @@ link:#jetty-xml-property[Property element]
 
 ====== Basic Example
 
-This simple example doesn't do much on its own. You would normally use
-this in conjunction with a <Ref id="Logger" />.
+This simple example doesn't do much on its own.
+You would normally use this in conjunction with a `<Ref id="Logger" />`.
 
 [source, xml, subs="{sub-order}"]
 ----
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <Get id="Logger" class="org.eclipse.jetty.util.log.Log" name="log"/>
-</Configure>          
+</Configure>
 ----
 
 ====== Invoking a Static Getter and Call Methods on the Returned Object
@@ -426,18 +389,16 @@ this in conjunction with a <Ref id="Logger" />.
         <Arg>Server version is: <Get class="org.eclipse.jetty.server.Server" name="version"/></Arg>
       </Call>
     </Get>
-</Configure>          
+</Configure>
 ----
 
 [[jetty-xml-put]]
 ==== <Put>
 
-A Put element maps to a call to a put method on the current object,
-which must implement the Map interface. It can contain text and/or
-elements such as Call, New, SystemProperty, etc. as values. If you do
-not specify a no value type, white space is trimmed out of the value. If
-it contains multiple elements as values, they are added as strings
-before being converted to any specified type.
+A Put element maps to a call to a put method on the current object, which must implement the Map interface.
+It can contain text and/or elements such as `Call`, `New`, `SystemProperty`, etc. as values.
+If you do not specify a no value type, white space is trimmed out of the value.
+If it contains multiple elements as values, they are added as strings before being converted to any specified type.
 
 [cols=",,",options="header",]
 |=======================================================================
@@ -450,7 +411,7 @@ Arg for how to define null and empty string values.
 
 ===== Can Contain
 
-value text , link:#jetty-xml-get[Get element], link:#jetty-xml-call[Call
+value text, link:#jetty-xml-get[Get element], link:#jetty-xml-call[Call
 element], link:#jetty-xml-new[New element], link:#jetty-xml-ref[Ref
 element], link:#jetty-xml-array[Array element], link:#jetty-xml-map[Map
 element], link:#jetty-xml-system-property[System Property element],
@@ -462,17 +423,15 @@ link:#jetty-xml-property[Property element]
 ----
 <Get name="someKindOfMap">
    <Put name="keyName">objectValue</Put>
-</Get>        
+</Get>
 ----
 
 [[jetty-xml-call]]
 ==== <Call>
 
-A Call element maps to an arbitrary call to a method on the current
-object. It can contain a sequence of Arg elements followed by a sequence
-of configuration elements, such as Set, Put, Call. The <Arg>s are passed
-as arguments to the method; the sequence of configuration elements act
-on the object returned by the original call.
+A `Call` element maps to an arbitrary call to a method on the current object.
+It can contain a sequence of Arg elements followed by a sequence of configuration elements, such as Set, Put, Call.
+The <Arg>s are passed as arguments to the method; the sequence of configuration elements act on the object returned by the original call.
 
 [cols=",,",options="header",]
 |=======================================================================
@@ -507,7 +466,7 @@ element], link:#jetty-xml-property[Property element]
 <Call name="doFoo">
   <Arg>bar</Arg>
   <Set name="test">1, 2, 3</Set>
-</Call>          
+</Call>
 ----
 
 This is equivalent to:
@@ -515,7 +474,7 @@ This is equivalent to:
 [source, java, subs="{sub-order}"]
 ----
 Object o2 = o1.doFoo("bar");
-o2.setTest("1, 2, 3");          
+o2.setTest("1, 2, 3");
 ----
 
 ====== Invoking a static method
@@ -524,14 +483,14 @@ o2.setTest("1, 2, 3");
 ----
 <Call class="com.acme.Foo" name="setString">
   <Arg>somestring</Arg>
-</Call>          
+</Call>
 ----
 
-which is equivalent to:
+Which is equivalent to:
 
 [source, java, subs="{sub-order}"]
 ----
-com.acme.Foo.setString("somestring");          
+com.acme.Foo.setString("somestring");
 ----
 
 ====== Invoking the Actual MethodInstead of Relying on Getter/Setter Magic
@@ -545,15 +504,15 @@ com.acme.Foo.setString("somestring");
       <Ref refid="port"/>
     </Arg>
   </Call>
-</Configure>          
+</Configure>
 ----
 
-which is equivalent to:
+Which is equivalent to:
 
 [source, java, subs="{sub-order}"]
 ----
 org.mortbay.jetty.Server server = new org.mortbay.jetty.Server();
-com.acme.Environment.setPort( server.getPort() );          
+com.acme.Environment.setPort( server.getPort() );
 ----
 
 [[jetty-xml-arg]]
@@ -562,13 +521,11 @@ com.acme.Environment.setPort( server.getPort() );
 An Arg element can be an argument of either a method or a constructor.
 Use it within xref:jetty-syntax-call[] and xref:jetty-syntax-new[].
 
-It can contain text and/or elements, such as Call, New, SystemProperty,
-etc., as values. The optional type attribute can force the type of the
-value. If you don't specify a type, white space is trimmed out of the
-value. If it contains multiple elements as values, they are added as
-strings before being converted to any specified type. Simple String
-arguments can also be specified as a string separated arg attribute on
-the parent element.
+It can contain text and/or elements, such as `Call`, `New`, `SystemProperty`, etc., as values.
+The optional type attribute can force the type of the value.
+If you don't specify a type, white space is trimmed out of the value.
+If it contains multiple elements as values, they are added as strings before being converted to any specified type.
+Simple `String` arguments can also be specified as a string separated arg attribute on the parent element.
 
 [cols=",,",options="header",]
 |=======================================================================
@@ -597,7 +554,7 @@ link:#jetty-xml-property[Property element]
 <Arg>1</Arg> <!-- int, long, short, float, double -->
 <Arg><Ref refid="foo" /></Arg>  <!-- any object; reference a previously created object with id "foo", and pass it as a parameter -->
 <Arg></Arg> <!-- null value -->
-<Arg type="String"></Arg> <!-- empty string "" ->          
+<Arg type="String"></Arg> <!-- empty string "" -->
 ----
 
 ====== Coercing Type
@@ -606,13 +563,12 @@ This explicitly coerces the type to a boolean:
 
 [source, xml, subs="{sub-order}"]
 ----
-<Arg type="boolean">False</Arg>          
+<Arg type="boolean">False</Arg>
 ----
 
 ====== As a Parameter
 
-Here are a couple of examples of link:#jetty-xml-arg[Arg element] being
-used as a parameter to methods and to constructors:
+Here are a couple of examples of link:#jetty-xml-arg[Arg element] being used as a parameter to methods and to constructors:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -622,14 +578,14 @@ used as a parameter to methods and to constructors:
       <Arg>bar</Arg>
     </New>
   </Arg>
-</Call>          
+</Call>
 ----
 
 This is equivalent to:
 
 [source, java, subs="{sub-order}"]
 ----
-com.acme.Environment.setFoo(new com.acme.Foo("bar"));          
+com.acme.Environment.setFoo(new com.acme.Foo("bar"));
 ----
 
 [source, xml, subs="{sub-order}"]
@@ -640,26 +596,24 @@ com.acme.Environment.setFoo(new com.acme.Foo("bar"));
       <Arg>2</Arg>
     </Call>
   </Arg>
-</New>          
+</New>
 ----
 
 This is equivalent to:
 
 [source, java, subs="{sub-order}"]
 ----
-new com.acme.Baz(com.acme.MyStaticObjectFactory.createObject(2));          
+new com.acme.Baz(com.acme.MyStaticObjectFactory.createObject(2));
 ----
 
 [[jetty-xml-new]]
 ==== <New>
 
-Instantiates an object. Equivalent to new in Java, and allows the
-creation of a new object. A New element can contain a sequence of
-link:#jetty-xml-arg[Arg element]'s, followed by a sequence of
-configuration elements (Set, Put, etc). link:#jetty-xml-arg[Arg
-element]'s are used to select a constructor for the object to be
-created. The sequence of configuration elements then acts on the
-newly-created object.
+Instantiates an object.
+Equivalent to `new` in Java, and allows the creation of a new object.
+A `New` element can contain a sequence of link:#jetty-xml-arg[`Arg` element]'s, followed by a sequence of configuration elements (`Set`, `Put`, etc).
+link:#jetty-xml-arg[`Arg` element]'s are used to select a constructor for the object to be created.
+The sequence of configuration elements then acts on the newly-created object.
 
 [cols=",,",options="header",]
 |=======================================================================
@@ -691,28 +645,28 @@ element], link:#jetty-xml-property[Property element]
 ----
 <New class="com.acme.Foo">
   <Arg>bar</Arg>
-</New>          
+</New>
 ----
 
-which is equivalent to:
+Which is equivalent to:
 
 [source, java, subs="{sub-order}"]
 ----
-com.acme.Foo foo = new com.acme.Foo("bar");          
+com.acme.Foo foo = new com.acme.Foo("bar");
 ----
 
 ====== Instantiate with the Default Constructor
 
 [source, xml, subs="{sub-order}"]
 ----
-<New class="com.acme.Foo" />          
+<New class="com.acme.Foo" />
 ----
 
-which is equivalent to:
+Which is equivalent to:
 
 [source, java, subs="{sub-order}"]
 ----
-com.acme.Foo foo = new com.acme.Foo();        
+com.acme.Foo foo = new com.acme.Foo();
 ----
 
 ====== Instantiate with Multiple Arguments, Then Configuring Further
@@ -723,10 +677,10 @@ com.acme.Foo foo = new com.acme.Foo();
    <Arg>bar</Arg>
    <Arg>baz</Arg>
    <Set name="test">1, 2, 3</Set>
- </New>          
+ </New>
 ----
 
-which is equivalent to:
+Which is equivalent to:
 
 [source, java, subs="{sub-order}"]
 ----
@@ -737,17 +691,14 @@ foo.setTest("1, 2, 3");
 [[jetty-xml-ref]]
 ==== <Ref>
 
-A Ref element allows a previously created object to be referenced by a
-unique id. It can contain a sequence of elements, such as Set or Put
-which then act on the referenced object. You can also use a Ref element
-as a value for other elements such as Set and Arg.
+A `Ref` element allows a previously created object to be referenced by a unique id.
+It can contain a sequence of elements, such as `Set` or `Put` which then act on the referenced object.
+You can also use a `Ref` element as a value for other elements such as `Set` and `Arg`.
 
-The Ref element provides convenience and eases readability. You can
-usually achieve the effect of the Ref by nesting elements (method
-calls), but this can get complicated very easily. The Ref element makes
-it possible to refer to the same object if you're using it multiple
-times, or passing it into multiple methods. It also makes it possible to
-split up configuration across multiple files.
+The `Ref` element provides convenience and eases readability.
+You can usually achieve the effect of the `Ref` by nesting elements (method calls), but this can get complicated very easily.
+The Ref element makes it possible to refer to the same object if you're using it multiple times, or passing it into multiple methods.
+It also makes it possible to split up configuration across multiple files.
 
 [cols=",,",options="header",]
 |=======================================================================
@@ -768,13 +719,12 @@ link:#jetty-xml-property[Property element]
 
 ====== Basic example
 
-Use the referenced object as an argument to a method call or
-constructor:
+Use the referenced object as an argument to a method call or constructor:
 
 [source, xml, subs="{sub-order}"]
 ----
 <Get id="foo" name="xFoo" />
-<Set name="test"><Ref refid="foo"/></Set>            
+<Set name="test"><Ref refid="foo"/></Set>
 ----
 
 This is equivalent to:
@@ -782,7 +732,7 @@ This is equivalent to:
 [source, java, subs="{sub-order}"]
 ----
 foo = getXFoo();
-setSomeMethod(foo);            
+setSomeMethod(foo);
 ----
 
 ====== Manipulating the Object Returned by Ref
@@ -792,7 +742,7 @@ setSomeMethod(foo);
 <Get id="foo" name="xFoo" />
 <Ref refid="foo">
   <Set name="test">1, 2, 3</Set>
-</Ref>            
+</Ref>
 ----
 
 This is equivalent to:
@@ -800,13 +750,13 @@ This is equivalent to:
 [source, java, subs="{sub-order}"]
 ----
 foo = getXFoo();
-foo.setTest("1, 2, 3");            
+foo.setTest("1, 2, 3");
 ----
 
 ====== Ref vs. Nested Elements
 
-Here is an example of the difference in syntax between using the Ref
-element, and nesting method calls. They are exactly equivalent:
+Here is an example of the difference in syntax between using the `Ref` element, and nesting method calls.
+They are exactly equivalent:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -822,11 +772,10 @@ element, and nesting method calls. They are exactly equivalent:
   <Get class="org.eclipse.jetty.util.log.Log" name="log">
     <Set name="debugEnabled">true</Set>
   </Get>
-</Configure>            
+</Configure>
 ----
 
-Here is a more practical example, taken from the handler configuration
-section in ` etc/jetty.xml`:
+Here is a more practical example, taken from the handler configuration section in `etc/jetty.xml`:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -862,13 +811,13 @@ section in ` etc/jetty.xml`:
 <!-- configure the RequestLogHandler object ("RequestLog") that we created earlier -->
 <Ref refid="RequestLog">
   ....
-</Ref>            
+</Ref>
 ----
 
 [[jetty-xml-array]]
 ==== <Array>
 
-An Array element allows the creation of a new array.
+An `Array` element allows the creation of a new array.
 
 [cols=",,",options="header",]
 |==================================================================
@@ -895,13 +844,13 @@ This is equivalent to:
 
 [source, java, subs="{sub-order}"]
 ----
-String[] a = new String[] { "value0", new String("value1") };              
+String[] a = new String[] { "value0", new String("value1") };
 ----
 
 [[jetty-xml-item]]
 ==== <Item>
 
-An Item element defines an entry for Array and Map elements.
+An `Item` element defines an entry for Array and Map elements.
 
 [cols=",,",options="header",]
 |=======================================================================
@@ -921,8 +870,7 @@ link:#jetty-xml-property[Property element]
 [[jetty-xml-map]]
 ==== <Map>
 
-A Map element allows the creation of a new HashMap and to populate it
-with (key, value) pairs.
+A `Map` element allows the creation of a new HashMap and to populate it with `(key, value)` pairs.
 
 [cols=",,",options="header",]
 |================================================================
@@ -943,7 +891,7 @@ link:#jetty-xml-entry[Entry element]
     <Item>keyName</Item>
     <Item><New class="java.lang.String"><Arg>value1</Arg></New></Item>
   </Entry>
-</Map>                
+</Map>
 ----
 
 This is equivalent to:
@@ -951,14 +899,13 @@ This is equivalent to:
 [source, java, subs="{sub-order}"]
 ----
 Map m = new HashMap();
-m.put("keyName", new String("value1"));                
+m.put("keyName", new String("value1"));
 ----
 
 [[jetty-xml-entry]]
 ==== <Entry>
 
-An Entry element contains a key-value link:#jetty-xml-item[Item element]
-pair for a Map.
+An `Entry` element contains a key-value link:#jetty-xml-item[Item element] pair for a `Map`.
 
 ===== Can Contain
 
@@ -967,8 +914,8 @@ link:#jetty-xml-item[Item element]
 [[jetty-xml-system-property]]
 ==== <SystemProperty>
 
-A SystemProperty element gets the value of a JVM system property. It can
-be used within elements that accept values, such as Set, Put, Arg.
+A `SystemProperty` element gets the value of a JVM system property.
+It can be used within elements that accept values, such as `Set`, `Put`, `Arg`.
 
 [cols=",,",options="header",]
 |=======================================================================
@@ -983,31 +930,30 @@ later.
 
 ===== Can Contain
 
-Only attributes as Elements (Id, Name, Default).
+Only attributes as Elements (`Id`, `Name`, `Default`).
 
 ===== Example
 
 [source, xml, subs="{sub-order}"]
 ----
-<SystemProperty name="jetty.http.port" default="8080"/>                
+<SystemProperty name="jetty.http.port" default="8080"/>
 ----
 
 That is equivalent to:
 
 [source, java, subs="{sub-order}"]
 ----
-System.getProperty("jetty.http.port", "8080");                
+System.getProperty("jetty.http.port", "8080");
 ----
 
-Both try to retrieve the value of jetty.http.port. If jetty.http.port is
-not set, then 8080 is used.
+Both try to retrieve the value of `jetty.http.port`.
+If `jetty.http.port` is not set, then 8080 is used.
 
 [[jetty-xml-property]]
 ==== <Property>
 
-A Property element allows arbitrary properties to be retrieved by name.
-It can contain a sequence of elements, such as Set, Put, Call that act
-on the retrieved object.
+A `Property` element allows arbitrary properties to be retrieved by name.
+It can contain a sequence of elements, such as `Set`, `Put`, `Call` that act on the retrieved object.
 
 [cols=",,",options="header",]
 |=======================================================================
@@ -1020,17 +966,13 @@ on the retrieved object.
 later.
 |=======================================================================
 
-The `name` attribute may be a comma separated list of property names,
-with the first property name being the "official" name, and the others
-names being old, deprecated property names that are kept for backward
-compatibility. A warning log is issued when deprecated property names
-are used. The `default` attribute contains the value to use in case none
-of the property names is found.
+The `Name` attribute may be a comma separated list of property names, with the first property name being the "official" name, and the others names being old, deprecated property names that are kept for backward compatibility.
+A warning log is issued when deprecated property names are used.
+The `Default` attribute contains the value to use in case none of the property names is found.
 
 ===== Can Contain
 
-The attributes may be expressed as contained Elements (Id, Name,
-Default).
+The attributes may be expressed as contained Elements (`Id`, `Name`, `Default`).
 
 ===== Example
 
@@ -1040,5 +982,5 @@ Default).
   <Call id="jdbcIdMgr" name="getAttribute">
     <Arg>jdbcIdMgr</Arg>
   </Call>
-</Property>                
+</Property>
 ----

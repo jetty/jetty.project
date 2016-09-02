@@ -51,7 +51,6 @@ public enum PathSpecGroup
     MIDDLE_GLOB,
     /**
      * For path specs that have a hardcoded prefix and a trailing wildcard glob.
-     * <p>
      * 
      * <pre>
      *   "/downloads/*"          - servlet spec
