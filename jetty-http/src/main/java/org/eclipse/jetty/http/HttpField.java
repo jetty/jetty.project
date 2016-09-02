@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.ArrayList;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -85,113 +84,9 @@ public class HttpField
     {
         if (_value == null)
             return null;
-
-        ArrayList<String> list = new ArrayList<>();
-        int state = 0;
-        int start=0;
-        int end=0;
-        StringBuilder builder = new StringBuilder();
-
-        for (int i=0;i<_value.length();i++)
-        {
-            char c = _value.charAt(i);
-            switch(state)
-            {
-                case 0: // initial white space
-                    switch(c)
-                    {
-                        case '"': // open quote
-                            state=2;
-                            break;
-
-                        case ',': // ignore leading empty field
-                            break;
-
-                        case ' ': // more white space
-                        case '\t':
-                            break;
-
-                        default: // character
-                            start=i;
-                            end=i;
-                            state=1;
-                    }
-                    break;
-
-                case 1: // In token
-                    switch(c)
-                    {
-                        case ',': // next field
-                            list.add(_value.substring(start,end+1));
-                            state=0;
-                            break;
-
-                        case ' ': // more white space
-                        case '\t':
-                            break;
-
-                        default:
-                            end=i;
-                    }
-                    break;
-
-                case 2: // In Quoted
-                    switch(c)
-                    {
-                        case '\\': // next field
-                            state=3;
-                            break;
-
-                        case '"': // end quote
-                            list.add(builder.toString());
-                            builder.setLength(0);
-                            state=4;
-                            break;
-
-                        default:
-                            builder.append(c);
-                    }
-                    break;
-
-                case 3: // In Quoted Quoted
-                    builder.append(c);
-                    state=2;
-                    break;
-
-                case 4: // WS after end quote
-                    switch(c)
-                    {
-                        case ' ': // white space
-                        case '\t': // white space
-                            break;
-
-                        case ',': // white space
-                            state=0;
-                            break;
-
-                        default:
-                            throw new IllegalArgumentException("c="+(int)c);
-
-                    }
-                    break;
-            }
-        }
-
-        switch(state)
-        {
-            case 0:
-                break;
-            case 1:
-                list.add(_value.substring(start,end+1));
-                break;
-            case 4:
-                break;
-
-            default:
-                throw new IllegalArgumentException("state="+state);
-        }
-
-        return list.toArray(new String[list.size()]);
+        
+        QuotedCSV list = new QuotedCSV(false,_value);
+        return list.getValues().toArray(new String[list.size()]);
     }
 
     /**
