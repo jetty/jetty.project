@@ -2,11 +2,13 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-<<<<<<< HEAD
+<<<<<<<
     <version>8.1.18-SNAPSHOT</version>
+
 =======
     <version>7.6.21-SNAPSHOT</version>
->>>>>>> jetty-7
+
+>>>>>>>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
