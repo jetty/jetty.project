@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FuturePromise<C> implements Future<C>,Promise<C>
 {
-    private static Throwable COMPLETED=new Throwable();
+    private static Throwable COMPLETED=new ConstantThrowable();
     private final AtomicBoolean _done=new AtomicBoolean(false);
     private final CountDownLatch _latch=new CountDownLatch(1);
     private Throwable _cause;

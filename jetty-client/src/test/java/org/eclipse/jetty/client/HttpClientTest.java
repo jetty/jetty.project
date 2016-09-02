@@ -89,6 +89,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Rule;
@@ -1532,6 +1533,31 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 listener.get(5, TimeUnit.SECONDS);
             }
         }
+    }
+
+    @Test
+    public void test_IPv6_Host() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setContentType("text/plain");
+                response.getOutputStream().print(request.getHeader("Host"));
+            }
+        });
+
+        URI uri = URI.create(scheme + "://[::1]:" + connector.getLocalPort() + "/path");
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.PUT)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1),Matchers.startsWith("[::1]:"));
     }
 
     private void consume(InputStream input, boolean eof) throws IOException

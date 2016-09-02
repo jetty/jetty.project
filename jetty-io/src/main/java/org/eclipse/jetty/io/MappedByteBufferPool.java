@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -31,6 +32,7 @@ public class MappedByteBufferPool implements ByteBufferPool
     private final ConcurrentMap<Integer, Bucket> heapBuffers = new ConcurrentHashMap<>();
     private final int _factor;
     private final int _maxQueue;
+    private final Function<Integer, Bucket> _newBucket;
 
     public MappedByteBufferPool()
     {
@@ -39,13 +41,19 @@ public class MappedByteBufferPool implements ByteBufferPool
 
     public MappedByteBufferPool(int factor)
     {
-        this(factor,-1);
+        this(factor,-1,null);
     }
     
     public MappedByteBufferPool(int factor,int maxQueue)
     {
+        this(factor,maxQueue,null);
+    }
+    
+    public MappedByteBufferPool(int factor,int maxQueue,Function<Integer, Bucket> newBucket)
+    {
         _factor = factor<=0?1024:factor;
-        _maxQueue=maxQueue;
+        _maxQueue = maxQueue;
+        _newBucket = newBucket!=null?newBucket:i->new Bucket(this,i*_factor,_maxQueue);
     }
 
     @Override
@@ -60,12 +68,6 @@ public class MappedByteBufferPool implements ByteBufferPool
         return bucket.acquire(direct);
     }
 
-    protected ByteBuffer newByteBuffer(int capacity, boolean direct)
-    {
-        return direct ? BufferUtil.allocateDirect(capacity)
-                      : BufferUtil.allocate(capacity);
-    }
-
     @Override
     public void release(ByteBuffer buffer)
     {
@@ -78,13 +80,15 @@ public class MappedByteBufferPool implements ByteBufferPool
         int b = bucketFor(buffer.capacity());
         ConcurrentMap<Integer, Bucket> buckets = bucketsFor(buffer.isDirect());
 
-        Bucket bucket = buckets.computeIfAbsent(b,bi->new Bucket(b*_factor,_maxQueue));
+        Bucket bucket = buckets.computeIfAbsent(b,_newBucket);
         bucket.release(buffer);
     }
 
     public void clear()
     {
+        directBuffers.values().forEach(Bucket::clear);
         directBuffers.clear();
+        heapBuffers.values().forEach(Bucket::clear);
         heapBuffers.clear();
     }
 
@@ -107,7 +111,7 @@ public class MappedByteBufferPool implements ByteBufferPool
         private final AtomicInteger tag = new AtomicInteger();
 
         @Override
-        protected ByteBuffer newByteBuffer(int capacity, boolean direct)
+        public ByteBuffer newByteBuffer(int capacity, boolean direct)
         {
             ByteBuffer buffer = super.newByteBuffer(capacity + 4, direct);
             buffer.limit(buffer.capacity());
