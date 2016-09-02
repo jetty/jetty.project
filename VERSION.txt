@@ -1,4 +1,5 @@
-jetty-7.6.20-SNAPSHOT
+jetty-7.6.20.v20160902 - 2 September 2016
+ + 868 backport static throwables fix
 
 jetty-7.6.19.v20160209 - 9 February 2016
  + 486167 ServletInputStream.available() broken for pipelined requests.
