@@ -454,11 +454,21 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             }
         }
 
-        // install interceptor and handle
-        out.setInterceptor(new GzipHttpOutputInterceptor(this,getVaryField(),baseRequest.getHttpChannel(),out.getInterceptor(),isSyncFlush()));
+        HttpOutput.Interceptor orig_interceptor = out.getInterceptor();
+        try
+        {
+            // install interceptor and handle
+            out.setInterceptor(new GzipHttpOutputInterceptor(this,getVaryField(),baseRequest.getHttpChannel(),orig_interceptor,isSyncFlush()));
 
-        if (_handler!=null)
-            _handler.handle(target,baseRequest, request, response);
+            if (_handler!=null)
+                _handler.handle(target,baseRequest, request, response);
+        }
+        finally
+        {
+            // reset interceptor if request not handled
+            if (!baseRequest.isHandled() && !baseRequest.isAsyncStarted())
+                out.setInterceptor(orig_interceptor);
+        }
     }
 
     /* ------------------------------------------------------------ */
