@@ -18,32 +18,25 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.Set;
-import java.util.function.Predicate;
-
-
-/** Utility class to maintain a set of inclusions and exclusions.
- * <p>This extension of the {@link IncludeExcludeSet} class is used
- * when the type of the set elements is the same as the type of 
- * the predicate test.
- * <p>
- * @param <ITEM> The type of element
+/**
+ * A {@link Throwable} that may be used in static contexts. It uses Java 7
+ * constructor that prevents setting stackTrace inside exception object.
  */
-public class IncludeExclude<ITEM> extends IncludeExcludeSet<ITEM,ITEM>
+public class ConstantThrowable extends Throwable
 {
-    public IncludeExclude()
+    public ConstantThrowable()
     {
-        super();
+        this(null);
     }
 
-    public <SET extends Set<ITEM>> IncludeExclude(Class<SET> setClass)
+    public ConstantThrowable(String name)
     {
-        super(setClass);
+        super(name, null, false, false);
     }
 
-    public <SET extends Set<ITEM>> IncludeExclude(Set<ITEM> includeSet, Predicate<ITEM> includePredicate, Set<ITEM> excludeSet,
-            Predicate<ITEM> excludePredicate)
+    @Override
+    public String toString()
     {
-        super(includeSet,includePredicate,excludeSet,excludePredicate);
+        return String.valueOf(getMessage());
     }
 }

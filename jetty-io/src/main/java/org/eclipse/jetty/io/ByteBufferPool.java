@@ -55,6 +55,11 @@ public interface ByteBufferPool
      * @see #acquire(int, boolean)
      */
     public void release(ByteBuffer buffer);
+    
+    default ByteBuffer newByteBuffer(int capacity, boolean direct)
+    {
+        return direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
+    }
 
     public static class Lease
     {
@@ -119,14 +124,17 @@ public interface ByteBufferPool
         }
     }
 
+    
     class Bucket
     {
+        private final ByteBufferPool _pool;
         private final int _capacity;
         private final AtomicInteger _space;
         private final Queue<ByteBuffer> _queue= new ConcurrentArrayQueue<>();
 
-        public Bucket(int bufferSize,int maxSize)
+        public Bucket(ByteBufferPool pool, int bufferSize,int maxSize)
         {
+            _pool=pool;
             _capacity=bufferSize;
             _space=maxSize>0?new AtomicInteger(maxSize):null;
         }
@@ -146,7 +154,7 @@ public interface ByteBufferPool
         {
             ByteBuffer buffer = _queue.poll();
             if (buffer == null) 
-               return direct ? BufferUtil.allocateDirect(_capacity) : BufferUtil.allocate(_capacity);
+               return _pool.newByteBuffer(_capacity,direct);
             if (_space!=null)
                 _space.incrementAndGet();
             return buffer;        

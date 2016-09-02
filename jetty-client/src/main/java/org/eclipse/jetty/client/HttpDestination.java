@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -83,7 +84,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
         this.connectionFactory = connectionFactory;
 
-        String host = getHost();
+        String host = HostPort.normalizeHost(getHost());
         if (!client.isDefaultPort(getScheme(), getPort()))
             host += ":" + getPort();
         hostField = new HttpField(HttpHeader.HOST, host);
