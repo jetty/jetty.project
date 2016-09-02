@@ -22,33 +22,31 @@ The challenge is to do so without changing the webapp itself. You can use a `jet
 But there are some changes that `jetty.xml` cannot accomplish, for example, modifications to servlet init-params and context init-params.
 Using `webdefault.xml` is not an option because Jetty applies `webdefault.xml` to a web application _before_ the application's own `WEB-INF/web.xml`, which means that it cannot override values inside the webapp's ` web.xml`.
 
-The solution is `override-web.xml`. It is a `web.xml` file that Jetty applies to a web application _after_ the application's own `WEB-INF/web.xml`, which means that it can override values or add new elements.
-You define it per-webapp, using the xref:jetty-xml-syntax[].
+The solution is `override-web.xml`.
+It is a `web.xml` file that Jetty applies to a web application _after_ the application's own `WEB-INF/web.xml`, which means that it can override values or add new elements.
+This is defined on a per-webapp basis, using the xref:jetty-xml-syntax[].
 
 [[using-override-web-xml]]
-==== Using `override-web.xml`
+==== Using override-web.xml
 
-You can specify the `override-web.xml` to use for an individual web application, in that webapp's xref:jetty-web-xml-config[].
+You can specify the `override-web.xml` to use for an individual web application in a deployable xml file located in Jetty webapps folder .
+For example, if you had a webapp named MyApp, you would place a deployable xml file named `myapp.xml` in `${jetty.base}/webapps` which includes an `overrideDescriptor` entry for the `override-web.xml` file.
 
 [source, xml, subs="{sub-order}"]
 ----
-
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   ...
-  <!-- Set up the path to the custom override descriptor, 
+  <!-- Set up the path to the custom override descriptor,
   relative to your $(jetty.home) directory or to the current directory -->
   <Set name="overrideDescriptor"><SystemProperty name="jetty.home" default="."/>/my/path/to/override-web.xml</Set>
   ...
 </Configure>
-
-      
 ----
 
 The equivalent in code is:
 
 [source, java, subs="{sub-order}"]
 ----
-
 import org.eclipse.jetty.webapp.WebAppContext;
 
     ...
@@ -58,11 +56,9 @@ import org.eclipse.jetty.webapp.WebAppContext;
     //Set the path to the override descriptor, based on your $(jetty.home) directory
     wac.setOverrideDescriptor(System.getProperty("jetty.home")+"/my/path/to/override-web.xml");
     ...
-
-      
 ----
 
-Alternatively, use the classloader (xref:jetty-classloading[]) to get the path to the override descriptor as a resource.
+Alternatively, you can use the classloader (xref:jetty-classloading[]) to get the path to the override descriptor as a resource.
 
 [[override-using-jetty-maven-plugin]]
 ==== Using the Jetty Maven Plugin
@@ -71,7 +67,6 @@ Use the `<overrideDescriptor>` tag as follows:
 
 [source, xml, subs="{sub-order}"]
 ----
-
 <project>
     ...
     <plugins>
@@ -89,8 +84,6 @@ Use the `<overrideDescriptor>` tag as follows:
     </plugins>
     ...
 </project>
-
-      
 ----
 
 [[override-web-xml-additional-resources]]
