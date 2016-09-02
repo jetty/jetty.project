@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Response;
@@ -189,7 +190,8 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         }
 
         // Has the Content-Encoding header already been set?
-        String ce=response.getHeader("Content-Encoding");
+        HttpFields fields = response.getHttpFields();
+        String ce=fields.get(HttpHeader.CONTENT_ENCODING);
         if (ce != null)
         {
             LOG.debug("{} exclude by content-encoding {}",this,ce);
@@ -202,9 +204,13 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         if (_state.compareAndSet(GZState.MIGHT_COMPRESS,GZState.COMMITTING))
         {
             // We are varying the response due to accept encoding header.
-            HttpFields fields = response.getHttpFields();
             if (_vary != null)
-                fields.add(_vary);
+            {
+                if (fields.contains(HttpHeader.VARY))
+                    fields.addCSV(HttpHeader.VARY,_vary.getValues());
+                else
+                    fields.add(_vary);
+            }
 
             long content_length = response.getContentLength();
             if (content_length<0 && complete)
