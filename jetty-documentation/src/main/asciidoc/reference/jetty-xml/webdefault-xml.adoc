@@ -38,7 +38,7 @@ You can specify a custom `webdefault.xml` for an individual web application in t
 
 [source, xml, subs="{sub-order}"]
 ----
- 
+
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   ...
   <!-- Set up the absolute path to the custom webdefault.xml -->
@@ -46,14 +46,14 @@ You can specify a custom `webdefault.xml` for an individual web application in t
   ...
 </Configure>
 
-        
+
 ----
 
 The equivalent in code is:
 
 [source, java, subs="{sub-order}"]
 ----
- 
+
 import org.eclipse.jetty.webapp.WebAppContext;
 
     ...
@@ -64,7 +64,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
     wac.setDefaultsDescriptor("/my/path/to/webdefault.xml");
     ...
 
-        
+
 ----
 
 Alternatively, you can use a xref:jetty-classloading[] to find the resource representing your custom `webdefault.xml`.
@@ -86,7 +86,7 @@ Similarly, when using the link:#jetty-maven-plugin[Jetty Maven Plugin] you provi
 
 [source, xml, subs="{sub-order}"]
 ----
- 
+
 <project>
     ...
     <plugins>
@@ -105,7 +105,7 @@ Similarly, when using the link:#jetty-maven-plugin[Jetty Maven Plugin] you provi
     ...
 </project>
 
-        
+
 ----
 
 [[webdefault-xml-additional-resources]]

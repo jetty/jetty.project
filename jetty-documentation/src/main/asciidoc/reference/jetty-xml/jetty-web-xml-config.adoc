@@ -30,15 +30,12 @@ For a more in-depth look at the syntax, see xref:jetty-xml-syntax[].
 
 [source, xml, subs="{sub-order}"]
 ----
- 
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
  ..
 </Configure>
-
-      
 ----
 
 ____
