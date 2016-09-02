@@ -329,7 +329,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     
     /* ------------------------------------------------------------ */
     /** Add a managed lifecycle.
-     * <p>This is a conveniance method that uses addBean(lifecycle,true)
+     * <p>This is a convenience method that uses addBean(lifecycle,true)
      * and then ensures that the added bean is started iff this container
      * is running.  Exception from nested calls to start are caught and 
      * wrapped as RuntimeExceptions

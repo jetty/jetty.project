@@ -93,7 +93,7 @@ public class Constraint implements Cloneable, Serializable
 
     /* ------------------------------------------------------------ */
     /**
-     * Conveniance Constructor.
+     * convenience Constructor.
      * 
      * @param name
      * @param role

@@ -336,7 +336,7 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a servlet.
+    /** convenience method to add a servlet.
      */
     public ServletHolder addServlet(String className,String pathSpec)
     {
@@ -344,15 +344,15 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a servlet.
+    /** convenience method to add a servlet.
      */
     public ServletHolder addServlet(Class<? extends Servlet> servlet,String pathSpec)
     {
-        return getServletHandler().addServletWithMapping(servlet.getName(), pathSpec);
+        return getServletHandler().addServletWithMapping(servlet, pathSpec);
     }
 
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a servlet.
+    /** convenience method to add a servlet.
      */
     public void addServlet(ServletHolder servlet,String pathSpec)
     {
@@ -360,7 +360,7 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a filter
+    /** convenience method to add a filter
      */
     public void addFilter(FilterHolder holder,String pathSpec,EnumSet<DispatcherType> dispatches)
     {

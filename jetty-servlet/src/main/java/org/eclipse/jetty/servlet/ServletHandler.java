@@ -963,7 +963,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a servlet.
+    /** convenience method to add a servlet.
      * @return The servlet holder.
      */
     public ServletHolder addServletWithMapping (Class<? extends Servlet> servlet,String pathSpec)
@@ -976,7 +976,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a servlet.
+    /** convenience method to add a servlet.
      * @param servlet servlet holder to add
      * @param pathSpec servlet mappings for the servletHolder
      */
