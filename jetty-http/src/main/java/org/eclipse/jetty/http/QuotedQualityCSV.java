@@ -42,10 +42,9 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     
     private final List<Double> _quality = new ArrayList<>();
     private boolean _sorted = false;
-    private final Function<String, Integer> secondaryOrderingFunction;
+    private final Function<String, Integer> _secondaryOrdering;
     
     /* ------------------------------------------------------------ */
-
     /**
      * Sorts values with equal quality according to the length of the value String.
      */
@@ -54,31 +53,34 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         this((s) -> s.length());
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * Sorts values with equal quality according to given order.
+     * @param preferredOrder Array indicating the preferred order of known values
      */
-    public QuotedQualityCSV(String[] serverPreferredValueOrder)
+    public QuotedQualityCSV(String[] preferredOrder)
     {
         this((s) -> {
-            for (int i=0;i<serverPreferredValueOrder.length;++i)
-                if (serverPreferredValueOrder[i].equals(s))
-                    return serverPreferredValueOrder.length-i;
+            for (int i=0;i<preferredOrder.length;++i)
+                if (preferredOrder[i].equals(s))
+                    return preferredOrder.length-i;
 
             if ("*".equals(s))
-                return serverPreferredValueOrder.length;
+                return preferredOrder.length;
 
             return MIN_VALUE;
         });
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * Orders values with equal quality with the given function.
+     * @param secondaryOrdering Function to apply an ordering other than specified by quality
      */
-    public QuotedQualityCSV(Function<String, Integer> secondaryOrderingFunction)
+    public QuotedQualityCSV(Function<String, Integer> secondaryOrdering)
     {
-        this.secondaryOrderingFunction = secondaryOrderingFunction;
+        this._secondaryOrdering = secondaryOrdering;
     }
-
 
     /* ------------------------------------------------------------ */
     public void addValue(String value)
@@ -148,7 +150,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             Double q = _quality.get(i);
 
             int compare=last.compareTo(q);
-            if (compare>0 || (compare==0 && secondaryOrderingFunction.apply(v)<lastOrderIndex))
+            if (compare>0 || (compare==0 && _secondaryOrdering.apply(v)<lastOrderIndex))
             {
                 _values.set(i, _values.get(i + 1));
                 _values.set(i + 1, v);
@@ -161,7 +163,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             }
 
             last=q;
-            lastOrderIndex=secondaryOrderingFunction.apply(v);
+            lastOrderIndex=_secondaryOrdering.apply(v);
         }
         
         int last_element=_quality.size();
