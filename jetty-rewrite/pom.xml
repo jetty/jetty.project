@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.6.21-SNAPSHOT</version>
+    <version>7.6.20.v20160902</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-rewrite</artifactId>
