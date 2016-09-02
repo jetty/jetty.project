@@ -101,7 +101,7 @@ At this point you can place a webapp (war file) in the `mybase/webapps/` directo
 
 In the above example, when a module is activated the contents of that module file are added in `${jetty.base}/start.ini`.
 As additional modules are added, their contents are appended to this file.
-This can be beneficial if you want all of your module configurations in a single file, but for large server instances with lots of modules it can pose a challenge to quickly find and make changes.
+This can be beneficial if you want all of your module configurations in a single file, but for large server instances with lots of modules it can pose a challenge to quickly find and make changes or to remove a module.
 
 As an alternative to a single `start.ini` file you can opt to house modules in a `${jetty.base}/start.d` directory.
 Modules activated when a `start.d` directory exists will be stored as a single file per module.
@@ -151,38 +151,24 @@ INFO : server          initialised in ${jetty.base}/start.ini
 INFO : websocket       initialised in ${jetty.base}/start.ini
 INFO : client          initialised in ${jetty.base}/start.ini
 INFO : Base directory was modified
-[mybase]$ ls -all
-total 8
-drwxr-xr-x   3 staff  staff   102 Aug 29 15:24 .
-drwxr-xr-x@ 26 staff  staff   884 Aug 29 15:16 ..
--rw-r--r--   1 staff  staff  2867 Aug 29 15:24 start.ini
 
 [mybase]$ java -jar ../start.jar --create-startd
 INFO : Base directory was modified
-[mybase]$ ls -all
-total 0
-drwxr-xr-x   3 staff  staff  102 Aug 29 15:33 .
-drwxr-xr-x@ 26 staff  staff  884 Aug 29 15:16 ..
-drwxr-xr-x   3 staff  staff  102 Aug 29 15:33 start.d
+[mybase]$ tree
+.
+└── start.d
+    └── start.ini
 
-[mybase]$ cd start.d/
-[start.d]$ ls -all
-total 8
-drwxr-xr-x  3 staff  staff   102 Aug 29 15:33 .
-drwxr-xr-x  3 staff  staff   102 Aug 29 15:33 ..
--rw-r--r--  1 staff  staff  2867 Aug 29 15:24 start.ini
-
-[start.d]$ cd ..
 [mybase]$ java -jar ../start.jar --add-to-start=ssl
 INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
 INFO : Base directory was modified
-[mybase]$ cd start.d/
-[start.d]$ ls -all
-total 16
-drwxr-xr-x  4 staff  staff   136 Aug 29 15:33 .
-drwxr-xr-x  4 staff  staff   136 Aug 29 15:33 ..
--rw-r--r--  1 staff  staff  2889 Aug 29 15:33 ssl.ini
--rw-r--r--  1 staff  staff  2867 Aug 29 15:24 start.ini
+[mybase]$ tree
+.
+├── etc
+│   └── keystore
+└── start.d
+    ├── ssl.ini
+    └── start.ini
 ....
 
 [NOTE]
