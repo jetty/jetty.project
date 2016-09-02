@@ -1,3 +1,5 @@
+jetty-7.6.21-SNAPSHOT
+
 jetty-7.6.20.v20160902 - 2 September 2016
  + 868 backport static throwables fix
 
