@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -42,7 +43,14 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.IncludeExcludeSet;
+import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
@@ -70,43 +78,35 @@ import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
  */
 public class ThreadLimitHandler extends HandlerWrapper
 {
+    private static final Logger LOG = Log.getLogger(ThreadLimitHandler.class);
+
     private final static String REMOTE = "o.e.j.s.h.TLH.REMOTE";
     private final static String PASS = "o.e.j.s.h.TLH.PASS";
     private final boolean _rfc7239;
     private final String _forwardedHeader;
-    private volatile boolean _enabled;
+    private final IncludeExcludeSet<String, InetAddress> _includeExcludeSet = new IncludeExcludeSet<>(InetAddressSet.class);
     private final ConcurrentMap<String, Remote> _remotes = new ConcurrentHashMap<>();
-    private long _blockForMs=10;
-    private volatile int _threadLimit=0;
+    private volatile boolean _enabled;
+    private long _blockForMs=0;
+    private int _threadLimit=10;
 
     public ThreadLimitHandler()
     {
-        this(null,false,true);
-    }
-
-    public ThreadLimitHandler(boolean enabled)
-    {
-        this(null,false,enabled);
+        this(null,false);
     }
     
-    public ThreadLimitHandler(boolean rfc7239,boolean enabled)
+    public ThreadLimitHandler(@Name("forwardedHeader") String forwardedHeader)
     {
-        this(rfc7239?HttpHeader.FORWARDED.asString():HttpHeader.X_FORWARDED_FOR.asString(),rfc7239,enabled);
-    }
-    
-    public ThreadLimitHandler(String forwardedHeader, boolean rfc7239)
-    {
-        this(forwardedHeader,rfc7239,true);
+        this(forwardedHeader,HttpHeader.FORWARDED.is(forwardedHeader));
     }
 
-    public ThreadLimitHandler(String forwardedHeader, boolean rfc7239, boolean enabled)
+    public ThreadLimitHandler(@Name("forwardedHeader") String forwardedHeader, @Name("rfc7239")  boolean rfc7239)
     {
         super();
         _rfc7239 = rfc7239;
         _forwardedHeader = forwardedHeader;
-        _enabled = enabled;
+        _enabled = true;
     }
- 
     
     @Override
     protected void doStart() throws Exception
@@ -129,6 +129,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         return _enabled;
     }
 
+    @ManagedAttribute("enable/disable thread limits")
     public void setEnabled(boolean enabled)
     {
         _enabled = enabled;
@@ -139,6 +140,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         return _blockForMs;
     }
 
+    @ManagedAttribute("Period in ms to wait synchronously for available thread")
     public void setBlockForMs(long blockForMs)
     {
         _blockForMs = blockForMs;
@@ -149,6 +151,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         return _threadLimit;
     }
 
+    @ManagedAttribute("The maximum threads that can be dispatched per remote IP")
     public void setThreadLimit(int threadLimit)
     {
         _threadLimit = threadLimit;
@@ -156,6 +159,18 @@ public class ThreadLimitHandler extends HandlerWrapper
             _enabled=false;
     }
 
+    @ManagedOperation("Include IP in thread limits")
+    public void include(String... inetAddressPattern)
+    {
+        _includeExcludeSet.include(inetAddressPattern);
+    }
+
+    @ManagedOperation("Exclude IP from thread limits")
+    public void exclude(String... inetAddressPattern)
+    {
+        _includeExcludeSet.exclude(inetAddressPattern);
+    }
+    
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -232,7 +247,21 @@ public class ThreadLimitHandler extends HandlerWrapper
     
     protected int getThreadLimit(String ip)
     {
-        // TODO handle excluded IPs
+        if (!_includeExcludeSet.isEmpty())
+        {
+            try
+            {
+                if (!_includeExcludeSet.test(InetAddress.getByName(ip)))
+                {
+                    LOG.debug("excluded {}",ip);
+                    return 0;
+                }
+            }
+            catch(Exception e)
+            {
+                LOG.ignore(e);
+            }
+        }
         return _threadLimit;
     }
 
@@ -243,6 +272,7 @@ public class ThreadLimitHandler extends HandlerWrapper
             return remote;
         
         String ip=getRemoteIP(baseRequest);
+        LOG.debug("ip={}",ip);
         if (ip==null)
             return null;
         
@@ -268,7 +298,7 @@ public class ThreadLimitHandler extends HandlerWrapper
     protected String getRemoteIP(Request baseRequest)
     {
         // Do we have a forwarded header set?
-        if (_forwardedHeader!=null)
+        if (_forwardedHeader!=null && !_forwardedHeader.isEmpty())
         {
             // Yes, then try to get the remote IP from the header
             String remote = _rfc7239?getForwarded(baseRequest):getXForwardedFor(baseRequest);

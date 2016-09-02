@@ -75,7 +75,7 @@ public class ThreadLimitHandlerTest
     public void testNoForwardHeaders() throws Exception
     {
         AtomicReference<String> last = new AtomicReference<>();
-        ThreadLimitHandler handler = new ThreadLimitHandler(null,false,true)
+        ThreadLimitHandler handler = new ThreadLimitHandler(null,false)
         {
             @Override
             protected int getThreadLimit(String ip)
@@ -113,7 +113,7 @@ public class ThreadLimitHandlerTest
     public void testXForwardForHeaders() throws Exception
     {
         AtomicReference<String> last = new AtomicReference<>();
-        ThreadLimitHandler handler = new ThreadLimitHandler(false,true)
+        ThreadLimitHandler handler = new ThreadLimitHandler("X-Forwarded-For")
         {
             @Override
             protected int getThreadLimit(String ip)
@@ -147,7 +147,7 @@ public class ThreadLimitHandlerTest
     public void testForwardHeaders() throws Exception
     {
         AtomicReference<String> last = new AtomicReference<>();
-        ThreadLimitHandler handler = new ThreadLimitHandler(true,true)
+        ThreadLimitHandler handler = new ThreadLimitHandler("Forwarded")
         {
             @Override
             protected int getThreadLimit(String ip)
@@ -181,7 +181,7 @@ public class ThreadLimitHandlerTest
     @Test
     public void testLimit() throws Exception
     {
-        ThreadLimitHandler handler = new ThreadLimitHandler(true,true);
+        ThreadLimitHandler handler = new ThreadLimitHandler("Forwarded");
         
         handler.setThreadLimit(4);
 

@@ -183,4 +183,9 @@ public class IncludeExcludeSet<P,T> implements Predicate<T>
     {
         return String.format("%s@%x{i=%s,ip=%s,e=%s,ep=%s}",this.getClass().getSimpleName(),hashCode(),_includes,_includePredicate,_excludes,_excludePredicate);
     }
+
+    public boolean isEmpty()
+    {
+        return _includes.isEmpty() && _excludes.isEmpty();
+    }
 }
