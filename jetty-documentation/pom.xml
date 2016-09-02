@@ -85,7 +85,7 @@
               <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/docbook.xsl</htmlCustomization>
               <preProcess>
                 <!-- pull over the images from the source material -->
-                <copy todir="target/docbkx/html/index/images" flatten="true">
+                <copy todir="target/docbkx/html/images" flatten="true">
                   <fileset dir="src/main/asciidoc">
                     <include name="**/*.png" />
                     <include name="**/*.jpg" />
@@ -93,16 +93,16 @@
                     <include name="**/*.dot" />
                   </fileset>
                 </copy>
-                <copy todir="target/docbkx/html/index/images">
+                <copy todir="target/docbkx/html/images">
                   <fileset dir="src/main/docbkx-resources/images" />
                 </copy>
-                <copy todir="target/docbkx/html/index/css">
+                <copy todir="target/docbkx/html/css">
                   <fileset dir="src/main/docbkx-resources/css" />
                 </copy>
-                <copy todir="target/docbkx/html/index/fonts">
+                <copy todir="target/docbkx/html/fonts">
                   <fileset dir="src/main/docbkx-resources/fonts" />
                 </copy>
-                <copy todir="target/docbkx/html/index/js">
+                <copy todir="target/docbkx/html/js">
                   <fileset dir="src/main/docbkx-resources/js" />
                 </copy>
               </preProcess>
