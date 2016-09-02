@@ -2,7 +2,11 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
+<<<<<<< HEAD
     <version>8.1.20-SNAPSHOT</version>
+=======
+    <version>7.6.21-SNAPSHOT</version>
+>>>>>>> jetty-7
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-webapp</artifactId>

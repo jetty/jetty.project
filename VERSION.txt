@@ -1,4 +1,5 @@
-jetty-8.1.20-SNAPSHOT
+jetty-8.1.20.v20160902 - 2 September 2016
+ + 868 backport static throwables fix
 
 jetty-8.1.19.v20160209 - 09 February 2016
  + 426490 HttpServletResponse.setBufferSize(0) results in tight loop (100% cpu
@@ -23,6 +24,9 @@ jetty-8.1.19.v20160209 - 09 February 2016
 
 jetty-8.1.18.v20150929 - 29 September 2015
  + 467434 NPE in SslContextFactory
+
+jetty-7.6.20.v20160902 - 2 September 2016
+ + 868 backport static throwables fix
 
 jetty-7.6.19.v20160209 - 9 February 2016
  + 486167 ServletInputStream.available() broken for pipelined requests.
