@@ -315,7 +315,7 @@ public class HttpFields implements Iterable<HttpField>
     /**
      * Add comma separated values, but only if not already
      * present.
-     * @param header The header to add the value(s) to
+     * @param name The header to add the value(s) to
      * @param values The value(s) to add
      * @return True if headers were modified
      */
