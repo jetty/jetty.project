@@ -427,7 +427,7 @@ public class ServletContextHandler extends ContextHandler
      */
     public ServletHolder addServlet(Class<? extends Servlet> servlet,String pathSpec)
     {
-        return getServletHandler().addServletWithMapping(servlet,pathSpec);
+        return getServletHandler().addServletWithMapping(servlet, pathSpec);
     }
 
     /* ------------------------------------------------------------ */
