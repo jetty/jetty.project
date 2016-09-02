@@ -6,7 +6,7 @@
     <version>20</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>7.6.20.v20160902</version>
+  <version>7.6.21-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -22,7 +22,7 @@
     <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>
     <developerConnection>scm:git:ssh://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</developerConnection>
     <url>http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree</url>
-    <tag>jetty-7.6.20.v20160902</tag>
+    <tag>HEAD</tag>
   </scm>
   <build>
     <defaultGoal>install</defaultGoal>
