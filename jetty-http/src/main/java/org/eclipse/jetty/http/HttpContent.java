@@ -73,7 +73,7 @@ public interface HttpContent
          * @param maxBuffer The maximum buffer to allocated for this request.  For cached content, a larger buffer may have
          * previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
          * @return A {@link HttpContent}
-         * @throws IOException
+         * @throws IOException IO Exception reading content
          */
         HttpContent getContent(String path,int maxBuffer) throws IOException;
     }

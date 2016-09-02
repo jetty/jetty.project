@@ -177,8 +177,8 @@ public class HttpURI
 
     /* ------------------------------------------------------------ */
     /** Parse according to https://tools.ietf.org/html/rfc7230#section-5.3
-     * @param method
-     * @param uri
+     * @param method The method to parse the URI against (used to allow CONNECT exceptions)
+     * @param uri The URI to parse
      */
     public void parseRequestTarget(String method,String uri)
     {

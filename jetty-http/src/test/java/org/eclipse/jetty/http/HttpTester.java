@@ -297,7 +297,7 @@ public class HttpTester
         @Override
         public void parsedHeader(HttpField field)
         {
-            put(field.getName(),field.getValue());
+            add(field.getName(),field.getValue());
         }
 
         @Override

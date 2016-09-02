@@ -134,6 +134,8 @@ public class GzipHandlerTest
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
         {
+            if (req.getParameter("vary")!=null)
+                response.addHeader("Vary",req.getParameter("vary"));
             response.setHeader("ETag",__contentETag);
             String ifnm = req.getHeader("If-None-Match");    
             if (ifnm!=null && ifnm.equals(__contentETag))
@@ -181,24 +183,24 @@ public class GzipHandlerTest
         HttpTester.Response response;
 
         request.setMethod("GET");
-        request.setURI("/ctx/content");
+        request.setURI("/ctx/content?vary=Other");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
 
         response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
-
+        
         assertThat(response.getStatus(),is(200));
         assertThat(response.get("Content-Encoding"),not(equalToIgnoringCase("gzip")));
         assertThat(response.get("ETag"),is(__contentETag));
-        assertThat(response.get("Vary"),is("Accept-Encoding"));
+        assertThat(response.getValuesList("Vary"),Matchers.contains("Other","Accept-Encoding"));
 
         InputStream testIn = new ByteArrayInputStream(response.getContentBytes());
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn,testOut);
 
         assertEquals(__content, testOut.toString("UTF8"));
-
     }
+    
     
     @Test
     public void testGzipHandler() throws Exception
@@ -208,7 +210,7 @@ public class GzipHandlerTest
         HttpTester.Response response;
 
         request.setMethod("GET");
-        request.setURI("/ctx/content");
+        request.setURI("/ctx/content?vary=Accept-Encoding,Other");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setHeader("accept-encoding","gzip");
@@ -218,7 +220,7 @@ public class GzipHandlerTest
         assertThat(response.getStatus(),is(200));
         assertThat(response.get("Content-Encoding"),Matchers.equalToIgnoringCase("gzip"));
         assertThat(response.get("ETag"),is(__contentETagGzip));
-        assertThat(response.get("Vary"),is("Accept-Encoding"));
+        assertThat(response.getCSV("Vary",false),Matchers.contains("Accept-Encoding","Other"));
 
         InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
