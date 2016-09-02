@@ -19,17 +19,10 @@
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
   </properties>
   <scm>
-<<<<<<< HEAD
-    <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>
-    <developerConnection>scm:git:ssh://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</developerConnection>
-    <url>http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree</url>
-    <tag>jetty-8.1.20.v20160902</tag>
-=======
     <connection>scm:git:https://github.com/eclipse/jetty.project.git</connection>
     <developerConnection>scm:git:git@github.com:eclipse/jetty.project.git</developerConnection>
     <url>https://github.com/eclipse/jetty.project</url>
     <tag>HEAD</tag>
->>>>>>> jetty-7
   </scm>
   <build>
     <defaultGoal>install</defaultGoal>
