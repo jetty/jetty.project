@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -73,7 +75,12 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     {
         super.before();
         if (_httpConfiguration!=null)
+        {
             _httpConfiguration.setBlockingTimeout(-1L);
+            _httpConfiguration.setMinRequestDataRate(-1);
+            _httpConfiguration.setIdleTimeout(-1);
+        }
+        
     }
 
     @Test(timeout=60000)
@@ -766,8 +773,156 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Assert.assertTrue(System.currentTimeMillis() - start > minimumTestRuntime);
         Assert.assertTrue(System.currentTimeMillis() - start < maximumTestRuntime);
     }
-    
 
+    @Test(timeout=60000)
+    public void testSlowClientRequestNoLimit() throws Exception
+    {
+        configureServer(new EchoHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        InputStream is=client.getInputStream();
+
+        os.write((
+                "POST /echo HTTP/1.0\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+                "content-type: text/plain; charset=utf-8\r\n"+
+                "content-length: 20\r\n"+
+        "\r\n").getBytes("utf-8"));
+        os.flush();
+        
+        for (int i=0;i<4;i++)
+        {
+            os.write("123\n".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(1000);
+        }
+        os.write("===\n".getBytes("utf-8"));
+        os.flush();
+
+        String response =IO.toString(is);
+        Assert.assertThat(response,containsString(" 200 "));
+        Assert.assertThat(response,containsString("==="));
+    }
+
+    @Test(timeout=60000)
+    public void testSlowClientRequestLimited() throws Exception
+    {
+        _httpConfiguration.setMinRequestDataRate(20);
+        configureServer(new EchoHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        InputStream is=client.getInputStream();
+
+        os.write((
+                "POST /echo HTTP/1.0\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+                "content-type: text/plain; charset=utf-8\r\n"+
+                "content-length: 20\r\n"+
+        "\r\n").getBytes("utf-8"));
+        os.flush();
+        
+        try
+        {
+            for (int i=0;i<4;i++)
+            {
+                os.write("123\n".getBytes("utf-8"));
+                os.flush();
+                Thread.sleep(500);
+            }
+            os.write("===\n".getBytes("utf-8"));
+            os.flush();
+
+            String response =IO.toString(is);
+            Assert.assertThat(response,containsString(" 408 "));
+            Assert.assertThat(response,containsString("Request Data rate"));
+        }
+        catch (SocketException e)
+        {}
+    }
+
+    @Test(timeout=60000)
+    public void testSlowClientRequestLimitExceeded() throws Exception
+    {
+        _httpConfiguration.setMinRequestDataRate(20);
+        configureServer(new EchoHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        InputStream is=client.getInputStream();
+
+        os.write((
+                "POST /echo HTTP/1.0\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+                "content-type: text/plain; charset=utf-8\r\n"+
+                "content-length: 100\r\n"+
+        "\r\n").getBytes("utf-8"));
+        os.flush();
+        
+        for (int i=0;i<9;i++)
+        {
+            os.write("123456789\n".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(250);
+        }
+        os.write("=========\n".getBytes("utf-8"));
+        os.flush();
+
+        String response =IO.toString(is);
+        Assert.assertThat(response,containsString(" 200 "));
+        Assert.assertThat(response,containsString("========="));
+    }
+
+
+    @Test(timeout=60000)
+    public void testHttpIdleTime() throws Exception
+    {
+        _httpConfiguration.setIdleTimeout(500);
+        configureServer(new EchoHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        InputStream is=client.getInputStream();
+
+        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
+        {
+            os.write((
+                "POST /echo HTTP/1.0\r\n"+
+                    "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+                    "content-type: text/plain; charset=utf-8\r\n"+
+                    "content-length: 20\r\n"+
+                "\r\n").getBytes("utf-8"));
+            os.flush();
+
+            os.write("123456789\n".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(1000);
+            os.write("=========\n".getBytes("utf-8"));
+            os.flush();
+
+            String response =IO.toString(is);
+            Assert.assertThat(response,containsString(" 500 "));
+            Assert.assertThat(response,containsString("/500 ms"));
+            Assert.assertThat(response,Matchers.not(containsString("=========")));
+        }
+    }
+
+    
+    
+    
     protected static class SlowResponseHandler extends AbstractHandler
     {
         @Override

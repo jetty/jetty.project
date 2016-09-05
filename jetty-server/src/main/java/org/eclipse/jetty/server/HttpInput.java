@@ -25,11 +25,14 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
@@ -56,6 +59,8 @@ public class HttpInput extends ServletInputStream implements Runnable
     private final HttpChannelState _channelState;
     private ReadListener _listener;
     private State _state = STREAM;
+    private long _firstByteTimeStamp=-1;
+    private long _contentArrived;
     private long _contentConsumed;
     private long _blockingTimeoutAt = -1;
 
@@ -83,7 +88,10 @@ public class HttpInput extends ServletInputStream implements Runnable
             }
             _listener = null;
             _state = STREAM;
+            _contentArrived = 0;
             _contentConsumed = 0;
+            _firstByteTimeStamp = -1;
+            _blockingTimeoutAt = -1;
         }
     }
 
@@ -142,6 +150,18 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (_blockingTimeoutAt>=0 && !isAsync())
                 _blockingTimeoutAt=System.currentTimeMillis()+getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
 
+            int minRequestDataRate=_channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
+            if (minRequestDataRate>0 && _firstByteTimeStamp!=-1)
+            {
+                long period=System.nanoTime()-_firstByteTimeStamp;
+                if (period>0)
+                {
+                    long minimum_data = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period)/TimeUnit.SECONDS.toMillis(1);
+                    if (_contentArrived<minimum_data)
+                        throw new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,String.format("Request data rate < %d B/s",minRequestDataRate));
+                }
+            }
+            
             while(true)
             {
                 Content item = nextContent();
@@ -410,6 +430,9 @@ public class HttpInput extends ServletInputStream implements Runnable
         boolean woken=false;
         synchronized (_inputQ)
         {
+            if (_firstByteTimeStamp==-1)
+                _firstByteTimeStamp=System.nanoTime();
+            _contentArrived+=item.remaining();
             _inputQ.offer(item);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} addContent {}", this, item);
