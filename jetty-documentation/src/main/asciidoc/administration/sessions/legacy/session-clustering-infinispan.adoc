@@ -36,7 +36,7 @@ These managers also cooperate and collaborate with the `org.eclipse.jetty.server
 
 ==== The Infinispan Module
 
-When using the jetty distribution, to enable Infinispan session persistence, you will first need to enable the Infinispan link:#startup-modules[module] for your link:#creating-jetty-base[base] using the `--add-to-start` or `--add-to-startd` argument to the link:#startup-overview[start.jar].
+When using the jetty distribution, to enable Infinispan session persistence, you will first need to enable the Infinispan link:#startup-modules[module] for your link:#creating-jetty-base[base] using the `--add-to-start` argument to the link:#startup-overview[start.jar].
 
 As part of the module installation, the necessary Infinispan jars will be dynamically downloaded and installed to your `${jetty.base}/lib/infinispan` directory.
 If you need to up or downgrade the version of the Infinispan jars, then you can delete the jars that were automatically installed and replace them.
