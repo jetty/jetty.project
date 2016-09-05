@@ -25,11 +25,14 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
@@ -56,14 +59,14 @@ public class HttpInput extends ServletInputStream implements Runnable
     private final HttpChannelState _channelState;
     private ReadListener _listener;
     private State _state = STREAM;
+    private long _firstByteTimeStamp = -1;
+    private long _contentArrived;
     private long _contentConsumed;
-    private long _blockingTimeoutAt = -1;
+    private long _blockUntil;
 
     public HttpInput(HttpChannelState state)
     {
-        _channelState=state;
-        if (_channelState.getHttpChannel().getHttpConfiguration().getBlockingTimeout()>0)
-            _blockingTimeoutAt=0;
+        _channelState = state;
     }
 
     protected HttpChannelState getHttpChannelState()
@@ -83,33 +86,36 @@ public class HttpInput extends ServletInputStream implements Runnable
             }
             _listener = null;
             _state = STREAM;
+            _contentArrived = 0;
             _contentConsumed = 0;
+            _firstByteTimeStamp = -1;
+            _blockUntil = 0;
         }
     }
 
     @Override
     public int available()
     {
-        int available=0;
-        boolean woken=false;
+        int available = 0;
+        boolean woken = false;
         synchronized (_inputQ)
         {
             Content content = _inputQ.peek();
-            if (content==null)
+            if (content == null)
             {
                 try
                 {
                     produceContent();
                 }
-                catch(IOException e)
+                catch (IOException e)
                 {
-                    woken=failed(e);
+                    woken = failed(e);
                 }
                 content = _inputQ.peek();
             }
 
-            if (content!=null)
-                available= remaining(content);
+            if (content != null)
+                available = remaining(content);
         }
 
         if (woken)
@@ -124,12 +130,16 @@ public class HttpInput extends ServletInputStream implements Runnable
         executor.execute(channel);
     }
 
+    private long getBlockingTimeout()
+    {
+        return getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
+    }
 
     @Override
     public int read() throws IOException
     {
         int read = read(_oneByteBuffer, 0, 1);
-        if (read==0)
+        if (read == 0)
             throw new IllegalStateException("unready read=0");
         return read < 0 ? -1 : _oneByteBuffer[0] & 0xFF;
     }
@@ -139,17 +149,36 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
-            if (_blockingTimeoutAt>=0 && !isAsync())
-                _blockingTimeoutAt=System.currentTimeMillis()+getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
+            if (!isAsync())
+            {
+                if (_blockUntil == 0)
+                {
+                    long blockingTimeout = getBlockingTimeout();
+                    if (blockingTimeout > 0)
+                        _blockUntil = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(blockingTimeout);
+                }
+            }
 
-            while(true)
+            long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
+            if (minRequestDataRate > 0 && _firstByteTimeStamp != -1)
+            {
+                long period = System.nanoTime() - _firstByteTimeStamp;
+                if (period > 0)
+                {
+                    long minimum_data = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
+                    if (_contentArrived < minimum_data)
+                        throw new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408, String.format("Request data rate < %d B/s", minRequestDataRate));
+                }
+            }
+
+            while (true)
             {
                 Content item = nextContent();
-                if (item!=null)
+                if (item != null)
                 {
                     int l = get(item, b, off, len);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} read {} from {}",this,l,item);
+                        LOG.debug("{} read {} from {}", this, l, item);
 
                     consumeNonContent();
 
@@ -167,6 +196,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * produce more Content and add it via {@link #addContent(Content)}.
      * For protocols that are constantly producing (eg HTTP2) this can
      * be left as a noop;
+     *
      * @throws IOException if unable to produce content
      */
     protected void produceContent() throws IOException
@@ -183,7 +213,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     protected Content nextContent() throws IOException
     {
         Content content = pollContent();
-        if (content==null && !isFinished())
+        if (content == null && !isFinished())
         {
             produceContent();
             content = pollContent();
@@ -191,9 +221,11 @@ public class HttpInput extends ServletInputStream implements Runnable
         return content;
     }
 
-    /** Poll the inputQ for Content.
+    /**
+     * Poll the inputQ for Content.
      * Consumed buffers and {@link PoisonPillContent}s are removed and
      * EOF state updated if need be.
+     *
      * @return Content or null
      */
     protected Content pollContent()
@@ -208,20 +240,20 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (LOG.isDebugEnabled())
                 LOG.debug("{} consumed {}", this, content);
 
-            if (content==EOF_CONTENT)
+            if (content == EOF_CONTENT)
             {
-                if (_listener==null)
-                    _state=EOF;
+                if (_listener == null)
+                    _state = EOF;
                 else
                 {
-                    _state=AEOF;
+                    _state = AEOF;
                     boolean woken = _channelState.onReadReady(); // force callback?
                     if (woken)
                         wake();
                 }
             }
-            else if (content==EARLY_EOF_CONTENT)
-                _state=EARLY_EOF;
+            else if (content == EARLY_EOF_CONTENT)
+                _state = EARLY_EOF;
 
             content = _inputQ.peek();
         }
@@ -261,7 +293,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     protected Content nextReadable() throws IOException
     {
         Content content = pollReadable();
-        if (content==null && !isFinished())
+        if (content == null && !isFinished())
         {
             produceContent();
             content = pollReadable();
@@ -269,9 +301,11 @@ public class HttpInput extends ServletInputStream implements Runnable
         return content;
     }
 
-    /** Poll the inputQ for Content or EOF.
+    /**
+     * Poll the inputQ for Content or EOF.
      * Consumed buffers and non EOF {@link PoisonPillContent}s are removed.
      * EOF state is not updated.
+     *
      * @return Content, EOF or null
      */
     protected Content pollReadable()
@@ -282,7 +316,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         // Skip consumed items at the head of the queue except EOF
         while (content != null)
         {
-            if (content==EOF_CONTENT || content==EARLY_EOF_CONTENT || remaining(content)>0)
+            if (content == EOF_CONTENT || content == EARLY_EOF_CONTENT || remaining(content) > 0)
                 return content;
 
             _inputQ.poll();
@@ -307,17 +341,17 @@ public class HttpInput extends ServletInputStream implements Runnable
     /**
      * Copies the given content into the given byte buffer.
      *
-     * @param content   the content to copy from
-     * @param buffer the buffer to copy into
-     * @param offset the buffer offset to start copying from
-     * @param length the space available in the buffer
+     * @param content the content to copy from
+     * @param buffer  the buffer to copy into
+     * @param offset  the buffer offset to start copying from
+     * @param length  the space available in the buffer
      * @return the number of bytes actually copied
      */
     protected int get(Content content, byte[] buffer, int offset, int length)
     {
         int l = Math.min(content.remaining(), length);
         content.getContent().get(buffer, offset, l);
-        _contentConsumed+=l;
+        _contentConsumed += l;
         return l;
     }
 
@@ -325,16 +359,16 @@ public class HttpInput extends ServletInputStream implements Runnable
      * Consumes the given content.
      * Calls the content succeeded if all content consumed.
      *
-     * @param content   the content to consume
-     * @param length the number of bytes to consume
+     * @param content the content to consume
+     * @param length  the number of bytes to consume
      */
     protected void skip(Content content, int length)
     {
         int l = Math.min(content.remaining(), length);
         ByteBuffer buffer = content.getContent();
-        buffer.position(buffer.position()+l);
-        _contentConsumed+=l;
-        if (l>0 && !content.hasContent())
+        buffer.position(buffer.position() + l);
+        _contentConsumed += l;
+        if (l > 0 && !content.hasContent())
             pollContent(); // hungry succeed
 
     }
@@ -348,23 +382,26 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         try
         {
-            long timeout=0;
-            if (_blockingTimeoutAt>=0)
+            long timeout = 0;
+            if (_blockUntil != 0)
             {
-                timeout=_blockingTimeoutAt-System.currentTimeMillis();
-                if (timeout<=0)
+                timeout = TimeUnit.NANOSECONDS.toMillis(_blockUntil - System.nanoTime());
+                if (timeout <= 0)
                     throw new TimeoutException();
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} blocking for content timeout={}", this,timeout);
-            if (timeout>0)
+                LOG.debug("{} blocking for content timeout={}", this, timeout);
+            if (timeout > 0)
                 _inputQ.wait(timeout);
             else
                 _inputQ.wait();
 
-            if (_blockingTimeoutAt>0 && System.currentTimeMillis()>=_blockingTimeoutAt)
-                throw new TimeoutException();
+            // TODO: cannot return unless there is content or timeout,
+            // TODO: so spurious wakeups are not handled correctly.
+
+            if (_blockUntil != 0 && TimeUnit.NANOSECONDS.toMillis(_blockUntil - System.nanoTime()) <= 0)
+                throw new TimeoutException(String.format("Blocking timeout %d ms", getBlockingTimeout()));
         }
         catch (Throwable e)
         {
@@ -377,23 +414,24 @@ public class HttpInput extends ServletInputStream implements Runnable
      * <p>Typically used to push back content that has
      * been read, perhaps mutated.  The bytes prepended are
      * deducted for the contentConsumed total</p>
+     *
      * @param item the content to add
      * @return true if content channel woken for read
      */
     public boolean prependContent(Content item)
     {
-        boolean woken=false;
+        boolean woken = false;
         synchronized (_inputQ)
         {
             _inputQ.push(item);
-            _contentConsumed-=item.remaining();
+            _contentConsumed -= item.remaining();
             if (LOG.isDebugEnabled())
                 LOG.debug("{} prependContent {}", this, item);
 
-            if (_listener==null)
+            if (_listener == null)
                 _inputQ.notify();
             else
-                woken=_channelState.onReadPossible();
+                woken = _channelState.onReadPossible();
         }
 
         return woken;
@@ -407,17 +445,20 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public boolean addContent(Content item)
     {
-        boolean woken=false;
+        boolean woken = false;
         synchronized (_inputQ)
         {
+            if (_firstByteTimeStamp == -1)
+                _firstByteTimeStamp = System.nanoTime();
+            _contentArrived += item.remaining();
             _inputQ.offer(item);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} addContent {}", this, item);
 
-            if (_listener==null)
+            if (_listener == null)
                 _inputQ.notify();
             else
-                woken=_channelState.onReadPossible();
+                woken = _channelState.onReadPossible();
         }
 
         return woken;
@@ -427,7 +468,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
-            return _inputQ.size()>0;
+            return _inputQ.size() > 0;
         }
     }
 
@@ -453,6 +494,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * <p>
      * Typically this will result in an EOFException being thrown
      * from a subsequent read rather than a -1 return.
+     *
      * @return true if content channel woken for read
      */
     public boolean earlyEOF()
@@ -463,11 +505,12 @@ public class HttpInput extends ServletInputStream implements Runnable
     /**
      * This method should be called to signal that all the expected
      * content arrived.
+     *
      * @return true if content channel woken for read
      */
     public boolean eof()
     {
-       return addContent(EOF_CONTENT);
+        return addContent(EOF_CONTENT);
     }
 
     public boolean consumeAll()
@@ -506,7 +549,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
-            return _state==ASYNC;
+            return _state == ASYNC;
         }
     }
 
@@ -519,7 +562,6 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-
     @Override
     public boolean isReady()
     {
@@ -527,18 +569,18 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             synchronized (_inputQ)
             {
-                if (_listener == null )
+                if (_listener == null)
                     return true;
                 if (_state instanceof EOFState)
                     return true;
-                if (nextReadable()!=null)
+                if (nextReadable() != null)
                     return true;
 
                 _channelState.onReadUnready();
             }
             return false;
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             LOG.ignore(e);
             return true;
@@ -549,7 +591,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     public void setReadListener(ReadListener readListener)
     {
         readListener = Objects.requireNonNull(readListener);
-        boolean woken=false;
+        boolean woken = false;
         try
         {
             synchronized (_inputQ)
@@ -557,11 +599,11 @@ public class HttpInput extends ServletInputStream implements Runnable
                 if (_listener != null)
                     throw new IllegalStateException("ReadListener already set");
                 if (_state != STREAM)
-                    throw new IllegalStateException("State "+STREAM+" != " + _state);
+                    throw new IllegalStateException("State " + STREAM + " != " + _state);
 
                 _state = ASYNC;
                 _listener = readListener;
-                boolean content=nextContent()!=null;
+                boolean content = nextContent() != null;
 
                 if (content)
                     woken = _channelState.onReadReady();
@@ -569,7 +611,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                     _channelState.onReadUnready();
             }
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             throw new RuntimeIOException(e);
         }
@@ -580,7 +622,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean failed(Throwable x)
     {
-        boolean woken=false;
+        boolean woken = false;
         synchronized (_inputQ)
         {
             if (_state instanceof ErrorState)
@@ -588,16 +630,15 @@ public class HttpInput extends ServletInputStream implements Runnable
             else
                 _state = new ErrorState(x);
 
-            if (_listener==null)
+            if (_listener == null)
                 _inputQ.notify();
             else
-                woken=_channelState.onReadPossible();
+                woken = _channelState.onReadPossible();
         }
 
         return woken;
     }
 
-    /* ------------------------------------------------------------ */
     /*
      * <p>
      * While this class is-a Runnable, it should never be dispatched in it's own thread. It is a
@@ -610,26 +651,26 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         final Throwable error;
         final ReadListener listener;
-        boolean aeof=false;
+        boolean aeof = false;
 
         synchronized (_inputQ)
         {
-            if (_state==EOF)
+            if (_state == EOF)
                 return;
 
-            if (_state==AEOF)
+            if (_state == AEOF)
             {
-                _state=EOF;
-                aeof=true;
+                _state = EOF;
+                aeof = true;
             }
 
             listener = _listener;
-            error = _state instanceof ErrorState?((ErrorState)_state).getError():null;
+            error = _state instanceof ErrorState ? ((ErrorState)_state).getError() : null;
         }
 
         try
         {
-            if (error!=null)
+            if (error != null)
             {
                 _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
                 listener.onError(error);
@@ -649,7 +690,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             LOG.debug(e);
             try
             {
-                if (aeof || error==null)
+                if (aeof || error == null)
                 {
                     _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
                     listener.onError(e);
@@ -673,10 +714,10 @@ public class HttpInput extends ServletInputStream implements Runnable
         Content content;
         synchronized (_inputQ)
         {
-            state=_state;
-            consumed=_contentConsumed;
-            q=_inputQ.size();
-            content=_inputQ.peekFirst();
+            state = _state;
+            consumed = _contentConsumed;
+            q = _inputQ.size();
+            content = _inputQ.peekFirst();
         }
         return String.format("%s@%x[c=%d,q=%d,[0]=%s,s=%s]",
                 getClass().getSimpleName(),
@@ -690,10 +731,11 @@ public class HttpInput extends ServletInputStream implements Runnable
     public static class PoisonPillContent extends Content
     {
         private final String _name;
+
         public PoisonPillContent(String name)
         {
             super(BufferUtil.EMPTY_BUFFER);
-            _name=name;
+            _name = name;
         }
 
         @Override
@@ -717,7 +759,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
         public Content(ByteBuffer content)
         {
-            _content=content;
+            _content = content;
         }
 
         @Override
@@ -745,7 +787,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         @Override
         public String toString()
         {
-            return String.format("Content@%x{%s}",hashCode(),BufferUtil.toDetailString(_content));
+            return String.format("Content@%x{%s}", hashCode(), BufferUtil.toDetailString(_content));
         }
     }
 
@@ -770,9 +812,10 @@ public class HttpInput extends ServletInputStream implements Runnable
     protected class ErrorState extends EOFState
     {
         final Throwable _error;
+
         ErrorState(Throwable error)
         {
-            _error=error;
+            _error = error;
         }
 
         public Throwable getError()
@@ -791,7 +834,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         @Override
         public String toString()
         {
-            return "ERROR:"+_error;
+            return "ERROR:" + _error;
         }
     }
 

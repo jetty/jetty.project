@@ -133,9 +133,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public boolean onStreamTimeout(IStream stream, Throwable failure)
     {
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-        boolean result = !channel.isRequestHandled();
+        boolean result = channel.onStreamTimeout(failure);
         if (LOG.isDebugEnabled())
-            LOG.debug("{} idle timeout on {}: {}", result ? "Processing" : "Ignoring", stream, failure);
+            LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", stream, failure);
         return result;
     }
 
@@ -157,7 +157,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             result &= !channel.isRequestHandled();
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("{} idle timeout on {}: {}", result ? "Processing" : "Ignoring", session, failure);
+            LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);
         return result;
     }
 
