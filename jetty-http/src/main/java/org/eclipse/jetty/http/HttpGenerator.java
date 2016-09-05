@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;

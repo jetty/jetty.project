@@ -50,6 +50,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxHeaderBlockFragment = 0;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private ExecutionStrategy.Factory executionStrategyFactory = new ProduceExecuteConsume.Factory();
+    private long streamIdleTimeout;
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -157,6 +158,17 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.executionStrategyFactory = executionStrategyFactory;
     }
 
+    @ManagedAttribute("The stream idle timeout in milliseconds")
+    public long getStreamIdleTimeout()
+    {
+        return streamIdleTimeout;
+    }
+
+    public void setStreamIdleTimeout(long streamIdleTimeout)
+    {
+        this.streamIdleTimeout = streamIdleTimeout;
+    }
+
     public HttpConfiguration getHttpConfiguration()
     {
         return httpConfiguration;
@@ -177,8 +189,11 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         // For a single stream in a connection, there will be a race between
         // the stream idle timeout and the connection idle timeout. However,
         // the typical case is that the connection will be busier and the
-        // stream idle timeout will expire earlier that the connection's.
-        session.setStreamIdleTimeout(endPoint.getIdleTimeout());
+        // stream idle timeout will expire earlier than the connection's.
+        long streamIdleTimeout = getStreamIdleTimeout();
+        if (streamIdleTimeout <= 0)
+            streamIdleTimeout = endPoint.getIdleTimeout();
+        session.setStreamIdleTimeout(streamIdleTimeout);
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
 
         ServerParser parser = newServerParser(connector, session);

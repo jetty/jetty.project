@@ -124,9 +124,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     protected HttpChannelOverHttp newHttpChannel()
     {
-        HttpChannelOverHttp httpChannel = new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this);
-
-        return httpChannel;
+        return new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this);
     }
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
@@ -285,9 +283,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         while (_parser.inContentState())
         {
             int filled = fillRequestBuffer();
-            boolean handle = parseRequestBuffer();
-            handled|=handle;
-            if (handle || filled<=0 || _channel.getRequest().getHttpInput().hasContent())
+            handled = parseRequestBuffer();
+            if (handled || filled<=0 || _channel.getRequest().getHttpInput().hasContent())
                 break;
         }
         return handled;
