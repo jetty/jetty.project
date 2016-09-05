@@ -73,7 +73,12 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     {
         super.before();
         if (_httpConfiguration!=null)
+        {
             _httpConfiguration.setBlockingTimeout(-1L);
+            _httpConfiguration.setMinRequestDataRate(-1);
+            _httpConfiguration.setIdleTimeout(-1);
+        }
+        
     }
 
     @Test(timeout=60000)
@@ -732,41 +737,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         int offset=in.indexOf("Hello World");
         Assert.assertTrue(offset > 0);
     }
-    
-
-
-    @Test(timeout=60000)
-    public void testMaxIdleWithDelayedDispatch() throws Exception
-    {
-        configureServer(new EchoHandler());
-        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
-        client.setSoTimeout(10000);
-
-        Assert.assertFalse(client.isClosed());
-
-        OutputStream os=client.getOutputStream();
-        InputStream is=client.getInputStream();
-
-        String content="Wibble";
-        byte[] contentB=content.getBytes("utf-8");
-        os.write((
-                "POST /echo HTTP/1.1\r\n"+
-                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                "content-type: text/plain; charset=utf-8\r\n"+
-                "content-length: "+contentB.length+"\r\n"+
-        "\r\n").getBytes("utf-8"));
-        os.flush();
-
-        long start = System.currentTimeMillis();
-        IO.toString(is);
-
-        Thread.sleep(sleepTime);
-        Assert.assertEquals(-1, is.read());
-
-        Assert.assertTrue(System.currentTimeMillis() - start > minimumTestRuntime);
-        Assert.assertTrue(System.currentTimeMillis() - start < maximumTestRuntime);
-    }
-    
 
     protected static class SlowResponseHandler extends AbstractHandler
     {
