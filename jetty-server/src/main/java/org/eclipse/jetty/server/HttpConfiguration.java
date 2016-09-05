@@ -204,7 +204,7 @@ public class HttpConfiguration
     }
 
     /* ------------------------------------------------------------ */
-    @ManagedAttribute("True if HTTP/1 persistent connection are enabled")
+    @ManagedAttribute("Whether persistent connections are enabled")
     public boolean isPersistentConnectionsEnabled()
     {
         return _persistentConnectionsEnabled;
@@ -217,6 +217,7 @@ public class HttpConfiguration
      * @return the max idle time in ms or if == 0 implies an infinite timeout, &lt;0 
      * implies no HTTP channel timeout and the connection timeout is used instead.
      */
+    @ManagedAttribute("The idle timeout in ms for I/O operations during the handling of a HTTP request")
     public long getIdleTimeout()
     {
         return _idleTimeout;
@@ -234,7 +235,6 @@ public class HttpConfiguration
         _idleTimeout=timeoutMs;
     }
 
-
     /* ------------------------------------------------------------ */
     /** Get the timeout applied to blocking operations.
      * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
@@ -243,7 +243,7 @@ public class HttpConfiguration
      * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
      */
-    @ManagedAttribute("Timeout in MS for blocking operations.")
+    @ManagedAttribute("Total timeout in ms for blocking I/O operations.")
     public long getBlockingTimeout()
     {
         return _blockingTimeout;
@@ -275,7 +275,7 @@ public class HttpConfiguration
     }
 
     /* ------------------------------------------------------------ */
-    @ManagedAttribute("if true, send the Server header in responses")
+    @ManagedAttribute("Whether to send the Server header in responses")
     public boolean getSendServerVersion()
     {
         return _sendServerVersion;
@@ -301,7 +301,7 @@ public class HttpConfiguration
     }
 
     /* ------------------------------------------------------------ */
-    @ManagedAttribute("if true, send the X-Powered-By header in responses")
+    @ManagedAttribute("Whether to send the X-Powered-By header in responses")
     public boolean getSendXPoweredBy()
     {
         return _sendXPoweredBy;
@@ -314,7 +314,7 @@ public class HttpConfiguration
     }
 
     /* ------------------------------------------------------------ */
-    @ManagedAttribute("if true, include the date in HTTP headers")
+    @ManagedAttribute("Whether to send the Date header in responses")
     public boolean getSendDateHeader()
     {
         return _sendDateHeader;
@@ -330,7 +330,7 @@ public class HttpConfiguration
     }
 
     /* ------------------------------------------------------------ */
-    @ManagedAttribute("if true, delay the application dispatch until content is available")
+    @ManagedAttribute("Whether to delay the application dispatch until content is available")
     public boolean isDelayDispatchUntilContent()
     {
         return _delayDispatchUntilContent;
@@ -513,6 +513,7 @@ public class HttpConfiguration
     /**
      * @return The minimum request data rate in bytes per second; or &lt;=0 for no limit
      */
+    @ManagedAttribute("The minimum request content data rate in bytes per second")
     public long getMinRequestDataRate()
     {
         return _minRequestDataRate;
