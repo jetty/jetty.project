@@ -123,6 +123,7 @@ public class HttpConfiguration
         _delayDispatchUntilContent=config._delayDispatchUntilContent;
         _persistentConnectionsEnabled=config._persistentConnectionsEnabled;
         _maxErrorDispatches=config._maxErrorDispatches;
+        _minRequestDataRate=config._minRequestDataRate;
     }
     
     /* ------------------------------------------------------------ */
