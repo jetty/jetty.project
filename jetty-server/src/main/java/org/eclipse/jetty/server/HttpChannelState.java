@@ -367,6 +367,8 @@ public class HttpChannelState
     protected Action unhandle()
     {
         Action action;
+        boolean read_interested=false;
+
         try(Locker.Lock lock= _locker.lock())
         {
             if(DEBUG)
@@ -424,8 +426,8 @@ public class HttpChannelState
                         _state=State.ASYNC_WAIT;
                         action=Action.WAIT; 
                         if (_asyncReadUnready)
-                            _channel.asyncReadFillInterested();
-                        Scheduler scheduler = _channel.getScheduler();
+                            read_interested=true;
+                        Scheduler scheduler=_channel.getScheduler();
                         if (scheduler!=null && _timeoutMs>0)
                             _event.setTimeoutTask(scheduler.schedule(_event,_timeoutMs,TimeUnit.MILLISECONDS));
                     }
@@ -462,6 +464,9 @@ public class HttpChannelState
                     break;
             }
         }
+
+        if (read_interested)
+            _channel.asyncReadFillInterested();
 
         return action;
     }
@@ -537,7 +542,7 @@ public class HttpChannelState
 
         }
 
-        final AtomicReference<Throwable> error=new AtomicReference<Throwable>();
+        final AtomicReference<Throwable> error=new AtomicReference<>();
         if (listeners!=null)
         {
             Runnable task=new Runnable()

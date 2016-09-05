@@ -56,6 +56,7 @@ public class HttpConfiguration
     private int _responseHeaderSize=8*1024;
     private int _headerCacheSize=512;
     private int _securePort;
+    private long _idleTimeout=-1;
     private long _blockingTimeout=-1;
     private String _secureScheme = HttpScheme.HTTPS.asString();
     private boolean _sendServerVersion = true;
@@ -65,6 +66,7 @@ public class HttpConfiguration
     private boolean _persistentConnectionsEnabled = true;
     private int _maxErrorDispatches = 10;
     private boolean _useDirectByteBuffers = false;
+    private long _minRequestDataRate;
 
     /* ------------------------------------------------------------ */
     /** 
@@ -114,6 +116,7 @@ public class HttpConfiguration
         _headerCacheSize=config._headerCacheSize;
         _secureScheme=config._secureScheme;
         _securePort=config._securePort;
+        _idleTimeout=config._idleTimeout;
         _blockingTimeout=config._blockingTimeout;
         _sendDateHeader=config._sendDateHeader;
         _sendServerVersion=config._sendServerVersion;
@@ -206,6 +209,31 @@ public class HttpConfiguration
     {
         return _persistentConnectionsEnabled;
     }
+
+    /* ------------------------------------------------------------ */
+    /** Get the max idle time in ms.
+     * <p>The max idle time is applied to a HTTP request for IO operations and
+     * delayed dispatch. 
+     * @return the max idle time in ms or if == 0 implies an infinite timeout, &lt;0 
+     * implies no HTTP channel timeout and the connection timeout is used instead.
+     */
+    public long getIdleTimeout()
+    {
+        return _idleTimeout;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the max idle time in ms.
+     * <p>The max idle time is applied to a HTTP request for IO operations and
+     * delayed dispatch. 
+     * @param timeoutMs the max idle time in ms or if == 0 implies an infinite timeout, &lt;0 
+     * implies no HTTP channel timeout and the connection timeout is used instead.
+     */
+    public void setIdleTimeout(long timeoutMs)
+    {
+        _idleTimeout=timeoutMs;
+    }
+
 
     /* ------------------------------------------------------------ */
     /** Get the timeout applied to blocking operations.
@@ -495,5 +523,23 @@ public class HttpConfiguration
     public void setMaxErrorDispatches(int max)
     {
         _maxErrorDispatches=max;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The minimum request data rate in bytes per second; or &lt;=0 for no limit
+     */
+    public long getMinRequestDataRate()
+    {
+        return _minRequestDataRate;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param bytesPerSecond The minimum request data rate in bytes per second; or &lt;=0 for no limit
+     */
+    public void setMinRequestDataRate(long bytesPerSecond)
+    {
+        _minRequestDataRate=bytesPerSecond;
     }
 }

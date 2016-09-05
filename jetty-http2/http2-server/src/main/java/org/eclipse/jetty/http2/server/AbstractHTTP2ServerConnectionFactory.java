@@ -35,8 +35,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 
 @ManagedObject
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
@@ -49,7 +47,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxConcurrentStreams = 128;
     private int maxHeaderBlockFragment = 0;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
-    private ExecutionStrategy.Factory executionStrategyFactory = new ProduceExecuteConsume.Factory();
+    private long streamIdleTimeout;
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -99,26 +97,6 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.initialStreamRecvWindow = initialStreamRecvWindow;
     }
 
-    /**
-     * @deprecated use {@link #getInitialStreamRecvWindow()} instead,
-     * since "send" is meant on the client, but this is the server configuration
-     */
-    @Deprecated
-    public int getInitialStreamSendWindow()
-    {
-        return getInitialStreamRecvWindow();
-    }
-
-    /**
-     * @deprecated use {@link #setInitialStreamRecvWindow(int)} instead,
-     * since "send" is meant on the client, but this is the server configuration
-     */
-    @Deprecated
-    public void setInitialStreamSendWindow(int initialStreamSendWindow)
-    {
-        setInitialStreamRecvWindow(initialStreamSendWindow);
-    }
-
     @ManagedAttribute("The max number of concurrent streams per session")
     public int getMaxConcurrentStreams()
     {
@@ -150,6 +128,17 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.flowControlStrategyFactory = flowControlStrategyFactory;
     }
 
+    @ManagedAttribute("The stream idle timeout in milliseconds")
+    public long getStreamIdleTimeout()
+    {
+        return streamIdleTimeout;
+    }
+
+    public void setStreamIdleTimeout(long streamIdleTimeout)
+    {
+        this.streamIdleTimeout = streamIdleTimeout;
+    }
+
     public HttpConfiguration getHttpConfiguration()
     {
         return httpConfiguration;
@@ -168,8 +157,11 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         // For a single stream in a connection, there will be a race between
         // the stream idle timeout and the connection idle timeout. However,
         // the typical case is that the connection will be busier and the
-        // stream idle timeout will expire earlier that the connection's.
-        session.setStreamIdleTimeout(endPoint.getIdleTimeout());
+        // stream idle timeout will expire earlier than the connection's.
+        long streamIdleTimeout = getStreamIdleTimeout();
+        if (streamIdleTimeout <= 0)
+            streamIdleTimeout = endPoint.getIdleTimeout();
+        session.setStreamIdleTimeout(streamIdleTimeout);
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
 
         ServerParser parser = newServerParser(connector, session);

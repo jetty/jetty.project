@@ -79,6 +79,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Response _response;
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
+    private long _oldIdleTimeout;
 
     /** Bytes written after interception (eg after compression) */
     private long _written;
@@ -550,6 +551,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
             fields.put(_connector.getServer().getDateField());
 
+        long idleTO=_configuration.getIdleTimeout();
+        _oldIdleTimeout=getIdleTimeout();
+        if (idleTO>=0 && _oldIdleTimeout!=idleTO)
+            setIdleTimeout(idleTO);
+        
         _request.setMetaData(request);
 
         if (LOG.isDebugEnabled())
@@ -581,6 +587,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (_requestLog!=null )
             _requestLog.log(_request, _response);
 
+        long idleTO=_configuration.getIdleTimeout();
+        if (idleTO>=0 && getIdleTimeout()!=_oldIdleTimeout)
+            setIdleTimeout(_oldIdleTimeout);
+        
         _transport.onCompleted();
     }
 
