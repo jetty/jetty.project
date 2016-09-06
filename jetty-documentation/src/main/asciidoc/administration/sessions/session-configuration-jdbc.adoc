@@ -22,6 +22,9 @@ When using the Jetty distribution, you will first need to enable the `session-st
 
 [source, screen, subs="{sub-order}"]
 ----
+$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+
 $ java -jar ../start.jar --add-to-start=session-store-jdbc
 INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
 INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
@@ -30,9 +33,9 @@ INFO : Base directory was modified
 ----
 
 Doing this enables the JDBC Session module and any dependent modules or files needed for it to run on the server.
-The example above is running an fresh `{$jetty.base}` with nothing enabled.
+The example above is running an fresh `${jetty.base}` with nothing enabled.
 When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-jdbc` module as well as the `sessions` and `server` modules, which are required for JDBC session management to operate.
-In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `{$jetty.base}`.
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `${jetty.base}`.
 
 Opening the `start.d/session-store-jdbc.ini` will show a list of all the configurable options for the JDBC module:
 

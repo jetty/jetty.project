@@ -22,6 +22,9 @@ When using the Jetty distribution, you will first need to enable the `session-st
 
 [source, screen, subs="{sub-order}"]
 ----
+$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+
 $ java -jar ../start.jar --add-to-start=session-store-mongo
 
 ALERT: There are enabled module(s) with licenses.
@@ -44,11 +47,11 @@ INFO : Base directory was modified
 ----
 
 Doing this enables the MongoDB Session module and any dependent modules or files needed for it to run on the server.
-The example above is running an fresh `{$jetty.base}` with nothing enabled.
+The example above is running an fresh `${jetty.base}` with nothing enabled.
 Because MongoDB is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
 When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-mongo` module as well as the `sessions` and `server` modules, which are required for MongoDB session management to operate..
 It also downloaded the needed Mongo-specific jar file and created a directory named `${jetty.base}/lib/nosql/` to house it.
-In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `{$jetty.base}`.
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `${jetty.base}`.
 
 ____
 [NOTE]
