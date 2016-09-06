@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.server;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
@@ -83,20 +84,17 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     @Override
     public void send(MetaData.Response info, boolean isHeadRequest, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        // info != null | content != 0 | last = true => commit + send/end
-        // info != null | content != 0 | last = false => commit + send
-        // info != null | content == 0 | last = true => commit/end
-        // info != null | content == 0 | last = false => commit
-        // info == null | content != 0 | last = true => send/end
-        // info == null | content != 0 | last = false => send
-        // info == null | content == 0 | last = true => send/end
-        // info == null | content == 0 | last = false => noop
-
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
 
         if (info != null)
         {
-            if (commit.compareAndSet(false, true))
+            int status = info.getStatus();
+            boolean informational = HttpStatus.isInformational(status) && status != HttpStatus.SWITCHING_PROTOCOLS_101;
+            boolean committed = false;
+            if (!informational)
+                committed = commit.compareAndSet(false, true);
+
+            if (committed || informational)
             {
                 if (hasContent)
                 {

@@ -104,7 +104,7 @@ public abstract class AbstractTest
         return new ServerConnector(server, provideServerConnectionFactory(transport));
     }
 
-    private void startClient() throws Exception
+    protected void startClient() throws Exception
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
