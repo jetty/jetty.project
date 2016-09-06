@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Stream;
@@ -79,7 +80,9 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
 
             if (responseHeaders(exchange))
             {
-                if (frame.isEndStream())
+                int status = metaData.getStatus();
+                boolean informational = HttpStatus.isInformational(status) && status != HttpStatus.SWITCHING_PROTOCOLS_101;
+                if (frame.isEndStream() || informational)
                     responseSuccess(exchange);
             }
         }
