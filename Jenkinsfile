@@ -1,11 +1,7 @@
 node {
   // System Dependent Locations
   def mvntool = tool name: 'maven3.0.5', type: 'hudson.tasks.Maven$MavenInstallation'
-<<<<<<< HEAD
   def jdktool = tool name: 'jdk6', type: 'hudson.model.JDK'
-=======
-  def jdktool = tool name: 'jdk5', type: 'hudson.model.JDK'
->>>>>>> jetty-7
 
   // Environment
   List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
