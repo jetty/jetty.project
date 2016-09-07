@@ -13,10 +13,12 @@ node {
 
   stage 'Build & Test'
 
-  withEnv(mvnEnv) {
-    sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
-    // Report failures in the jenkins UI
-    step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+  timeout(60) {
+    withEnv(mvnEnv) {
+      sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
+      // Report failures in the jenkins UI
+      step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+    }
   }
 
   stage 'Javadoc'
