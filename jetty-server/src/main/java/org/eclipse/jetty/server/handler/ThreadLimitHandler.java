@@ -50,8 +50,6 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
-import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
 
 /**
@@ -79,7 +77,7 @@ public class ThreadLimitHandler extends HandlerWrapper
     private static final Logger LOG = Log.getLogger(ThreadLimitHandler.class);
 
     private final static String REMOTE = "o.e.j.s.h.TLH.REMOTE";
-    private final static String PASS = "o.e.j.s.h.TLH.PASS";
+    private final static String PERMIT = "o.e.j.s.h.TLH.PASS";
     private final boolean _rfc7239;
     private final String _forwardedHeader;
     private final IncludeExcludeSet<String, InetAddress> _includeExcludeSet = new IncludeExcludeSet<>(InetAddressSet.class);
@@ -108,51 +106,43 @@ public class ThreadLimitHandler extends HandlerWrapper
     @Override
     protected void doStart() throws Exception
     {
-        if (_threadLimit<0)
-            _enabled=false;
-        else if (_threadLimit==0)
-        {
-            ThreadPool threadPool = getServer().getThreadPool();
-            if (threadPool instanceof SizedThreadPool)
-                _threadLimit=Math.max(10,((SizedThreadPool)threadPool).getMaxThreads()/10);
-            else
-                _threadLimit=10;
-        }
         super.doStart();
+        LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d include=%s",_enabled,_threadLimit,_includeExcludeSet));
     }
 
+    @ManagedAttribute("true if this handler is enabled")
     public boolean isEnabled()
     {
         return _enabled;
     }
 
-    @ManagedAttribute("enable/disable thread limits")
     public void setEnabled(boolean enabled)
     {
         _enabled = enabled;
+        LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d include=%s",_enabled,_threadLimit,_includeExcludeSet));
     }
 
+    @ManagedAttribute("The maximum threads that can be dispatched per remote IP")
     public int getThreadLimit()
     {
         return _threadLimit;
     }
 
-    @ManagedAttribute("The maximum threads that can be dispatched per remote IP")
     public void setThreadLimit(int threadLimit)
     {
+        if (threadLimit<=0)
+            throw new IllegalArgumentException("limit must be >0");
         _threadLimit = threadLimit;
-        if (_threadLimit<0)
-            _enabled=false;
     }
-
+    
     @ManagedOperation("Include IP in thread limits")
-    public void include(String... inetAddressPattern)
+    public void include(String inetAddressPattern)
     {
         _includeExcludeSet.include(inetAddressPattern);
     }
 
     @ManagedOperation("Exclude IP from thread limits")
-    public void exclude(String... inetAddressPattern)
+    public void exclude(String inetAddressPattern)
     {
         _includeExcludeSet.exclude(inetAddressPattern);
     }
@@ -162,32 +152,45 @@ public class ThreadLimitHandler extends HandlerWrapper
     {
         // Allow ThreadLimit to be enabled dynamically without restarting server
         if (!_enabled)
+        {
             // if disabled, handle normally
             super.handle(target,baseRequest,request,response);
+        }
         else
         {
             // Get the remote address of the request
             Remote remote = getRemote(baseRequest);
             if (remote==null)
+            {
                 // if remote is not known, handle normally
                 super.handle(target,baseRequest,request,response);
+            }
             else
             {
-                // Do we already have a future pass from a previous invocation?
-                Closeable pass = (Closeable)baseRequest.getAttribute(PASS);
+                // Do we already have a future permit from a previous invocation?
+                Closeable permit = (Closeable)baseRequest.getAttribute(PERMIT);
                 try
                 {
-                    if (pass==null)
+                    if (permit!=null)
+                    {
+                        // Yes, remove it from any future async cycles.
+                        baseRequest.removeAttribute(PERMIT);
+                    }
+                    else
                     {
                         // No, then lets try to acquire one
-                        CompletableFuture<Closeable> future_pass=remote.acquire();
+                        CompletableFuture<Closeable> future_permit=remote.acquire();
 
-                        // Did we get a pass?
-                        if (future_pass.isDone())
+                        // Did we get a permit?
+                        if (future_permit.isDone())
+                        {
                             // yes
-                            pass=future_pass.get();
+                            permit=future_permit.get();
+                        }
                         else
                         {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Threadlimited {} {}",remote,target);
                             // No, lets asynchronously suspend the request
                             AsyncContext async = baseRequest.startAsync();
                             // let's never timeout the async.  If this is a DOS, then good to make them wait, if this is not
@@ -195,20 +198,16 @@ public class ThreadLimitHandler extends HandlerWrapper
                             async.setTimeout(0);
 
                             // dispatch the request when we do eventually get a pass
-                            future_pass.thenRun(()->
+                            future_permit.thenAccept(c->
                             {
-                                baseRequest.setAttribute(PASS,remote.preAcquire());
+                                baseRequest.setAttribute(PERMIT,c);
                                 async.dispatch();
                             });
                             return;
                         }
                     }
-                    else
-                        // Yes, remove it from any future async cycles.
-                        baseRequest.removeAttribute(PASS);
 
-
-                    // Use the pass
+                    // Use the permit
                     super.handle(target,baseRequest,request,response);
                 }
                 catch (InterruptedException | ExecutionException e)
@@ -217,8 +216,8 @@ public class ThreadLimitHandler extends HandlerWrapper
                 }
                 finally
                 {
-                    if (pass!=null)
-                        pass.close();
+                    if (permit!=null)
+                        permit.close();
                 }
             }
         }
@@ -335,9 +334,9 @@ public class ThreadLimitHandler extends HandlerWrapper
         private final String _ip;
         private final int _limit;
         private final Locker _locker = new Locker();
-        private int _passes;
+        private int _permits;
         private Deque<CompletableFuture<Closeable>> _queue = new ArrayDeque<>();
-        private final CompletableFuture<Closeable> _passed = CompletableFuture.completedFuture(this);
+        private final CompletableFuture<Closeable> _permitted = CompletableFuture.completedFuture(this);
         
         public Remote(String ip, int limit)
         {
@@ -350,12 +349,12 @@ public class ThreadLimitHandler extends HandlerWrapper
             try(Locker.Lock lock = _locker.lock())
             {
                 // Do we have available passes?
-                if (_passes<_limit)
+                if (_permits<_limit)
                 {
                     // Yes - increment the allocated passes
-                    _passes++;
+                    _permits++;
                     // return the already completed future
-                    return _passed; // TODO is it OK to share/reuse this?
+                    return _permitted; // TODO is it OK to share/reuse this?
                 }
                 
                 // No pass available, so queue a new future 
@@ -365,33 +364,28 @@ public class ThreadLimitHandler extends HandlerWrapper
             }
         }
         
-        public Closeable preAcquire()
-        {
-            // Always allocated
-            _passes++;
-            // return the already completed future
-            return this;
-        }
-        
         @Override
         public void close() throws IOException
         {
             try(Locker.Lock lock = _locker.lock())
             {
                 // reduce the allocated passes
-                _passes--;
+                _permits--;
                 while(true)
                 {
                     // Are there any future passes waiting?
-                    CompletableFuture<Closeable> pass = _queue.pollFirst();
+                    CompletableFuture<Closeable> permit = _queue.pollFirst();
                     
                     // No - we are done
-                    if (pass==null)
+                    if (permit==null)
                         break;
                     
                     // Yes - if we can complete them, we are done
-                    if (pass==null || pass.complete(this))
+                    if (permit.complete(this))
+                    {
+                        _permits++;
                         break;
+                    }
                     
                     // Somebody else must have completed/failed that future pass,
                     // so let's try for another.
@@ -404,7 +398,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         {
             try(Locker.Lock lock = _locker.lock())
             {
-                return String.format("R[ip=%s,p=%d,l=%d,q=%d]",_ip,_passes,_limit,_queue.size());
+                return String.format("R[ip=%s,p=%d,l=%d,q=%d]",_ip,_permits,_limit,_queue.size());
             }
         }
     }
