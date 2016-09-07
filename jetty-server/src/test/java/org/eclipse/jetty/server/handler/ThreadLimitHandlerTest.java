@@ -222,7 +222,7 @@ public class ThreadLimitHandlerTest
         for (int i=0;i<client.length;i++)
         {
             client[i]=new Socket("127.0.0.1",_connector.getLocalPort());
-            client[i].getOutputStream().write("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n".getBytes());  
+            client[i].getOutputStream().write(("GET /"+i+" HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n").getBytes());  
             client[i].getOutputStream().flush();  
         }
         

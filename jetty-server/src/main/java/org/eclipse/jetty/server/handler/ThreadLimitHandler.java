@@ -28,8 +28,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
@@ -87,7 +85,6 @@ public class ThreadLimitHandler extends HandlerWrapper
     private final IncludeExcludeSet<String, InetAddress> _includeExcludeSet = new IncludeExcludeSet<>(InetAddressSet.class);
     private final ConcurrentMap<String, Remote> _remotes = new ConcurrentHashMap<>();
     private volatile boolean _enabled;
-    private long _blockForMs=0;
     private int _threadLimit=10;
 
     public ThreadLimitHandler()
@@ -135,17 +132,6 @@ public class ThreadLimitHandler extends HandlerWrapper
         _enabled = enabled;
     }
 
-    public long getBlockForMs()
-    {
-        return _blockForMs;
-    }
-
-    @ManagedAttribute("Period in ms to wait synchronously for available thread")
-    public void setBlockForMs(long blockForMs)
-    {
-        _blockForMs = blockForMs;
-    }
-
     public int getThreadLimit()
     {
         return _threadLimit;
@@ -188,58 +174,51 @@ public class ThreadLimitHandler extends HandlerWrapper
             else
             {
                 // Do we already have a future pass from a previous invocation?
-                CompletableFuture<Closeable> future_pass = (CompletableFuture<Closeable>)baseRequest.getAttribute(PASS);
-                if (future_pass==null)
-                    // No, then lets try to acquire one
-                    future_pass=remote.acquire();
-                else
-                    // Yes, remove it from any future async cycles.
-                    baseRequest.removeAttribute(PASS);
-                
-                // Try to get a pass from the future pass, potentially blocking for a short while
-                Closeable pass;
+                Closeable pass = (Closeable)baseRequest.getAttribute(PASS);
                 try
                 {
-                    pass=_blockForMs>0?future_pass.get(_blockForMs,TimeUnit.MILLISECONDS):future_pass.isDone()?future_pass.get():null;
+                    if (pass==null)
+                    {
+                        // No, then lets try to acquire one
+                        CompletableFuture<Closeable> future_pass=remote.acquire();
+
+                        // Did we get a pass?
+                        if (future_pass.isDone())
+                            // yes
+                            pass=future_pass.get();
+                        else
+                        {
+                            // No, lets asynchronously suspend the request
+                            AsyncContext async = baseRequest.startAsync();
+                            // let's never timeout the async.  If this is a DOS, then good to make them wait, if this is not
+                            // then give them maximum time to get a thread.
+                            async.setTimeout(0);
+
+                            // dispatch the request when we do eventually get a pass
+                            future_pass.thenRun(()->
+                            {
+                                baseRequest.setAttribute(PASS,remote.preAcquire());
+                                async.dispatch();
+                            });
+                            return;
+                        }
+                    }
+                    else
+                        // Yes, remove it from any future async cycles.
+                        baseRequest.removeAttribute(PASS);
+
+
+                    // Use the pass
+                    super.handle(target,baseRequest,request,response);
                 }
-                catch (InterruptedException|ExecutionException e)
+                catch (InterruptedException | ExecutionException e)
                 {
                     throw new ServletException(e);
                 }
-                catch (TimeoutException e)
+                finally
                 {
-                    // too long in blocking wait for the pass, let's try async waiting
-                    pass=null;
-                }
-
-                // Did we get a pass?
-                if (pass==null)
-                {
-                    // No, lets asynchronously suspend the request
-                    AsyncContext async = baseRequest.startAsync();
-                    // let's never timeout the async.  If this is a DOS, then good to make them wait, if this is not
-                    // then give them maximum time to get a thread.
-                    async.setTimeout(0);
-                    
-                    // dispatch the request when we do eventually get a pass
-                    baseRequest.setAttribute(PASS,future_pass);
-                    future_pass.thenRun(()->async.dispatch());
-                    
-                    // TODO Do we need to wire up the async onError to an exceptional future completion?
-                }
-                else
-                {
-                    // We got a pass!
-                    try
-                    {
-                        // Use the pass
-                        super.handle(target,baseRequest,request,response);
-                    }
-                    finally
-                    {
-                        // Close the pass
+                    if (pass!=null)
                         pass.close();
-                    }
                 }
             }
         }
@@ -384,6 +363,14 @@ public class ThreadLimitHandler extends HandlerWrapper
                 _queue.addLast(pass);
                 return pass;
             }
+        }
+        
+        public Closeable preAcquire()
+        {
+            // Always allocated
+            _passes++;
+            // return the already completed future
+            return this;
         }
         
         @Override
