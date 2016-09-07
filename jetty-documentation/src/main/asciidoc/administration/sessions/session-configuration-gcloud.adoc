@@ -15,16 +15,16 @@
 //  ========================================================================
 
 [[configuring-sessions-gcloud]]
-=== Configuring Google Cloud DataStore
+=== Configuring Session Clustering with Google Cloud DataStore
 
 ==== Preparation
 
 You will first need to create a project and enable the Google Cloud api: https://cloud.google.com/docs/authentication#preparation.
 Take note of the project id that you create in this step as you need to supply it in later steps.
 
-==== Communicating with GCloudDataStore
+===== Communicating with GCloudDataStore
 
-===== When running Jetty outside of google infrastructure
+====== When running Jetty outside of google infrastructure
 
 Before running Jetty, you will need to choose one of the following methods to set up the local environment to enable remote GCloud DataStore communications.
 
@@ -38,7 +38,7 @@ Before running Jetty, you will need to choose one of the following methods to se
   * Generate a JSON link:https://cloud.google.com/storage/docs/authentication?hl=en#service_accounts[service account key] and then define the environment variable `GOOGLE_APPLICATION_CREDENTIALS=/path/to/my/key.json`
 
 
-===== When Running Jetty Inside of Google Infrastructure
+====== When Running Jetty Inside of Google Infrastructure
 
 The Google deployment tools will automatically configure the project and authentication information for you.
 
@@ -49,7 +49,7 @@ This file is named `index.yaml` and you can find it in your distribution in `$je
 
 Follow the instructions link:https://cloud.google.com/datastore/docs/tools/#the_development_workflow_using_gcloud[here] to upload the pre-generated `index.yaml` file.
 
-==== Communicating with the GCloudDataStore Emulator
+===== Communicating with the GCloudDataStore Emulator
 
 To enable communication using the GCloud Emulator:
 

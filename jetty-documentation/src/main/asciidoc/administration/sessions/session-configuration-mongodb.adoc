@@ -16,7 +16,7 @@
 
 [[configuring-sessions-mongo]]
 
-=== Configuring MongoDB Clustering
+=== Configuring Session Clustering with MongoDB
 
 When using the Jetty distribution, you will first need to enable the `session-store-mongo` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 

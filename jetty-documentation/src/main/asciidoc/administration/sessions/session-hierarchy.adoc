@@ -48,6 +48,8 @@ image::images/SessionsHierarchy.png[]
 
 ==== Configuring Sessions in the Jetty Distribution
 
-Jetty provides support for several different Session Management/Clustering technologies including link:#configuring-sessions-jdbc[JDBC], link:#configuring-sessions-mongo[MongoDB], link:#configuring-sessions-infinispan[Inifinispan], link:#configuring-sessions-gcloud[Google Cloud Datastore] and one for link:#configuring-sessions-file-system[local file storage.]
+Jetty provides support for several different Session Management technologies.
+Both link:#configuring-sessions-file-system[local file storage] and link:#configuring-sessions-jdbc[JDBC] Session Management can be implemented for standard implementations.
+For implementations using clusted technologies, link:#configuring-sessions-mongo[MongoDB], link:#configuring-sessions-infinispan[Inifinispan] and link:#configuring-sessions-gcloud[Google Cloud Datastore] are all supported.
 Setting up these technologies is as easy as enabling it's link:#startup-modules[module] and editing it's associated ini file with any usernames, passwords or changes you need to make for your instance.
 The following sections will cover how exactly to enable the required modules as well as an overview of what options are available for customization.
