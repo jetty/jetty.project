@@ -9,10 +9,10 @@
   <Call name="insertHandler">
     <Arg>
       <New id="ThreadLimitHandler" class="org.eclipse.jetty.server.handler.ThreadLimitHandler">
-        <Arg name="forwardedHeader"><Property name="jetty.threadlimit.forwardedHeader"/><Arg> 
-        <Set name="enabled"><Property name="jetty.threadlimit.enabled" default="true"/><Set> 
-        <Set name="blockForMs"><Property name="jetty.threadlimit.blockForMs" default="0"/><Set> 
-        <Set name="threadLimit"><Property name="jetty.threadlimit.threadLimit" default="10"/><Set> 
+        <Arg name="forwardedHeader"><Property name="jetty.threadlimit.forwardedHeader"/></Arg> 
+        <Set name="enabled"><Property name="jetty.threadlimit.enabled" default="true"/></Set> 
+        <Set name="blockForMs"><Property name="jetty.threadlimit.blockForMs" default="0"/></Set> 
+        <Set name="threadLimit"><Property name="jetty.threadlimit.threadLimit" default="10"/></Set> 
       </New>
     </Arg>
   </Call>
