@@ -16,7 +16,7 @@
 
 [[configuring-sessions-infinispan]]
 
-=== Configuring Remote Inifinspan Clustering
+=== Configuring Remote Session Clustering with Inifinspan
 
 When using the Jetty distribution, you will first need to enable the `session-store-infinispan-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
