@@ -1,3 +1,6 @@
+jetty-8.1.21.v20160908 - 8 September 2016
+ 868 remove static throwable fix for java 1.7 usage
+
 jetty-8.1.20.v20160902 - 2 September 2016
  + 868 backport static throwables fix
 
