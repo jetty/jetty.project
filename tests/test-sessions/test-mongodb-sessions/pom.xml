@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>8.1.21.v20160908</version>
+    <version>8.2.0-SNAPSHOT</version>
   </parent>
   <artifactId>test-mongodb-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Mongo</name>
