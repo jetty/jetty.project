@@ -1,3 +1,5 @@
+jetty-9.2.20-SNAPSHOT
+
 jetty-9.2.19.v20160908 - 08 September 2016
  + 817 NPE in jndi Resource
  + 830 Test webapp not properly copied to demo-base
