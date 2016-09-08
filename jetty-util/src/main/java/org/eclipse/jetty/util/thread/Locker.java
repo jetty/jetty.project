@@ -25,9 +25,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * Convenience Lock Wrapper.
  * 
  * <pre>
- * try(SpinLock.Lock lock = locker.lock())
+ * try(Locker.Lock lock = locker.lock())
  * {
- *   // something very quick and non blocking
+ *   // something 
  * }
  * </pre>
  */
