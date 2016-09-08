@@ -1,4 +1,15 @@
-jetty-9.2.19-SNAPSHOT
+jetty-9.2.19.v20160908 - 08 September 2016
+ + 817 NPE in jndi Resource
+ + 830 Test webapp not properly copied to demo-base
+ + 832 ServerWithJNDI example uses wrong webapp
+ + 851 MBeanContainer no longer unregisters MBeans when "stopped"
+ + 868 ClassLoader leak with Jetty and Karaf - static instances of
+   java.lang.Throwable
+ + 880 Refactor jetty-http's HostPortHttpField logic into new jetty-util class
+ + 882 Add IPv6 support to IPAddressMap in jetty-util
+ + 894 When adding servless class, preserve Class instead of going through
+   String
+ + 899 PathFinderTest fails in jetty-9.2.x
 
 jetty-9.2.18.v20160721 - 21 July 2016
  + 425 Incorrect @ServerEndpoint Encoder/Decoder lifecycle
