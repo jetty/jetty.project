@@ -112,11 +112,11 @@ public class EncodedURITest
     @Test
     public void testTestServlet() throws Exception
     {
-        String response = _connector.getResponse("GET /context%20path/test%20servlet/path%20info HTTP/1.0\n\n");
+        String response = _connector.getResponse("GET /c%6Fntext%20path/test%20servlet/path%20info HTTP/1.0\n\n");
         assertThat(response,startsWith("HTTP/1.1 200 "));
-        assertThat(response,Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
-        assertThat(response,Matchers.containsString("servletPath=/test servlet"));
+        assertThat(response,Matchers.containsString("requestURI=/c%6Fntext%20path/test%20servlet/path%20info"));
         assertThat(response,Matchers.containsString("contextPath=/context path"));
+        assertThat(response,Matchers.containsString("servletPath=/test servlet"));
         assertThat(response,Matchers.containsString("pathInfo=/path info"));
     }
 
@@ -126,8 +126,8 @@ public class EncodedURITest
         String response = _connector.getResponse("GET /context%20path/test%20servlet/path%20info?async=true HTTP/1.0\n\n");
         assertThat(response,startsWith("HTTP/1.1 200 "));
         assertThat(response,Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
-        assertThat(response,Matchers.containsString("servletPath=/test servlet"));
         assertThat(response,Matchers.containsString("contextPath=/context path"));
+        assertThat(response,Matchers.containsString("servletPath=/test servlet"));
         assertThat(response,Matchers.containsString("pathInfo=/path info"));
     }
 
@@ -137,10 +137,23 @@ public class EncodedURITest
         String response = _connector.getResponse("GET /context%20path/test%20servlet/path%20info?async=true&wrap=true HTTP/1.0\n\n");
         assertThat(response,startsWith("HTTP/1.1 200 "));
         assertThat(response,Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
-        assertThat(response,Matchers.containsString("servletPath=/test servlet"));
         assertThat(response,Matchers.containsString("contextPath=/context path"));
+        assertThat(response,Matchers.containsString("servletPath=/test servlet"));
         assertThat(response,Matchers.containsString("pathInfo=/path info"));
     }
+
+    @Test
+    public void testAsyncServletTestServlet() throws Exception
+    {
+        String response = _connector.getResponse("GET /context%20path/async%20servlet/path%20info HTTP/1.0\n\n");
+        assertThat(response,startsWith("HTTP/1.1 200 "));
+        assertThat(response,Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
+        assertThat(response,Matchers.containsString("contextPath=/context path"));
+        assertThat(response,Matchers.containsString("servletPath=/test servlet"));
+        assertThat(response,Matchers.containsString("pathInfo=/path info"));
+    }
+    
+    
     
 
     public static class TestServlet extends HttpServlet
