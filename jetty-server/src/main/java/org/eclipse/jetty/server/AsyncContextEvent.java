@@ -27,6 +27,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class AsyncContextEvent extends AsyncEvent implements Runnable
@@ -138,7 +139,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
 
     public void setDispatchPath(String path)
     {
-        _dispatchPath=path;
+        _dispatchPath=URIUtil.decodePath(path);
     }
 
     public void completed()
