@@ -67,10 +67,10 @@ public class IncludeExcludeSet<P,T> implements Predicate<T>
     
     /**
      * Construct an IncludeExclude.
-     * <p>
-     * If the {@link Set} class also implements {@link Predicate}, then that Predicate is
-     * used to match against the set, otherwise a simple {@link Set#contains(Object)} test is used.
-     * @param setClass The type of {@link Set} to using internally
+     * @param setClass The type of {@link Set} to using internally to hold patterns. Two instances will be created.
+     * one for include patterns and one for exclude patters.  If the class is also a {@link Predicate},
+     * then it is also used as the item test for the set, otherwise a {@link SetContainsPredicate} instance
+     * is created.
      * @param <SET> The type of a set to use as the backing store
      */
     public <SET extends Set<P>> IncludeExcludeSet(Class<SET> setClass)
@@ -89,9 +89,12 @@ public class IncludeExcludeSet<P,T> implements Predicate<T>
                 _includePredicate = new SetContainsPredicate(_includes);
             }
             
-            if(_excludes instanceof Predicate) {
+            if(_excludes instanceof Predicate) 
+            {
                 _excludePredicate = (Predicate<T>)_excludes;
-            } else {
+            } 
+            else 
+            {
                 _excludePredicate = new SetContainsPredicate(_excludes);
             }
         }
