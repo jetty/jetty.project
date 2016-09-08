@@ -322,27 +322,7 @@ public class Response implements HttpServletResponse
             buf.append(";Comment=");
             quoteOnlyOrAppend(buf,comment,isQuoteNeededForCookie(comment));
         }
-
-        // remove any existing set-cookie fields of same name
-        Iterator<HttpField> i=_fields.iterator();
-        while (i.hasNext())
-        {
-            HttpField field=i.next();
-            if (field.getHeader()==HttpHeader.SET_COOKIE)
-            {
-                String val = field.getValue();
-                if (val!=null && val.startsWith(name_equals))
-                {
-                    //existing cookie has same name, does it also match domain and path?
-                    if (((!has_domain && !val.contains("Domain")) || (has_domain && val.contains(domain))) &&
-                        ((!has_path && !val.contains("Path")) || (has_path && val.contains(path))))
-                    {
-                        i.remove();
-                    }
-                }
-            }
-        }
-
+        
         // add the set cookie
         _fields.add(HttpHeader.SET_COOKIE, buf.toString());
 
