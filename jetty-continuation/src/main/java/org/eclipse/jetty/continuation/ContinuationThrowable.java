@@ -46,5 +46,6 @@ public class ContinuationThrowable extends Error
 {
     public ContinuationThrowable()
     {
+       super(null, null, false, false);
     }
 }
