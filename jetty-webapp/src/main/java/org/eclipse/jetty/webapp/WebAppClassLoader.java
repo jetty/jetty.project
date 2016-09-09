@@ -489,7 +489,8 @@ public class WebAppClassLoader extends URLClassLoader
 
             if (c == null && ex!=null)
             {
-                LOG.debug("!loadedClass({}) from={} tried_parent={}",name,this,tried_parent);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("!loadedClass({}) from={} tried_parent={}",name,this,tried_parent);
                 throw ex;
             }
 
