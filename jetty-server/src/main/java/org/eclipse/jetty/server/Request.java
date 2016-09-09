@@ -1219,6 +1219,8 @@ public class Request implements HttpServletRequest
     @Override
     public RequestDispatcher getRequestDispatcher(String path)
     {
+        // path is encoded, potentially with query
+        
         path = URIUtil.compactPath(path);
 
         if (path == null || _context == null)
@@ -1233,7 +1235,7 @@ public class Request implements HttpServletRequest
                 relTo = relTo.substring(0,slash + 1);
             else
                 relTo = "/";
-            path = URIUtil.addPaths(relTo,path);
+            path = URIUtil.addPaths(URIUtil.encodePath(relTo),path);
         }
 
         return _context.getRequestDispatcher(path);
@@ -2176,7 +2178,7 @@ public class Request implements HttpServletRequest
             _async=new AsyncContextState(state);
         AsyncContextEvent event = new AsyncContextEvent(_context,_async,state,this,servletRequest,servletResponse);
         event.setDispatchContext(getServletContext());
-        event.setDispatchPath(URIUtil.addPaths(getServletPath(),getPathInfo()));
+        event.setDispatchPath(URIUtil.encodePath(URIUtil.addPaths(getServletPath(),getPathInfo())));
         state.startAsync(event);
         return _async;
     }

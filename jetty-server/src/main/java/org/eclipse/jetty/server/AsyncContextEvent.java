@@ -27,6 +27,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class AsyncContextEvent extends AsyncEvent implements Runnable
@@ -94,7 +95,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     }
 
     /**
-     * @return The path in the context
+     * @return The path in the context (encoded with possible query string)
      */
     public String getPath()
     {
@@ -131,6 +132,9 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         _dispatchContext=context;
     }
 
+    /**
+     * @param path encoded URI
+     */
     public void setDispatchPath(String path)
     {
         _dispatchPath=path;
