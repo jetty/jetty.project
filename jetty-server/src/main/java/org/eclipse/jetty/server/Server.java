@@ -578,7 +578,7 @@ public class Server extends HandlerWrapper implements Attributes
             // this is a dispatch with a path
             ServletContext context=event.getServletContext();
             String query=baseRequest.getQueryString();
-            baseRequest.setURIPathQuery(URIUtil.encodePath(URIUtil.addPaths(context==null?null:context.getContextPath(), path)));
+            baseRequest.setURIPathQuery(URIUtil.addPaths(context==null?null:URIUtil.encodePath(context.getContextPath()), path));
             HttpURI uri = baseRequest.getHttpURI();
             baseRequest.setPathInfo(uri.getDecodedPath());
             if (uri.getQuery()!=null)
