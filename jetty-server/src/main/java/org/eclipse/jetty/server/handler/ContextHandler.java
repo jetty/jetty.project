@@ -2041,6 +2041,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public RequestDispatcher getRequestDispatcher(String uriInContext)
         {
+            // uriInContext is encoded, potentially with query
+
             if (uriInContext == null)
                 return null;
 

@@ -95,7 +95,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     }
 
     /**
-     * @return The path in the context
+     * @return The path in the context (encoded with possible query string)
      */
     public String getPath()
     {
@@ -137,9 +137,12 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         _dispatchContext=context;
     }
 
+    /**
+     * @param path encoded URI
+     */
     public void setDispatchPath(String path)
     {
-        _dispatchPath=URIUtil.decodePath(path);
+        _dispatchPath=path;
     }
 
     public void completed()

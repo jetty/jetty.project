@@ -60,6 +60,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -147,13 +148,22 @@ public class EncodedURITest
     {
         String response = _connector.getResponse("GET /context%20path/async%20servlet/path%20info HTTP/1.0\n\n");
         assertThat(response,startsWith("HTTP/1.1 200 "));
+        assertThat(response,Matchers.containsString("requestURI=/context%20path/test servlet/path info"));
+        assertThat(response,Matchers.containsString("contextPath=/context path"));
+        assertThat(response,Matchers.containsString("servletPath=/test servlet"));
+        assertThat(response,Matchers.containsString("pathInfo=/path info"));
+    }
+
+    @Test
+    public void testAsyncServletTestServletEncoded() throws Exception
+    {
+        String response = _connector.getResponse("GET /context%20path/async%20servlet/path%20info?encode=true HTTP/1.0\n\n");
+        assertThat(response,startsWith("HTTP/1.1 200 "));
         assertThat(response,Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
         assertThat(response,Matchers.containsString("contextPath=/context path"));
         assertThat(response,Matchers.containsString("servletPath=/test servlet"));
         assertThat(response,Matchers.containsString("pathInfo=/path info"));
     }
-    
-    
     
 
     public static class TestServlet extends HttpServlet
@@ -180,7 +190,7 @@ public class EncodedURITest
                 :request.startAsync();
 
             if (Boolean.parseBoolean(request.getParameter("encode")))
-                async.dispatch("/test%20servlet"+URLEncoder.encode(request.getPathInfo(),"UTF-8"));
+                async.dispatch("/test%20servlet"+URIUtil.encodePath(request.getPathInfo()));
             else
                 async.dispatch("/test servlet/path info"+request.getPathInfo());
             return;
