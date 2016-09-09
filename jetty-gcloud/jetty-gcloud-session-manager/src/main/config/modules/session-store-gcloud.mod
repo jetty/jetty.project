@@ -62,6 +62,6 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 [ini-template]
 
 ## GCloudDatastore Session config
-#jetty.gcloudSession.maxRetries=5
-#jetty.gcloudSession.backoffMs=1000
+#jetty.session.gcloud.maxRetries=5
+#jetty.session.gcloud.backoffMs=1000
 
