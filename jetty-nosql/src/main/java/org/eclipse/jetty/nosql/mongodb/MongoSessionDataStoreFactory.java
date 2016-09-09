@@ -23,6 +23,7 @@ import java.net.UnknownHostException;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.server.session.SessionDataStore;
 
 
@@ -38,6 +39,43 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
 {
     String _dbName;  
     String _collectionName;
+    String _host;
+    int _port = -1;
+    
+    /**
+     * @return the host
+     */
+    public String getHost()
+    {
+        return _host;
+    }
+
+    /**
+     * @param host the host to set
+     */
+    public void setHost(String host)
+    {
+        _host = host;
+    }
+
+    /**
+     * @return the port
+     */
+    public int getPort()
+    {
+        return _port;
+    }
+
+    /**
+     * @param port the port to set
+     */
+    public void setPort(int port)
+    {
+        _port = port;
+    }
+
+
+
     
     
     /**
@@ -83,7 +121,14 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     {
         MongoSessionDataStore store = new MongoSessionDataStore();
         store.setGracePeriodSec(getGracePeriodSec());
-        store.setDBCollection(new Mongo().getDB(getDbName()).getCollection(getCollectionName()));
+        Mongo mongo;
+        if (!StringUtil.isBlank(getHost()) && getPort() != -1)
+            mongo = new Mongo(getHost(), getPort());
+        else if (!StringUtil.isBlank(getHost()))
+            mongo = new Mongo(getHost());
+        else
+            mongo = new Mongo();
+        store.setDBCollection(mongo.getDB(getDbName()).getCollection(getCollectionName()));
         return store;
     }
 
