@@ -16,7 +16,7 @@
 
 [[configuring-sessions-infinispan]]
 
-=== Configuring Remote Session Clustering with Inifinspan
+=== Clustered Session Management: Inifinspan
 
 When using the Jetty distribution, you will first need to enable the `session-store-infinispan-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
@@ -69,20 +69,20 @@ Opening the `start.d/session-store-infinispan-remote.ini` will show a list of al
 # ---------------------------------------
 --module=session-store-infinispan-remote
 
-#jetty.session.remoteInfinispanCache.name=sessions
-#jetty.session.infinispanIdleTimeout.seconds=0
+#jetty.session.infinispan.remoteCacheName=sessions
+#jetty.session.infinispan.idleTimeout.seconds=0
 #jetty.session.gracePeriod.seconds=3600
 ----
 
-jetty.session.remoteInfinispanCache.name::
+jetty.session.infinispan.remoteCacheName::
 Name of the cache in Infinispan where sessions will be stored.
-jetty.session.infinispanIdleTimeout.seconds::
+jetty.session.infinispan.idleTimeout.seconds::
 Amount of time, in seconds, that the system allows the connector to remain idle before closing the connection.
 jetty.session.gracePeriod.seconds::
 Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
 
 
-=== Configuring Embedded Inifinspan Clustering
+==== Configuring Embedded Inifinspan Clustering
 
 During testing, it can be helpful to run an in-process instance of Infinispan.
 To enable this you will first need to enable the `session-store-infinispan-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
