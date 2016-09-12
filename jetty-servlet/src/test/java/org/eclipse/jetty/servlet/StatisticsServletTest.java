@@ -75,13 +75,8 @@ public class StatisticsServletTest
     {
 
         StatisticsHandler statsHandler = new StatisticsHandler();
-
-        _server.setHandler( statsHandler );
-
-        ServletContextHandler statsContext = new ServletContextHandler( _server, "/" );
-        statsContext.setHandler( statsHandler );
-
-        //statsHandler.setHandler( statsContext );
+        _server.setHandler(statsHandler);
+        ServletContextHandler statsContext = new ServletContextHandler(statsHandler, "/");
 
         statsContext.addServlet( new ServletHolder( new TestServlet() ), "/test1" );
 
