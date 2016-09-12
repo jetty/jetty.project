@@ -101,6 +101,12 @@ public class StatisticsServlet extends HttpServlet
             }
         }
 
+        String statsReset = req.getParameter( "statsReset" );
+        if (statsReset != null && "true".equalsIgnoreCase( statsReset )) {
+            _statsHandler.statsReset();
+            return;
+        }
+
         String wantXml = req.getParameter("xml");
         if (wantXml == null)
           wantXml = req.getParameter("XML");
