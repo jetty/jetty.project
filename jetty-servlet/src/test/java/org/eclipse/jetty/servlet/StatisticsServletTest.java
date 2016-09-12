@@ -25,7 +25,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.xml.XmlParser;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -38,6 +37,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
@@ -96,15 +97,15 @@ public class StatisticsServletTest
 
         _server.start();
 
-        String response = getResponse("/test1" );
+        getResponse("/test1" );
 
-        response = getResponse("/stats?xml=true" );
+        String response = getResponse("/stats?xml=true" );
 
         Stats stats = parseStats( response );
 
         Assert.assertEquals(1, stats.responses2xx);
 
-        response = getResponse("/stats?statsReset=true" );
+        getResponse("/stats?statsReset=true" );
 
         response = getResponse("/stats?xml=true" );
 
@@ -143,62 +144,29 @@ public class StatisticsServletTest
     public Stats parseStats( String xml )
         throws Exception
     {
-        XmlParser xmlParser = new XmlParser();
-        Stats stats = new Stats();
+        XPath xPath = XPathFactory.newInstance().newXPath();
 
-        xmlParser.addContentHandler( "responses4xx", new DefaultHandler()
-        {
-            @Override
-            public void characters( char[] ch, int start, int length )
-                throws SAXException
-            {
-                try
-                {
-                    stats.responses4xx = Integer.parseInt( new String( ch, start, length  ) );
-                }
-                catch ( NumberFormatException e )
-                {
-                    //
-                }
-            }
-        } );
+        String responses4xx = xPath.evaluate( "//responses4xx", new InputSource( new StringReader( xml ) ) );
 
-        xmlParser.addContentHandler( "responses2xx", new DefaultHandler()
-        {
-            @Override
-            public void characters( char[] ch, int start, int length )
-                throws SAXException
-            {
-                try
-                {
-                    stats.responses2xx = Integer.parseInt( new String( ch, start, length  ) );
-                }
-                catch ( NumberFormatException e )
-                {
-                    //
-                }
-            }
-        } );
+        String responses2xx = xPath.evaluate( "//responses2xx", new InputSource( new StringReader( xml ) ) );
 
-        xmlParser.parse( new InputSource( new StringReader( xml ) ) );
+        Stats stats = new Stats(Integer.parseInt( responses2xx), Integer.parseInt( responses4xx ));
+
+
         return stats;
     }
 
     public static class Stats
     {
         int responses2xx,responses4xx;
-    }
 
-    public static class ValueContentHandler
-        extends DefaultHandler
-    {
-        @Override
-        public void characters( char[] ch, int start, int length )
-            throws SAXException
+        public Stats( int responses2xx, int responses4xx )
         {
-            super.characters( ch, start, length );
+            this.responses2xx = responses2xx;
+            this.responses4xx = responses4xx;
         }
     }
+
 
     public static class TestServlet
         extends HttpServlet
