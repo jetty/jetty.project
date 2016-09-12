@@ -76,10 +76,10 @@ public class StatisticsServletTest
     public void get_stats()
         throws Exception
     {
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        _server.setHandler( contexts );
 
         StatisticsHandler statsHandler = new StatisticsHandler();
+
+        _server.setHandler( statsHandler );
 
         ServletContextHandler statsContext = new ServletContextHandler( _server, "/" );
         statsContext.setHandler( statsHandler );
