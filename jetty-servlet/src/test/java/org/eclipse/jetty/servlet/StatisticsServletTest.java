@@ -22,7 +22,6 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.junit.After;
@@ -30,8 +29,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -84,7 +81,7 @@ public class StatisticsServletTest
         ServletContextHandler statsContext = new ServletContextHandler( _server, "/" );
         statsContext.setHandler( statsHandler );
 
-        _server.setHandler( statsContext );
+        //statsHandler.setHandler( statsContext );
 
         statsContext.addServlet( new ServletHolder( new TestServlet() ), "/test1" );
 
