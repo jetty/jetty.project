@@ -142,10 +142,7 @@ public class StatisticsServletTest
 
         String responses2xx = xPath.evaluate( "//responses2xx", new InputSource( new StringReader( xml ) ) );
 
-        Stats stats = new Stats(Integer.parseInt( responses2xx), Integer.parseInt( responses4xx ));
-
-
-        return stats;
+        return new Stats(Integer.parseInt( responses2xx), Integer.parseInt( responses4xx ));
     }
 
     public static class Stats
