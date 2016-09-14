@@ -24,8 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.DispatcherType;
 
@@ -68,7 +67,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
     private final AtomicBoolean _committed = new AtomicBoolean();
-    private final AtomicInteger _requests = new AtomicInteger();
+    private final AtomicLong _requests = new AtomicLong();
     private final Connector _connector;
     private final Executor _executor;
     private final HttpConfiguration _configuration;
@@ -125,7 +124,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     /**
      * @return the number of requests handled by this connection
      */
-    public int getRequests()
+    public long getRequests()
     {
         return _requests.get();
     }
@@ -266,8 +265,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         handle();
     }
 
-    AtomicReference<Action> caller = new AtomicReference<>();
-    
     /**
      * @return True if the channel is ready to continue handling (ie it is not suspended)
      */
@@ -355,7 +352,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         {
                             _response.reset();
                             Integer icode = (Integer)_request.getAttribute(ERROR_STATUS_CODE);
-                            int code = icode!=null?icode.intValue():HttpStatus.INTERNAL_SERVER_ERROR_500;                        
+                            int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500;
                             _response.setStatus(code);
                             _request.setAttribute(ERROR_STATUS_CODE,code);
                             if (icode==null)
@@ -508,7 +505,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     // Minimal response
                     Integer code=(Integer)_request.getAttribute(ERROR_STATUS_CODE);
                     _response.reset();
-                    _response.setStatus(code==null?500:code.intValue());
+                    _response.setStatus(code == null ? 500 : code);
                     _response.flushBuffer();
                 }
             }

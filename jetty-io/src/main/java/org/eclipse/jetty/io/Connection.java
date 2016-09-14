@@ -60,7 +60,7 @@ public interface Connection extends Closeable
     public void onClose();
 
     /**
-     * @return the {@link EndPoint} associated with this {@link Connection}
+     * @return the {@link EndPoint} associated with this Connection.
      */
     public EndPoint getEndPoint();
     
@@ -86,8 +86,8 @@ public interface Connection extends Closeable
      */
     public boolean onIdleExpired();
 
-    public int getMessagesIn();
-    public int getMessagesOut();
+    public long getMessagesIn();
+    public long getMessagesOut();
     public long getBytesIn();
     public long getBytesOut();
     public long getCreatedTimeStamp();

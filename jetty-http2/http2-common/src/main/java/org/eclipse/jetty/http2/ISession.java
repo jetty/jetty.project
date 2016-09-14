@@ -127,4 +127,9 @@ public interface ISession extends Session
      * @param frame the synthetic frame to process
      */
     public void onFrame(Frame frame);
+
+    /**
+     * @return the number of bytes written by this session
+     */
+    public long getBytesWritten();
 }

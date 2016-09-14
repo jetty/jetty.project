@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
@@ -167,13 +166,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
-    public int getMessagesIn()
+    public long getMessagesIn()
     {
         return getHttpChannel().getRequests();
     }
 
     @Override
-    public int getMessagesOut()
+    public long getMessagesOut()
     {
         return getHttpChannel().getRequests();
     }

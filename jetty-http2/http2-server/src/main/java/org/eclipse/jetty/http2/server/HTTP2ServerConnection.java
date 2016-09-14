@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
@@ -55,11 +56,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
 
 public class HTTP2ServerConnection extends HTTP2Connection implements Connection.UpgradeTo
 {
-    
     /**
      * @param protocol A HTTP2 protocol variant
      * @return True if the protocol version is supported
@@ -85,15 +84,29 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     }
     
     private final Queue<HttpChannelOverHTTP2> channels = new ConcurrentArrayQueue<>();
+    private final List<Frame> upgradeFrames = new ArrayList<>();
+    private final AtomicLong totalRequests = new AtomicLong();
+    private final AtomicLong totalResponses = new AtomicLong();
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
-    private final List<Frame> upgradeFrames = new ArrayList<>();
 
     public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
         super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize);
         this.listener = listener;
         this.httpConfig = httpConfig;
+    }
+
+    @Override
+    public long getMessagesIn()
+    {
+        return totalRequests.intValue();
+    }
+
+    @Override
+    public long getMessagesOut()
+    {
+        return totalResponses.intValue();
     }
 
     @Override
@@ -264,19 +277,27 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
 
         @Override
-        public void recycle()
+        public Runnable onRequest(HeadersFrame frame)
         {
-            getStream().removeAttribute(IStream.CHANNEL_ATTRIBUTE);
-            super.recycle();
-            channels.offer(this);
+            totalRequests.incrementAndGet();
+            return super.onRequest(frame);
         }
 
         @Override
         public void onCompleted()
         {
+            totalResponses.incrementAndGet();
             super.onCompleted();
             if (!getStream().isReset())
                 recycle();
+        }
+
+        @Override
+        public void recycle()
+        {
+            getStream().removeAttribute(IStream.CHANNEL_ATTRIBUTE);
+            super.recycle();
+            channels.offer(this);
         }
 
         @Override

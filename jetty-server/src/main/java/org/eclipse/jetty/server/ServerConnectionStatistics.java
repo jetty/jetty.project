@@ -16,35 +16,19 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.frames;
+package org.eclipse.jetty.server;
 
-public class WindowUpdateFrame extends Frame
+import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.util.component.Container;
+
+public class ServerConnectionStatistics extends ConnectionStatistics
 {
-    public static final int WINDOW_UPDATE_LENGTH = 4;
-
-    private final int streamId;
-    private final int windowDelta;
-
-    public WindowUpdateFrame(int streamId, int windowDelta)
+    public static void addToAllConnectors(Server server)
     {
-        super(FrameType.WINDOW_UPDATE);
-        this.streamId = streamId;
-        this.windowDelta = windowDelta;
-    }
-
-    public int getStreamId()
-    {
-        return streamId;
-    }
-
-    public int getWindowDelta()
-    {
-        return windowDelta;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s#%d,delta=%d", super.toString(), streamId, windowDelta);
+        for (Connector connector : server.getConnectors())
+        {
+            if (connector instanceof Container)
+                ((Container)connector).addBean(new ConnectionStatistics());
+        }
     }
 }
