@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -37,7 +31,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.ConnectorStatistics;
+import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -45,10 +39,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 public class StatisticsHandlerTest
 {
     private Server _server;
-    private ConnectorStatistics _statistics;
+    private ConnectionStatistics _statistics;
     private LocalConnector _connector;
     private LatchHandler _latchHandler;
     private StatisticsHandler _statsHandler;
@@ -59,7 +59,7 @@ public class StatisticsHandlerTest
         _server = new Server();
 
         _connector = new LocalConnector(_server);
-        _statistics = new ConnectorStatistics();
+        _statistics = new ConnectionStatistics();
         _connector.addBean(_statistics);
         _server.addConnector(_connector);
 
@@ -110,7 +110,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _statistics.getConnectionsOpen());
+        assertEquals(1, _statistics.getConnections());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -145,7 +145,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(2, _statistics.getConnectionsOpen());
+        assertEquals(2, _statistics.getConnections());
 
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -208,7 +208,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(2, _statistics.getConnectionsOpen());
+        assertEquals(2, _statistics.getConnections());
 
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(2, _statsHandler.getRequestsActive());
@@ -282,7 +282,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _statistics.getConnectionsOpen());
+        assertEquals(1, _statistics.getConnections());
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getDispatched());
@@ -336,7 +336,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await(); // entered app handler
 
-        assertEquals(1, _statistics.getConnectionsOpen());
+        assertEquals(1, _statistics.getConnections());
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getDispatched());
@@ -416,7 +416,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _statistics.getConnectionsOpen());
+        assertEquals(1, _statistics.getConnections());
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getDispatched());
@@ -532,7 +532,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _statistics.getConnectionsOpen());
+        assertEquals(1, _statistics.getConnections());
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getDispatched());
