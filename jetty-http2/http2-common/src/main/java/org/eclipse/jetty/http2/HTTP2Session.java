@@ -1220,7 +1220,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     private class DataEntry extends HTTP2Flusher.Entry
     {
-        private long bytes;
+        private int bytes;
         private int dataRemaining;
         private int dataWritten;
 
@@ -1255,7 +1255,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
             // Only one DATA frame is generated.
             bytes = generator.data(lease, (DataFrame)frame, length);
-            int written = (int)bytes - Frame.HEADER_LENGTH;
+            int written = bytes - Frame.HEADER_LENGTH;
             if (LOG.isDebugEnabled())
                 LOG.debug("Generated {}, length/window/data={}/{}/{}", frame, written, window, dataRemaining);
 
