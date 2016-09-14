@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -43,11 +44,12 @@ public class HTTP2Connection extends AbstractConnection
     protected static final Logger LOG = Log.getLogger(HTTP2Connection.class);
 
     private final Queue<Runnable> tasks = new ConcurrentArrayQueue<>();
+    private final HTTP2Producer producer = new HTTP2Producer();
+    private final AtomicLong bytesIn = new AtomicLong();
     private final ByteBufferPool byteBufferPool;
     private final Parser parser;
     private final ISession session;
     private final int bufferSize;
-    private final HTTP2Producer producer = new HTTP2Producer();
     private final ExecutionStrategy blockingStrategy;
     private final ExecutionStrategy nonBlockingStrategy;
 
@@ -66,7 +68,6 @@ public class HTTP2Connection extends AbstractConnection
     {
         return session;
     }
-
 
     protected Parser getParser()
     {
@@ -94,7 +95,6 @@ public class HTTP2Connection extends AbstractConnection
             LOG.debug("HTTP2 Close {} ", this);
         super.onClose();
     }
-
 
     @Override
     public void onFillable()
@@ -220,6 +220,10 @@ public class HTTP2Connection extends AbstractConnection
                     session.onShutdown();
                     return null;
                 }
+                else
+                {
+                    bytesIn.addAndGet(filled);
+                }
 
                 looping = true;
             }
@@ -238,12 +242,6 @@ public class HTTP2Connection extends AbstractConnection
     private class FillableCallback implements Callback
     {
         @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.EITHER;
-        }
-        
-        @Override
         public void succeeded()
         {
             if (Invocable.isNonBlockingInvocation())
@@ -256,6 +254,12 @@ public class HTTP2Connection extends AbstractConnection
         public void failed(Throwable x)
         {
             onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.EITHER;
         }
     }
 }

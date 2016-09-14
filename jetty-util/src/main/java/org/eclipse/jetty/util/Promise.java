@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.util.log.Log;
@@ -55,11 +56,6 @@ public interface Promise<C>
      */
     class Adapter<U> implements Promise<U>
     {
-        @Override
-        public void succeeded(U result)
-        {
-        }
-
         @Override
         public void failed(Throwable x)
         {
@@ -119,13 +115,25 @@ public interface Promise<C>
         }
     }
 
-    public static abstract class Wrapper<W> implements Promise<W>
+    class Wrapper<W> implements Promise<W>
     {
         private final Promise<W> promise;
 
         public Wrapper(Promise<W> promise)
         {
-            this.promise = promise;
+            this.promise = Objects.requireNonNull(promise);
+        }
+
+        @Override
+        public void succeeded(W result)
+        {
+            promise.succeeded(result);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            promise.failed(x);
         }
 
         public Promise<W> getPromise()

@@ -43,7 +43,10 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 /** A Connector.Listener that gathers Connector and Connections Statistics.
  * Adding an instance of this class as with {@link AbstractConnector#addBean(Object)} 
  * will register the listener with all connections accepted by that connector.
+ *
+ * @deprecated use {@link ServerConnectionStatistics} instead.
  */
+@Deprecated
 @ManagedObject("Connector Statistics")
 public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, Connection.Listener
 {
@@ -75,8 +78,8 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
     {
         if (isStarted())
         {
-            int msgsIn=connection.getMessagesIn();
-            int msgsOut=connection.getMessagesOut();
+            long msgsIn=connection.getMessagesIn();
+            long msgsOut=connection.getMessagesOut();
             _messagesIn.set(msgsIn);
             _messagesOut.set(msgsOut);
             _connectionStats.decrement();
@@ -302,7 +305,7 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
             _messagesOut=connection.getMessagesOut();
         }
         
-        final int _messagesIn;
-        final int _messagesOut;
+        final long _messagesIn;
+        final long _messagesOut;
     }
 }

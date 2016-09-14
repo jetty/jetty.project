@@ -12,7 +12,7 @@
       </New>
     </Arg>
   </Call>
-  <Call class="org.eclipse.jetty.server.ConnectorStatistics" name="addToAllConnectors">
+  <Call class="org.eclipse.jetty.server.ServerConnectionStatistics" name="addToAllConnectors">
     <Arg><Ref refid="Server"/></Arg>
   </Call>
 </Configure>

@@ -39,7 +39,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
@@ -86,6 +85,20 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             this.client = client;
             this.promise = promise;
             this.listener = listener;
+        }
+
+        @Override
+        public long getMessagesIn()
+        {
+            HTTP2ClientSession session = (HTTP2ClientSession)getSession();
+            return session.getStreamsOpened();
+        }
+
+        @Override
+        public long getMessagesOut()
+        {
+            HTTP2ClientSession session = (HTTP2ClientSession)getSession();
+            return session.getStreamsClosed();
         }
 
         @Override

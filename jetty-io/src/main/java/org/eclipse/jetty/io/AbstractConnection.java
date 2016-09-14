@@ -85,19 +85,15 @@ public abstract class AbstractConnection implements Connection
 
     protected void failedCallback(final Callback callback, final Throwable x)
     {
-        Runnable failCallback = new Runnable()
+        Runnable failCallback = () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    callback.failed(x);
-                }
-                catch (Exception e)
-                {
-                    LOG.warn(e);
-                }
+                callback.failed(x);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
             }
         };
         
@@ -223,13 +219,13 @@ public abstract class AbstractConnection implements Connection
     }
 
     @Override
-    public int getMessagesIn()
+    public long getMessagesIn()
     {
         return -1;
     }
 
     @Override
-    public int getMessagesOut()
+    public long getMessagesOut()
     {
         return -1;
     }
