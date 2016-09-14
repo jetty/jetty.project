@@ -564,17 +564,11 @@ public class HttpClient extends ContainerLifeCycle
                 context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<Connection>(promise)
                 {
                     @Override
-                    public void succeeded(Connection result)
-                    {
-                        getPromise().succeeded(result);
-                    }
-
-                    @Override
                     public void failed(Throwable x)
                     {
                         int nextIndex = index + 1;
                         if (nextIndex == socketAddresses.size())
-                            getPromise().failed(x);
+                            super.failed(x);
                         else
                             connect(socketAddresses, nextIndex, context);
                     }
