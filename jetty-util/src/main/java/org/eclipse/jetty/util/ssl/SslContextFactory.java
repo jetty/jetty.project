@@ -123,7 +123,7 @@ public class SslContextFactory extends AbstractLifeCycle
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
 
     /** Excluded protocols. */
-    private final Set<String> _excludeProtocols = new LinkedHashSet<>();
+    private final Set<String> _excludeProtocols = new LinkedHashSet<>(Arrays.asList("SSL", "SSLv2", "SSLv2Hello", "SSLv3"));
 
     /** Included protocols. */
     private final Set<String> _includeProtocols = new LinkedHashSet<>();
@@ -132,7 +132,7 @@ public class SslContextFactory extends AbstractLifeCycle
     private String[] _selectedProtocols;
 
     /** Excluded cipher suites. */
-    private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
+    private final Set<String> _excludeCipherSuites = new LinkedHashSet<>(Arrays.asList("^.*_(MD5|SHA|SHA1)$"));
 
     /** Included cipher suites. */
     private final List<String> _includeCipherSuites = new ArrayList<>();
@@ -249,8 +249,6 @@ public class SslContextFactory extends AbstractLifeCycle
     public SslContextFactory(boolean trustAll)
     {
         setTrustAll(trustAll);
-        addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
-        setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
     }
 
     /**
