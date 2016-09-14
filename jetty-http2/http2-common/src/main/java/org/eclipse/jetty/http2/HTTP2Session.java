@@ -1114,7 +1114,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     private class ControlEntry extends HTTP2Flusher.Entry
     {
-        private long bytes;
+        private int bytes;
 
         private ControlEntry(Frame frame, IStream stream, Callback callback)
         {
