@@ -10,7 +10,7 @@
   <!-- ===================================================================== -->
   <New id="hotrodMgr" class="org.infinispan.client.hotrod.RemoteCacheManager">
     <Call id="remoteCache" name="getCache">
-      <Arg><Property name="jetty.session.remoteInfinispanCache.name" default="sessions"/></Arg>
+      <Arg><Property name="jetty.session.infinispan.remoteCacheName" default="sessions"/></Arg>
     </Call>
   </New>
   
@@ -22,7 +22,7 @@
    <Arg>
     <New id="sessionDataStoreFactory" class="org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory">
        <Set name="cache"><Ref id="remoteCache"/></Set>
-       <Set name="infinispanIdleTimeoutSec"><Property name="jetty.session.infinispanIdleTimeout.seconds" default="0" /></Set>
+       <Set name="infinispanIdleTimeoutSec"><Property name="jetty.session.infinispan.idleTimeout.seconds" default="0" /></Set>
        <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
     </New>
    </Arg>
