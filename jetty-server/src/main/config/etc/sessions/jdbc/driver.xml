@@ -5,8 +5,8 @@
 
     <New id="databaseAdaptor" class="org.eclipse.jetty.server.session.DatabaseAdaptor">
          <Call name="setDriverInfo">
-             <Arg><Property name="jetty.session.driverClass"/></Arg>
-             <Arg><Property name="jetty.session.driverUrl"/></Arg>
+             <Arg><Property name="jetty.session.jdbc.driverClass"/></Arg>
+             <Arg><Property name="jetty.session.jdbc.driverUrl"/></Arg>
          </Call>
     </New>
 
