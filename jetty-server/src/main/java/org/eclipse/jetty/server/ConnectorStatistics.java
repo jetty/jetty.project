@@ -43,7 +43,10 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 /** A Connector.Listener that gathers Connector and Connections Statistics.
  * Adding an instance of this class as with {@link AbstractConnector#addBean(Object)} 
  * will register the listener with all connections accepted by that connector.
+ *
+ * @deprecated use {@link ServerConnectionStatistics} instead.
  */
+@Deprecated
 @ManagedObject("Connector Statistics")
 public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, Connection.Listener
 {
