@@ -31,21 +31,17 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.ConnectorStatistics;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/**
- * StatisticsServlet
- *
- *
- */
 public class StatisticsServlet extends HttpServlet
 {
     private static final Logger LOG = Log.getLogger(StatisticsServlet.class);
@@ -55,11 +51,6 @@ public class StatisticsServlet extends HttpServlet
     private MemoryMXBean _memoryBean;
     private Connector[] _connectors;
 
-    
-    
-    /** 
-     * @see javax.servlet.GenericServlet#init()
-     */
     public void init() throws ServletException
     {
         ServletContext context = getServletContext();
@@ -87,21 +78,11 @@ public class StatisticsServlet extends HttpServlet
         }
     }
 
-    
-    
-    /** 
-     * @see javax.servlet.http.HttpServlet#doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     public void doPost(HttpServletRequest sreq, HttpServletResponse sres) throws ServletException, IOException
     {
         doGet(sreq, sres);
     }
 
-    
-    
-    /** 
-     * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
         if (_statsHandler == null)
@@ -131,7 +112,6 @@ public class StatisticsServlet extends HttpServlet
         {
             sendTextResponse(resp);
         }
-
     }
 
     private boolean isLoopbackAddress(String address)
@@ -199,24 +179,26 @@ public class StatisticsServlet extends HttpServlet
                 sb.append("      <protocol>").append(protocol).append("</protocol>\n");
             sb.append("      </protocols>\n");
 
-            ConnectorStatistics connectorStats = null;
-
+            ConnectionStatistics connectionStats = null;
             if (connector instanceof AbstractConnector)
-                connectorStats = ((AbstractConnector)connector).getBean(ConnectorStatistics.class);
-            if (connectorStats == null)
-                sb.append("      <statsOn>false</statsOn>\n");
-            else
+                connectionStats = ((AbstractConnector)connector).getBean(ConnectionStatistics.class);
+            if (connectionStats != null)
             {
                 sb.append("      <statsOn>true</statsOn>\n");
-                sb.append("      <connections>").append(connectorStats.getConnections()).append("</connections>\n");
-                sb.append("      <connectionsOpen>").append(connectorStats.getConnectionsOpen()).append("</connectionsOpen>\n");
-                sb.append("      <connectionsOpenMax>").append(connectorStats.getConnectionsOpenMax()).append("</connectionsOpenMax>\n");
-                sb.append("      <connectionsDurationMean>").append(connectorStats.getConnectionDurationMean()).append("</connectionsDurationMean>\n");
-                sb.append("      <connectionsDurationMax>").append(connectorStats.getConnectionDurationMax()).append("</connectionsDurationMax>\n");
-                sb.append("      <connectionsDurationStdDev>").append(connectorStats.getConnectionDurationStdDev()).append("</connectionsDurationStdDev>\n");
-                sb.append("      <messagesIn>").append(connectorStats.getMessagesIn()).append("</messagesIn>\n");
-                sb.append("      <messagesOut>").append(connectorStats.getMessagesIn()).append("</messagesOut>\n");
-                sb.append("      <elapsedMs>").append(connectorStats.getStartedMillis()).append("</elapsedMs>\n");
+                sb.append("      <connections>").append(connectionStats.getConnectionsTotal()).append("</connections>\n");
+                sb.append("      <connectionsOpen>").append(connectionStats.getConnections()).append("</connectionsOpen>\n");
+                sb.append("      <connectionsOpenMax>").append(connectionStats.getConnectionsMax()).append("</connectionsOpenMax>\n");
+                sb.append("      <connectionsDurationMean>").append(connectionStats.getConnectionDurationMean()).append("</connectionsDurationMean>\n");
+                sb.append("      <connectionsDurationMax>").append(connectionStats.getConnectionDurationMax()).append("</connectionsDurationMax>\n");
+                sb.append("      <connectionsDurationStdDev>").append(connectionStats.getConnectionDurationStdDev()).append("</connectionsDurationStdDev>\n");
+                sb.append("      <bytesIn>").append(connectionStats.getReceivedBytes()).append("</bytesIn>\n");
+                sb.append("      <bytesOut>").append(connectionStats.getSentBytes()).append("</connectorStats>\n");
+                sb.append("      <messagesIn>").append(connectionStats.getReceivedMessages()).append("</messagesIn>\n");
+                sb.append("      <messagesOut>").append(connectionStats.getSentMessages()).append("</messagesOut>\n");
+            }
+            else
+            {
+                sb.append("      <statsOn>false</statsOn>\n");
             }
             sb.append("    </connector>\n");
         }
@@ -234,12 +216,6 @@ public class StatisticsServlet extends HttpServlet
         pout.write(sb.toString());
     }
 
-    
-    
-    /**
-     * @param response
-     * @throws IOException
-     */
     private void sendTextResponse(HttpServletResponse response) throws IOException
     {
         StringBuilder sb = new StringBuilder();
@@ -254,28 +230,26 @@ public class StatisticsServlet extends HttpServlet
                 sb.append(protocol).append("&nbsp;");
             sb.append("    <br />\n");
 
-            ConnectorStatistics connectorStats = null;
-
-            if (connector instanceof AbstractConnector)
-                connectorStats = ((AbstractConnector)connector).getBean(ConnectorStatistics.class);
-
-            if (connectorStats != null)
+            ConnectionStatistics connectionStats = null;
+            if (connector instanceof Container)
+                connectionStats = ((Container)connector).getBean(ConnectionStatistics.class);
+            if (connectionStats != null)
             {
-                sb.append("Statistics gathering started ").append(connectorStats.getStartedMillis()).append("ms ago").append("<br />\n");
-                sb.append("Total connections: ").append(connectorStats.getConnections()).append("<br />\n");
-                sb.append("Current connections open: ").append(connectorStats.getConnectionsOpen()).append("<br />\n");;
-                sb.append("Max concurrent connections open: ").append(connectorStats.getConnectionsOpenMax()).append("<br />\n");
-                sb.append("Mean connection duration: ").append(connectorStats.getConnectionDurationMean()).append("<br />\n");
-                sb.append("Max connection duration: ").append(connectorStats.getConnectionDurationMax()).append("<br />\n");
-                sb.append("Connection duration standard deviation: ").append(connectorStats.getConnectionDurationStdDev()).append("<br />\n");
-                sb.append("Total messages in: ").append(connectorStats.getMessagesIn()).append("<br />\n");                
-                sb.append("Total messages out: ").append(connectorStats.getMessagesOut()).append("<br />\n");
+                sb.append("Total connections: ").append(connectionStats.getConnectionsTotal()).append("<br />\n");
+                sb.append("Current connections open: ").append(connectionStats.getConnections()).append("<br />\n");
+                sb.append("Max concurrent connections open: ").append(connectionStats.getConnectionsMax()).append("<br />\n");
+                sb.append("Mean connection duration: ").append(connectionStats.getConnectionDurationMean()).append("<br />\n");
+                sb.append("Max connection duration: ").append(connectionStats.getConnectionDurationMax()).append("<br />\n");
+                sb.append("Connection duration standard deviation: ").append(connectionStats.getConnectionDurationStdDev()).append("<br />\n");
+                sb.append("Total bytes received: ").append(connectionStats.getReceivedBytes()).append("<br />\n");
+                sb.append("Total bytes sent: ").append(connectionStats.getSentBytes()).append("<br />\n");
+                sb.append("Total messages received: ").append(connectionStats.getReceivedMessages()).append("<br />\n");
+                sb.append("Total messages sent: ").append(connectionStats.getSentMessages()).append("<br />\n");
             }
             else
             {
                 sb.append("Statistics gathering off.\n");
             }
-
         }
 
         sb.append("<h2>Memory:</h2>\n");
@@ -285,6 +259,5 @@ public class StatisticsServlet extends HttpServlet
         response.setContentType("text/html");
         PrintWriter pout = response.getWriter();
         pout.write(sb.toString());
-
     }
 }
