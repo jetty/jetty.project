@@ -89,6 +89,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             IStream stream = createRemoteStream(frame.getStreamId());
             if (stream != null)
             {
+                onStreamOpened(stream);
                 stream.process(frame, Callback.NOOP);
                 Stream.Listener listener = notifyNewStream(stream, frame);
                 stream.setListener(listener);

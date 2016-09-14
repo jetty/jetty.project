@@ -36,12 +36,12 @@ public class DataGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public void generate(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
+    public long generate(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
     {
-        generateData(lease, frame.getStreamId(), frame.getData(), frame.isEndStream(), maxLength);
+        return generateData(lease, frame.getStreamId(), frame.getData(), frame.isEndStream(), maxLength);
     }
 
-    public void generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, int maxLength)
+    public long generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, int maxLength)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -51,8 +51,7 @@ public class DataGenerator
         if (dataLength <= maxLength && dataLength <= maxFrameSize)
         {
             // Single frame.
-            generateFrame(lease, streamId, data, last);
-            return;
+            return generateFrame(lease, streamId, data, last);
         }
 
         // Other cases, we need to slice the original buffer into multiple frames.
@@ -62,6 +61,7 @@ public class DataGenerator
         if (frames * maxFrameSize != length)
             ++frames;
 
+        long totalLength = 0;
         int begin = data.position();
         int end = data.limit();
         for (int i = 1; i <= frames; ++i)
@@ -70,12 +70,14 @@ public class DataGenerator
             data.limit(limit);
             ByteBuffer slice = data.slice();
             data.position(limit);
-            generateFrame(lease, streamId, slice, i == frames && last && limit == end);
+            totalLength += generateFrame(lease, streamId, slice, i == frames && last && limit == end);
         }
         data.limit(end);
+
+        return totalLength;
     }
 
-    private void generateFrame(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last)
+    private long generateFrame(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last)
     {
         int length = data.remaining();
 
@@ -84,10 +86,10 @@ public class DataGenerator
             flags |= Flags.END_STREAM;
 
         ByteBuffer header = headerGenerator.generate(lease, FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
-
         BufferUtil.flipToFlush(header, 0);
         lease.append(header, true);
-
         lease.append(data, false);
+
+        return Frame.HEADER_LENGTH + length;
     }
 }

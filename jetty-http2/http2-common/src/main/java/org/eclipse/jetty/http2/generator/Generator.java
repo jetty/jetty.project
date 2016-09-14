@@ -75,14 +75,14 @@ public class Generator
         headerGenerator.setMaxFrameSize(maxFrameSize);
     }
 
-    public void control(ByteBufferPool.Lease lease, Frame frame)
+    public long control(ByteBufferPool.Lease lease, Frame frame)
     {
-        generators[frame.getType().getType()].generate(lease, frame);
+        return generators[frame.getType().getType()].generate(lease, frame);
     }
 
-    public void data(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
+    public long data(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
     {
-        dataGenerator.generate(lease, frame, maxLength);
+        return dataGenerator.generate(lease, frame, maxLength);
     }
 
     public void setMaxHeaderListSize(int value)

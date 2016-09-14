@@ -35,18 +35,19 @@ public class PriorityGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public long generate(ByteBufferPool.Lease lease, Frame frame)
     {
         PriorityFrame priorityFrame = (PriorityFrame)frame;
-        generatePriority(lease, priorityFrame.getStreamId(), priorityFrame.getParentStreamId(), priorityFrame.getWeight(), priorityFrame.isExclusive());
+        return generatePriority(lease, priorityFrame.getStreamId(), priorityFrame.getParentStreamId(), priorityFrame.getWeight(), priorityFrame.isExclusive());
     }
 
-    public void generatePriority(ByteBufferPool.Lease lease, int streamId, int parentStreamId, int weight, boolean exclusive)
+    public long generatePriority(ByteBufferPool.Lease lease, int streamId, int parentStreamId, int weight, boolean exclusive)
     {
         ByteBuffer header = generateHeader(lease, FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
         generatePriorityBody(header, streamId, parentStreamId, weight, exclusive);
         BufferUtil.flipToFlush(header, 0);
         lease.append(header, true);
+        return Frame.HEADER_LENGTH + PriorityFrame.PRIORITY_LENGTH;
     }
 
     public void generatePriorityBody(ByteBuffer header, int streamId, int parentStreamId, int weight, boolean exclusive)

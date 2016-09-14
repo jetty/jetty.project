@@ -32,8 +32,9 @@ public class PrefaceGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public long generate(ByteBufferPool.Lease lease, Frame frame)
     {
         lease.append(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES), false);
+        return PrefaceFrame.PREFACE_BYTES.length;
     }
 }

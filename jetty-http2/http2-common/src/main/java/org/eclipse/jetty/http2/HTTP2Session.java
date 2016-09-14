@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.api.Session;
@@ -75,6 +76,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
     private final AtomicReference<CloseState> closed = new AtomicReference<>(CloseState.NOT_CLOSED);
+    private final AtomicLong bytesWritten = new AtomicLong();
     private final Scheduler scheduler;
     private final EndPoint endPoint;
     private final Generator generator;
@@ -189,6 +191,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public Generator getGenerator()
     {
         return generator;
+    }
+
+    @Override
+    public long getBytesWritten()
+    {
+        return bytesWritten.get();
     }
 
     @Override
@@ -746,6 +754,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             else
                 remoteStreamCount.decrementAndGet();
 
+            onStreamClosed(stream);
+
             flowControl.onStreamDestroyed(stream);
 
             if (LOG.isDebugEnabled())
@@ -934,6 +944,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "upgrade");
     }
 
+    protected void onStreamOpened(IStream stream)
+    {
+    }
+
+    protected void onStreamClosed(IStream stream)
+    {
+    }
+
     public void disconnect()
     {
         if (LOG.isDebugEnabled())
@@ -1090,6 +1108,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     private class ControlEntry extends HTTP2Flusher.Entry
     {
+        private long bytes;
+
         private ControlEntry(Frame frame, IStream stream, Callback callback)
         {
             super(frame, stream, callback);
@@ -1099,7 +1119,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             try
             {
-                generator.control(lease, frame);
+                bytes = generator.control(lease, frame);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Generated {}", frame);
                 prepare();
@@ -1148,10 +1168,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void succeeded()
         {
+            bytesWritten.addAndGet(bytes);
             switch (frame.getType())
             {
                 case HEADERS:
                 {
+                    onStreamOpened(stream);
                     HeadersFrame headersFrame = (HeadersFrame)frame;
                     if (stream.updateClose(headersFrame.isEndStream(), true))
                         removeStream(stream);
@@ -1202,6 +1224,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private class DataEntry extends HTTP2Flusher.Entry
     {
         private int length;
+        private long bytes;
 
         private DataEntry(DataFrame frame, IStream stream, Callback callback)
         {
@@ -1239,7 +1262,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 if (LOG.isDebugEnabled())
                     LOG.debug("Generated {}, length/window={}/{}", frame, length, window);
 
-                generator.data(lease, (DataFrame)frame, length);
+                bytes = generator.data(lease, (DataFrame)frame, length);
                 flowControl.onDataSending(stream, length);
                 return null;
             }
@@ -1254,6 +1277,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void succeeded()
         {
+            bytesWritten.addAndGet(bytes);
             flowControl.onDataSent(stream, length);
             // Do we have more to send ?
             DataFrame dataFrame = (DataFrame)frame;

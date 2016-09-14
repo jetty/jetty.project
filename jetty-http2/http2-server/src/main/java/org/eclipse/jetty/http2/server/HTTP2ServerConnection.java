@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
@@ -59,9 +60,11 @@ import org.eclipse.jetty.util.thread.ExecutionStrategy;
 public class HTTP2ServerConnection extends HTTP2Connection implements Connection.UpgradeTo
 {
     private final Queue<HttpChannelOverHTTP2> channels = new ConcurrentArrayQueue<>();
+    private final List<Frame> upgradeFrames = new ArrayList<>();
+    private final AtomicLong totalRequests = new AtomicLong();
+    private final AtomicLong totalResponses = new AtomicLong();
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
-    private final List<Frame> upgradeFrames = new ArrayList<>();
 
     public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
@@ -73,6 +76,18 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize, executionFactory);
         this.listener = listener;
         this.httpConfig = httpConfig;
+    }
+
+    @Override
+    public int getMessagesIn()
+    {
+        return totalRequests.intValue();
+    }
+
+    @Override
+    public int getMessagesOut()
+    {
+        return totalResponses.intValue();
     }
 
     @Override
@@ -243,19 +258,27 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
 
         @Override
-        public void recycle()
+        public Runnable onRequest(HeadersFrame frame)
         {
-            getStream().removeAttribute(IStream.CHANNEL_ATTRIBUTE);
-            super.recycle();
-            channels.offer(this);
+            totalRequests.incrementAndGet();
+            return super.onRequest(frame);
         }
 
         @Override
         public void onCompleted()
         {
+            totalResponses.incrementAndGet();
             super.onCompleted();
             if (!getStream().isReset())
                 recycle();
+        }
+
+        @Override
+        public void recycle()
+        {
+            getStream().removeAttribute(IStream.CHANNEL_ATTRIBUTE);
+            super.recycle();
+            channels.offer(this);
         }
 
         @Override
