@@ -36,12 +36,12 @@ public class DataGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public long generate(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
+    public int generate(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
     {
         return generateData(lease, frame.getStreamId(), frame.getData(), frame.isEndStream(), maxLength);
     }
 
-    public long generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, int maxLength)
+    public int generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, int maxLength)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);

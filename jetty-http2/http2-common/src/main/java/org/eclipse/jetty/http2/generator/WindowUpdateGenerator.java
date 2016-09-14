@@ -35,13 +35,13 @@ public class WindowUpdateGenerator extends FrameGenerator
     }
 
     @Override
-    public long generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, Frame frame)
     {
         WindowUpdateFrame windowUpdateFrame = (WindowUpdateFrame)frame;
         return generateWindowUpdate(lease, windowUpdateFrame.getStreamId(), windowUpdateFrame.getWindowDelta());
     }
 
-    public long generateWindowUpdate(ByteBufferPool.Lease lease, int streamId, int windowUpdate)
+    public int generateWindowUpdate(ByteBufferPool.Lease lease, int streamId, int windowUpdate)
     {
         if (windowUpdate < 0)
             throw new IllegalArgumentException("Invalid window update: " + windowUpdate);

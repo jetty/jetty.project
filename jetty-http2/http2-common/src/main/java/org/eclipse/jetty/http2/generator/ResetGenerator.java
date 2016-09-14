@@ -35,13 +35,13 @@ public class ResetGenerator extends FrameGenerator
     }
 
     @Override
-    public long generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, Frame frame)
     {
         ResetFrame resetFrame = (ResetFrame)frame;
         return generateReset(lease, resetFrame.getStreamId(), resetFrame.getError());
     }
 
-    public long generateReset(ByteBufferPool.Lease lease, int streamId, int error)
+    public int generateReset(ByteBufferPool.Lease lease, int streamId, int error)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
