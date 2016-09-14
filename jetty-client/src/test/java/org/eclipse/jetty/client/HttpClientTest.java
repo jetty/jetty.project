@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -829,19 +828,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testConnectHostWithMultipleAddresses() throws Exception
     {
-        String host = "google.com";
-        try
-        {
-            // Likely that the DNS for google.com returns multiple addresses.
-            Assume.assumeTrue(InetAddress.getAllByName(host).length > 1);
-        }
-        catch (Throwable x)
-        {
-            Assume.assumeNoException(x);
-        }
+        start(new EmptyServerHandler());
 
-        startClient();
-        client.setFollowRedirects(false); // Avoid redirects from 80 to 443.
         client.setSocketAddressResolver(new SocketAddressResolver.Async(client.getExecutor(), client.getScheduler(), client.getConnectTimeout())
         {
             @Override
@@ -854,7 +842,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     {
                         // Add as first address an invalid address so that we test
                         // that the connect operation iterates over the addresses.
-                        result.add(0, new InetSocketAddress("idontexist", 80));
+                        result.add(0, new InetSocketAddress("idontexist", port));
                         promise.succeeded(result);
                     }
 
@@ -867,9 +855,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        // Response code may be 200 or 302;
-        // if no exceptions the test passes.
-        client.newRequest(host, 80)
+        // If no exceptions the test passes.
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .header(HttpHeader.CONNECTION, "close")
                 .send();
     }
@@ -1233,7 +1221,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             // before closing the connection, so we need to wait before checking
             // that the connection is closed to avoid races.
             Thread.sleep(1000);
-            Assert.assertTrue(((HttpConnectionOverHTTP)connection).isClosed());
+            Assert.assertTrue(connection.isClosed());
         }
     }
 
