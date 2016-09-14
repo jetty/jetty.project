@@ -27,13 +27,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
+import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.ConnectorStatistics;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Server;
@@ -395,15 +395,15 @@ public class Runner
                                 connector.setHost(host);
                             _server.addConnector(connector);
                             if (_enableStats)
-                                connector.addBean(new ConnectorStatistics());
+                                connector.addBean(new ConnectionStatistics());
                         } 
                         else 
                         {
                             if (_enableStats) 
                             {
-                                for (Connector connector : connectors) 
+                                for (Connector connector : connectors)
                                 {
-                                    ((AbstractConnector) connector).addBean(new ConnectorStatistics());
+                                    ((AbstractConnector) connector).addBean(new ConnectionStatistics());
                                 }
                             }
                         }

@@ -72,10 +72,10 @@ This example comes from within `jetty-http.xml`.
         <Set name="host"><Property name="jetty.host" /></Set>
         <Set name="port"><Property name="jetty.http.port" default="8080" /></Set>
         <Set name="idleTimeout">30000</Set>
-        <!-- Enable Connector Statistics -->
+        <!-- Enable Connection Statistics -->
         <Call name="addBean">
           <Arg>
-              <New id="ConnectorStatistics" class="org.eclipse.jetty.server.ConnectorStatistics"/>
+              <New id="ConnectionStatistics" class="org.eclipse.jetty.io.ConnectionStatistics"/>
           </Arg>
         </Call>
       </New>
