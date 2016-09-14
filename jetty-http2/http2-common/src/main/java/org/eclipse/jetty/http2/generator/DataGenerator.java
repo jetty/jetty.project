@@ -36,12 +36,12 @@ public class DataGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public long generate(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
+    public int generate(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
     {
         return generateData(lease, frame.getStreamId(), frame.getData(), frame.isEndStream(), maxLength);
     }
 
-    public long generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, int maxLength)
+    public int generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, int maxLength)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -61,7 +61,7 @@ public class DataGenerator
         if (frames * maxFrameSize != length)
             ++frames;
 
-        long totalLength = 0;
+        int totalLength = 0;
         int begin = data.position();
         int end = data.limit();
         for (int i = 1; i <= frames; ++i)
@@ -77,7 +77,7 @@ public class DataGenerator
         return totalLength;
     }
 
-    private long generateFrame(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last)
+    private int generateFrame(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last)
     {
         int length = data.remaining();
 

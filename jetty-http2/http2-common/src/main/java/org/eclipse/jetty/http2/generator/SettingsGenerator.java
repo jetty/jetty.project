@@ -36,13 +36,13 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public long generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, Frame frame)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(lease, settingsFrame.getSettings(), settingsFrame.isReply());
     }
 
-    public long generateSettings(ByteBufferPool.Lease lease, Map<Integer, Integer> settings, boolean reply)
+    public int generateSettings(ByteBufferPool.Lease lease, Map<Integer, Integer> settings, boolean reply)
     {
         // Two bytes for the identifier, four bytes for the value.
         int entryLength = 2 + 4;
