@@ -18,53 +18,31 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
-import javax.servlet.GenericServlet;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
-import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
-import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 
-import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.UrlEncoded;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -75,7 +53,6 @@ public class EncodedURITest
     private ContextHandlerCollection _contextCollection;
     private ServletContextHandler _context0;
     private ServletContextHandler _context1;
-    private ResourceHandler _resourceHandler;
 
     @Before
     public void init() throws Exception
@@ -116,7 +93,7 @@ public class EncodedURITest
         String response = _connector.getResponse("GET /c%6Fntext%20path/test%20servlet/path%20info HTTP/1.0\n\n");
         assertThat(response,startsWith("HTTP/1.1 200 "));
         assertThat(response,Matchers.containsString("requestURI=/c%6Fntext%20path/test%20servlet/path%20info"));
-        assertThat(response,Matchers.containsString("contextPath=/context path"));
+        assertThat(response,Matchers.containsString("contextPath=/context%20path"));
         assertThat(response,Matchers.containsString("servletPath=/test servlet"));
         assertThat(response,Matchers.containsString("pathInfo=/path info"));
     }
@@ -127,7 +104,7 @@ public class EncodedURITest
         String response = _connector.getResponse("GET /context%20path/test%20servlet/path%20info?async=true HTTP/1.0\n\n");
         assertThat(response,startsWith("HTTP/1.1 200 "));
         assertThat(response,Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
-        assertThat(response,Matchers.containsString("contextPath=/context path"));
+        assertThat(response,Matchers.containsString("contextPath=/context%20path"));
         assertThat(response,Matchers.containsString("servletPath=/test servlet"));
         assertThat(response,Matchers.containsString("pathInfo=/path info"));
     }
@@ -138,7 +115,7 @@ public class EncodedURITest
         String response = _connector.getResponse("GET /context%20path/test%20servlet/path%20info?async=true&wrap=true HTTP/1.0\n\n");
         assertThat(response,startsWith("HTTP/1.1 200 "));
         assertThat(response,Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
-        assertThat(response,Matchers.containsString("contextPath=/context path"));
+        assertThat(response,Matchers.containsString("contextPath=/context%20path"));
         assertThat(response,Matchers.containsString("servletPath=/test servlet"));
         assertThat(response,Matchers.containsString("pathInfo=/path info"));
     }
@@ -149,7 +126,7 @@ public class EncodedURITest
         String response = _connector.getResponse("GET /context%20path/async%20servlet/path%20info HTTP/1.0\n\n");
         assertThat(response,startsWith("HTTP/1.1 200 "));
         assertThat(response,Matchers.containsString("requestURI=/context%20path/test servlet/path info"));
-        assertThat(response,Matchers.containsString("contextPath=/context path"));
+        assertThat(response,Matchers.containsString("contextPath=/context%20path"));
         assertThat(response,Matchers.containsString("servletPath=/test servlet"));
         assertThat(response,Matchers.containsString("pathInfo=/path info"));
     }
@@ -160,7 +137,7 @@ public class EncodedURITest
         String response = _connector.getResponse("GET /context%20path/async%20servlet/path%20info?encode=true HTTP/1.0\n\n");
         assertThat(response,startsWith("HTTP/1.1 200 "));
         assertThat(response,Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
-        assertThat(response,Matchers.containsString("contextPath=/context path"));
+        assertThat(response,Matchers.containsString("contextPath=/context%20path"));
         assertThat(response,Matchers.containsString("servletPath=/test servlet"));
         assertThat(response,Matchers.containsString("pathInfo=/path info"));
     }
