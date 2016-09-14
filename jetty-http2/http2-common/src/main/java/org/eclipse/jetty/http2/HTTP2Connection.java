@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
 import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 
@@ -62,6 +61,18 @@ public class HTTP2Connection extends AbstractConnection
         this.bufferSize = bufferSize;
         this.blockingStrategy = new ExecuteProduceConsume(producer, executor);
         this.nonBlockingStrategy = new ProduceExecuteConsume(producer, executor);
+    }
+
+    @Override
+    public long getBytesIn()
+    {
+        return bytesIn.get();
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        return session.getBytesWritten();
     }
 
     public ISession getSession()
@@ -101,14 +112,14 @@ public class HTTP2Connection extends AbstractConnection
     {
         throw new UnsupportedOperationException();
     }
-    
+
     private void onFillableBlocking()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 onFillableBlocking {} ", this);
         blockingStrategy.produce();
     }
-    
+
     private void onFillableNonBlocking()
     {
         if (LOG.isDebugEnabled())
@@ -147,11 +158,11 @@ public class HTTP2Connection extends AbstractConnection
     protected void offerTask(Runnable task, boolean dispatch)
     {
         tasks.offer(task);
-        
+
         // Because producing calls parse and parse can call offerTask, we have to make sure
         // we use the same strategy otherwise produce can be reentrant and that messes with 
         // the release mechanism.  TODO is this test sufficient to protect from this?
-        ExecutionStrategy s = Invocable.isNonBlockingInvocation()?nonBlockingStrategy:blockingStrategy;
+        ExecutionStrategy s = Invocable.isNonBlockingInvocation() ? nonBlockingStrategy : blockingStrategy;
         if (dispatch)
             // TODO Why again is this necessary?
             s.dispatch();
@@ -174,7 +185,7 @@ public class HTTP2Connection extends AbstractConnection
 
         @Override
         public synchronized Runnable produce()
-        {            
+        {
             Runnable task = tasks.poll();
             if (LOG.isDebugEnabled())
                 LOG.debug("Dequeued task {}", task);
