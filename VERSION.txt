@@ -1,4 +1,4 @@
-jetty-9.3.12-SNAPSHOT
+jetty-9.3.12-SNAPSHOT 
 
 jetty-9.3.11.v20160721 - 21 July 2016
  + 230 customize Content-Type in ErrorHandler's default error page 
