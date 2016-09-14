@@ -10,8 +10,8 @@
   <Call name="addBean">
    <Arg>
     <New id="sessionDataStoreFactory" class="org.eclipse.jetty.server.session.FileSessionDataStoreFactory">
-       <Set name="deleteUnrestorableFiles"><Property name="jetty.session.deleteUnrestorableFiles" default="false" /></Set>
-       <Set name="storeDir"><Property name="jetty.session.storeDir"/></Set>
+       <Set name="deleteUnrestorableFiles"><Property name="jetty.session.file.deleteUnrestorableFiles" default="false" /></Set>
+       <Set name="storeDir"><Property name="jetty.session.file.storeDir"/></Set>
     </New>
    </Arg>
   </Call>
