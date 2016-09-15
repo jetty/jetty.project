@@ -1,7 +1,56 @@
-jetty-9.3.12-SNAPSHOT 
+jetty-9.3.12.v20160915 - 15 September 2016
+ + 56 Fix authn issues in LdapLoginModule
+ + 131 Improve Connector Statistic names and values
+ + 185 Implement RFC 7239 (Forwarded header)
+ + 700 Bundle org.eclipse.jetty.http.spi not available via p2 repository
+ + 725 Provide a private way to report security issues
+ + 732 Add jetty-documentation into jetty distribution under demo-base
+ + 752 Implement support for HTTP2 SETTINGS_MAX_HEADER_LIST_SIZE
+ + 759 Ensure wrapped Responses will close and commit outputstream or writer
+ + 761 Clarify retainDays for NCSARequestLog in documentation
+ + 780 The moved websocket PathSpec is incompatible with cometd 3.0.x
+ + 783 Report name of broken jar file
+ + 784 JSP Session updated before sendRedirect() lose their information
+ + 786 Buffering Response Handler
+ + 790 AsyncContentListener semantic broken with HTTP/2 transport
+ + 792 [HTTP/2] Socket seems to be not closed completely
+ + 797 MimeTypes resource loading incorrect on OSGi
+ + 798 async IO Write closed race
+ + 804 setting default Url Encoding broken in Jetty >= 9.3
+ + 806 Jetty HttpClient authentication - missing any realm option
+ + 817 NPE in jndi Resource
+ + 826 Better default for HTTP/2's max concurrent streams
+ + 827 HTTPClient fails connecting to HTTPS host through an HTTP proxy
+   w/authentication
+ + 830 Test webapp not properly copied to demo-base
+ + 832 ServerWithJNDI example uses wrong webapp
+ + 841 support reset in buffering interceptors
+ + 844 Implement a Thread Limit Handler
+ + 845 Improve blocking IO for data rate limiting.
+ + 851 MBeanContainer no longer unregisters MBeans when "stopped"
+ + 854 If container.destroy() is called, calling container.start() again should
+   throw an IllegalStateException
+ + 855 JMXify MBeanContainer
+ + 860 Only TLS 1.2 Supported
+ + 868 ClassLoader leak with Jetty and Karaf - static instances of
+   java.lang.Throwable
+ + 872 override-web.xml configured inside webapp's jetty-web.xml is ignored
+ + 880 Refactor jetty-http's HostPortHttpField logic into new jetty-util class
+ + 882 Add IPv6 support to IPAddressMap in jetty-util
+ + 889 ConstantThrowable.name can be removed
+ + 894 When adding servless class, preserve Class instead of going through
+   String
+ + 897 Remove GzipHandler interceptor when out of scope
+ + 898 GzipHandler adds multiple Vary header
+ + 902 Expect: 100-Continue does not work with HTTP/2
+ + 909 Path and Domain not properly matched in addCookie()
+ + 911 Request.getRequestURI() gets decoded after startAsync(req, resp) is
+   invoked
+ + 913 Unprotected debug in WebAppClassLoader
+ + 922 Implements methods Connection.getBytes[In|Out]()
 
 jetty-9.3.11.v20160721 - 21 July 2016
- + 230 customize Content-Type in ErrorHandler's default error page 
+ + 230 customize Content-Type in ErrorHandler's default error page
  + 592 Support no-value Host header in HttpParser
  + 631 SLOTH protection
  + 643 NPE in passing websocket client test
