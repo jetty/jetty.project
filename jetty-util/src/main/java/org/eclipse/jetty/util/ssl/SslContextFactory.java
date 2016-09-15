@@ -77,15 +77,11 @@ import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Password;
 
-
 /**
  * SslContextFactory is used to configure SSL connectors
  * as well as HttpClient. It holds all SSL parameters and
  * creates SSL context based on these parameters to be
  * used by the SSL connectors.
- */
-
-/**
  */
 public class SslContextFactory extends AbstractLifeCycle
 {
@@ -105,7 +101,7 @@ public class SslContextFactory extends AbstractLifeCycle
         }
     }};
 
-    static final Logger LOG = Log.getLogger(SslContextFactory.class);
+    private static final Logger LOG = Log.getLogger(SslContextFactory.class);
 
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
         (Security.getProperty("ssl.KeyManagerFactory.algorithm") == null ?
@@ -227,9 +223,6 @@ public class SslContextFactory extends AbstractLifeCycle
 
     protected Factory _factory;
 
-
-
-
     /**
      * Construct an instance of SslContextFactory
      * Default constructor for use in XmlConfiguration files
@@ -247,9 +240,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SslContextFactory(boolean trustAll)
     {
-        setTrustAll(trustAll);
-        addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
-        setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
+        this(trustAll, null);
     }
 
     /**
@@ -258,7 +249,16 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SslContextFactory(String keyStorePath)
     {
-        setKeyStorePath(keyStorePath);
+        this(false, keyStorePath);
+    }
+
+    private SslContextFactory(boolean trustAll, String keyStorePath)
+    {
+        setTrustAll(trustAll);
+        addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
+        setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
+        if (keyStorePath != null)
+            setKeyStorePath(keyStorePath);
     }
 
     public String[] getSelectedProtocols()
@@ -1105,7 +1105,8 @@ public class SslContextFactory extends AbstractLifeCycle
             }
         }
 
-        LOG.debug("managers={} for {}",managers,this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("managers={} for {}",managers,this);
 
         return managers;
     }
@@ -1192,18 +1193,13 @@ public class SslContextFactory extends AbstractLifeCycle
         else
             selected_protocols.addAll(Arrays.asList(enabledProtocols));
 
-
         // Remove any excluded protocols
         selected_protocols.removeAll(_excludeProtocols);
-
 
         if (selected_protocols.isEmpty())
             LOG.warn("No selected protocols from {}",Arrays.asList(supportedProtocols));
 
         _selectedProtocols = selected_protocols.toArray(new String[selected_protocols.size()]);
-
-
-
     }
 
     /**
@@ -1567,7 +1563,7 @@ public class SslContextFactory extends AbstractLifeCycle
     /**
      * Customize an SslEngine instance with the configuration of this factory,
      * by calling {@link #customize(SSLParameters)}
-     * @param sslEngine
+     * @param sslEngine the SSLEngine to customize
      */
     public void customize(SSLEngine sslEngine)
     {
@@ -1587,7 +1583,7 @@ public class SslContextFactory extends AbstractLifeCycle
         sslParams.setEndpointIdentificationAlgorithm(_endpointIdentificationAlgorithm);
         sslParams.setUseCipherSuitesOrder(_useCipherSuitesOrder);
         if (!_certHosts.isEmpty() || !_certWilds.isEmpty())
-            sslParams.setSNIMatchers(Collections.singletonList((SNIMatcher)new AliasSNIMatcher()));
+            sslParams.setSNIMatchers(Collections.singletonList(new AliasSNIMatcher()));
         if (_selectedCipherSuites!=null)
             sslParams.setCipherSuites(_selectedCipherSuites);
         if (_selectedProtocols!=null)
