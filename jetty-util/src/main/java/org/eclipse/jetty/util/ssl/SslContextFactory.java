@@ -241,9 +241,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SslContextFactory(boolean trustAll)
     {
-        setTrustAll(trustAll);
-        addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
-        setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
+        this(trustAll, null);
     }
 
     /**
@@ -252,7 +250,16 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SslContextFactory(String keyStorePath)
     {
-        setKeyStorePath(keyStorePath);
+        this(false, keyStorePath);
+    }
+
+    private SslContextFactory(boolean trustAll, String keyStorePath)
+    {
+        setTrustAll(trustAll);
+        addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
+        setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
+        if (keyStorePath != null)
+            setKeyStorePath(keyStorePath);
     }
 
     public String[] getSelectedProtocols()
