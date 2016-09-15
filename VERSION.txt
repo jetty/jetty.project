@@ -1,3 +1,5 @@
+jetty-9.4.0-SNAPSHOT
+
 jetty-9.4.0.RC0 - 15 September 2016
  + 131 Improve Connector Statistic names and values
  + 572 Don't reject HTTP/2 requests without body in low threads mode
