@@ -1173,7 +1173,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
             boolean index1Exists = false;
             boolean index2Exists = false;
-            try (ResultSet result = metaData.getIndexInfo(null, schemaName, tableName, false, false))
+            try (ResultSet result = metaData.getIndexInfo(null, schemaName, tableName, false, true))
             {
                 while (result.next())
                 {
