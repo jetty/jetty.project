@@ -101,8 +101,8 @@ public class StatisticsServlet extends HttpServlet
             }
         }
 
-        String statsReset = req.getParameter( "statsReset" );
-        if (statsReset != null && "true".equalsIgnoreCase( statsReset )) {
+        if (Boolean.valueOf( req.getParameter("statsReset")))
+        {
             _statsHandler.statsReset();
             return;
         }
@@ -111,7 +111,7 @@ public class StatisticsServlet extends HttpServlet
         if (wantXml == null)
           wantXml = req.getParameter("XML");
 
-        if (wantXml != null && "true".equalsIgnoreCase(wantXml))
+        if (Boolean.valueOf(wantXml))
         {
             sendXmlResponse(resp);
         }
