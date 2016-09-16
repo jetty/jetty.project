@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -26,7 +27,8 @@ import java.net.InetAddress;
 import java.net.Socket;
 
 import org.eclipse.jetty.util.thread.ShutdownThread;
-import org.junit.AfterClass;
+import org.junit.After;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -34,14 +36,55 @@ import static org.junit.Assert.assertTrue;
 
 public class ShutdownMonitorTest
 {
-    @AfterClass
-    public static void afterClass()
+    @After
+    public void dispose()
     {
         ShutdownMonitor.reset();
     }
-    
+
     @Test
-    public void testShutdownMonitor() throws Exception
+    public void testStatus() throws Exception
+    {
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setDebug(true);
+        monitor.setPort(0);
+        monitor.setExitVm(false);
+        monitor.start();
+        String key = monitor.getKey();
+        int port = monitor.getPort();
+
+        // Try more than once to be sure that the ServerSocket has not been closed.
+        for (int i = 0; i < 2; ++i)
+        {
+            try (Socket socket = new Socket("localhost", port))
+            {
+                OutputStream output = socket.getOutputStream();
+                String command = "status";
+                output.write((key + "\r\n" + command + "\r\n").getBytes());
+                output.flush();
+
+                BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                String reply = input.readLine();
+                assertEquals("OK", reply);
+                // Socket must be closed afterwards.
+                Assert.assertNull(input.readLine());
+            }
+        }
+    }
+
+    @Test
+    public void testStartStopDifferentPortDifferentKey() throws Exception
+    {
+        testStartStop(false);
+    }
+
+    @Test
+    public void testStartStopSamePortDifferentKey() throws Exception
+    {
+        testStartStop(true);
+    }
+
+    private void testStartStop(boolean reusePort) throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setDebug(true);
@@ -58,8 +101,8 @@ public class ShutdownMonitorTest
         monitor.await();
         assertTrue(!monitor.isAlive());
 
-        // should be able to change port and key because it is stopped
-        monitor.setPort(0);
+        // Should be able to change port and key because it is stopped.
+        monitor.setPort(reusePort ? port : 0);
         String newKey = "foo";
         monitor.setKey(newKey);
         monitor.start();
@@ -78,8 +121,12 @@ public class ShutdownMonitorTest
     public void testForceStopCommand() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setDebug(true);
         monitor.setPort(0);
-        try(CloseableServer server = new CloseableServer())
+        monitor.setExitVm(false);
+        monitor.start();
+
+        try (CloseableServer server = new CloseableServer())
         {
             server.start();
 
@@ -105,10 +152,12 @@ public class ShutdownMonitorTest
     public void testOldStopCommandWithStopOnShutdownTrue() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        monitor.setExitVm(false);
-
+        monitor.setDebug(true);
         monitor.setPort(0);
-        try(CloseableServer server = new CloseableServer())
+        monitor.setExitVm(false);
+        monitor.start();
+
+        try (CloseableServer server = new CloseableServer())
         {
             server.setStopAtShutdown(true);
             server.start();
@@ -135,9 +184,12 @@ public class ShutdownMonitorTest
     public void testOldStopCommandWithStopOnShutdownFalse() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        monitor.setExitVm(false);
+        monitor.setDebug(true);
         monitor.setPort(0);
-        try(CloseableServer server = new CloseableServer())
+        monitor.setExitVm(false);
+        monitor.start();
+
+        try (CloseableServer server = new CloseableServer())
         {
             server.setStopAtShutdown(false);
             server.start();
@@ -222,7 +274,6 @@ public class ShutdownMonitorTest
             {
                 throw new RuntimeException(e);
             }
-           
         }
     }
 }
