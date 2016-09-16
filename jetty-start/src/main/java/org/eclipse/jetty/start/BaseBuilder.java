@@ -118,7 +118,15 @@ public class BaseBuilder
         if (!startArgs.getStartModules().isEmpty())
         {
             for (String name:startArgs.getStartModules())
+            {
                 newly_added.addAll(modules.enable(name,"--add-to-start"));
+                if (!newly_added.contains(name))
+                {
+                    Set<String> sources = modules.get(name).getEnableSources();
+                    sources.remove("--add-to-start");
+                    StartLog.info("%s already enabled by %s",name,sources);
+                }
+            }
         }
 
         if (StartLog.isDebugEnabled())
