@@ -88,6 +88,12 @@ public class StartIniBuilder implements BaseBuilder.Config
     @Override
     public boolean addModule(Module module) throws IOException
     {
+        if (modulesPresent.contains(module.getName()))
+        {
+            StartLog.info("%-15s already initialised in %s",module.getName(),baseHome.toShortForm(startIni));
+            // skip, already present
+            return false;
+        }
 
         if (module.isDynamic())
         {
