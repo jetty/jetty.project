@@ -101,11 +101,17 @@ public class StatisticsServlet extends HttpServlet
             }
         }
 
+        if (Boolean.valueOf( req.getParameter("statsReset")))
+        {
+            _statsHandler.statsReset();
+            return;
+        }
+
         String wantXml = req.getParameter("xml");
         if (wantXml == null)
           wantXml = req.getParameter("XML");
 
-        if (wantXml != null && "true".equalsIgnoreCase(wantXml))
+        if (Boolean.valueOf(wantXml))
         {
             sendXmlResponse(resp);
         }
