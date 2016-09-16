@@ -65,6 +65,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         public final static int MAX_INTERVAL_NOT_SET = -999;
         
         protected DatabaseAdaptor _dbAdaptor;
+        protected String _schemaName = null;
         protected String _tableName = "JettySessions";
         protected String _idColumn = "sessionId";
         protected String _contextPathColumn = "contextPath";
@@ -85,7 +86,15 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         {
             _dbAdaptor = dbadaptor;
         }
-        
+        public String getSchemaName()
+        {
+            return _schemaName;
+        }
+        public void setSchemaName(String schemaName)
+        {
+            checkNotNull(schemaName);
+            _schemaName = schemaName;
+        }
         
         public String getTableName()
         {
@@ -97,6 +106,11 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             _tableName = tableName;
         }
      
+        private String getSchemaTableName()
+        {
+            return (getSchemaName()!=null?getSchemaName()+".":"")+getTableName();
+        }
+        
         public String getIdColumn()
         {
             return _idColumn;
@@ -223,12 +237,12 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         
         public String getCreateIndexOverExpiryStatementAsString (String indexName)
         {
-            return "create index "+indexName+" on "+getTableName()+" ("+getExpiryTimeColumn()+")";
+            return "create index "+indexName+" on "+getSchemaTableName()+" ("+getExpiryTimeColumn()+")";
         }
         
         public String getCreateIndexOverSessionStatementAsString (String indexName)
         {
-            return "create index "+indexName+" on "+getTableName()+" ("+getIdColumn()+", "+getContextPathColumn()+")";
+            return "create index "+indexName+" on "+getSchemaTableName()+" ("+getIdColumn()+", "+getContextPathColumn()+")";
         }
         
         public String getAlterTableForMaxIntervalAsString ()
@@ -236,7 +250,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             if (_dbAdaptor == null)
                 throw new IllegalStateException ("No DBAdaptor");
             String longType = _dbAdaptor.getLongType();
-            String stem = "alter table "+getTableName()+" add "+getMaxIntervalColumn()+" "+longType;
+            String stem = "alter table "+getSchemaTableName()+" add "+getMaxIntervalColumn()+" "+longType;
             if (_dbAdaptor.getDBName().contains("oracle"))
                 return stem + " default "+ MAX_INTERVAL_NOT_SET + " not null";
             else
@@ -250,7 +264,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         }
         public String getInsertSessionStatementAsString()
         {
-           return "insert into "+getTableName()+
+           return "insert into "+getSchemaTableName()+
             " ("+getIdColumn()+", "+getContextPathColumn()+", "+getVirtualHostColumn()+", "+getLastNodeColumn()+
             ", "+getAccessTimeColumn()+", "+getLastAccessTimeColumn()+", "+getCreateTimeColumn()+", "+getCookieTimeColumn()+
             ", "+getLastSavedTimeColumn()+", "+getExpiryTimeColumn()+", "+getMaxIntervalColumn()+", "+getMapColumn()+") "+
@@ -260,7 +274,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         public PreparedStatement getUpdateSessionStatement(Connection connection, String canonicalContextPath)
                 throws SQLException
         {
-            String s =  "update "+getTableName()+
+            String s =  "update "+getSchemaTableName()+
                     " set "+getLastNodeColumn()+" = ?, "+getAccessTimeColumn()+" = ?, "+
                     getLastAccessTimeColumn()+" = ?, "+getLastSavedTimeColumn()+" = ?, "+getExpiryTimeColumn()+" = ?, "+
                     getMaxIntervalColumn()+" = ?, "+getMapColumn()+" = ? where ";
@@ -293,7 +307,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 if (_dbAdaptor.isEmptyStringNull())
                 {
                     PreparedStatement statement = connection.prepareStatement("select "+getIdColumn()+", "+getExpiryTimeColumn()+
-                                                                              " from "+getTableName()+" where "+
+                                                                              " from "+getSchemaTableName()+" where "+
                                                                               getContextPathColumn()+" is null and "+
                                                                               getVirtualHostColumn()+" = ? and "+getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?");
                     statement.setString(1, vhost);
@@ -303,7 +317,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             }
 
             PreparedStatement statement = connection.prepareStatement("select "+getIdColumn()+", "+getExpiryTimeColumn()+
-                                                                      " from "+getTableName()+" where "+getContextPathColumn()+" = ? and "+
+                                                                      " from "+getSchemaTableName()+" where "+getContextPathColumn()+" = ? and "+
                                                                       getVirtualHostColumn()+" = ? and "+
                                                                       getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?");
 
@@ -325,7 +339,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 if (_dbAdaptor.isEmptyStringNull())
                 {
                     PreparedStatement statement = connection.prepareStatement("select "+getIdColumn()+", "+getExpiryTimeColumn()+
-                                                                              " from "+getTableName()+" where "+
+                                                                              " from "+getSchemaTableName()+" where "+
                                                                               getLastNodeColumn() + " = ?  and "+
                                                                               getContextPathColumn()+" is null and "+
                                                                               getVirtualHostColumn()+" = ? and "+getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?");
@@ -337,7 +351,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             }
 
             PreparedStatement statement = connection.prepareStatement("select "+getIdColumn()+", "+getExpiryTimeColumn()+
-                                                                      " from "+getTableName()+" where "+
+                                                                      " from "+getSchemaTableName()+" where "+
                                                                       getLastNodeColumn()+" = ? and "+
                                                                       getContextPathColumn()+" = ? and "+
                                                                       getVirtualHostColumn()+" = ? and "+
@@ -358,7 +372,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 throw new IllegalStateException("No DB adaptor");
 
             PreparedStatement statement = connection.prepareStatement("select "+getIdColumn()+", "+getContextPathColumn()+", "+getVirtualHostColumn()+
-                                                                      " from "+getTableName()+
+                                                                      " from "+getSchemaTableName()+
                                                                       " where "+getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?");
             return statement;
         }
@@ -376,7 +390,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 if (_dbAdaptor.isEmptyStringNull())
                 {
                     PreparedStatement statement = connection.prepareStatement("select "+getIdColumn()+", "+getExpiryTimeColumn()+
-                                                                              " from "+getTableName()+
+                                                                              " from "+getSchemaTableName()+
                                                                               " where "+getIdColumn()+" = ? and "+
                                                                               getContextPathColumn()+" is null and "+
                                                                               getVirtualHostColumn()+" = ?");
@@ -385,7 +399,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             }
 
             PreparedStatement statement = connection.prepareStatement("select "+getIdColumn()+", "+getExpiryTimeColumn()+
-                                                                      " from "+getTableName()+
+                                                                      " from "+getSchemaTableName()+
                                                                       " where "+getIdColumn()+" = ? and "+
                                                                       getContextPathColumn()+" = ? and "+
                                                                       getVirtualHostColumn()+" = ?");
@@ -422,7 +436,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             {
                 if (_dbAdaptor.isEmptyStringNull())
                 {
-                    PreparedStatement statement = connection.prepareStatement("select * from "+getTableName()+
+                    PreparedStatement statement = connection.prepareStatement("select * from "+getSchemaTableName()+
                                                                               " where "+getIdColumn()+" = ? and "+
                                                                               getContextPathColumn()+" is null and "+
                                                                               getVirtualHostColumn()+" = ?");
@@ -433,7 +447,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 }
             }
 
-            PreparedStatement statement = connection.prepareStatement("select * from "+getTableName()+
+            PreparedStatement statement = connection.prepareStatement("select * from "+getSchemaTableName()+
                                                                       " where "+getIdColumn()+" = ? and "+getContextPathColumn()+
                                                                       " = ? and "+getVirtualHostColumn()+" = ?");
             statement.setString(1, id);
@@ -451,7 +465,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             if (_dbAdaptor == null)
                 throw new IllegalStateException("No DB adaptor");
 
-            String s = "update "+getTableName()+
+            String s = "update "+getSchemaTableName()+
                     " set "+getLastNodeColumn()+" = ?, "+getAccessTimeColumn()+" = ?, "+
                     getLastAccessTimeColumn()+" = ?, "+getLastSavedTimeColumn()+" = ?, "+getExpiryTimeColumn()+" = ?, "+
                     getMaxIntervalColumn()+" = ?, "+getMapColumn()+" = ? where ";
@@ -492,7 +506,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             {
                 if (_dbAdaptor.isEmptyStringNull())
                 {
-                    PreparedStatement statement = connection.prepareStatement("delete from "+getTableName()+
+                    PreparedStatement statement = connection.prepareStatement("delete from "+getSchemaTableName()+
                                                                               " where "+getIdColumn()+" = ? and "+getContextPathColumn()+
                                                                               " = ? and "+getVirtualHostColumn()+" = ?");
                     statement.setString(1, id);
@@ -501,7 +515,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 }
             }
 
-            PreparedStatement statement = connection.prepareStatement("delete from "+getTableName()+
+            PreparedStatement statement = connection.prepareStatement("delete from "+getSchemaTableName()+
                                                                       " where "+getIdColumn()+" = ? and "+getContextPathColumn()+
                                                                       " = ? and "+getVirtualHostColumn()+" = ?");
             statement.setString(1, id);
@@ -531,7 +545,9 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 
                 //make the session table if necessary
                 String tableName = _dbAdaptor.convertIdentifier(getTableName());
-                try (ResultSet result = metaData.getTables(null, null, tableName, null))
+                String schemaName = _dbAdaptor.convertIdentifier(getSchemaName());
+                System.err.println ("Tablename: "+tableName+" SchemaName:"+schemaName);
+                try (ResultSet result = metaData.getTables(null, schemaName, tableName, null))
                 {
                     if (!result.next())
                     {
@@ -544,8 +560,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         ResultSet colResult = null;
                         try
                         {
-                            colResult = metaData.getColumns(null, null,
-                                                            _dbAdaptor.convertIdentifier(getTableName()), 
+                            colResult = metaData.getColumns(null, schemaName, tableName, 
                                                             _dbAdaptor.convertIdentifier(getMaxIntervalColumn()));
                         }
                         catch (SQLException s)
@@ -585,7 +600,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
                 boolean index1Exists = false;
                 boolean index2Exists = false;
-                try (ResultSet result = metaData.getIndexInfo(null, null, tableName, false, false))
+                try (ResultSet result = metaData.getIndexInfo(null, schemaName, tableName, false, true))
                 {
                     while (result.next())
                     {
