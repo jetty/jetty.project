@@ -130,6 +130,9 @@ public class DatabaseAdaptor
      */
     public String convertIdentifier (String identifier)
     {
+        if (identifier == null)
+            return null;
+        
         if (_dbName == null)
             throw new IllegalStateException ("DbAdaptor missing metadata");
         
