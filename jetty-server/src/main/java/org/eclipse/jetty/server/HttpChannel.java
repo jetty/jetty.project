@@ -476,9 +476,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         else if (failure instanceof BadMessageException)
         {
             if (LOG.isDebugEnabled())
-                LOG.warn(_request.getRequestURI(), failure);
+                LOG.debug(_request.getRequestURI(), failure);
             else
-                LOG.warn("{} {}",_request.getRequestURI(), failure.getMessage());
+                LOG.warn("{} {}",_request.getRequestURI(), failure);
         }
         else
         {
