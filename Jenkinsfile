@@ -21,8 +21,10 @@ node('linux') {
   try
   {
     stage 'Compile'
-    withEnv(mvnEnv) {
-      sh "mvn -B clean install -Dtest=None"
+    timeout(15) {
+      withEnv(mvnEnv) {
+        sh "mvn -B clean install -Dtest=None"
+      }
     }
   } catch(Exception e) {
     notifyBuild("Compile Failure")
@@ -32,8 +34,10 @@ node('linux') {
   try
   {
     stage 'Javadoc'
-    withEnv(mvnEnv) {
-      sh "mvn -B javadoc:javadoc"
+    timeout(15) {
+      withEnv(mvnEnv) {
+        sh "mvn -B javadoc:javadoc"
+      }
     }
   } catch(Exception e) {
     notifyBuild("Javadoc Failure")
