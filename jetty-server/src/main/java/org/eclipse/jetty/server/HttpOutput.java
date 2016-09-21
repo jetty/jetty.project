@@ -114,6 +114,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public void reset()
     {
+        HttpConfiguration config = _channel.getHttpConfiguration();
+        _bufferSize = config.getOutputBufferSize();
+        _commitSize = config.getOutputAggregationSize();
+        if (_commitSize>_bufferSize)
+        {
+            LOG.warn("OutputAggregationSize {} exceeds bufferSize {}",_commitSize,_bufferSize);
+            _commitSize=_bufferSize;
+        }
         _written = 0;
         reopen();
     }
